@@ -1,0 +1,41 @@
+{
+  "device": {
+    "name": "Antelope Discrete 4 Pro Synergy Core",
+    "vid": "0x23e5",
+    "pid": "0xa2bf",
+    "bcdDevice": "02.03",
+    "status": "UNCONFIRMED",
+    "notes": "vid copied from Orion Studio III on the assumption it's Antelope's registered USB vendor id (constant across their product line) -- NOT independently confirmed for this device. Verify with `lsusb -v` or a capture before trusting it. pid and bcdDevice are taken directly from the device's own descriptor table (see project notes) and should be correct as-is. A unit with serial 3424222000110 is the one this profile is being built against; serial is per-unit, not part of the protocol, and is not read/used anywhere in transport.py or protocol.py."
+  },
+  "transport": {
+    "type": "hid",
+    "report_size": null,
+    "out_endpoint": null,
+    "in_endpoint": null,
+    "poll_interval_ms": null,
+    "status": "unconfirmed",
+    "notes": "Copied none of Orion Studio III's transport values on purpose -- report size, endpoints, and poll interval are device-specific and haven't been captured for this unit yet. Fill these in from a real capture per README.md 'Adding a new Antelope device' before anything in this profile can be used. Don't assume 320-byte reports; a Discrete-series device may use a different report size entirely."
+  },
+  "frame": {
+    "command": {
+      "status": "unconfirmed",
+      "notes": "SET_PARAM shape (magic/opcode/param_id_offset/channel_offset/value_offset) not yet captured for this device. Do not assume it matches Orion Studio III's 0x70/0x13/16/17/18 -- confirm from a fresh capture first, per README.md step 4 (check the outgoing URB_INTERRUPT out frame, not just the state-report diff)."
+    },
+    "state_report": {
+      "status": "unconfirmed",
+      "notes": "magic byte and gain/status base offsets not yet captured. Follow the same capture-correlate-confirm discipline as Orion Studio III's gain_base_offset/status_base_offset (see that profile's params for the pattern to replicate here)."
+    }
+  },
+  "params": {},
+  "channels": {
+    "count": null,
+    "status": "unconfirmed",
+    "notes": "Physical input channel count not yet confirmed for this device -- check the product's spec sheet and a capture before filling in."
+  },
+  "buses": {
+    "known": {},
+    "status": "unconfirmed",
+    "notes": "Output bus ids (monitor A/B, headphone, etc.) not yet captured for this device -- do not assume Orion Studio III's 0/1/2/5 mapping applies."
+  },
+  "unresolved_state_offsets": []
+}
