@@ -1,0 +1,16 @@
+# Raw USB captures -- large binaries, kept locally only (see CAPTURING.md)
+captures/raw pcapng captures/
+*.pcapng
+*.pcap
+
+# Bulky tshark exports -- regenerate from the pcapng when needed
+*.tsv
+captures/*.txt
+/vumeters-sinewave*.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# Local CLI cache (link state) lives in ~/.cache/antelope-ctl, not here, but just in case
+*.cache

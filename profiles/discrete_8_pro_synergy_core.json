@@ -1,0 +1,179 @@
+{
+  "device": {
+    "name": "Antelope Discrete 8 Pro Synergy Core",
+    "vid": "0x23e5",
+    "pid": "0xa2b5",
+    "bcdDevice": "02.01",
+    "status": "confirmed",
+    "notes": "Composite USB device; control is entirely via the vendor HID interface (iface 3, MI_03), same interface number as Orion Studio III. The UAC2 audio interfaces are separate device nodes and are unaffected by anything in this profile. vid is now independently confirmed for this device, not inherited.",
+    "evidence": "lsusb and dmesg on Linux, 2026-08; usb ids cross-checked against the Windows PnP database"
+  },
+  "transport": {
+    "type": "hid",
+    "report_size": 320,
+    "out_endpoint": "0x01",
+    "in_endpoint": "0x82",
+    "poll_interval_ms": 4,
+    "uses_numbered_reports": false,
+    "status": "confirmed",
+    "notes": "Identical to Orion Studio III on every field, so the transport layer really is shared across the family. One difference that matters for transport.py: the HID report descriptor contains no Report ID item, so on Linux hidraw a write must be 321 bytes -- a leading 0x00 report-number byte plus the 320-byte payload. Worth dumping /sys/class/hidraw/hidrawN/device/report_descriptor on an Orion to see whether the same applies there. Full descriptor for this device: 06 a0 ff 09 01 a1 01 09 02 a1 00 06 a1 ff 09 03 09 04 15 80 25 7f 35 00 45 ff 75 08 96 40 01 81 02 09 05 09 06 15 80 25 7f 35 00 45 ff 75 08 96 40 01 91 02 c0 c0",
+    "evidence": "sysfs report_descriptor and endpoint attributes"
+  },
+  "protocol": {
+    "streams_state_unprompted": false,
+    "supports_control_get_report": false,
+    "has_readback": false,
+    "status": "confirmed",
+    "notes": "THIS IS THE BIG BEHAVIOURAL DIFFERENCE FROM ORION. Orion streams its state report every 4 ms, so a client can simply read. This device sends nothing at all until it is written to, and a HID GET_REPORT control transfer is stalled (EPIPE). There is currently no way to read device state back. Every param below was therefore confirmed by sending a frame and reading the result off the unit's own front panel display, not from the wire. A client written against Orion's passive-read model will not work here.",
+    "evidence": "90 s passive listen, HID GET_REPORT, and an active ALSA capture stream -- all produced zero control traffic"
+  },
+  "frame": {
+    "command": {
+      "magic_offset": 0,
+      "magic": "0x70",
+      "opcode_offset": 4,
+      "opcode": "0x13",
+      "opcode_name": "SET_PARAM",
+      "param_id_offset": 16,
+      "channel_offset": 17,
+      "value_offset": 18,
+      "status": "confirmed",
+      "notes": "Same field layout as Orion Studio III. One nuance: byte 0 is NOT a discriminator on this device -- sweeping all 256 values at offset 0 with the opcode held at 0x00 produced an identical rejection every time. 0x70 is written there for family consistency but the device ignores it. Offset 4 is the real discriminator.",
+      "evidence": "eight distinct gain values sent to channels 0..7, each read back on the front panel"
+    },
+    "state_report": {
+      "status": "does not exist on this device",
+      "notes": "Deliberately left empty rather than unconfirmed. This device never emits a state report, so there is no magic byte or base offset to find -- see the protocol block above. If a query opcode is ever discovered that makes it emit one, this is where it goes."
+    },
+    "response_frame": {
+      "magic_offset": 0,
+      "magic": "0x61",
+      "status_offset": 4,
+      "status_values": { "0x10": "unknown opcode" },
+      "status": "confirmed",
+      "notes": "Sent only in response to an unrecognised opcode. A recognised opcode is answered with silence. Careful: silence means the opcode was recognised, not that it took effect -- opcode 0x14 is silent and does nothing.",
+      "evidence": "alternating control test: 0x00 replies, 0x13 and 0x14 silent, with the interleaved 0x00 replies proving the endpoint stayed alive"
+    }
+  },
+  "opcodes": {
+    "0x13": { "name": "SET_PARAM", "status": "confirmed" },
+    "0x14": { "name": "SET_LINK?", "status": "recognised, no observed effect" },
+    "0x01": { "name": null, "status": "forbidden", "reason": "wedges the USB controller, see hazards" },
+    "0x02": { "name": null, "status": "forbidden", "reason": "wedges the USB controller, see hazards" }
+  },
+  "channels": {
+    "addressing": "0-indexed, written to frame.command.channel_offset",
+    "count": 8,
+    "max_safe_index": 7,
+    "hiz_channels": [0, 1],
+    "status": "confirmed",
+    "notes": "Eight hybrid preamps. An index above max_safe_index does not get ignored -- it crashes the firmware, see hazards.channel_index_out_of_range. Hi-Z exists only on channels 1 and 2 (indices 0 and 1); the device accepts input_mode=hiz on any channel and displays it on its own panel with no circuit behind it, so the client has to enforce this.",
+    "evidence": "eight distinct gain values, one per channel, all read back on the front panel"
+  },
+  "buses": {
+    "addressing": "bus id written to frame.command.channel_offset, the same byte that carries a channel index for per-channel params",
+    "known": {
+      "0": { "name": "monitor_1", "aliases": ["monitor", "mon1"], "verified": true },
+      "1": { "name": "headphone_1", "aliases": ["hp1"], "verified": true },
+      "2": { "name": "headphone_2", "aliases": ["hp2"], "verified": true },
+      "5": { "name": "monitor_2", "aliases": ["mon2", "reamp"], "verified": false }
+    },
+    "status": "confirmed",
+    "notes": "The id scheme does match Orion Studio III's after all. Ids 0, 1 and 2 were each driven to a distinct level and read back. Id 5 was accepted the same way but Monitor 2 is not readable from the front panel, so it stays unverified.",
+    "evidence": "four distinct levels on four bus ids, read back on the front panel"
+  },
+  "params": {
+    "input_mode": {
+      "id": "0x4f",
+      "status": "confirmed",
+      "type": "enum",
+      "values": { "0": "mic", "1": "line", "2": "hiz" },
+      "forbidden_values": ["3"],
+      "notes": "Same param id as Orion, but the VALUE SET IS NOT THE SAME. Orion defines 3 = direct. This device has no direct mode and sending 3 crashes its firmware -- see hazards.forbidden_enum_values. The product manual independently confirms only mic / line / Hi-Z.",
+      "evidence": "each value set on a different channel and read back on the front panel; value 3 crashed the unit"
+    },
+    "gain": {
+      "id": "0x50",
+      "status": "confirmed",
+      "type": "int8",
+      "encoding": "two's complement, dB",
+      "per_mode_range": { "mic": [-12, 65], "line": [-6, 20], "hiz": [0, 40] },
+      "device_side_clamping": true,
+      "notes": "Same param id as Orion, but the ranges differ except for line. Orion has mic 0..75 and hiz 0..65; this device is mic -12..65 and hiz 0..40. The device clamps to the current input_mode's range rather than rejecting an out-of-range value, which is what made the bounds measurable without a capture.",
+      "evidence": "deliberate over-range values in each mode clamped to exactly these six bounds, read off the front panel"
+    },
+    "phantom": {
+      "id": "0x51",
+      "status": "confirmed",
+      "type": "bool",
+      "constraint": "mic mode only",
+      "notes": "48V into a ribbon microphone destroys it. A client must never assert this without knowing what is connected.",
+      "evidence": "set on two channels only; 48V lit on exactly those two and stayed dark on the rest"
+    },
+    "phase_invert": {
+      "id": "0x52",
+      "status": "confirmed",
+      "type": "bool",
+      "evidence": "set on three channels only; the indicator lit on exactly those three and stayed dark on the rest"
+    },
+    "bus_level": {
+      "id": "0x47",
+      "status": "confirmed",
+      "type": "int",
+      "applies_to": "buses",
+      "encoding": "value N sets the bus to -N dB",
+      "notes": "Same param id as Orion, DIFFERENT SCALE. Orion encodes 0..96 with 96 (0x60) meaning 0 dB unity. Here the value is simply negated decibels: 30 gives -30 dB. The same byte therefore means about -66 dB on Orion and -30 dB here. This is the second place where an inherited param id carries a different encoding.",
+      "evidence": "bus 0 sent 30 showed -30 dB; then buses 0/1/2/5 sent 60/45/55/50 and the matching outputs followed"
+    },
+    "bus_mute": {
+      "id": "0x48",
+      "status": "confirmed",
+      "type": "bool",
+      "applies_to": "buses",
+      "evidence": "set on one bus only; that bus muted and the others did not"
+    },
+    "bus_dim": {
+      "id": "0x68",
+      "status": "unconfirmed",
+      "type": "bool",
+      "applies_to": "buses",
+      "notes": "Your Orion id, carried over as a candidate. Accepted by the device but no dim state appears on the front panel. Three readings remain open: wrong id here, no panel indicator for dim, or no dim on this model. Needs a capture.",
+      "evidence": "sent, silent, no observable change"
+    },
+    "bus_mono": {
+      "id": "0x69",
+      "status": "unconfirmed",
+      "type": "bool",
+      "applies_to": "buses",
+      "notes": "Your Orion id, carried over as a candidate. Accepted, but this front panel displays no mono/stereo state at all, so it is untestable by eye. Not evidence either way.",
+      "evidence": "sent, silent, nothing to observe"
+    },
+    "channel_link": {
+      "id": null,
+      "status": "unconfirmed",
+      "type": "per-pair bool",
+      "notes": "The feature exists -- the manual documents a Link button that mirrors changes onto the neighbouring channel -- and opcode 0x14 is recognised by the device. But neither your frame.link_command layout (param_id 0xa2 at 16, pair_index at 18, enabled at 19) nor a SET_PARAM-style layout (pair_index at 17, enabled at 18) actually links a pair. This is the clearest case where an Orion frame shape does not transfer, and the best target for the next capture.",
+      "evidence": "controlled test: both channels set to 10 dB, pair linked with both layouts, then only one channel moved -- the other stayed put"
+    }
+  },
+  "hazards": {
+    "_comment": "Proposed addition to the profile schema. This device has no bounds checking of its own and faults in ways that cost a physical power cycle of the unit. Happy to move or drop this block if you would rather keep it out of the profiles.",
+    "channel_index_out_of_range": {
+      "rule": "clamp the channel index to channels.max_safe_index before writing",
+      "effect": "firmware BusFault; the front panel shows 'critical error L204 busfault handler' and only a physical power cycle recovers it",
+      "notes": "An ARM Cortex-M BusFault is raised on an invalid memory access, so the firmware is indexing its per-channel array unchecked. Note that the same byte carries bus ids for bus params, where 0/1/2/5 are legal -- bound-check against the right address space for the param being sent, not one global channel count."
+    },
+    "forbidden_enum_values": {
+      "rule": "validate every enum value against this device's own profile; never pass one through from another device's profile or from user input",
+      "effect": "input_mode = 3 crashes the firmware and needs a physical power cycle",
+      "notes": "This is the concrete reason a shared profile format must not let one device's enum leak into another's."
+    },
+    "wedging_opcodes": {
+      "opcodes": ["0x01", "0x02"],
+      "rule": "send only opcodes from a confirmed allow-list, never a value taken from user input, and rate-limit writes",
+      "effect": "the USB controller wedges; every further write returns ETIMEDOUT, the device then drops off the bus with 'device descriptor read/64, error -71', and neither a driver rebind nor the kernel's own port power cycle recovers it. Only unplugging the unit's power does.",
+      "notes": "Which of the two is responsible was not isolated, because narrowing it down costs another physical power cycle. Both are treated as forbidden. The unit's front panel display glitches at the same moment, which suggests the control channel and the display share one processor."
+    }
+  },
+  "unresolved_state_offsets": []
+}

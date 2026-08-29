@@ -1,0 +1,465 @@
+# Antelope Orion Studio III -- protocol & hardware reference
+
+Everything reverse-engineered so far about how the device talks, in one
+place. `README.md` is the user-facing guide; this file is the spec you
+reach for once you've read it. `profiles/orion_studio_3.json` is the
+machine-readable source of truth -- if the two ever disagree, the profile
+wins and this file is stale.
+
+All offsets are **byte offsets into the 320-byte HID report**, 0-indexed.
+"2026-08" on a claim means it was confirmed by capture in that session;
+see `README.md` and the profile's `evidence` fields for which capture.
+
+---
+
+## 1. Device & transport
+
+| | |
+|---|---|
+| Device | Antelope Orion Studio III |
+| USB VID:PID | `0x23e5:0xa221` |
+| bcdDevice | 7.00 |
+| Control interface | vendor **HID, interface 3** (the UAC2 audio-control interface is a stub -- 1 clock, 4 terminals `nrChannels=1`, no Feature Units -- all control is HID) |
+| Report size | **320 bytes**, fixed, both directions |
+| Control OUT endpoint | `0x01` (host -> device commands), interrupt |
+| Control IN endpoint | `0x82` (device -> host reports), interrupt |
+| Audio stream endpoints | `0x05` OUT / `0x84` IN, isochronous, 24-ch / 24-bit in the class-compliant descriptor -- **unrelated to control** |
+| Device address | 2 (`usb.dst 1.2.x` in the captures) |
+| Poll interval | 4 ms |
+| GET / query opcode | **none known** -- state is only ever read passively from the IN reports the device streams |
+| String descriptors | **never fetched in any capture on file** -- so no channel/bus/category names are recoverable from the USB traffic |
+
+Byte 0 of every report is a **magic** that identifies the frame type.
+
+---
+
+## 2. Outgoing command frames (magic `0x70`)
+
+Four opcodes are known. The opcode is at **offset 4**. The param_id is at
+**offset 16** for all of them. What comes after offset 16 depends on the
+opcode -- this is the single most important thing to get right:
+
+| Opcode @4 | Name | param_id @16 | Payload | Used by |
+|---|---|---|---|---|
+| `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
+| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain |
+| `0x14` | SET_LINK | `0xa2` (fixed) | `pair_index` @18, `enabled` @19 (@17 unused) | channel_link, adat_channel_link |
+| `0x53` | (routing?) | `0xd3` | multi-byte, **not decoded** (`@17..21` = `41 01 00 00 02` in one sample) | routing matrix |
+| `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
+
+Notes:
+- `0x12` puts its value where `0x13` puts its channel. A builder that
+  assumes `0x13` layout will write the value to the wrong byte.
+- `0x14` shifts everything one byte later than `0x13` and adds an explicit
+  `enabled` byte that `0x13` has no equivalent of.
+- The official Launcher frequently **double-sends** the same command
+  (two identical frames tens of ms apart). One is enough.
+- For a linked pair, the Launcher sends **two** `SET_PARAM` frames per
+  change (one per channel) -- the firmware does not fan a single write out
+  to both channels. See section 8.
+
+---
+
+## 3. Incoming report frames
+
+| Magic @0 | Name | Rate | Purpose |
+|---|---|---|---|
+| `0x73` | state report | continuous (~every 4-8 ms) | the readback for nearly everything -- see section 5 |
+| `0x75` | meter report | continuous | per-channel input meters, offset 32 + channel index |
+| `0x74` | init enumeration | **once**, ~t=7.5-16 s of the connect sequence, then never | device topology dump; see section 4 |
+
+`0x75` meter bytes: one byte per channel from offset **32**, same channel
+order as gain/status. Scale is **inverted** -- `0x60` (96) at
+rest/silence, falls toward `0x00` as the signal gets louder. Calibration
+in section 9.
+
+### 2026-08 caveat: only `0x70` / `0x73` / `0x75` exist in normal use
+
+Every multi-thousand-report capture to date contains only those three
+magics (plus `0x74` in the one INIT capture). There is no hidden fourth
+report type carrying link state, oscillator state, etc.
+
+---
+
+## 4. Magic `0x74` -- init enumeration (unconfirmed)
+
+One-shot at device connect (t=7.5-16 s of `all_reports_AntelopeINIT.tsv`,
+113 records total, never seen in any other capture). Record layout:
+
+```
+@0   0x74
+@4   u32  0x10        (constant on every record)
+@8   u32  category_id
+@12  u32  index       (0-based, runs 0..count-1 within a category)
+@16+ zero
+```
+
+The device walks each internal category and emits one record per member.
+**The records carry only `(category_id, index)` -- no names.** Names would
+be in USB string descriptors -- and **none of the 21 raw pcapng files on
+file contains a single string-descriptor fetch** (checked 2026-08), plus
+the UAC2 descriptor is a nameless stub. So the counts and emission order
+below are everything the captures give; the labels are inference. To get
+real names: a fresh connect capture where Windows re-fetches strings, or
+read the counts off against the Launcher's routing-tab labels.
+
+### Full emission order
+
+| # | category | indices | count | notes |
+|---|---|---|---|---|
+| 1 | `0x11` | 0-1 | 2 | **S/PDIF** (stereo L/R) -- matches the `0x11`x2 = S/PDIF read of the ADAT/`0x1a` pairing |
+| 2 | `0x0b` | 1, 2 | (2) | **section marker, not I/O** -- see below |
+| 3 | `0x1b` | 0 | 1 | singleton, grouped with the digital inputs |
+| 4 | `0x1a` | 0-15 | 16 | **ADAT** -- confirmed (matches the 16-ch / 8-pair ADAT link+gain space) |
+| 5 | `0x03` | 0-14 | 15 | unmapped -- see candidates below |
+| 6 | `0x04` | 0-3 | 4 | unmapped -- each entry is followed by its own `0x0b` index-3 marker (no other category does this) |
+| 7 | `0x0a` | 0 | 1 | singleton |
+| 8 | `0x15` | 0 | 1 | singleton |
+| 9 | `0x16` | 0 | 1 | singleton (emitted just before the 64-list, after a ~3.5 s gap) |
+| 10 | `0x19` | 0-63 | 64 | unmapped -- almost certainly the 64-channel USB/Thunderbolt stream (this is the interface's headline I/O count); the routing command's first payload byte is `0x41`=65, consistent with a 1-based index into a 64-entry space |
+| - | `0x0b` | 0, then 4 | (2) | closing section markers |
+
+### `0x0b` is a phase/section marker, not an I/O category
+
+Its 8 records carry index values `1, 2, 3, 3, 3, 3, 0, 4` and land only at
+section boundaries (after S/PDIF; after ADAT starts; after each `0x04`
+entry; before and after the `0x19` list). Treat it as structural.
+
+### What's still unmapped
+
+- **`0x19` = 64** -- best guess: the 64 USB/TB streaming channels. Fairly
+  well-founded (matches the device spec and the routing index hint).
+- **`0x03` = 15** and **`0x04` = 4** -- physical-I/O or routing-node
+  groups; exact identity unknown. `0x04`=4 plausibly the headphone outs,
+  monitor outs, or clock sources (Internal / ADAT / S/PDIF / Word Clock);
+  `0x03`=15 has no obvious match. Don't guess in code.
+- **Singletons `0x1b` / `0x0a` / `0x15` / `0x16`** -- single-instance
+  subsystems (word clock? internal talkback mic? oscillator? monitor
+  controller?). Not distinguishable from this capture.
+
+To actually name these: capture the USB **control transfers** during
+connect (string descriptors), or match the counts against the labels in
+the Launcher's routing tab.
+
+It carries **indices, not values** -- useless for reading current
+settings. Mainly documented so tools stop flagging `0x74` as unknown and
+so a future string-descriptor capture has something to line up against.
+
+---
+
+## 5. State report (`0x73`) byte-map
+
+Only the bytes that are understood are listed. "Formula" columns give the
+offset for target *N*.
+
+| Offset(s) | Field | Formula / encoding | Status |
+|---|---|---|---|
+| 0 | magic `0x73` | | confirmed |
+| 4-7 | header `0x40 0x01 0x00 0x00` | (meaning unknown, constant) | - |
+| 17, 19 | *unexplained* | single-byte blips ~3.0 s after connect, every capture | unresolved |
+| 24 | output_trim target 0 | `value << 4` (bits 4-6) | confirmed |
+| 25 | output_trim targets 1 & 2 | t1 = `value << 2` (bits 2-4); t2 = `value << 5` (bits 5-7) | confirmed |
+| 28-45 | **bus_block** -- 6 buses x 3 bytes | bus *N*: level @ `28+3N`, status @ `29+3N`, reserved @ `30+3N` | confirmed |
+| 37 / 38 | bus 3 (line_out) level / status | (= the `28+3N` formula, N=3) | confirmed |
+| 40 / 41 | bus 4 (reamp) level / status | (N=4) | confirmed |
+| 49-60 | **channel gain array** -- 12 physical inputs | channel *N* gain @ `49+N`, int8 two's-complement dB | confirmed |
+| 61-72 | **channel status array** -- 12 physical inputs | channel *N* status @ `61+N` (bitfield, section 6) | confirmed |
+| 73 | **talkback status** | packed bitfield (section 6 / section 7) | confirmed |
+| 74 | **talkback gain** | 0-96, gain of the currently-selected talkback source | confirmed |
+| 75-90 | **ADAT gain array** -- 16 ADAT channels | ADAT channel *N* (0-indexed) gain @ `75+N`, int8 dB, range -6..+12 | confirmed |
+| 139-140 | *startup ramp* | both bytes ramp to `0x60` in the first ~0.12 s of every capture | unresolved (looks like init) |
+| 157-176, 221-232 | *embedded meter jitter* | free-runs `0x5a`<->`0x60` at rest; drops toward 0 on loud signal | unresolved (looks like a second meter copy) |
+
+Layout is tight and sequential: gain array (49-60), status array (61-72),
+talkback status+gain (73-74), ADAT gain array (75-90) -- no gaps.
+
+---
+
+## 6. Bitmask logic
+
+### Channel status byte (offsets 61-72, one per physical input)
+
+```
+status_byte = (phase_invert << 6) | (phantom << 4) | (input_mode & 0x03)
+```
+
+| Field | Mask | Shift | Values |
+|---|---|---|---|
+| input_mode | `0x03` | 0 | 0=mic, 1=line, 2=hiz, 3=direct |
+| phantom | `0x10` | 4 | 0/1 |
+| phase_invert | `0x40` | 6 | 0/1 |
+
+### Bus status byte (offset `29 + 3*bus_id`)
+
+| Field | Mask | Shift |
+|---|---|---|
+| mute | `0x04` | 2 |
+| dim | `0x08` | 3 |
+| mono | `0x10` | 4 |
+
+**`mute` bit is ambiguous.** `0x04` reads 1 both when the bus is
+explicitly muted **and** whenever `bus_level == 96` (max), with no mute
+command -- reproduced on buses 0, 3, 4 (2026-08). A reader must
+special-case `level == 96`: at max level, treat `0x04` as "at unity", not
+"muted", unless a mute was explicitly sent.
+
+### Talkback status byte (offset 73)
+
+Three sub-fields packed into one byte:
+
+| Field | Mask | Shift | Meaning |
+|---|---|---|---|
+| source (low bits) | `0x03` | 0 | `talkback_source & 0x03` **only** -- high bits of the 0-12 index are not exposed |
+| dest_assign | `0x3c` | 2 | bitmask, destination *N* assigned = bit `N+2` (dest0=`0x04`, dest1=`0x08`, dest2=`0x10`, dest3=`0x20`) |
+| button | `0x40` | 6 | hold-to-talk active |
+
+**Untested overlap:** the source low-bits (`0x03`) and dest0/dest1 assign
+bits (`0x04`/`0x08`) are adjacent, and source index 4-12 sets bits 2-3
+too. The talkback-select and talkback-bttn captures were separate sessions
+(source was 0 during dest toggles; no dest during the source sweep), so
+how this byte reads with talkback *fully* configured is unverified.
+
+### Output trim packing (offsets 24-25)
+
+| Target | Byte | Mask | Shift | Confirmed sweep |
+|---|---|---|---|---|
+| 0 (~ Monitor A trim) | 24 | `0x70` | 4 | `0x00,0x10,0x20,0x30,0x40,0x50,0x60` |
+| 1 (~ Monitor B trim) | 25 | `0x1c` | 2 | `0x00,0x04,0x08,0x0c,0x10,0x14,0x18` |
+| 2 (~ Line trim) | 25 | `0xe0` | 5 | `0x00,0x20,0x40,0x60,0x80,0xa0,0xc0` |
+
+Readback value = `raw_bits >> shift` = the commanded value (0-6).
+Spare bits: offset 24 bits 0-3 and 7; offset 25 bits 0-1. Offset 25 bits
+0-1 (a 2-bit / 4-option field) is the likely home of **pan law**, which
+was never actually captured.
+
+---
+
+## 7. Address spaces
+
+The `channel` byte (offset 17) in a `SET_PARAM` frame is **not one
+namespace**. Its meaning depends entirely on the param_id:
+
+| When setting... | offset-17 byte is... | Range |
+|---|---|---|
+| gain / input_mode / phantom / phase_invert | physical input index | 0-11 |
+| adat_gain | ADAT channel index | 0-15 |
+| bus_level / bus_dim / bus_mute / bus_mono | **bus id** (see below) | 0-5 |
+| output_trim | trim target | 0-2 |
+| talkback_dest_assign | talkback destination | 0-3 |
+| (talkback_button / _source / _gain use `0x12`, no target byte) | - | - |
+
+For `SET_LINK` (`0x14`), offset **18** is a `pair_index`, not offset 17.
+
+### Bus ids (all 6 identified, 2026-08)
+
+Bus ids are **not** in UI order and **not** contiguous with channel
+indices.
+
+| Bus id | Name | Aliases | bus_block level offset |
+|---|---|---|---|
+| 0 | monitor_a | mona, mon_a | 28 |
+| 1 | headphone_1 | hp1 | 31 |
+| 2 | headphone_2 | hp2 | 34 |
+| 3 | line_out | line, lineout | 37 |
+| 4 | reamp | reamp_out, re-amp | 40 |
+| 5 | monitor_b | monb, mon_b | 43 |
+
+`master_volume` is not a distinct param -- it is bus 0's `bus_level`.
+
+`bus_dim` / `bus_mono` were only exercised on 0/1/2/5 and may not apply to
+line_out / reamp. `bus_mute` confirmed on 0/1/2/3.
+
+### Physical channel link pairs
+
+`pair_index = channel_index // 2` (0-indexed channels): pair 0 = ch1&ch2,
+pair 1 = ch3&ch4, ... pair 5 = ch11&ch12. 6 pairs (index 0-5).
+
+### ADAT link pairs
+
+Same formula over the 16-channel ADAT space: 8 pairs (index 0-7).
+Pairs 6 and 7 have no physical-channel equivalent.
+
+**Behaviour is identical to the preamp link** (user-confirmed on hardware,
+2026-08): while a pair is linked the two channels' gains move together,
+and -- as with the preamp -- the *device* doesn't do that, the software
+sends a second `SET_PARAM(adat_gain)` for the partner. The CLI's
+`set-adat-gain` / `set-adat-link` replicate this exactly as `set-gain` /
+`set-link` do for physical channels.
+
+**Open problem (2026-08 update):** the physical-pair-0-ON frame and the
+ADAT-pair-0-ON frame were compared byte-for-byte across **all 320 bytes
+and the USB metadata** (endpoint `0x01`, device address 2, interface,
+direction) -- **zero differences**. So `SET_LINK` is genuinely ambiguous
+at the wire level; there is no disambiguating byte or USB field, confirmed.
+Still unknown: whether one `SET_LINK(pair_index=N)` links pair N in **both**
+the physical and ADAT spaces at once (the Launcher only sends gain/mode
+sync for whichever space you're looking at). The two captures couldn't
+show this because both channels of each pair already had equal gain. To
+settle it: link a physical pair and an ADAT pair in one session with
+*different* gains per channel, or test on hardware. Until then, treat
+`SET_LINK` as potentially affecting both spaces.
+
+---
+
+## 8. Channel link -- behaviour
+
+`SET_LINK` (`0x14` / `0xa2`, `pair_index` @18, `enabled` @19) engages a
+real link flag **on the device** -- visible on the Orion's own front
+panel. But:
+
+- **The firmware does NOT propagate mode/gain/phantom/phase across a
+  linked pair.** Every bit of "syncing" you see is the official Launcher
+  sending extra `SET_PARAM` commands.
+  - On link engage: the Launcher pushes the higher-numbered channel's
+    mode + gain to match the lower one.
+  - While linked: every gain / phantom / phase_invert change is sent
+    **twice** by the Launcher, once per channel (~2 ms apart, same value).
+  - `input_mode` cannot be changed while linked (Launcher greys it out).
+    Workflow: unlink -> set mode per channel (gain resets to the new
+    mode's range) -> re-link.
+- **No link-enabled bit has been found in the `0x73` report.** Diffing
+  the state report immediately before/after link toggles shows zero
+  changed bytes. Link readback may not exist; track it client-side.
+
+Any non-Launcher controller must replicate the two-commands-per-change
+behaviour itself if it wants Launcher-equivalent results.
+
+---
+
+## 9. Meter calibration (`0x75` report)
+
+Raw meter byte at offset `32 + channel_index`. Inverted scale.
+
+### dB curve (channel 0 only, applied to all 12)
+
+`raw_byte == -dBFS`, essentially exactly, across 0 to -60 dB:
+
+| raw | dBFS |
+|---|---|
+| 0 | 0 |
+| 10 | -10 |
+| 12 | -12 |
+| 20 | -20 |
+| 30 | -30 |
+| 40 | -40 |
+| 60 | -60 |
+
+Not swept below -60 dB (one stray raw=72 point at deep silence doesn't fit
+the line). Not independently verified past channel 0, but the offset
+formula holds for all 12 so the curve probably does too.
+
+### LED colour thresholds
+
+| Band | Range | Colour |
+|---|---|---|
+| clip | >= 0 dB | red (only at clip) |
+| | -4 .. 0 dB | orange |
+| | -12 .. -4 dB | yellow |
+| | < -12 dB | green |
+
+No separate solid-red band below clip -- orange runs straight to 0 dB.
+
+---
+
+## 10. Parameter reference
+
+| Param | id | Opcode | Target (@17) | Value (@18, or @17 for `0x12`) | Readback |
+|---|---|---|---|---|---|
+| input_mode | `0x4f` | `0x13` | channel 0-11 | 0=mic,1=line,2=hiz,3=direct | status byte bits 0-1 |
+| gain | `0x50` | `0x13` | channel 0-11 | int8 dB (range per mode: mic 0..75, line -6..20, hiz 0..65, direct 0..20) | gain array `49+ch` |
+| phantom | `0x51` | `0x13` | channel 0-11 | 0/1 (mic mode only) | status byte bit 4 |
+| phase_invert | `0x52` | `0x13` | channel 0-11 | 0/1 | status byte bit 6 |
+| adat_gain | `0x5b` | `0x13` | ADAT ch 0-15 | int8 dB, -6..+12 | ADAT gain array `75+ch` |
+| bus_level | `0x47` | `0x13` | bus id 0-5 | 0-96 (0=-inf, 96=0dB) | bus_block level `28+3N` |
+| bus_dim | `0x68` | `0x13` | bus id | 0/1 | bus status bit 3 |
+| bus_mute | `0x48` | `0x13` | bus id | 0/1 | bus status bit 2 (ambiguous, section 6) |
+| bus_mono | `0x69` | `0x13` | bus id | 0/1 | bus status bit 4 |
+| output_trim | `0x4b` | `0x13` | target 0-2 | 0-6 | offsets 24-25 (section 6) |
+| channel_link | `0xa2` | `0x14` | (pair_index @18) | enabled @19 | none found |
+| adat_channel_link | `0xa2` | `0x14` | (pair_index @18, 0-7) | enabled @19 | none found (gain bytes track together; behaviour = preamp link, CLI mirrors gain software-side) |
+| talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
+| talkback_source | `0x27` | `0x12` | - | 0-12 @17 (0=internal mic, 1-12=input ch) | offset 73 bits 0-1 (low bits only) |
+| talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
+| talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 | 0/1 @18 | offset 73 bits 2-5 |
+| routing | `0xd3` | `0x53` | ? | multi-byte, undecoded | ? |
+| surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
+| spdif (gain + link) | ? | ? | ? | ? -- not captured | ? |
+| oscillator | - | - | - | **host-side only, no device command** (section 11) | none |
+
+---
+
+## 11. Settings window -- device-side vs host-side
+
+What the Settings/Device window controls actually do, from the captures
+(all Windows-VM Launcher + USBPcap, 2026-08):
+
+| Feature | Capture | Device traffic | Verdict |
+|---|---|---|---|
+| **Line-out level + mute** | `settings-linevol-...` | `bus_level` `0x47` / `bus_mute` `0x48` on **bus 3** | **real, confirmed** -- in CLI (`set-bus-level line` / `set-bus-mute line`) |
+| **Reamp-out level** | `settings-linevol-...` | `bus_level` `0x47` on **bus 4** | **real, confirmed** -- in CLI (`set-bus-level reamp`) |
+| **Output trim** (Mon A / Mon B / Line) | `settings-trim-...` | param `0x4b`, 20 frames | **real, confirmed** -- readback @24-25 (section 6); not yet in CLI |
+| **Surround-EQ pre/post** | `settings-scrbrght-surroundEQ` | opcode `0xab` / param `0xeb`, **2 frames** | **real command exists** -- layout undecoded, no `0x73` readback |
+| Pan law | `settings-trim-...` | none (not sent in that capture) | unknown -- recapture |
+| **Oscillator** (osc1/2 mute/freq/level) | `settings-osc1-2-fq-lvl` | **zero frames** (checked all sizes) | **host-side only** -- software tone generator, no device command |
+| **Screen brightness** | `settings-scrbrght-surroundEQ` | **zero frames** | host-side *in the VM* -- but see below, it works on native macOS |
+| **Thunderbolt / latency / DC-coupling** | `settigs-thunderb-lat-dccp` | **zero frames** | host driver settings; TB is inactive while connected over USB, so this tab does nothing in this setup |
+
+So the Settings window is a genuine mix: output levels/mute, the three
+trims, and surround-EQ pre/post are real device commands; the oscillator
+and (at least under the VM) screen brightness and latency are host-side.
+
+### Oscillator -- host-side only
+
+`settings-osc1-2-fq-lvl.pcapng`: not one outgoing frame on endpoint `0x01`
+over the whole 27.7 s. Pure software signal generator mixed into the
+output stream. No command or readback to find. Don't add a device CLI
+command for it.
+
+### Screen brightness -- VM shows nothing, macOS works
+
+`settings-scrbrght-surroundEQ.pcapng` sent nothing for the brightness
+slider. **But the user reports brightness *does* work from the native
+macOS Launcher** (and doesn't change at all under the VM). USBPcap on the
+same capture did catch the 2 surround-EQ frames, so it's not a
+lost-OUT-transfer problem -- more likely the VM's Launcher build no-ops
+brightness when it can't fully talk to the hardware, or that build just
+doesn't implement it. **A native macOS USB capture is the way to settle
+this** (and would also re-check the oscillator / thunderbolt findings
+against a Launcher build where everything works). Capture with **no size
+filter** so nothing like the `0xab` frames gets dropped.
+
+### Surround-EQ
+
+The one Settings-window control here that does talk to the device:
+opcode `0xab` / param `0xeb` (a 5th command shape), 2 frames, bit 7 of
+payload byte @19 toggles. No `0x73` effect. Needs a dedicated capture to
+decode the `0xab` layout.
+
+### Thunderbolt / latency / DC-coupling
+
+`settigs-thunderb-lat-dccp.pcapng` -- zero outgoing frames. Latency/buffer
+is a host driver setting. Thunderbolt is inactive over USB. DC-coupling
+*should* be hardware but wasn't exercised (or is TB-gated) -- worth an
+isolated recapture, ideally on macOS.
+
+---
+
+## 12. Open questions
+
+| Item | Status |
+|---|---|
+| Routing frame (`0x53` / `0xd3`) | payload undecoded -- needs a systematic source x destination capture |
+| ADAT vs physical `SET_LINK` disambiguation | **frames confirmed byte-identical incl. USB metadata** (section 7). Open: does one command link both spaces? Needs different per-channel gains, or a hardware test |
+| Pan law | never captured; likely offset 25 bits 0-1 |
+| S/PDIF gain + link | never captured; expected to mirror ADAT but confirm the param_id |
+| Oscillator command | **resolved -- host-side only, no device command** (section 11) |
+| Screen brightness | resolved -- sends nothing (host-side or not persisted) |
+| Surround-EQ pre/post | new opcode `0xab` / param `0xeb` seen (2 frames); layout undecoded, no `0x73` effect |
+| Thunderbolt / latency / DC-coupling | zero outgoing frames -- host-side, or not exercised |
+| Offsets 17 / 19 blip | fires ~3.0 s after connect in every capture -- periodic/init event, not user-triggered |
+| Offsets 139-140 ramp | first ~0.12 s of every capture -- looks like startup init |
+| Offsets 157-176 / 221-232 | free-running meter data embedded in the state report; exact byte->channel mapping not pinned down (cross-check against `0x75` offsets 32-43) |
+| Channel-link readback bit | none found; may not exist |
+| dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
+| `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |
+| `bus_block` reserved byte (`30+3N`) | never changed -- padding or unexercised |
