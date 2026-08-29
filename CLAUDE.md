@@ -65,6 +65,14 @@ window scorecard: PROTOCOL.md section 11.
       (user-confirmed ADAT link behaves like the preamp link). Separate
       link cache (`kind='adat'`). `set-adat-link` warns that pairs 0-5 may
       also toggle the physical link (identical frame).
+- [ ] **Enforce `constraints` / `hazards`** (added to the profile 2026-08
+      from the Discrete 8 Pro peer PR). `raw-set` sends arbitrary
+      param_id + channel with no bounds check; `set-mode`/`set-gain`/etc.
+      only *warn* past `confirmed_indices` and send anyway. The sibling
+      device BusFaults on an out-of-range channel index and wedges on
+      opcodes `0x01`/`0x02` -- Orion should refuse (not clamp) writes
+      outside `constraints`, `--force` to override. Read the bounds from
+      the profile, don't hardcode.
 - [ ] `antelope/protocol.py`: add `build_global_command(profile, param_id, value)`
       (opcode `0x12`, value @17) -- the profile references it already.
 - [ ] Decide which confirmed-but-unexposed params get CLI commands:
@@ -105,10 +113,15 @@ osc1 freq, osc1 level, then osc2 the same).
 
 ### Magic 0x74 -- device topology enumeration (seen only in all_reports_AntelopeINIT.tsv)
 
-Emitted once at device connect, never again. 113 records; each is
-`(category_id @8, index @12)` -- **no names** (names are USB string
-descriptors = control transfers, not in the HID capture). Full structure
-in `PROTOCOL.md` section 4 and `frame.init_enumeration_report`.
+`AntelopeINIT.tsv` = the Launcher being **started with no user
+interaction** (user-confirmed) -- pure init observation. So the `0x74`
+burst, the lone `SET_PARAM(0x49)` at t=7.7s, and the `0x73` startup noise
+(17/19 blip at t~3s, 139/140 ramp) are all the Launcher's automatic
+handshake, nothing user-triggered.
+
+113 records; each is `(category_id @8, index @12)` -- **no names** (names
+are USB string descriptors = control transfers, not in the HID capture).
+Full structure in `PROTOCOL.md` section 4 and `frame.init_enumeration_report`.
 
 | category | count | meaning |
 |---|---|---|

@@ -12,7 +12,8 @@
     "out_endpoint": "0x01",
     "in_endpoint": "0x82",
     "poll_interval_ms": 4,
-    "notes": "Confirmed from raw pcapng (2026-08): the vendor control protocol is entirely HID interrupt on interface 3, endpoint 0x01 OUT / 0x82 IN, device address 2 (usb.dst 1.2.x). Endpoints 0x05 OUT / 0x84 IN are the UAC2 isochronous audio stream (24-ch / 24-bit in the class-compliant descriptor) -- unrelated to control. Only 16 USB control transfers in the whole connect sequence: standard descriptor GETs + SET_CONFIGURATION/SET_INTERFACE, NO string-descriptor fetches in any capture on file. The UAC2 audio-control descriptor is a stub (1 clock source, 4 terminals all nrChannels=1, no Feature Units), so it carries no usable channel topology or names."
+    "notes": "Confirmed from raw pcapng (2026-08): the vendor control protocol is entirely HID interrupt on interface 3, endpoint 0x01 OUT / 0x82 IN, device address 2 (usb.dst 1.2.x). Endpoints 0x05 OUT / 0x84 IN are the UAC2 isochronous audio stream (24-ch / 24-bit in the class-compliant descriptor) -- unrelated to control. Only 16 USB control transfers in the whole connect sequence: standard descriptor GETs + SET_CONFIGURATION/SET_INTERFACE, NO string-descriptor fetches in any capture on file. The UAC2 audio-control descriptor is a stub (1 clock source, 4 terminals all nrChannels=1, no Feature Units), so it carries no usable channel topology or names.",
+    "hidraw_write_length_unverified": "The sibling Antelope Discrete 8 Pro (peer PR, profile discrete_8_pro_synergy_core.json) has a HID report descriptor with NO Report ID item, so on Linux hidraw a write there must be 321 bytes (leading 0x00 report-number byte + 320-byte payload), NOT 320. This CLI's transport.py currently writes exactly 320 bytes for Orion with no prefix, and the confirmed params suggest that works here -- but it has not been checked against Orion's actual descriptor. Verify with: cat /sys/class/hidraw/hidrawN/device/report_descriptor and look for a Report ID item (0x85 ...). If Orion's descriptor also lacks one, transport.py needs the leading 0x00 for Orion too. Discrete 8 Pro's full descriptor, for comparison: 06 a0 ff 09 01 a1 01 09 02 a1 00 06 a1 ff 09 03 09 04 15 80 25 7f 35 00 45 ff 75 08 96 40 01 81 02 09 05 09 06 15 80 25 7f 35 00 45 ff 75 08 96 40 01 91 02 c0 c0 (no 0x85)."
   },
   "frame": {
     "command": {
@@ -24,7 +25,7 @@
       "param_id_offset": 16,
       "channel_offset": 17,
       "value_offset": 18,
-      "notes": "The general-purpose 'set one param for one target' frame. Used for every per-input-channel param (gain, mode, phantom, phase), the per-bus params (bus_level/bus_dim/bus_mute/bus_mono) and talkback_dest_assign. channel_offset means different things depending on the param: a physical input index (0-11) for channel params, a bus id (0-5, all six now identified -- see 'buses') for bus params, or a talkback destination index (0-3) for talkback_dest_assign. No known GET/query opcode -- state is read passively from IN reports."
+      "notes": "The general-purpose 'set one param for one target' frame. Used for every per-input-channel param (gain, mode, phantom, phase), the per-bus params (bus_level/bus_dim/bus_mute/bus_mono) and talkback_dest_assign. channel_offset means different things depending on the param: a physical input index (0-11) for channel params, a bus id (0-5, all six now identified -- see 'buses') for bus params, or a talkback destination index (0-3) for talkback_dest_assign. No known GET/query opcode -- state is read passively from IN reports. magic (byte 0) 0x70 is written for family consistency; on the sibling Discrete 8 Pro byte 0 is IGNORED on outgoing commands (offset 4 / opcode is the real discriminator there), and that most likely holds for Orion too -- byte 0 as 'the magic' is a property of the INCOMING reports (0x73/0x75/0x74), not the outgoing command."
     },
     "link_command": {
       "magic_offset": 0,
@@ -215,7 +216,17 @@
       "magic": "0x74",
       "status": "unconfirmed",
       "record_layout": "header 0x74, u32 constant 0x10 @4, u32 category_id @8, u32 index @12 (0-based, 0..count-1 within a category); nothing non-zero past offset 16. Records carry (category_id, index) ONLY -- no names (names would be USB string descriptors, i.e. control transfers, not in the 320-byte HID capture).",
-      "notes": "A one-shot device topology enumeration. Seen ONLY in all_reports_AntelopeINIT.tsv (113 records, t=7.5-16s of the connect sequence), never in any other capture. Full emission order (see PROTOCOL.md section 4): 0x11 x2 (S/PDIF); 0x0b marker; 0x1b x1 singleton; 0x1a x16 (ADAT -- confirmed); 0x03 x15 (unmapped); 0x04 x4 (unmapped, each entry trailed by its own 0x0b=3 marker); 0x0a x1, 0x15 x1, 0x16 x1 singletons; 0x19 x64 (unmapped -- almost certainly the 64-channel USB/Thunderbolt stream, the device's headline I/O count; routing command's first payload byte 0x41=65 is consistent with a 1-based index into a 64-entry space); 0x0b closing markers. 0x0b (8 records, index values 1/2/3/3/3/3/0/4) is a section/phase marker, NOT an I/O category. Confirmed: 0x1a=ADAT, 0x11=S/PDIF. Still unnamed: 0x19/0x03/0x04 and the four singletons. NOTE (2026-08): checked all 21 raw pcapng files -- NOT ONE contains a USB string-descriptor fetch, and the UAC2 descriptor is a stub with no channel names. So the names are Launcher-internal and cannot be recovered from any capture on file; the practical routes are (a) a fresh connect capture where Windows re-fetches string descriptors, or (b) reading the counts off against the Launcher's routing-tab labels. This is NOT a live settings readback -- indices only, no current values. Listed here mainly so scan tools stop flagging 0x74 as unknown."
+      "notes": "A one-shot device topology enumeration. Seen ONLY in all_reports_AntelopeINIT.tsv (113 records, t=7.5-16s of the connect sequence), never in any other capture. That capture is the Antelope Launcher being launched with NO user interaction (confirmed by the user) -- so this whole burst, and the single outgoing 0x70/SET_PARAM(param 0x49) at t=7.71s, is the Launcher's automatic startup/handshake, not anything a user did. Full emission order (see PROTOCOL.md section 4): 0x11 x2 (S/PDIF); 0x0b marker; 0x1b x1 singleton; 0x1a x16 (ADAT -- confirmed); 0x03 x15 (unmapped); 0x04 x4 (unmapped, each entry trailed by its own 0x0b=3 marker); 0x0a x1, 0x15 x1, 0x16 x1 singletons; 0x19 x64 (unmapped -- almost certainly the 64-channel USB/Thunderbolt stream, the device's headline I/O count; routing command's first payload byte 0x41=65 is consistent with a 1-based index into a 64-entry space); 0x0b closing markers. 0x0b (8 records, index values 1/2/3/3/3/3/0/4) is a section/phase marker, NOT an I/O category. Confirmed: 0x1a=ADAT, 0x11=S/PDIF. Still unnamed: 0x19/0x03/0x04 and the four singletons. NOTE (2026-08): checked all 21 raw pcapng files -- NOT ONE contains a USB string-descriptor fetch, and the UAC2 descriptor is a stub with no channel names. So the names are Launcher-internal and cannot be recovered from any capture on file; the practical routes are (a) a fresh connect capture where Windows re-fetches string descriptors, or (b) reading the counts off against the Launcher's routing-tab labels. This is NOT a live settings readback -- indices only, no current values. Listed here mainly so scan tools stop flagging 0x74 as unknown."
+    },
+    "error_response": {
+      "magic_offset": 0,
+      "magic": "0x61",
+      "status_offset": 4,
+      "status_values": {
+        "0x10": "unknown opcode"
+      },
+      "status": "unconfirmed on Orion -- confirmed on the sibling Discrete 8 Pro",
+      "notes": "On the Discrete 8 Pro (peer PR): the device replies with a 0x61 frame (status byte at offset 4) ONLY when it receives an opcode it does not recognise; a recognised opcode is answered with silence. IMPORTANT: silence means 'opcode recognised', NOT 'command took effect' -- on that device opcode 0x14 was silent and did nothing. No 0x61 frame has ever appeared in an Orion capture (only 0x70/0x73/0x75/0x74), but the Launcher never sends Orion a bad opcode, so absence is not evidence. If you ever probe a candidate opcode on Orion, watch for a 0x61 reply -- and don't read silence as success."
     }
   },
   "channels": {
@@ -551,15 +562,15 @@
   "unresolved_state_offsets": [
     {
       "offset": "17",
-      "notes": "vumeter-test-ch1 session (2026-08): frame 13306->13310, isolated single-byte change 0x08->0x00, nothing else in the report moved. Unexplained -- not gain/status/mode. RECURS at nearly the same relative time (t~3.05s from start of capture) in TWO more, otherwise-unrelated captures: ch-link-gain-ph-inv-test (frame 13518, t=3.037s) and adat-ch1-2-3-12-link12 (frame 13360, t=3.055s). Neither of those captures had a link/unlink action anywhere near that timestamp (the actual link toggles in ch-link-gain-ph-inv-test happen much later, at t~23s and t~27.6s) -- this rules out the earlier 'possible link-state readback' guess and now favors a periodic/init event that fires ~3s after the capture (or the device connection) starts, independent of user action. Still not deliberately isolated/reproduced on purpose, so keep as unconfirmed, but the 'link readback' hypothesis specifically is now disfavored."
+      "notes": "Single-byte 0x08->0x00, isolated (nothing else moves). RECURS at ~3.0s from capture start in every capture that has been checked: vumeter-test-ch1 (frame 13306), ch-link-gain-ph-inv-test (t=3.037s), adat-ch1-2-3-12-link12 (t=3.055s), and -- crucially -- all_reports_AntelopeINIT (t~3.07s), which is the Launcher being STARTED with no user interaction at all (user-confirmed). So this is a Launcher-connection/handshake event ~3s after the Launcher starts talking to the device, NOT user-triggered and NOT a device-forever-periodic tick. The earlier 'link-state readback' guess is ruled out. Still not deliberately isolated, but its cause is now well-bounded: ignore it, it's startup noise."
     },
     {
       "offset": "19",
-      "notes": "vumeter-test-ch1 session (2026-08): frame 13290->13294, isolated single-byte change 0x06->0x00, nothing else in the report moved, ~16ms before the offset-17 change above (frame 13306). RECURS alongside offset 17 in the same two later captures (ch-link-gain-ph-inv-test frame 13506 t=3.013s; adat-ch1-2-3-12-link12 frame 13336 t=3.007s), same ~3s-from-capture-start timing. See offset-17 note -- same 'periodic/init event around t~3s' hypothesis, same caveat that it's not yet deliberately isolated."
+      "notes": "Single-byte 0x06->0x00, isolated, fires ~10-20ms BEFORE the offset-17 change and tracks it everywhere: vumeter-test-ch1, ch-link-gain-ph-inv-test (t=3.013s), adat-ch1-2-3-12-link12 (t=3.007s), and all_reports_AntelopeINIT (t~3.00s, pure Launcher startup, no user action). Same conclusion as offset 17: a Launcher-connection/handshake event ~3s in, not user- or feature-related. Startup noise, ignore."
     },
     {
       "offset": "139-140",
-      "notes": "changed during capture, no corresponding test-matrix action. vumeter-test-ch1 session (2026-08): both bytes moved together (0x1f->0x20->0x21->0x60) but only within the first ~0.12s of the capture, before any deliberate user action -- looks like device startup/init behavior rather than something the Launcher UI triggers. Seen again at the start of every one of the mona/monb/hp1/hp2/chlink captures (2026-08), always in that same first fraction of a second, which supports 'startup behavior' over anything test-specific. Not yet deliberately tested."
+      "notes": "Both bytes ramp together (0x1f->0x20->0x21->0x60) in the first ~0.12s of every capture, before any user action. In all_reports_AntelopeINIT (Launcher startup, no user interaction -- user-confirmed) offsets 129/130/133/134 (a nearby block, not exactly 139/140) show the same first-fraction-of-a-second ramp/settle. Consistent across mona/monb/hp1/hp2/chlink too. Conclusion: device/connection startup settling of an embedded meter-ish block, not a Launcher-UI control. Ignore. (The exact offsets of this block seem to shift slightly between capture setups -- 129-136 in INIT vs 139-140 elsewhere -- which is itself unexplained but low-value.)"
     },
     {
       "offset": "157-176",
@@ -585,5 +596,123 @@
       "offset": "oscillator / test-tone generator (osc1 + osc2: mute, 1kHz/400Hz, 0/-6/-12/-18 dBFS)",
       "notes": "RESOLVED 2026-08 -- host-side only, see params.oscillator. The raw settings-osc1-2-fq-lvl.pcapng has ZERO outgoing frames on the HID control endpoint (0x01) for the entire 27.7s -- the Launcher never touches the device for oscillator controls. It's a software signal generator. No device command, no readback. (The 0x73 activity during that capture -- offsets 139/140 startup ramp, 17/19 ~3s blip, 157-232 meter jitter -- is all the usual already-explained noise.)"
     }
-  ]
+  ],
+  "family_notes": {
+    "_comment": "Antelope Synergy Core devices share this HID protocol family (magic 0x70 command / opcode at offset 4 / param_id at 16). A peer got an Antelope Discrete 8 Pro working with it too -- see profiles/discrete_8_pro_synergy_core.json (contributed by PR). Param IDs are shared but SEMANTICS ARE NOT guaranteed to be: value sets, encodings, ranges, and even whether a frame shape works at all can differ per device. The constraints/hazards blocks below are the safety lessons from that sibling device, applied here as precautionary defaults.",
+    "shared_with": "discrete_8_pro_synergy_core.json (confirmed working by peer PR); discrete_4 / discrete_4_pro profiles are stubs",
+    "known_divergences_on_discrete_8_pro": [
+      "input_mode 0x4f: no 'direct' mode -- value 3 CRASHES its firmware (Orion has 3=direct, confirmed here)",
+      "bus_level 0x47: encoding is plain negated dB (value N = -N dB), NOT Orion's 0-96 / 96=0dB-unity scale",
+      "gain 0x50: mic -12..65 and hiz 0..40 (vs Orion mic 0..75, hiz 0..65); line -6..20 is the same. Discrete 8 device-side CLAMPS out-of-range gain to the mode range rather than rejecting -- Orion's clamp-vs-reject behaviour is untested",
+      "channel_link (opcode 0x14 / param 0xa2): the frame shape that works on Orion does NOT link a pair on the Discrete 8 Pro, despite 0x14 being recognised -- link is the most device-specific part of the protocol",
+      "outgoing byte 0: ignored on Discrete 8 (offset 4 is the discriminator); 0x70 is cosmetic on commands",
+      "HID report descriptor: Discrete 8 has no Report ID, so Linux hidraw writes there are 321 bytes (leading 0x00 + payload) -- see transport.hidraw_write_length_unverified",
+      "error frame 0x61 ('unknown opcode') exists in the family -- see frame.error_response",
+      "min write interval ~250ms on Discrete 8 (Orion tolerates the Launcher's ~30-80ms double-sends fine)"
+    ]
+  },
+  "constraints": {
+    "_comment": "Machine-readable bounds a client should enforce before writing. Confirmed values are from Orion captures; the forbidden_opcodes and the general 'don't sweep' rule are carried from the Discrete 8 Pro, where crossing them cost a physical power cycle -- see hazards. A bound here should have a matching hazards entry explaining why.",
+    "allowed_opcodes": [
+      "0x12",
+      "0x13",
+      "0x14"
+    ],
+    "observed_opcodes_launcher_only": [
+      "0x53",
+      "0xab"
+    ],
+    "forbidden_opcodes": [
+      "0x01",
+      "0x02"
+    ],
+    "channel_bounds": {
+      "min": 0,
+      "max": 11
+    },
+    "adat_channel_bounds": {
+      "min": 0,
+      "max": 15
+    },
+    "bus_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "input_mode_allowed_values": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "hiz_channels": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "gain_bounds": {
+      "mic": [
+        0,
+        75
+      ],
+      "line": [
+        -6,
+        20
+      ],
+      "hiz": [
+        0,
+        65
+      ],
+      "direct": [
+        0,
+        20
+      ]
+    },
+    "adat_gain_bounds": [
+      -6,
+      12
+    ],
+    "bus_level_bounds": [
+      0,
+      96
+    ],
+    "output_trim_bounds": [
+      0,
+      6
+    ],
+    "talkback_source_bounds": [
+      0,
+      12
+    ],
+    "talkback_dest_bounds": [
+      0,
+      3
+    ],
+    "min_write_interval_ms": 20
+  },
+  "hazards": {
+    "_comment": "Why the constraints above exist. Effects marked 'Discrete 8 Pro' were observed on that sibling device (peer PR); they have NOT been reproduced on Orion, but the shared protocol family and the cost of the failure mode (physical power cycle of the unit) make them precautionary defaults here. Do not treat 'not seen on Orion' as 'safe on Orion'.",
+    "blind_opcode_sweeps": {
+      "rule": "only send opcodes from constraints.allowed_opcodes; never a value from user input; rate-limit writes (constraints.min_write_interval_ms)",
+      "effect_on_discrete_8_pro": "opcodes 0x01 and 0x02 wedged the USB controller -- every further write ETIMEDOUT, the device dropped off the bus ('device descriptor read/64, error -71'), and NEITHER a driver rebind NOR the kernel port power-cycle recovered it. Only unplugging the unit's power did.",
+      "notes": "Which of 0x01/0x02 is responsible was not isolated; both forbidden. An unmapped opcode could in principle reach a routine that writes non-volatile memory or enters recalibration -- nothing observed suggests that happened, nothing rules it out. This asymmetry is the whole argument against blind sweeps, including on Orion.",
+      "enforced_by": "constraints.forbidden_opcodes + constraints.allowed_opcodes"
+    },
+    "channel_index_out_of_range": {
+      "rule": "bound-check the channel index against the RIGHT address space before writing -- constraints.channel_bounds (0-11) for gain/mode/phantom/phase, constraints.adat_channel_bounds (0-15) for adat_gain, constraints.bus_ids for bus params. Refuse, don't clamp-and-hope.",
+      "effect_on_discrete_8_pro": "an index above the channel count did NOT get ignored -- it raised an ARM Cortex-M BusFault ('critical error L204 busfault handler' on the panel) and needed a physical power cycle. The firmware indexes its per-channel array unchecked.",
+      "notes": "Orion's CLI currently only warns past channels.confirmed_indices and sends anyway. Given the sibling behaviour that is too loose -- an out-of-range write should be refused unless --force. The same byte carries bus ids for bus params, where 0-5 are legal, so a single global channel-count check is wrong.",
+      "enforced_by": "constraints.channel_bounds / constraints.adat_channel_bounds / constraints.bus_ids"
+    },
+    "foreign_enum_values": {
+      "rule": "validate every enum value against THIS profile; never pass one through from another device's profile or straight from user input",
+      "effect_on_discrete_8_pro": "input_mode = 3 (Orion's 'direct') crashed the firmware and needed a physical power cycle -- that device has no direct mode.",
+      "notes": "Orion does have input_mode 3 = direct (confirmed here), so this specific value is fine ON ORION -- the hazard is the general one: a shared profile format must not let one device's enum leak into another's code path.",
+      "enforced_by": "constraints.input_mode_allowed_values"
+    }
+  }
 }

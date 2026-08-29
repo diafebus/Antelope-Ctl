@@ -20,7 +20,7 @@ see `README.md` and the profile's `evidence` fields for which capture.
 | USB VID:PID | `0x23e5:0xa221` |
 | bcdDevice | 7.00 |
 | Control interface | vendor **HID, interface 3** (the UAC2 audio-control interface is a stub -- 1 clock, 4 terminals `nrChannels=1`, no Feature Units -- all control is HID) |
-| Report size | **320 bytes**, fixed, both directions |
+| Report size | **320 bytes**, fixed, both directions (but see §13 -- Linux hidraw writes may need a leading `0x00`, making them 321; unverified on Orion) |
 | Control OUT endpoint | `0x01` (host -> device commands), interrupt |
 | Control IN endpoint | `0x82` (device -> host reports), interrupt |
 | Audio stream endpoints | `0x05` OUT / `0x84` IN, isochronous, 24-ch / 24-bit in the class-compliant descriptor -- **unrelated to control** |
@@ -29,7 +29,10 @@ see `README.md` and the profile's `evidence` fields for which capture.
 | GET / query opcode | **none known** -- state is only ever read passively from the IN reports the device streams |
 | String descriptors | **never fetched in any capture on file** -- so no channel/bus/category names are recoverable from the USB traffic |
 
-Byte 0 of every report is a **magic** that identifies the frame type.
+Byte 0 of every **incoming** report is a **magic** that identifies the
+frame type. On **outgoing** commands byte 0 (`0x70`) is cosmetic -- the
+sibling Discrete 8 Pro ignores it entirely; the opcode at offset 4 is the
+real discriminator (§13).
 
 ---
 
@@ -84,7 +87,10 @@ report type carrying link state, oscillator state, etc.
 ## 4. Magic `0x74` -- init enumeration (unconfirmed)
 
 One-shot at device connect (t=7.5-16 s of `all_reports_AntelopeINIT.tsv`,
-113 records total, never seen in any other capture). Record layout:
+113 records total, never seen in any other capture). That capture is the
+Launcher being **started with no user interaction** -- so the whole burst,
+plus the single outgoing `SET_PARAM(param 0x49)` at t=7.7 s, is the
+Launcher's automatic startup handshake. Record layout:
 
 ```
 @0   0x74
@@ -156,7 +162,7 @@ offset for target *N*.
 |---|---|---|---|
 | 0 | magic `0x73` | | confirmed |
 | 4-7 | header `0x40 0x01 0x00 0x00` | (meaning unknown, constant) | - |
-| 17, 19 | *unexplained* | single-byte blips ~3.0 s after connect, every capture | unresolved |
+| 17, 19 | *Launcher-handshake blip* | one byte each, `0x08->0x00` / `0x06->0x00`, ~3.0 s after the Launcher starts (incl. the no-user INIT capture) | startup noise, ignore |
 | 24 | output_trim target 0 | `value << 4` (bits 4-6) | confirmed |
 | 25 | output_trim targets 1 & 2 | t1 = `value << 2` (bits 2-4); t2 = `value << 5` (bits 5-7) | confirmed |
 | 28-45 | **bus_block** -- 6 buses x 3 bytes | bus *N*: level @ `28+3N`, status @ `29+3N`, reserved @ `30+3N` | confirmed |
@@ -167,7 +173,7 @@ offset for target *N*.
 | 73 | **talkback status** | packed bitfield (section 6 / section 7) | confirmed |
 | 74 | **talkback gain** | 0-96, gain of the currently-selected talkback source | confirmed |
 | 75-90 | **ADAT gain array** -- 16 ADAT channels | ADAT channel *N* (0-indexed) gain @ `75+N`, int8 dB, range -6..+12 | confirmed |
-| 139-140 | *startup ramp* | both bytes ramp to `0x60` in the first ~0.12 s of every capture | unresolved (looks like init) |
+| 139-140 | *startup ramp* | both bytes ramp to `0x60` in the first ~0.12 s of every capture (a nearby block, 129-136, does the same in INIT) | startup settling, ignore |
 | 157-176, 221-232 | *embedded meter jitter* | free-runs `0x5a`<->`0x60` at rest; drops toward 0 on loud signal | unresolved (looks like a second meter copy) |
 
 Layout is tight and sequential: gain array (49-60), status array (61-72),
@@ -456,10 +462,69 @@ isolated recapture, ideally on macOS.
 | Screen brightness | resolved -- sends nothing (host-side or not persisted) |
 | Surround-EQ pre/post | new opcode `0xab` / param `0xeb` seen (2 frames); layout undecoded, no `0x73` effect |
 | Thunderbolt / latency / DC-coupling | zero outgoing frames -- host-side, or not exercised |
-| Offsets 17 / 19 blip | fires ~3.0 s after connect in every capture -- periodic/init event, not user-triggered |
-| Offsets 139-140 ramp | first ~0.12 s of every capture -- looks like startup init |
+| Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
+| Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
 | Offsets 157-176 / 221-232 | free-running meter data embedded in the state report; exact byte->channel mapping not pinned down (cross-check against `0x75` offsets 32-43) |
 | Channel-link readback bit | none found; may not exist |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |
 | `bus_block` reserved byte (`30+3N`) | never changed -- padding or unexercised |
+| Orion hidraw write length | 320 or 321 bytes? -- `transport.py` writes 320; unverified against Orion's HID descriptor (section 13) |
+| Orion gain clamp vs reject | unknown -- the Discrete 8 Pro clamps out-of-range gain; Orion's behaviour untested |
+
+---
+
+## 13. Device family / cross-device notes
+
+Antelope **Synergy Core** interfaces share this HID protocol family (magic
+`0x70` command, opcode @4, param_id @16). A peer got an **Antelope Discrete
+8 Pro** working with this same driver -- see
+`profiles/discrete_8_pro_synergy_core.json` (contributed by PR). Param IDs
+are shared; **semantics are not guaranteed to be.** The lessons from that
+sibling device, folded into `orion_studio_3.json` as `family_notes`,
+`constraints`, and `hazards`:
+
+### Safety (precautionary on Orion -- confirmed on the Discrete 8 Pro, cost a physical power cycle each)
+
+- **Never blind-sweep opcodes.** On the Discrete 8 Pro, opcodes `0x01` and
+  `0x02` wedged the USB controller unrecoverably (driver rebind and kernel
+  port power-cycle both failed; only unplugging the unit's power worked).
+  Send only `constraints.allowed_opcodes` (`0x12`/`0x13`/`0x14`).
+- **Out-of-range channel index → firmware BusFault** on the Discrete 8 Pro
+  (needs a power cycle). Bound-check against the *right* space: 0-11 for
+  channel params, 0-15 for ADAT, `0-5` bus ids for bus params -- and
+  *refuse*, don't clamp. (Orion's CLI currently only warns; that's too
+  loose given the sibling behaviour.)
+- **Enum values are not portable.** `input_mode = 3` is "direct" on Orion
+  (fine here) but **crashed the Discrete 8 Pro's firmware** (no direct
+  mode). Never pass one device's enum through another's code path.
+
+### Protocol nuances (verify on Orion)
+
+- **HID write length.** The Discrete 8 Pro's report descriptor has no
+  Report ID, so Linux hidraw writes there must be **321 bytes** (leading
+  `0x00` + 320 payload). `transport.py` writes 320 for Orion with no
+  prefix. Check `cat /sys/class/hidraw/hidrawN/device/report_descriptor`
+  for a Report ID item (`0x85 ...`); if absent, Orion needs the prefix too.
+- **Outgoing byte 0 is cosmetic.** On the Discrete 8 Pro, byte 0 of a
+  command is ignored (offset 4 is the discriminator). `0x70` is written
+  for family consistency. "Byte 0 = the magic" is a property of the
+  *incoming* reports (`0x73`/`0x75`/`0x74`), not the command.
+- **`0x61` error frame.** The Discrete 8 Pro replies `0x61` (status @4,
+  `0x10` = "unknown opcode") **only** for an unrecognised opcode; a
+  recognised opcode gets **silence**. Silence ≠ success (its `0x14` was
+  silent and did nothing). Never seen in an Orion capture, but watch for
+  it if you probe an opcode. See `frame.error_response`.
+
+### Encoding / range divergences (do not assume they match)
+
+| Param | Orion | Discrete 8 Pro |
+|---|---|---|
+| `bus_level` `0x47` | `0-96`, `96` = 0 dB unity | plain: value `N` = `-N` dB |
+| `gain` `0x50` mic | `0..75` | `-12..65` |
+| `gain` `0x50` hiz | `0..65` | `0..40` |
+| `gain` `0x50` line | `-6..20` | `-6..20` (same) |
+| `input_mode` `0x4f` | `0-3` (incl. direct) | `0-2` (3 = crash) |
+| out-of-range `gain` | untested (reject? clamp?) | device clamps to mode range |
+| `channel_link` frame | works (frame.link_command) | frame shape does **not** link a pair |
+| min write interval | ~20 ms fine (Launcher does ~30-80) | ~250 ms |
