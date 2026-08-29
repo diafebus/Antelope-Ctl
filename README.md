@@ -55,6 +55,13 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json set-link 2 on   #
 python3 -m antelope.cli --profile profiles/orion_studio_3.json set-link 3 off  # same pair
 ```
 
+**Important (2026-08, confirmed on real hardware):** the device itself does
+NOT propagate mode/gain/phantom/phase across a linked pair -- that's the
+official Launcher software sending extra commands, which `set-link` now
+replicates. See "Channel link is real, but the syncing you see isn't the
+device doing it" below before assuming any other tool will behave the same
+way against this hardware.
+
 Output buses -- monitor A/B and headphone 1/2. These are a *different*
 address space from the input channels above (see "Buses vs. channels"
 below); use either the numeric bus id or its name:
@@ -185,6 +192,83 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   the gain/status sync above, not a standalone flag. `bus-status` and
   `status` both print a note about this rather than silently omitting it.
   If you find the actual readback bit, that's a great follow-up capture.
+
+  **Re-verified independently (2026-08) against the raw
+  `all_reports_ch-link-gain-ph-inv-test.tsv`**: every report in that capture
+  has first byte `0x70`, `0x73`, or `0x75` -- no other magic byte shows up
+  anywhere in the session, so there's no hidden fourth report type carrying
+  a link flag either. The capture toggled pair 0 (ch1&ch2) on/off/on/off
+  (4 `0x70`/`0x14`/`0xa2` frames, pair_index always `0x00`); diffing the
+  `0x73` state report from immediately before to immediately after each of
+  those 4 commands shows **zero changed bytes** every time -- consistent
+  with (not just "not yet found", but actively re-confirmed for this
+  session's pair-0 toggles) there being no readback bit. Separately, the
+  live gain-mirroring behavior itself is real and fast: sweeping ch0's gain
+  while linked produces a matching ch1 state-report update about 8ms later,
+  in lockstep, for the whole sweep -- this is what `set-link`'s new
+  before/after check (below) leans on.
+
+  **`set-link` now does an indirect confirmation.** Since there's no direct
+  readback, `set-link ... on` snapshots gain/phantom/phase_invert for both
+  channels in the pair before and after sending the command. If they
+  disagreed before and agree after, that's real (if indirect) evidence the
+  link engaged, grounded in the confirmed mirroring behavior above -- not a
+  guess. If they already agreed before (nothing to observe changing), or
+  still disagree after, the CLI says so plainly instead of claiming
+  confirmation it doesn't have. `set-link ... off` still can't be confirmed
+  this way (disengaging has no known observable effect on its own).
+
+  **`status` now shows a link indicator**, e.g.:
+  ```
+   0  mic     0dB   on   off -.
+   1  mic     0dB   on   off -'   (linked, pair 0 -- CLI-tracked, not device-confirmed)
+  ```
+  This is **not a device readback** -- there isn't one. It's a small local
+  cache (`~/.cache/antelope-ctl/link_state_<vid>_<pid>.json`) of the last
+  `set-link` command *this CLI* has sent for each pair. It will go stale if
+  link state changes some other way (the official Launcher, another
+  instance of this tool, or the device losing/regaining power) -- `status`
+  prints a note to that effect whenever it has anything cached. Treat the
+  markers as "what I last told the device", not "what the device currently
+  is".
+
+  **Channel link is real, but the syncing you see isn't the device doing
+  it (confirmed 2026-08, real hardware).** Using an earlier version of this
+  CLI to send only the raw SET_LINK frame did engage a real link flag --
+  visible on the Orion's own front-panel control, so the hardware itself
+  really is tracking "linked" -- but each channel kept whatever mode/gain it
+  already had. Linking ch1 (mic, 20dB) and ch2 (line, 10dB) through the
+  Launcher app snaps ch2 to mic/20dB immediately; doing the exact same
+  SET_LINK frame from the CLI alone did not. Re-examining the outgoing
+  frames in `all_reports_ch-link-gain-ph-inv-test.tsv` explains why: every
+  gain change made while linked in that capture shows **two separate**
+  outgoing `SET_PARAM(gain=0x50, channel, value)` frames (channel 0, then
+  channel 1, ~2ms apart, identical value) -- not one command with an
+  observed two-channel effect. The "live sync" documented above is the
+  Launcher software choosing to send two commands every time, not the
+  device firmware fanning one write out to both channels. `profiles/orion_studio_3.json`'s
+  `params.channel_link.side_effects` and `.live_sync_while_linked` notes
+  have been updated to say this plainly, so nobody re-discovers it as a
+  "CLI bug" later.
+
+  **`cli.py` now replicates the Launcher's behavior itself:**
+  - `set-link ... on` immediately pushes the higher-numbered channel's
+    mode/gain/phantom/phase_invert to match the lower one's (only sending a
+    command for fields that actually differ, mode-before-gain-before-phantom
+    to respect real constraints -- see `_push_full_sync`).
+  - From then on, for as long as this CLI's local cache says the pair is
+    linked, `set-gain`/`set-phantom`/`set-invert` on either channel also
+    sends the same command to its partner (mirroring what the Launcher's
+    two-frames-per-change behavior does). `set-mode` on a linked channel is
+    refused (`--force` to override) -- mode genuinely can't be changed on a
+    linked pair on real hardware; the confirmed workflow is still unlink ->
+    set mode independently -> re-link.
+  - This mirroring is driven entirely by the **local cache**, not a device
+    fact. If you link a pair through the official Launcher instead of this
+    CLI, this CLI won't know and won't mirror -- use the new
+    `mark-link <channel> on/off` command to tell it (updates only the
+    cache, sends nothing to the device) so `set-gain`/etc. mirror correctly
+    afterward.
 - One **unexplained coincidence**: in the monitor-A capture, the `mute`
   status bit flipped on by itself the instant `bus_level` hit its max
   value (96), with no `bus_mute` command anywhere nearby in the log. Only
