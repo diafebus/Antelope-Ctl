@@ -49,23 +49,42 @@
       "magic_offset": 0,
       "magic": "0x61",
       "status_offset": 4,
-      "status_values": { "0x10": "unknown opcode" },
+      "status_values": {
+        "0x10": "unknown opcode"
+      },
       "status": "confirmed",
       "notes": "Sent only in response to an unrecognised opcode. A recognised opcode is answered with silence. Careful: silence means the opcode was recognised, not that it took effect -- opcode 0x14 is silent and does nothing.",
       "evidence": "alternating control test: 0x00 replies, 0x13 and 0x14 silent, with the interleaved 0x00 replies proving the endpoint stayed alive"
     }
   },
   "opcodes": {
-    "0x13": { "name": "SET_PARAM", "status": "confirmed" },
-    "0x14": { "name": "SET_LINK?", "status": "recognised, no observed effect" },
-    "0x01": { "name": null, "status": "forbidden", "reason": "wedges the USB controller, see hazards" },
-    "0x02": { "name": null, "status": "forbidden", "reason": "wedges the USB controller, see hazards" }
+    "0x13": {
+      "name": "SET_PARAM",
+      "status": "confirmed"
+    },
+    "0x14": {
+      "name": "SET_LINK?",
+      "status": "recognised, no observed effect"
+    },
+    "0x01": {
+      "name": null,
+      "status": "forbidden",
+      "reason": "wedges the USB controller, see hazards"
+    },
+    "0x02": {
+      "name": null,
+      "status": "forbidden",
+      "reason": "wedges the USB controller, see hazards"
+    }
   },
   "channels": {
     "addressing": "0-indexed, written to frame.command.channel_offset",
     "count": 8,
     "max_safe_index": 7,
-    "hiz_channels": [0, 1],
+    "hiz_channels": [
+      0,
+      1
+    ],
     "status": "confirmed",
     "notes": "Eight hybrid preamps. An index above max_safe_index does not get ignored -- it crashes the firmware, see hazards.channel_index_out_of_range. Hi-Z exists only on channels 1 and 2 (indices 0 and 1); the device accepts input_mode=hiz on any channel and displays it on its own panel with no circuit behind it, so the client has to enforce this.",
     "evidence": "eight distinct gain values, one per channel, all read back on the front panel"
@@ -73,10 +92,36 @@
   "buses": {
     "addressing": "bus id written to frame.command.channel_offset, the same byte that carries a channel index for per-channel params",
     "known": {
-      "0": { "name": "monitor_1", "aliases": ["monitor", "mon1"], "verified": true },
-      "1": { "name": "headphone_1", "aliases": ["hp1"], "verified": true },
-      "2": { "name": "headphone_2", "aliases": ["hp2"], "verified": true },
-      "5": { "name": "monitor_2", "aliases": ["mon2", "reamp"], "verified": false }
+      "0": {
+        "name": "monitor_1",
+        "aliases": [
+          "monitor",
+          "mon1"
+        ],
+        "verified": true
+      },
+      "1": {
+        "name": "headphone_1",
+        "aliases": [
+          "hp1"
+        ],
+        "verified": true
+      },
+      "2": {
+        "name": "headphone_2",
+        "aliases": [
+          "hp2"
+        ],
+        "verified": true
+      },
+      "5": {
+        "name": "monitor_2",
+        "aliases": [
+          "mon2",
+          "reamp"
+        ],
+        "verified": false
+      }
     },
     "status": "confirmed",
     "notes": "The id scheme does match Orion Studio III's after all. Ids 0, 1 and 2 were each driven to a distinct level and read back. Id 5 was accepted the same way but Monitor 2 is not readable from the front panel, so it stays unverified.",
@@ -87,8 +132,14 @@
       "id": "0x4f",
       "status": "confirmed",
       "type": "enum",
-      "values": { "0": "mic", "1": "line", "2": "hiz" },
-      "forbidden_values": ["3"],
+      "values": {
+        "0": "mic",
+        "1": "line",
+        "2": "hiz"
+      },
+      "forbidden_values": [
+        "3"
+      ],
       "notes": "Same param id as Orion, but the VALUE SET IS NOT THE SAME. Orion defines 3 = direct. This device has no direct mode and sending 3 crashes its firmware -- see hazards.forbidden_enum_values. The product manual independently confirms only mic / line / Hi-Z.",
       "evidence": "each value set on a different channel and read back on the front panel; value 3 crashed the unit"
     },
@@ -97,7 +148,20 @@
       "status": "confirmed",
       "type": "int8",
       "encoding": "two's complement, dB",
-      "per_mode_range": { "mic": [-12, 65], "line": [-6, 20], "hiz": [0, 40] },
+      "per_mode_range": {
+        "mic": [
+          -12,
+          65
+        ],
+        "line": [
+          -6,
+          20
+        ],
+        "hiz": [
+          0,
+          40
+        ]
+      },
       "device_side_clamping": true,
       "notes": "Same param id as Orion, but the ranges differ except for line. Orion has mic 0..75 and hiz 0..65; this device is mic -12..65 and hiz 0..40. The device clamps to the current input_mode's range rather than rejecting an out-of-range value, which is what made the bounds measurable without a capture.",
       "evidence": "deliberate over-range values in each mode clamped to exactly these six bounds, read off the front panel"
@@ -156,23 +220,77 @@
       "evidence": "controlled test: both channels set to 10 dB, pair linked with both layouts, then only one channel moved -- the other stayed put"
     }
   },
+  "constraints": {
+    "_comment": "Machine-readable safety boundaries. A client parses THIS block and refuses anything outside it. The hazards block below explains why each bound exists and what the device does when one is crossed. Keep them in step: a bound here without an explanation there is unreviewable, and an explanation without a bound here is unenforced.",
+    "allowed_opcodes": [
+      "0x13"
+    ],
+    "forbidden_opcodes": [
+      "0x01",
+      "0x02"
+    ],
+    "channel_bounds": {
+      "min": 0,
+      "max": 7
+    },
+    "hiz_channels": [
+      0,
+      1
+    ],
+    "input_mode_allowed_values": [
+      0,
+      1,
+      2
+    ],
+    "bus_ids": [
+      0,
+      1,
+      2,
+      5
+    ],
+    "gain_bounds": {
+      "mic": [
+        -12,
+        65
+      ],
+      "line": [
+        -6,
+        20
+      ],
+      "hiz": [
+        0,
+        40
+      ]
+    },
+    "bus_level_bounds": [
+      0,
+      96
+    ],
+    "min_write_interval_ms": 250
+  },
   "hazards": {
     "_comment": "Proposed addition to the profile schema. This device has no bounds checking of its own and faults in ways that cost a physical power cycle of the unit. Happy to move or drop this block if you would rather keep it out of the profiles.",
     "channel_index_out_of_range": {
       "rule": "clamp the channel index to channels.max_safe_index before writing",
       "effect": "firmware BusFault; the front panel shows 'critical error L204 busfault handler' and only a physical power cycle recovers it",
-      "notes": "An ARM Cortex-M BusFault is raised on an invalid memory access, so the firmware is indexing its per-channel array unchecked. Note that the same byte carries bus ids for bus params, where 0/1/2/5 are legal -- bound-check against the right address space for the param being sent, not one global channel count."
+      "notes": "An ARM Cortex-M BusFault is raised on an invalid memory access, so the firmware is indexing its per-channel array unchecked. Note that the same byte carries bus ids for bus params, where 0/1/2/5 are legal -- bound-check against the right address space for the param being sent, not one global channel count.",
+      "enforced_by": "constraints.channel_bounds"
     },
     "forbidden_enum_values": {
       "rule": "validate every enum value against this device's own profile; never pass one through from another device's profile or from user input",
       "effect": "input_mode = 3 crashes the firmware and needs a physical power cycle",
-      "notes": "This is the concrete reason a shared profile format must not let one device's enum leak into another's."
+      "notes": "This is the concrete reason a shared profile format must not let one device's enum leak into another's.",
+      "enforced_by": "constraints.input_mode_allowed_values"
     },
     "wedging_opcodes": {
-      "opcodes": ["0x01", "0x02"],
+      "opcodes": [
+        "0x01",
+        "0x02"
+      ],
       "rule": "send only opcodes from a confirmed allow-list, never a value taken from user input, and rate-limit writes",
       "effect": "the USB controller wedges; every further write returns ETIMEDOUT, the device then drops off the bus with 'device descriptor read/64, error -71', and neither a driver rebind nor the kernel's own port power cycle recovers it. Only unplugging the unit's power does.",
-      "notes": "Which of the two is responsible was not isolated, because narrowing it down costs another physical power cycle. Both are treated as forbidden. The unit's front panel display glitches at the same moment, which suggests the control channel and the display share one processor."
+      "notes": "Which of the two is responsible was not isolated; both are treated as forbidden. A wedge has been recovered cleanly twice, but that is an observation, not a guarantee: an unmapped opcode could in principle reach a routine that writes non-volatile memory, enters a recalibration state, or leaves the unit in a crash loop. Nothing observed suggests it happened here, and nothing rules it out either. That asymmetry is the whole argument against blind opcode sweeps.",
+      "enforced_by": "constraints.forbidden_opcodes"
     }
   },
   "unresolved_state_offsets": []
