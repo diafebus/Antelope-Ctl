@@ -35,9 +35,29 @@
       "opcode_name": "SET_LINK",
       "param_id_offset": 16,
       "param_id": "0xa2",
+      "space_offset": 17,
       "pair_index_offset": 18,
       "enabled_offset": 19,
-      "notes": "A SEPARATE frame shape from the SET_PARAM command above -- do NOT build it with build_command()/build_raw_command(). param_id_offset (16) lines up with SET_PARAM's, but there is no per-channel byte at offset 17 (always 0/unused here); instead pair_index lives at offset 18 and an explicit enabled 0/1 lives at offset 19 (SET_PARAM has no equivalent of this second byte). Confirmed from capture chlink (2026-08): all 6 channel-link pairs toggled on then off in turn, and the pair_index/enabled bytes were read directly off the wire for every single command -- see params.channel_link."
+      "space_values": {
+        "0": "physical inputs AND ADAT (shared -- not distinguishable from the frame, see params.adat_channel_link.notes)",
+        "1": "S/PDIF"
+      },
+      "notes": "A SEPARATE frame shape from the SET_PARAM command -- do NOT build it with build_command()/build_raw_command(). param_id at 16 lines up with SET_PARAM's. Offset 17 was previously thought unused/always-0; capture spdif-gain-link (2026-08) shows it is a SPACE/DOMAIN selector: 0x00 for physical + ADAT link (which still can't be told apart from each other -- both use 0x00), 0x01 for S/PDIF link. pair_index is at 18, explicit enabled 0/1 at 19. Confirmed: chlink (all 6 physical pairs, space 0), ADAT-link1-2-7-8 (pairs 0/1/6/7, space 0), spdif-gain-link (pair 0, space 1)."
+    },
+    "routing_command": {
+      "magic_offset": 0,
+      "magic": "0x70",
+      "opcode_offset": 4,
+      "opcode": "0x53",
+      "opcode_name": "SET_ROUTE",
+      "param_id_offset": 16,
+      "param_id": "0xd3",
+      "subcmd_offset": 17,
+      "subcmd": "0x41",
+      "destination_offset": 18,
+      "source_offset": 20,
+      "status": "partly decoded",
+      "notes": "The matrix/routing frame -- a 5th distinct command shape (opcode 0x53, NOT 0x13/0x12/0x14). Payload lives in bytes 16-23 only: [16]=0xd3 param, [17]=0x41 (constant sub-command / 'set crosspoint'), [18]=destination (see routing.destinations), [19]=0x00 (dest sub-channel? -- was 0x00/0x02 in the older matrixtest capture, always 0x00 in matrix-ch3tohpmonreamp), [20]=source (0-indexed physical input -- 0x02 = preamp 3 in matrix-ch3tohpmonreamp, 0x00 = preamp 1 in matrixtest), [21] and [22] = undecoded (per-destination the Launcher sent TWO frames -- one with [21]=0x02/[22]=varies, one with [21]=0x00/[22]=0x02 -- likely the two stereo sides but the L/R encoding and [22]'s meaning aren't pinned down). Bytes 23+ always zero. Confirmed from captures matrix-ch3tohpmonreamp (preamp 3 -> hp1/hp2/mona/monb/reamp both sides, 2026-08) and matrixtest-pre1-cmpplay1-2 (older, 4 frames). ROUTING HAS NO 0x73 STATE-REPORT READBACK -- zero bytes changed across all 10 routes, same as channel_link. Needs more captures to finish -- see params.routing.notes."
     },
     "global_command": {
       "magic_offset": 0,
@@ -55,6 +75,7 @@
       "gain_base_offset": 49,
       "status_base_offset": 61,
       "adat_gain_base_offset": 75,
+      "spdif_gain_base_offset": 91,
       "status_bits": {
         "input_mode": {
           "mask": "0x03",
@@ -285,7 +306,20 @@
         6,
         7
       ],
-      "notes": "Confirmed on real hardware (user, 2026-08): ADAT link behaves exactly like the physical-preamp link -- while a pair is linked, changing gain on one channel moves the other with it. As with physical channels, the device firmware does NOT fan a single write out to both; a controller replicates it by sending a second SET_PARAM(adat_gain) for the partner (this CLI's set-adat-gain does that when its cache says the pair is linked). See params.adat_channel_link and the SET_LINK caveat there (the ADAT and physical SET_LINK frames are byte-identical, so pair_index 0-5 is shared between the two spaces -- sending SET_LINK for ADAT pair N may also affect physical pair N)."
+      "notes": "Confirmed on real hardware (user, 2026-08): ADAT link behaves exactly like the physical-preamp link -- while a pair is linked, changing gain on one channel moves the other with it. As with physical channels, the device firmware does NOT fan a single write out to both; a controller replicates it by sending a second SET_PARAM(adat_gain) for the partner (this CLI's set-adat-gain does that when its cache says the pair is linked). See params.adat_channel_link and the SET_LINK caveat there (the ADAT and physical SET_LINK frames are byte-identical -- both use space byte 0x00 at offset 17 -- so pair_index 0-5 is shared between the two spaces; sending SET_LINK for ADAT pair N may also affect physical pair N. S/PDIF link is distinguishable: space byte 0x01)."
+    }
+  },
+  "spdif": {
+    "addressing": "0-indexed S/PDIF channel: 0 = L, 1 = R. Written to frame.command.channel_offset for spdif_gain (param 0x5c). A separate address space from physical inputs and ADAT -- almost certainly the 0x11 x2 group in init_enumeration_report.",
+    "count": 2,
+    "readback": "spdif gain for channel N is state_report byte (state_report.spdif_gain_base_offset 91) + N -- one int8 dB byte per channel, immediately after the 16-byte ADAT gain array (75-90). No status byte (S/PDIF, like ADAT, has gain + link only).",
+    "link_pairs": {
+      "count": 1,
+      "formula": "the single L/R pair is pair_index 0 (in the S/PDIF space, selected by SET_LINK space byte 0x01)",
+      "confirmed_pair_indices": [
+        0
+      ],
+      "notes": "Confirmed from capture spdif-gain-link (2026-08): SET_LINK space=0x01 / pair_index=0x00 / enabled toggled on then off. Same behaviour as the preamp/ADAT link -- while linked the Launcher sends the gain command twice (once per channel, ~1-3ms apart); the device does not propagate. Unlike ADAT, the S/PDIF link frame IS distinguishable from the physical one (space byte 0x01 vs 0x00)."
     }
   },
   "buses": {
@@ -479,7 +513,7 @@
       "frame": "frame.link_command -- same opcode (0x14)/param_id (0xa2) as physical channel_link, see notes for an important open caveat about this reuse",
       "pairing": "pair_index = adat_channel_index // 2, same formula as physical channels but applied to the 16-channel ADAT index space (0-15), giving 8 possible pairs (pair_index 0-7) instead of physical's 6 (0-5)",
       "evidence": "capture adat-ch1-2-3-12-link12 (2026-08): after ADAT ch1 and ch2 were linked, their gain bytes (offsets 75 and 76) tracked together through a full sweep -- same lockstep pattern as physical-channel links. pair_index CONFIRMED from outgoing 0x70/0x14 frames in that capture: pair_index=0x00 sent right before the ch1/ch2 gain-sync behavior began. Independently re-confirmed and extended in capture ADAT-link1-2-7-8 (2026-08): activating link1/link2/link7/link8 in the Launcher sent pair_index=0x00/0x01/0x06/0x07 respectively, each immediately followed by gain-sync behavior on the matching channel pair (ch1&2, ch3&4, ch13&14, ch15&16) -- pair_index = channel_index//2 holds exactly across all 4 pairs, including the two highest (pair_index 6 and 7) which have no physical-channel equivalent. Full round-trip confirmed: all 4 pairs linked then unlinked in the expected order, enabled byte (offset 19) correctly 0x01 then 0x00 for each. USER-CONFIRMED ON HARDWARE (2026-08): ADAT link behaves identically to the physical-preamp link -- linked channels move gain together, and (like physical) this is replicated software-side by sending a second SET_PARAM(adat_gain) for the partner. The CLI's set-adat-gain / set-adat-link mirror this exactly as set-gain / set-link do for physical channels.",
-      "notes": "OPEN QUESTION, now partly answered (2026-08, raw pcapng). The physical-pair-0-ON frame from ch-link-on-off.pcapng and the ADAT-pair-0-ON frame from ADAT-link1-2-7-8.pcapng were compared byte-for-byte across ALL 320 bytes AND the USBPcap metadata (endpoint 0x01, device address 2, interface, direction): ZERO differing bytes. So SET_LINK(pair_index, enabled) is genuinely ambiguous at the wire level -- there is no disambiguating byte or USB field, confirmed, not just 'none found yet'. What still isn't known: whether one SET_LINK(pair_index=N) links pair N in BOTH the physical space (N<=5) and the ADAT space (N<=7) at once (with the Launcher just sending gain/mode-sync for whichever space you're looking at), or whether the device uses some context. Couldn't test from these two separate captures because both channels of each linked pair already had equal gain, so any cross-space sync would be invisible. To settle it: one session that links a physical pair AND an ADAT pair with DIFFERENT gains on the two channels of each, so sync is observable -- or test on hardware (send raw SET_LINK pair 0, check whether both physical ch1&2 and ADAT ch1&2 show linked behaviour). Until then, if the CLI ever sends SET_LINK it should assume it may affect both spaces. Also unconfirmed: the momentary missed-sync frame in ADAT-link1-2-7-8 (ch1 -> -6 while ch2's mirrored SET_PARAM never arrived) -- a one-off, worth another look if it recurs."
+      "notes": "OPEN QUESTION, partly answered. The SET_LINK frame has a SPACE byte at offset 17 (see frame.link_command.space_values), discovered from spdif-gain-link: S/PDIF link uses space 0x01. BUT physical link and ADAT link BOTH use space 0x00 -- the physical-pair-0-ON frame (ch-link-on-off.pcapng) and ADAT-pair-0-ON frame (ADAT-link1-2-7-8.pcapng) are byte-for-byte identical across all 320 bytes AND the USB metadata. So S/PDIF link is now unambiguous, but physical-vs-ADAT still is not. Unknown: whether one SET_LINK(space=0, pair_index=N) links pair N in BOTH the physical (N<=5) and ADAT (N<=7) spaces at once. Not testable from the existing captures (both channels of each pair already had equal gain). To settle it: link a physical pair AND an ADAT pair in one session with different per-channel gains, or test on hardware. Until then, treat a space-0 SET_LINK as possibly affecting both. Also unconfirmed: the one-off missed-sync frame in ADAT-link1-2-7-8."
     },
     "master_volume": {
       "id": null,
@@ -488,10 +522,21 @@
       "notes": "Not a distinct param -- this IS monitor_a's bus_level (id 0x47, bus 0). Use bus_level/set-bus-level with bus 0 (or 'monitor_a'/'mona'). Kept as a stub entry so 'master volume' still resolves to something if searched for."
     },
     "routing": {
-      "id": null,
-      "status": "unconfirmed",
-      "type": "unknown",
-      "notes": "Routing matrices are usually multi-cell (source x destination), so this may not fit the single param_id/channel/value shape at all -- could be a different opcode, or channel_offset repurposed as a matrix cell index, or a larger multi-byte payload. Do not assume the existing frame shape applies; confirm from a real capture first. (The discovery of frame.link_command as a genuinely different shape from SET_PARAM is a good reminder that a new feature does not have to reuse the existing frame -- routing may well need its own frame block too.) Capture matrixtest-pre1-cmpplay1-2 (2026-08) shows the first concrete evidence: 4 outgoing frames with opcode 0x53 / param_id 0xd3 and a multi-byte payload (bytes 17-19 = 0x41 / 0x01 / 0x02 on the last one) -- a genuinely new frame shape, as predicted. Not yet decoded."
+      "id": "0xd3",
+      "status": "partly decoded",
+      "type": "matrix crosspoint (source -> destination)",
+      "frame": "frame.routing_command (opcode 0x53) -- a 5th distinct shape, NOT SET_PARAM",
+      "destinations": {
+        "1": "headphone_1",
+        "2": "headphone_2",
+        "3": "monitor_a",
+        "4": "monitor_b",
+        "5": "reamp"
+      },
+      "destination_note": "1-indexed at frame.routing_command.destination_offset (18). This is a THIRD address space -- different numbering from bus ids (0-5) and from channel indices. Only these 5 seen so far; there are almost certainly more (line outs, ADAT, S/PDIF out).",
+      "source_note": "0-indexed physical input at frame.routing_command.source_offset (20). preamp 3 -> 0x02 (matrix-ch3tohpmonreamp), preamp 1 -> 0x00 (matrixtest). Non-physical sources (DAW playback, ADAT, etc.) not captured -- their encoding (and whether byte 20 alone is enough) is unknown.",
+      "readback": "NONE -- routing state is not in the 0x73 report (0 bytes changed across 10 routes). Like channel_link, it can only be tracked client-side.",
+      "notes": "Bytes 19, 21, 22 of frame.routing_command are still undecoded. Per destination the Launcher sent 2 frames (the user's 'both L and R sides'): frame A = [21]=0x02 / [22]=varies (0x01 for hp1/mona/monb, 0x03 for hp2, 0x04 for reamp); frame B = [21]=0x00 / [22]=0x02. Best guesses: [19] or [21] is the destination sub-channel (L/R), [22] is a level/pan or a second source -- not resolved. TO FINISH: (1) route one source to ONE destination, L then R, slowly, to isolate the side byte; (2) route then UN-route (source -> none) to see the clear encoding (matrixtest shows an all-zero-tail frame that is probably it); (3) route a NON-preamp source (a USB/DAW playback channel) to see how non-physical sources encode. Do not wire routing into the CLI until at least (1) and (2) are done."
     },
     "talkback_button": {
       "id": "0x1f",
@@ -539,11 +584,27 @@
       "evidence": "capture talkback-bttn (2026-08): each of the 4 dest-assign switches toggled on then off in isolation set/cleared exactly its bit. Only one on at a time in that capture -- multi-destination combining assumed, not shown.",
       "caveat": "offset 73 bits 2-3 are shared with talkback_source's low bits (see state_report.talkback_block.notes) -- how the readback behaves with both a high source index AND destinations assigned is untested."
     },
-    "spdif": {
-      "id": null,
-      "status": "unconfirmed",
-      "type": "unknown",
-      "notes": "S/PDIF digital I/O -- a 2-channel (stereo L/R) input, almost certainly the 0x11 x2 group in init_enumeration_report. Expected to have per-channel gain and a channel link like ADAT does. NOT captured yet (less commonly used); a dedicated capture for S/PDIF gain + link is planned. When capturing: expect the ADAT pattern (gain via opcode 0x13 with its own param_id and a 2-entry channel index; link via opcode 0x14 / param 0xa2 with a pair_index) but confirm the param_id and index base from the outgoing 0x70 frames -- do not assume it reuses ADAT's 0x5b."
+    "spdif_gain": {
+      "id": "0x5c",
+      "status": "confirmed",
+      "type": "int8",
+      "encoding": "two's complement, dB",
+      "range": [
+        -6,
+        12
+      ],
+      "applies_to": "the 2 S/PDIF input channels (0 = L, 1 = R), a separate address space -- see 'spdif'",
+      "frame": "command (opcode 0x13 / SET_PARAM) -- channel 0/1 at offset 17, value int8 dB at offset 18",
+      "state_report_offset_formula": "spdif_gain_base_offset (91) + spdif_channel_index (0 = L, 1 = R)",
+      "evidence": "capture spdif-gain-link (2026-08): S/PDIF ch0 swept -6..+12 then ch1 the same; every SET_PARAM(0x5c, ch, value) matched state_report offset 91 (ch0) / 92 (ch1) 1:1. Same range and layout pattern as adat_gain, but a DISTINCT param_id (0x5c, not ADAT's 0x5b or physical's 0x50)."
+    },
+    "spdif_channel_link": {
+      "status": "confirmed",
+      "type": "per-pair bool",
+      "frame": "frame.link_command with SPACE byte (offset 17) = 0x01 (physical/ADAT use 0x00), pair_index (offset 18) = 0x00, enabled (offset 19). This is the one link space that IS unambiguously distinguishable from the physical link.",
+      "pairing": "one L/R pair only (pair_index 0 in the S/PDIF space)",
+      "evidence": "capture spdif-gain-link (2026-08): SET_LINK space=0x01/pair=0x00 toggled on then off. While linked, every gain change was sent TWICE by the Launcher (one SET_PARAM(0x5c) per channel, ~1-3ms apart) and both state_report bytes (91 and 92) moved together -- identical behaviour to the preamp/ADAT link. The device does not propagate; a controller replicates it software-side.",
+      "notes": "Because the S/PDIF link frame carries space byte 0x01, it does NOT collide with physical/ADAT links (unlike the ADAT/physical ambiguity). Safe to wire into a CLI without the both-spaces caveat."
     },
     "oscillator": {
       "id": null,
@@ -634,6 +695,10 @@
       "min": 0,
       "max": 15
     },
+    "spdif_channel_bounds": {
+      "min": 0,
+      "max": 1
+    },
     "bus_ids": [
       0,
       1,
@@ -673,6 +738,10 @@
       ]
     },
     "adat_gain_bounds": [
+      -6,
+      12
+    ],
+    "spdif_gain_bounds": [
       -6,
       12
     ],

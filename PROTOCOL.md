@@ -46,8 +46,8 @@ opcode -- this is the single most important thing to get right:
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain |
-| `0x14` | SET_LINK | `0xa2` (fixed) | `pair_index` @18, `enabled` @19 (@17 unused) | channel_link, adat_channel_link |
-| `0x53` | (routing?) | `0xd3` | multi-byte, **not decoded** (`@17..21` = `41 01 00 00 02` in one sample) | routing matrix |
+| `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link |
+| `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, `source` @20; `@19`/`@21`/`@22` undecoded | routing matrix (§7) |
 | `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
 
 Notes:
@@ -173,11 +173,13 @@ offset for target *N*.
 | 73 | **talkback status** | packed bitfield (section 6 / section 7) | confirmed |
 | 74 | **talkback gain** | 0-96, gain of the currently-selected talkback source | confirmed |
 | 75-90 | **ADAT gain array** -- 16 ADAT channels | ADAT channel *N* (0-indexed) gain @ `75+N`, int8 dB, range -6..+12 | confirmed |
+| 91-92 | **S/PDIF gain** -- L / R | ch 0 (L) @ `91`, ch 1 (R) @ `92`, int8 dB, range -6..+12 | confirmed |
 | 139-140 | *startup ramp* | both bytes ramp to `0x60` in the first ~0.12 s of every capture (a nearby block, 129-136, does the same in INIT) | startup settling, ignore |
 | 157-176, 221-232 | *embedded meter jitter* | free-runs `0x5a`<->`0x60` at rest; drops toward 0 on loud signal | unresolved (looks like a second meter copy) |
 
 Layout is tight and sequential: gain array (49-60), status array (61-72),
-talkback status+gain (73-74), ADAT gain array (75-90) -- no gaps.
+talkback status+gain (73-74), ADAT gain array (75-90), S/PDIF gain (91-92)
+-- no gaps.
 
 ---
 
@@ -280,37 +282,67 @@ line_out / reamp. `bus_mute` confirmed on 0/1/2/3.
 `pair_index = channel_index // 2` (0-indexed channels): pair 0 = ch1&ch2,
 pair 1 = ch3&ch4, ... pair 5 = ch11&ch12. 6 pairs (index 0-5).
 
+### SET_LINK `space` byte (offset 17)
+
+`SET_LINK` frames carry a domain selector at **offset 17**:
+
+| space @17 | domain | pair_index range |
+|---|---|---|
+| `0x00` | physical inputs **and** ADAT (shared) | physical 0-5, ADAT 0-7 |
+| `0x01` | S/PDIF | 0 only (the L/R pair) |
+
+Discovered from `spdif-gain-link` (2026-08). Previously this byte was
+thought to be unused/always-0.
+
 ### ADAT link pairs
 
-Same formula over the 16-channel ADAT space: 8 pairs (index 0-7).
-Pairs 6 and 7 have no physical-channel equivalent.
+`pair_index = channel_index // 2` over the 16-channel ADAT space: 8 pairs
+(0-7). Pairs 6 and 7 have no physical-channel equivalent.
 
-**Behaviour is identical to the preamp link** (user-confirmed on hardware,
-2026-08): while a pair is linked the two channels' gains move together,
-and -- as with the preamp -- the *device* doesn't do that, the software
-sends a second `SET_PARAM(adat_gain)` for the partner. The CLI's
-`set-adat-gain` / `set-adat-link` replicate this exactly as `set-gain` /
-`set-link` do for physical channels.
+**Behaviour is identical to the preamp link** (user-confirmed on hardware):
+linked channels' gains move together, and -- as with the preamp -- the
+*device* doesn't do that, the software sends a second `SET_PARAM(adat_gain)`
+for the partner. `set-adat-gain` / `set-adat-link` replicate this.
 
-**Open problem (2026-08 update):** the physical-pair-0-ON frame and the
-ADAT-pair-0-ON frame were compared byte-for-byte across **all 320 bytes
-and the USB metadata** (endpoint `0x01`, device address 2, interface,
-direction) -- **zero differences**. So `SET_LINK` is genuinely ambiguous
-at the wire level; there is no disambiguating byte or USB field, confirmed.
-Still unknown: whether one `SET_LINK(pair_index=N)` links pair N in **both**
-the physical and ADAT spaces at once (the Launcher only sends gain/mode
-sync for whichever space you're looking at). The two captures couldn't
-show this because both channels of each pair already had equal gain. To
-settle it: link a physical pair and an ADAT pair in one session with
-*different* gains per channel, or test on hardware. Until then, treat
-`SET_LINK` as potentially affecting both spaces.
+**Still ambiguous with physical link.** Physical link and ADAT link *both*
+use space `0x00`, and the physical-pair-0-ON and ADAT-pair-0-ON frames are
+byte-for-byte identical across all 320 bytes + USB metadata. S/PDIF (space
+`0x01`) is now unambiguous, but physical-vs-ADAT is not. Unknown: whether
+one `SET_LINK(space=0, pair_index=N)` links pair N in *both* spaces. To
+settle it: link a physical and an ADAT pair in one session with different
+per-channel gains, or test on hardware.
+
+### S/PDIF link pair
+
+One L/R pair, `SET_LINK` with `space=0x01` / `pair_index=0x00`. Same
+gain-mirroring behaviour as the preamp link; the CLI's `set-spdif-gain` /
+`set-spdif-link` handle it. No cross-space ambiguity (distinct `space`).
+
+### Routing matrix (partly decoded)
+
+A 5th command shape: opcode `0x53`, param `0xd3` (`frame.routing_command`).
+Payload is bytes 16-23 only:
+
+| byte | meaning |
+|---|---|
+| 16 | `0xd3` param |
+| 17 | `0x41` constant (sub-command / "set crosspoint") |
+| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=Reamp (a *third* address space -- not the bus ids, not channel indices; more destinations surely exist) |
+| 19 | `0x00` here; `0x00`/`0x02` in the older matrixtest capture -- dest sub-channel? |
+| 20 | **source**, 0-indexed physical input (`0x02` = preamp 3, `0x00` = preamp 1) |
+| 21, 22 | undecoded -- per destination the Launcher sent 2 frames (the two stereo sides): one `[21]=0x02 [22]=varies`, one `[21]=0x00 [22]=0x02` |
+
+**No `0x73` readback** -- routing state is invisible in the state report
+(0 bytes changed across 10 routes), same as channel link. To finish
+decoding, see `params.routing.notes` -- needs an isolated one-dest L/R
+capture, an un-route capture, and a non-preamp-source capture.
 
 ---
 
 ## 8. Channel link -- behaviour
 
-`SET_LINK` (`0x14` / `0xa2`, `pair_index` @18, `enabled` @19) engages a
-real link flag **on the device** -- visible on the Orion's own front
+`SET_LINK` (`0x14` / `0xa2`, `space` @17, `pair_index` @18, `enabled` @19)
+engages a real link flag **on the device** -- visible on the Orion's own front
 panel. But:
 
 - **The firmware does NOT propagate mode/gain/phantom/phase across a
@@ -381,15 +413,16 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | bus_mute | `0x48` | `0x13` | bus id | 0/1 | bus status bit 2 (ambiguous, section 6) |
 | bus_mono | `0x69` | `0x13` | bus id | 0/1 | bus status bit 4 |
 | output_trim | `0x4b` | `0x13` | target 0-2 | 0-6 | offsets 24-25 (section 6) |
-| channel_link | `0xa2` | `0x14` | (pair_index @18) | enabled @19 | none found |
-| adat_channel_link | `0xa2` | `0x14` | (pair_index @18, 0-7) | enabled @19 | none found (gain bytes track together; behaviour = preamp link, CLI mirrors gain software-side) |
+| spdif_gain | `0x5c` | `0x13` | S/PDIF ch (0=L, 1=R) | int8 dB, -6..+12 | offset `91` (L) / `92` (R) |
+| channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | none found |
+| adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | none found (gain bytes track together; preamp-link behaviour, CLI mirrors gain) |
+| spdif_channel_link | `0xa2` | `0x14` | **space=1** @17, pair_index @18 (0) | enabled @19 | none found (L/R gain bytes track together; CLI mirrors gain) |
 | talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
 | talkback_source | `0x27` | `0x12` | - | 0-12 @17 (0=internal mic, 1-12=input ch) | offset 73 bits 0-1 (low bits only) |
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | ? | multi-byte, undecoded | ? |
 | surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
-| spdif (gain + link) | ? | ? | ? | ? -- not captured | ? |
 | oscillator | - | - | - | **host-side only, no device command** (section 11) | none |
 
 ---
@@ -454,10 +487,10 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | payload undecoded -- needs a systematic source x destination capture |
-| ADAT vs physical `SET_LINK` disambiguation | **frames confirmed byte-identical incl. USB metadata** (section 7). Open: does one command link both spaces? Needs different per-channel gains, or a hardware test |
+| Routing frame (`0x53` / `0xd3`) | **partly decoded** (§7): dest byte (1-5) + source byte (0-idx input) known; `@19`/`@21`/`@22` and the L/R + un-route encoding still open. No state readback. |
+| ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
-| S/PDIF gain + link | never captured; expected to mirror ADAT but confirm the param_id |
+| S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
 | Oscillator command | **resolved -- host-side only, no device command** (section 11) |
 | Screen brightness | resolved -- sends nothing (host-side or not persisted) |
 | Surround-EQ pre/post | new opcode `0xab` / param `0xeb` seen (2 frames); layout undecoded, no `0x73` effect |

@@ -33,6 +33,16 @@ from the physical inputs; gain + link only, no mode/phantom/phase):
                                                                             # physical link -- see
                                                                             # set-adat-link help)
 
+S/PDIF input controls (2 channels, 0 = L / 1 = R; gain + link only):
+
+    antelope-ctl --profile profiles/orion_studio_3.json spdif-status
+    antelope-ctl --profile profiles/orion_studio_3.json set-spdif-gain 0 6
+    antelope-ctl --profile profiles/orion_studio_3.json set-spdif-link on    # links L+R (distinct
+                                                                            # link frame from the
+                                                                            # physical/ADAT one --
+                                                                            # no cross-space
+                                                                            # ambiguity)
+
 Output-bus controls (monitor A/B, headphone 1/2 -- NOT the same "channel"
 numbers as inputs above; buses accept either their numeric id or a name,
 see profiles/orion_studio_3.json -> "buses"):
@@ -48,6 +58,13 @@ Escape hatch for anything not yet in the profile:
     antelope-ctl --profile profiles/orion_studio_3.json raw-set 0 0x53 7   # for a param
                                                                             # not yet in
                                                                             # the profile
+
+Safety: every write command enforces profile["constraints"] -- the target
+byte must be a legal index in its address space (channel 0-11, ADAT 0-15,
+bus id 0-5), and enum values (input_mode) must be in the allow-list. This
+exists because a sibling device in this protocol family BusFaults / wedges
+the USB controller on out-of-range input (see profile["hazards"]). Pass
+--force to override a bound if you know what you're doing.
 
 Adding a device: write a new profiles/<name>.json and point --profile at it.
 Adding a param: once you've captured+confirmed it, add it under "params" in
@@ -95,6 +112,26 @@ def warn_unverified_channel(profile, ch):
     if confirmed and ch not in confirmed:
         print(f'note: channel {ch} is beyond the explicitly captured '
               f'{confirmed} range for this device profile; likely fine, but unverified.')
+
+
+# ---- constraints / hazards enforcement (profile['constraints'] + ['hazards']) ----
+# Turns protocol.ConstraintError into a clean CLI exit. See the module comment
+# in protocol.py: these bounds exist because a sibling device faults hard
+# (BusFault / wedged USB) on out-of-range input.
+
+def enforce_target(profile, target, space, force=False):
+    """space: 'input' (channel 0-11), 'adat' (0-15), 'bus' (valid bus ids)."""
+    try:
+        proto.check_target(profile, target, space, force=force)
+    except proto.ConstraintError as e:
+        sys.exit(str(e))
+
+
+def enforce_enum(profile, constraint_key, value, label, force=False):
+    try:
+        proto.check_enum(profile, constraint_key, value, label, force=force)
+    except proto.ConstraintError as e:
+        sys.exit(str(e))
 
 
 def fmt_state(profile, s):
@@ -235,6 +272,9 @@ def _partner_channel(profile, ch):
 
 
 def cmd_set_mode(args, profile):
+    enforce_target(profile, args.channel, 'input', args.force)
+    enforce_enum(profile, 'input_mode_allowed_values',
+                 proto.mode_value(profile, args.mode), 'input_mode', args.force)
     link_state = _load_link_state(profile)
     if _is_pair_linked(profile, link_state, args.channel) and not args.force:
         partner = _partner_channel(profile, args.channel)
@@ -279,6 +319,7 @@ def _channel_and_partner_state(transport, profile, channel, timeout):
 
 
 def cmd_set_gain(args, profile):
+    enforce_target(profile, args.channel, 'input', args.force)
     transport = get_transport(profile)
     s, s_partner, partner = _channel_and_partner_state(transport, profile, args.channel, args.timeout)
     mode = proto.mode_name(profile, s.get('input_mode', -1))
@@ -308,6 +349,7 @@ def cmd_set_gain(args, profile):
 
 
 def cmd_set_phantom(args, profile):
+    enforce_target(profile, args.channel, 'input', args.force)
     transport = get_transport(profile)
     s, s_partner, partner = _channel_and_partner_state(transport, profile, args.channel, args.timeout)
     mic_val = proto.mode_value(profile, 'mic')
@@ -333,6 +375,7 @@ def cmd_set_phantom(args, profile):
 
 
 def cmd_set_invert(args, profile):
+    enforce_target(profile, args.channel, 'input', args.force)
     transport = get_transport(profile)
     s, s_partner, partner = _channel_and_partner_state(transport, profile, args.channel, args.timeout)
     on = 1 if args.state == 'on' else 0
@@ -647,12 +690,10 @@ def cmd_adat_status(args, profile):
 
 
 def cmd_set_adat_gain(args, profile):
-    lo, hi = proto.adat_gain_range(profile)
+    enforce_target(profile, args.channel, 'adat', args.force)
+    lo, hi = proto.constraints(profile).get('adat_gain_bounds', proto.adat_gain_range(profile))
     if not args.force and not (lo <= args.dB <= hi):
         sys.exit(f'ADAT gain {args.dB} outside the confirmed range {lo}..{hi}. Use --force to override.')
-    count = profile.get('adat', {}).get('count', 16)
-    if not args.force and not (0 <= args.channel < count):
-        sys.exit(f'ADAT channel {args.channel} out of range 0..{count - 1}. Use --force to override.')
 
     transport = get_transport(profile)
     send_and_wait(transport, proto.build_command(profile, 'adat_gain', args.channel, args.dB))
@@ -745,6 +786,126 @@ def cmd_mark_adat_link(args, profile):
           f'{"linked" if on else "unlinked"} in this CLI\'s local cache. No command was sent.')
 
 
+# ---- subcommands: S/PDIF input (2 channels L/R, gain + link) ----
+#
+# S/PDIF is a 2-channel space (0 = L, 1 = R), gain + link only. The link
+# frame carries space byte 0x01 (frame.link_command.space_offset), so unlike
+# the ADAT link it is NOT ambiguous with the physical link. Gain mirroring
+# while linked works exactly like set-gain/set-adat-gain -- the device does
+# not propagate, this CLI sends the second SET_PARAM. Separate link cache
+# (kind='spdif').
+
+_SPDIF_LINK_SPACE = 1  # frame.link_command space value for S/PDIF; physical/ADAT use 0
+
+
+def _spdif_partner(ch):
+    return 1 - ch if ch in (0, 1) else None
+
+
+def _spdif_link_bracket(profile, link_state, ch):
+    if 'spdif' not in profile or not link_state.get('0'):
+        return '', ''
+    if ch == 0:
+        return ' -.', ''
+    if ch == 1:
+        return " -'", '  (linked -- CLI-tracked, not device-confirmed)'
+    return '', ''
+
+
+def _verify_spdif(transport, profile, ch, timeout):
+    time.sleep(0.1)
+    data = read_state(transport, profile, timeout)
+    if not data:
+        print('sent command, but no immediate readback was available')
+        return
+    try:
+        print(f'readback: S/PDIF ch {ch} ({"L" if ch == 0 else "R"})  gain={proto.parse_spdif_gain(profile, data, ch)}dB')
+    except ValueError as e:
+        print(f'readback unavailable: {e}')
+
+
+def cmd_spdif_status(args, profile):
+    transport = get_transport(profile)
+    data = read_state(transport, profile, args.timeout)
+    if not data:
+        sys.exit('No state report captured. Try again, or run with sudo if permissions are an issue.')
+    link_state = _load_link_state(profile, 'spdif')
+    print(f"{'spdif':>5}  {'gain':>5}")
+    for ch, name in ((0, 'L'), (1, 'R')):
+        try:
+            g = proto.parse_spdif_gain(profile, data, ch)
+        except ValueError:
+            break
+        glyph, tail = _spdif_link_bracket(profile, link_state, ch)
+        print(f"{ch} ({name})  {g:>4}dB{glyph}{tail}")
+    if link_state:
+        print("note: link marker reflects the last `set-spdif-link` from THIS CLI (cached) -- "
+              "no device-side readback.")
+
+
+def cmd_set_spdif_gain(args, profile):
+    enforce_target(profile, args.channel, 'spdif', args.force)
+    lo, hi = proto.constraints(profile).get('spdif_gain_bounds',
+                                            profile['params'].get('spdif_gain', {}).get('range', [-128, 127]))
+    if not args.force and not (lo <= args.dB <= hi):
+        sys.exit(f'S/PDIF gain {args.dB} outside the confirmed range {lo}..{hi}. Use --force to override.')
+
+    transport = get_transport(profile)
+    send_and_wait(transport, proto.build_command(profile, 'spdif_gain', args.channel, args.dB))
+    _verify_spdif(transport, profile, args.channel, args.timeout)
+
+    partner = _spdif_partner(args.channel)
+    if partner is not None and _load_link_state(profile, 'spdif').get('0'):
+        print(f'note: mirroring gain to linked S/PDIF channel {partner} -- done by THIS CLI, '
+              f'replicating the Launcher (the device does not auto-mirror).')
+        send_and_wait(transport, proto.build_command(profile, 'spdif_gain', partner, args.dB))
+        _verify_spdif(transport, profile, partner, args.timeout)
+
+
+def cmd_set_spdif_link(args, profile):
+    """Engage/disengage the S/PDIF L/R link. Uses frame.link_command with
+    space byte 0x01 (frame.link_command.space_offset) -- distinct from the
+    physical/ADAT link (space 0x00), so no cross-space ambiguity. On link-ON
+    pushes ch1's gain to match ch0's; from then on set-spdif-gain mirrors to
+    the partner while this CLI's cache says the pair is linked."""
+    on = args.state == 'on'
+    transport = get_transport(profile)
+
+    def gains():
+        data = read_state(transport, profile, args.timeout)
+        if not data:
+            return None, None
+        try:
+            return proto.parse_spdif_gain(profile, data, 0), proto.parse_spdif_gain(profile, data, 1)
+        except ValueError:
+            return None, None
+
+    before_l, before_r = gains()
+    send_and_wait(transport, proto.build_link_command(profile, 0, on, space=_SPDIF_LINK_SPACE), delay=0.3)
+
+    if on and before_l is not None and before_r is not None and before_l != before_r:
+        print(f'pushing S/PDIF ch1 (R) gain to match ch0 (L) ({before_l}dB) -- the device does not do this itself.')
+        send_and_wait(transport, proto.build_command(profile, 'spdif_gain', 1, before_l))
+
+    after_l, after_r = gains()
+    if on:
+        if after_l is not None and after_l == after_r:
+            print('confirmed: S/PDIF L/R gains match. set-spdif-gain on either channel now mirrors to the other.')
+        else:
+            print('warning: S/PDIF L/R gains still differ after syncing -- check the Launcher UI.')
+    else:
+        print('sent. disengaging has no known readback -- this CLI just stops mirroring set-spdif-gain.')
+
+    _save_link_state(profile, 0, on, 'spdif')
+
+
+def cmd_mark_spdif_link(args, profile):
+    """Update ONLY this CLI's local S/PDIF link cache -- no device command."""
+    on = args.state == 'on'
+    _save_link_state(profile, 0, on, 'spdif')
+    print(f'cache updated: S/PDIF L/R link now marked {"linked" if on else "unlinked"}. No command was sent.')
+
+
 # ---- subcommands: output buses (monitor A/B, headphone 1/2) ----
 
 def cmd_bus_status(args, profile):
@@ -771,6 +932,7 @@ def cmd_bus_status(args, profile):
 
 def cmd_set_bus_level(args, profile):
     bus_id = resolve_bus(profile, args.bus)
+    enforce_target(profile, bus_id, 'bus', args.force)
     transport = get_transport(profile)
     lo, hi = proto.bus_level_range(profile)
     if not args.force and not (lo <= args.level <= hi):
@@ -784,6 +946,7 @@ def _bus_bool_command(args, profile, param_name):
     """Shared body for set-bus-dim/set-bus-mute/set-bus-mono -- they only
     differ in which param they send."""
     bus_id = resolve_bus(profile, args.bus)
+    enforce_target(profile, bus_id, 'bus', getattr(args, 'force', False))
     transport = get_transport(profile)
     on = 1 if args.state == 'on' else 0
     pkt = proto.build_command(profile, param_name, bus_id, on)
@@ -805,7 +968,37 @@ def cmd_set_bus_mono(args, profile):
 
 def cmd_raw_set(args, profile):
     """Escape hatch for exploring not-yet-confirmed params (e.g. routing)
-    during a live capture session. See tools/capture_diff.py for finding candidates."""
+    during a live capture session. See tools/capture_diff.py for finding candidates.
+
+    Enforces profile['constraints']: the target byte must be a legal index in
+    SOME address space (0..max of channel/adat/bus bounds), since for an
+    unmapped param_id we don't know which space applies -- and an out-of-range
+    index BusFaulted a sibling device (hazards.channel_index_out_of_range).
+    --force skips that check."""
+    c = proto.constraints(profile)
+    if c and not args.force:
+        maxes = []
+        for sp in ('input', 'adat'):
+            b = proto.channel_space_bounds(profile, sp)
+            if b:
+                maxes.append(b[1])
+        bus = proto.channel_space_bounds(profile, 'bus')
+        if bus:
+            maxes.append(max(bus))
+        hard_max = max(maxes) if maxes else None
+        if hard_max is not None and not (0 <= args.channel <= hard_max):
+            sys.exit(f'raw-set target {args.channel} is outside 0..{hard_max} (the widest '
+                     f'address space in profile constraints). An out-of-range index BusFaulted '
+                     f'a sibling device -- see hazards.channel_index_out_of_range. Use --force.')
+
+    known_ids = {proto._as_int(p['id']) for p in profile['params'].values() if p.get('id') is not None}
+    if args.param_id not in known_ids:
+        print(f'HAZARD NOTE: param_id {hex(args.param_id)} is not a confirmed param in this '
+              f'profile. On a sibling device, unmapped input faulted the firmware and silence '
+              f'from the device does NOT mean the command took effect (see profile hazards / '
+              f'frame.error_response). Capture the result and confirm before trusting it.')
+        sys.stdout.flush()
+
     transport = get_transport(profile)
     pkt = proto.build_raw_command(profile, args.param_id, args.channel, args.value)
     print(f'sending: param_id={hex(args.param_id)} channel={args.channel} value={args.value}')
@@ -938,6 +1131,8 @@ def main():
     sp.add_argument('channel', type=int)
     sp.add_argument('state', choices=['on', 'off'])
     sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true',
+                     help='bypass profile constraints (channel bounds etc) -- see profile hazards')
     sp.set_defaults(func=cmd_set_invert)
 
     sp = sub.add_parser('set-link',
@@ -989,6 +1184,31 @@ def main():
     sp.add_argument('--force', action='store_true')
     sp.set_defaults(func=cmd_mark_adat_link)
 
+    sp = sub.add_parser('spdif-status', help='show the 2 S/PDIF input channel gains (L/R) + link marker')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.set_defaults(func=cmd_spdif_status)
+
+    sp = sub.add_parser('set-spdif-gain', help='set an S/PDIF input channel gain in dB (0=L, 1=R; mirrors to the linked partner)')
+    sp.add_argument('channel', type=int, help='S/PDIF channel: 0 = L, 1 = R')
+    sp.add_argument('dB', type=int)
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true')
+    sp.set_defaults(func=cmd_set_spdif_gain)
+
+    sp = sub.add_parser('set-spdif-link',
+                         help='engage/disengage the S/PDIF L/R stereo link (distinct frame from the '
+                              'physical/ADAT link -- no cross-space ambiguity)')
+    sp.add_argument('state', choices=['on', 'off'])
+    sp.add_argument('--force', action='store_true')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.set_defaults(func=cmd_set_spdif_link)
+
+    sp = sub.add_parser('mark-spdif-link',
+                         help='update this CLI\'s local S/PDIF link-state cache WITHOUT sending a device command')
+    sp.add_argument('state', choices=['on', 'off'])
+    sp.add_argument('--force', action='store_true')
+    sp.set_defaults(func=cmd_mark_spdif_link)
+
     sp = sub.add_parser('bus-status', help='show monitor A/B and headphone 1/2 levels+flags')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_bus_status)
@@ -1004,18 +1224,21 @@ def main():
     sp.add_argument('bus', help='bus id or name, e.g. 0, monitor_a, mona')
     sp.add_argument('state', choices=['on', 'off'])
     sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true', help='bypass profile constraints (bus id bounds)')
     sp.set_defaults(func=cmd_set_bus_dim)
 
     sp = sub.add_parser('set-bus-mute')
     sp.add_argument('bus', help='bus id or name, e.g. 0, monitor_a, mona')
     sp.add_argument('state', choices=['on', 'off'])
     sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true', help='bypass profile constraints (bus id bounds)')
     sp.set_defaults(func=cmd_set_bus_mute)
 
     sp = sub.add_parser('set-bus-mono')
     sp.add_argument('bus', help='bus id or name, e.g. 0, monitor_a, mona')
     sp.add_argument('state', choices=['on', 'off'])
     sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true', help='bypass profile constraints (bus id bounds)')
     sp.set_defaults(func=cmd_set_bus_mono)
 
     sp = sub.add_parser('meter', help='live per-channel meter view (dB calibration from ch0 sweep, applied to all channels)')
@@ -1030,6 +1253,8 @@ def main():
     sp.add_argument('param_id', type=lambda x: int(x, 0))
     sp.add_argument('value', type=lambda x: int(x, 0))
     sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true',
+                     help='bypass the profile-constraints target-bounds check (see profile hazards)')
     sp.set_defaults(func=cmd_raw_set)
 
     args = p.parse_args()

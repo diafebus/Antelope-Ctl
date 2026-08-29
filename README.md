@@ -82,9 +82,24 @@ ADAT link behaves exactly like the preamp link (user-confirmed on
 hardware): linked channels move gain together, and -- as with the preamp
 -- that's the *software* sending a second command, not the device, so
 `set-adat-gain` mirrors to the linked partner itself. **Caveat:** the ADAT
-and physical `SET_LINK` frames are byte-identical, so `set-adat-link` on
-pairs 0-5 may also toggle the matching *physical* link (ch1&2 ... ch11&12).
-Pairs 6-7 are ADAT-only. See `params.adat_channel_link` in the profile.
+and physical `SET_LINK` frames are byte-identical (both `space` byte
+`0x00`), so `set-adat-link` on pairs 0-5 may also toggle the matching
+*physical* link (ch1&2 ... ch11&12). Pairs 6-7 are ADAT-only. See
+`params.adat_channel_link` in the profile.
+
+S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
+
+```
+python3 -m antelope.cli --profile profiles/orion_studio_3.json spdif-status
+python3 -m antelope.cli --profile profiles/orion_studio_3.json set-spdif-gain 0 6   # S/PDIF L, +6 dB
+python3 -m antelope.cli --profile profiles/orion_studio_3.json set-spdif-link on    # links L+R
+```
+
+Same gain-mirroring behaviour as the other links. The S/PDIF `SET_LINK`
+frame carries a distinct `space` byte (`0x01` vs `0x00` for physical/ADAT),
+so it has **no** cross-space ambiguity -- `set-spdif-link` only touches
+S/PDIF. Confirmed from `spdif-gain-link.pcapng` (gain param `0x5c`,
+readback at state-report offsets 91/92).
 
 Output buses -- monitor A/B, headphone 1/2, plus the settings-tab Line and
 Reamp outputs. These are a *different* address space from the input
@@ -170,7 +185,13 @@ confirm, only then trust it. Nothing is inferred from byte patterns alone.
    python3 -m antelope.cli --profile profiles/orion_studio_3.json raw-set 0 0x53 10
    ```
    and confirm via another capture that *only* the expected offset moved,
-   across a few different values, before calling it confirmed.
+   across a few different values, before calling it confirmed. `raw-set`
+   enforces `profile["constraints"]` (target must be a valid index in some
+   address space) and prints a hazard note for an unmapped `param_id` --
+   `--force` bypasses the bound. Never sweep opcodes or feed it values from
+   an untrusted source: on the sibling Discrete 8 Pro, opcodes `0x01`/`0x02`
+   and out-of-range indices wedged/BusFaulted the unit (see
+   `profile["hazards"]` and `PROTOCOL.md` §13).
 7. **Don't assume routing (or anything else new) fits the same frame shape.**
    A source x destination matrix likely needs a different opcode or a
    multi-byte payload -- confirm the actual shape from a capture first. If

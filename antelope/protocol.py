@@ -38,6 +38,106 @@ def i8(b: int) -> int:
     return b - 256 if b > 127 else b
 
 
+# ---- constraints / hazards (profile['constraints'], see profile['hazards']) ----
+#
+# These are the machine-readable safety bounds a client MUST enforce before
+# writing. They exist because a sibling device in this protocol family
+# (Discrete 8 Pro) faults hard -- firmware BusFault, wedged USB controller --
+# on out-of-range input, in ways that cost a physical power cycle. The
+# effects are not reproduced on Orion, but the shared protocol and the cost
+# of being wrong make them precautionary defaults. All values come from the
+# profile; nothing here is hardcoded.
+
+def constraints(profile: dict) -> dict:
+    return profile.get('constraints', {}) or {}
+
+
+class ConstraintError(ValueError):
+    """Raised when a write would violate profile['constraints']. The CLI
+    turns this into a clean exit message; callers that really mean it can
+    pass force=True to the check_* helpers to downgrade it to a warning."""
+
+
+def _opcode_set(profile: dict, key: str) -> set:
+    return {_as_int(x) for x in constraints(profile).get(key, [])}
+
+
+def check_opcode(profile: dict, opcode: int, force: bool = False):
+    """Refuse an opcode that is in constraints.forbidden_opcodes, or (if an
+    allow-list is defined) one that is not in constraints.allowed_opcodes."""
+    c = constraints(profile)
+    if not c:
+        return
+    if opcode in _opcode_set(profile, 'forbidden_opcodes'):
+        raise ConstraintError(
+            f'opcode 0x{opcode:02x} is in constraints.forbidden_opcodes -- '
+            f'on a sibling device it wedged the USB controller unrecoverably '
+            f'(see profile hazards.blind_opcode_sweeps). Refusing.')
+    allowed = _opcode_set(profile, 'allowed_opcodes')
+    if allowed and opcode not in allowed and not force:
+        raise ConstraintError(
+            f'opcode 0x{opcode:02x} is not in constraints.allowed_opcodes '
+            f'{sorted(hex(o) for o in allowed)}. Pass force to send it anyway.')
+
+
+def channel_space_bounds(profile: dict, space: str):
+    """Return the legal target values for a `space`:
+      'input' -> (min, max) from constraints.channel_bounds
+      'adat'  -> (min, max) from constraints.adat_channel_bounds
+      'bus'   -> sorted list from constraints.bus_ids
+    Returns None if the profile doesn't define that bound."""
+    c = constraints(profile)
+    if space == 'input' and 'channel_bounds' in c:
+        b = c['channel_bounds']
+        return b['min'], b['max']
+    if space == 'adat' and 'adat_channel_bounds' in c:
+        b = c['adat_channel_bounds']
+        return b['min'], b['max']
+    if space == 'spdif' and 'spdif_channel_bounds' in c:
+        b = c['spdif_channel_bounds']
+        return b['min'], b['max']
+    if space == 'bus' and 'bus_ids' in c:
+        return sorted(int(x) for x in c['bus_ids'])
+    return None
+
+
+def check_target(profile: dict, target: int, space: str, force: bool = False):
+    """Refuse a channel/bus/adat target outside its address space's bounds
+    (constraints). space is 'input', 'adat', or 'bus'. On a sibling device
+    an out-of-range channel index raised a firmware BusFault needing a power
+    cycle -- see hazards.channel_index_out_of_range."""
+    bounds = channel_space_bounds(profile, space)
+    if bounds is None:
+        return
+    ok = target in bounds if isinstance(bounds, list) else bounds[0] <= target <= bounds[1]
+    if ok:
+        return
+    rng = bounds if isinstance(bounds, list) else f'{bounds[0]}..{bounds[1]}'
+    if force:
+        return
+    raise ConstraintError(
+        f'{space} target {target} is outside the allowed range {rng} '
+        f'(profile constraints). On a sibling device an out-of-range index '
+        f'caused a firmware BusFault needing a physical power cycle -- see '
+        f'hazards.channel_index_out_of_range. Pass force to override.')
+
+
+def check_enum(profile: dict, constraint_key: str, value: int, label: str, force: bool = False):
+    """Refuse an enum value not in constraints[constraint_key] (e.g.
+    input_mode_allowed_values). hazards.foreign_enum_values: on a sibling
+    device a value from another device's profile crashed the firmware."""
+    allowed = constraints(profile).get(constraint_key)
+    if allowed is None:
+        return
+    allowed = [int(x) for x in allowed]
+    if value in allowed or force:
+        return
+    raise ConstraintError(
+        f'{label} value {value} is not in constraints.{constraint_key} {allowed}. '
+        f'Enum values are NOT portable across this device family -- see '
+        f'hazards.foreign_enum_values. Pass force to override.')
+
+
 def build_command(profile: dict, param_name: str, channel: int, value: int) -> bytes:
     """Build a SET_PARAM-style command frame for a param defined in profile['params'].
 
@@ -65,6 +165,7 @@ def build_raw_command(profile: dict, param_id: int, channel: int, value: int) ->
     Only valid for the SET_PARAM frame shape (profile['frame']['command']) -- for
     channel_link, use build_link_command() instead, since it's a different shape."""
     f = profile['frame']['command']
+    check_opcode(profile, _as_int(f['opcode']))
     size = profile['transport']['report_size']
     pkt = bytearray(size)
     pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
@@ -75,20 +176,25 @@ def build_raw_command(profile: dict, param_id: int, channel: int, value: int) ->
     return bytes(pkt)
 
 
-def build_link_command(profile: dict, pair_index: int, enabled: bool) -> bytes:
+def build_link_command(profile: dict, pair_index: int, enabled: bool, space: int = 0) -> bytes:
     """Build a SET_LINK frame (profile['frame']['link_command']) to engage/disengage
     one channel-link pair. This is NOT the SET_PARAM shape -- param_id still lives
-    at param_id_offset, but the per-channel byte is unused and pair_index/enabled
-    live at their own offsets a byte further along. See frame.link_command.notes
-    in the profile for how this was worked out from a real capture."""
+    at param_id_offset; pair_index and enabled live at their own offsets a byte
+    further along. `space` is the domain selector at frame.link_command.space_offset
+    (offset 17): 0 for physical + ADAT (see frame.link_command.space_values), 1 for
+    S/PDIF. Default 0 keeps physical/ADAT callers unchanged. If the profile has no
+    space_offset, `space` is ignored (older profiles)."""
     if 'link_command' not in profile['frame']:
         raise KeyError('this profile has no frame.link_command -- channel link is not available')
     f = profile['frame']['link_command']
+    check_opcode(profile, _as_int(f['opcode']))
     size = profile['transport']['report_size']
     pkt = bytearray(size)
     pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
     pkt[_as_int(f['opcode_offset'])] = _as_int(f['opcode'])
     pkt[_as_int(f['param_id_offset'])] = _as_int(f['param_id'])
+    if 'space_offset' in f:
+        pkt[_as_int(f['space_offset'])] = space & 0xFF
     pkt[_as_int(f['pair_index_offset'])] = pair_index & 0xFF
     pkt[_as_int(f['enabled_offset'])] = 1 if enabled else 0
     return bytes(pkt)
@@ -122,6 +228,19 @@ def adat_gain_range(profile: dict):
     """[lo, hi] dB range for adat_gain, from the profile (default wide-open)."""
     lo, hi = profile['params'].get('adat_gain', {}).get('range', [-128, 127])
     return lo, hi
+
+
+def parse_spdif_gain(profile: dict, data: bytes, spdif_channel: int) -> int:
+    """Read one S/PDIF channel's gain (int8 dB, 0=L 1=R) from the state report,
+    using state_report.spdif_gain_base_offset. Like ADAT, no status byte."""
+    sr = profile['frame']['state_report']
+    base = sr.get('spdif_gain_base_offset')
+    if base is None:
+        raise ValueError('this profile has no state_report.spdif_gain_base_offset -- S/PDIF gain readback not available')
+    off = _as_int(base) + spdif_channel
+    if off >= len(data):
+        raise ValueError(f'state report too short for S/PDIF channel {spdif_channel}')
+    return i8(data[off])
 
 
 def parse_state(profile: dict, data: bytes, channel: int) -> dict:
