@@ -4,6 +4,10 @@ Don't over use tokens, throwing agents and using all the resources at once, a go
 hand-off (project state, decoded protocol, code state, pending captures).
 Update its "Right now" + "Session log" sections at the end of each session.
 
+**Endgame:** `KERNEL.md` holds the roadmap for a mainline `snd-usb-audio`
+mixer driver -- do not start that until the userspace protocol is
+essentially complete + hardware-verified (readback is the blocker).
+
 ## Session hygiene (keeps quota cost down)
 
 Auto-compaction runs against the whole context window and is expensive
