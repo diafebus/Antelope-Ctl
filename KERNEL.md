@@ -1,25 +1,41 @@
-# KERNEL.md -- roadmap for upstreaming an in-kernel ALSA driver
+# KERNEL.md -- notes for a possible in-kernel ALSA driver
 
-**Status: not started. Read this when the userspace protocol work is
-essentially done.** This is the plan for turning the reverse-engineered
-protocol into a mainline Linux `snd-usb-audio` mixer driver. Nothing
-here blocks the current userspace `antelope-ctl` tool -- that ships and
-stays useful regardless.
+**Status: optional endgame, not started, not committed to.** This is a
+plan kept on file for *if* the project decides a mainline
+`snd-usb-audio` mixer driver is worth it. It is not a required finish
+line. Read it only when the userspace protocol work is essentially done
+and the team is weighing next steps.
+
+The protocol reverse-engineering (`PROTOCOL.md`) is the thing that must
+be complete regardless -- it feeds the webUI and a kernel driver
+equally. Nothing here blocks the current `antelope-ctl` tool or the
+planned webUI.
 
 ---
 
-## 0. Why bother
+## 0. Is it even worth it?
 
-A userspace hidraw tool (what we have) works but:
+**Probably not required.** Antelope's install base is far smaller and
+more niche than Focusrite/Scarlett, so "download our app" (webUI +
+local backend over hidraw/WebHID) is an acceptable ask for most users,
+and a good webUI covers the desktop-user majority.
+
+A userspace tool (CLI or webUI) has real limits, though:
 - races with anything else touching the device
 - no integration with `alsamixer` / `amixer` / `alsactl store|restore`
-- every user needs udev rules / the repo / Python
-- no distro ships it
+- state does not persist / restore without the app running
+- every user needs the app; no distro ships it
 
 An in-kernel driver exposes every parameter as a standard **ALSA
-kcontrol**, so `alsamixer`, `amixer`, `alsactl`, and GUIs
-(`alsa-scarlett-gui`-style) all work with zero setup, and distros pick
-it up automatically. That is the ultimate-win state.
+kcontrol**: works headless / on a rack server, state restores with
+standard ALSA machinery, distros pick it up with zero install, and
+other audio software (PipeWire/JACK routing) sees the controls
+natively.
+
+**They compose:** a kernel driver would make the webUI *simpler* (it
+could sit on ALSA kcontrols like `alsa-scarlett-gui` does), not
+redundant. Decision to actually pursue this is deferred -- revisit once
+the webUI exists and there's real demand from headless/studio users.
 
 ---
 

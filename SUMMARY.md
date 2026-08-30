@@ -26,8 +26,10 @@ Wireshark/USBPcap captures, and building a **stdlib-only Python CLI**
    reference implementation + test harness, not the final product; the
    webUI backend will consume the same `profiles/*.json`. Keep
    `antelope/` generic and profile-driven.
-3. **Endgame** -- mainline `snd-usb-audio` kernel driver (`KERNEL.md`),
-   not before the protocol is complete + hardware-verified.
+3. **Optional endgame** -- a mainline `snd-usb-audio` kernel driver
+   (`KERNEL.md`). Not committed to; Antelope is niche and a good webUI
+   may be enough. Revisit only if headless/studio demand appears, and
+   never before the protocol is complete + hardware-verified.
 
 - HID vendor interface 3, EP `0x01` OUT / `0x82` IN, 320-byte reports,
   4 ms poll. Audio is separate iso endpoints (`0x05` / `0x84`), not

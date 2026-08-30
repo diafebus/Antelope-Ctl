@@ -4,9 +4,10 @@ Don't over use tokens, throwing agents and using all the resources at once, a go
 hand-off (project state, decoded protocol, code state, pending captures).
 Update its "Right now" + "Session log" sections at the end of each session.
 
-**Endgame:** `KERNEL.md` holds the roadmap for a mainline `snd-usb-audio`
-mixer driver -- do not start that until the userspace protocol is
-essentially complete + hardware-verified (readback is the blocker).
+**Optional endgame:** `KERNEL.md` holds a plan for a possible mainline
+`snd-usb-audio` mixer driver -- not committed to (Antelope is niche; a
+good webUI may be enough). Not to be started before the protocol is
+complete + hardware-verified.
 
 ## Session hygiene (keeps quota cost down)
 
