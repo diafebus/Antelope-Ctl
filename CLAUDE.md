@@ -1,5 +1,9 @@
 Don't over use tokens, throwing agents and using all the resources at once, a good engineer saves resources
 
+**Resuming a session?** Read `SUMMARY.md` first -- it is the cross-session
+hand-off (project state, decoded protocol, code state, pending captures).
+Update its "Right now" + "Session log" sections at the end of each session.
+
 ## TODO / next steps (keep this current)
 
 Raw `.pcapng` files are local under `captures/` (`raw pcapng captures/`
