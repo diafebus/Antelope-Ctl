@@ -17,3 +17,8 @@ __pycache__/
 
 # Local CLI cache (link state) lives in ~/.cache/antelope-ctl, not here, but just in case
 *.cache
+
+# Session/working docs -- local only, not part of the public project
+CLAUDE.md
+KERNEL.md
+SUMMARY.md
