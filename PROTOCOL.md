@@ -277,6 +277,11 @@ indices.
 `bus_dim` / `bus_mono` were only exercised on 0/1/2/5 and may not apply to
 line_out / reamp. `bus_mute` confirmed on 0/1/2/3.
 
+The Orion III has **two** physical reamp outputs (Reamp 1 / Reamp 2 --
+separate mono outs for two guitar amps, not a stereo pair). The settings
+tab exposes one "Reamp" level slider (bus 4); whether Reamp 1 and 2 share
+that level or have independent controls is untested.
+
 ### Physical channel link pairs
 
 `pair_index = channel_index // 2` (0-indexed channels): pair 0 = ch1&ch2,
@@ -327,15 +332,16 @@ Payload is bytes 16-23 only:
 |---|---|
 | 16 | `0xd3` param |
 | 17 | `0x41` constant (sub-command / "set crosspoint") |
-| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=Reamp (a *third* address space -- not the bus ids, not channel indices; more destinations surely exist) |
+| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=**Reamp** (a *third* address space -- not the bus ids, not channel indices; more destinations surely exist). Each is a **pair** of physical outputs. |
 | 19 | `0x00` here; `0x00`/`0x02` in the older matrixtest capture -- dest sub-channel? |
 | 20 | **source**, 0-indexed physical input (`0x02` = preamp 3, `0x00` = preamp 1) |
-| 21, 22 | undecoded -- per destination the Launcher sent 2 frames (the two stereo sides): one `[21]=0x02 [22]=varies`, one `[21]=0x00 [22]=0x02` |
+| 21, 22 | undecoded -- per destination the Launcher sent 2 frames, one per sub-channel of the pair (**L/R** for dests 1-4; **Reamp 1 / Reamp 2** for dest 5 -- the two reamp outs feed separate guitar amps, they're not a stereo pair): one `[21]=0x02 [22]=varies`, one `[21]=0x00 [22]=0x02` |
 
 **No `0x73` readback** -- routing state is invisible in the state report
 (0 bytes changed across 10 routes), same as channel link. To finish
-decoding, see `params.routing.notes` -- needs an isolated one-dest L/R
-capture, an un-route capture, and a non-preamp-source capture.
+decoding, see `params.routing.notes` -- needs an isolated one-destination
+sub-channel-A-then-B capture, an un-route capture, and a non-preamp-source
+capture.
 
 ---
 

@@ -364,7 +364,8 @@
           "reamp_out",
           "reamp out",
           "re-amp"
-        ]
+        ],
+        "notes": "The Orion Studio III has TWO physical reamp outputs -- Reamp 1 and Reamp 2 (independent mono outs for driving separate guitar amps, NOT a stereo L/R pair). Capture settings-linevol-mute-reampvol-toggle exercised ONE 'Reamp' level slider (bus id 4); whether Reamp 1 and Reamp 2 share this level or have independent controls is untested."
       },
       "5": {
         "name": "monitor_b",
@@ -527,16 +528,16 @@
       "type": "matrix crosspoint (source -> destination)",
       "frame": "frame.routing_command (opcode 0x53) -- a 5th distinct shape, NOT SET_PARAM",
       "destinations": {
-        "1": "headphone_1",
-        "2": "headphone_2",
-        "3": "monitor_a",
-        "4": "monitor_b",
-        "5": "reamp"
+        "1": "headphone_1 (stereo L/R)",
+        "2": "headphone_2 (stereo L/R)",
+        "3": "monitor_a (stereo L/R)",
+        "4": "monitor_b (stereo L/R)",
+        "5": "reamp (dual mono -- Reamp 1 / Reamp 2, for separate guitar amps, NOT L/R)"
       },
-      "destination_note": "1-indexed at frame.routing_command.destination_offset (18). This is a THIRD address space -- different numbering from bus ids (0-5) and from channel indices. Only these 5 seen so far; there are almost certainly more (line outs, ADAT, S/PDIF out).",
+      "destination_note": "1-indexed at frame.routing_command.destination_offset (18). A THIRD address space -- different numbering from bus ids (0-5) and channel indices. Each destination is a PAIR of physical outputs; the sub-channel byte (still undecoded) selects L vs R for dests 1-4, and Reamp 1 vs Reamp 2 for dest 5. Only these 5 destinations seen so far; there are almost certainly more (line outs, ADAT out, S/PDIF out, USB record).",
       "source_note": "0-indexed physical input at frame.routing_command.source_offset (20). preamp 3 -> 0x02 (matrix-ch3tohpmonreamp), preamp 1 -> 0x00 (matrixtest). Non-physical sources (DAW playback, ADAT, etc.) not captured -- their encoding (and whether byte 20 alone is enough) is unknown.",
       "readback": "NONE -- routing state is not in the 0x73 report (0 bytes changed across 10 routes). Like channel_link, it can only be tracked client-side.",
-      "notes": "Bytes 19, 21, 22 of frame.routing_command are still undecoded. Per destination the Launcher sent 2 frames (the user's 'both L and R sides'): frame A = [21]=0x02 / [22]=varies (0x01 for hp1/mona/monb, 0x03 for hp2, 0x04 for reamp); frame B = [21]=0x00 / [22]=0x02. Best guesses: [19] or [21] is the destination sub-channel (L/R), [22] is a level/pan or a second source -- not resolved. TO FINISH: (1) route one source to ONE destination, L then R, slowly, to isolate the side byte; (2) route then UN-route (source -> none) to see the clear encoding (matrixtest shows an all-zero-tail frame that is probably it); (3) route a NON-preamp source (a USB/DAW playback channel) to see how non-physical sources encode. Do not wire routing into the CLI until at least (1) and (2) are done."
+      "notes": "Bytes 19, 21, 22 of frame.routing_command are still undecoded. Per destination the Launcher sent 2 frames -- the user routed the source to BOTH sub-channels of each destination pair (L+R for hp1/hp2/mona/monb; Reamp 1 + Reamp 2 for dest 5). frame A = [21]=0x02 / [22]=varies (0x01 for hp1/mona/monb, 0x03 for hp2, 0x04 for reamp); frame B = [21]=0x00 / [22]=0x02. Best guesses: [19] or [21] is the destination sub-channel, [22] is a level/pan or a second source -- not resolved. TO FINISH: (1) route one source to ONE destination, sub-channel A then sub-channel B, slowly, to isolate the side byte; (2) route then UN-route (source -> none) to see the clear encoding (matrixtest shows an all-zero-tail frame that is probably it); (3) route a NON-preamp source (a USB/DAW playback channel) to see how non-physical sources encode. Do not wire routing into the CLI until at least (1) and (2) are done."
     },
     "talkback_button": {
       "id": "0x1f",

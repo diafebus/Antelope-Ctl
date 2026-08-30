@@ -127,7 +127,10 @@ different things depending on which param you're setting:
   Ids 3/4 turned out to be the settings-tab Line and Reamp output levels
   (not the headphone-3/4 that was previously guessed). `bus_dim`/`bus_mono`
   weren't exercised on 3/4 and may not apply to a line/reamp out;
-  `bus_mute` is confirmed on 3 only.
+  `bus_mute` is confirmed on 3 only. The Orion III has **two** physical
+  reamp outputs (Reamp 1 / Reamp 2 -- separate mono outs for two guitar
+  amps); bus 4 is one shared "Reamp" level slider, whether Reamp 1/2 have
+  independent levels is untested.
 
 Don't mix the two up -- `set-gain 5 10` and `set-bus-level 5 60` both use
 "5" but mean completely different things (physical channel 6 vs. Monitor B).
