@@ -227,6 +227,38 @@ def build_global_command(profile: dict, param, value: int) -> bytes:
     return bytes(pkt)
 
 
+def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
+                      pan_deg: int, send: int, mute: bool = False,
+                      solo: bool = False) -> bytes:
+    """Build a SET_MIX frame (profile['frame']['mix_command'], opcode 0x17) --
+    one virtual-mixer input strip's whole state. `mix` 0-3, `channel` 1-32,
+    `fader` 0-90 (dB attenuation), `pan_deg` -30..+30, `send` 0-96. The frame
+    carries every field every time (no partial update, no readback)."""
+    if 'mix_command' not in profile['frame']:
+        raise KeyError('this profile has no frame.mix_command -- SET_MIX not available')
+    f = profile['frame']['mix_command']
+    check_opcode(profile, _as_int(f['opcode']))
+    pan_center = _as_int(f.get('pan_center', 32))
+    pan_mask = _as_int(f.get('pan_mask', 0x3f))
+    pan_flags = ((pan_center + pan_deg) & pan_mask)
+    if mute:
+        pan_flags |= _as_int(f.get('mute_bit', 0x40))
+    if solo:
+        pan_flags |= _as_int(f.get('solo_bit', 0x80))
+    size = profile['transport']['report_size']
+    pkt = bytearray(size)
+    pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
+    pkt[_as_int(f['opcode_offset'])] = _as_int(f['opcode'])
+    pkt[_as_int(f['param_id_offset'])] = _as_int(f['param_id'])
+    pkt[_as_int(f['subcmd_offset'])] = _as_int(f['subcmd'])
+    pkt[_as_int(f['mix_offset'])] = mix & 0xFF
+    pkt[_as_int(f['channel_offset'])] = channel & 0xFF
+    pkt[_as_int(f['fader_offset'])] = fader & 0xFF
+    pkt[_as_int(f['pan_flags_offset'])] = pan_flags & 0xFF
+    pkt[_as_int(f['send_offset'])] = send & 0xFF
+    return bytes(pkt)
+
+
 # ---- routing matrix (frame.routing_command, opcode 0x53) ----
 #
 # EXPERIMENTAL, but the frame model is now understood (macOS captures

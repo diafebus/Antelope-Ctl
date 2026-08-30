@@ -20,7 +20,7 @@ see `README.md` and the profile's `evidence` fields for which capture.
 | USB VID:PID | `0x23e5:0xa221` |
 | bcdDevice | 7.00 |
 | Control interface | vendor **HID, interface 3** (the UAC2 audio-control interface is a stub -- 1 clock, 4 terminals `nrChannels=1`, no Feature Units -- all control is HID) |
-| Report size | **320 bytes**, fixed, both directions (but see §13 -- Linux hidraw writes may need a leading `0x00`, making them 321; unverified on Orion) |
+| Report size | **320 bytes**, fixed, both directions (but see §14 -- Linux hidraw writes may need a leading `0x00`, making them 321; unverified on Orion) |
 | Control OUT endpoint | `0x01` (host -> device commands), interrupt |
 | Control IN endpoint | `0x82` (device -> host reports), interrupt |
 | Audio stream endpoints | `0x05` OUT / `0x84` IN, isochronous, 24-ch / 24-bit in the class-compliant descriptor -- **unrelated to control** |
@@ -32,7 +32,7 @@ see `README.md` and the profile's `evidence` fields for which capture.
 Byte 0 of every **incoming** report is a **magic** that identifies the
 frame type. On **outgoing** commands byte 0 (`0x70`) is cosmetic -- the
 sibling Discrete 8 Pro ignores it entirely; the opcode at offset 4 is the
-real discriminator (§13).
+real discriminator (§14).
 
 ---
 
@@ -46,7 +46,8 @@ opcode -- this is the single most important thing to get right:
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`) |
-| `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link |
+| `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
+| `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
 
@@ -316,9 +317,11 @@ pair 1 = ch3&ch4, ... pair 5 = ch11&ch12. 6 pairs (index 0-5).
 |---|---|---|
 | `0x00` | physical inputs **and** ADAT (shared) | physical 0-5, ADAT 0-7 |
 | `0x01` | S/PDIF | 0 only (the L/R pair) |
+| `0x03` | virtual mixer (Mix 1-4 strips) | `channel // 2` (§12) |
 
-Discovered from `spdif-gain-link` (2026-08). Previously this byte was
-thought to be unused/always-0.
+`0x01` discovered from `spdif-gain-link`, `0x03` from
+`macos-mix1-send-pan-fader-mute-solo-link` (both 2026-08). Previously this
+byte was thought to be unused/always-0. `0x02` unseen.
 
 ### ADAT link pairs
 
@@ -581,6 +584,8 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | none found |
 | adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | none found (gain bytes track together; preamp-link behaviour, CLI mirrors gain) |
 | spdif_channel_link | `0xa2` | `0x14` | **space=1** @17, pair_index @18 (0) | enabled @19 | none found (L/R gain bytes track together; CLI mirrors gain) |
+| mix_channel_link | `0xa2` | `0x14` | **space=3** @17, pair_index @18 | enabled @19 | none found (software-mirrored, §12) |
+| mix_fader / mix_pan / mix_send / mix_mute / mix_solo | `0xd4` | `0x17` | `mix` @18, `channel` @19 (1-32) | fader @20 (0-90 dB), pan @21 bits 0-5 (0x20=centre), mute @21 bit 6, solo @21 bit 7, send @22 (0-96) | none (§12) |
 | talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
 | talkback_source | `0x27` | `0x12` | - | 0-12 @17 -- `0` = INT (built-in talkback mic behind the physical TB button), `1-12` = preamps 1-12 (user-confirmed) | offset 73 bits 0-1 (low bits only) |
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
@@ -666,11 +671,56 @@ isolated recapture, ideally on macOS.
 
 ---
 
-## 12. Open questions
+## 12. Virtual mixer -- Mix 1-4 (`0x17` / `0xd4`)
+
+A 6th command shape (`frame.mix_command`). The **Mix windows are a
+separate UI from the routing matrix**: mixing happens here, then each mix's
+L/R appears as a *source* in the matrix (banks `0x06`-`0x09`, §7).
+
+```
+d4 05 <mix> <ch> <fader> <pan|flags> <send>
+```
+
+| byte | field | encoding |
+|---|---|---|
+| 16 | `0xd4` param | |
+| 17 | `0x05` const | |
+| 18 | **mix** | 0 = Mix 1 (1/2/3 = Mix 2/3/4 presumed; only 0 captured) |
+| 19 | **channel** | 1-32 (each mix has 32 input strips) |
+| 20 | **fader** | attenuation in dB: `0` = 0 dB / unity … `90` = −90 dB |
+| 21 | **pan + flags** | bits 0-5 = pan: `0x02` = L30, `0x20` = centre, `0x3e` = R30 (raw = `0x20` + degrees); bit `0x40` = **mute**; bit `0x80` = **solo** |
+| 22 | **send** | this channel's send *into* this mix, `0`-`96` (`96` = 0 dB, same scale as `bus_level`) |
+
+One frame per `(mix, channel)` strip; it carries the whole strip state
+every time. Confirmed from `macos-mix1-send-pan-fader-mute-solo-link`
+(2026-08, native macOS): send / pan / fader sweeps each moved exactly one
+byte 1:1; mute → `[21] |= 0x40`; solo → `[21] |= 0x80`.
+
+**Solo mutes the rest host-side** -- clicking solo on one channel makes
+the Launcher re-send a `mix_command` for **all 32 channels** of that mix
+(a handy channel-count probe -- that's how we know it's 32).
+
+**Mix channel link** = `SET_LINK` with a **new `space` byte `0x03`**
+(0 = physical/ADAT, 1 = S/PDIF, 3 = mixer). `pair_index = channel // 2`.
+Software-mirrored like every other link: while linked, the Launcher
+re-sends both strips' `mix_command` frames on each change; the device does
+not propagate.
+
+**No `0x73` readback** -- the whole capture moved only meter-jitter bytes.
+Mixer state has its own (undecoded) readback path, like routing.
+
+**Not in the CLI yet.** `protocol.build_mix_command(profile, mix, channel,
+fader, pan_deg, send, mute, solo)` builds the frame; `0x17` is in
+`constraints.allowed_opcodes`.
+
+---
+
+## 13. Open questions
 
 | Item | Status |
 |---|---|
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), source banks `0x00`-`0x0c` (all but `0x01`), and the `(bank,index)`-per-channel array model all confirmed (2026-08). CLI `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch). Open: channel counts of the other multichannel destinations; bank `0x01`. **Routing readback exists** (cross-machine persistence) but is NOT at connect (macOS on2/on3) and not decoded -- prime suspect: routing-tab open (CAPTURE E'). |
+| Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Open: only Mix 1 (`[18]=0`) captured; no readback found (like routing); not in the CLI. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
@@ -685,12 +735,12 @@ isolated recapture, ideally on macOS.
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |
 | `bus_block` reserved byte (`30+3N`) | never changed -- padding or unexercised |
-| Orion hidraw write length | 320 or 321 bytes? -- `transport.py` writes 320; unverified against Orion's HID descriptor (section 13) |
+| Orion hidraw write length | 320 or 321 bytes? -- `transport.py` writes 320; unverified against Orion's HID descriptor (section 14) |
 | Orion gain clamp vs reject | unknown -- the Discrete 8 Pro clamps out-of-range gain; Orion's behaviour untested |
 
 ---
 
-## 13. Device family / cross-device notes
+## 14. Device family / cross-device notes
 
 Antelope **Synergy Core** interfaces share this HID protocol family (magic
 `0x70` command, opcode @4, param_id @16). A peer got an **Antelope Discrete

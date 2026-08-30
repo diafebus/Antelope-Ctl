@@ -60,7 +60,8 @@ Wireshark/USBPcap captures, and building a **stdlib-only Python CLI**
 |---|---|---|
 | `0x13` | SET_PARAM | param@16, channel@17, value@18 |
 | `0x12` | SET_GLOBAL | param@16, value@17 (no channel) -- talkback_*, screen_brightness (`0x0e`, 0-100, readback @26) |
-| `0x14` | SET_LINK | `0xa2`@16, space@17, pair@18, enabled@19 |
+| `0x14` | SET_LINK | `0xa2`@16, space@17 (0=phys/ADAT, 1=S/PDIF, 3=mixer), pair@18, enabled@19 |
+| `0x17` | SET_MIX | `0xd4`@16, `0x05`@17, mix@18, ch@19 (1-32), fader@20 (0-90dB), pan+flags@21 (0x20=centre; +0x40 mute; +0x80 solo), send@22 (0-96) |
 | `0x53` | SET_ROUTE | `0xd3`@16, `0x41`@17, dest group@18, then (bank,idx) pair per output channel from @19 stride 2 |
 | `0xab` | surround-EQ | `0xeb`@16 -- barely decoded, needs a capture |
 
@@ -126,7 +127,18 @@ Darwin XHC pcapng: 40-byte pseudo-header + 320-byte payload =
 
 ### SET_LINK `space` byte (@17)
 `0` = physical preamp + ADAT (still ambiguous between the two, both
-`0x00`), `1` = S/PDIF.
+`0x00`), `1` = S/PDIF, `3` = virtual mixer (Mix 1-4 strips). `2` unseen.
+
+### Virtual mixer -- Mix 1-4 (opcode `0x17` / `0xd4`) -- DECODED 2026-08
+Separate UI from the routing matrix (mixing happens here; Mix N L/R then
+= matrix source banks `0x06`-`0x09`). `d4 05 <mix> <ch> <fader> <pan|flags>
+<send>`: [18]=mix 0-3 (only 0 seen), [19]=channel 1-32, [20]=fader
+(0=0dB..90=-90dB), [21]=pan (low 6 bits, `0x20`=centre, ±30) + mute
+(`0x40`) + solo (`0x80`), [22]=send (0-96, 96=0dB). One frame per strip,
+whole state each time. Solo re-sends all 32 strips (channel-count probe).
+Mix link = SET_LINK space `0x03`, software-mirrored. NO `0x73` readback.
+`frame.mix_command` + `params.mix_*` + `protocol.build_mix_command`. Not
+in the CLI. From `macos-mix1-send-pan-fader-mute-solo-link`.
 
 ### Channel link is SOFTWARE-controlled
 Device firmware does **not** propagate mode/gain/phantom/phase between
@@ -177,7 +189,9 @@ host-side, exactly like the Launcher.
 - `build_command`, `build_link_command(profile, pair, enabled, space=0)`,
   `build_global_command(profile, param, value)` (opcode 0x12, value @17),
   `build_route_command(profile, dest, channels)` -- `channels` = ordered
-  list of (bank, idx) tuples, whole destination group
+  list of (bank, idx) tuples, whole destination group;
+  `build_mix_command(profile, mix, ch, fader, pan_deg, send, mute, solo)`
+  (opcode 0x17)
 - `resolve_route_source` / `resolve_route_dest` / `route_source_label`
   (reverse lookup); `ROUTE_MUTE` = (0x0b, 0)
 - constraints layer: `ConstraintError`, `check_opcode`, `check_target`,
@@ -249,10 +263,13 @@ L=preamp3, R=preamp4 (old code swapped them).
   Next = CAPTURE E' (routing-tab open).
 - **Screen brightness DONE + hardware-confirmed:** CLI `set-brightness
   <0-100>` (via new `build_global_command`).
+- **Virtual mixer DECODED** (opcode `0x17`, `frame.mix_command`) -- fader/
+  pan/send/mute/solo per (mix, ch 1-32); mix link = SET_LINK space 3.
+  `build_mix_command` added; no CLI command yet.
 - Still open on routing: channel counts of the other multichannel dests
   (adat out / com rec / afx in / mix chN / surround in); bank `0x01`
   (emumic?); the readback. `compplay*lineout*` captures = no OUT frames.
-- Pending: hardware round-trip `route`; CAPTURE E'.
+- Pending: hardware round-trip `route`; CAPTURE E'; wire a `mix-set` CLI.
 
 ## Session log
 
@@ -288,10 +305,16 @@ L=preamp3, R=preamp4 (old code swapped them).
      mute`. Added protocol `route_dest_channels` / `resolve_route_channel`.
      line_out (16 ch) now wired alongside hp1/hp2/mona/monb/reamp. Frames
      verified byte-exact vs all five usable macOS matrix captures.
-  7. Added `tools/scan_macos_capture.py`; documented the Darwin XHC
+  7. **Virtual mixer decoded** (`macos-mix1-send-pan-fader-mute-solo-link`):
+     NEW opcode `0x17` / param `0xd4`. `d4 05 <mix> <ch> <fader> <pan|
+     flags> <send>` -- fader 0-90dB, pan (0x20 centre) + mute bit 0x40 +
+     solo bit 0x80, send 0-96. 32 ch/mix (solo re-sends all 32). Mix link
+     = SET_LINK space `0x03` (4th link domain). No `0x73` readback. Added
+     `frame.mix_command`, `params.mix_*`, `protocol.build_mix_command`;
+     no CLI command yet.
+  8. Added `tools/scan_macos_capture.py`; documented the Darwin XHC
      format. NOTE: `macos-matrix-compplay*lineout*` + `ch1-12-mute-hp2LR`
      are missing the OUT endpoint -> unusable for command decoding.
-     Commits `6176e95` (frame fix) .. later (banks + CLI rebuild + brightness).
 - **2026-08-30 (routing-decode session)** -- Decoded routing matrix
   destinations 0-14 + source banks from Windows `matrix-*` captures;
   shipped the first experimental `route` / `matrix-status`. (Its "op

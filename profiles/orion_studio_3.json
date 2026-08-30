@@ -40,7 +40,8 @@
       "enabled_offset": 19,
       "space_values": {
         "0": "physical inputs AND ADAT (shared -- not distinguishable from the frame, see params.adat_channel_link.notes)",
-        "1": "S/PDIF"
+        "1": "S/PDIF",
+        "3": "virtual-mixer channel link (Mix 1-4 strips) -- CONFIRMED macos-mix1-send-pan-fader-mute-solo-link (2026-08): linking mix ch1+ch2 sent SET_LINK space=0x03 pair_index=0x00 enabled=0x01. Software-mirrored like the other link spaces -- while linked the Launcher re-sent BOTH strips' mix_command frames on every fader move."
       },
       "notes": "A SEPARATE frame shape from the SET_PARAM command -- do NOT build it with build_command()/build_raw_command(). param_id at 16 lines up with SET_PARAM's. Offset 17 was previously thought unused/always-0; capture spdif-gain-link (2026-08) shows it is a SPACE/DOMAIN selector: 0x00 for physical + ADAT link (which still can't be told apart from each other -- both use 0x00), 0x01 for S/PDIF link. pair_index is at 18, explicit enabled 0/1 at 19. Confirmed: chlink (all 6 physical pairs, space 0), ADAT-link1-2-7-8 (pairs 0/1/6/7, space 0), spdif-gain-link (pair 0, space 1)."
     },
@@ -108,6 +109,27 @@
       "param_id_offset": 16,
       "value_offset": 17,
       "notes": "A third command shape, for device-global params that have no per-channel/per-bus target. Same header as SET_PARAM but the single value byte sits at offset 17 (where SET_PARAM keeps its channel byte); offset 18 is unused/0. Confirmed from the talkback captures (2026-08): talkback_button (param 0x1f), talkback_source (param 0x27) and talkback_gain (param 0x20) all use opcode 0x12 with the value at offset 17. Build with build_global_command(profile, param_id, value) -- NOT build_command() (which would put the value at offset 18)."
+    },
+    "mix_command": {
+      "magic_offset": 0,
+      "magic": "0x70",
+      "opcode_offset": 4,
+      "opcode": "0x17",
+      "opcode_name": "SET_MIX",
+      "param_id_offset": 16,
+      "param_id": "0xd4",
+      "subcmd_offset": 17,
+      "subcmd": "0x05",
+      "mix_offset": 18,
+      "channel_offset": 19,
+      "fader_offset": 20,
+      "pan_flags_offset": 21,
+      "send_offset": 22,
+      "pan_mask": "0x3f",
+      "pan_center": 32,
+      "mute_bit": "0x40",
+      "solo_bit": "0x80",
+      "notes": "A 6th distinct command shape -- the VIRTUAL MIXER (the Mix 1-4 windows, a SEPARATE UI from the routing matrix: mixing happens here, then Mix N's L/R appear as sources in the matrix, banks 0x06-0x09). One frame per (mix, channel) strip, carrying that strip's WHOLE state every time. CONFIRMED from macos-mix1-send-pan-fader-mute-solo-link (2026-08, native macOS): [16]=0xd4 [17]=0x05 constant; [18]=mix number (0 = Mix 1; 1/2/3 for Mix 2/3/4 presumed, only 0 seen); [19]=channel 1-32 (each mix has 32 input strips -- the user's solo click re-sent all 32, a handy channel-count probe); [20]=FADER, raw = attenuation in -dB, 0 = 0dB/unity .. 90 = -90dB (matches the UI's 0..-90 range); [21]=PAN + FLAGS -- low 6 bits (pan_mask) = pan, pan_center 0x20, so 0x02 = full-left (-30), 0x20 = center, 0x3e = full-right (+30) i.e. raw = 32 + degrees; bit 0x40 = MUTE; bit 0x80 = SOLO; [22]=SEND level, 0-96 (0x60 = 0dB, 0 = -inf; same 0-96 scale as bus_level). No target byte past 22. NO 0x73 readback (checked the whole capture -- only meter jitter moved). Mixer state has its own readback path, undecoded (like routing). Not yet wired into cli.py; use build_mix_command(profile, mix, channel, fader, pan_deg, send, mute, solo)."
     },
     "state_report": {
       "magic_offset": 0,
@@ -688,6 +710,53 @@
       "type": "unknown",
       "frame": "NEW opcode 0xab (opcode_offset 4) -- a 5th command shape. param_id 0xeb at offset 16, then payload bytes 99 b0 <flags> 06 00 58 02 (offsets 17-23).",
       "notes": "Settings-tab 'Surround EQ' pre/post toggle -- the likely identity of the only 2 outgoing frames in settings-scrbrght-surroundEQ.pcapng (2026-08). The two frames are identical except offset 19: 0x03 -> 0x83 (bit 7 = the toggle). Payload 0x0258 (=600) at offsets 22-23 is unexplained. NO 0x73 state-report change either time. Screen brightness sent NOTHING in that capture (host-side, or the slider wasn't moved). Only 2 frames -- not enough to decode the 0xab frame properly; needs a dedicated capture toggling surround-EQ pre/post several times and sweeping screen brightness."
+    },
+    "mix_fader": {
+      "status": "confirmed",
+      "frame": "mix_command (opcode 0x17) -- value at fader_offset (20)",
+      "per": "(mix 0-3, channel 1-32)",
+      "range": [0, 90],
+      "encoding": "raw byte = attenuation in dB below unity: 0 = 0dB, 90 = -90dB. Matches the Mix window's 0..-90 fader range.",
+      "evidence": "macos-mix1-send-pan-fader-mute-solo-link (2026-08): dragging channel 1's fader over its full range moved byte 20 across 0x00..0x5a (0..90) 1:1."
+    },
+    "mix_pan": {
+      "status": "confirmed",
+      "frame": "mix_command (opcode 0x17) -- pan_flags_offset (21), low 6 bits (pan_mask 0x3f)",
+      "per": "(mix 0-3, channel 1-32)",
+      "range": [-30, 30],
+      "encoding": "raw = pan_center (0x20) + degrees. 0x02 = full left (-30), 0x20 = center (0), 0x3e = full right (+30). Bits 6-7 of the same byte carry mute/solo -- mask with 0x3f.",
+      "evidence": "same capture: panning channel 1 -30..+30 moved byte 21's low 6 bits across 0x02..0x3e. Mix input strips default to alternating hard L/R pan (odd ch -> 0x02, even ch -> 0x3e), seen in the solo re-send burst."
+    },
+    "mix_send": {
+      "status": "confirmed",
+      "frame": "mix_command (opcode 0x17) -- send_offset (22)",
+      "per": "(mix 0-3, channel 1-32)",
+      "range": [0, 96],
+      "encoding": "0-96, same scale as bus_level: 96 (0x60) = 0dB / unity, 0 = -inf. This is the channel's send amount INTO this mix.",
+      "evidence": "same capture: the 'send button' drag moved byte 22 downward from ~0x5d; the solo re-send burst wrote 0x60 for channels at their default send."
+    },
+    "mix_mute": {
+      "status": "confirmed",
+      "frame": "mix_command (opcode 0x17) -- bit mute_bit (0x40) of pan_flags_offset (21)",
+      "per": "(mix 0-3, channel 1-32)",
+      "type": "bool",
+      "evidence": "same capture: clicking channel 1's mute set byte 21 from 0x02 to 0x42 (0x02 | 0x40), clearing it restored 0x02."
+    },
+    "mix_solo": {
+      "status": "confirmed",
+      "frame": "mix_command (opcode 0x17) -- bit solo_bit (0x80) of pan_flags_offset (21)",
+      "per": "(mix 0-3, channel 1-32)",
+      "type": "bool",
+      "notes": "Clicking solo on one channel also makes the Launcher re-send a mix_command for ALL 32 channels of that mix (host-side implementation of solo -> mute-the-rest). A convenient way to probe the mix channel count -- it's 32 here.",
+      "evidence": "same capture: solo on channel 1 -> byte 21 = 0x82 (0x02 | 0x80), followed by a 32-frame burst (channels 1..32)."
+    },
+    "mix_channel_link": {
+      "status": "confirmed",
+      "frame": "link_command (opcode 0x14 / param 0xa2) with space = 0x03 (see frame.link_command.space_values)",
+      "per": "mix pair (pair_index = channel // 2, same formula as the other link spaces)",
+      "type": "per-pair bool",
+      "notes": "Software-mirrored: while a mix pair is linked the Launcher re-sends BOTH strips' mix_command frames on every change; the device does not propagate. Space 0x03 is a 4th link domain (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer).",
+      "evidence": "macos-mix1-send-pan-fader-mute-solo-link (2026-08): link on mix ch1+ch2 -> SET_LINK space=0x03 pair_index=0x00 enabled=0x01; then linked fader moves produced paired ch1+ch2 mix_command frames ~ms apart."
     }
   },
   "unresolved_state_offsets": [
@@ -748,9 +817,10 @@
       "0x12",
       "0x13",
       "0x14",
+      "0x17",
       "0x53"
     ],
-    "allowed_opcodes_note": "0x53 (SET_ROUTE) added 2026-08 for the experimental CLI `route` command. The frame model is decoded for 2-channel destinations (see frame.routing_command.frame_model); the CLI restricts it to the 5 addressable_destinations. Nothing about it looked dangerous in captures, but it has not been round-trip tested against hardware -- treat routing as experimental.",
+    "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). Neither is round-trip tested against hardware -- treat routing and mixer as experimental. 0x17 is not in a CLI command yet.",
     "observed_opcodes_launcher_only": [
       "0xab"
     ],

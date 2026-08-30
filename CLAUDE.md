@@ -51,8 +51,8 @@ being logged (`tools/scan_macos_capture.py` prints an `OUT magic 70` line
 when a file is usable).
 
 **macOS captures not yet triaged** (`captures/macos-captures/`):
-`macos-mix1-send-pan-fader-mute-solo-link`, `macos-smplrt-*` (sample
-rate), `macos-auraverb-on-off`, `macos-antelopeINIT-poweron` /
+`macos-smplrt-*` (sample rate), `macos-auraverb-on-off`,
+`macos-antelopeINIT-poweron` /
 `-poweron1-itresettopreviousstate`
 (2 more INIT variants). INIT poweroff-on2/on3 = CAPTURE E, done.
 
@@ -99,6 +99,20 @@ The routing frame is an array of (bank,idx) pairs, one per output channel
 of the destination group; the whole group is always sent (see the block
 above + `frame.routing_command`). Routing an already-present source is
 idempotent (no frame).
+
+### VIRTUAL MIXER -- Mix 1-4 (`0x17` / `0xd4`) -- decoded 2026-08
+
+A 6th opcode. **Separate UI from the matrix** -- mixing happens in the Mix
+windows, then Mix N L/R shows up as a matrix source (banks `0x06`-`0x09`).
+`macos-mix1-send-pan-fader-mute-solo-link`: `d4 05 <mix> <ch> <fader>
+<pan|flags> <send>` -- [18]=mix 0-3 (only 0 seen), [19]=channel 1-32,
+[20]=fader (0=0dB .. 90=-90dB), [21]=pan (low 6 bits, `0x20`=centre,
+`0x02`/`0x3e`=L30/R30) + mute bit `0x40` + solo bit `0x80`, [22]=send
+(0-96, 96=0dB). One frame per strip, whole state each time. **Solo
+re-sends all 32 strips** (channel-count probe). **Mix link = SET_LINK
+space `0x03`** (new 4th link domain). No `0x73` readback (like routing).
+`protocol.build_mix_command`; `0x17` in `allowed_opcodes`. NOT in the CLI
+yet. `frame.mix_command` + `params.mix_*`.
 
 - [x] ~~CAPTURE B -- destination enumeration~~ -- DONE (map above).
 - [x] ~~CAPTURE A -- L/R sub-channel + frame model~~ -- **DONE, REVISED
@@ -210,12 +224,19 @@ on native macOS before trusting the "host-side" verdicts.
       (plain byte at a named state_report offset). CLI `set-brightness
       <0-100>` -- user confirmed it changes the device's physical screen.
       `build_global_command` also unblocks talkback params.
+- [x] ~~`build_mix_command` (opcode `0x17`)~~ -- **DONE 2026-08.**
+      `protocol.build_mix_command(profile, mix, channel, fader, pan_deg,
+      send, mute, solo)`; `frame.mix_command` + `params.mix_*`. NOT in a
+      CLI command yet -- big surface (fader/pan/send/mute/solo/link ×
+      32ch × 4 mixes, no readback so each command sends the whole strip).
+      A `mix-set <mix> <ch> [--fader] [--pan] ...` with a local cache
+      (like `route`) is the shape.
 - [ ] Hardware round-trip test the rewritten `route`:
       `route hp1 preamp3 preamp4` (Launcher should show HP1 L=preamp3
       R=preamp4; old code swapped them), then `route hp1 mute`.
 - [ ] Decide which confirmed-but-unexposed params get CLI commands:
       talkback (`talkback_*`), line/reamp bus levels (already work via
-      `set-bus-level` with bus 3/4), `output_trim`.
+      `set-bus-level` with bus 3/4), `output_trim`, the mixer (`mix_*`).
 - [ ] `bus-status`: special-case `bus_level == 96` so a bus at max volume
       isn't reported as muted (the `0x04` bit is ambiguous).
 - [ ] Teach `tools/scan_capture.py` about `0x74` (its known-magic dict is
@@ -314,3 +335,9 @@ are analyzable offline right now:
   counts of the other multichannel dests; bank `0x01`; the readback
   (exists per cross-machine persistence -> E').
   See `frame.routing_command` + `params.routing`.
+- ~~`macos-mix1-send-pan-fader-mute-solo-link`~~ -- **DONE (2026-08).**
+  Virtual mixer, new opcode `0x17` / param `0xd4`. `d4 05 <mix> <ch>
+  <fader> <pan|flags> <send>`; mute/solo = bits `0x40`/`0x80` of the pan
+  byte; mix link = SET_LINK space `0x03`; 32 channels/mix; no `0x73`
+  readback. `frame.mix_command` + `params.mix_*` + `protocol.build_mix_command`.
+  Not in CLI.

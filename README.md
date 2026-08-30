@@ -199,6 +199,26 @@ python3 -m antelope.cli ... matrix-status                    # what THIS CLI has
 
 See `PROTOCOL.md` §7 and `frame.routing_command` in the profile.
 
+### Virtual mixer -- Mix 1-4 (decoded, not in the CLI yet)
+
+The **Mix windows** are a separate UI from the routing matrix -- mixing
+happens there, and each mix's L/R then shows up as a *source* in the
+matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
+`macos-mix1-send-pan-fader-mute-solo-link` (opcode `0x17` / param `0xd4`):
+
+- one frame per `(mix 0-3, channel 1-32)` strip, carrying **fader**
+  (0 dB … −90 dB), **pan** (−30 … +30, centre `0x20`), **mute** (`[21]`
+  bit 6), **solo** (`[21]` bit 7), and **send** (0 … 96, 96 = 0 dB).
+- soloing a channel makes the Launcher re-send all 32 strips (that's how
+  we know each mix has 32 inputs).
+- **mix channel link** = `SET_LINK` with a new `space` byte `0x03`
+  (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer); software-mirrored.
+- no `0x73` readback (like routing).
+
+`protocol.build_mix_command(profile, mix, channel, fader, pan_deg, send,
+mute, solo)` builds the frame. No CLI command yet. See `PROTOCOL.md` §12
+and `frame.mix_command`.
+
 ### Buses vs. channels
 
 The SET_PARAM command frame has one byte (`channel_offset`) that means
@@ -279,7 +299,7 @@ confirm, only then trust it. Nothing is inferred from byte patterns alone.
    `--force` bypasses the bound. Never sweep opcodes or feed it values from
    an untrusted source: on the sibling Discrete 8 Pro, opcodes `0x01`/`0x02`
    and out-of-range indices wedged/BusFaulted the unit (see
-   `profile["hazards"]` and `PROTOCOL.md` §13).
+   `profile["hazards"]` and `PROTOCOL.md` §14).
 7. **Don't assume a new feature fits the SET_PARAM shape.** Five opcodes
    are known now (`0x12`/`0x13`/`0x14`/`0x53`/`0xab`), each with its own
    frame block under `"frame"` and its own `build_*_command()` in
