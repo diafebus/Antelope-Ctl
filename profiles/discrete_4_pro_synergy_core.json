@@ -5,7 +5,7 @@
     "pid": "0xa2bf",
     "bcdDevice": "02.03",
     "status": "UNCONFIRMED",
-    "notes": "vid copied from Orion Studio III on the assumption it's Antelope's registered USB vendor id (constant across their product line) -- NOT independently confirmed for this device. Verify with `lsusb -v` or a capture before trusting it. pid and bcdDevice are taken directly from the device's own descriptor table (see project notes) and should be correct as-is. A unit with serial REDACTED is the one this profile is being built against; serial is per-unit, not part of the protocol, and is not read/used anywhere in transport.py or protocol.py."
+    "notes": "vid copied from Orion Studio III on the assumption it's Antelope's registered USB vendor id (constant across their product line) -- NOT independently confirmed for this device. Verify with `lsusb -v` or a capture before trusting it. pid and bcdDevice are taken directly from the device's own descriptor table (see project notes) and should be correct as-is. This profile is built against a physical unit the contributor owns; the per-unit serial is redacted and is not read/used anywhere in transport.py or protocol.py."
   },
   "transport": {
     "type": "hid",
