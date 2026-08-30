@@ -8,15 +8,15 @@ Don't over use tokens, throwing agents and using all the resources at once, a go
 directions / USB metadata can be done offline now, no VM round-trip.
 
 ### Analyze now -- offline
-- [~] **Routing** -- `matrix-ch3tohpmonreamp.pcapng` (preamp 3 -> 5 dests,
-      both sides) + old `matrixtest`. **Partly decoded:** opcode `0x53` /
-      param `0xd3` (`frame.routing_command`), byte 17 = `0x41` const, byte
-      18 = destination (1=hp1, 2=hp2, 3=mona, 4=monb, 5=reamp -- a 3rd
-      address space; each dest is a PAIR, sub-channel = L/R for 1-4,
-      Reamp 1/Reamp 2 for 5), byte 20 = source (0-idx input; preamp 3 =
-      0x02). NO `0x73` readback. Still open: bytes 19/21/22, sub-channel
-      encoding, the un-route/clear frame. See `params.routing.notes` for
-      the 3 captures
+- [~] **Routing** -- captures `matrix-ch3tohpmonreamp` + `matrix-pre1-hp12`
+      + old `matrixtest`. **Confirmed:** opcode `0x53` / param `0xd3`
+      (`frame.routing_command`), byte 17 = `0x41`, byte 18 = destination
+      (1=hp1..5=reamp, a 3rd address space; each dest is a PAIR), **byte 19
+      = sub-channel** (0x00 = L/Reamp1, 0x02 = R/Reamp2), **byte 20 =
+      source** (0-idx input; preamp1=00, preamp3=02, preamp5=04). NO `0x73`
+      readback. **Open:** bytes 21/22 (add=0x02/count?, remove=0x00/0x00),
+      additive vs exclusive, clean un-route, non-preamp sources -- see
+      `params.routing.notes`
       that would finish it.
 - [x] ~~`settigs-thunderb-lat-dccp`~~ -- **DONE.** Zero outgoing frames on
       the HID endpoint. Host-side driver settings, or not exercised.

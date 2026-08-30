@@ -332,16 +332,16 @@ Payload is bytes 16-23 only:
 |---|---|
 | 16 | `0xd3` param |
 | 17 | `0x41` constant (sub-command / "set crosspoint") |
-| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=**Reamp** (a *third* address space -- not the bus ids, not channel indices; more destinations surely exist). Each is a **pair** of physical outputs. |
-| 19 | `0x00` here; `0x00`/`0x02` in the older matrixtest capture -- dest sub-channel? |
-| 20 | **source**, 0-indexed physical input (`0x02` = preamp 3, `0x00` = preamp 1) |
-| 21, 22 | undecoded -- per destination the Launcher sent 2 frames, one per sub-channel of the pair (**L/R** for dests 1-4; **Reamp 1 / Reamp 2** for dest 5 -- the two reamp outs feed separate guitar amps, they're not a stereo pair): one `[21]=0x02 [22]=varies`, one `[21]=0x00 [22]=0x02` |
+| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=**Reamp** (a *third* address space -- not bus ids, not channel indices; more destinations surely exist). Each is a **pair** of physical outputs. |
+| 19 | **destination sub-channel** -- `0x00` = first (L, or Reamp 1), `0x02` = second (R, or Reamp 2). Confirmed: routing preamp 1 to HP1.L then HP1.R changed *only* this byte. |
+| 20 | **source**, 0-indexed physical input (`0x00` = preamp 1, `0x02` = preamp 3, `0x04` = preamp 5) |
+| 21 | undecoded -- `0x02` on a route ADD, `0x00` on a REMOVE |
+| 22 | undecoded -- `0x01` for the first source on a destination; `0x01/0x03/0x01/0x01/0x04` per-destination in the multi-route capture, **consistent with a source count** (routing may sum multiple sources into one output). `0x00` on a REMOVE. |
 
 **No `0x73` readback** -- routing state is invisible in the state report
-(0 bytes changed across 10 routes), same as channel link. To finish
-decoding, see `params.routing.notes` -- needs an isolated one-destination
-sub-channel-A-then-B capture, an un-route capture, and a non-preamp-source
-capture.
+(0 bytes changed across all routes), same as channel link. Still open
+(see `params.routing.notes`): bytes 21/22, whether routing is additive,
+the clean un-route frame, and how non-preamp sources encode.
 
 ---
 
@@ -493,7 +493,7 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | **partly decoded** (§7): dest byte (1-5) + source byte (0-idx input) known; `@19`/`@21`/`@22` and the L/R + un-route encoding still open. No state readback. |
+| Routing frame (`0x53` / `0xd3`) | **partly decoded** (§7): destination `@18`, sub-channel `@19` (L/R), source `@20` all confirmed. `@21`/`@22` (add/remove + source count?), additive-vs-exclusive, and non-preamp sources still open. No state readback. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
