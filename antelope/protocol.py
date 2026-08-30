@@ -200,6 +200,100 @@ def build_link_command(profile: dict, pair_index: int, enabled: bool, space: int
     return bytes(pkt)
 
 
+# ---- routing matrix (frame.routing_command, opcode 0x53) ----
+#
+# EXPERIMENTAL. The routing frame is only partly decoded (see the profile's
+# frame.routing_command). For the 5 simple 2-output destinations
+# (hp1/hp2/mona/monb/reamp) it is understood: a fixed frame
+#   d3 41 <dest> <source_bank> <source_index> <op1> <op2>
+# where (op1,op2) comes from output_ops -- (2,1) for output 1, (0,2) for
+# output 2, (0,0) for remove. Multichannel destinations (line out, ADAT out,
+# ...) use a longer per-channel list that is NOT decoded, so this builder
+# refuses them.
+
+ROUTE_SOURCE_SPECS = {
+    # name: (source_bank, first_index, count, label)
+    'preamp':   (0x00, 0, 12, 'preamp 1-12'),
+    'playback': (0x02, 0, 24, 'computer playback 1-24'),
+    'adat':     (0x03, 0, 16, 'ADAT in 1-16'),
+    'osc':      (0x0c, 0, 2,  'oscillator 1-2'),
+}
+
+
+def resolve_route_source(profile: dict, kind: str, number):
+    """Map a source spec to (bank, index). `kind` is 'preamp'|'playback'|'adat'
+    |'osc' with a 1-based `number`, or 'spdif' with number 'L'/'R'/1/2, or
+    'mute' (number ignored). Raises ValueError on a bad spec."""
+    kind = kind.lower()
+    if kind == 'mute':
+        return 0x0b, 0
+    if kind == 'spdif':
+        n = str(number).strip().lower()
+        idx = {'l': 0, 'r': 1, '1': 0, '2': 1}.get(n)
+        if idx is None:
+            raise ValueError("spdif source needs L or R")
+        return 0x04, idx
+    if kind in ROUTE_SOURCE_SPECS:
+        bank, first, count, label = ROUTE_SOURCE_SPECS[kind]
+        n = int(number)
+        if not (1 <= n <= count):
+            raise ValueError(f"{kind} number {n} out of range 1..{count} ({label})")
+        return bank, first + (n - 1)
+    raise ValueError(f"unknown routing source kind '{kind}' -- "
+                     f"one of: preamp, playback, adat, spdif, osc, mute")
+
+
+def resolve_route_dest(profile: dict, name):
+    """Map a destination name/alias/id to its byte-18 value, restricted to
+    frame.routing_command.addressable_destinations (the 5 the CLI supports)."""
+    f = profile['frame'].get('routing_command', {})
+    addr = f.get('addressable_destinations', {})
+    s = str(name).strip().lower()
+    if s in addr:
+        return int(s)
+    # resolve against the buses 'known' names/aliases, then check it's addressable
+    for id_str, dest_name in addr.items():
+        info = profile.get('buses', {}).get('known', {})
+        # match on the routing dest name or a bus alias for the same output
+        names = [dest_name]
+        for bid, binfo in info.items():
+            if binfo.get('name') == dest_name:
+                names += [binfo.get('name')] + binfo.get('aliases', [])
+        if s in (n.lower() for n in names if n):
+            return int(id_str)
+    choices = ', '.join(f"{i} ({n})" for i, n in addr.items())
+    raise ValueError(f"routing destination '{name}' not addressable by the CLI -- "
+                     f"choose one of: {choices} (multichannel outs like line out / ADAT out "
+                     f"aren't supported -- their frame isn't decoded)")
+
+
+def build_route_command(profile: dict, dest: int, source_bank: int,
+                        source_index: int, output) -> bytes:
+    """Build a routing frame for a simple 2-output destination.
+    `output` is 1, 2, or 'remove'. See the module comment above."""
+    f = profile['frame'].get('routing_command')
+    if not f:
+        raise KeyError('this profile has no frame.routing_command -- routing not available')
+    check_opcode(profile, _as_int(f['opcode']))
+    ops = f['output_ops']
+    key = str(output).lower()
+    if key not in ops:
+        raise ValueError(f"routing output '{output}' -- expected 1, 2, or 'remove'")
+    op1, op2 = ops[key]
+    size = profile['transport']['report_size']
+    pkt = bytearray(size)
+    pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
+    pkt[_as_int(f['opcode_offset'])] = _as_int(f['opcode'])
+    pkt[_as_int(f['param_id_offset'])] = _as_int(f['param_id'])
+    pkt[_as_int(f['subcmd_offset'])] = _as_int(f['subcmd'])
+    pkt[_as_int(f['destination_offset'])] = dest & 0xFF
+    pkt[_as_int(f['source_bank_offset'])] = source_bank & 0xFF
+    pkt[_as_int(f['source_index_offset'])] = source_index & 0xFF
+    pkt[_as_int(f['op1_offset'])] = op1 & 0xFF
+    pkt[_as_int(f['op2_offset'])] = op2 & 0xFF
+    return bytes(pkt)
+
+
 def pair_index_for_channel(channel: int) -> int:
     """channels.link_pairs.formula: pair_index = channel_index // 2. Kept as a
     tiny helper (not read from the profile) since it's arithmetic, not a magic

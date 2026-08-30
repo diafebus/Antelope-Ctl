@@ -57,7 +57,21 @@
       "destination_offset": 18,
       "source_bank_offset": 19,
       "source_index_offset": 20,
-      "op_offset": 21,
+      "op1_offset": 21,
+      "op2_offset": 22,
+      "output_ops": {
+        "1": [2, 1],
+        "2": [0, 2],
+        "remove": [0, 0]
+      },
+      "addressable_destinations": {
+        "1": "headphone_1",
+        "2": "headphone_2",
+        "3": "monitor_a",
+        "4": "monitor_b",
+        "5": "reamp"
+      },
+      "cli_support": "CLI `route` / `unroute` (experimental, 2026-08) build this frame for the 5 addressable_destinations only, using output_ops for bytes 21-22 (op1_offset / op2_offset). Source specs: preamp N -> (0x00,N-1); playback N -> (0x02,N-1); adat N -> (0x03,N-1); spdif L|R -> (0x04,0|1); osc N -> (0x0c,N-1); mute -> (0x0b,0). Multichannel destinations (line_out, adat_out, etc.) are NOT built by the CLI -- they need the undecoded per-channel list.",
       "mono_matrix": "The routing matrix treats EVERY output as an independent mono channel (user-confirmed 2026-08). No stereo-pair concept.",
       "op_bytes": "For SIMPLE 2-output destinations (hp1/hp2/mona/monb/reamp) bytes 21-22 select the OUTPUT and encode the op. CONFIRMED from captures matrix-recapturedA (hp1/hp2/monb output 1), matrix-reamp1-2 (reamp output 2), matrix-ch3tohpmonreamp (both outputs of all 5): \n  * route/SET a source to OUTPUT 1 (L / Reamp 1): `[21]=0x02 [22]=0x01`\n  * route/SET a source to OUTPUT 2 (R / Reamp 2): `[21]=0x00 [22]=0x02`\n  * MUTE: source bank 0x0b idx 0x00, plus the output's `[21] [22]` pair as above\n  * UN-ROUTE: `[21]=0x00 [22]=0x00`, with [19]/[20] = the source being removed\n  * REPLACE a source: just send the new SET frame -- no remove first (exclusive)\n  No per-channel list for these (bytes 23+ zero). CAVEAT: in ch3tohpmonreamp the output-1 SET had `[22]` = 0x01 for hp1/mona/monb but 0x03 for hp2 and 0x04 for reamp -- some per-destination channel numbering not fully understood; the 0x01/0x02 output-1/output-2 pattern holds for hp1/mona/monb and is the working model. reamp1-2 also produced a stray `[21]=0x0b` frame (t=22.7) not explained.",
       "frame_is_a_group_dump": "For MULTICHANNEL destinations only (line_out, adat_out, spdif_out, com_rec, afx_in, the mix channels, surround_in) the frame after byte 20 is NOT the fixed op code above -- it's a VARIABLE-LENGTH LIST of 2-byte entries dumping that group's per-channel routing state (capture matrix-compplay-allouts-1: adat_out -> 15x `03 NN` for NN=1..15; mix_ch3 -> 15x `05 NN` then more; line_out -> a mixed list). Not decoded. Wiring routing to these needs captures that change ONE channel of one such group at a time.",
@@ -705,10 +719,11 @@
     "allowed_opcodes": [
       "0x12",
       "0x13",
-      "0x14"
+      "0x14",
+      "0x53"
     ],
+    "allowed_opcodes_note": "0x53 (SET_ROUTE) added 2026-08 for the experimental CLI `route` command. It is only PARTLY decoded (see frame.routing_command) and the CLI restricts it to the 5 addressable_destinations. Nothing about it looked dangerous in captures, but it has not been round-trip tested against hardware -- treat routing as experimental.",
     "observed_opcodes_launcher_only": [
-      "0x53",
       "0xab"
     ],
     "forbidden_opcodes": [

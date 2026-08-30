@@ -38,7 +38,7 @@ real discriminator (§13).
 
 ## 2. Outgoing command frames (magic `0x70`)
 
-Four opcodes are known. The opcode is at **offset 4**. The param_id is at
+Five opcodes are known. The opcode is at **offset 4**. The param_id is at
 **offset 16** for all of them. What comes after offset 16 depends on the
 opcode -- this is the single most important thing to get right:
 
@@ -47,7 +47,7 @@ opcode -- this is the single most important thing to get right:
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link |
-| `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, `source` @20; `@19`/`@21`/`@22` undecoded | routing matrix (§7) |
+| `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, `source_bank` @19, `source_index` @20, then op bytes / a list -- see §7 | routing matrix |
 | `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
 
 Notes:
@@ -358,6 +358,11 @@ Confirmed across `matrix-recapturedA`, `matrix-reamp1-2`,
 `0x03` for HP2 and `0x04` for Reamp -- a per-destination channel numbering
 not fully understood; `01`/`02` is the working model for HP1/Mon A/Mon B.
 
+The CLI's **`route` / `unroute`** (experimental) build exactly this frame
+for these 5 destinations (`frame.routing_command.output_ops`), and cache
+the result locally for **`matrix-status`** since there's no readback.
+`0x53` is in `constraints.allowed_opcodes` for that -- flagged experimental.
+
 **Multichannel destinations** (line out, ADAT out, S/PDIF out, com rec,
 AFX in, mix channels, surround in) -- bytes 21+ are instead a
 variable-length list dumping that group's per-channel routing (ADAT out →
@@ -464,7 +469,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | talkback_source | `0x27` | `0x12` | - | 0-12 @17 -- `0` = INT (built-in talkback mic behind the physical TB button), `1-12` = preamps 1-12 (user-confirmed) | offset 73 bits 0-1 (low bits only) |
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
-| routing | `0xd3` | `0x53` | ? | multi-byte, undecoded | ? |
+| routing | `0xd3` | `0x53` | destination `@18` | source bank `@19` + index `@20`, then op bytes `@21`/`@22` (simple dests) or a per-channel list (multichannel) -- §7 | none |
 | surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
 | oscillator (matrix insert) | `0xd3` | `0x53` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | none |
 | oscillator (settings panel: freq/level/mute) | - | - | host-side, sends nothing (§11) | none |
@@ -537,7 +542,7 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | **partly decoded** (§7): destination `@18`, source bank `@19` + index `@20`, op `@21` all confirmed; routing is exclusive. Open: the destination sub-channel (L/R) byte, bank `0x0b` (mute?), remaining source banks. No state readback. |
+| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + source bank/index + the simple-destination op bytes all confirmed; CLI `route` covers HP1/HP2/Mon A/Mon B/Reamp. Open: the multichannel per-channel list, source banks `0x01`/`0x05`-`0x0a`, the per-destination `[22]` numbering. No readback. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
@@ -572,7 +577,8 @@ sibling device, folded into `orion_studio_3.json` as `family_notes`,
 - **Never blind-sweep opcodes.** On the Discrete 8 Pro, opcodes `0x01` and
   `0x02` wedged the USB controller unrecoverably (driver rebind and kernel
   port power-cycle both failed; only unplugging the unit's power worked).
-  Send only `constraints.allowed_opcodes` (`0x12`/`0x13`/`0x14`).
+  Send only `constraints.allowed_opcodes` (`0x12`/`0x13`/`0x14`, plus
+  `0x53` for the experimental `route` command).
 - **Out-of-range channel index → firmware BusFault** on the Discrete 8 Pro
   (needs a power cycle). Bound-check against the *right* space: 0-11 for
   channel params, 0-15 for ADAT, `0-5` bus ids for bus params -- and

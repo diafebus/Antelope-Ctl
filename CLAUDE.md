@@ -53,9 +53,15 @@ channels). Routing an already-present source is idempotent (no frame).
       of line out (or adat out) at a time -- decode the variable-length
       per-channel list. Also the virtual-mix additive path (2-3 sources
       into mix ch1, keeping all).
-- [ ] **wire `route` / `unroute` / `matrix-status`** into the CLI for the
-      simple destinations (hp1/hp2/mona/monb/reamp), experimental, user
-      tests live. `0x53` needs adding to `constraints.allowed_opcodes`.
+- [x] ~~**wire `route` / `unroute` / `matrix-status`** into the CLI~~ --
+      **DONE (2026-08), experimental.** `protocol.build_route_command` +
+      `resolve_route_source` / `resolve_route_dest`; CLI `route <dest>
+      <output> <source>`, `unroute`, `matrix-status` (local cache, no
+      readback). Only hp1/hp2/mona/monb/reamp. `0x53` added to
+      `constraints.allowed_opcodes` (flagged experimental). Frame builds
+      verified against all 4 confirmed capture patterns.
+      **NOT round-trip tested against hardware yet** -- user to test:
+      `antelope-ctl route hp1 L preamp3` then check the Launcher.
 
 ### Other captures to record (hardware)
 

@@ -114,6 +114,36 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mute hp1 
 python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mono hp2 off
 ```
 
+### Routing matrix (EXPERIMENTAL)
+
+The routing matrix (opcode `0x53`) is **only partly reverse-engineered**
+and has **no device readback**. The CLI can build routing commands for the
+five simple two-output destinations only -- **HP1, HP2, Monitor A, Monitor
+B, Reamp** -- and you should always verify the result in the official
+Launcher, because nothing is confirmed after sending.
+
+```
+python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp1 L preamp3    # preamp 3 -> HP1 left
+python3 -m antelope.cli --profile profiles/orion_studio_3.json route reamp 2 playback1 # playback 1 -> Reamp 2
+python3 -m antelope.cli --profile profiles/orion_studio_3.json route mona R mute       # silence Monitor A right
+python3 -m antelope.cli --profile profiles/orion_studio_3.json unroute hp1 L preamp3   # remove that source
+python3 -m antelope.cli --profile profiles/orion_studio_3.json matrix-status           # what THIS CLI has routed
+```
+
+- **Source spec:** `preampN` (1-12), `playbackN` (computer playback 1-24),
+  `adatN` (1-16), `spdifL`/`spdifR`, `oscN` (1-2), or `mute`.
+- **Output:** `1` / `L` = first output; `2` / `R` = second (for Reamp, that's
+  Reamp 1 / Reamp 2 -- they're two independent mono outs, not a stereo pair).
+- **Routing is exclusive** -- `route` replaces whatever that output currently
+  has. To silence an output, route `mute`.
+- **`matrix-status` is a local cache**, not a device readback -- it only shows
+  what `route`/`unroute` sent from this CLI, and goes stale if you change
+  routing in the Launcher.
+- Line out, ADAT out, S/PDIF out, com rec, AFX in, the mix channels and
+  surround in use a different (undecoded) frame and are **not** supported.
+
+See `PROTOCOL.md` §7 and `frame.routing_command` in the profile.
+
 ### Buses vs. channels
 
 The SET_PARAM command frame has one byte (`channel_offset`) that means
@@ -195,14 +225,15 @@ confirm, only then trust it. Nothing is inferred from byte patterns alone.
    an untrusted source: on the sibling Discrete 8 Pro, opcodes `0x01`/`0x02`
    and out-of-range indices wedged/BusFaulted the unit (see
    `profile["hazards"]` and `PROTOCOL.md` §13).
-7. **Don't assume routing (or anything else new) fits the same frame shape.**
-   A source x destination matrix likely needs a different opcode or a
-   multi-byte payload -- confirm the actual shape from a capture first. If
-   it turns out to need a new frame type, add a new block under `"frame"` in
-   the profile (e.g. `"frame.routing_command"`, following the same pattern
-   as `"frame.link_command"`) rather than overloading the existing
-   `SET_PARAM` shape to fit. Add a matching `build_*_command()` function to
-   `antelope/protocol.py` alongside `build_link_command()`.
+7. **Don't assume a new feature fits the SET_PARAM shape.** Five opcodes
+   are known now (`0x12`/`0x13`/`0x14`/`0x53`/`0xab`), each with its own
+   frame block under `"frame"` and its own `build_*_command()` in
+   `protocol.py`. Routing (`0x53` / `frame.routing_command`) is the worked
+   example: a distinct opcode, and for multichannel destinations a
+   variable-length per-channel list instead of a fixed payload -- a
+   state-report diff alone would never have shown that. Confirm the shape
+   from a capture; add a new `"frame"` block and builder rather than
+   bending an existing one.
 8. Once confirmed, flip `"status"` to `"confirmed"`, add real ranges/enums,
    and add a proper subcommand to `antelope/cli.py` if it deserves one
    (or leave it on `raw-set` if it's rarely used).
