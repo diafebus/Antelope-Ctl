@@ -235,47 +235,55 @@ L=preamp3, R=preamp4 (old code swapped them).
 
 ## Right now (update me each session)
 
-- Routing matrix is the active thread. **Frame model now decoded** for
+- Working tree clean at commit `7d0226b`.
+- Routing matrix is the active thread. **Frame model decoded** for
   2-channel destinations (array of (bank,idx) pairs, one per output
-  channel). CLI rewritten: `route <dest> <L> <R>`. Still not
-  hardware-tested; the old code swapped L/R (user-observed).
-- **CAPTURE E answered (2026-08-30):** no routing readback in the connect
-  sequence -- BUT one must exist (user: routing survived a Windows->macOS
-  switch). Undecoded; next attempt = CAPTURE E' (routing-tab open).
+  channel, stride 2 from byte 19). CLI rewritten:
+  `route <dest> <Lsrc> [<Rsrc>]` / `matrix-status`. **Not hardware-tested
+  yet** -- user to run `route hp1 preamp3 preamp4` and check the Launcher
+  shows L=preamp3 R=preamp4 (old code swapped them).
+- **CAPTURE E answered:** no routing readback in the connect sequence --
+  BUT one must exist (user: routing survived a Windows->macOS switch).
+  Undecoded; next attempt = CAPTURE E' (routing-tab open).
 - **Screen brightness decoded:** `0x12`/`0x0e`/0-100, readback `0x73` @26.
-  VM artifact -- VM Launcher no-ops the slider.
+  Not in the CLI yet (needs `build_global_command`).
 - Multichannel routing (line out etc.): model known, channel counts not.
   All macOS `macos-matrix-*` files except `-hp1L`/`-hp1R` have **no OUT
   frames** (only endpoint .2 captured) -> unusable, need recapture.
-- Also pending: CAPTURE E', C, D; `route` hardware round-trip test; wire
-  `build_global_command` + `set-brightness`.
+- Pending: `route` hardware round-trip test; CAPTURE E' / C / D; wire
+  `build_global_command` + a `set-brightness` command.
 
 ## Session log
 
-- **2026-08-30 (c)** -- Routing frame model CORRECTED from
-  `macos-matrix-ch1-12-mute-hp1L`/`-hp1R`: after byte 18 it's an array of
-  (source_bank, source_index) pairs, one per output channel, stride 2 --
-  NO "op bytes" (`00 02` was literally preamp 3 = the untouched other
-  channel). This was the L/R-swap bug the user hit. Rewrote
-  `build_route_command` + CLI `route`/`matrix-status`; frame builds
-  verified byte-exact vs the captures. `route <dest> <L> [<R>]`; dropped
-  `unroute` (Launcher has no un-route -- replace or mute; user-noted).
-  Renamed source `playback` -> `compplay` (alias kept). Old flat matrix
-  cache auto-dropped.
-- **2026-08-30 (b)** -- macOS captures. CAPTURE E: no routing readback in
-  the connect sequence (on2/on3 swapped LineOut routing -> connect diffs
-  to nothing routing-related), but user evidence (routing survived a
-  Windows->macOS host switch) proves a readback exists -> undecoded, try
-  CAPTURE E'. Connect handshake = one `SET_PARAM(0x49,ch1,0)`
-  (cross-platform). **Screen brightness decoded** from
-  `macos-scrbrght-0-100-50-multvalue`: `0x12`/`0x0e`/0-100, readback @26;
-  VM had shown nothing only because the VM Launcher no-ops it. Documented
-  macOS Darwin capture format. Added `tools/scan_macos_capture.py`.
-- **2026-08-30 (a)** -- Decoded routing matrix destinations 0-14 + source
-  banks from `matrix-*` captures; shipped experimental `route` /
-  `matrix-status`. (The "op bytes" part was wrong -- see (c).) Confirmed
-  channel link is software-only via the hardware-wheel test. Checked
-  `AntelopeINIT.pcapng` for routing readback -- none. Created this file.
+- **2026-08-30 (macOS-captures session)** -- Worked the native-macOS
+  capture batch. Commits `213e42f`, `3e0ef09`, `6176e95`, `7d0226b`.
+  1. **CAPTURE E**: no routing readback in the *connect* sequence
+     (`macos-antelopeINIT-poweroff-on2/on3`, swapped LineOut routing ->
+     connect diffs to nothing routing-related). BUT the user reports
+     routing survived a Windows-VM -> macOS host switch, so a device
+     readback DOES exist -- undecoded, next try = CAPTURE E' (routing-tab
+     open). Connect handshake = one `SET_PARAM(0x49,ch1,0)`, cross-platform.
+  2. **Screen brightness decoded** (`macos-scrbrght-0-100-50-multvalue`):
+     `global_command 0x12` / param `0x0e` / value 0-100, readback `0x73`
+     offset 26. VM had shown nothing only because the VM Launcher no-ops
+     the slider -- so "zero frames under the VM" != host-side.
+  3. **Routing frame model CORRECTED** (`macos-matrix-ch1-12-mute-hp1L`/
+     `-hp1R`): after byte 18 it's an array of (source_bank, source_index)
+     pairs, one per output channel, stride 2 -- NO "op bytes" (`00 02` was
+     literally preamp 3 = the untouched other channel). That was the
+     L/R-swap bug the user hit on the Windows Launcher. Rewrote
+     `build_route_command` + CLI `route <dest> <L> [<R>]` / `matrix-status`
+     (frames verified byte-exact vs the captures). Dropped `unroute`
+     (Launcher has no un-route). Renamed routing source `playback` ->
+     `compplay` (alias kept).
+  4. Added `tools/scan_macos_capture.py`; documented the Darwin XHC
+     format. NOTE: every macOS `macos-matrix-*` file except `-hp1L`/`-hp1R`
+     is missing the OUT endpoint -> unusable for command decoding.
+- **2026-08-30 (routing-decode session)** -- Decoded routing matrix
+  destinations 0-14 + source banks from Windows `matrix-*` captures;
+  shipped the first experimental `route` / `matrix-status`. (Its "op
+  bytes" model was wrong -- fixed in the session above.) Confirmed channel
+  link is software-only via the hardware-wheel test. Created this file.
 - **earlier (2026-08)** -- Talkback fully decoded (`0x12` / `0x13`).
   Bus ids 3/4 = line out / reamp. Output trim (`0x4b`). S/PDIF gain +
   link, discovered SET_LINK `space` byte. `0x74` = init topology enum.
