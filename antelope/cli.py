@@ -43,15 +43,16 @@ S/PDIF input controls (2 channels, 0 = L / 1 = R; gain + link only):
                                                                             # no cross-space
                                                                             # ambiguity)
 
-Routing matrix -- EXPERIMENTAL (only hp1/hp2/mona/monb/reamp; the frame is
-only partly reverse-engineered and there is NO device readback, so these
-send a best-guess command you should verify in the Launcher):
+Routing matrix -- EXPERIMENTAL (only hp1/hp2/mona/monb/reamp). The wire
+frame carries the WHOLE destination every time. Like the Antelope Launcher
+there is no "un-route" -- you replace a channel's source or set it to
+`mute`. There is NO device readback yet, so verify in the Launcher:
 
-    antelope-ctl --profile profiles/orion_studio_3.json route hp1 L preamp3   # preamp 3 -> HP1 left
-    antelope-ctl --profile profiles/orion_studio_3.json route reamp 2 playback1
-    antelope-ctl --profile profiles/orion_studio_3.json route mona R mute
-    antelope-ctl --profile profiles/orion_studio_3.json unroute hp1 L preamp3
-    antelope-ctl --profile profiles/orion_studio_3.json matrix-status         # CLI-cached routes only
+    antelope-ctl --profile profiles/orion_studio_3.json route hp1 preamp3 preamp4   # L=preamp3, R=preamp4
+    antelope-ctl --profile profiles/orion_studio_3.json route hp2 compplay5 compplay6
+    antelope-ctl --profile profiles/orion_studio_3.json route mona preamp1          # set L, keep R from cache
+    antelope-ctl --profile profiles/orion_studio_3.json route hp1 mute              # mute every channel
+    antelope-ctl --profile profiles/orion_studio_3.json matrix-status              # CLI-cached routes only
 
 Output-bus controls (monitor A/B, headphone 1/2 -- NOT the same "channel"
 numbers as inputs above; buses accept either their numeric id or a name,
@@ -919,123 +920,132 @@ def cmd_mark_spdif_link(args, profile):
 
 # ---- subcommands: routing matrix (EXPERIMENTAL) ----
 #
-# Only the 5 simple 2-output destinations (hp1/hp2/mona/monb/reamp) are
-# supported -- their frame is decoded (frame.routing_command.op_bytes).
-# There is NO device readback for routing, so `matrix-status` shows only a
-# local cache of what THIS CLI has sent, exactly like the link-state cache.
-# Routing is partly reverse-engineered -- treat these commands as a live
-# test against the device, not a settled feature.
+# Only the 5 two-channel destinations (hp1/hp2/mona/monb/reamp) are wired
+# in. The frame model is decoded (frame.routing_command.frame_model): after
+# byte 18 it's an array of (source_bank, source_index) pairs, one per output
+# channel of the destination group -- so the WHOLE group is sent every time,
+# and to change one channel we must resend the others. There is NO device
+# readback yet (frame.routing_command has none; see params.routing.readback),
+# so `matrix-status` shows only a local cache of what THIS CLI last sent,
+# and `keep` for a channel reads from that cache. Like the Launcher there is
+# no un-route: replace a source or set it to mute.
 
 def _matrix_state_path(profile):
     return _link_state_path(profile, 'matrix')
 
 
 def _load_matrix_state(profile):
+    """Return {dest_id_str: {chan_str: {'bank':int,'idx':int,'label':str}}}.
+    Silently drops anything not in that shape (e.g. the pre-2026-08 flat
+    `{"1.1": "preamp 3"}` cache written by the old buggy route builder)."""
     path = _matrix_state_path(profile)
     if not path or not os.path.exists(path):
         return {}
     try:
         with open(path) as f:
-            return json.load(f).get('routes', {})
+            raw = json.load(f).get('routes', {})
     except (OSError, ValueError):
         return {}
+    out = {}
+    for d, chans in (raw.items() if isinstance(raw, dict) else []):
+        if isinstance(chans, dict) and all(
+                isinstance(v, dict) and 'bank' in v and 'idx' in v for v in chans.values()):
+            out[d] = chans
+    return out
 
 
-def _save_matrix_route(profile, key, value):
+def _save_matrix_dest(profile, dest, channels):
+    """channels: ordered list of (bank, idx) -- the whole group, as just sent."""
     path = _matrix_state_path(profile)
     if not path:
         return
     routes = _load_matrix_state(profile)
-    if value is None:
-        routes.pop(key, None)
-    else:
-        routes[key] = value
+    routes[str(dest)] = {
+        str(c): {'bank': b, 'idx': i,
+                 'label': proto.route_source_label(profile, b, i)}
+        for c, (b, i) in enumerate(channels)
+    }
     try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w') as f:
-            json.dump({'routes': routes, 'source': 'cli-issued routing commands only, not a device readback'}, f)
+            json.dump({'routes': routes,
+                       'source': 'cli-issued routing commands only, not a device readback'}, f)
     except OSError:
         pass
 
 
 def _parse_route_source(token):
-    """'preamp3' -> ('preamp', 3); 'spdifL' -> ('spdif', 'L'); 'mute' -> ('mute', None);
-    'none' -> ('none', None). Returns (kind, number)."""
-    t = token.strip().lower()
-    if t in ('mute', 'none', 'off'):
-        return ('none' if t in ('none', 'off') else 'mute'), None
-    m = re.match(r'^([a-z]+?)[\s:_-]*([0-9]+|[lr])$', t)
+    """'preamp3' -> ('preamp', '3'); 'spdifL' -> ('spdif', 'L'); 'mute' -> ('mute', None);
+    'keep' -> ('keep', None). Returns (kind, number)."""
+    t = re.sub(r'[\s:_-]+', '', token.strip().lower())  # "comp play 2" -> "compplay2"
+    if t in ('mute', 'off'):
+        return 'mute', None
+    if t in ('keep', 'same', ''):
+        return 'keep', None
+    m = re.match(r'^([a-z]+?)([0-9]+|[lr])$', t)
     if not m:
         raise SystemExit(f"can't parse routing source '{token}' -- "
-                         f"try preamp3 / playback1 / adat5 / spdifL / osc1 / mute / none")
+                         f"try preamp3 / compplay1 / adat5 / spdifL / osc1 / mute / keep")
     return m.group(1), m.group(2)
 
 
-def _parse_output(token):
-    t = str(token).strip().lower()
-    return {'1': 1, 'l': 1, '2': 2, 'r': 2}.get(t)
-
-
-def _route_source_label(kind, number):
-    if kind == 'mute':
-        return 'MUTE'
-    if kind == 'spdif':
-        return f'spdif {str(number).upper()}'
-    return f'{kind} {number}'
+def _route_channel_tuple(profile, token, dest, chan, cache):
+    """Resolve one channel's source to (bank, idx). `keep` -> the cached value
+    for (dest, chan), erroring if there is none."""
+    kind, number = _parse_route_source(token)
+    if kind == 'keep':
+        c = cache.get(str(dest), {}).get(str(chan))
+        if not c:
+            sys.exit(f"'keep' for channel {chan}: this CLI has no cached source for it "
+                     f"(no device readback yet). Pass an explicit source for both channels "
+                     f"the first time.")
+        return c['bank'], c['idx']
+    try:
+        return proto.resolve_route_source(profile, kind, number)
+    except ValueError as e:
+        sys.exit(str(e))
 
 
 def cmd_route(args, profile):
-    """Route a source to one output of a simple destination (hp1/hp2/mona/monb/reamp).
+    """Set the sources of a 2-channel destination (hp1/hp2/mona/monb/reamp).
 
-    EXPERIMENTAL -- the routing frame is only partly decoded. There is no
-    device readback, so nothing is verified after sending; check the result
-    in the Launcher / on the hardware. Routing is exclusive (this replaces
-    whatever source that output currently has).
+    EXPERIMENTAL. The wire frame carries the WHOLE destination group every
+    time. Like the Antelope Launcher there is no "un-route": you either
+    replace a channel's source or set it to `mute`. Give both channels
+    (`route hp1 <Lsource> <Rsource>`); omit the second to keep it, or use
+    `keep` / `mute` explicitly. `mute` alone (`route hp1 mute`) mutes every
+    channel. `keep` needs a cached value -- there is no device readback.
     """
     dest = _resolve_route_dest_cli(profile, args.destination)
-    out = _parse_output(args.output)
-    if out is None:
-        sys.exit(f"output '{args.output}' -- expected 1/L or 2/R")
-    kind, number = _parse_route_source(args.source)
-    if kind == 'none':
-        sys.exit("to un-route, use `unroute <dest> <output> <source>` (the frame needs the "
-                 "source being removed, and there's no readback to look it up)")
-    try:
-        bank, idx = proto.resolve_route_source(profile, kind, number)
-    except ValueError as e:
-        sys.exit(str(e))
+    nchan = profile['frame'].get('routing_command', {}).get('addressable_destination_channels', 2)
+    mute = tuple(profile['frame']['routing_command'].get('mute_source', [11, 0]))
+    cache = _load_matrix_state(profile)
 
-    label = _route_source_label(kind, number)
-    outname = 'output 1 (L / Reamp 1)' if out == 1 else 'output 2 (R / Reamp 2)'
-    print(f'routing {label} -> {args.destination} {outname}  (EXPERIMENTAL, no readback -- '
-          f'verify in the Launcher)')
+    right = args.right
+    if right is None:
+        # `route hp1 mute` -> mute all channels; `route hp1 preamp3` -> keep the rest
+        right = 'mute' if _parse_route_source(args.left)[0] == 'mute' else 'keep'
+        if right == 'mute':
+            chans = [mute] * nchan
+        else:
+            chans = [_route_channel_tuple(profile, args.left, dest, 0, cache)]
+            chans += [_route_channel_tuple(profile, 'keep', dest, i, cache)
+                      for i in range(1, nchan)]
+    else:
+        toks = [args.left, right][:nchan]
+        chans = [_route_channel_tuple(profile, t, dest, i, cache) for i, t in enumerate(toks)]
+
+    labels = [proto.route_source_label(profile, b, i) for b, i in chans]
+    print(f'routing {args.destination}:  ' +
+          '   '.join(f'ch{i}/{("L","R")[i] if i < 2 else i} = {lab}'
+                     for i, lab in enumerate(labels)) +
+          '  (EXPERIMENTAL, no readback -- verify in the Launcher)')
     transport = get_transport(profile)
-    pkt = proto.build_route_command(profile, dest, bank, idx, out)
+    pkt = proto.build_route_command(profile, dest, chans)
     send_and_wait(transport, pkt, delay=0.3)
-    _save_matrix_route(profile, f'{dest}.{out}', label)
-    print(f'sent: {pkt[16:23].hex()}  (cached locally -- see `matrix-status`)')
-
-
-def cmd_unroute(args, profile):
-    """Remove a specific source from one output. The routing frame carries the
-    source being removed, and there's no readback, so you must name it."""
-    dest = _resolve_route_dest_cli(profile, args.destination)
-    out = _parse_output(args.output)
-    if out is None:
-        sys.exit(f"output '{args.output}' -- expected 1/L or 2/R")
-    kind, number = _parse_route_source(args.source)
-    if kind in ('mute', 'none'):
-        sys.exit("unroute needs a real source (the one to remove), not mute/none")
-    try:
-        bank, idx = proto.resolve_route_source(profile, kind, number)
-    except ValueError as e:
-        sys.exit(str(e))
-    label = _route_source_label(kind, number)
-    print(f'un-routing {label} from {args.destination} output {out}  (EXPERIMENTAL)')
-    transport = get_transport(profile)
-    pkt = proto.build_route_command(profile, dest, bank, idx, 'remove')
-    send_and_wait(transport, pkt, delay=0.3)
-    _save_matrix_route(profile, f'{dest}.{out}', None)
-    print(f'sent: {pkt[16:23].hex()}')
+    _save_matrix_dest(profile, dest, chans)
+    end = 19 + 2 * len(chans)
+    print(f'sent: {pkt[16:end].hex()}  (cached locally -- see `matrix-status`)')
 
 
 def cmd_matrix_status(args, profile):
@@ -1044,13 +1054,14 @@ def cmd_matrix_status(args, profile):
     routes = _load_matrix_state(profile)
     if not routes:
         print('no routes cached by this CLI yet. (Routing has no device readback -- '
-              '`matrix-status` only shows what `route`/`unroute` have sent from here.)')
+              '`matrix-status` only shows what `route` has sent from here.)')
         return
-    print(f"{'destination':<14} {'output':<8} {'source (CLI-cached)'}")
-    for key, label in sorted(routes.items()):
-        d, o = key.split('.')
+    print(f"{'destination':<14} {'channel':<10} {'source (CLI-cached)'}")
+    for d in sorted(routes, key=lambda x: int(x) if x.isdigit() else x):
         name = addr.get(d, f'dest{d}')
-        print(f"{name:<14} {('1 (L)' if o == '1' else '2 (R)'):<8} {label}")
+        for c in sorted(routes[d], key=lambda x: int(x) if x.isdigit() else x):
+            cname = {'0': '0 (L)', '1': '1 (R)'}.get(c, c)
+            print(f"{name:<14} {cname:<10} {routes[d][c].get('label', '?')}")
     print('note: local cache only -- can be stale if routing changed via the Launcher.')
 
 
@@ -1365,22 +1376,15 @@ def main():
     sp.set_defaults(func=cmd_mark_spdif_link)
 
     sp = sub.add_parser('route',
-                         help='EXPERIMENTAL: route a source to one output of hp1/hp2/mona/monb/reamp '
-                              '(routing is only partly decoded, no device readback -- verify in the Launcher)')
+                         help='EXPERIMENTAL: set the sources of hp1/hp2/mona/monb/reamp '
+                              '(whole destination sent every time; no device readback -- verify in the Launcher)')
     sp.add_argument('destination', help='hp1 | hp2 | mona | monb | reamp (or 1-5)')
-    sp.add_argument('output', help='1 or L = first output; 2 or R = second (Reamp 1 / Reamp 2)')
-    sp.add_argument('source', help='preamp3 | playback1 | adat5 | spdifL | osc1 | mute')
+    sp.add_argument('left', help='ch0 / L / Reamp 1 source: preamp3 | compplay1 | adat5 | spdifL | osc1 | mute | keep')
+    sp.add_argument('right', nargs='?', default=None,
+                    help='ch1 / R / Reamp 2 source (same forms). Omit to keep it; '
+                         '`route <dest> mute` mutes every channel. Like the Launcher there is no "unroute".')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_route)
-
-    sp = sub.add_parser('unroute',
-                         help='EXPERIMENTAL: remove a named source from one output (you must name the source -- '
-                              'no readback to look it up)')
-    sp.add_argument('destination', help='hp1 | hp2 | mona | monb | reamp')
-    sp.add_argument('output', help='1/L or 2/R')
-    sp.add_argument('source', help='the source to remove, e.g. preamp3')
-    sp.add_argument('--timeout', type=float, default=3.0)
-    sp.set_defaults(func=cmd_unroute)
 
     sp = sub.add_parser('matrix-status',
                          help='show the routes THIS CLI has sent (local cache, NOT a device readback)')

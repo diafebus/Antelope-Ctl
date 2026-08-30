@@ -202,50 +202,85 @@ def build_link_command(profile: dict, pair_index: int, enabled: bool, space: int
 
 # ---- routing matrix (frame.routing_command, opcode 0x53) ----
 #
-# EXPERIMENTAL. The routing frame is only partly decoded (see the profile's
-# frame.routing_command). For the 5 simple 2-output destinations
-# (hp1/hp2/mona/monb/reamp) it is understood: a fixed frame
-#   d3 41 <dest> <source_bank> <source_index> <op1> <op2>
-# where (op1,op2) comes from output_ops -- (2,1) for output 1, (0,2) for
-# output 2, (0,0) for remove. Multichannel destinations (line out, ADAT out,
-# ...) use a longer per-channel list that is NOT decoded, so this builder
-# refuses them.
+# EXPERIMENTAL, but the frame model is now understood (macOS captures
+# ch1-12-mute-hp1L / -hp1R, 2026-08):
+#
+#   d3 41 <dest> | <bank0> <idx0> | <bank1> <idx1> | <bank2> <idx2> | ...
+#
+# The frame carries the WHOLE destination group's per-channel routing, one
+# (bank, index) pair per output channel, starting at channel_list_offset
+# (19) with channel_stride (2). Channel 0 = L / output 1 / Reamp 1;
+# channel 1 = R / output 2 / Reamp 2; multichannel groups (line out = 12,
+# ADAT out = 16, ...) just have more pairs. There are NO separate "op
+# bytes" -- the old output_ops model was a misread of the OTHER channel's
+# unchanged (bank, index).
+#
+# Consequence: to change one channel you must resend every channel of the
+# group. There is still no device readback, so the CLI must be told (or
+# have cached) every channel it isn't changing -- see cli.cmd_route. mute
+# is the pseudo-source (bank 0x0b, index 0); there is no "no source".
 
 ROUTE_SOURCE_SPECS = {
-    # name: (source_bank, first_index, count, label)
+    # canonical name: (source_bank, first_index, count, label)
     'preamp':   (0x00, 0, 12, 'preamp 1-12'),
-    'playback': (0x02, 0, 24, 'computer playback 1-24'),
+    'compplay': (0x02, 0, 24, 'computer playback 1-24'),
     'adat':     (0x03, 0, 16, 'ADAT in 1-16'),
     'osc':      (0x0c, 0, 2,  'oscillator 1-2'),
 }
 
+# accepted spellings -> canonical key
+ROUTE_SOURCE_ALIASES = {
+    'compplay': 'compplay', 'comp': 'compplay', 'compplayback': 'compplay',
+    'playback': 'compplay', 'daw': 'compplay', 'usb': 'compplay',
+    'preamp': 'preamp', 'pre': 'preamp', 'mic': 'preamp',
+    'adat': 'adat',
+    'osc': 'osc', 'oscillator': 'osc',
+}
+
+ROUTE_MUTE = (0x0b, 0)
+
 
 def resolve_route_source(profile: dict, kind: str, number):
-    """Map a source spec to (bank, index). `kind` is 'preamp'|'playback'|'adat'
-    |'osc' with a 1-based `number`, or 'spdif' with number 'L'/'R'/1/2, or
-    'mute' (number ignored). Raises ValueError on a bad spec."""
+    """Map a source spec to (bank, index). `kind` is
+    'preamp'|'compplay'|'adat'|'osc' (aliases in ROUTE_SOURCE_ALIASES) with a
+    1-based `number`, or 'spdif' with number 'L'/'R'/1/2, or 'mute' (number
+    ignored). Raises ValueError on a bad spec."""
     kind = kind.lower()
     if kind == 'mute':
-        return 0x0b, 0
+        return ROUTE_MUTE
     if kind == 'spdif':
         n = str(number).strip().lower()
         idx = {'l': 0, 'r': 1, '1': 0, '2': 1}.get(n)
         if idx is None:
             raise ValueError("spdif source needs L or R")
         return 0x04, idx
-    if kind in ROUTE_SOURCE_SPECS:
-        bank, first, count, label = ROUTE_SOURCE_SPECS[kind]
+    canon = ROUTE_SOURCE_ALIASES.get(kind, kind)
+    if canon in ROUTE_SOURCE_SPECS:
+        bank, first, count, label = ROUTE_SOURCE_SPECS[canon]
         n = int(number)
         if not (1 <= n <= count):
-            raise ValueError(f"{kind} number {n} out of range 1..{count} ({label})")
+            raise ValueError(f"{canon} number {n} out of range 1..{count} ({label})")
         return bank, first + (n - 1)
     raise ValueError(f"unknown routing source kind '{kind}' -- "
-                     f"one of: preamp, playback, adat, spdif, osc, mute")
+                     f"one of: preamp, compplay, adat, spdif, osc, mute")
+
+
+def route_source_label(profile: dict, bank: int, index: int) -> str:
+    """Reverse of resolve_route_source: (bank, index) -> a human label like
+    'compplay 5' or 'MUTE', for showing a decoded/cached route."""
+    if (bank, index) == ROUTE_MUTE:
+        return 'MUTE'
+    if bank == 0x04:
+        return f"spdif {'L' if index == 0 else 'R'}"
+    for name, (b, first, count, _label) in ROUTE_SOURCE_SPECS.items():
+        if b == bank and first <= index < first + count:
+            return f'{name} {index - first + 1}'
+    return f'bank 0x{bank:02x} idx {index}'
 
 
 def resolve_route_dest(profile: dict, name):
     """Map a destination name/alias/id to its byte-18 value, restricted to
-    frame.routing_command.addressable_destinations (the 5 the CLI supports)."""
+    frame.routing_command.addressable_destinations (the ones the CLI supports)."""
     f = profile['frame'].get('routing_command', {})
     addr = f.get('addressable_destinations', {})
     s = str(name).strip().lower()
@@ -254,7 +289,6 @@ def resolve_route_dest(profile: dict, name):
     # resolve against the buses 'known' names/aliases, then check it's addressable
     for id_str, dest_name in addr.items():
         info = profile.get('buses', {}).get('known', {})
-        # match on the routing dest name or a bus alias for the same output
         names = [dest_name]
         for bid, binfo in info.items():
             if binfo.get('name') == dest_name:
@@ -264,33 +298,33 @@ def resolve_route_dest(profile: dict, name):
     choices = ', '.join(f"{i} ({n})" for i, n in addr.items())
     raise ValueError(f"routing destination '{name}' not addressable by the CLI -- "
                      f"choose one of: {choices} (multichannel outs like line out / ADAT out "
-                     f"aren't supported -- their frame isn't decoded)")
+                     f"aren't supported yet -- their channel count isn't captured)")
 
 
-def build_route_command(profile: dict, dest: int, source_bank: int,
-                        source_index: int, output) -> bytes:
-    """Build a routing frame for a simple 2-output destination.
-    `output` is 1, 2, or 'remove'. See the module comment above."""
+def build_route_command(profile: dict, dest: int, channels) -> bytes:
+    """Build a routing frame. `channels` is an ordered list of (bank, index)
+    tuples -- one per output channel of the destination GROUP, in channel
+    order (0 = L / output 1, 1 = R / output 2, ...). The whole group is
+    always sent; there is no way to address a single channel on the wire.
+    Use resolve_route_source() / ROUTE_MUTE to build the tuples."""
     f = profile['frame'].get('routing_command')
     if not f:
         raise KeyError('this profile has no frame.routing_command -- routing not available')
     check_opcode(profile, _as_int(f['opcode']))
-    ops = f['output_ops']
-    key = str(output).lower()
-    if key not in ops:
-        raise ValueError(f"routing output '{output}' -- expected 1, 2, or 'remove'")
-    op1, op2 = ops[key]
+    base = _as_int(f['channel_list_offset'])
+    stride = _as_int(f['channel_stride'])
     size = profile['transport']['report_size']
+    if base + stride * len(channels) > size:
+        raise ValueError(f'routing frame: {len(channels)} channels overflow the {size}-byte report')
     pkt = bytearray(size)
     pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
     pkt[_as_int(f['opcode_offset'])] = _as_int(f['opcode'])
     pkt[_as_int(f['param_id_offset'])] = _as_int(f['param_id'])
     pkt[_as_int(f['subcmd_offset'])] = _as_int(f['subcmd'])
     pkt[_as_int(f['destination_offset'])] = dest & 0xFF
-    pkt[_as_int(f['source_bank_offset'])] = source_bank & 0xFF
-    pkt[_as_int(f['source_index_offset'])] = source_index & 0xFF
-    pkt[_as_int(f['op1_offset'])] = op1 & 0xFF
-    pkt[_as_int(f['op2_offset'])] = op2 & 0xFF
+    for c, (bank, index) in enumerate(channels):
+        pkt[base + stride * c] = bank & 0xFF
+        pkt[base + stride * c + 1] = index & 0xFF
     return bytes(pkt)
 
 

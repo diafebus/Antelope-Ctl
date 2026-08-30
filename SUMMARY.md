@@ -61,7 +61,7 @@ Wireshark/USBPcap captures, and building a **stdlib-only Python CLI**
 | `0x13` | SET_PARAM | param@16, channel@17, value@18 |
 | `0x12` | SET_GLOBAL | param@16, value@17 (no channel) -- talkback_*, screen_brightness (`0x0e`, 0-100, readback @26) |
 | `0x14` | SET_LINK | `0xa2`@16, space@17, pair@18, enabled@19 |
-| `0x53` | SET_ROUTE | `0xd3`@16, `0x41`@17, dest@18, src_bank@19, src_idx@20, op bytes @21/@22 or a list |
+| `0x53` | SET_ROUTE | `0xd3`@16, `0x41`@17, dest group@18, then (bank,idx) pair per output channel from @19 stride 2 |
 | `0xab` | surround-EQ | `0xeb`@16 -- barely decoded, needs a capture |
 
 Outgoing frames use magic `0x70` @0 (cosmetic -- device ignores byte 0
@@ -134,31 +134,33 @@ linked channels. The Launcher sends two SET_PARAM frames.
 linked channel moves only that channel. The CLI mirrors to the partner
 host-side, exactly like the Launcher.
 
-### Routing matrix (opcode `0x53`) -- PARTLY decoded, active thread
-- byte 18 = **destination**, full map: `0`=line out, `1`=hp1, `2`=hp2,
-  `3`=mona, `4`=monb, `5`=reamp, `6`=com rec, `7`=adat out,
+### Routing matrix (opcode `0x53`) -- FRAME MODEL DECODED (2-channel), active thread
+- `d3 41 <dest> | <bank0> <idx0> | <bank1> <idx1> | ...` -- after byte 18,
+  an **array of (source_bank, source_index) pairs**, one per output
+  channel of the destination group, from byte 19, **stride 2**.
+  ch0 = L/out1/Reamp1 = bytes (19,20); ch1 = R/out2/Reamp2 = (21,22).
+- byte 18 = **destination group**, full map: `0`=line out, `1`=hp1,
+  `2`=hp2, `3`=mona, `4`=monb, `5`=reamp, `6`=com rec, `7`=adat out,
   `8`=spdif out, `9`=afx in, `10`=mix ch1, `11`=mix ch2, `12`=mix ch3,
   `13`=mix ch4, `14`=surround in
-- byte 19 = **source bank**, byte 20 = **source index in bank**
-- source banks: `0x00` preamp (0-11), `0x02` DAW playback (0-23 -- caps
-  at 24, no ch32), `0x03` ADAT (0-15), `0x04` S/PDIF (0-1), `0x0b` MUTE
-  pseudo-source, `0x0c` oscillator (0/1 = osc 1/2)
-- **unseen banks:** `0x01`, `0x05`-`0x0a`, `0x0d`+ -- need emumic
-  (starts at ch5; ch1-4 have no mic emulation), afx out, mix1-4 L/R,
-  surround out
-- **matrix is all-mono** -- each output treated as mono; L/R sources go
-  to separate outputs individually, they do not fill both
-- routing is **exclusive** (one source per output; replacing sends no
-  remove frame) and **idempotent** (no frame if source already routed)
-- op bytes for simple 2-output destinations (hp1/hp2/mona/monb/reamp):
-  output 1 = `[21]=0x02 [22]=0x01`; output 2 = `[21]=0x00 [22]=0x02`;
-  un-route = `[21]=0x00 [22]=0x00`; mute = bank `0x0b` idx 0 + op pair
-- multichannel destinations (line out, adat out, mix ch) carry an
-  **undecoded variable-length per-channel list** at bytes 21+
-- talkback is **NOT** a matrix source (its dest toggles live in the
-  Monitors/Headphones menu)
-- oscillator insert + output mute both go through this frame via
-  right-click
+- source banks: `0x00` preamp (0-11), `0x02` **compplay** (Computer
+  Playback, 0-23), `0x03` ADAT (0-15), `0x04` S/PDIF (0-1), `0x0b` MUTE
+  (idx 0), `0x0c` oscillator (0/1)
+- **unseen banks:** `0x01`, `0x05`-`0x0a`, `0x0d`+ (emumic, afx out,
+  mix1-4 L/R, surround out) -- CAPTURE C
+- **NO op bytes.** The old `02 01`/`00 02` model was a misread of the
+  OTHER channel's untouched (bank,idx). It caused the L/R swap the user
+  saw (`route hp1 R preamp4` -> HP1 L=preamp4). CLI rewritten.
+- **whole group always sent** -- to change one channel, resend all
+  channels (changed + unchanged). No single-channel frame.
+- mute a channel = put `(0x0b, 0)` in its slot. No "no source".
+- exclusive per channel; idempotent (no frame if unchanged)
+- multichannel groups (line out, adat out=16, mix ch, ...) = same array,
+  more pairs. Channel counts NOT captured -> CAPTURE D. All macOS
+  `macos-matrix-*lineout*`/`*mix*`/`*surrnd*` files miss the OUT endpoint.
+- EVIDENCE: `macos-matrix-ch1-12-mute-hp1L`/`-hp1R` (sequential; L=mute
+  state carries between them). talkback NOT a matrix source. oscillator
+  insert goes through this frame.
 - **Routing readback EXISTS but is undecoded, and is NOT at connect.**
   User proof it exists: changed routing on Windows VM -> switched to
   macOS -> macOS Launcher showed the NEW routing (host cache can't
@@ -176,8 +178,10 @@ host-side, exactly like the Launcher.
 ### `antelope/protocol.py` (generic, no hardcoded device values)
 - frame build/parse for all opcodes + reports
 - `build_command`, `build_link_command(profile, pair, enabled, space=0)`,
-  `build_route_command(profile, dest, src_bank, src_idx, output)`
-- `resolve_route_source` / `resolve_route_dest`
+  `build_route_command(profile, dest, channels)` -- `channels` = ordered
+  list of (bank, idx) tuples, whole destination group
+- `resolve_route_source` / `resolve_route_dest` / `route_source_label`
+  (reverse lookup); `ROUTE_MUTE` = (0x0b, 0)
 - constraints layer: `ConstraintError`, `check_opcode`, `check_target`,
   `check_enum`, `channel_space_bounds` -- profile-driven, `--force`
   overrides
@@ -190,8 +194,11 @@ host-side, exactly like the Launcher.
   `spdif-status` / `set-spdif-gain` / `set-spdif-link` / `mark-spdif-link`
 - bus: `bus-status` / `set-bus-level` / `set-bus-dim|mute|mono`
 - `raw-set` (constraint-guarded, `--force`)
-- **EXPERIMENTAL, not hardware-tested:** `route <dest> <output>
-  <source>`, `unroute <dest> <output> <source>`, `matrix-status`
+- **EXPERIMENTAL, not hardware-tested:** `route <dest> <Lsrc> [<Rsrc>]`
+  (omit R = keep; `route <dest> mute` = mute all channels),
+  `matrix-status` (per-channel cache). No `unroute` -- Launcher has none
+  (replace or mute). Rewritten 2026-08 for the corrected frame model.
+  `compplay` canonical source name (`playback` still accepted).
 - constraints enforced on all channel/bus/adat/spdif/raw commands
 - caches under `~/.cache/antelope-ctl/`: link state (kinds `''` /
   `adat` / `spdif`) and routing (`matrix`) -- all **CLI-tracked, not
@@ -210,38 +217,51 @@ host-side, exactly like the Launcher.
 
 | id | what | maps |
 |---|---|---|
-| **C** | route emumic / afx out / mix1 L / mix1 R / surround out -> HP1 output 1, one at a time | source banks `0x01`, `0x05`-`0x0a`, `0x0d`+ -- maybe already in `macos-matrix-*` (triage first) |
-| **D** | change ONE channel of line out (or adat out) at a time; also 2-3 sources into mix ch1 keeping all | the variable-length per-channel list; the virtual-mix additive path -- maybe already in `macos-matrix-compplay*lineout*` / `-mix1234-lineo1-*` (triage first) |
+| **C** | route emumic / afx out / mix1 L/R / surround out to a channel, one at a time | source banks `0x01`, `0x05`-`0x0a`, `0x0d`+ (macOS `-afx*`/`-surrnd*` files have NO OUT frames -- must recapture catching endpoint .1) |
+| **D** | change ONE channel of line out / adat out / mix chN | how many (bank,idx) pairs each multichannel group carries (macOS lineout/mix files also miss the OUT endpoint) |
 | ~~**E**~~ | ~~routing readback at connect~~ | **DONE 2026-08** -- no readback at connect (macOS on2/on3). |
 | **E'** | with Launcher already connected, capture clicking into the routing *tab*, x2 with different routes, diff | whether tab-open triggers a routing query (last possible readback path) |
 
-Lower priority: screen brightness on macOS, surround-EQ pre/post
-(`0xab`), pan law (state offset 25 bits 0-1), DC-coupling, string
-descriptors (fresh connect no size filter -> `0x74` names), ADAT +
-physical link in one session, channel_link readback diff.
+Lower priority: surround-EQ pre/post (`0xab`), pan law (state offset 25
+bits 0-1), DC-coupling, string descriptors (fresh connect no size filter
+-> `0x74` names), ADAT + physical link in one session, channel_link
+readback diff.
 
 **Also pending:** user to hardware round-trip test
-`antelope-ctl route hp1 L preamp3` then check the Launcher.
+`antelope-ctl route hp1 preamp3 preamp4` -> Launcher should show HP1
+L=preamp3, R=preamp4 (old code swapped them).
 
 ---
 
 ## Right now (update me each session)
 
-- Routing matrix is the active thread. Simple destinations
-  (hp1/hp2/mona/monb/reamp) are decoded + wired into an experimental CLI;
-  not hardware-tested yet.
+- Routing matrix is the active thread. **Frame model now decoded** for
+  2-channel destinations (array of (bank,idx) pairs, one per output
+  channel). CLI rewritten: `route <dest> <L> <R>`. Still not
+  hardware-tested; the old code swapped L/R (user-observed).
 - **CAPTURE E answered (2026-08-30):** no routing readback in the connect
   sequence -- BUT one must exist (user: routing survived a Windows->macOS
   switch). Undecoded; next attempt = CAPTURE E' (routing-tab open).
-- **Screen brightness decoded (2026-08-30):** `0x12`/`0x0e`/0-100, readback
-  `0x73` @26. Was a VM artifact -- VM Launcher no-ops the slider.
-- macos-captures/ batch still mostly UNTRIAGED. Next: the `macos-matrix-*`
-  set for CAPTURE C / D material (source banks + multichannel list).
-- Also pending: CAPTURE E', `route` hardware round-trip test, wire
-  `build_global_command` + a `set-brightness` CLI command.
+- **Screen brightness decoded:** `0x12`/`0x0e`/0-100, readback `0x73` @26.
+  VM artifact -- VM Launcher no-ops the slider.
+- Multichannel routing (line out etc.): model known, channel counts not.
+  All macOS `macos-matrix-*` files except `-hp1L`/`-hp1R` have **no OUT
+  frames** (only endpoint .2 captured) -> unusable, need recapture.
+- Also pending: CAPTURE E', C, D; `route` hardware round-trip test; wire
+  `build_global_command` + `set-brightness`.
 
 ## Session log
 
+- **2026-08-30 (c)** -- Routing frame model CORRECTED from
+  `macos-matrix-ch1-12-mute-hp1L`/`-hp1R`: after byte 18 it's an array of
+  (source_bank, source_index) pairs, one per output channel, stride 2 --
+  NO "op bytes" (`00 02` was literally preamp 3 = the untouched other
+  channel). This was the L/R-swap bug the user hit. Rewrote
+  `build_route_command` + CLI `route`/`matrix-status`; frame builds
+  verified byte-exact vs the captures. `route <dest> <L> [<R>]`; dropped
+  `unroute` (Launcher has no un-route -- replace or mute; user-noted).
+  Renamed source `playback` -> `compplay` (alias kept). Old flat matrix
+  cache auto-dropped.
 - **2026-08-30 (b)** -- macOS captures. CAPTURE E: no routing readback in
   the connect sequence (on2/on3 swapped LineOut routing -> connect diffs
   to nothing routing-related), but user evidence (routing survived a
@@ -250,11 +270,10 @@ physical link in one session, channel_link readback diff.
   (cross-platform). **Screen brightness decoded** from
   `macos-scrbrght-0-100-50-multvalue`: `0x12`/`0x0e`/0-100, readback @26;
   VM had shown nothing only because the VM Launcher no-ops it. Documented
-  macOS Darwin capture format. Updated all 5 docs. macos-matrix-* etc.
-  still untriaged.
-- **2026-08-30 (a)** -- Decoded routing matrix (destinations 0-14, source
-  banks, op bytes for simple destinations) from `matrix-*` captures.
-  Shipped experimental `route` / `unroute` / `matrix-status`. Confirmed
+  macOS Darwin capture format. Added `tools/scan_macos_capture.py`.
+- **2026-08-30 (a)** -- Decoded routing matrix destinations 0-14 + source
+  banks from `matrix-*` captures; shipped experimental `route` /
+  `matrix-status`. (The "op bytes" part was wrong -- see (c).) Confirmed
   channel link is software-only via the hardware-wheel test. Checked
   `AntelopeINIT.pcapng` for routing readback -- none. Created this file.
 - **earlier (2026-08)** -- Talkback fully decoded (`0x12` / `0x13`).

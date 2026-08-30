@@ -47,7 +47,7 @@ opcode -- this is the single most important thing to get right:
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link |
-| `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, `source_bank` @19, `source_index` @20, then op bytes / a list -- see §7 | routing matrix |
+| `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
 
 Notes:
@@ -344,18 +344,36 @@ One L/R pair, `SET_LINK` with `space=0x01` / `pair_index=0x00`. Same
 gain-mirroring behaviour as the preamp link; the CLI's `set-spdif-gain` /
 `set-spdif-link` handle it. No cross-space ambiguity (distinct `space`).
 
-### Routing matrix (partly decoded)
+### Routing matrix (frame model decoded, 2026-08)
 
 A 5th command shape: opcode `0x53`, param `0xd3` (`frame.routing_command`).
+
+```
+d3 41 <dest> | <bank0> <idx0> | <bank1> <idx1> | <bank2> <idx2> | ...
+```
 
 | byte | meaning |
 |---|---|
 | 16 | `0xd3` param |
 | 17 | `0x41` constant |
-| 18 | **destination** (see full map below) |
-| 19 | **source bank** -- `0x00`=preamps, `0x02`=DAW/USB playback (24 ch), `0x03`=ADAT, `0x04`=S/PDIF, `0x0b`=**mute**, `0x0c`=oscillator. `0x01`, `0x05`-`0x0a` unseen. |
-| 20 | **source index** within the bank, 0-based (preamp 1/6/12 → `0x00`/`0x05`/`0x0b`; ADAT 1/16 → `0x00`/`0x0f`; osc 1/2 → `0x00`/`0x01`) |
-| 21+ | **a variable-length list**, not a fixed field -- see below |
+| 18 | **destination group** (see map below) |
+| 19 + 2·c | **source bank** for output channel `c` of that group |
+| 20 + 2·c | **source index** for output channel `c`, 0-based within the bank |
+
+The frame after byte 18 is a **plain array of `(source_bank, source_index)`
+pairs, one per output channel of the destination group** -- channel 0 = L /
+output 1 / Reamp 1, channel 1 = R / output 2 / Reamp 2. Multichannel groups
+(line out, ADAT out = 16, mix channels, …) just have more pairs. There is
+**no separate op code** and **no "no source"** -- to clear a channel you
+route the **mute** pseudo-source (`bank 0x0b, idx 0x00`).
+
+**The whole group is always sent.** To change one channel you resend every
+channel of that group -- the changed one plus the others unchanged. There
+is no single-channel frame.
+
+Source banks (`frame.routing_command.source_banks`): `0x00` preamps,
+`0x02` **compplay** (Computer Playback / USB, 24 ch), `0x03` ADAT, `0x04`
+S/PDIF, `0x0b` mute, `0x0c` oscillator. `0x01`, `0x05`-`0x0a` unseen.
 
 **Destination map** (byte 18) -- confirmed from `matrix-compplay-allouts-1`:
 
@@ -363,38 +381,46 @@ A 5th command shape: opcode `0x53`, param `0xd3` (`frame.routing_command`).
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | line out | HP1 | HP2 | Mon A | Mon B | Reamp | com rec | ADAT out | S/PDIF out | AFX in | mix ch1 | mix ch2 | mix ch3 | mix ch4 | surround in |
 
-**Simple 2-output destinations (HP1/HP2/Mon A/Mon B/Reamp)** -- bytes 21-22
-select the output and the op (bytes 23+ zero, no list):
+**Evidence** (`macos-matrix-ch1-12-mute-hp1L` / `-hp1R`, 2026-08):
 
-| operation | bytes 21-22 |
-|---|---|
-| route source → **output 1** (L / Reamp 1) | `02 01` |
-| route source → **output 2** (R / Reamp 2) | `00 02` |
-| mute an output | bank `0x0b`, idx `00`, + the output's `21 22` pair |
-| un-route | `00 00`, with `19`/`20` = the source being removed |
-| replace a source | just send the new route frame (no remove) |
+- hp1L: swept preamp 1-12 into **HP1 L**. Every frame `d3 41 01 | 00 (n-1)
+  | 00 02` -- `[19][20]` = the changing L source, `[21][22]` = `(0x00,
+  0x02)` = **preamp 3** = HP1 R's *untouched* source.
+- hp1R: then swept preamp 1-12 into **HP1 R**. Every frame `d3 41 01 | 0b
+  00 | 00 (n-1)` -- `[19][20]` = `(0x0b, 0)` = **mute** (HP1 L, left muted
+  by hp1L's last frame), `[21][22]` = the changing R source.
+- The two captures are sequential and the L=mute state carries between
+  them -- decisive.
+- Final mutes: hp1L → `d3 41 01 | 0b 00 | 00 02` (mute L, keep R); hp1R →
+  `d3 41 01 | 0b 00 | 0b 00` (mute both).
 
-Confirmed across `matrix-recapturedA`, `matrix-reamp1-2`,
-`matrix-ch3tohpmonreamp`. *Caveat:* in one capture the output-1 `[22]` was
-`0x03` for HP2 and `0x04` for Reamp -- a per-destination channel numbering
-not fully understood; `01`/`02` is the working model for HP1/Mon A/Mon B.
+> **This corrects the old model.** Bytes 21-22 were previously read as op
+> codes: `02 01` = "output 1", `00 02` = "output 2". Wrong -- `00 02` is
+> literally `(bank 0x00, index 0x02)` = preamp 3, the *other channel's*
+> routing. The old CLI shipped this: `route hp1 R preamp4` put preamp4 in
+> the L slot and preamp3 in R, so the Launcher showed HP1 L=preamp4,
+> R=preamp3 (user-observed, 2026-08). Fixed: `route <dest> <Lsrc> <Rsrc>`
+> now sets both channels explicitly.
 
-The CLI's **`route` / `unroute`** (experimental) build exactly this frame
-for these 5 destinations (`frame.routing_command.output_ops`), and cache
-the result locally for **`matrix-status`** since there's no readback.
-`0x53` is in `constraints.allowed_opcodes` for that -- flagged experimental.
+**CLI:** `route <dest> <Lsrc> [<Rsrc>]` / `matrix-status` (experimental)
+build this frame for the 5 two-channel destinations and cache the result
+locally (`frame.routing_command.channel_list_offset` / `channel_stride`),
+since there's no readback. Like the Launcher there is **no un-route** --
+replace a source or `route <dest> mute`. `0x53` is in
+`constraints.allowed_opcodes`.
 
-**Multichannel destinations** (line out, ADAT out, S/PDIF out, com rec,
-AFX in, mix channels, surround in) -- bytes 21+ are instead a
-variable-length list dumping that group's per-channel routing (ADAT out →
-15× `03 NN`; mix ch3 → 15× `05 NN` then more). **Not decoded.**
+**Multichannel destinations** (line out, ADAT out, …) use the same array,
+just longer. Not wired into the CLI: their channel counts aren't captured,
+and every macOS `macos-matrix-*lineout*` / `*mix*` / `*surrnd*` file is
+missing the OUT endpoint. Old note that adat_out is "15× `03 NN`" fits the
+array model exactly: entry 0 = the changed channel, entries 1-15 =
+`(0x03, 1..15)` = the ADAT-in passthrough left untouched.
 
-**Routing is exclusive** (one source per output; replacing sends no remove
-frame) and **idempotent** (routing an already-present source sends nothing
--- that's why HP1/HP2/Mon A/Mon B/mix ch4 produced no frame in the
-enumeration capture). Summing is via separate "virtual mixes".
+**Routing is exclusive** per channel (one source per output channel) and
+**idempotent** (routing an already-present source sends nothing). Summing
+is via separate "virtual mixes".
 
-Also open: source banks `0x01`, `0x05`-`0x0a`; the multichannel list.
+Also open: source banks `0x01`, `0x05`-`0x0a`; multichannel channel counts.
 
 **Output mute and oscillator-insert both go through this frame** (bank
 `0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
@@ -534,7 +560,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | talkback_source | `0x27` | `0x12` | - | 0-12 @17 -- `0` = INT (built-in talkback mic behind the physical TB button), `1-12` = preamps 1-12 (user-confirmed) | offset 73 bits 0-1 (low bits only) |
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
-| routing | `0xd3` | `0x53` | destination `@18` | source bank `@19` + index `@20`, then op bytes `@21`/`@22` (simple dests) or a per-channel list (multichannel) -- §7 | none |
+| routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | none decoded (exists) |
 | surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
 | oscillator (matrix insert) | `0xd3` | `0x53` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | none |
 | oscillator (settings panel: freq/level/mute) | - | - | host-side, sends nothing (§11) | none |
@@ -615,7 +641,7 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + source bank/index + the simple-destination op bytes all confirmed; CLI `route` covers HP1/HP2/Mon A/Mon B/Reamp. Open: the multichannel per-channel list, source banks `0x01`/`0x05`-`0x0a`, the per-destination `[22]` numbering. **Routing readback exists** (cross-machine persistence proves it) but is NOT in the connect sequence (macOS on2/on3, §7) and is not decoded -- prime suspect: routing-tab open (CAPTURE E'). |
+| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + the `(bank,index)`-per-channel array model confirmed (`ch1-12-mute-hp1L`/`-hp1R`, 2026-08); CLI `route <dest> <L> <R>` covers HP1/HP2/Mon A/Mon B/Reamp. Open: multichannel channel counts, source banks `0x01`/`0x05`-`0x0a`. **Routing readback exists** (cross-machine persistence) but is NOT at connect (macOS on2/on3) and not decoded -- prime suspect: routing-tab open (CAPTURE E'). |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |

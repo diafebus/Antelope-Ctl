@@ -146,28 +146,35 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mono hp2 
 
 ### Routing matrix (EXPERIMENTAL)
 
-The routing matrix (opcode `0x53`) is **only partly reverse-engineered**
-and has **no device readback**. The CLI can build routing commands for the
-five simple two-output destinations only -- **HP1, HP2, Monitor A, Monitor
-B, Reamp** -- and you should always verify the result in the official
-Launcher, because nothing is confirmed after sending.
+The routing frame (opcode `0x53`) is now **understood for 2-channel
+destinations** but has **no device readback**. The frame carries the
+*whole* destination group's per-channel routing every time -- so `route`
+takes **both** channels. Supported destinations: **HP1, HP2, Monitor A,
+Monitor B, Reamp**. Verify in the Launcher; nothing is confirmed after
+sending.
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp1 L preamp3    # preamp 3 -> HP1 left
-python3 -m antelope.cli --profile profiles/orion_studio_3.json route reamp 2 playback1 # playback 1 -> Reamp 2
-python3 -m antelope.cli --profile profiles/orion_studio_3.json route mona R mute       # silence Monitor A right
-python3 -m antelope.cli --profile profiles/orion_studio_3.json unroute hp1 L preamp3   # remove that source
-python3 -m antelope.cli --profile profiles/orion_studio_3.json matrix-status           # what THIS CLI has routed
+python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp1 preamp3 preamp4     # L=preamp3, R=preamp4
+python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp2 compplay5 compplay6
+python3 -m antelope.cli --profile profiles/orion_studio_3.json route mona preamp1            # set L, keep R (from cache)
+python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp1 mute                # mute every channel
+python3 -m antelope.cli --profile profiles/orion_studio_3.json matrix-status                 # what THIS CLI has routed
 ```
 
-- **Source spec:** `preampN` (1-12), `playbackN` (computer playback 1-24),
-  `adatN` (1-16), `spdifL`/`spdifR`, `oscN` (1-2), or `mute`.
-- **Output:** `1` / `L` = first output; `2` / `R` = second (for Reamp, that's
-  Reamp 1 / Reamp 2 -- they're two independent mono outs, not a stereo pair).
-- **Routing is exclusive** -- `route` replaces whatever that output currently
-  has. To silence an output, route `mute`.
+- **Source spec:** `preampN` (1-12), `compplayN` (Computer Playback 1-24;
+  `playbackN` still accepted), `adatN` (1-16), `spdifL`/`spdifR`, `oscN`
+  (1-2), `mute`, or `keep` (reuse this CLI's cached value for that channel).
+- **No un-route** -- same as the Antelope Launcher: you replace a
+  channel's source or set it to `mute`; there is no "empty" state.
+- **The wire frame carries the whole destination.** `route` sends channel
+  0 (L / Reamp 1) and channel 1 (R / Reamp 2) together. Omit the second
+  arg (or pass `keep`) to leave it as this CLI last set it -- there's no
+  readback to look it up, so `keep` errors if nothing is cached. This
+  replaces the old `route <dest> <L|R> <source>` form, which had a bug: it
+  wrote the source to the L slot regardless and clobbered R.
+- **Routing is exclusive** per channel. To silence a channel, route `mute`.
 - **`matrix-status` is a local cache**, not a device readback -- it only shows
-  what `route`/`unroute` sent from this CLI, and goes stale if routing is
+  what `route` sent from this CLI, and goes stale if routing is
   changed anywhere else. A device-side routing readback **does exist**
   (the user changed routing on the Windows VM, switched to macOS, and the
   macOS Launcher showed the new routing -- a host cache can't do that), but
@@ -176,7 +183,9 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json matrix-status    
   `macos-antelopeINIT-poweroff-on2/on3`) and is **not decoded yet**. Prime
   suspect: opening the Launcher's routing *tab*.
 - Line out, ADAT out, S/PDIF out, com rec, AFX in, the mix channels and
-  surround in use a different (undecoded) frame and are **not** supported.
+  surround in use the **same** frame, just with more `(bank,index)` pairs
+  (one per output channel). Not wired into the CLI: their channel counts
+  aren't captured yet.
 
 See `PROTOCOL.md` §7 and `frame.routing_command` in the profile.
 
@@ -265,11 +274,13 @@ confirm, only then trust it. Nothing is inferred from byte patterns alone.
    are known now (`0x12`/`0x13`/`0x14`/`0x53`/`0xab`), each with its own
    frame block under `"frame"` and its own `build_*_command()` in
    `protocol.py`. Routing (`0x53` / `frame.routing_command`) is the worked
-   example: a distinct opcode, and for multichannel destinations a
-   variable-length per-channel list instead of a fixed payload -- a
-   state-report diff alone would never have shown that. Confirm the shape
-   from a capture; add a new `"frame"` block and builder rather than
-   bending an existing one.
+   example: a distinct opcode whose payload is an array of `(bank, index)`
+   pairs (one per output channel of the destination), not a fixed field --
+   and the first read of it (op bytes `02 01` / `00 02`) was *wrong* until
+   a single-variable capture (`macos-matrix-ch1-12-mute-hp1L`/`-hp1R`)
+   showed `00 02` was just the other channel's untouched routing. Confirm
+   the shape from a capture that changes ONE thing; add a new `"frame"`
+   block and builder rather than bending an existing one.
 8. Once confirmed, flip `"status"` to `"confirmed"`, add real ranges/enums,
    and add a proper subcommand to `antelope/cli.py` if it deserves one
    (or leave it on `raw-set` if it's rarely used).
