@@ -8,16 +8,17 @@ Don't over use tokens, throwing agents and using all the resources at once, a go
 directions / USB metadata can be done offline now, no VM round-trip.
 
 ### Analyze now -- offline
-- [~] **Routing** -- captures `matrix-ch3tohpmonreamp` + `matrix-pre1-hp12`
-      + old `matrixtest`. **Confirmed:** opcode `0x53` / param `0xd3`
-      (`frame.routing_command`), byte 17 = `0x41`, byte 18 = destination
-      (1=hp1..5=reamp, a 3rd address space; each dest is a PAIR), **byte 19
-      = sub-channel** (0x00 = L/Reamp1, 0x02 = R/Reamp2), **byte 20 =
-      source** (0-idx input; preamp1=00, preamp3=02, preamp5=04). NO `0x73`
-      readback. **Open:** bytes 21/22 (add=0x02/count?, remove=0x00/0x00),
-      additive vs exclusive, clean un-route, non-preamp sources -- see
-      `params.routing.notes`
-      that would finish it.
+- [~] **Routing** -- captures `matrix-source-enum` (cleanest) + `pre1-hp12`
+      + `ch3tohpmonreamp`. **Confirmed:** `0x53`/`0xd3` (`frame.routing_command`),
+      byte 17=`0x41`, byte 18=destination (1=hp1..5=reamp), **byte 19 =
+      source BANK** (0=preamp, 2=DAW playback, 3=ADAT, 4=S/PDIF, 0xc=osc,
+      0xb=?mute), **byte 20 = source index** in that bank, byte 21 = op
+      (0x02 add / 0x00 remove). Routing is EXCLUSIVE (virtual mixes do
+      summing). NO `0x73` readback. Osc-insert + output-mute also use this
+      frame (right-click). Talkback is NOT a matrix source.
+      **Open:** the destination L/R sub-channel byte (never isolated),
+      bank 0xb, remaining banks. **(An earlier commit wrongly called byte
+      19 the sub-channel -- superseded.)** See `params.routing.notes`.
 - [x] ~~`settigs-thunderb-lat-dccp`~~ -- **DONE.** Zero outgoing frames on
       the HID endpoint. Host-side driver settings, or not exercised.
 - [ ] Cross-check the `0x73` embedded meter block (offsets 157-232) against
@@ -29,8 +30,11 @@ directions / USB metadata can be done offline now, no VM round-trip.
       pcapng: not one string-descriptor fetch; UAC2 desc is a nameless
       stub). `0x19`=64 ≈ USB/TB channel stream. To name the rest: fresh
       string-descriptor capture, or read the Launcher routing-tab labels.
-- [x] ~~Oscillator command~~ -- **DONE. Host-side only.** Zero outgoing
-      frames in the whole osc pcapng. Not a device feature.
+- [x] ~~Oscillator command~~ -- **PARTLY.** Two access points: (a) matrix
+      right-click "insert oscillator into output" = a real `0x53` routing
+      frame, source bank `0x0c` idx 0/1 (osc 1/2) -- confirmed in
+      `matrix-source-enum`; (b) the settings-tab freq/level/mute panel
+      sends nothing (host-side or uncaptured). See `params.oscillator`.
 - [x] ~~ADAT vs physical `SET_LINK` byte compare~~ -- **DONE.** Byte-for-byte
       identical across all 320 bytes + USB metadata. Residual open question
       (does one command link both spaces?) moved to hardware-test list.

@@ -428,9 +428,11 @@ Key takeaways:
   captures never set a high source index and a destination at the same
   time, so how the packed byte behaves with talkback fully configured is
   still unverified -- one combined capture would close this.
-- Destination indices 0-3 are almost certainly Monitor 1 / Monitor 2 /
-  HP1 / HP2 but the capture didn't label them -- confirm against the bus
-  ids before adding a CLI command with named destinations.
+- **Destinations = Monitor A / Monitor B / HP1 / HP2** (user-confirmed),
+  four toggle buttons in the Monitors/Headphones menu -- **not** routing-
+  matrix sources. They **combine**: talkback can go to all four at once
+  (the bitmask holds multiple bits). Exact index→name order (0-3) isn't
+  pinned down; likely 0=Mon A, 1=Mon B, 2=HP1, 3=HP2.
 
 ### Output trim (confirmed, 2026-08 -- not yet in the CLI)
 
@@ -455,10 +457,13 @@ Line output trim (capture-order inference). See `params.output_trim` and
 With the raw `.pcapng` files now available locally, three settings-tab
 features were checked for outgoing traffic on the HID control endpoint:
 
-- **Oscillator / test-tone generator** -- **zero** outgoing frames in the
-  entire 27.7 s capture. The Launcher sends the device nothing; it's a
-  software signal generator mixed into the output stream host-side. There
-  is no oscillator command or readback. Don't add a device CLI command.
+- **Oscillator / test-tone generator** -- the *settings-tab panel*
+  (freq / level / mute) sends **zero** outgoing frames. But there are two
+  oscillators and the way you actually use them is a right-click in the
+  routing matrix ("insert oscillator into this output") -- and *that*
+  **is** a real device command: the `0x53` routing frame with source bank
+  `0x0c` (see `params.routing` / `params.oscillator`). So only the
+  per-signal parameters are host-side; the insert isn't.
 - **Thunderbolt / latency / DC-coupling** -- also zero outgoing frames.
   Host driver settings, or not exercised in the capture.
 - **Screen brightness** -- sent nothing.

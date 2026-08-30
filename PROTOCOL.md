@@ -331,17 +331,29 @@ Payload is bytes 16-23 only:
 | byte | meaning |
 |---|---|
 | 16 | `0xd3` param |
-| 17 | `0x41` constant (sub-command / "set crosspoint") |
-| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=**Reamp** (a *third* address space -- not bus ids, not channel indices; more destinations surely exist). Each is a **pair** of physical outputs. |
-| 19 | **destination sub-channel** -- `0x00` = first (L, or Reamp 1), `0x02` = second (R, or Reamp 2). Confirmed: routing preamp 1 to HP1.L then HP1.R changed *only* this byte. |
-| 20 | **source**, 0-indexed physical input (`0x00` = preamp 1, `0x02` = preamp 3, `0x04` = preamp 5) |
-| 21 | undecoded -- `0x02` on a route ADD, `0x00` on a REMOVE |
-| 22 | undecoded -- `0x01` for the first source on a destination; `0x01/0x03/0x01/0x01/0x04` per-destination in the multi-route capture, **consistent with a source count** (routing may sum multiple sources into one output). `0x00` on a REMOVE. |
+| 17 | `0x41` constant |
+| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=Reamp (a *third* address space; more surely exist) |
+| 19 | **source bank** -- `0x00`=preamps, `0x02`=DAW/USB playback, `0x03`=ADAT, `0x04`=S/PDIF, `0x0c`=oscillator, `0x0b`=? (mute?). Others (`0x01`, `0x05`-`0x0a`) unseen. |
+| 20 | **source index** within the bank, 0-based (preamp 1/6/12 → `0x00`/`0x05`/`0x0b`; ADAT 1/16 → `0x00`/`0x0f`; osc 1/2 → `0x00`/`0x01`) |
+| 21 | `0x02` = add, `0x00` = remove |
+| 22 | tracks byte 21 (`0x01` add / `0x00` remove) |
 
-**No `0x73` readback** -- routing state is invisible in the state report
-(0 bytes changed across all routes), same as channel link. Still open
-(see `params.routing.notes`): bytes 21/22, whether routing is additive,
-the clean un-route frame, and how non-preamp sources encode.
+**Routing is exclusive** -- one source per output; a new source replaces
+the old with no remove frame. Summing is done via separate "virtual mixes"
+(not yet captured).
+
+**Still open:** the destination **sub-channel** (HP/Monitor L vs R, Reamp 1
+vs Reamp 2) is *not located* -- every clean capture routed to one output
+only. Bank `0x0b` (mute?), the un-mute frame, banks `0x01`/`0x05`-`0x0a`.
+
+Also: **output mute and oscillator-insert both go through this frame**
+(right-click in the matrix). The settings-tab oscillator panel is
+separate and sends nothing (§11). **Talkback is NOT a matrix source** --
+its 4 destination toggles (Mon A / Mon B / HP1 / HP2, in the
+Monitors/Headphones menu) use `talkback_dest_assign` (`0x13` / `0x5d`).
+
+**No `0x73` readback** -- routing state is invisible in the state report,
+same as channel link.
 
 ---
 
@@ -426,10 +438,11 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
 | talkback_source | `0x27` | `0x12` | - | 0-12 @17 -- `0` = INT (built-in talkback mic behind the physical TB button), `1-12` = preamps 1-12 (user-confirmed) | offset 73 bits 0-1 (low bits only) |
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
-| talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 | 0/1 @18 | offset 73 bits 2-5 |
+| talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | ? | multi-byte, undecoded | ? |
 | surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
-| oscillator | - | - | - | **host-side only, no device command** (section 11) | none |
+| oscillator (matrix insert) | `0xd3` | `0x53` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | none |
+| oscillator (settings panel: freq/level/mute) | - | - | host-side, sends nothing (§11) | none |
 
 ---
 
@@ -445,7 +458,8 @@ What the Settings/Device window controls actually do, from the captures
 | **Output trim** (Mon A / Mon B / Line) | `settings-trim-...` | param `0x4b`, 20 frames | **real, confirmed** -- readback @24-25 (section 6); not yet in CLI |
 | **Surround-EQ pre/post** | `settings-scrbrght-surroundEQ` | opcode `0xab` / param `0xeb`, **2 frames** | **real command exists** -- layout undecoded, no `0x73` readback |
 | Pan law | `settings-trim-...` | none (not sent in that capture) | unknown -- recapture |
-| **Oscillator** (osc1/2 mute/freq/level) | `settings-osc1-2-fq-lvl` | **zero frames** (checked all sizes) | **host-side only** -- software tone generator, no device command |
+| **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
+| **Oscillator** -- settings panel (freq/level/mute) | `settings-osc1-2-fq-lvl` | **zero frames** | host-side or uncaptured |
 | **Screen brightness** | `settings-scrbrght-surroundEQ` | **zero frames** | host-side *in the VM* -- but see below, it works on native macOS |
 | **Thunderbolt / latency / DC-coupling** | `settigs-thunderb-lat-dccp` | **zero frames** | host driver settings; TB is inactive while connected over USB, so this tab does nothing in this setup |
 
@@ -453,12 +467,17 @@ So the Settings window is a genuine mix: output levels/mute, the three
 trims, and surround-EQ pre/post are real device commands; the oscillator
 and (at least under the VM) screen brightness and latency are host-side.
 
-### Oscillator -- host-side only
+### Oscillator -- two access points
 
-`settings-osc1-2-fq-lvl.pcapng`: not one outgoing frame on endpoint `0x01`
-over the whole 27.7 s. Pure software signal generator mixed into the
-output stream. No command or readback to find. Don't add a device CLI
-command for it.
+**In the routing matrix:** right-click an output → insert oscillator. It
+becomes a matrix source, bank `0x0c` (idx 0/1 = oscillator 1/2), sent as
+the normal `0x53` routing frame (confirmed, §7). So *inserting* an
+oscillator into an output IS a real device command.
+
+**The settings-tab oscillator panel** (freq 1kHz/400Hz, level 0..−18 dBFS,
+mute): `settings-osc1-2-fq-lvl.pcapng` had **zero** outgoing frames over
+27.7 s. So the per-signal parameters are configured host-side or via an
+uncaptured path -- only the matrix "insert into output" half is confirmed.
 
 ### Screen brightness -- VM shows nothing, macOS works
 
@@ -493,11 +512,11 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | **partly decoded** (§7): destination `@18`, sub-channel `@19` (L/R), source `@20` all confirmed. `@21`/`@22` (add/remove + source count?), additive-vs-exclusive, and non-preamp sources still open. No state readback. |
+| Routing frame (`0x53` / `0xd3`) | **partly decoded** (§7): destination `@18`, source bank `@19` + index `@20`, op `@21` all confirmed; routing is exclusive. Open: the destination sub-channel (L/R) byte, bank `0x0b` (mute?), remaining source banks. No state readback. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
-| Oscillator command | **resolved -- host-side only, no device command** (section 11) |
+| Oscillator | matrix insert is a real command (routing bank `0x0c`, §7); the settings-panel freq/level/mute sends nothing |
 | Screen brightness | resolved -- sends nothing (host-side or not persisted) |
 | Surround-EQ pre/post | new opcode `0xab` / param `0xeb` seen (2 frames); layout undecoded, no `0x73` effect |
 | Thunderbolt / latency / DC-coupling | zero outgoing frames -- host-side, or not exercised |

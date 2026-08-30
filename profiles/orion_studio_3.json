@@ -55,10 +55,19 @@
       "subcmd_offset": 17,
       "subcmd": "0x41",
       "destination_offset": 18,
-      "sub_channel_offset": 19,
-      "source_offset": 20,
+      "source_bank_offset": 19,
+      "source_index_offset": 20,
+      "op_offset": 21,
       "status": "partly decoded",
-      "notes": "The matrix/routing frame -- a 5th distinct command shape (opcode 0x53, NOT 0x13/0x12/0x14). Payload is bytes 16-23 only, rest zero. CONFIRMED (captures matrix-ch3tohpmonreamp + matrix-pre1-hp12, 2026-08): [16]=0xd3 param; [17]=0x41 constant; [18]=destination (1-indexed, see routing.destinations); [19]=destination SUB-CHANNEL -- 0x00 = first (L / Reamp 1), 0x02 = second (R / Reamp 2) -- proven in matrix-pre1-hp12 where routing preamp1 to HP1.L then HP1.R changed ONLY byte 19 (0x00 -> 0x02); [20]=source, 0-indexed physical input (preamp 1 = 0x00, preamp 3 = 0x02, preamp 5 = 0x04 -- consistent across both captures). STILL UNDECODED: [21] (0x02 when a route is added, 0x00 when removed?) and [22] (0x01 for the first source on HP1 in pre1-hp12; in ch3tohpmonreamp it was 0x01/0x03/0x01/0x01/0x04 per destination -- possibly the source count after the op, i.e. routing may be additive/summing). An un-route looks like [21]=0x00 [22]=0x00 (with [20] maybe = the removed source). NO 0x73 READBACK -- zero bytes change, same as channel_link. See params.routing.notes."
+      "source_banks": {
+        "0x00": "preamps / physical inputs (idx 0-11 = preamp 1-12)",
+        "0x02": "DAW / USB playback channels (idx 0-based)",
+        "0x03": "ADAT inputs (idx 0-15 = ADAT 1-16)",
+        "0x04": "S/PDIF inputs (idx 0-1 = L/R)",
+        "0x0b": "UNCONFIRMED -- the mute pseudo-source? (frame right after the oscillators, user said they then muted HP1)",
+        "0x0c": "oscillator (idx 0-1 = oscillator 1 / oscillator 2 -- inserted by right-click on an output in the matrix)"
+      },
+      "notes": "The matrix/routing frame -- a 5th distinct command shape (opcode 0x53, NOT 0x13/0x12/0x14). Payload is bytes 16-23 only, rest zero. [16]=0xd3, [17]=0x41 (constant). CONFIRMED from capture matrix-source-enum (2026-08, user routed a specified list of sources to HP1 one at a time): [18]=destination (1-indexed, HP1 the whole capture); [19]=SOURCE BANK/TYPE (see source_banks -- preamp 1/6/12 -> bank 0x00 idx 0/5/11, ADAT 1/16 -> bank 0x03 idx 0/15, S/PDIF L -> 0x04/0, oscillators -> 0x0c/0 and 0x0c/1, all matching the user's stated order); [20]=source index within the bank (0-indexed). [21] = 0x02 add / 0x00 remove, [22] = 0x01 add / 0x00 remove (matrix-pre1-hp12). SUPERSEDES an earlier wrong reading (commit 7696e6a) that called byte 19 the L/R sub-channel -- pre1-hp12's byte19 0x00/0x02 was the preamp-bank vs playback-bank, not L vs R. The destination SUB-CHANNEL (L/R for HP/Monitor, Reamp 1/Reamp 2) is still NOT located -- the user always routed to one output in every clean capture. Routing is EXCLUSIVE (user-confirmed; one source per output -- 'virtual mixes' are the separate mechanism for summing). NO 0x73 READBACK. See params.routing.notes."
     },
     "global_command": {
       "magic_offset": 0,
@@ -153,7 +162,7 @@
           "dest_assign": {
             "mask": "0x3c",
             "shift": 2,
-            "notes": "4-bit bitmask, one bit per talkback destination: destination N assigned = bit (N+2), i.e. dest0=0x04, dest1=0x08, dest2=0x10, dest3=0x20. Confirmed from capture talkback-bttn (2026-08): toggling each of the 4 dest-assign switches on then off in isolation set/cleared exactly its bit. Only one was ever on at a time in that capture, so simultaneous multi-destination combining is assumed-not-confirmed."
+            "notes": "4-bit bitmask, one bit per talkback destination (Mon A / Mon B / HP1 / HP2): destination N assigned = bit (N+2), i.e. dest0=0x04, dest1=0x08, dest2=0x10, dest3=0x20. Confirmed from capture talkback-bttn (2026-08): toggling each of the 4 switches in isolation set/cleared exactly its bit. Multi-destination combining is USER-CONFIRMED (2026-08) -- talkback can be sent to all 4 at once, so this byte can legitimately hold several of these bits set together."
           },
           "button": {
             "mask": "0x40",
@@ -536,10 +545,10 @@
         "5": "reamp (dual mono -- Reamp 1 / Reamp 2, for separate guitar amps, NOT L/R)"
       },
       "destination_note": "1-indexed at frame.routing_command.destination_offset (18). A THIRD address space -- different numbering from bus ids (0-5) and channel indices. Each destination is a PAIR of physical outputs; the sub-channel byte (still undecoded) selects L vs R for dests 1-4, and Reamp 1 vs Reamp 2 for dest 5. Only these 5 destinations seen so far; there are almost certainly more (line outs, ADAT out, S/PDIF out, USB record).",
-      "sub_channel": "byte 19: 0x00 = first output of the pair (L, or Reamp 1), 0x02 = second (R, or Reamp 2). CONFIRMED from matrix-pre1-hp12.",
-      "source_note": "byte 20, 0-indexed physical input. preamp 1 -> 0x00, preamp 3 -> 0x02, preamp 5 -> 0x04 (consistent across matrix-ch3tohpmonreamp + matrix-pre1-hp12). Non-physical sources (DAW playback, ADAT, S/PDIF, INT) not captured -- their encoding, and whether byte 20 alone suffices or there's a source-type byte, is unknown.",
+      "source_encoding": "TWO bytes: byte 19 = bank/type (see frame.routing_command.source_banks), byte 20 = index within the bank (0-based). preamp N -> (0x00, N-1); ADAT N -> (0x03, N-1); S/PDIF L/R -> (0x04, 0/1); DAW playback N -> (0x02, N-1); oscillator 1/2 -> (0x0c, 0/1).",
+      "exclusive": "Routing is EXCLUSIVE -- one source per output. Routing a new source replaces the old with no explicit remove frame (matrix-pre1-hp12: preamp1 add, then playback1 add with the same op pattern, no remove in between). Summing multiple sources into one output is done via 'virtual mixes', a separate mechanism not yet captured.",
       "readback": "NONE -- routing state is not in the 0x73 report (0 bytes changed across all routes). Like channel_link, track it client-side.",
-      "notes": "SOLID: destination (byte 18), sub-channel (byte 19), source (byte 20). OPEN: bytes 21 & 22. In matrix-pre1-hp12: a route ADD = [21]=0x02 [22]=0x01; a route REMOVE = [21]=0x00 [22]=0x00. In matrix-ch3tohpmonreamp the 'add' frames had [22] = 0x01/0x03/0x01/0x01/0x04 per destination -- consistent with [22] being the source count after the op (i.e. routing SUMS multiple sources into one output). One unexplained frame in pre1-hp12 (t=46.4s: [19]=0x00 [20]=0x04 [21]=0x00 [22]=0x00) -- source preamp 5 with the 'remove' pattern; user asked what action produced it. TO FINISH: (a) route source A, then ALSO source B, to the same output -- does [22] go 1 then 2 (additive) or does B replace A? (b) a clean un-route from a known 1-source state; (c) a NON-preamp source. Do not wire routing into the CLI until (a) and (b) are done."
+      "notes": "SOLID: destination byte 18, source bank byte 19, source index byte 20, op byte 21 (0x02 add / 0x00 remove; byte 22 tracks it: 0x01/0x00). The DESTINATION SUB-CHANNEL (HP/Monitor L vs R, Reamp 1 vs Reamp 2) is NOT located -- every clean capture routed to a single output. Banks 0x01 and 0x05-0x0a unseen (other input types? line inputs? word clock?); bank 0x0b unconfirmed (mute?). Output MUTE and OSCILLATOR insert are both done through THIS frame via right-click in the matrix (osc = bank 0x0c). Talkback is NOT in the matrix -- see talkback_dest_assign. TO FINISH: (a) route a source to HP1 L only, then R only -- find the sub-channel byte; (b) confirm bank 0x0b = mute and how an un-mute looks; (c) route DAW playback and confirm bank 0x02 indexing; (d) enumerate the remaining source banks. Do not wire routing into the CLI until (a) is done."
     },
     "talkback_button": {
       "id": "0x1f",
@@ -582,9 +591,9 @@
       "type": "bool",
       "target": "destination index 0-3 in frame.command.channel_offset (offset 17); on/off in value_offset (offset 18)",
       "frame": "command (opcode 0x13 / SET_PARAM) -- NOT global_command; this one does take a target byte",
-      "destinations": "4 talkback output destinations, index 0-3. Almost certainly the 4 monitor outputs (Monitor 1 / Monitor 2 / Headphone 1 / Headphone 2) but the capture didn't label them -- confirm mapping against the bus ids in 'buses' with a follow-up.",
+      "destinations": "4 talkback output destinations, index 0-3 = Monitor A / Monitor B / Headphone 1 / Headphone 2 (user-confirmed 2026-08). These are 4 toggle buttons in the Launcher's Monitors/Headphones menu -- talkback is NOT a routing-matrix source. Exact index->name order not pinned down (talkback-bttn toggled targets 2,3,0,1 with no click log); likely 0=MonA, 1=MonB, 2=HP1, 3=HP2 matching the button order.",
       "readback": "state_report.talkback_block, offset 73 bits 2-5 (dest N = bit N+2: 0x04/0x08/0x10/0x20)",
-      "evidence": "capture talkback-bttn (2026-08): each of the 4 dest-assign switches toggled on then off in isolation set/cleared exactly its bit. Only one on at a time in that capture -- multi-destination combining assumed, not shown.",
+      "evidence": "capture talkback-bttn (2026-08): each of the 4 dest-assign switches toggled on then off in isolation set/cleared exactly its bit. User-confirmed (2026-08): the destinations COMBINE -- talkback can be sent to Mon A + Mon B + HP1 + HP2 all at once -- so offset-73 bits 2-5 form a real bitmask that can hold several set bits simultaneously.",
       "caveat": "offset 73 bits 2-3 are shared with talkback_source's low bits (see state_report.talkback_block.notes) -- how the readback behaves with both a high source index AND destinations assigned is untested."
     },
     "spdif_gain": {
@@ -611,9 +620,9 @@
     },
     "oscillator": {
       "id": null,
-      "status": "host-side only -- NOT a device feature",
-      "type": "n/a",
-      "notes": "Settings-tab test-tone generator: two oscillators, each mute + frequency (1kHz/400Hz) + level (0/-6/-12/-18 dBFS). RESOLVED 2026-08 from the raw settings-osc1-2-fq-lvl.pcapng: over the whole 27.7s capture there is NOT ONE outgoing frame on the HID control endpoint (0x01) -- the Launcher sends the device nothing at all when you touch any oscillator control. It is a pure software signal generator inside the Launcher, mixed into the output stream host-side. There is no oscillator command or readback to find. Do not add a CLI command for this against the device."
+      "status": "partly understood -- two access points, only the matrix one talks to the device",
+      "type": "routing-matrix source (bank 0x0c) + a host-side settings panel",
+      "notes": "TWO oscillators (1 and 2). (A) ROUTING MATRIX: right-click an output -> insert oscillator -> it becomes a source, bank 0x0c idx 0/1 in frame.routing_command (CONFIRMED, capture matrix-source-enum 2026-08). So inserting an oscillator into an output IS a real device command (the 0x53 routing frame). (B) The settings-tab oscillator panel (mute / 1kHz-400Hz / level 0..-18 dBFS) sends the device NOTHING -- capture settings-osc1-2-fq-lvl (27.7s) had zero outgoing frames. So the oscillator per-signal parameters (freq/level/mute) are host-side or use an uncaptured path; only the matrix 'insert into output' half is a confirmed device command. Not in the CLI (routing decode incomplete -- see params.routing)."
     },
     "surround_eq": {
       "id": "0xeb",
