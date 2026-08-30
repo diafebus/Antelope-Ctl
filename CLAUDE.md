@@ -30,34 +30,34 @@ source.
 | mix1/2/3/4 L/R | ? | **TBD** (also destinations -- the virtual mixes) |
 | surround out | ? | **TBD** |
 
-**Matrix destinations** (byte 18) -- user's full output list:
-| dest | byte 18 | status |
-|---|---|---|
-| hp1 | `1` | confirmed |
-| hp2 | `2` | confirmed |
-| mona | `3` | confirmed |
-| monb | `4` | confirmed |
-| reamp | `5` | confirmed |
-| lineout, com rec, adat out, spdif out, afx in, mix ch1-4, surround in | ? | **TBD** |
+**Matrix destinations** (byte 18) -- **DONE** (`matrix-compplay-allouts-1`):
+`0`=line out, `1`=hp1, `2`=hp2, `3`=mona, `4`=monb, `5`=reamp, `6`=com rec,
+`7`=adat out, `8`=spdif out, `9`=afx in, `10`=mix ch1, `11`=mix ch2,
+`12`=mix ch3, `13`=mix ch4, `14`=surround in.
 
-- [ ] **CAPTURE A -- L/R sub-channel** (the blocker for CLI wiring):
-      route comp-play 1 -> HP1 **Left**, wait, -> HP1 **Right**, wait (no
-      un-route between). Then comp-play 1 -> Monitor A Left, wait, -> Right.
-      Diff the frame pairs -> the byte that changes is the L/R selector,
-      and whether it's the same value per destination.
-- [ ] **CAPTURE B -- destination enumeration**: route comp-play 1 to one
-      output of EACH type in the list above (lineout, com rec, adat out 1,
-      spdif out L, afx in, mix ch1, surround in, ...), un-routing between,
-      3 s pauses. Maps byte 18's full range.
+**Big complication found:** the routing frame is NOT a simple crosspoint.
+Bytes 21+ are a variable-length list dumping the whole destination group's
+per-channel routing state (1 entry for hp1/reamp, 15-30 for adat out / mix
+channels). Routing an already-present source is idempotent (no frame).
+
+- [x] ~~CAPTURE B -- destination enumeration~~ -- DONE (map above).
+- [ ] **CAPTURE A (redo) -- mono-output selector + list structure.**
+      The first Capture A didn't work: comp-play-1 was already on HP1/MonA
+      by default so the routes were idempotent no-ops. Redo:
+      1. Right-click HP1 L -> **mute** (clears it). Wait.
+      2. Route **preamp 1 -> HP1 L**. Wait.
+      3. Route **preamp 2 -> HP1 L** (replace). Wait.
+      4. Route **preamp 1 -> HP1 R**. Wait.
+      5. Same 4 steps for HP2.
+      -> isolates the channel/side byte in the list, and shows a
+      one-channel change on a 2-channel destination.
 - [ ] **CAPTURE C -- source-bank enumeration**: route each of emumic /
-      afx out / mix1 L / mix1 R / surround out -> HP1 L, one at a time.
-      Maps the remaining byte-19 banks.
+      afx out / mix1 L / mix1 R / surround out -> HP1 L (after clearing
+      it), one at a time. Maps banks `0x01`, `0x05`-`0x0a`, `0x0d`+.
 - [ ] **CAPTURE D -- virtual mix (additive path)**: route 2-3 sources INTO
-      mix ch1 (a mix channel destination), keeping all -- shows how summing
-      is encoded (different frame? a "mix" flag? add without replace?).
-- [ ] then: decode + fold into `frame.routing_command` / `params.routing`,
-      and wire `route` / `unroute` / `matrix-status`(client-cache) into the
-      CLI.
+      mix ch1, keeping all. Shows how summing differs from a normal route.
+- [ ] then: decode the list, fold into `frame.routing_command`, wire
+      `route` / `unroute` / `matrix-status` into the CLI.
 
 ### Other captures to record (hardware)
 
@@ -184,8 +184,9 @@ are analyzable offline right now:
   offsets 24-25 (`state_report.output_trim_block`). Targets 0/1/2 ≈ mona /
   monb / line trim. **Pan law was NOT in the capture** (no 4th target ever
   sent) -- still needs its own capture.
-- ~~`matrixtest-pre1-cmpplay1-2` / `matrix-ch3tohpmonreamp`~~ -- routing,
-  **partly decoded** (see TODO + `frame.routing_command` + `params.routing`).
-  Opcode `0x53` / param `0xd3`; dest byte 18 (1=hp1..5=reamp), source byte
-  20 (0-idx input). No `0x73` readback. Bytes 19/21/22 + L/R + un-route
-  still need 3 targeted captures.
+- **Routing** (`matrix-*` captures) -- **partly decoded**, active thread.
+  Opcode `0x53`/`0xd3`; byte 18 = destination (full 0-14 map confirmed),
+  byte 19 = source bank, byte 20 = source index. Bytes 21+ = a
+  variable-length per-channel group dump (not decoded). Exclusive +
+  idempotent. No `0x73` readback. See TODO section + `frame.routing_command`
+  + `params.routing`.

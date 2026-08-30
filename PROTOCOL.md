@@ -326,28 +326,40 @@ gain-mirroring behaviour as the preamp link; the CLI's `set-spdif-gain` /
 ### Routing matrix (partly decoded)
 
 A 5th command shape: opcode `0x53`, param `0xd3` (`frame.routing_command`).
-Payload is bytes 16-23 only:
 
 | byte | meaning |
 |---|---|
 | 16 | `0xd3` param |
 | 17 | `0x41` constant |
-| 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=Reamp (a *third* address space; more surely exist) |
-| 19 | **source bank** -- `0x00`=preamps, `0x02`=DAW/USB playback (24 ch), `0x03`=ADAT, `0x04`=S/PDIF, `0x0b`=**mute** (assign to an output to silence it), `0x0c`=oscillator. Others (`0x01`, `0x05`-`0x0a`) unseen. |
+| 18 | **destination** (see full map below) |
+| 19 | **source bank** -- `0x00`=preamps, `0x02`=DAW/USB playback (24 ch), `0x03`=ADAT, `0x04`=S/PDIF, `0x0b`=**mute**, `0x0c`=oscillator. `0x01`, `0x05`-`0x0a` unseen. |
 | 20 | **source index** within the bank, 0-based (preamp 1/6/12 → `0x00`/`0x05`/`0x0b`; ADAT 1/16 → `0x00`/`0x0f`; osc 1/2 → `0x00`/`0x01`) |
-| 21 | ambiguous -- looks like `0x02` add / `0x00` remove (pre1-hp12), but see below |
-| 22 | tracks byte 21 (`0x01` / `0x00`); was `0x02` in the ch3tohpmonreamp second-frame-per-group, which fits neither |
+| 21+ | **a variable-length list**, not a fixed field -- see below |
 
-**Routing is exclusive** -- one source per output; a new source replaces
-the old with no remove frame. Summing is done via separate "virtual mixes"
-(not yet captured).
+**Destination map** (byte 18) -- confirmed from `matrix-compplay-allouts-1`:
 
-**The matrix is all-mono** (user-confirmed): every output is an
-independent mono channel -- HP1 L and HP1 R are separate targets, a mono
-source routed to one does *not* also feed the other. So bytes 18/21/22
-must somewhere encode *which mono output* -- **not yet located** (every
-clean capture routed to a single target). Also open: source banks `0x01`,
-`0x05`-`0x0a`, and the non-HP/Mon/Reamp destinations.
+| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| line out | HP1 | HP2 | Mon A | Mon B | Reamp | com rec | ADAT out | S/PDIF out | AFX in | mix ch1 | mix ch2 | mix ch3 | mix ch4 | surround in |
+
+**The frame is a group dump, not a single crosspoint.** After byte 20 comes
+a variable-length list of 2-byte entries describing the *whole destination
+group's* per-channel state. Simple destinations → 1 entry (HP1 → `02 00`,
+Reamp → `00 02`, S/PDIF out → `04 01`); big groups → 15-30 entries (ADAT
+out → 15× `03 NN` for NN=1..15). The entries look like
+`(source_bank, channel)` pairs but aren't decoded. Bytes 19-20 are the
+source the user picked; the list is the resulting state. Decoding it needs
+captures that change **one channel of a small destination** at a time.
+
+**Routing is exclusive** (one source per output; replacing sends no remove
+frame) and **idempotent** (routing an already-present source sends nothing
+at all -- that's why HP1/HP2/Mon A/Mon B/mix ch4 produced no frame in the
+enumeration capture). Summing is via separate "virtual mixes".
+
+**The matrix is all-mono** -- HP1 L and HP1 R are separate targets. The
+mono-output selector is somewhere in the list, still not isolated.
+
+Also open: source banks `0x01`, `0x05`-`0x0a`; the list structure.
 
 **Output mute and oscillator-insert both go through this frame** (bank
 `0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
