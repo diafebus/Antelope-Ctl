@@ -4,6 +4,30 @@ Don't over use tokens, throwing agents and using all the resources at once, a go
 hand-off (project state, decoded protocol, code state, pending captures).
 Update its "Right now" + "Session log" sections at the end of each session.
 
+## Session hygiene (keeps quota cost down)
+
+Auto-compaction runs against the whole context window and is expensive
+(one compact ~= 16% of a 5h quota). Avoid needing it:
+
+- **One focused task per session.** `/clear` between unrelated tasks
+  instead of letting context grow until auto-compact fires.
+- **Resume by reading `SUMMARY.md` in a fresh session**, not by
+  reloading a long transcript. `claude --resume` survives a reboot but
+  reloading a big compacted session is the costly path.
+- **End every session deliberately:** update `SUMMARY.md` ("Right now" +
+  "Session log", keep the log to ~5 entries), commit, exit.
+- **Commit findings immediately** after a capture is analyzed -- once
+  it's in the docs a lost session costs nothing.
+- **Never paste raw captures / hex / tsv dumps into chat** -- give the
+  file path. Dumps sit in context permanently.
+- **Targeted doc edits, not sweeps.** Name the capture; edit the
+  relevant spots in the 4 docs, don't re-read all of them.
+- **Big files** (`orion_studio_3.json`, `PROTOCOL.md`, `README.md`) --
+  read only the needed sections.
+- Routine work doesn't need `/fast` (Opus); Sonnet is fine.
+- If a mid-session compact is unavoidable, run `/compact <focus>` early
+  (smaller input + output) rather than waiting for the auto trigger.
+
 ## TODO / next steps (keep this current)
 
 Raw `.pcapng` files are local under `captures/` (`raw pcapng captures/`
