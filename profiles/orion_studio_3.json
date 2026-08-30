@@ -140,7 +140,7 @@
       "param_id_offset": 16,
       "param_id": "0xda",
       "enabled_offset": 28,
-      "notes": "Its own command shape (opcode 0x1d) -- the AuraVerb reverb on the Mix 1 window (a bundled Synergy Core effect, not part of the licensed AFX plugin chain). CONFIRMED from macos-auraverb-on-off (2026-08, native macOS): exactly 2 outgoing frames, byte-identical except offset 28 (01 = on, 00 = off). Full frame: da 0b 00 51 64 00 64 0b 0d 18 42 32 <en> at offsets 16-28. Bytes 17-27 (0b 00 51 64 00 64 0b 0d 18 42 32) are the reverb's DSP parameters (decay/size/damping/mix/pre-delay etc.) -- constant here because only on/off was toggled, and DELIBERATELY NOT decoded (that is the licensed-effect DSP path this project avoids -- see the boundary note in CLAUDE.md). Only the on/off toggle is exposed. NO 0x73 readback. Whether AuraVerb affects only Mix 1 or something wider is unclear from the capture -- check the public Orion Studio Synergy Core manual (facts only). Not wired into cli.py."
+      "notes": "Its own command shape (opcode 0x1d) -- the AuraVerb reverb on the Mix 1 window (a device-BUNDLED Synergy Core effect: always present, no per-plugin activation -- IN SCOPE, unlike the licensed AFX plugin chain). CONFIRMED from macos-auraverb-on-off (2026-08, native macOS): exactly 2 outgoing frames, byte-identical except offset 28 (01 = on, 00 = off). Full frame: da 0b 00 51 64 00 64 0b 0d 18 42 32 <en> at offsets 16-28. Bytes 17-27 (0b 00 51 64 00 64 0b 0d 18 42 32) are the reverb's DSP parameters (decay/size/damping/mix/pre-delay etc.) -- frozen here because only on/off was toggled. NOT YET DECODED; the user wants full AuraVerb controls next -> needs a capture sweeping one control at a time (then map 17-27, add build_auraverb_command, add 0x1d to allowed_opcodes). NO 0x73 readback. Whether AuraVerb affects only Mix 1 or something wider is unclear from the capture -- check the public Orion Studio Synergy Core manual (facts only). Not wired into cli.py yet."
     },
     "state_report": {
       "magic_offset": 0,
@@ -762,11 +762,11 @@
       "evidence": "same capture: solo on channel 1 -> byte 21 = 0x82 (0x02 | 0x80), followed by a 32-frame burst (channels 1..32)."
     },
     "auraverb": {
-      "status": "confirmed (on/off only)",
-      "frame": "auraverb_command (opcode 0x1d / param 0xda) -- byte 28 = 1 on / 0 off",
-      "type": "bool",
-      "per": "the AuraVerb instance on the Mix 1 window (a bundled effect; scope of its effect beyond Mix 1 unconfirmed)",
-      "notes": "Only the on/off toggle is exposed. The reverb's DSP parameters (frame bytes 17-27) are deliberately NOT decoded -- that's the licensed-effect path this project avoids. NO 0x73 readback.",
+      "status": "on/off confirmed; DSP params pending a capture",
+      "frame": "auraverb_command (opcode 0x1d / param 0xda) -- byte 28 = 1 on / 0 off; bytes 17-27 = DSP params, not yet decoded",
+      "type": "bool (on/off) + a param block TBD",
+      "per": "the AuraVerb instance on the Mix 1 window (a device-bundled effect; scope beyond Mix 1 unconfirmed)",
+      "notes": "IN SCOPE (user, 2026-08) -- AuraVerb is bundled, no per-plugin activation. On/off = byte 28. NEXT: a capture sweeping each AuraVerb control one at a time to map bytes 17-27 (decay/size/mod/damp/mix/gain -- confirm the control list from the public manual). NO 0x73 readback.",
       "evidence": "capture macos-auraverb-on-off (2026-08, native macOS): clicking AuraVerb on then off produced exactly 2 frames, identical except offset 28 (01 -> 00)."
     },
     "mix_channel_link": {

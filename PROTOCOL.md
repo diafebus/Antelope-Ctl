@@ -48,7 +48,7 @@ opcode -- this is the single most important thing to get right:
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
-| `0x1d` | SET_AURAVERB | `0xda` | `0b 00 51 64 00 64 0b 0d 18 42 32` (@17..27, reverb DSP params -- **not decoded, on purpose**), `enabled` @28 | AuraVerb on/off (Mix 1) |
+| `0x1d` | SET_AURAVERB | `0xda` | reverb DSP params @17..27 (**not decoded yet** -- `macos-auraverb-on-off` only toggled on/off), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
 
@@ -727,14 +727,15 @@ da 0b 00 51 64 00 64 0b 0d 18 42 32 <enabled>
 ```
 
 Bytes @17-27 are the reverb's DSP parameters (decay / size / damping /
-mix / pre-delay …). They are **deliberately not decoded** -- that's the
-licensed-effect DSP path this project stays out of (see `README.md`
-"AFX / Synergy Core effects are out of scope" and the source-policy note
-in `CLAUDE.md`). Only the on/off toggle is documented. No `0x73` readback.
-Whether AuraVerb touches anything beyond Mix 1 is unclear from the
-capture -- the public Orion Studio Synergy Core manual may say (facts
-only, cite it). Not in the CLI; `0x1d` is **not** in
-`constraints.allowed_opcodes`.
+mix / pre-delay …). **Not decoded yet** -- that capture only toggled
+on/off, so bytes 17-27 are frozen. AuraVerb is a device-*bundled* effect
+(no per-plugin activation), so it's **in scope**: the plan is a capture
+that sweeps each AuraVerb control one at a time, then map bytes 17-27, add
+`build_auraverb_command`, and put `0x1d` in `constraints.allowed_opcodes`.
+Still off-limits: the licensed AFX plugin chain and anything touching
+license state. No `0x73` readback. Whether AuraVerb touches anything
+beyond Mix 1 is unclear from the capture -- the public Orion Studio
+Synergy Core manual may say (facts only, cite it).
 
 ---
 

@@ -167,18 +167,20 @@ yet. `frame.mix_command` + `params.mix_*`.
 
 ### Out of scope (deliberate)
 
-**AFX / Synergy Core effects** -- the on-DSP plugin chain. Skipped on
-purpose: plugins are per-user licensed with online activation, so
-touching that path drags in authentication/licensing concerns we want
-nothing to do with. Focus is the mixer/routing/preamp feature set needed
-for professional tracking + monitoring.
+**Licensed AFX plugins** -- the per-user-licensed, online-activated
+plugin chain (Auto-Tune, the modelled-EQ/comp collections, etc.).
+Skipped: touching that path drags in authentication/licensing.
 
-**Boundary (2026-08):** a clean *bypass/enable* toggle for a bundled
-effect is fine to document (the CLAUDE.md line above always allowed "is
-effect slot N bypassed"). AuraVerb on/off = opcode `0x1d` / param `0xda`,
-byte 28 = enabled (`macos-auraverb-on-off`). What we DON'T do: decode or
-replicate the effect's DSP parameter payload (bytes 17-27 of that frame),
-the plugin-chain layout, or anything that reads/writes license state.
+**AuraVerb -- IN SCOPE (user decision, 2026-08).** AuraVerb is a
+device-bundled reverb, always present, no per-plugin activation. Its own
+frame: opcode `0x1d` / param `0xda`, byte 28 = enabled, bytes 17-27 = DSP
+params (`macos-auraverb-on-off` only toggled on/off, so those are frozen
+in that capture). **Next: full AuraVerb controls** -- needs a capture
+that sweeps each control (decay / size / mod / hi+lo damp / mix / gain --
+check the public manual for the real control list) one at a time. Then
+map bytes 17-27, add `0x1d` to `allowed_opcodes`, `build_auraverb_command`
++ a CLI command. Still off-limits: anything that reads/writes license
+state, and the licensed-plugin chain layout.
 
 ### Reverse-engineering sources -- what's allowed
 
@@ -208,6 +210,14 @@ on native macOS before trusting the "host-side" verdicts.
       offset 26 (1:1, 25/25). `params.screen_brightness` +
       `state_report.screen_brightness_byte_offset`; CLI `set-brightness
       <0-100>` -- user confirmed it changes the physical screen.
+- [ ] **AuraVerb parameter sweep** (user wants full controls next) --
+      opcode `0x1d` / param `0xda` is known; `macos-auraverb-on-off` only
+      toggled on/off so bytes 17-27 (the DSP params) are frozen. Capture
+      on native macOS, sweeping ONE AuraVerb control at a time (decay /
+      size / mod depth+rate / hi+lo damp / mix / gain -- confirm the real
+      control list from the public manual). Then map bytes 17-27, add
+      `0x1d` to `allowed_opcodes`, write `build_auraverb_command` + a CLI
+      command. See `frame.auraverb_command`.
 - [ ] **Surround-EQ pre/post** -- opcode `0xab` / param `0xeb`, only 2
       frames so far. Toggle several times to decode. (macOS)
 - [ ] **Pan law** -- trim capture never sent it. Move only pan-law; watch
@@ -361,9 +371,9 @@ are analyzable offline right now:
   byte; mix link = SET_LINK space `0x03`; 32 channels/mix; no `0x73`
   readback. `frame.mix_command` + `params.mix_*` + `protocol.build_mix_command`.
   Not in CLI.
-- ~~`macos-auraverb-on-off`~~ -- **DONE (2026-08).** AuraVerb (Mix 1
+- ~~`macos-auraverb-on-off`~~ -- **PARTIAL (2026-08).** AuraVerb (Mix 1
   reverb) on/off: new opcode `0x1d` / param `0xda`, byte 28 = enabled
-  (2 frames, identical bar byte 28). DSP params (bytes 17-27) left
-  undecoded on purpose (licensed-effect boundary -- see "Out of scope").
-  `frame.auraverb_command` + `params.auraverb`. Decode-only: no builder,
-  not in `allowed_opcodes`, not in CLI.
+  (2 frames, identical bar byte 28). Bytes 17-27 = DSP params, frozen in
+  this capture. `frame.auraverb_command` + `params.auraverb`. **User wants
+  full controls next** -> needs a param-sweep capture (see the captures
+  TODO above). AuraVerb is IN SCOPE (bundled, no per-plugin activation).

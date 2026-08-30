@@ -38,9 +38,11 @@ this software interoperates with.
   contributor's own device on the contributor's own machine, kept
   minimal and included only as evidence for a documented finding. Device
   serial numbers are redacted where practical.
-- **AFX / Synergy Core effects are out of scope.** Those plugins involve
-  per-user licensing and online activation; this project does not touch,
-  emulate, or circumvent any licensing or authentication mechanism.
+- **The licensed AFX plugin chain is out of scope.** Those plugins
+  involve per-user licensing and online activation; this project does not
+  touch, emulate, or circumvent any licensing or authentication
+  mechanism. Device-*bundled* effects that carry no per-plugin activation
+  (e.g. AuraVerb) are treated as ordinary device controls.
 - Use at your own risk. Sending control frames to hardware can put it in
   unexpected states; see "hazards" in the profile JSON. No warranty.
 
@@ -226,11 +228,12 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 mute, solo)` builds the frame. No CLI command yet. See `PROTOCOL.md` §12
 and `frame.mix_command`.
 
-**AuraVerb** (the reverb on the Mix 1 window) has its own frame -- opcode
-`0x1d` / param `0xda`, byte 28 = on/off (`macos-auraverb-on-off`). Only
-the on/off toggle is documented; the reverb's DSP parameters are **not
-decoded** -- that's the licensed-effect path this project stays out of.
-See `frame.auraverb_command`.
+**AuraVerb** (the bundled reverb on the Mix 1 window) has its own frame
+-- opcode `0x1d` / param `0xda`, byte 28 = on/off (`macos-auraverb-on-off`).
+Its DSP parameters (bytes 17-27) aren't decoded yet -- that needs a
+capture sweeping each control. AuraVerb is bundled with the device (no
+per-plugin activation), so full controls are planned. See
+`frame.auraverb_command`.
 
 ### Buses vs. channels
 
