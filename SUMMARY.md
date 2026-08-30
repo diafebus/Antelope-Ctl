@@ -262,78 +262,54 @@ L=preamp3, R=preamp4 (old code swapped them).
 
 ## Right now (update me each session)
 
-- Working tree: run `git log` -- several routing commits this session.
-- Routing matrix: **frame model + all source banks (bar `0x01`) + line-out
-  channel count (16) decoded.** CLI `route <dest> <chan> <source>` (per
-  channel) / `all` / `mute`, dests line_out + hp1/hp2/mona/monb/reamp.
-  **Not hardware-tested** -- user to run `route hp1 all preamp3 preamp4`
-  and check the Launcher shows L=preamp3 R=preamp4 (old code swapped them).
-- **CAPTURE E answered:** no routing readback in the connect sequence --
-  BUT one must exist (user: routing survived a Windows->macOS switch).
-  Next = CAPTURE E' (routing-tab open).
-- **Screen brightness DONE + hardware-confirmed:** CLI `set-brightness
-  <0-100>` (via new `build_global_command`).
-- **Virtual mixer DECODED** (opcode `0x17`, `frame.mix_command`) -- fader/
-  pan/send/mute/solo per (mix, ch 1-32); mix link = SET_LINK space 3.
-  `build_mix_command` added; no CLI command yet.
-- Still open on routing: channel counts of the other multichannel dests
-  (adat out / com rec / afx in / mix chN / surround in); bank `0x01`
-  (emumic?); the readback. `compplay*lineout*` captures = no OUT frames.
-- **NEXT (user):** full AuraVerb controls -- needs a capture sweeping each
-  AuraVerb control one at a time (opcode `0x1d`/`0xda` known; bytes 17-27
-  = the DSP params, frozen in `macos-auraverb-on-off`). Then map 17-27,
-  add `build_auraverb_command` + `0x1d` to `allowed_opcodes` + a CLI cmd.
-- Pending: hardware round-trip `route`; CAPTURE E'; `mix-set` CLI.
+- Working tree clean at `ee1fd20`. This session = `213e42f`..`ee1fd20`.
+- **NEXT (user):** full AuraVerb controls. Opcode `0x1d`/`0xda` + byte 28
+  on/off are known; frame bytes 17-27 = the DSP params, frozen in
+  `macos-auraverb-on-off`. Need a native-macOS capture (AuraVerb ON)
+  sweeping ONE control at a time. Then map 17-27 -> `params.auraverb_*`,
+  add `build_auraverb_command`, `0x1d` to `allowed_opcodes`, a CLI cmd.
+  Check the public Orion Studio Synergy Core manual for the control list.
+- Other open threads: hardware round-trip test `route hp1 all preamp3
+  preamp4` (Launcher should show L=preamp3 R=preamp4); CAPTURE E'
+  (routing-tab readback); a `mix-set` CLI for `0x17`; multichannel
+  routing-dest channel counts (adat out / com rec / afx in / mix chN /
+  surround in); source bank `0x01` (emumic?).
 
 ## Session log
 
-- **2026-08-30 (macOS-captures session)** -- Worked the native-macOS
-  capture batch. Commits `213e42f`, `3e0ef09`, `6176e95`, `7d0226b`.
-  1. **CAPTURE E**: no routing readback in the *connect* sequence
-     (`macos-antelopeINIT-poweroff-on2/on3`, swapped LineOut routing ->
-     connect diffs to nothing routing-related). BUT the user reports
-     routing survived a Windows-VM -> macOS host switch, so a device
-     readback DOES exist -- undecoded, next try = CAPTURE E' (routing-tab
-     open). Connect handshake = one `SET_PARAM(0x49,ch1,0)`, cross-platform.
-  2. **Screen brightness decoded + wired** (`macos-scrbrght-0-100-50-multvalue`):
-     `global_command 0x12` / param `0x0e` / value 0-100, readback `0x73`
-     offset 26. VM had shown nothing only because the VM Launcher no-ops
-     the slider -- so "zero frames under the VM" != host-side. Added
-     `protocol.build_global_command` + `parse_state_scalar` and the CLI
-     `set-brightness <0-100>` -- user then confirmed on hardware it
-     changes the device's physical screen.
-  3. **Routing frame model CORRECTED** (`macos-matrix-ch1-12-mute-hp1L`/
-     `-hp1R`): after byte 18 it's an array of (source_bank, source_index)
-     pairs, one per output channel, stride 2 -- NO "op bytes" (`00 02` was
-     literally preamp 3 = the untouched other channel). That was the
-     L/R-swap bug the user hit on the Windows Launcher. Dropped `unroute`
-     (Launcher has none). Renamed source `playback` -> `compplay` (alias).
-  4. **Source banks `0x05`-`0x0a` + line-out channel count decoded**
-     (`macos-matrix-afx1-19-to-line1*` = AFX out bank `0x05` idx 0-31 +
-     line out = 16-channel group; `-mix1234-lineo1-*` = mix 1-4 =
-     `0x06`-`0x09` L/R; `-surrnd1-16-to-lineo1` = surround out `0x0a`
-     idx 0-15). Only bank `0x01` (emumic?) unseen now.
-  5. **CLI rebuilt for numeric channels** (user-noted -- L/R doesn't
-     generalize): `route <dest> <chan> <source>` (1-based; L/R = 1/2 for
-     the stereo dests only), `route <dest> all <s1>..<sN>`, `route <dest>
-     mute`. Added protocol `route_dest_channels` / `resolve_route_channel`.
-     line_out (16 ch) now wired alongside hp1/hp2/mona/monb/reamp. Frames
-     verified byte-exact vs all five usable macOS matrix captures.
-  7. **Virtual mixer decoded** (`macos-mix1-send-pan-fader-mute-solo-link`):
-     NEW opcode `0x17` / param `0xd4`. `d4 05 <mix> <ch> <fader> <pan|
-     flags> <send>` -- fader 0-90dB, pan (0x20 centre) + mute bit 0x40 +
-     solo bit 0x80, send 0-96. 32 ch/mix (solo re-sends all 32). Mix link
-     = SET_LINK space `0x03` (4th link domain). No `0x73` readback. Added
-     `frame.mix_command`, `params.mix_*`, `protocol.build_mix_command`.
-  8. **AuraVerb on/off decoded** (`macos-auraverb-on-off`): NEW opcode
-     `0x1d` / param `0xda`, byte 28 = enabled. DSP params (bytes 17-27)
-     not decoded yet -- the user wants full AuraVerb controls next
-     (AuraVerb is bundled / no activation -> in scope; see CLAUDE.md).
-     Added a source-policy note: public Antelope manuals are OK for facts
-     (cite, don't copy).
-  9. Added `tools/scan_macos_capture.py`; documented the Darwin XHC
-     format. NOTE: `macos-matrix-compplay*lineout*` + `ch1-12-mute-hp2LR`
-     are missing the OUT endpoint -> unusable for command decoding.
+- **2026-08-30/31 (native-macOS captures)** -- `213e42f`..`ee1fd20`.
+  Worked the whole macOS capture batch:
+  - **CAPTURE E** (`macos-antelopeINIT-poweroff-on2/on3`): no routing
+    readback in the connect sequence -- but one MUST exist (user: routing
+    survived a Windows-VM -> macOS host switch). Undecoded; next = CAPTURE
+    E' (routing-tab). Connect handshake = one `SET_PARAM(0x49,ch1,0)`.
+  - **Screen brightness** (`macos-scrbrght-*`): `0x12`/`0x0e`/0-100,
+    readback `0x73` @26. VM had shown nothing only because its Launcher
+    no-ops the slider. Added `build_global_command` + `parse_state_scalar`
+    + CLI `set-brightness` -- **hardware-confirmed by the user**.
+  - **Routing frame model CORRECTED** (`macos-matrix-ch1-12-mute-hp1L`/
+    `-hp1R`): array of (bank,idx) pairs from byte 19, stride 2 -- NO "op
+    bytes" (the old `00 02` was literally preamp 3, the untouched other
+    channel -- that was the L/R-swap bug). Dropped `unroute`. `playback`
+    -> `compplay` (alias kept).
+  - **Source banks `0x05`-`0x0a` + line-out = 16 ch** (`macos-matrix-afx1-19*`
+    = AFX out `0x05`; `-mix1234-*` = mix 1-4 `0x06`-`0x09`; `-surrnd1-16*`
+    = surround out `0x0a`). Only bank `0x01` (emumic?) unseen.
+  - **CLI rebuilt for numeric channels** (user-noted): `route <dest>
+    <chan> <src>` / `all` / `mute`; `L`/`R` only for the true stereo
+    dests. line_out (16 ch) wired. `route_dest_channels` /
+    `resolve_route_channel`. Frames byte-exact vs all 5 usable captures.
+  - **Virtual mixer decoded** (`macos-mix1-*`): NEW opcode `0x17`/`0xd4`,
+    `d4 05 <mix> <ch> <fader> <pan|flags> <send>` (fader 0-90dB, pan
+    0x20=centre + mute bit 0x40 + solo bit 0x80, send 0-96); 32 ch/mix;
+    mix link = SET_LINK space `0x03`. `build_mix_command`; no CLI yet.
+  - **AuraVerb on/off decoded** (`macos-auraverb-on-off`): NEW opcode
+    `0x1d`/`0xda`, byte 28 = enabled. Reframed as in-scope (bundled, no
+    activation); DSP params + CLI are the user's next step.
+  - Added `tools/scan_macos_capture.py`; documented the Darwin XHC format
+    + the "check for BOTH endpoints" gotcha; RE source policy (public
+    manuals OK for facts). `macos-matrix-compplay*lineout*` +
+    `ch1-12-mute-hp2LR` are missing the OUT endpoint -> unusable.
 - **2026-08-30 (routing-decode session)** -- Decoded routing matrix
   destinations 0-14 + source banks from Windows `matrix-*` captures;
   shipped the first experimental `route` / `matrix-status`. (Its "op
