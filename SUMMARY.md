@@ -18,6 +18,17 @@ Studio III** audio interface (VID `0x23e5`, PID `0xa221`) from
 Wireshark/USBPcap captures, and building a **stdlib-only Python CLI**
 (`antelope-ctl`) to control it on Linux.
 
+**Direction (priority order):**
+1. **Now** -- reverse-engineer *all* controls / as much of the device as
+   possible.
+2. **Next** -- a forming group of collaborators will build a **webUI**
+   control panel on top of the decoded protocol. The Python CLI is the
+   reference implementation + test harness, not the final product; the
+   webUI backend will consume the same `profiles/*.json`. Keep
+   `antelope/` generic and profile-driven.
+3. **Endgame** -- mainline `snd-usb-audio` kernel driver (`KERNEL.md`),
+   not before the protocol is complete + hardware-verified.
+
 - HID vendor interface 3, EP `0x01` OUT / `0x82` IN, 320-byte reports,
   4 ms poll. Audio is separate iso endpoints (`0x05` / `0x84`), not
   touched.
