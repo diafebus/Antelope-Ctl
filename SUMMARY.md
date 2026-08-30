@@ -239,7 +239,7 @@ L=preamp3, R=preamp4 (old code swapped them).
 
 ## Right now (update me each session)
 
-- Working tree clean at commit `7d0226b`.
+- Working tree clean at commit `c9b1eb9` (this doc's own update lands on top).
 - Routing matrix is the active thread. **Frame model decoded** for
   2-channel destinations (array of (bank,idx) pairs, one per output
   channel, stride 2 from byte 19). CLI rewritten:
