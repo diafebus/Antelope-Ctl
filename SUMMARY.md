@@ -105,7 +105,8 @@ flush, not device behaviour.
 Readback = `0x73` offset 26, plain byte = value (25/25 in
 `macos-scrbrght-0-100-50-multvalue`). VM Launcher no-ops the slider ->
 "zero frames under the VM" != host-side; recheck VM negatives on macOS.
-CLI: `set-brightness <0-100>` (2026-08). Not hardware round-trip tested.
+CLI: `set-brightness <0-100>` (2026-08) -- HARDWARE-CONFIRMED (user: the
+CLI command changes the device's physical screen).
 
 ### macOS capture format (`captures/macos-captures/`)
 Darwin XHC pcapng: 40-byte pseudo-header + 320-byte payload =
@@ -248,14 +249,14 @@ L=preamp3, R=preamp4 (old code swapped them).
 - **CAPTURE E answered:** no routing readback in the connect sequence --
   BUT one must exist (user: routing survived a Windows->macOS switch).
   Undecoded; next attempt = CAPTURE E' (routing-tab open).
-- **Screen brightness decoded + wired:** `0x12`/`0x0e`/0-100, readback
-  `0x73` @26. CLI `set-brightness <0-100>` (via new `build_global_command`).
-  Not hardware round-trip tested.
+- **Screen brightness DONE:** `0x12`/`0x0e`/0-100, readback `0x73` @26.
+  CLI `set-brightness <0-100>` (via new `build_global_command`) --
+  hardware-confirmed by the user.
 - Multichannel routing (line out etc.): model known, channel counts not.
   All macOS `macos-matrix-*` files except `-hp1L`/`-hp1R` have **no OUT
   frames** (only endpoint .2 captured) -> unusable, need recapture.
-- Pending: hardware round-trip test both `route hp1 preamp3 preamp4` and
-  `set-brightness`; CAPTURE E' / C / D.
+- Pending: hardware round-trip test `route hp1 preamp3 preamp4` (Launcher
+  should show L=preamp3 R=preamp4, not swapped); CAPTURE E' / C / D.
 
 ## Session log
 
@@ -272,7 +273,8 @@ L=preamp3, R=preamp4 (old code swapped them).
      offset 26. VM had shown nothing only because the VM Launcher no-ops
      the slider -- so "zero frames under the VM" != host-side. Added
      `protocol.build_global_command` + `parse_state_scalar` and the CLI
-     `set-brightness <0-100>` (frame verified byte-exact vs the capture).
+     `set-brightness <0-100>` -- user then confirmed on hardware it
+     changes the device's physical screen.
   3. **Routing frame model CORRECTED** (`macos-matrix-ch1-12-mute-hp1L`/
      `-hp1R`): after byte 18 it's an array of (source_bank, source_index)
      pairs, one per output channel, stride 2 -- NO "op bytes" (`00 02` was

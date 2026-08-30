@@ -164,11 +164,12 @@ NOT mean host-side.** Screen brightness proved this: nothing under the VM,
 full command on native macOS. Re-check oscillator / thunderbolt / DC-coup
 on native macOS before trusting the "host-side" verdicts.
 
-- [x] ~~**Screen brightness on macOS**~~ -- **DONE (2026-08), in the CLI.**
-      `macos-scrbrght-0-100-50-multvalue`: opcode `0x12` / param `0x0e` /
-      value 0-100 at offset 17; readback `0x73` offset 26 (1:1, 25/25).
-      `params.screen_brightness` + `state_report.screen_brightness_byte_offset`;
-      CLI `set-brightness <0-100>`.
+- [x] ~~**Screen brightness on macOS**~~ -- **DONE (2026-08), in the CLI,
+      hardware-confirmed.** `macos-scrbrght-0-100-50-multvalue`: opcode
+      `0x12` / param `0x0e` / value 0-100 at offset 17; readback `0x73`
+      offset 26 (1:1, 25/25). `params.screen_brightness` +
+      `state_report.screen_brightness_byte_offset`; CLI `set-brightness
+      <0-100>` -- user confirmed it changes the physical screen.
 - [ ] **Surround-EQ pre/post** -- opcode `0xab` / param `0xeb`, only 2
       frames so far. Toggle several times to decode. (macOS)
 - [ ] **Pan law** -- trim capture never sent it. Move only pan-law; watch
@@ -199,15 +200,15 @@ on native macOS before trusting the "host-side" verdicts.
       (bus id), and `raw-set` (target must be valid in some space + hazard
       note for unmapped param_id). `build_command` / `build_link_command`
       assert the opcode isn't forbidden. `--force` overrides every bound.
-- [x] ~~`build_global_command` + `set-brightness`~~ -- **DONE (2026-08).**
-      `protocol.build_global_command(profile, param, value)` (opcode
-      `0x12`, value @17) + `protocol.parse_state_scalar` (plain byte at a
-      named state_report offset). CLI `set-brightness <0-100>`. Frame
-      verified byte-exact vs `macos-scrbrght-*`. Not hardware round-trip
-      tested. `build_global_command` also unblocks talkback params.
-- [ ] Hardware round-trip test: `route hp1 preamp3 preamp4` (Launcher
-      should show HP1 L=preamp3 R=preamp4; old code swapped them), then
-      `route hp1 mute`; and `set-brightness 30` / `set-brightness 100`.
+- [x] ~~`build_global_command` + `set-brightness`~~ -- **DONE (2026-08),
+      HARDWARE-CONFIRMED.** `protocol.build_global_command(profile, param,
+      value)` (opcode `0x12`, value @17) + `protocol.parse_state_scalar`
+      (plain byte at a named state_report offset). CLI `set-brightness
+      <0-100>` -- user confirmed it changes the device's physical screen.
+      `build_global_command` also unblocks talkback params.
+- [ ] Hardware round-trip test the rewritten `route`:
+      `route hp1 preamp3 preamp4` (Launcher should show HP1 L=preamp3
+      R=preamp4; old code swapped them), then `route hp1 mute`.
 - [ ] Decide which confirmed-but-unexposed params get CLI commands:
       talkback (`talkback_*`), line/reamp bus levels (already work via
       `set-bus-level` with bus 3/4), `output_trim`.
