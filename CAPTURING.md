@@ -13,8 +13,11 @@ tshark ships with Wireshark, so no separate install is needed on the VM.
 ## Capturing on native macOS instead of the VM
 
 Some Launcher features behave differently under the VM than on a native
-host (confirmed 2026-08: screen brightness works on macOS, does nothing
-under the VM). When chasing one of those, capture on macOS directly:
+host. **The VM Launcher silently no-ops some controls** -- "zero outgoing
+frames under the VM" does NOT prove a feature is host-side. Confirmed
+2026-08: screen brightness sends nothing under the VM but is a real
+`0x12`/`0x0e` device command on native macOS (readback `0x73` @26).
+Re-check every "host-side" verdict on native macOS. Capture there:
 
 1. Install Wireshark (its installer adds the ChmodBPF helper for
    non-root capture).
@@ -24,11 +27,24 @@ under the VM). When chasing one of those, capture on macOS directly:
 3. In Wireshark, capture on that `XHCxx` interface. **No display/size
    filter** -- capture everything, so nothing like the `0xab` surround-EQ
    frames is missed.
-4. Export the same way as below (`-T fields -e frame.number
-   -e frame.time_relative -e usbhid.data -e usb.capdata`). The 320-byte
-   HID report format is identical; `tools/scan_capture.py` and the
-   analysis scripts already handle either `usbhid.data` or `usb.capdata`.
-   Field names for USB-level metadata can differ slightly from USBPcap's.
+4. **The macOS (Darwin XHC) frame format is NOT the same as USBPcap.**
+   tshark does not populate `usbhid.data` / `usb.capdata` for these, so
+   `tools/scan_capture.py` and its TSV recipe do not work directly. Each
+   vendor HID report is a **40-byte Darwin pseudo-header + 320-byte
+   payload** (`frame.len == 360`); the payload (byte 0 = the usual magic
+   `0x70`/`0x73`/`0x74`/`0x75`) is `frame_raw[80:]`. Header byte 30 =
+   endpoint (`0x01` OUT / `0x82` IN); VID/PID at header bytes 36-39.
+   `usb.src`/`usb.dst` direction labels are unreliable -- identify
+   outgoing frames by magic `0x70` + opcode at payload[4] instead.
+   Use **`tools/scan_macos_capture.py`** (needs `tshark` on PATH):
+   ```
+   tools/scan_macos_capture.py CAP.pcapng                # outgoing cmds + 0x73 transitions
+   tools/scan_macos_capture.py CAP.pcapng --magic 74     # dump one magic's transitions
+   tools/scan_macos_capture.py CAP.pcapng --diff OTHER.pcapng   # per-magic final-state diff
+   ```
+   It does the 40-byte-header strip and `frame.len==360` filter itself.
+   Under the hood: `tshark -r cap.pcapng -Y "frame.len==360" -T json -x`,
+   then `bytes.fromhex(_source.layers.frame_raw[0])[40:]`.
 
 ## 1. Find tshark
 

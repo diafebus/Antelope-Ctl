@@ -54,8 +54,10 @@ brightness on macOS -- does it send now?), `macos-auraverb-on-off`,
 `frame.routing_command`: opcode `0x53` / param `0xd3`. Confirmed bytes:
 17=`0x41`, **18 = destination**, **19 = source bank**, **20 = source
 index in bank**, **21 = op** (`0x02` add / `0x00` remove). Routing is
-EXCLUSIVE per output (virtual mixes = the summing path). NO `0x73`
-readback. Output mute (bank `0x0b`) and oscillator-insert (bank `0x0c`)
+EXCLUSIVE per output (virtual mixes = the summing path). No `0x73`
+readback and none at connect (CAPTURE E), but a readback **exists**
+(cross-machine persistence) -- undecoded, likely on routing-tab open
+(CAPTURE E'). Output mute (bank `0x0b`) and oscillator-insert (bank `0x0c`)
 go through this same frame via right-click. Talkback is NOT a matrix
 source.
 
@@ -104,17 +106,18 @@ channels). Routing an already-present source is idempotent (no frame).
       routings and diff. This is the last place a device-side routing
       readback could live -- connect-time is ruled out (CAPTURE E).
 - [x] ~~**CAPTURE E -- routing readback via fresh Launcher INIT**~~ --
-      **DONE (2026-08, native macOS).** `captures/macos-captures/macos-antelopeINIT-poweroff-on2/on3-itsavedstate.pcapng`:
+      **DONE (2026-08, native macOS).** `macos-antelopeINIT-poweroff-on2/on3-itsavedstate.pcapng`:
       cold boot, Launcher quit, record, launch Launcher, power device on;
       on2 vs on3 had swapped LineOut routing (preamp1-12 vs compplay).
-      RESULT: **no routing readback at connect.** 0x74 identical, USB
-      descriptors identical, 0x73 differs only in a preamp-gain byte +
-      meter noise, no 0x53 either direction. Device keeps routing in
-      NVRAM but never reports it; Launcher caches host-side like this CLI.
-      Also cross-confirmed: the entire connect handshake is one frame
+      RESULT: **no routing readback in the connect sequence.** 0x74
+      identical (all 209 frames, bytes 0-15 only), USB descriptors
+      identical, 0x73 differs only in a preamp-gain byte + meter noise,
+      no 0x53 either direction. Entire connect handshake = one frame
       `SET_PARAM(param 0x49, ch 1, val 0)` (matches Windows AntelopeINIT).
-      **Only path left:** does opening the routing *tab* trigger a query?
-      -> new CAPTURE E'. See `params.routing.readback`, PROTOCOL.md §4/§7.
+      BUT a routing readback **must exist** -- user changed routing on
+      Windows VM, moved to macOS, macOS Launcher showed the NEW routing
+      (host cache can't cross machines). So it fires LATER, undecoded.
+      -> CAPTURE E'. See `params.routing.readback`, PROTOCOL.md §4/§7.
 - [x] ~~**wire `route` / `unroute` / `matrix-status`** into the CLI~~ --
       **DONE (2026-08), experimental.** `protocol.build_route_command` +
       `resolve_route_source` / `resolve_route_dest`; CLI `route <dest>
@@ -136,12 +139,19 @@ license-free "is effect slot N bypassed" style control shows up.
 
 ### Other captures to record (hardware)
 
-Consider **native macOS** (CAPTURING.md) -- screen brightness works there,
-does nothing under the VM.
+Consider **native macOS** (CAPTURING.md). **LESSON (2026-08): the VM
+Launcher silently no-ops some controls -- "zero frames under the VM" does
+NOT mean host-side.** Screen brightness proved this: nothing under the VM,
+full command on native macOS. Re-check oscillator / thunderbolt / DC-coup
+on native macOS before trusting the "host-side" verdicts.
 
-- [ ] **Screen brightness on macOS** -- real command or not? (no size filter)
+- [x] ~~**Screen brightness on macOS**~~ -- **DONE (2026-08).**
+      `macos-scrbrght-0-100-50-multvalue`: opcode `0x12` / param `0x0e` /
+      value 0-100 at offset 17; readback `0x73` offset 26 (1:1, 25/25).
+      `params.screen_brightness` + `state_report.screen_brightness_byte_offset`.
+      TODO: wire into CLI once `build_global_command` exists.
 - [ ] **Surround-EQ pre/post** -- opcode `0xab` / param `0xeb`, only 2
-      frames so far. Toggle several times to decode.
+      frames so far. Toggle several times to decode. (macOS)
 - [ ] **Pan law** -- trim capture never sent it. Move only pan-law; watch
       `state_report` offset 25 bits 0-1.
 - [ ] **DC-coupling** -- `thunderb-lat-dccp` sent nothing; isolate it.
@@ -259,9 +269,14 @@ are analyzable offline right now:
   offsets 24-25 (`state_report.output_trim_block`). Targets 0/1/2 ≈ mona /
   monb / line trim. **Pan law was NOT in the capture** (no 4th target ever
   sent) -- still needs its own capture.
+- ~~`macos-scrbrght-0-100-50-multvalue`~~ -- **DONE (2026-08, native macOS).**
+  Screen brightness: opcode `0x12` / param `0x0e` / value 0-100 at
+  offset 17; `0x73` readback offset 26 (1:1, 25/25 commands). VM showed
+  nothing because the VM Launcher no-ops the slider. `params.screen_brightness`.
 - **Routing** (`matrix-*` captures) -- **partly decoded**, active thread.
   Opcode `0x53`/`0xd3`; byte 18 = destination (full 0-14 map confirmed),
   byte 19 = source bank, byte 20 = source index. Bytes 21+ = a
   variable-length per-channel group dump (not decoded). Exclusive +
-  idempotent. No `0x73` readback. See TODO section + `frame.routing_command`
-  + `params.routing`.
+  idempotent. No readback at connect (CAPTURE E) but one exists somewhere
+  (cross-machine persistence) -- CAPTURE E'. See TODO section +
+  `frame.routing_command` + `params.routing`.

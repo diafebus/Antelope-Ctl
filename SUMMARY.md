@@ -59,7 +59,7 @@ Wireshark/USBPcap captures, and building a **stdlib-only Python CLI**
 | opcode | name | layout |
 |---|---|---|
 | `0x13` | SET_PARAM | param@16, channel@17, value@18 |
-| `0x12` | SET_GLOBAL | param@16, value@17 (no channel) |
+| `0x12` | SET_GLOBAL | param@16, value@17 (no channel) -- talkback_*, screen_brightness (`0x0e`, 0-100, readback @26) |
 | `0x14` | SET_LINK | `0xa2`@16, space@17, pair@18, enabled@19 |
 | `0x53` | SET_ROUTE | `0xd3`@16, `0x41`@17, dest@18, src_bank@19, src_idx@20, op bytes @21/@22 or a list |
 | `0xab` | surround-EQ | `0xeb`@16 -- barely decoded, needs a capture |
@@ -80,6 +80,7 @@ on outgoing).
 | offset | meaning |
 |---|---|
 | 24-25 | output_trim, packed (targets 0/1/2 = mona/monb/line) |
+| 26 | screen brightness (0-100, plain byte) -- confirmed 2026-08 |
 | 28-45 | bus block, 6 buses x 3 bytes at `28+3N` |
 | 49-60 | channel gain array (12 input ch) |
 | 61-72 | channel status array (bits: mode `0x03`, phantom `0x10`, phase `0x40`) |
@@ -94,15 +95,24 @@ on outgoing).
 ### Connect handshake (cross-platform confirmed, 2026-08)
 Entire host->device init = ONE frame `SET_PARAM(param 0x49, ch 1, val 0)`
 (Windows AntelopeINIT + all 4 macOS INIT captures). Device replies with
-`0x74` enum burst + `0x73`/`0x75` polling. Optional cosmetic
-`SET_PARAM(gain 0x50)` ramp = state restore, not handshake.
-**No routing readback at connect** -- see routing section.
+`0x74` enum burst + `0x73`/`0x75` polling. Any extra `SET_PARAM(gain
+0x50)` frames = the user wiggling sliders to force the buggy Launcher to
+flush, not device behaviour.
+**No routing readback at connect** -- but one exists (see routing section).
+
+### Screen brightness -- CONFIRMED (2026-08, native macOS)
+`global_command` opcode `0x12`, param `0x0e`, value 0-100 (0x00-0x64) @17.
+Readback = `0x73` offset 26, plain byte = value (25/25 in
+`macos-scrbrght-0-100-50-multvalue`). VM Launcher no-ops the slider ->
+"zero frames under the VM" != host-side; recheck VM negatives on macOS.
+Not in CLI yet (needs `build_global_command`).
 
 ### macOS capture format (`captures/macos-captures/`)
 Darwin XHC pcapng: 40-byte pseudo-header + 320-byte payload =
 `frame.len==360`; payload[0] = magic; header byte 30 = endpoint
 (0x01 OUT / 0x82 IN). `0x74` on IN-ep1, `0x73`/`0x75` on IN-ep2.
-`tools/scan_capture.py` only knows the Windows TSV layout.
+`tools/scan_capture.py` only knows the Windows TSV layout; use
+`tools/scan_macos_capture.py` for these (`--magic`, `--diff` modes).
 
 ### Address spaces
 - input channels 0-11; ADAT 0-15 (8 link pairs); S/PDIF 0-1
@@ -149,13 +159,15 @@ host-side, exactly like the Launcher.
   Monitors/Headphones menu)
 - oscillator insert + output mute both go through this frame via
   right-click
-- **NO routing readback at connect** -- CONFIRMED (CAPTURE E, 2026-08,
-  macOS `macos-antelopeINIT-poweroff-on2/on3`: cold boot, swapped
-  LineOut routing between the two, connect sequences diff to nothing
-  routing-related -- `0x74` identical, descriptors identical, `0x73`
-  only a preamp-gain byte + meter noise, no `0x53`). Device keeps
-  routing in NVRAM but never reports it; Launcher caches host-side.
-  Only untested path left: opening the routing *tab* (CAPTURE E').
+- **Routing readback EXISTS but is undecoded, and is NOT at connect.**
+  User proof it exists: changed routing on Windows VM -> switched to
+  macOS -> macOS Launcher showed the NEW routing (host cache can't
+  cross machines; device stores in NVRAM + reports to whoever asks).
+  CAPTURE E (2026-08, `macos-antelopeINIT-poweroff-on2/on3`: cold boot,
+  swapped LineOut routing) ruled out the CONNECT sequence -- `0x74`
+  identical, descriptors identical, `0x73` only a preamp-gain byte +
+  meter noise, no `0x53`. So it fires later; prime suspect = opening
+  the routing tab (CAPTURE E'). Also not in the `0x73` report at all.
 
 ---
 
@@ -218,26 +230,28 @@ physical link in one session, channel_link readback diff.
 - Routing matrix is the active thread. Simple destinations
   (hp1/hp2/mona/monb/reamp) are decoded + wired into an experimental CLI;
   not hardware-tested yet.
-- **CAPTURE E answered (2026-08-30):** no routing readback at connect.
-  Routing is host-side cached, same as this CLI. Docs updated (PROTOCOL
-  §4/§7, profile `params.routing.readback` + `init_enumeration_report`,
-  README, CLAUDE.md).
-- User uploaded a batch of native-macOS captures to
-  `captures/macos-captures/` -- mostly UNTRIAGED (matrix source/dest,
-  sample rate, screen brightness, mix1 send, auraverb). Next: triage the
-  `macos-matrix-*` set for CAPTURE C / D material before asking for more.
-- Also pending: CAPTURE E' (routing tab open), `route` hardware
-  round-trip test.
+- **CAPTURE E answered (2026-08-30):** no routing readback in the connect
+  sequence -- BUT one must exist (user: routing survived a Windows->macOS
+  switch). Undecoded; next attempt = CAPTURE E' (routing-tab open).
+- **Screen brightness decoded (2026-08-30):** `0x12`/`0x0e`/0-100, readback
+  `0x73` @26. Was a VM artifact -- VM Launcher no-ops the slider.
+- macos-captures/ batch still mostly UNTRIAGED. Next: the `macos-matrix-*`
+  set for CAPTURE C / D material (source banks + multichannel list).
+- Also pending: CAPTURE E', `route` hardware round-trip test, wire
+  `build_global_command` + a `set-brightness` CLI command.
 
 ## Session log
 
-- **2026-08-30 (b)** -- CAPTURE E done via 4 native-macOS INIT captures.
-  No routing readback at connect (on2/on3 had swapped LineOut routing;
-  connect sequences diff to nothing routing-related). Confirmed the
-  whole connect handshake = one `SET_PARAM(param 0x49, ch1, val0)`
-  (cross-platform). Documented macOS Darwin capture format. Updated
-  PROTOCOL/profile/README/CLAUDE/SUMMARY. macos-captures/ batch still
-  mostly untriaged.
+- **2026-08-30 (b)** -- macOS captures. CAPTURE E: no routing readback in
+  the connect sequence (on2/on3 swapped LineOut routing -> connect diffs
+  to nothing routing-related), but user evidence (routing survived a
+  Windows->macOS host switch) proves a readback exists -> undecoded, try
+  CAPTURE E'. Connect handshake = one `SET_PARAM(0x49,ch1,0)`
+  (cross-platform). **Screen brightness decoded** from
+  `macos-scrbrght-0-100-50-multvalue`: `0x12`/`0x0e`/0-100, readback @26;
+  VM had shown nothing only because the VM Launcher no-ops it. Documented
+  macOS Darwin capture format. Updated all 5 docs. macos-matrix-* etc.
+  still untriaged.
 - **2026-08-30 (a)** -- Decoded routing matrix (destinations 0-14, source
   banks, op bytes for simple destinations) from `matrix-*` captures.
   Shipped experimental `route` / `unroute` / `matrix-status`. Confirmed

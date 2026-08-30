@@ -45,7 +45,7 @@ opcode -- this is the single most important thing to get right:
 | Opcode @4 | Name | param_id @16 | Payload | Used by |
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
-| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain |
+| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, `source_bank` @19, `source_index` @20, then op bytes / a list -- see §7 | routing matrix |
 | `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
@@ -88,9 +88,10 @@ host→device init traffic is a single frame:
 `SET_PARAM(param 0x49, channel 1, value 0)` -- seen in the Windows
 `AntelopeINIT.tsv` and in all four macOS INIT captures. The device answers
 with the `0x74` enumeration burst + normal `0x73`/`0x75` polling. A
-just-connected Launcher may also send a short cosmetic `SET_PARAM(gain
-0x50)` ramp (gain fade-in) on the first channels -- state restore, not
-handshake.
+just-connected Launcher may also send a short `SET_PARAM(gain 0x50)` step
+sequence on the first channels -- in `on2` that was the user nudging the
+gain sliders to force the (buggy) Launcher to flush state, not a device
+or handshake behaviour.
 
 **macOS capture format.** Native-macOS (Darwin "XHC") pcapng: each vendor
 HID report is a 40-byte Darwin pseudo-header + 320-byte payload =
@@ -183,6 +184,8 @@ offset for target *N*.
 | 17, 19 | *Launcher-handshake blip* | one byte each, `0x08->0x00` / `0x06->0x00`, ~3.0 s after the Launcher starts (incl. the no-user INIT capture) | startup noise, ignore |
 | 24 | output_trim target 0 | `value << 4` (bits 4-6) | confirmed |
 | 25 | output_trim targets 1 & 2 | t1 = `value << 2` (bits 2-4); t2 = `value << 5` (bits 5-7) | confirmed |
+| 26 | **screen brightness** | plain byte, 0-100 (= commanded value) | confirmed (`macos-scrbrght-0-100-50-multvalue`) |
+| 27 | (unmapped) | -- | -- |
 | 28-45 | **bus_block** -- 6 buses x 3 bytes | bus *N*: level @ `28+3N`, status @ `29+3N`, reserved @ `30+3N` | confirmed |
 | 37 / 38 | bus 3 (line_out) level / status | (= the `28+3N` formula, N=3) | confirmed |
 | 40 / 41 | bus 4 (reamp) level / status | (N=4) | confirmed |
@@ -400,16 +403,19 @@ source. The settings-tab oscillator panel is separate and sends nothing
 (Mon A / Mon B / HP1 / HP2, which combine) use `talkback_dest_assign`
 (`0x13` / `0x5d`).
 
-**No routing readback anywhere -- the Launcher caches routing host-side**
-(same as this CLI's `matrix-status`). The device *does* retain routing in
-its own NVRAM across a full power cycle (user-confirmed: "it saved
-state"), but it never reports that state back over USB.
+**A routing readback exists -- but it is NOT in the connect sequence, and
+we have not found where it is.** User proof it exists (2026-08): routing
+changed on the Windows VM, then the machine was switched to macOS, and the
+macOS Launcher displayed the *new* routing -- even though the last time
+that Mac saw the card the routing was different. A host-side cache cannot
+agree across two machines, so the device must store routing in NVRAM
+**and** hand it to whichever host asks.
 
-Confirmed by the macOS `macos-antelopeINIT-poweroff-on2/on3` captures
-(2026-08, = the "CAPTURE E" test): device powered fully off, Launcher
-quit, start recording, launch Launcher, power on device. on2 and on3 had
-**deliberately different LineOut routing** (preamp 1-12 vs comp-play,
-swapped). Diffing the two complete connect sequences:
+What CAPTURE E ruled out is the **connect handshake**. The macOS
+`macos-antelopeINIT-poweroff-on2/on3` captures: device powered fully off,
+Launcher quit, start recording, launch Launcher, power on device. on2 and
+on3 had **deliberately different LineOut routing** (preamp 1-12 vs
+comp-play, swapped). Diffing the two complete connect sequences:
 
 - `0x73` state report -- final states differ only at offset 50 (one
   preamp gain byte, unrelated) and free-running meter-noise offsets. No
@@ -423,13 +429,22 @@ swapped). Diffing the two complete connect sequences:
   frame: `SET_PARAM(param 0x49, channel 1, value 0)` (present in all four
   macOS INIT captures; matches the lone `0x49` in the Windows
   `AntelopeINIT.tsv` -- now cross-platform confirmed). on2 additionally
-  had an 18-frame `SET_PARAM(gain 0x50)` ramp on ch0/ch1 -- a cosmetic
-  Launcher-side gain fade-in, not routing. **No `0x53`, no routing query.**
+  had an 18-frame `SET_PARAM(gain 0x50)` step sequence on ch0/ch1 -- the
+  user deliberately wiggling the gain sliders to force Antelope's buggy
+  Launcher to actually flush state to the device (their words: gain,
+  phase-invert and phantom are "more solid"; routing changes sometimes
+  don't register). Not device behaviour, not routing. **No `0x53`, no
+  routing query.**
 
-So the Launcher neither reads routing from the device nor pushes its
-cached routing at connect. **Still untested:** whether opening the routing
-matrix *tab* triggers a query (these captures only observed the connect).
+So at connect the Launcher neither reads routing from the device nor
+pushes cached routing. The readback fires **later** -- prime suspect:
+opening the routing-matrix *tab* (CAPTURE E'). Other candidates: a HID
+`GET_REPORT` / vendor control transfer (Darwin captures dissect these
+poorly), or a request/response pair on the vendor interrupt endpoints.
 See `params.routing.readback`.
+
+Until the readback is decoded, `matrix-status` stays a local cache and
+goes stale if routing is changed outside this CLI.
 
 ---
 
@@ -540,12 +555,14 @@ What the Settings/Device window controls actually do, from the captures
 | Pan law | `settings-trim-...` | none (not sent in that capture) | unknown -- recapture |
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
 | **Oscillator** -- settings panel (freq/level/mute) | `settings-osc1-2-fq-lvl` | **zero frames** | host-side or uncaptured |
-| **Screen brightness** | `settings-scrbrght-surroundEQ` | **zero frames** | host-side *in the VM* -- but see below, it works on native macOS |
+| **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; VM sent nothing because the slider is a no-op under the VM. `params.screen_brightness` |
 | **Thunderbolt / latency / DC-coupling** | `settigs-thunderb-lat-dccp` | **zero frames** | host driver settings; TB is inactive while connected over USB, so this tab does nothing in this setup |
 
 So the Settings window is a genuine mix: output levels/mute, the three
-trims, and surround-EQ pre/post are real device commands; the oscillator
-and (at least under the VM) screen brightness and latency are host-side.
+trims, surround-EQ pre/post and **screen brightness** are real device
+commands; the oscillator panel and latency are host-side. **Lesson: the
+VM Launcher silently no-ops some controls -- "zero frames under the VM"
+does not mean host-side. Re-check on native macOS before concluding.**
 
 ### Oscillator -- two access points
 
@@ -559,18 +576,24 @@ mute): `settings-osc1-2-fq-lvl.pcapng` had **zero** outgoing frames over
 27.7 s. So the per-signal parameters are configured host-side or via an
 uncaptured path -- only the matrix "insert into output" half is confirmed.
 
-### Screen brightness -- VM shows nothing, macOS works
+### Screen brightness -- RESOLVED (native macOS, 2026-08)
 
-`settings-scrbrght-surroundEQ.pcapng` sent nothing for the brightness
-slider. **But the user reports brightness *does* work from the native
-macOS Launcher** (and doesn't change at all under the VM). USBPcap on the
-same capture did catch the 2 surround-EQ frames, so it's not a
-lost-OUT-transfer problem -- more likely the VM's Launcher build no-ops
-brightness when it can't fully talk to the hardware, or that build just
-doesn't implement it. **A native macOS USB capture is the way to settle
-this** (and would also re-check the oscillator / thunderbolt findings
-against a Launcher build where everything works). Capture with **no size
-filter** so nothing like the `0xab` frames gets dropped.
+`settings-scrbrght-surroundEQ.pcapng` (VM) sent nothing for the
+brightness slider -- because the VM Launcher no-ops it. Recaptured on
+native macOS as `macos-scrbrght-0-100-50-multvalue`, with the user
+watching the device's physical screen dim and brighten:
+
+- **Command:** `global_command` (opcode `0x12`), param `0x0e`, value
+  **0-100** (`0x00`-`0x64`) at payload offset 17. No target byte.
+- **Readback:** `0x73` state report **offset 26** = the value, exact,
+  1:1, on all 25 commands in the capture. Sits in the gap between
+  `output_trim_block` (24-25) and `bus_block` (28-45); offset 27 still
+  unmapped.
+- First confirmed `0x12` param with a plain `0x73` readback (talkback's
+  `0x12` params read back in the packed `talkback_block`).
+
+See `params.screen_brightness`. Would be a clean first CLI user of
+`build_global_command()`.
 
 ### Surround-EQ
 
@@ -592,12 +615,12 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + source bank/index + the simple-destination op bytes all confirmed; CLI `route` covers HP1/HP2/Mon A/Mon B/Reamp. Open: the multichannel per-channel list, source banks `0x01`/`0x05`-`0x0a`, the per-destination `[22]` numbering. **No readback at connect -- confirmed** by the macOS on2/on3 INIT captures with swapped routing (§7); device keeps routing in NVRAM but never reports it. Only the routing-*tab*-open path is still untested. |
+| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + source bank/index + the simple-destination op bytes all confirmed; CLI `route` covers HP1/HP2/Mon A/Mon B/Reamp. Open: the multichannel per-channel list, source banks `0x01`/`0x05`-`0x0a`, the per-destination `[22]` numbering. **Routing readback exists** (cross-machine persistence proves it) but is NOT in the connect sequence (macOS on2/on3, §7) and is not decoded -- prime suspect: routing-tab open (CAPTURE E'). |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
 | Oscillator | matrix insert is a real command (routing bank `0x0c`, §7); the settings-panel freq/level/mute sends nothing |
-| Screen brightness | resolved -- sends nothing (host-side or not persisted) |
+| Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Surround-EQ pre/post | new opcode `0xab` / param `0xeb` seen (2 frames); layout undecoded, no `0x73` effect |
 | Thunderbolt / latency / DC-coupling | zero outgoing frames -- host-side, or not exercised |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |

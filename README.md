@@ -167,14 +167,14 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json matrix-status    
 - **Routing is exclusive** -- `route` replaces whatever that output currently
   has. To silence an output, route `mute`.
 - **`matrix-status` is a local cache**, not a device readback -- it only shows
-  what `route`/`unroute` sent from this CLI, and goes stale if you change
-  routing in the Launcher. There is **no device readback for routing**: the
-  official Launcher also caches it host-side. Confirmed 2026-08 by diffing
-  two native-macOS cold-boot connect captures with deliberately different
-  routing (`macos-antelopeINIT-poweroff-on2/on3`) -- identical `0x73`,
-  `0x74` and USB descriptors, no routing query on the wire. The device
-  keeps routing in its own NVRAM across a power cycle but never reports
-  it. (Only untested path left: opening the Launcher's routing *tab*.)
+  what `route`/`unroute` sent from this CLI, and goes stale if routing is
+  changed anywhere else. A device-side routing readback **does exist**
+  (the user changed routing on the Windows VM, switched to macOS, and the
+  macOS Launcher showed the new routing -- a host cache can't do that), but
+  it is **not** in the connect handshake (ruled out 2026-08 by diffing two
+  native-macOS cold-boot connects with swapped routing,
+  `macos-antelopeINIT-poweroff-on2/on3`) and is **not decoded yet**. Prime
+  suspect: opening the Launcher's routing *tab*.
 - Line out, ADAT out, S/PDIF out, com rec, AFX in, the mix channels and
   surround in use a different (undecoded) frame and are **not** supported.
 
@@ -523,10 +523,24 @@ Line output trim (capture-order inference). See `params.output_trim` and
   bits (offset 25 bits 0-1 = a 2-bit / 4-option field) that could hold it.
   Needs its own capture.
 
-### Oscillator, screen brightness, thunderbolt -- resolved as host-side (2026-08)
+### Screen brightness -- CONFIRMED, real device command (2026-08, native macOS)
 
-With the raw `.pcapng` files now available locally, three settings-tab
-features were checked for outgoing traffic on the HID control endpoint:
+The VM capture showed nothing for the brightness slider, which had it
+filed as host-side. **Wrong -- the VM Launcher just no-ops the slider.**
+Recaptured on native macOS (`macos-scrbrght-0-100-50-multvalue`) with the
+device's physical screen visibly changing:
+
+- **Command:** opcode `0x12` (global), param `0x0e`, value **0-100**
+  (`0x00`-`0x64`) at payload offset 17.
+- **Readback:** `0x73` state report **offset 26** = the value, exactly,
+  on all 25 commands.
+- See `params.screen_brightness`. Not yet in the CLI (needs
+  `build_global_command()` first) -- would be a clean first user of it.
+
+**Lesson:** "zero frames under the VM" ≠ host-side. The VM Launcher
+silently drops some controls. Re-check on native macOS before concluding.
+
+### Oscillator, thunderbolt -- resolved as host-side (2026-08)
 
 - **Oscillator / test-tone generator** -- the *settings-tab panel*
   (freq / level / mute) sends **zero** outgoing frames. But there are two
@@ -534,10 +548,10 @@ features were checked for outgoing traffic on the HID control endpoint:
   routing matrix ("insert oscillator into this output") -- and *that*
   **is** a real device command: the `0x53` routing frame with source bank
   `0x0c` (see `params.routing` / `params.oscillator`). So only the
-  per-signal parameters are host-side; the insert isn't.
+  per-signal parameters are host-side; the insert isn't. (Worth a
+  native-macOS recheck too, given the brightness lesson above.)
 - **Thunderbolt / latency / DC-coupling** -- also zero outgoing frames.
   Host driver settings, or not exercised in the capture.
-- **Screen brightness** -- sent nothing.
 - **Surround-EQ pre/post** -- the one thing here that *does* talk to the
   device: 2 frames of a **new opcode `0xab` / param `0xeb`**, differing
   only in bit 7 of payload byte @19. No `0x73` effect. Too few frames to
@@ -557,25 +571,23 @@ were recorded with **deliberately different LineOut routing** -- preamp
   `SET_PARAM(param 0x49, channel 1, value 0)`. Present in all four macOS
   captures *and* in the older Windows `AntelopeINIT.tsv` -- cross-platform
   confirmed. The device replies with the `0x74` topology enumeration
-  burst and normal `0x73`/`0x75` polling. A freshly-connected Launcher
-  may also send a brief `SET_PARAM(gain 0x50)` ramp on the first channels
-  -- a cosmetic gain fade-in / state restore, not part of the handshake.
-- **There is no routing readback at connect.** Diffing the on2 vs on3
-  connect sequences byte-for-byte: the `0x74` enumeration is identical,
-  the USB descriptors are identical, the final `0x73` state report
-  differs only in one preamp-gain byte and free-running meter noise, and
-  there is no `0x53` (routing) frame in either direction. The device
-  retains routing in its own NVRAM across the power cycle ("it saved
-  state") but never tells the host. The Launcher, like this CLI, must be
-  caching routing host-side. **Only remaining untested path:** opening
-  the Launcher's routing-matrix *tab* (these captures only watched the
-  connect).
-- **macOS capture format** (for `tools/` and future work): Darwin "XHC"
-  pcapng wraps each 320-byte vendor HID report in a 40-byte pseudo-header
-  (`frame.len == 360`); payload byte 0 is the usual magic, header byte 30
-  is the endpoint. `tools/scan_capture.py` expects the Windows TSV
-  layout; a small extractor for the macOS format lived in the scratchpad
-  for this session (40-byte strip + `frame.len==360` filter).
+  burst and normal `0x73`/`0x75` polling. In `on2` the Launcher also sent
+  a short `SET_PARAM(gain 0x50)` sequence -- the user nudging gain sliders
+  to force the buggy Launcher to flush state, not handshake or device
+  behaviour.
+- **The routing readback is not at connect** (but it exists -- see the
+  cross-machine evidence under "Routing matrix" above). Diffing the on2
+  vs on3 connect sequences byte-for-byte: the `0x74` enumeration is
+  identical, the USB descriptors are identical, the final `0x73` state
+  report differs only in one preamp-gain byte and meter noise, and there
+  is no `0x53` frame in either direction. So the readback fires later --
+  prime suspect: opening the routing-matrix *tab* (these captures only
+  watched the connect).
+- **macOS capture format:** Darwin "XHC" pcapng wraps each 320-byte
+  vendor HID report in a 40-byte pseudo-header (`frame.len == 360`);
+  payload byte 0 is the usual magic. `tools/scan_capture.py` only reads
+  the Windows TSV layout -- use **`tools/scan_macos_capture.py`** for
+  these (see `CAPTURING.md`).
 
 ### Still unconfirmed
 
