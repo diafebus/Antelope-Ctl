@@ -201,6 +201,11 @@ on native macOS before trusting the "host-side" verdicts.
       assert the opcode isn't forbidden. `--force` overrides every bound.
 - [ ] `antelope/protocol.py`: add `build_global_command(profile, param_id, value)`
       (opcode `0x12`, value @17) -- the profile references it already.
+      Then wire a `set-brightness <0-100>` CLI command (`params.screen_brightness`,
+      readback `state_report` offset 26) -- the clean first user of it.
+- [ ] Hardware round-trip test the rewritten `route`:
+      `route hp1 preamp3 preamp4` -> Launcher should show HP1 L=preamp3,
+      R=preamp4 (the old code swapped them). Then `route hp1 mute`.
 - [ ] Decide which confirmed-but-unexposed params get CLI commands:
       talkback (`talkback_*`), line/reamp bus levels (already work via
       `set-bus-level` with bus 3/4), `output_trim`.
@@ -297,6 +302,6 @@ are analyzable offline right now:
   destination group (full 0-14 map confirmed); from byte 19, an array of
   (bank,idx) pairs, stride 2, one per output channel of the group. Whole
   group always sent. mute=(0x0b,0). Exclusive per channel. CLI rewritten
-  (`route <dest> <L> <R>`). Multichannel channel counts + true readback
-  still open (readback exists per cross-machine persistence -> E'). See
-  `frame.routing_command` + `params.routing`.
+  (`route <dest> <Lsrc> [<Rsrc>]`). Multichannel channel counts + true
+  readback still open (readback exists per cross-machine persistence -> E').
+  See `frame.routing_command` + `params.routing`.
