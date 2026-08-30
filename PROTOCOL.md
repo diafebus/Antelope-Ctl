@@ -79,8 +79,26 @@ in section 9.
 ### 2026-08 caveat: only `0x70` / `0x73` / `0x75` exist in normal use
 
 Every multi-thousand-report capture to date contains only those three
-magics (plus `0x74` in the one INIT capture). There is no hidden fourth
-report type carrying link state, oscillator state, etc.
+magics (plus `0x74` in the INIT captures -- Windows `AntelopeINIT` and the
+four macOS `macos-antelopeINIT-*`). There is no hidden fourth report type
+carrying link state, oscillator state, routing state, etc.
+
+**Connect handshake (cross-platform confirmed).** The Launcher's entire
+host→device init traffic is a single frame:
+`SET_PARAM(param 0x49, channel 1, value 0)` -- seen in the Windows
+`AntelopeINIT.tsv` and in all four macOS INIT captures. The device answers
+with the `0x74` enumeration burst + normal `0x73`/`0x75` polling. A
+just-connected Launcher may also send a short cosmetic `SET_PARAM(gain
+0x50)` ramp (gain fade-in) on the first channels -- state restore, not
+handshake.
+
+**macOS capture format.** Native-macOS (Darwin "XHC") pcapng: each vendor
+HID report is a 40-byte Darwin pseudo-header + 320-byte payload =
+`frame.len == 360`; payload byte 0 is the usual magic. Header byte 30 =
+endpoint (`0x01` OUT / `0x82` IN); VID/PID at header bytes 36-39. The
+`0x74` enumeration arrives on IN endpoint 1, `0x73`/`0x75` on IN endpoint
+2. tshark's `usb.src`/`usb.dst` direction labels are unreliable here --
+discriminate outgoing frames by magic `0x70` + opcode instead.
 
 ---
 
@@ -382,13 +400,36 @@ source. The settings-tab oscillator panel is separate and sends nothing
 (Mon A / Mon B / HP1 / HP2, which combine) use `talkback_dest_assign`
 (`0x13` / `0x5d`).
 
-**No `0x73` readback** -- routing state is invisible in the state report.
-Also checked `AntelopeINIT.pcapng`: no routing data in its `0x73` report,
-its `0x74` enumeration is topology-only, and it has no HID-class or vendor
-control transfers. **Untested idea:** a genuinely-fresh Launcher start
-(state changed, Launcher fully quit) might query routing at init via a
-path not in that capture -- worth capturing two such connects with
-different routes and diffing (`params.routing.readback`).
+**No routing readback anywhere -- the Launcher caches routing host-side**
+(same as this CLI's `matrix-status`). The device *does* retain routing in
+its own NVRAM across a full power cycle (user-confirmed: "it saved
+state"), but it never reports that state back over USB.
+
+Confirmed by the macOS `macos-antelopeINIT-poweroff-on2/on3` captures
+(2026-08, = the "CAPTURE E" test): device powered fully off, Launcher
+quit, start recording, launch Launcher, power on device. on2 and on3 had
+**deliberately different LineOut routing** (preamp 1-12 vs comp-play,
+swapped). Diffing the two complete connect sequences:
+
+- `0x73` state report -- final states differ only at offset 50 (one
+  preamp gain byte, unrelated) and free-running meter-noise offsets. No
+  routing.
+- `0x74` topology enumeration -- **byte-identical** between the two
+  (indices only, as always).
+- USB control transfers (EP0) -- byte-identical: plain descriptors
+  (device / config / strings "Orion Studio III" etc / UAC2). No routing.
+- 48-byte HID interface -- only idle keepalives. No routing.
+- Outgoing commands -- the *entire* host→device handshake is **one**
+  frame: `SET_PARAM(param 0x49, channel 1, value 0)` (present in all four
+  macOS INIT captures; matches the lone `0x49` in the Windows
+  `AntelopeINIT.tsv` -- now cross-platform confirmed). on2 additionally
+  had an 18-frame `SET_PARAM(gain 0x50)` ramp on ch0/ch1 -- a cosmetic
+  Launcher-side gain fade-in, not routing. **No `0x53`, no routing query.**
+
+So the Launcher neither reads routing from the device nor pushes its
+cached routing at connect. **Still untested:** whether opening the routing
+matrix *tab* triggers a query (these captures only observed the connect).
+See `params.routing.readback`.
 
 ---
 
@@ -551,7 +592,7 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + source bank/index + the simple-destination op bytes all confirmed; CLI `route` covers HP1/HP2/Mon A/Mon B/Reamp. Open: the multichannel per-channel list, source banks `0x01`/`0x05`-`0x0a`, the per-destination `[22]` numbering. No readback. |
+| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + source bank/index + the simple-destination op bytes all confirmed; CLI `route` covers HP1/HP2/Mon A/Mon B/Reamp. Open: the multichannel per-channel list, source banks `0x01`/`0x05`-`0x0a`, the per-destination `[22]` numbering. **No readback at connect -- confirmed** by the macOS on2/on3 INIT captures with swapped routing (§7); device keeps routing in NVRAM but never reports it. Only the routing-*tab*-open path is still untested. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |

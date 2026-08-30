@@ -168,7 +168,13 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json matrix-status    
   has. To silence an output, route `mute`.
 - **`matrix-status` is a local cache**, not a device readback -- it only shows
   what `route`/`unroute` sent from this CLI, and goes stale if you change
-  routing in the Launcher.
+  routing in the Launcher. There is **no device readback for routing**: the
+  official Launcher also caches it host-side. Confirmed 2026-08 by diffing
+  two native-macOS cold-boot connect captures with deliberately different
+  routing (`macos-antelopeINIT-poweroff-on2/on3`) -- identical `0x73`,
+  `0x74` and USB descriptors, no routing query on the wire. The device
+  keeps routing in its own NVRAM across a power cycle but never reports
+  it. (Only untested path left: opening the Launcher's routing *tab*.)
 - Line out, ADAT out, S/PDIF out, com rec, AFX in, the mix channels and
   surround in use a different (undecoded) frame and are **not** supported.
 
@@ -537,6 +543,39 @@ features were checked for outgoing traffic on the HID control endpoint:
   only in bit 7 of payload byte @19. No `0x73` effect. Too few frames to
   decode the frame layout -- needs a dedicated capture. See
   `params.surround_eq`.
+
+### Connect handshake & routing readback -- resolved (2026-08, native macOS)
+
+Four native-macOS captures of the Launcher connecting to the device
+(`captures/macos-captures/macos-antelopeINIT-*`): device powered fully
+off, Launcher quit, start recording, launch Launcher, power device on.
+Two of them (`...poweroff-on2-itsavedstate`, `...poweroff-on3-itsavedstate`)
+were recorded with **deliberately different LineOut routing** -- preamp
+1-12 vs computer-playback, swapped between the two.
+
+- **The whole host->device connect handshake is one frame:**
+  `SET_PARAM(param 0x49, channel 1, value 0)`. Present in all four macOS
+  captures *and* in the older Windows `AntelopeINIT.tsv` -- cross-platform
+  confirmed. The device replies with the `0x74` topology enumeration
+  burst and normal `0x73`/`0x75` polling. A freshly-connected Launcher
+  may also send a brief `SET_PARAM(gain 0x50)` ramp on the first channels
+  -- a cosmetic gain fade-in / state restore, not part of the handshake.
+- **There is no routing readback at connect.** Diffing the on2 vs on3
+  connect sequences byte-for-byte: the `0x74` enumeration is identical,
+  the USB descriptors are identical, the final `0x73` state report
+  differs only in one preamp-gain byte and free-running meter noise, and
+  there is no `0x53` (routing) frame in either direction. The device
+  retains routing in its own NVRAM across the power cycle ("it saved
+  state") but never tells the host. The Launcher, like this CLI, must be
+  caching routing host-side. **Only remaining untested path:** opening
+  the Launcher's routing-matrix *tab* (these captures only watched the
+  connect).
+- **macOS capture format** (for `tools/` and future work): Darwin "XHC"
+  pcapng wraps each 320-byte vendor HID report in a 40-byte pseudo-header
+  (`frame.len == 360`); payload byte 0 is the usual magic, header byte 30
+  is the endpoint. `tools/scan_capture.py` expects the Windows TSV
+  layout; a small extractor for the macOS format lived in the scratchpad
+  for this session (40-byte strip + `frame.len==360` filter).
 
 ### Still unconfirmed
 

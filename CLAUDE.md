@@ -35,9 +35,19 @@ Auto-compaction runs against the whole context window and is expensive
 
 ## TODO / next steps (keep this current)
 
-Raw `.pcapng` files are local under `captures/` (`raw pcapng captures/`
-and `matrix-captures/`); `tshark` 4.6.8 is on this machine. Anything
-needing full frames / both directions / USB metadata is offline now.
+Raw `.pcapng` files are local under `captures/` (`raw pcapng captures/`,
+`matrix-captures/`, and `macos-captures/` -- native-macOS Darwin XHC
+captures, 40-byte pseudo-header + 320-byte payload, `frame.len==360`);
+`tshark` 4.6.8 is on this machine. Anything needing full frames / both
+directions / USB metadata is offline now.
+
+**macOS captures not yet triaged** (`captures/macos-captures/`): the
+`macos-matrix-*` set (compplay/afx/surround/mix -> lineout -- likely
+CAPTURE C + D source-bank + multichannel-list material), `macos-mix1-send-pan-fader-mute-solo-link`,
+`macos-smplrt-*` (sample rate), `macos-scrbrght-0-100-*` (screen
+brightness on macOS -- does it send now?), `macos-auraverb-on-off`,
+`macos-antelopeINIT-poweron` / `-poweron1-itresettopreviousstate`
+(2 more INIT variants). INIT poweroff-on2/on3 = CAPTURE E, done.
 
 ### ROUTING MATRIX -- the active thread
 
@@ -85,14 +95,26 @@ channels). Routing an already-present source is idempotent (no frame).
 - [ ] **CAPTURE D -- multichannel destination list**: change ONE channel
       of line out (or adat out) at a time -- decode the variable-length
       per-channel list. Also the virtual-mix additive path (2-3 sources
-      into mix ch1, keeping all).
-- [ ] **CAPTURE E -- routing readback via fresh Launcher INIT** (user idea):
-      change some routes, FULLY quit the Launcher, restart, capture the
-      connect (no size filter). Do it twice with different routes and diff.
-      If they differ -> routing readback lives in the init handshake (the
-      existing AntelopeINIT.pcapng has none -- checked). If not -> routing
-      is host-side-cached, no device readback at all. See
-      `params.routing.readback`.
+      into mix ch1, keeping all). NOTE: `macos-matrix-compplay1-12lineout1-12`,
+      `-compplay17-32lineout1-12`, `-mix1234-lineo1-invphch6` may already
+      have this -- triage before asking for more.
+- [ ] **CAPTURE E' -- routing readback on TAB open**: with the Launcher
+      already connected, capture (both dirs, no size filter) while
+      clicking into the routing-matrix tab. Do it with two different
+      routings and diff. This is the last place a device-side routing
+      readback could live -- connect-time is ruled out (CAPTURE E).
+- [x] ~~**CAPTURE E -- routing readback via fresh Launcher INIT**~~ --
+      **DONE (2026-08, native macOS).** `captures/macos-captures/macos-antelopeINIT-poweroff-on2/on3-itsavedstate.pcapng`:
+      cold boot, Launcher quit, record, launch Launcher, power device on;
+      on2 vs on3 had swapped LineOut routing (preamp1-12 vs compplay).
+      RESULT: **no routing readback at connect.** 0x74 identical, USB
+      descriptors identical, 0x73 differs only in a preamp-gain byte +
+      meter noise, no 0x53 either direction. Device keeps routing in
+      NVRAM but never reports it; Launcher caches host-side like this CLI.
+      Also cross-confirmed: the entire connect handshake is one frame
+      `SET_PARAM(param 0x49, ch 1, val 0)` (matches Windows AntelopeINIT).
+      **Only path left:** does opening the routing *tab* trigger a query?
+      -> new CAPTURE E'. See `params.routing.readback`, PROTOCOL.md §4/§7.
 - [x] ~~**wire `route` / `unroute` / `matrix-status`** into the CLI~~ --
       **DONE (2026-08), experimental.** `protocol.build_route_command` +
       `resolve_route_source` / `resolve_route_dest`; CLI `route <dest>

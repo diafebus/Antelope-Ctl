@@ -91,6 +91,19 @@ on outgoing).
 | 139-140 | startup ramp -- NOT user state |
 | 157-232 | embedded meter jitter -- noise floor only |
 
+### Connect handshake (cross-platform confirmed, 2026-08)
+Entire host->device init = ONE frame `SET_PARAM(param 0x49, ch 1, val 0)`
+(Windows AntelopeINIT + all 4 macOS INIT captures). Device replies with
+`0x74` enum burst + `0x73`/`0x75` polling. Optional cosmetic
+`SET_PARAM(gain 0x50)` ramp = state restore, not handshake.
+**No routing readback at connect** -- see routing section.
+
+### macOS capture format (`captures/macos-captures/`)
+Darwin XHC pcapng: 40-byte pseudo-header + 320-byte payload =
+`frame.len==360`; payload[0] = magic; header byte 30 = endpoint
+(0x01 OUT / 0x82 IN). `0x74` on IN-ep1, `0x73`/`0x75` on IN-ep2.
+`tools/scan_capture.py` only knows the Windows TSV layout.
+
 ### Address spaces
 - input channels 0-11; ADAT 0-15 (8 link pairs); S/PDIF 0-1
 - bus ids: 0=mona, 1=hp1, 2=hp2, 3=line_out, 4=reamp, 5=monb
@@ -136,9 +149,13 @@ host-side, exactly like the Launcher.
   Monitors/Headphones menu)
 - oscillator insert + output mute both go through this frame via
   right-click
-- **NO `0x73` readback** for routing. Checked `AntelopeINIT.pcapng` --
-  no routing data anywhere. Untested hypothesis: readback may only
-  appear in the Launcher INIT handshake (see CAPTURE E).
+- **NO routing readback at connect** -- CONFIRMED (CAPTURE E, 2026-08,
+  macOS `macos-antelopeINIT-poweroff-on2/on3`: cold boot, swapped
+  LineOut routing between the two, connect sequences diff to nothing
+  routing-related -- `0x74` identical, descriptors identical, `0x73`
+  only a preamp-gain byte + meter noise, no `0x53`). Device keeps
+  routing in NVRAM but never reports it; Launcher caches host-side.
+  Only untested path left: opening the routing *tab* (CAPTURE E').
 
 ---
 
@@ -181,9 +198,10 @@ host-side, exactly like the Launcher.
 
 | id | what | maps |
 |---|---|---|
-| **C** | route emumic / afx out / mix1 L / mix1 R / surround out -> HP1 output 1, one at a time | source banks `0x01`, `0x05`-`0x0a`, `0x0d`+ |
-| **D** | change ONE channel of line out (or adat out) at a time; also 2-3 sources into mix ch1 keeping all | the variable-length per-channel list; the virtual-mix additive path |
-| **E** | change routes, fully quit Launcher, restart, capture connect (no size filter), x2 with different routes, diff | whether routing readback lives in the INIT handshake |
+| **C** | route emumic / afx out / mix1 L / mix1 R / surround out -> HP1 output 1, one at a time | source banks `0x01`, `0x05`-`0x0a`, `0x0d`+ -- maybe already in `macos-matrix-*` (triage first) |
+| **D** | change ONE channel of line out (or adat out) at a time; also 2-3 sources into mix ch1 keeping all | the variable-length per-channel list; the virtual-mix additive path -- maybe already in `macos-matrix-compplay*lineout*` / `-mix1234-lineo1-*` (triage first) |
+| ~~**E**~~ | ~~routing readback at connect~~ | **DONE 2026-08** -- no readback at connect (macOS on2/on3). |
+| **E'** | with Launcher already connected, capture clicking into the routing *tab*, x2 with different routes, diff | whether tab-open triggers a routing query (last possible readback path) |
 
 Lower priority: screen brightness on macOS, surround-EQ pre/post
 (`0xab`), pan law (state offset 25 bits 0-1), DC-coupling, string
@@ -197,16 +215,30 @@ physical link in one session, channel_link readback diff.
 
 ## Right now (update me each session)
 
-- Working tree clean. Last commit `2056f0c`.
 - Routing matrix is the active thread. Simple destinations
-  (hp1/hp2/mona/monb/reamp) are fully decoded and wired into an
-  experimental CLI; nothing has been tested against real hardware yet.
-- Next input needed from user: any of CAPTURE C / D / E, or the
-  `route` round-trip test result.
+  (hp1/hp2/mona/monb/reamp) are decoded + wired into an experimental CLI;
+  not hardware-tested yet.
+- **CAPTURE E answered (2026-08-30):** no routing readback at connect.
+  Routing is host-side cached, same as this CLI. Docs updated (PROTOCOL
+  §4/§7, profile `params.routing.readback` + `init_enumeration_report`,
+  README, CLAUDE.md).
+- User uploaded a batch of native-macOS captures to
+  `captures/macos-captures/` -- mostly UNTRIAGED (matrix source/dest,
+  sample rate, screen brightness, mix1 send, auraverb). Next: triage the
+  `macos-matrix-*` set for CAPTURE C / D material before asking for more.
+- Also pending: CAPTURE E' (routing tab open), `route` hardware
+  round-trip test.
 
 ## Session log
 
-- **2026-08-30** -- Decoded routing matrix (destinations 0-14, source
+- **2026-08-30 (b)** -- CAPTURE E done via 4 native-macOS INIT captures.
+  No routing readback at connect (on2/on3 had swapped LineOut routing;
+  connect sequences diff to nothing routing-related). Confirmed the
+  whole connect handshake = one `SET_PARAM(param 0x49, ch1, val0)`
+  (cross-platform). Documented macOS Darwin capture format. Updated
+  PROTOCOL/profile/README/CLAUDE/SUMMARY. macos-captures/ batch still
+  mostly untriaged.
+- **2026-08-30 (a)** -- Decoded routing matrix (destinations 0-14, source
   banks, op bytes for simple destinations) from `matrix-*` captures.
   Shipped experimental `route` / `unroute` / `matrix-status`. Confirmed
   channel link is software-only via the hardware-wheel test. Checked
