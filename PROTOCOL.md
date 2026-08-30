@@ -333,7 +333,7 @@ Payload is bytes 16-23 only:
 | 16 | `0xd3` param |
 | 17 | `0x41` constant |
 | 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=Reamp (a *third* address space; more surely exist) |
-| 19 | **source bank** -- `0x00`=preamps, `0x02`=DAW/USB playback, `0x03`=ADAT, `0x04`=S/PDIF, `0x0c`=oscillator, `0x0b`=? (mute?). Others (`0x01`, `0x05`-`0x0a`) unseen. |
+| 19 | **source bank** -- `0x00`=preamps, `0x02`=DAW/USB playback (24 ch), `0x03`=ADAT, `0x04`=S/PDIF, `0x0b`=**mute** (assign to an output to silence it), `0x0c`=oscillator. Others (`0x01`, `0x05`-`0x0a`) unseen. |
 | 20 | **source index** within the bank, 0-based (preamp 1/6/12 → `0x00`/`0x05`/`0x0b`; ADAT 1/16 → `0x00`/`0x0f`; osc 1/2 → `0x00`/`0x01`) |
 | 21 | `0x02` = add, `0x00` = remove |
 | 22 | tracks byte 21 (`0x01` add / `0x00` remove) |
@@ -343,14 +343,15 @@ the old with no remove frame. Summing is done via separate "virtual mixes"
 (not yet captured).
 
 **Still open:** the destination **sub-channel** (HP/Monitor L vs R, Reamp 1
-vs Reamp 2) is *not located* -- every clean capture routed to one output
-only. Bank `0x0b` (mute?), the un-mute frame, banks `0x01`/`0x05`-`0x0a`.
+vs Reamp 2) is *not located* -- every clean capture routed to one target
+only. Also banks `0x01` / `0x05`-`0x0a`.
 
-Also: **output mute and oscillator-insert both go through this frame**
-(right-click in the matrix). The settings-tab oscillator panel is
-separate and sends nothing (§11). **Talkback is NOT a matrix source** --
-its 4 destination toggles (Mon A / Mon B / HP1 / HP2, in the
-Monitors/Headphones menu) use `talkback_dest_assign` (`0x13` / `0x5d`).
+**Output mute and oscillator-insert both go through this frame** (bank
+`0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
+source. The settings-tab oscillator panel is separate and sends nothing
+(§11). **Talkback is NOT a matrix source** -- its 4 destination toggles
+(Mon A / Mon B / HP1 / HP2, which combine) use `talkback_dest_assign`
+(`0x13` / `0x5d`).
 
 **No `0x73` readback** -- routing state is invisible in the state report,
 same as channel link.
