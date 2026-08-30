@@ -41,23 +41,21 @@ per-channel routing state (1 entry for hp1/reamp, 15-30 for adat out / mix
 channels). Routing an already-present source is idempotent (no frame).
 
 - [x] ~~CAPTURE B -- destination enumeration~~ -- DONE (map above).
-- [ ] **CAPTURE A (redo) -- mono-output selector + list structure.**
-      The first Capture A didn't work: comp-play-1 was already on HP1/MonA
-      by default so the routes were idempotent no-ops. Redo:
-      1. Right-click HP1 L -> **mute** (clears it). Wait.
-      2. Route **preamp 1 -> HP1 L**. Wait.
-      3. Route **preamp 2 -> HP1 L** (replace). Wait.
-      4. Route **preamp 1 -> HP1 R**. Wait.
-      5. Same 4 steps for HP2.
-      -> isolates the channel/side byte in the list, and shows a
-      one-channel change on a 2-channel destination.
+- [x] ~~CAPTURE A -- output-1/2 + op bytes~~ -- DONE (`matrix-recapturedA`
+      + `matrix-reamp1-2`). Simple 2-output destinations: route to
+      output 1 = bytes 21-22 `02 01`, output 2 = `00 02`; mute = bank
+      `0x0b`; un-route = `00 00`. See `frame.routing_command.op_bytes`.
+      Enough to wire `route` for hp1/hp2/mona/monb/reamp.
 - [ ] **CAPTURE C -- source-bank enumeration**: route each of emumic /
-      afx out / mix1 L / mix1 R / surround out -> HP1 L (after clearing
-      it), one at a time. Maps banks `0x01`, `0x05`-`0x0a`, `0x0d`+.
-- [ ] **CAPTURE D -- virtual mix (additive path)**: route 2-3 sources INTO
-      mix ch1, keeping all. Shows how summing differs from a normal route.
-- [ ] then: decode the list, fold into `frame.routing_command`, wire
-      `route` / `unroute` / `matrix-status` into the CLI.
+      afx out / mix1 L / mix1 R / surround out -> HP1 output 1, one at a
+      time. Maps banks `0x01`, `0x05`-`0x0a`, `0x0d`+.
+- [ ] **CAPTURE D -- multichannel destination list**: change ONE channel
+      of line out (or adat out) at a time -- decode the variable-length
+      per-channel list. Also the virtual-mix additive path (2-3 sources
+      into mix ch1, keeping all).
+- [ ] **wire `route` / `unroute` / `matrix-status`** into the CLI for the
+      simple destinations (hp1/hp2/mona/monb/reamp), experimental, user
+      tests live. `0x53` needs adding to `constraints.allowed_opcodes`.
 
 ### Other captures to record (hardware)
 

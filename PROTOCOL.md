@@ -342,24 +342,33 @@ A 5th command shape: opcode `0x53`, param `0xd3` (`frame.routing_command`).
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | line out | HP1 | HP2 | Mon A | Mon B | Reamp | com rec | ADAT out | S/PDIF out | AFX in | mix ch1 | mix ch2 | mix ch3 | mix ch4 | surround in |
 
-**The frame is a group dump, not a single crosspoint.** After byte 20 comes
-a variable-length list of 2-byte entries describing the *whole destination
-group's* per-channel state. Simple destinations → 1 entry (HP1 → `02 00`,
-Reamp → `00 02`, S/PDIF out → `04 01`); big groups → 15-30 entries (ADAT
-out → 15× `03 NN` for NN=1..15). The entries look like
-`(source_bank, channel)` pairs but aren't decoded. Bytes 19-20 are the
-source the user picked; the list is the resulting state. Decoding it needs
-captures that change **one channel of a small destination** at a time.
+**Simple 2-output destinations (HP1/HP2/Mon A/Mon B/Reamp)** -- bytes 21-22
+select the output and the op (bytes 23+ zero, no list):
+
+| operation | bytes 21-22 |
+|---|---|
+| route source → **output 1** (L / Reamp 1) | `02 01` |
+| route source → **output 2** (R / Reamp 2) | `00 02` |
+| mute an output | bank `0x0b`, idx `00`, + the output's `21 22` pair |
+| un-route | `00 00`, with `19`/`20` = the source being removed |
+| replace a source | just send the new route frame (no remove) |
+
+Confirmed across `matrix-recapturedA`, `matrix-reamp1-2`,
+`matrix-ch3tohpmonreamp`. *Caveat:* in one capture the output-1 `[22]` was
+`0x03` for HP2 and `0x04` for Reamp -- a per-destination channel numbering
+not fully understood; `01`/`02` is the working model for HP1/Mon A/Mon B.
+
+**Multichannel destinations** (line out, ADAT out, S/PDIF out, com rec,
+AFX in, mix channels, surround in) -- bytes 21+ are instead a
+variable-length list dumping that group's per-channel routing (ADAT out →
+15× `03 NN`; mix ch3 → 15× `05 NN` then more). **Not decoded.**
 
 **Routing is exclusive** (one source per output; replacing sends no remove
 frame) and **idempotent** (routing an already-present source sends nothing
-at all -- that's why HP1/HP2/Mon A/Mon B/mix ch4 produced no frame in the
+-- that's why HP1/HP2/Mon A/Mon B/mix ch4 produced no frame in the
 enumeration capture). Summing is via separate "virtual mixes".
 
-**The matrix is all-mono** -- HP1 L and HP1 R are separate targets. The
-mono-output selector is somewhere in the list, still not isolated.
-
-Also open: source banks `0x01`, `0x05`-`0x0a`; the list structure.
+Also open: source banks `0x01`, `0x05`-`0x0a`; the multichannel list.
 
 **Output mute and oscillator-insert both go through this frame** (bank
 `0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
