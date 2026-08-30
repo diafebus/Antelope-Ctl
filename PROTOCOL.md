@@ -382,8 +382,13 @@ source. The settings-tab oscillator panel is separate and sends nothing
 (Mon A / Mon B / HP1 / HP2, which combine) use `talkback_dest_assign`
 (`0x13` / `0x5d`).
 
-**No `0x73` readback** -- routing state is invisible in the state report,
-same as channel link.
+**No `0x73` readback** -- routing state is invisible in the state report.
+Also checked `AntelopeINIT.pcapng`: no routing data in its `0x73` report,
+its `0x74` enumeration is topology-only, and it has no HID-class or vendor
+control transfers. **Untested idea:** a genuinely-fresh Launcher start
+(state changed, Launcher fully quit) might query routing at init via a
+path not in that capture -- worth capturing two such connects with
+different routes and diffing (`params.routing.readback`).
 
 ---
 
@@ -398,8 +403,12 @@ panel. But:
   sending extra `SET_PARAM` commands.
   - On link engage: the Launcher pushes the higher-numbered channel's
     mode + gain to match the lower one.
-  - While linked: every gain / phantom / phase_invert change is sent
-    **twice** by the Launcher, once per channel (~2 ms apart, same value).
+  - While linked: every gain / phantom / phase_invert change *made in the
+    Launcher UI* is sent **twice**, once per channel (~2 ms apart).
+  - **Turning the physical gain wheel** on a linked channel moves *only
+    that channel* (user-confirmed) -- the wheel bypasses host software, so
+    this is the cleanest proof the device has no link logic, and the
+    Launcher only mirrors its own UI actions, not hardware-wheel changes.
   - `input_mode` cannot be changed while linked (Launcher greys it out).
     Workflow: unlink -> set mode per channel (gain resets to the new
     mode's range) -> re-link.

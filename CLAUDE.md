@@ -53,6 +53,13 @@ channels). Routing an already-present source is idempotent (no frame).
       of line out (or adat out) at a time -- decode the variable-length
       per-channel list. Also the virtual-mix additive path (2-3 sources
       into mix ch1, keeping all).
+- [ ] **CAPTURE E -- routing readback via fresh Launcher INIT** (user idea):
+      change some routes, FULLY quit the Launcher, restart, capture the
+      connect (no size filter). Do it twice with different routes and diff.
+      If they differ -> routing readback lives in the init handshake (the
+      existing AntelopeINIT.pcapng has none -- checked). If not -> routing
+      is host-side-cached, no device readback at all. See
+      `params.routing.readback`.
 - [x] ~~**wire `route` / `unroute` / `matrix-status`** into the CLI~~ --
       **DONE (2026-08), experimental.** `protocol.build_route_command` +
       `resolve_route_source` / `resolve_route_dest`; CLI `route <dest>

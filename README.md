@@ -343,7 +343,11 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   channel 1, ~2ms apart, identical value) -- not one command with an
   observed two-channel effect. The "live sync" documented above is the
   Launcher software choosing to send two commands every time, not the
-  device firmware fanning one write out to both channels. `profiles/orion_studio_3.json`'s
+  device firmware fanning one write out to both channels. **Cleanest
+  proof (user, 2026-08):** turning the *physical gain wheel* on a linked
+  channel moves only that channel -- the wheel bypasses all host software,
+  so the device plainly has no link-propagation logic, and the Launcher
+  only mirrors changes it makes in its own UI. `profiles/orion_studio_3.json`'s
   `params.channel_link.side_effects` and `.live_sync_while_linked` notes
   have been updated to say this plainly, so nobody re-discovers it as a
   "CLI bug" later.
