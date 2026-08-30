@@ -335,16 +335,19 @@ Payload is bytes 16-23 only:
 | 18 | **destination**, 1-indexed: `1`=HP1, `2`=HP2, `3`=Monitor A, `4`=Monitor B, `5`=Reamp (a *third* address space; more surely exist) |
 | 19 | **source bank** -- `0x00`=preamps, `0x02`=DAW/USB playback (24 ch), `0x03`=ADAT, `0x04`=S/PDIF, `0x0b`=**mute** (assign to an output to silence it), `0x0c`=oscillator. Others (`0x01`, `0x05`-`0x0a`) unseen. |
 | 20 | **source index** within the bank, 0-based (preamp 1/6/12 → `0x00`/`0x05`/`0x0b`; ADAT 1/16 → `0x00`/`0x0f`; osc 1/2 → `0x00`/`0x01`) |
-| 21 | `0x02` = add, `0x00` = remove |
-| 22 | tracks byte 21 (`0x01` add / `0x00` remove) |
+| 21 | ambiguous -- looks like `0x02` add / `0x00` remove (pre1-hp12), but see below |
+| 22 | tracks byte 21 (`0x01` / `0x00`); was `0x02` in the ch3tohpmonreamp second-frame-per-group, which fits neither |
 
 **Routing is exclusive** -- one source per output; a new source replaces
 the old with no remove frame. Summing is done via separate "virtual mixes"
 (not yet captured).
 
-**Still open:** the destination **sub-channel** (HP/Monitor L vs R, Reamp 1
-vs Reamp 2) is *not located* -- every clean capture routed to one target
-only. Also banks `0x01` / `0x05`-`0x0a`.
+**The matrix is all-mono** (user-confirmed): every output is an
+independent mono channel -- HP1 L and HP1 R are separate targets, a mono
+source routed to one does *not* also feed the other. So bytes 18/21/22
+must somewhere encode *which mono output* -- **not yet located** (every
+clean capture routed to a single target). Also open: source banks `0x01`,
+`0x05`-`0x0a`, and the non-HP/Mon/Reamp destinations.
 
 **Output mute and oscillator-insert both go through this frame** (bank
 `0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
