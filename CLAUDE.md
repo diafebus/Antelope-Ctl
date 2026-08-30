@@ -164,11 +164,11 @@ NOT mean host-side.** Screen brightness proved this: nothing under the VM,
 full command on native macOS. Re-check oscillator / thunderbolt / DC-coup
 on native macOS before trusting the "host-side" verdicts.
 
-- [x] ~~**Screen brightness on macOS**~~ -- **DONE (2026-08).**
+- [x] ~~**Screen brightness on macOS**~~ -- **DONE (2026-08), in the CLI.**
       `macos-scrbrght-0-100-50-multvalue`: opcode `0x12` / param `0x0e` /
       value 0-100 at offset 17; readback `0x73` offset 26 (1:1, 25/25).
-      `params.screen_brightness` + `state_report.screen_brightness_byte_offset`.
-      TODO: wire into CLI once `build_global_command` exists.
+      `params.screen_brightness` + `state_report.screen_brightness_byte_offset`;
+      CLI `set-brightness <0-100>`.
 - [ ] **Surround-EQ pre/post** -- opcode `0xab` / param `0xeb`, only 2
       frames so far. Toggle several times to decode. (macOS)
 - [ ] **Pan law** -- trim capture never sent it. Move only pan-law; watch
@@ -199,13 +199,15 @@ on native macOS before trusting the "host-side" verdicts.
       (bus id), and `raw-set` (target must be valid in some space + hazard
       note for unmapped param_id). `build_command` / `build_link_command`
       assert the opcode isn't forbidden. `--force` overrides every bound.
-- [ ] `antelope/protocol.py`: add `build_global_command(profile, param_id, value)`
-      (opcode `0x12`, value @17) -- the profile references it already.
-      Then wire a `set-brightness <0-100>` CLI command (`params.screen_brightness`,
-      readback `state_report` offset 26) -- the clean first user of it.
-- [ ] Hardware round-trip test the rewritten `route`:
-      `route hp1 preamp3 preamp4` -> Launcher should show HP1 L=preamp3,
-      R=preamp4 (the old code swapped them). Then `route hp1 mute`.
+- [x] ~~`build_global_command` + `set-brightness`~~ -- **DONE (2026-08).**
+      `protocol.build_global_command(profile, param, value)` (opcode
+      `0x12`, value @17) + `protocol.parse_state_scalar` (plain byte at a
+      named state_report offset). CLI `set-brightness <0-100>`. Frame
+      verified byte-exact vs `macos-scrbrght-*`. Not hardware round-trip
+      tested. `build_global_command` also unblocks talkback params.
+- [ ] Hardware round-trip test: `route hp1 preamp3 preamp4` (Launcher
+      should show HP1 L=preamp3 R=preamp4; old code swapped them), then
+      `route hp1 mute`; and `set-brightness 30` / `set-brightness 100`.
 - [ ] Decide which confirmed-but-unexposed params get CLI commands:
       talkback (`talkback_*`), line/reamp bus levels (already work via
       `set-bus-level` with bus 3/4), `output_trim`.
@@ -296,7 +298,8 @@ are analyzable offline right now:
 - ~~`macos-scrbrght-0-100-50-multvalue`~~ -- **DONE (2026-08, native macOS).**
   Screen brightness: opcode `0x12` / param `0x0e` / value 0-100 at
   offset 17; `0x73` readback offset 26 (1:1, 25/25 commands). VM showed
-  nothing because the VM Launcher no-ops the slider. `params.screen_brightness`.
+  nothing because the VM Launcher no-ops the slider.
+  `params.screen_brightness`; CLI `set-brightness`.
 - **Routing** (`matrix-*` captures) -- **frame model decoded** for
   2-channel destinations, active thread. Opcode `0x53`/`0xd3`; byte 18 =
   destination group (full 0-14 map confirmed); from byte 19, an array of

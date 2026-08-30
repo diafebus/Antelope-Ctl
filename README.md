@@ -145,6 +145,15 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mute hp1 
 python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mono hp2 off
 ```
 
+### Screen brightness
+
+```
+python3 -m antelope.cli --profile profiles/orion_studio_3.json set-brightness 75   # device front-panel screen, 0-100
+```
+
+Only works when the device talks to a native host -- a VM Launcher no-ops
+the same slider (see "Screen brightness" under *What's still unconfirmed*).
+
 ### Routing matrix (EXPERIMENTAL)
 
 The routing frame (opcode `0x53`) is now **understood for 2-channel
@@ -546,8 +555,9 @@ device's physical screen visibly changing:
   (`0x00`-`0x64`) at payload offset 17.
 - **Readback:** `0x73` state report **offset 26** = the value, exactly,
   on all 25 commands.
-- See `params.screen_brightness`. Not yet in the CLI (needs
-  `build_global_command()` first) -- would be a clean first user of it.
+- **CLI:** `set-brightness <0-100>` (via `protocol.build_global_command`,
+  the first SET_GLOBAL builder -- talkback params can use it next). See
+  `params.screen_brightness`. Not hardware round-trip tested.
 
 **Lesson:** "zero frames under the VM" ≠ host-side. The VM Launcher
 silently drops some controls. Re-check on native macOS before concluding.

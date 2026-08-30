@@ -581,7 +581,7 @@ What the Settings/Device window controls actually do, from the captures
 | Pan law | `settings-trim-...` | none (not sent in that capture) | unknown -- recapture |
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
 | **Oscillator** -- settings panel (freq/level/mute) | `settings-osc1-2-fq-lvl` | **zero frames** | host-side or uncaptured |
-| **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; VM sent nothing because the slider is a no-op under the VM. `params.screen_brightness` |
+| **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; in CLI (`set-brightness`). VM sent nothing because the slider is a no-op under the VM. |
 | **Thunderbolt / latency / DC-coupling** | `settigs-thunderb-lat-dccp` | **zero frames** | host driver settings; TB is inactive while connected over USB, so this tab does nothing in this setup |
 
 So the Settings window is a genuine mix: output levels/mute, the three
@@ -618,8 +618,12 @@ watching the device's physical screen dim and brighten:
 - First confirmed `0x12` param with a plain `0x73` readback (talkback's
   `0x12` params read back in the packed `talkback_block`).
 
-See `params.screen_brightness`. Would be a clean first CLI user of
-`build_global_command()`.
+**CLI:** `set-brightness <0-100>`, built by
+`protocol.build_global_command(profile, 'screen_brightness', value)` --
+the first `SET_GLOBAL` builder (opcode `0x12`, value @17). Readback via
+`protocol.parse_state_scalar(profile, data, 'screen_brightness_byte_offset')`.
+The talkback params (`0x1f`/`0x20`/`0x27`) can use `build_global_command`
+too. See `params.screen_brightness`.
 
 ### Surround-EQ
 

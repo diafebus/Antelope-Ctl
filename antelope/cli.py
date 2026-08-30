@@ -64,6 +64,11 @@ see profiles/orion_studio_3.json -> "buses"):
     antelope-ctl --profile profiles/orion_studio_3.json set-bus-mute hp1 on
     antelope-ctl --profile profiles/orion_studio_3.json set-bus-mono hp2 off
 
+Device front-panel screen brightness (0-100; works only when the device
+talks to a native host -- a VM Launcher no-ops it):
+
+    antelope-ctl --profile profiles/orion_studio_3.json set-brightness 75
+
 Escape hatch for anything not yet in the profile:
 
     antelope-ctl --profile profiles/orion_studio_3.json raw-set 0 0x53 7   # for a param
@@ -1175,6 +1180,31 @@ def cmd_raw_set(args, profile):
               'with tools/capture_diff.py to see what byte(s) this param actually touched)')
 
 
+def cmd_set_brightness(args, profile):
+    """Set the device's front-panel screen brightness (SET_GLOBAL / param
+    screen_brightness). Readback is a plain byte in the state report."""
+    pdef = profile['params'].get('screen_brightness')
+    if not pdef:
+        sys.exit('this profile has no params.screen_brightness')
+    lo, hi = pdef.get('range', [0, 100])
+    if not args.force and not (lo <= args.value <= hi):
+        sys.exit(f'brightness {args.value} outside {lo}..{hi}. Use --force to override.')
+    transport = get_transport(profile)
+    pkt = proto.build_global_command(profile, 'screen_brightness', args.value)
+    print(f'setting screen brightness -> {args.value}  (sent: {pkt[16:18].hex()})')
+    send_and_wait(transport, pkt)
+    time.sleep(0.1)
+    data = read_state(transport, profile, args.timeout)
+    if not data:
+        print('sent command, but no immediate readback was available')
+        return
+    try:
+        val = proto.parse_state_scalar(profile, data, 'screen_brightness_byte_offset')
+        print(f'readback: brightness = {val}' + ('' if val == args.value else '  (!= commanded)'))
+    except ValueError as e:
+        print(f'readback unavailable: {e}')
+
+
 _ANSI_COLOR = {'red': '\x1b[31m', 'orange': '\x1b[33m', 'yellow': '\x1b[93m', 'green': '\x1b[32m'}
 _ANSI_RESET = '\x1b[0m'
 _ANSI_BOLD = '\x1b[1m'
@@ -1437,6 +1467,13 @@ def main():
     sp.add_argument('--force', action='store_true',
                      help='bypass the profile-constraints target-bounds check (see profile hazards)')
     sp.set_defaults(func=cmd_raw_set)
+
+    sp = sub.add_parser('set-brightness',
+                         help='set the device front-panel screen brightness (0-100)')
+    sp.add_argument('value', type=int, help='0 = darkest, 100 = brightest')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true', help='allow a value outside 0-100')
+    sp.set_defaults(func=cmd_set_brightness)
 
     args = p.parse_args()
     profile = proto.load_profile(args.profile)

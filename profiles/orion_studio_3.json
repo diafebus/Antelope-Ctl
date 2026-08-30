@@ -519,7 +519,7 @@
       "value_meaning": "Front-panel screen brightness as a percentage, 0 = off/darkest, 100 (0x64) = brightest. Raw byte == the percentage, no scaling.",
       "readback": "state_report offset 26 (state_report.screen_brightness_byte_offset) -- one plain byte, equals the last commanded value.",
       "evidence": "capture macos-scrbrght-0-100-50-multvalue (2026-08, native macOS): user dragged the brightness slider through 0 / 100 / 50 and many intermediate values while watching the device's physical screen change. 25 outgoing frames, all opcode 0x12 / param 0x0e / value at offset 17 (0x00..0x64); every one matched offset 26 in the next 0x73 report exactly (25/25). This overturns the earlier 'screen brightness is host-side, sends nothing' conclusion -- that was a VM artifact (the slider did nothing under the VM; the frames never reached the device). On native macOS it is a real, persisted, readable device parameter.",
-      "notes": "First confirmed user of opcode 0x12 with a genuine 0x73 readback (talkback params 0x1f/0x20/0x27 use 0x12 too but read back in the packed talkback_block). Not yet wired into cli.py -- needs build_global_command() first (see profile-referenced TODO). Would be a clean first global_command CLI command."
+      "notes": "First confirmed user of opcode 0x12 with a genuine 0x73 readback (talkback params 0x1f/0x20/0x27 use 0x12 too but read back in the packed talkback_block). WIRED INTO cli.py (2026-08): `set-brightness <0-100>`, via protocol.build_global_command(profile, 'screen_brightness', value) + protocol.parse_state_scalar(profile, data, 'screen_brightness_byte_offset'). Not hardware round-trip tested yet."
     },
     "channel_link": {
       "status": "confirmed",

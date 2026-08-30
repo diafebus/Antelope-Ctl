@@ -105,7 +105,7 @@ flush, not device behaviour.
 Readback = `0x73` offset 26, plain byte = value (25/25 in
 `macos-scrbrght-0-100-50-multvalue`). VM Launcher no-ops the slider ->
 "zero frames under the VM" != host-side; recheck VM negatives on macOS.
-Not in CLI yet (needs `build_global_command`).
+CLI: `set-brightness <0-100>` (2026-08). Not hardware round-trip tested.
 
 ### macOS capture format (`captures/macos-captures/`)
 Darwin XHC pcapng: 40-byte pseudo-header + 320-byte payload =
@@ -178,6 +178,7 @@ host-side, exactly like the Launcher.
 ### `antelope/protocol.py` (generic, no hardcoded device values)
 - frame build/parse for all opcodes + reports
 - `build_command`, `build_link_command(profile, pair, enabled, space=0)`,
+  `build_global_command(profile, param, value)` (opcode 0x12, value @17),
   `build_route_command(profile, dest, channels)` -- `channels` = ordered
   list of (bank, idx) tuples, whole destination group
 - `resolve_route_source` / `resolve_route_dest` / `route_source_label`
@@ -185,7 +186,8 @@ host-side, exactly like the Launcher.
 - constraints layer: `ConstraintError`, `check_opcode`, `check_target`,
   `check_enum`, `channel_space_bounds` -- profile-driven, `--force`
   overrides
-- ADAT/SPDIF gain parse helpers
+- parse helpers: ADAT/SPDIF gain; `parse_state_scalar(profile, data, key)`
+  (a plain byte at state_report.<key>, e.g. screen_brightness_byte_offset)
 
 ### `antelope/cli.py` (generic CLI)
 - input channel: `set-gain` / `set-mode` / `set-phantom` / `set-invert`
@@ -193,6 +195,7 @@ host-side, exactly like the Launcher.
   `set-adat-gain` / `set-adat-link` / `mark-adat-link`; S/PDIF:
   `spdif-status` / `set-spdif-gain` / `set-spdif-link` / `mark-spdif-link`
 - bus: `bus-status` / `set-bus-level` / `set-bus-dim|mute|mono`
+- `set-brightness <0-100>` (screen brightness; global_command; readback @26)
 - `raw-set` (constraint-guarded, `--force`)
 - **EXPERIMENTAL, not hardware-tested:** `route <dest> <Lsrc> [<Rsrc>]`
   (omit R = keep; `route <dest> mute` = mute all channels),
@@ -205,9 +208,9 @@ host-side, exactly like the Launcher.
   device readback**
 
 ### Pending code work (protocol-first, deferred on purpose)
-- `build_global_command(profile, param_id, value)` in protocol.py
-  (opcode `0x12`, value @17 -- profile references it already)
-- decide CLI exposure for talkback + output_trim params
+- decide CLI exposure for talkback + output_trim params (talkback can now
+  use `build_global_command` for `0x1f`/`0x20`/`0x27`, + `0x13` for
+  `talkback_dest_assign`)
 - `bus-status`: special-case `bus_level == 96` vs the mute bit
 - teach `tools/scan_capture.py` about magic `0x74`
 
@@ -245,13 +248,14 @@ L=preamp3, R=preamp4 (old code swapped them).
 - **CAPTURE E answered:** no routing readback in the connect sequence --
   BUT one must exist (user: routing survived a Windows->macOS switch).
   Undecoded; next attempt = CAPTURE E' (routing-tab open).
-- **Screen brightness decoded:** `0x12`/`0x0e`/0-100, readback `0x73` @26.
-  Not in the CLI yet (needs `build_global_command`).
+- **Screen brightness decoded + wired:** `0x12`/`0x0e`/0-100, readback
+  `0x73` @26. CLI `set-brightness <0-100>` (via new `build_global_command`).
+  Not hardware round-trip tested.
 - Multichannel routing (line out etc.): model known, channel counts not.
   All macOS `macos-matrix-*` files except `-hp1L`/`-hp1R` have **no OUT
   frames** (only endpoint .2 captured) -> unusable, need recapture.
-- Pending: `route` hardware round-trip test; CAPTURE E' / C / D; wire
-  `build_global_command` + a `set-brightness` command.
+- Pending: hardware round-trip test both `route hp1 preamp3 preamp4` and
+  `set-brightness`; CAPTURE E' / C / D.
 
 ## Session log
 
@@ -263,10 +267,12 @@ L=preamp3, R=preamp4 (old code swapped them).
      routing survived a Windows-VM -> macOS host switch, so a device
      readback DOES exist -- undecoded, next try = CAPTURE E' (routing-tab
      open). Connect handshake = one `SET_PARAM(0x49,ch1,0)`, cross-platform.
-  2. **Screen brightness decoded** (`macos-scrbrght-0-100-50-multvalue`):
+  2. **Screen brightness decoded + wired** (`macos-scrbrght-0-100-50-multvalue`):
      `global_command 0x12` / param `0x0e` / value 0-100, readback `0x73`
      offset 26. VM had shown nothing only because the VM Launcher no-ops
-     the slider -- so "zero frames under the VM" != host-side.
+     the slider -- so "zero frames under the VM" != host-side. Added
+     `protocol.build_global_command` + `parse_state_scalar` and the CLI
+     `set-brightness <0-100>` (frame verified byte-exact vs the capture).
   3. **Routing frame model CORRECTED** (`macos-matrix-ch1-12-mute-hp1L`/
      `-hp1R`): after byte 18 it's an array of (source_bank, source_index)
      pairs, one per output channel, stride 2 -- NO "op bytes" (`00 02` was

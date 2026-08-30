@@ -200,6 +200,33 @@ def build_link_command(profile: dict, pair_index: int, enabled: bool, space: int
     return bytes(pkt)
 
 
+def build_global_command(profile: dict, param, value: int) -> bytes:
+    """Build a SET_GLOBAL frame (profile['frame']['global_command'], opcode
+    0x12) for a device-global param that has no per-channel/per-bus target.
+    Unlike SET_PARAM the value byte sits at value_offset (17), not 18.
+    `param` is a param name in profile['params'] or a raw param_id int."""
+    if 'global_command' not in profile['frame']:
+        raise KeyError('this profile has no frame.global_command -- SET_GLOBAL not available')
+    f = profile['frame']['global_command']
+    if isinstance(param, str):
+        pdef = profile['params'].get(param)
+        if pdef is None:
+            raise KeyError(f'unknown param "{param}" -- add it to the profile first')
+        if pdef.get('id') is None:
+            raise ValueError(f'param "{param}" has no confirmed param_id yet')
+        param_id = _as_int(pdef['id'])
+    else:
+        param_id = _as_int(param)
+    check_opcode(profile, _as_int(f['opcode']))
+    size = profile['transport']['report_size']
+    pkt = bytearray(size)
+    pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
+    pkt[_as_int(f['opcode_offset'])] = _as_int(f['opcode'])
+    pkt[_as_int(f['param_id_offset'])] = param_id & 0xFF
+    pkt[_as_int(f['value_offset'])] = value & 0xFF
+    return bytes(pkt)
+
+
 # ---- routing matrix (frame.routing_command, opcode 0x53) ----
 #
 # EXPERIMENTAL, but the frame model is now understood (macOS captures
@@ -356,6 +383,21 @@ def adat_gain_range(profile: dict):
     """[lo, hi] dB range for adat_gain, from the profile (default wide-open)."""
     lo, hi = profile['params'].get('adat_gain', {}).get('range', [-128, 127])
     return lo, hi
+
+
+def parse_state_scalar(profile: dict, data: bytes, sr_key: str) -> int:
+    """Read one plain unsigned byte from the state report, at the offset named
+    by profile['frame']['state_report'][sr_key]. That value may be a bare int
+    or a {'offset': N, ...} dict. Used for simple single-byte params like
+    screen_brightness (state_report.screen_brightness_byte_offset)."""
+    sr = profile['frame']['state_report']
+    spec = sr.get(sr_key)
+    if spec is None:
+        raise ValueError(f'this profile has no state_report.{sr_key}')
+    off = _as_int(spec['offset'] if isinstance(spec, dict) else spec)
+    if off >= len(data):
+        raise ValueError(f'state report too short (need offset {off}, got {len(data)} bytes)')
+    return data[off]
 
 
 def parse_spdif_gain(profile: dict, data: bytes, spdif_channel: int) -> int:
