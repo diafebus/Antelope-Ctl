@@ -2,79 +2,83 @@ Don't over use tokens, throwing agents and using all the resources at once, a go
 
 ## TODO / next steps (keep this current)
 
-**The raw `.pcapng` files are now local** at
-`captures/raw pcapng captures/` (21 files, ~25 MB each), and `tshark`
-4.6.8 is on this machine -- so anything needing full frames / both
-directions / USB metadata can be done offline now, no VM round-trip.
+Raw `.pcapng` files are local under `captures/` (`raw pcapng captures/`
+and `matrix-captures/`); `tshark` 4.6.8 is on this machine. Anything
+needing full frames / both directions / USB metadata is offline now.
 
-### Analyze now -- offline
-- [~] **Routing** -- captures `matrix-source-enum` (cleanest) + `pre1-hp12`
-      + `ch3tohpmonreamp`. **Confirmed:** `0x53`/`0xd3` (`frame.routing_command`),
-      byte 17=`0x41`, byte 18=destination (1=hp1..5=reamp), **byte 19 =
-      source BANK** (0=preamp, 2=DAW playback, 3=ADAT, 4=S/PDIF, 0xc=osc,
-      0xb=?mute), **byte 20 = source index** in that bank, byte 21 = op
-      (0x02 add / 0x00 remove). Routing is EXCLUSIVE (virtual mixes do
-      summing). NO `0x73` readback. Osc-insert + output-mute also use this
-      frame (right-click). Talkback is NOT a matrix source.
-      **Open:** the destination L/R sub-channel byte (never isolated),
-      bank 0xb, remaining banks. **(An earlier commit wrongly called byte
-      19 the sub-channel -- superseded.)** See `params.routing.notes`.
-- [x] ~~`settigs-thunderb-lat-dccp`~~ -- **DONE.** Zero outgoing frames on
-      the HID endpoint. Host-side driver settings, or not exercised.
-- [ ] Cross-check the `0x73` embedded meter block (offsets 157-232) against
-      the `0x75` channel meters (offsets 32-43) frame-by-frame in a
-      signal-carrying capture -- would collapse a chunk of
-      `unresolved_state_offsets` to "redundant meter copy".
-- [x] ~~Map the `0x74` enumeration groups~~ -- structure + counts in
-      `PROTOCOL.md` §4. **Names are in NO capture on file** (checked all 21
-      pcapng: not one string-descriptor fetch; UAC2 desc is a nameless
-      stub). `0x19`=64 ≈ USB/TB channel stream. To name the rest: fresh
-      string-descriptor capture, or read the Launcher routing-tab labels.
-- [x] ~~Oscillator command~~ -- **PARTLY.** Two access points: (a) matrix
-      right-click "insert oscillator into output" = a real `0x53` routing
-      frame, source bank `0x0c` idx 0/1 (osc 1/2) -- confirmed in
-      `matrix-source-enum`; (b) the settings-tab freq/level/mute panel
-      sends nothing (host-side or uncaptured). See `params.oscillator`.
-- [x] ~~ADAT vs physical `SET_LINK` byte compare~~ -- **DONE.** Byte-for-byte
-      identical across all 320 bytes + USB metadata. Residual open question
-      (does one command link both spaces?) moved to hardware-test list.
+### ROUTING MATRIX -- the active thread
 
-### Captures to record (need hardware)
+`frame.routing_command`: opcode `0x53` / param `0xd3`. Confirmed bytes:
+17=`0x41`, **18 = destination**, **19 = source bank**, **20 = source
+index in bank**, **21 = op** (`0x02` add / `0x00` remove). Routing is
+EXCLUSIVE per output (virtual mixes = the summing path). NO `0x73`
+readback. Output mute (bank `0x0b`) and oscillator-insert (bank `0x0c`)
+go through this same frame via right-click. Talkback is NOT a matrix
+source.
 
-**Strongly consider capturing on native macOS** (see CAPTURING.md) -- some
-Launcher features do nothing under the VM (screen brightness confirmed).
-A macOS capture would re-validate the "host-side" findings (oscillator,
-brightness, thunderbolt) against a build where everything works. Settings-
-window scorecard: PROTOCOL.md section 11.
+**Matrix source banks** (byte 19) -- user's full source list:
+| source | bank | status |
+|---|---|---|
+| preamp 1-12 | `0x00` (idx 0-11) | confirmed |
+| comp play 1-24 | `0x02` (idx 0-23) | confirmed |
+| adat in 1-16 | `0x03` (idx 0-15) | confirmed |
+| spdif in L/R | `0x04` (idx 0-1) | confirmed |
+| mute (pseudo) | `0x0b` | confirmed |
+| oscillator 1/2 | `0x0c` (idx 0-1) | confirmed |
+| emumic | ? | **TBD** |
+| afx out | ? | **TBD** |
+| mix1/2/3/4 L/R | ? | **TBD** (also destinations -- the virtual mixes) |
+| surround out | ? | **TBD** |
 
-- [ ] **Screen brightness on macOS** -- works there, sends nothing under
-      the VM. Capture on macOS, no size filter, to see if it's a real
-      device command (and what opcode).
-- [ ] **Surround-EQ pre/post** -- new opcode `0xab` / param `0xeb` seen
-      (only 2 frames). Toggle several times to decode the `0xab` layout.
-- [ ] **Pan law** -- the trim capture never sent it. Move only the pan-law
-      selector; watch `state_report` offset 25 bits 0-1 (spare 2-bit field).
-- [x] ~~**S/PDIF** gain + link~~ -- **DONE (2026-08, `spdif-gain-link.pcapng`).**
-      gain = `SET_PARAM(0x5c, ch 0=L/1=R, int8 dB -6..12)`, readback state
-      offsets 91/92. link = `SET_LINK` with **space byte @17 = 0x01**
-      (physical/ADAT use 0x00) -- so S/PDIF link is unambiguous, unlike the
-      ADAT/physical case. In the CLI: `spdif-status` / `set-spdif-gain` /
-      `set-spdif-link` / `mark-spdif-link`. `build_link_command` gained a
-      `space` param; `frame.link_command.space_offset` is now documented.
-- [ ] **DC-coupling** -- `thunderb-lat-dccp` sent nothing. Isolate the
-      DC-coupling toggle (it should be hardware); maybe TB-gated.
-- [ ] **String descriptors** -- fresh connect capture (remove device in
-      Device Manager / re-plug on macOS), no size filter -> names for the
-      `0x74` categories.
+**Matrix destinations** (byte 18) -- user's full output list:
+| dest | byte 18 | status |
+|---|---|---|
+| hp1 | `1` | confirmed |
+| hp2 | `2` | confirmed |
+| mona | `3` | confirmed |
+| monb | `4` | confirmed |
+| reamp | `5` | confirmed |
+| lineout, com rec, adat out, spdif out, afx in, mix ch1-4, surround in | ? | **TBD** |
+
+- [ ] **CAPTURE A -- L/R sub-channel** (the blocker for CLI wiring):
+      route comp-play 1 -> HP1 **Left**, wait, -> HP1 **Right**, wait (no
+      un-route between). Then comp-play 1 -> Monitor A Left, wait, -> Right.
+      Diff the frame pairs -> the byte that changes is the L/R selector,
+      and whether it's the same value per destination.
+- [ ] **CAPTURE B -- destination enumeration**: route comp-play 1 to one
+      output of EACH type in the list above (lineout, com rec, adat out 1,
+      spdif out L, afx in, mix ch1, surround in, ...), un-routing between,
+      3 s pauses. Maps byte 18's full range.
+- [ ] **CAPTURE C -- source-bank enumeration**: route each of emumic /
+      afx out / mix1 L / mix1 R / surround out -> HP1 L, one at a time.
+      Maps the remaining byte-19 banks.
+- [ ] **CAPTURE D -- virtual mix (additive path)**: route 2-3 sources INTO
+      mix ch1 (a mix channel destination), keeping all -- shows how summing
+      is encoded (different frame? a "mix" flag? add without replace?).
+- [ ] then: decode + fold into `frame.routing_command` / `params.routing`,
+      and wire `route` / `unroute` / `matrix-status`(client-cache) into the
+      CLI.
+
+### Other captures to record (hardware)
+
+Consider **native macOS** (CAPTURING.md) -- screen brightness works there,
+does nothing under the VM.
+
+- [ ] **Screen brightness on macOS** -- real command or not? (no size filter)
+- [ ] **Surround-EQ pre/post** -- opcode `0xab` / param `0xeb`, only 2
+      frames so far. Toggle several times to decode.
+- [ ] **Pan law** -- trim capture never sent it. Move only pan-law; watch
+      `state_report` offset 25 bits 0-1.
+- [ ] **DC-coupling** -- `thunderb-lat-dccp` sent nothing; isolate it.
+- [ ] **String descriptors** -- fresh connect, no size filter -> `0x74` names.
 - [ ] **ADAT + physical link in ONE session, different per-channel gains**
-      -- to see whether `SET_LINK(pair N)` links both spaces at once.
-- [ ] **Routing matrix -- 3 follow-up captures** to finish `0x53`/`0xd3`
-      (see `params.routing.notes`): (1) one source -> ONE dest, L then R
-      slowly, to isolate the side byte; (2) route then set source -> none,
-      for the clear/un-route encoding; (3) a non-preamp source (DAW
-      playback / ADAT) -> one dest, to see how non-physical sources encode.
-- [ ] **channel_link readback** (low priority) -- dedicated 6-pair on/off
-      diff to confirm there's no readback bit.
+      -- does `SET_LINK(space=0, pair N)` link both spaces?
+- [ ] **channel_link readback** (low priority) -- 6-pair on/off diff.
+
+### Analyze offline (lower priority)
+- [ ] Cross-check the `0x73` embedded meter block (157-232) against `0x75`
+      channel meters (32-43) frame-by-frame -- would collapse part of
+      `unresolved_state_offsets` to "redundant meter copy".
 
 ### Code work (deferred on purpose -- protocol first)
 - [x] ~~ADAT gain + link CLI~~ -- **DONE (2026-08).** `adat-status`,
