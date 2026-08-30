@@ -9,6 +9,36 @@ from USB traffic capture (no official docs, no firmware modification).
 > lives in **[`PROTOCOL.md`](PROTOCOL.md)**. This README is the guide to
 > *using* the tool.
 
+## Legal status & disclaimer
+
+This is an independent interoperability project. It is **not affiliated
+with, authorized by, or endorsed by Antelope Audio**. "Antelope",
+"Orion", "Discrete", "Synergy Core" and related names are trademarks of
+their respective owner and are used here only to identify the hardware
+this software interoperates with.
+
+- **No Antelope software, firmware, or source code is included or
+  redistributed here.** The device is not modified and its firmware is
+  not touched.
+- The protocol description was produced by **observing USB traffic
+  to/from hardware the contributors own**, on their own machines, for
+  the sole purpose of making that hardware usable on operating systems
+  the vendor does not support (Linux). Reverse engineering for
+  interoperability is recognised in the US (e.g. *Sega v. Accolade*,
+  *Sony v. Connectix*) and expressly permitted in the EU (Software
+  Directive 2009/24/EC, Art. 6).
+- **Packet captures** committed under `captures/` are recordings of the
+  contributor's own device on the contributor's own machine, kept
+  minimal and included only as evidence for a documented finding. Device
+  serial numbers are redacted where practical.
+- **AFX / Synergy Core effects are out of scope.** Those plugins involve
+  per-user licensing and online activation; this project does not touch,
+  emulate, or circumvent any licensing or authentication mechanism.
+- Use at your own risk. Sending control frames to hardware can put it in
+  unexpected states; see "hazards" in the profile JSON. No warranty.
+
+If you are a rights holder with a concern, please open an issue.
+
 ## Requirements
 
 - Linux, Python 3.9+ (no third-party packages -- stdlib only).

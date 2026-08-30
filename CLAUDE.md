@@ -98,6 +98,15 @@ channels). Routing an already-present source is idempotent (no frame).
       **NOT round-trip tested against hardware yet** -- user to test:
       `antelope-ctl route hp1 L preamp3` then check the Launcher.
 
+### Out of scope (deliberate)
+
+**AFX / Synergy Core effects** -- the on-DSP plugin chain. Skipped on
+purpose: plugins are per-user licensed with online activation, so
+touching that path drags in authentication/licensing concerns we want
+nothing to do with. Focus is the mixer/routing/preamp feature set needed
+for professional tracking + monitoring. Revisit only if a clean,
+license-free "is effect slot N bypassed" style control shows up.
+
 ### Other captures to record (hardware)
 
 Consider **native macOS** (CAPTURING.md) -- screen brightness works there,
