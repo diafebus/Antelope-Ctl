@@ -1,7 +1,10 @@
 # Raw USB captures -- large binaries, kept locally only (see CAPTURING.md)
-captures/raw pcapng captures/
+captures/
 *.pcapng
 *.pcap
+
+# Local reference images (Launcher UI screenshots, terminal grabs) -- local only
+screenshots/
 
 # Bulky tshark exports -- regenerate from the pcapng when needed
 *.tsv
