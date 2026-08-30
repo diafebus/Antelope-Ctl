@@ -45,7 +45,7 @@ opcode -- this is the single most important thing to get right:
 | Opcode @4 | Name | param_id @16 | Payload | Used by |
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
-| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`) |
+| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x1d` | SET_AURAVERB | `0xda` | reverb DSP params @17..27 (**not decoded yet** -- `macos-auraverb-on-off` only toggled on/off), `enabled` @28 | AuraVerb (Mix 1) |
@@ -184,6 +184,8 @@ offset for target *N*.
 | 0 | magic `0x73` | | confirmed |
 | 4-7 | header `0x40 0x01 0x00 0x00` | (meaning unknown, constant) | - |
 | 17, 19 | *Launcher-handshake blip* | one byte each, `0x08->0x00` / `0x06->0x00`, ~3.0 s after the Launcher starts (incl. the no-user INIT capture) | startup noise, ignore |
+| 18 | **sample rate** | index 0-6 (0=32k, 1=44.1k, 2=48k, 3=88.2k, 4=96k, 5=176.4k, 6=192k) | confirmed (`macos-smplrt-...`) |
+| 21-23, 27 | clock / PLL / buffer state | only move at the 88.2k & 176.4k steps; 27 halves 16→8→4 | undecoded (§13) |
 | 24 | output_trim target 0 | `value << 4` (bits 4-6) | confirmed |
 | 25 | output_trim targets 1 & 2 | t1 = `value << 2` (bits 2-4); t2 = `value << 5` (bits 5-7) | confirmed |
 | 26 | **screen brightness** | plain byte, 0-100 (= commanded value) | confirmed (`macos-scrbrght-0-100-50-multvalue`) |
@@ -590,6 +592,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
 | talkback_source | `0x27` | `0x12` | - | 0-12 @17 -- `0` = INT (built-in talkback mic behind the physical TB button), `1-12` = preamps 1-12 (user-confirmed) | offset 73 bits 0-1 (low bits only) |
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
+| sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | none decoded (exists) |
 | surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
@@ -750,6 +753,7 @@ Synergy Core manual may say (facts only, cite it).
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
 | Oscillator | matrix insert is a real command (routing bank `0x0c`, §7); the settings-panel freq/level/mute sends nothing |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
+| Sample rate | **resolved (native macOS)** -- opcode `0x12` / param `0x03` / index 0-6 @17, readback @18 (`macos-smplrt-...`). CLI `sample-rate` / `set-sample-rate`. Open: the clock/PLL/buffer bytes @21-23,27 that move only at 88.2k/176.4k. |
 | Surround-EQ pre/post | new opcode `0xab` / param `0xeb` seen (2 frames); layout undecoded, no `0x73` effect |
 | Thunderbolt / latency / DC-coupling | zero outgoing frames -- host-side, or not exercised |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |

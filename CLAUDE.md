@@ -35,6 +35,35 @@ Auto-compaction runs against the whole context window and is expensive
 
 ## TODO / next steps (keep this current)
 
+### STATE OF PLAY -- end of the 2026-08 native-macOS session
+
+**Decoded + confirmed this session** (see PROTOCOL.md / profile for
+detail): routing frame model (array of (bank,idx) pairs -- old "op bytes"
+were a misread) + all source banks except `0x01` + line-out = 16-ch;
+screen brightness (`0x12`/`0x0e`, readback @26, hardware-confirmed);
+sample rate (`0x12`/`0x03`, index 0-6, readback @18); virtual mixer
+(`0x17`/`0xd4` -- fader/pan/send/mute/solo, mix link = SET_LINK space 3);
+AuraVerb on/off (`0x1d`/`0xda`, byte 28). CLI: `route` rewritten (numeric
+channels), `set-brightness`, `sample-rate` / `set-sample-rate`.
+
+**Half-baked / needs a follow-up capture:**
+- **AuraVerb parameters** -- on/off known; frame bytes 17-27 (the DSP
+  params) frozen in the only capture. *User's next task.*
+- **Mixer CLI** -- `build_mix_command` exists; no `mix-set` command.
+- **Multichannel routing dests** -- line-out=16 confirmed; adat out /
+  com rec / afx in / mix chN / surround-in channel counts unknown, so
+  only line-out + the 2-ch dests are wired.
+- **Routing readback** -- exists (cross-machine persistence) but not at
+  connect (CAPTURE E) and not decoded -> CAPTURE E' (routing-tab open).
+- **Source bank `0x01`** -- last unseen matrix source (emumic?).
+- **Clock state @21-23,27** -- moves at 88.2k/176.4k; undecoded.
+- **`route` hardware round-trip** -- never tested against real hardware.
+- **Surround-EQ `0xab`** -- 2 frames only, layout undecoded.
+
+Full detail + the rest of the backlog is in the subsections below.
+
+---
+
 Raw `.pcapng` files are local under `captures/` (`raw pcapng captures/`,
 `matrix-captures/`, and `macos-captures/` -- native-macOS Darwin XHC
 captures, 40-byte pseudo-header + 320-byte payload, `frame.len==360`);
@@ -50,11 +79,9 @@ The usable ones (OUT endpoint `20.x.1` present): `ch1-12-mute-hp1L`,
 being logged (`tools/scan_macos_capture.py` prints an `OUT magic 70` line
 when a file is usable).
 
-**macOS captures not yet triaged** (`captures/macos-captures/`):
-`macos-smplrt-*` (sample rate),
-`macos-antelopeINIT-poweron` /
-`-poweron1-itresettopreviousstate`
-(2 more INIT variants). INIT poweroff-on2/on3 = CAPTURE E, done.
+**macOS captures -- all triaged** except `macos-antelopeINIT-poweron` /
+`-poweron1-itresettopreviousstate` (2 more INIT variants -- likely nothing
+new; poweroff-on2/on3 = CAPTURE E, done).
 
 ### ROUTING MATRIX -- the active thread
 
@@ -254,6 +281,11 @@ on native macOS before trusting the "host-side" verdicts.
       (plain byte at a named state_report offset). CLI `set-brightness
       <0-100>` -- user confirmed it changes the device's physical screen.
       `build_global_command` also unblocks talkback params.
+- [x] ~~sample rate CLI~~ -- **DONE (2026-08).** CLI `sample-rate` /
+      `set-sample-rate <hz>` (accepts `48000`/`48k`/`44.1k`/...), via
+      `build_global_command(profile, 'sample_rate', index)` +
+      `parse_state_scalar(..., 'sample_rate_byte_offset')`. Not hardware
+      round-trip tested.
 - [x] ~~`build_mix_command` (opcode `0x17`)~~ -- **DONE 2026-08.**
       `protocol.build_mix_command(profile, mix, channel, fader, pan_deg,
       send, mute, solo)`; `frame.mix_command` + `params.mix_*`. NOT in a
@@ -262,8 +294,13 @@ on native macOS before trusting the "host-side" verdicts.
       A `mix-set <mix> <ch> [--fader] [--pan] ...` with a local cache
       (like `route`) is the shape.
 - [ ] Hardware round-trip test the rewritten `route`:
-      `route hp1 preamp3 preamp4` (Launcher should show HP1 L=preamp3
-      R=preamp4; old code swapped them), then `route hp1 mute`.
+      `route hp1 all preamp3 preamp4` (Launcher should show HP1 L=preamp3
+      R=preamp4; old code swapped them), then `route hp1 mute`. Also
+      round-trip `set-sample-rate` (with nothing streaming).
+- [ ] `mix-set <mix> <ch> [--fader/--pan/--send/--mute/--solo]` CLI for
+      `0x17` -- local cache like `route` (no readback).
+- [ ] AuraVerb param CLI once the sweep capture is analyzed (map frame
+      bytes 17-27, add `build_auraverb_command`, `0x1d` -> allowed_opcodes).
 - [ ] Decide which confirmed-but-unexposed params get CLI commands:
       talkback (`talkback_*`), line/reamp bus levels (already work via
       `set-bus-level` with bus 3/4), `output_trim`, the mixer (`mix_*`).
@@ -377,3 +414,10 @@ are analyzable offline right now:
   this capture. `frame.auraverb_command` + `params.auraverb`. **User wants
   full controls next** -> needs a param-sweep capture (see the captures
   TODO above). AuraVerb is IN SCOPE (bundled, no per-plugin activation).
+- ~~`macos-smplrt-32k-44k1-48-88k2-96k-176k4-192k`~~ -- **DONE (2026-08).**
+  Sample rate: `SET_GLOBAL` (opcode `0x12`) / param `0x03` / index 0-6 at
+  offset 17 (0=32k 1=44.1k 2=48k 3=88.2k 4=96k 5=176.4k 6=192k). Readback
+  `0x73` offset 18, ~1 s lag (clock re-lock). `params.sample_rate` +
+  `state_report.sample_rate_byte_offset`; CLI `sample-rate` /
+  `set-sample-rate <hz>`. Not hardware round-trip tested. Offsets
+  21-23,27 also move at 88.2k/176.4k -- undecoded clock state.

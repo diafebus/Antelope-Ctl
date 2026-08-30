@@ -59,7 +59,7 @@ Wireshark/USBPcap captures, and building a **stdlib-only Python CLI**
 | opcode | name | layout |
 |---|---|---|
 | `0x13` | SET_PARAM | param@16, channel@17, value@18 |
-| `0x12` | SET_GLOBAL | param@16, value@17 (no channel) -- talkback_*, screen_brightness (`0x0e`, 0-100, readback @26) |
+| `0x12` | SET_GLOBAL | param@16, value@17 (no channel) -- talkback_*, screen_brightness (`0x0e`, 0-100, readback @26), sample_rate (`0x03`, index 0-6, readback @18) |
 | `0x14` | SET_LINK | `0xa2`@16, space@17 (0=phys/ADAT, 1=S/PDIF, 3=mixer), pair@18, enabled@19 |
 | `0x17` | SET_MIX | `0xd4`@16, `0x05`@17, mix@18, ch@19 (1-32), fader@20 (0-90dB), pan+flags@21 (0x20=centre; +0x40 mute; +0x80 solo), send@22 (0-96) |
 | `0x1d` | SET_AURAVERB | `0xda`@16, DSP params @17-27 (not decoded yet), enabled@28 -- AuraVerb reverb (Mix 1) |
@@ -81,6 +81,7 @@ on outgoing).
 ### `0x73` state-report byte-map (confirmed)
 | offset | meaning |
 |---|---|
+| 18 | sample rate index 0-6 (0=32k … 6=192k) -- confirmed 2026-08, ~1s lag |
 | 24-25 | output_trim, packed (targets 0/1/2 = mona/monb/line) |
 | 26 | screen brightness (0-100, plain byte) -- confirmed 2026-08 |
 | 28-45 | bus block, 6 buses x 3 bytes at `28+3N` |
@@ -109,6 +110,15 @@ Readback = `0x73` offset 26, plain byte = value (25/25 in
 "zero frames under the VM" != host-side; recheck VM negatives on macOS.
 CLI: `set-brightness <0-100>` (2026-08) -- HARDWARE-CONFIRMED (user: the
 CLI command changes the device's physical screen).
+
+### Sample rate -- CONFIRMED (2026-08, native macOS)
+`global_command` opcode `0x12`, param `0x03`, INDEX 0-6 @17: 0=32000,
+1=44100, 2=48000, 3=88200, 4=96000, 5=176400, 6=192000. Readback = `0x73`
+offset 18, ~1 s after the command (device clock re-lock).
+`macos-smplrt-32k-44k1-48-88k2-96k-176k4-192k`. CLI `sample-rate` /
+`set-sample-rate <hz>` (2026-08); not hardware round-trip tested.
+Disruptive -- drops audio, may revert if a DAW holds the stream.
+Offsets 21-23,27 also move (only at 88.2k/176.4k) -- undecoded clock state.
 
 ### macOS capture format (`captures/macos-captures/`)
 Darwin XHC pcapng: 40-byte pseudo-header + 320-byte payload =
@@ -216,7 +226,8 @@ host-side, exactly like the Launcher.
   `set-adat-gain` / `set-adat-link` / `mark-adat-link`; S/PDIF:
   `spdif-status` / `set-spdif-gain` / `set-spdif-link` / `mark-spdif-link`
 - bus: `bus-status` / `set-bus-level` / `set-bus-dim|mute|mono`
-- `set-brightness <0-100>` (screen brightness; global_command; readback @26)
+- global: `set-brightness <0-100>` (readback @26); `sample-rate` /
+  `set-sample-rate <hz>` (readback @18) -- both via `build_global_command`
 - `raw-set` (constraint-guarded, `--force`)
 - **EXPERIMENTAL, not hardware-tested:** `route <dest> <chan> <source>`
   (1-based channel; `L`/`R`=1/2 for stereo dests; keeps other channels
@@ -262,18 +273,21 @@ L=preamp3, R=preamp4 (old code swapped them).
 
 ## Right now (update me each session)
 
-- Working tree clean at `ee1fd20`. This session = `213e42f`..`ee1fd20`.
-- **NEXT (user):** full AuraVerb controls. Opcode `0x1d`/`0xda` + byte 28
-  on/off are known; frame bytes 17-27 = the DSP params, frozen in
-  `macos-auraverb-on-off`. Need a native-macOS capture (AuraVerb ON)
-  sweeping ONE control at a time. Then map 17-27 -> `params.auraverb_*`,
-  add `build_auraverb_command`, `0x1d` to `allowed_opcodes`, a CLI cmd.
-  Check the public Orion Studio Synergy Core manual for the control list.
-- Other open threads: hardware round-trip test `route hp1 all preamp3
-  preamp4` (Launcher should show L=preamp3 R=preamp4); CAPTURE E'
-  (routing-tab readback); a `mix-set` CLI for `0x17`; multichannel
-  routing-dest channel counts (adat out / com rec / afx in / mix chN /
-  surround in); source bank `0x01` (emumic?).
+- Working tree: run `git log`. macOS-captures session started at `213e42f`.
+- **The 2026-08 native-macOS capture batch is worked through.** Decoded:
+  routing frame model + banks + line-out 16ch; screen brightness (CLI,
+  hardware-confirmed); sample rate (CLI); virtual mixer `0x17` (no CLI);
+  AuraVerb on/off `0x1d`.
+- **NEXT (user):** capture an **AuraVerb parameter sweep** -- native
+  macOS, AuraVerb ON, move ONE control at a time. `0x1d`/`0xda` + byte 28
+  on/off are known; bytes 17-27 (DSP params) are frozen in the only
+  capture. Then map 17-27, add `build_auraverb_command` + CLI. Check the
+  public Synergy Core manual for the control list.
+- **Half-baked / open** (full list in CLAUDE.md "STATE OF PLAY"):
+  `mix-set` CLI for `0x17`; multichannel routing-dest channel counts;
+  source bank `0x01` (emumic?); routing readback -> CAPTURE E'; clock
+  bytes @21-23,27; surround-EQ `0xab`; `route` + `set-sample-rate`
+  hardware round-trip tests.
 
 ## Session log
 
@@ -306,6 +320,9 @@ L=preamp3, R=preamp4 (old code swapped them).
   - **AuraVerb on/off decoded** (`macos-auraverb-on-off`): NEW opcode
     `0x1d`/`0xda`, byte 28 = enabled. Reframed as in-scope (bundled, no
     activation); DSP params + CLI are the user's next step.
+  - **Sample rate decoded + wired** (`macos-smplrt-*`): `SET_GLOBAL`
+    (`0x12`) / param `0x03` / index 0-6 @17, readback `0x73` @18 (~1 s
+    lag). CLI `sample-rate` / `set-sample-rate <hz>`.
   - Added `tools/scan_macos_capture.py`; documented the Darwin XHC format
     + the "check for BOTH endpoints" gotcha; RE source policy (public
     manuals OK for facts). `macos-matrix-compplay*lineout*` +

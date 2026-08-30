@@ -213,6 +213,10 @@
         },
         "notes": "A small packed block just before bus_block, holding the settings-tab output-trim selectors (param 0x4b). Three targets (0/1/2) confirmed, each a 7-position selector (value 0-6) -- the physical meaning of the 7 steps (dB values? reference levels?) is not known, only that the readback is value<<shift. UNUSED bits so far: offset 24 bits 0-3 and 7, offset 25 bits 0-1 -- offset 25 bits 0-1 (a 2-bit field, 4 options) is a plausible home for the PAN LAW setting, and offset 24 bits 0-3 for a 4th trim target, but the capture named 'panlaw' never actually sent a 4th target or any other param, so pan law is still uncaptured. See params.output_trim."
       },
+      "sample_rate_byte_offset": {
+        "offset": 18,
+        "notes": "The device sample-rate INDEX (0-6, see params.sample_rate.values), one plain byte. CONFIRMED from capture macos-smplrt-32k-44k1-48-88k2-96k-176k4-192k (2026-08, native macOS): the user stepped 32k/44k1/48k/88k2/96k/176k4/192k; each SET_GLOBAL(param 0x03, value V) was followed ~1 s later (device clock re-lock settle) by offset 18 == V, monotonic 0..6. This overlaps the old 'offset 17/19 blip' region -- offset 18 itself is the sample rate, NOT blip noise; 17 and 19 are still the ~3 s Launcher-handshake blip. Also-moved-at-88k2/176k4 offsets 21/22/23/27 are undecoded clock/PLL/buffer state (see unresolved_state_offsets). See params.sample_rate."
+      },
       "screen_brightness_byte_offset": {
         "offset": 26,
         "notes": "The device's front-panel screen brightness, 0-100 (0x00-0x64), one plain byte. CONFIRMED from capture macos-scrbrght-0-100-50-multvalue (2026-08, native macOS -- the user watched the physical screen dim/brighten in real time): every SET_PARAM(opcode 0x12, param 0x0e, value V) was followed by offset 26 == V in the very next 0x73 report, 25/25 commands, values 0x00..0x64. So screen brightness IS a real, persisted, readable device setting (NOT host-side -- the earlier settings-scrbrght-surroundEQ capture under the VM simply never reached the device / the slider did nothing under the VM). Sits in the previously-unmapped gap between output_trim_block (24-25) and bus_block (28-45). Offset 27 still unmapped. See params.screen_brightness."
@@ -560,6 +564,25 @@
       "evidence": "capture settings-trim-mona-monb-line-panlaw (2026-08): each of the 3 targets swept 0->6 and back to 0; the packed readback bytes tracked value<<shift exactly on every one of the 20 steps.",
       "panlaw_note": "The capture is named '...-panlaw' but never sent a 4th target or any other param_id -- pan law was not actually captured. state_report.output_trim_block has spare bits (offset 25 bits 0-1 = a 2-bit/4-option field; offset 24 bits 0-3) that could hold it. Needs its own capture."
     },
+    "sample_rate": {
+      "id": "0x03",
+      "status": "confirmed",
+      "type": "enum",
+      "frame": "global_command (opcode 0x12) -- INDEX 0-6 at offset 17, no target byte. Build with build_global_command(profile, 'sample_rate', index).",
+      "range": [0, 6],
+      "values": {
+        "0": 32000,
+        "1": 44100,
+        "2": 48000,
+        "3": 88200,
+        "4": 96000,
+        "5": 176400,
+        "6": 192000
+      },
+      "readback": "state_report offset 18 (state_report.sample_rate_byte_offset) -- the index, tracked ~1 s after the command (device clock re-lock).",
+      "evidence": "capture macos-smplrt-32k-44k1-48-88k2-96k-176k4-192k (2026-08, native macOS): the user stepped all 7 rates in order; 7 outgoing frames op 0x12 / param 0x03 / value 0..6 at offset 17, each matched by offset 18 in a later 0x73 report, monotonic. The 3 stray op 0x13/param 0x47 frames in the file are bus-level nudges the user made to flush.",
+      "notes": "Changing sample rate is disruptive: the device drops audio and re-locks its clock (~1 s), and if a DAW / the OS audio engine holds the stream open it may refuse or immediately revert. Best changed with nothing streaming. Same frame shape as screen_brightness (opcode 0x12). WIRED INTO cli.py (2026-08): `set-sample-rate <hz>` / `sample-rate` (status). Not hardware round-trip tested."
+    },
     "screen_brightness": {
       "id": "0x0e",
       "status": "confirmed",
@@ -779,6 +802,10 @@
     }
   },
   "unresolved_state_offsets": [
+    {
+      "offset": "21, 22, 23, 27 (clock/PLL/buffer state, sample-rate dependent)",
+      "notes": "In capture macos-smplrt-* these 4 offsets moved ONLY at the 88.2 kHz and 176.4 kHz steps (the odd-family rates), not at 32/44.1/48/96/192. Offset 27 halved 16 -> 8 -> 4 across those steps; 22/23 look like a 16-bit value that jumps around (125->172->187->88...). Likely a clock divider / PLL lock word / USB-frame sample count that depends on the rate family. Not decoded -- would need a capture that steps each rate slowly with nothing else moving. Not user-facing; the sample rate itself reads back cleanly at offset 18 (state_report.sample_rate_byte_offset)."
+    },
     {
       "offset": "17",
       "notes": "Single-byte 0x08->0x00, isolated (nothing else moves). RECURS at ~3.0s from capture start in every capture that has been checked: vumeter-test-ch1 (frame 13306), ch-link-gain-ph-inv-test (t=3.037s), adat-ch1-2-3-12-link12 (t=3.055s), and -- crucially -- all_reports_AntelopeINIT (t~3.07s), which is the Launcher being STARTED with no user interaction at all (user-confirmed). So this is a Launcher-connection/handshake event ~3s after the Launcher starts talking to the device, NOT user-triggered and NOT a device-forever-periodic tick. The earlier 'link-state readback' guess is ruled out. Still not deliberately isolated, but its cause is now well-bounded: ignore it, it's startup noise."

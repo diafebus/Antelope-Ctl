@@ -69,10 +69,11 @@ see profiles/orion_studio_3.json -> "buses"):
     antelope-ctl --profile profiles/orion_studio_3.json set-bus-mute hp1 on
     antelope-ctl --profile profiles/orion_studio_3.json set-bus-mono hp2 off
 
-Device front-panel screen brightness (0-100; works only when the device
-talks to a native host -- a VM Launcher no-ops it):
+Device-global settings:
 
-    antelope-ctl --profile profiles/orion_studio_3.json set-brightness 75
+    antelope-ctl --profile profiles/orion_studio_3.json set-brightness 75    # front-panel screen, 0-100
+    antelope-ctl --profile profiles/orion_studio_3.json sample-rate           # show current rate
+    antelope-ctl --profile profiles/orion_studio_3.json set-sample-rate 96k   # 32k/44.1k/48k/88.2k/96k/176.4k/192k -- re-locks the clock
 
 Escape hatch for anything not yet in the profile:
 
@@ -1235,6 +1236,74 @@ def cmd_set_brightness(args, profile):
         print(f'readback unavailable: {e}')
 
 
+def _sample_rate_table(profile):
+    """{index: hz} from params.sample_rate.values (keys may be str)."""
+    vals = profile['params'].get('sample_rate', {}).get('values', {})
+    return {int(k): int(v) for k, v in vals.items()}
+
+
+def _parse_sample_rate(token, table):
+    """'48000' / '48k' / '44.1k' / '44100' -> index. Raises SystemExit."""
+    t = str(token).strip().lower().replace(' ', '')
+    hz = None
+    m = re.match(r'^([0-9]+(?:\.[0-9]+)?)k$', t)
+    if m:
+        hz = round(float(m.group(1)) * 1000)
+    elif t.isdigit():
+        hz = int(t)
+    if hz is None:
+        opts = ' / '.join(f'{v // 1000 if v % 1000 == 0 else v / 1000:g}k' for v in sorted(table.values()))
+        sys.exit(f"can't parse sample rate '{token}' -- one of: {opts}")
+    for idx, v in table.items():
+        if v == hz:
+            return idx
+    sys.exit(f'{hz} Hz is not a supported rate -- one of: '
+             + ', '.join(str(v) for v in sorted(table.values())))
+
+
+def cmd_sample_rate(args, profile):
+    """Show the device's current sample rate (state_report offset 18)."""
+    table = _sample_rate_table(profile)
+    transport = get_transport(profile)
+    data = read_state(transport, profile, args.timeout)
+    if not data:
+        sys.exit('No state report captured. Try again, or run with sudo.')
+    try:
+        idx = proto.parse_state_scalar(profile, data, 'sample_rate_byte_offset')
+    except ValueError as e:
+        sys.exit(str(e))
+    hz = table.get(idx)
+    print(f'sample rate: {hz} Hz' if hz else f'sample rate: index {idx} (not in the profile table)')
+
+
+def cmd_set_sample_rate(args, profile):
+    """Set the device sample rate (SET_GLOBAL / param sample_rate).
+
+    Disruptive: the device drops audio and re-locks its clock (~1 s). If a
+    DAW or the OS audio engine holds the stream open it may refuse or
+    revert -- change it with nothing streaming.
+    """
+    table = _sample_rate_table(profile)
+    idx = _parse_sample_rate(args.rate, table)
+    hz = table[idx]
+    transport = get_transport(profile)
+    pkt = proto.build_global_command(profile, 'sample_rate', idx)
+    print(f'setting sample rate -> {hz} Hz (index {idx})  (sent: {pkt[16:18].hex()})  '
+          f'-- device will re-lock its clock, ~1 s')
+    send_and_wait(transport, pkt, delay=1.2)
+    data = read_state(transport, profile, args.timeout)
+    if not data:
+        print('sent command, but no immediate readback was available (re-run `sample-rate`)')
+        return
+    try:
+        got = proto.parse_state_scalar(profile, data, 'sample_rate_byte_offset')
+        gh = table.get(got, f'index {got}')
+        print(f'readback: {gh}{" Hz" if isinstance(gh, int) else ""}'
+              + ('' if got == idx else '  (!= commanded -- give it a moment and re-check with `sample-rate`)'))
+    except ValueError as e:
+        print(f'readback unavailable: {e}')
+
+
 _ANSI_COLOR = {'red': '\x1b[31m', 'orange': '\x1b[33m', 'yellow': '\x1b[93m', 'green': '\x1b[32m'}
 _ANSI_RESET = '\x1b[0m'
 _ANSI_BOLD = '\x1b[1m'
@@ -1506,6 +1575,16 @@ def main():
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.add_argument('--force', action='store_true', help='allow a value outside 0-100')
     sp.set_defaults(func=cmd_set_brightness)
+
+    sp = sub.add_parser('sample-rate', help='show the device sample rate')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.set_defaults(func=cmd_sample_rate)
+
+    sp = sub.add_parser('set-sample-rate',
+                         help='set the device sample rate (disruptive -- re-locks the clock, ~1 s)')
+    sp.add_argument('rate', help='48000 | 48k | 44.1k | 88.2k | 96k | 176.4k | 192k | 32k')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.set_defaults(func=cmd_set_sample_rate)
 
     args = p.parse_args()
     profile = proto.load_profile(args.profile)

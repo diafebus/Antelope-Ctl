@@ -154,14 +154,22 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mute hp1 
 python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mono hp2 off
 ```
 
-### Screen brightness
+### Device-global settings
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-brightness 75   # device front-panel screen, 0-100
+python3 -m antelope.cli --profile profiles/orion_studio_3.json set-brightness 75    # front-panel screen, 0-100
+python3 -m antelope.cli --profile profiles/orion_studio_3.json sample-rate           # show current rate
+python3 -m antelope.cli --profile profiles/orion_studio_3.json set-sample-rate 96k   # 32k/44.1k/48k/88.2k/96k/176.4k/192k
 ```
 
-Only works when the device talks to a native host -- a VM Launcher no-ops
-the same slider (see the "Screen brightness" section further down).
+- **Screen brightness** only works when the device talks to a native
+  host -- a VM Launcher no-ops the same slider (see the section further
+  down).
+- **`set-sample-rate` is disruptive**: the device drops audio and
+  re-locks its clock (~1 s), and the readback lags the command by about
+  that long. If a DAW or the OS audio engine is holding the stream open
+  it may refuse or immediately revert -- change it with nothing
+  streaming, then confirm with `sample-rate`.
 
 ### Routing matrix (EXPERIMENTAL)
 
@@ -598,6 +606,17 @@ device's physical screen visibly changing:
 
 **Lesson:** "zero frames under the VM" ≠ host-side. The VM Launcher
 silently drops some controls. Re-check on native macOS before concluding.
+
+### Sample rate -- CONFIRMED (2026-08, native macOS)
+
+`macos-smplrt-32k-44k1-48-88k2-96k-176k4-192k`: stepping every rate sent
+opcode `0x12` (global), param `0x03`, an **index 0-6** at offset 17
+(0 = 32000, 1 = 44100, 2 = 48000, 3 = 88200, 4 = 96000, 5 = 176400,
+6 = 192000). Readback is `0x73` **offset 18**, tracking ~1 s behind each
+command (clock re-lock). CLI: `sample-rate` / `set-sample-rate <hz>`
+(`params.sample_rate`). Not hardware round-trip tested. Offsets 21-23 & 27
+also move but only at the 88.2k / 176.4k steps -- undecoded clock/PLL
+state.
 
 ### Oscillator, thunderbolt -- resolved as host-side (2026-08)
 
