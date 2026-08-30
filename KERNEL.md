@@ -98,11 +98,15 @@ transfers over intact.
 1. **Readback for every exposed parameter.** ALSA kcontrols must return
    the device's current value. Anything we only track in a host-side
    cache is not kernel-ready.
-   - **Routing matrix has no `0x73` readback** -- hard blocker. Resolve
-     CAPTURE E (readback in the Launcher INIT handshake?) or prove the
-     device genuinely never reports routing, in which case the driver
-     carries documented shadow state (Scarlett does this for a few
-     things -- acceptable only when unavoidable and commented).
+   - **Routing matrix readback not yet decoded** -- hard blocker, but
+     CAPTURE E (2026-08) proved it is NOT in the connect handshake, and
+     the user confirmed a readback *must* exist (routing survived a
+     Windows-VM -> macOS host switch, which a host-side cache can't do).
+     So it is a real device readback we haven't found -- prime suspect:
+     opening the Launcher's routing tab (CAPTURE E'). The frame *model*
+     for setting routes is now decoded (an array of `(bank,index)` pairs,
+     one per output channel -- see PROTOCOL.md §7). Find the readback
+     before writing kcontrols; do not ship shadow state for this.
    - `channel_link` enabled-bit: still not found in the state report.
    - Confirm bus / trim / talkback / ADAT / S/PDIF readback offsets are
      all solid (they mostly are -- see `state_report` byte-map).

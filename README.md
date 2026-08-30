@@ -58,8 +58,9 @@ antelope/transport.py          <- generic HID open/read/write (no device-specifi
 antelope/protocol.py           <- generic frame build/parse, driven entirely by the profile
 antelope/cli.py                <- generic CLI, driven entirely by the profile
 tools/capture_diff.py          <- offline helper for finding new params from captures
-tools/scan_capture.py          <- offline helper: auto-finds the transition across a whole capture
-CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap + tshark)
+tools/scan_capture.py          <- offline helper: auto-finds the transition across a whole capture (Windows TSV)
+tools/scan_macos_capture.py    <- same, for native-macOS (Darwin XHC) pcapng -- see CAPTURING.md
+CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
 captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
 ```

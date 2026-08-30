@@ -27,6 +27,15 @@ Re-check every "host-side" verdict on native macOS. Capture there:
 3. In Wireshark, capture on that `XHCxx` interface. **No display/size
    filter** -- capture everything, so nothing like the `0xab` surround-EQ
    frames is missed.
+   **Check you are getting BOTH endpoints.** The device's vendor HID
+   interface has an IN endpoint (`20.x.2`, carries `0x73`/`0x75`) and an
+   OUT/interrupt endpoint (`20.x.1`, carries the host's `0x70` commands
+   *and* the `0x74` enumeration). Several 2026-08 macOS matrix captures
+   caught only `20.x.2` -- so they have the state reports but **none of
+   the outgoing route commands**, making them useless for decoding a
+   command frame. After capturing, run
+   `tools/scan_macos_capture.py CAP.pcapng` and confirm the summary shows
+   an `OUT magic 70 xN` line before you rely on the file.
 4. **The macOS (Darwin XHC) frame format is NOT the same as USBPcap.**
    tshark does not populate `usbhid.data` / `usb.capdata` for these, so
    `tools/scan_capture.py` and its TSV recipe do not work directly. Each

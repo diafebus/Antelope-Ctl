@@ -733,7 +733,7 @@
       "0x14",
       "0x53"
     ],
-    "allowed_opcodes_note": "0x53 (SET_ROUTE) added 2026-08 for the experimental CLI `route` command. It is only PARTLY decoded (see frame.routing_command) and the CLI restricts it to the 5 addressable_destinations. Nothing about it looked dangerous in captures, but it has not been round-trip tested against hardware -- treat routing as experimental.",
+    "allowed_opcodes_note": "0x53 (SET_ROUTE) added 2026-08 for the experimental CLI `route` command. The frame model is decoded for 2-channel destinations (see frame.routing_command.frame_model); the CLI restricts it to the 5 addressable_destinations. Nothing about it looked dangerous in captures, but it has not been round-trip tested against hardware -- treat routing as experimental.",
     "observed_opcodes_launcher_only": [
       "0xab"
     ],
