@@ -236,11 +236,11 @@ def build_global_command(profile: dict, param, value: int) -> bytes:
 #
 # The frame carries the WHOLE destination group's per-channel routing, one
 # (bank, index) pair per output channel, starting at channel_list_offset
-# (19) with channel_stride (2). Channel 0 = L / output 1 / Reamp 1;
-# channel 1 = R / output 2 / Reamp 2; multichannel groups (line out = 12,
-# ADAT out = 16, ...) just have more pairs. There are NO separate "op
-# bytes" -- the old output_ops model was a misread of the OTHER channel's
-# unchanged (bank, index).
+# (19) with channel_stride (2). Channel 0 = output 1 (L on a stereo pair);
+# multichannel groups (line out = 16 confirmed, ADAT out, mix channels,
+# ...) just have more pairs. There are NO separate "op bytes" -- the old
+# output_ops model was a misread of the OTHER channel's unchanged (bank,
+# index). Source banks 0x05-0x0a (AFX / mix 1-4 / surround) decoded 2026-08.
 #
 # Consequence: to change one channel you must resend every channel of the
 # group. There is still no device readback, so the CLI must be told (or
@@ -250,9 +250,16 @@ def build_global_command(profile: dict, param, value: int) -> bytes:
 ROUTE_SOURCE_SPECS = {
     # canonical name: (source_bank, first_index, count, label)
     'preamp':   (0x00, 0, 12, 'preamp 1-12'),
-    'compplay': (0x02, 0, 24, 'computer playback 1-24'),
+    'compplay': (0x02, 0, 32, 'computer playback (24 on VM, up to 32 on macOS)'),
     'adat':     (0x03, 0, 16, 'ADAT in 1-16'),
+    'afx':      (0x05, 0, 32, 'AFX out 1-32'),
+    'surround': (0x0a, 0, 16, 'surround out 1-16'),
     'osc':      (0x0c, 0, 2,  'oscillator 1-2'),
+}
+
+# stereo (L/R) source banks -- name -> bank
+ROUTE_STEREO_SOURCE_BANKS = {
+    'spdif': 0x04, 'mix1': 0x06, 'mix2': 0x07, 'mix3': 0x08, 'mix4': 0x09,
 }
 
 # accepted spellings -> canonical key
@@ -261,26 +268,32 @@ ROUTE_SOURCE_ALIASES = {
     'playback': 'compplay', 'daw': 'compplay', 'usb': 'compplay',
     'preamp': 'preamp', 'pre': 'preamp', 'mic': 'preamp',
     'adat': 'adat',
+    'afx': 'afx', 'fx': 'afx',
+    'surround': 'surround', 'surr': 'surround', 'srnd': 'surround',
     'osc': 'osc', 'oscillator': 'osc',
 }
 
 ROUTE_MUTE = (0x0b, 0)
 
 
+def _lr_index(number):
+    return {'l': 0, 'r': 1, '1': 0, '2': 1}.get(str(number).strip().lower())
+
+
 def resolve_route_source(profile: dict, kind: str, number):
-    """Map a source spec to (bank, index). `kind` is
-    'preamp'|'compplay'|'adat'|'osc' (aliases in ROUTE_SOURCE_ALIASES) with a
-    1-based `number`, or 'spdif' with number 'L'/'R'/1/2, or 'mute' (number
-    ignored). Raises ValueError on a bad spec."""
+    """Map a source spec to (bank, index). `kind` is a numbered bank
+    ('preamp'|'compplay'|'adat'|'afx'|'surround'|'osc', aliases in
+    ROUTE_SOURCE_ALIASES) with a 1-based `number`, a stereo bank
+    ('spdif'|'mix1'..'mix4') with number 'L'/'R'/1/2, or 'mute'. Raises
+    ValueError on a bad spec."""
     kind = kind.lower()
     if kind == 'mute':
         return ROUTE_MUTE
-    if kind == 'spdif':
-        n = str(number).strip().lower()
-        idx = {'l': 0, 'r': 1, '1': 0, '2': 1}.get(n)
+    if kind in ROUTE_STEREO_SOURCE_BANKS:
+        idx = _lr_index(number)
         if idx is None:
-            raise ValueError("spdif source needs L or R")
-        return 0x04, idx
+            raise ValueError(f"{kind} source needs L or R")
+        return ROUTE_STEREO_SOURCE_BANKS[kind], idx
     canon = ROUTE_SOURCE_ALIASES.get(kind, kind)
     if canon in ROUTE_SOURCE_SPECS:
         bank, first, count, label = ROUTE_SOURCE_SPECS[canon]
@@ -288,19 +301,20 @@ def resolve_route_source(profile: dict, kind: str, number):
         if not (1 <= n <= count):
             raise ValueError(f"{canon} number {n} out of range 1..{count} ({label})")
         return bank, first + (n - 1)
-    raise ValueError(f"unknown routing source kind '{kind}' -- "
-                     f"one of: preamp, compplay, adat, spdif, osc, mute")
+    raise ValueError(f"unknown routing source kind '{kind}' -- one of: "
+                     f"preamp, compplay, adat, afx, surround, osc, spdif, mix1..mix4, mute")
 
 
 def route_source_label(profile: dict, bank: int, index: int) -> str:
     """Reverse of resolve_route_source: (bank, index) -> a human label like
-    'compplay 5' or 'MUTE', for showing a decoded/cached route."""
+    'compplay 5' / 'mix2 R' / 'MUTE', for showing a decoded/cached route."""
     if (bank, index) == ROUTE_MUTE:
         return 'MUTE'
-    if bank == 0x04:
-        return f"spdif {'L' if index == 0 else 'R'}"
+    for name, b in ROUTE_STEREO_SOURCE_BANKS.items():
+        if b == bank:
+            return f"{name} {'L' if index == 0 else 'R'}"
     for name, (b, first, count, _label) in ROUTE_SOURCE_SPECS.items():
-        if b == bank and first <= index < first + count:
+        if b == bank and index >= first:
             return f'{name} {index - first + 1}'
     return f'bank 0x{bank:02x} idx {index}'
 
@@ -324,8 +338,40 @@ def resolve_route_dest(profile: dict, name):
             return int(id_str)
     choices = ', '.join(f"{i} ({n})" for i, n in addr.items())
     raise ValueError(f"routing destination '{name}' not addressable by the CLI -- "
-                     f"choose one of: {choices} (multichannel outs like line out / ADAT out "
-                     f"aren't supported yet -- their channel count isn't captured)")
+                     f"choose one of: {choices}. Other outputs (adat out, com rec, "
+                     f"mix channels, surround in) use the same frame but their channel "
+                     f"counts aren't captured yet.")
+
+
+def route_dest_channels(profile: dict, dest_id: int) -> int:
+    """How many output channels the destination group `dest_id` has, from
+    frame.routing_command.destination_channels. Raises if unknown."""
+    f = profile['frame'].get('routing_command', {})
+    dc = f.get('destination_channels', {})
+    n = dc.get(str(dest_id))
+    if n is None:
+        raise ValueError(f'routing destination {dest_id}: channel count not known '
+                         f'(not in frame.routing_command.destination_channels)')
+    return int(n)
+
+
+def resolve_route_channel(profile: dict, dest_id: int, sel) -> int:
+    """Map an output-channel selector to a 0-based channel index. `sel` is
+    1-based ('1'..'N'), or 'L'/'R' (= 1/2) only for a stereo destination
+    (frame.routing_command.stereo_destinations). Validates against the
+    group's channel count."""
+    n = route_dest_channels(profile, dest_id)
+    s = str(sel).strip().lower()
+    f = profile['frame'].get('routing_command', {})
+    if s in ('l', 'r'):
+        if str(dest_id) not in f.get('stereo_destinations', []):
+            raise ValueError(f"destination {dest_id} is not a stereo pair -- use a channel "
+                             f"number 1..{n}, not L/R")
+        s = '1' if s == 'l' else '2'
+    if not s.isdigit() or not (1 <= int(s) <= n):
+        raise ValueError(f"channel '{sel}' -- expected 1..{n}"
+                         + ('  (or L/R)' if str(dest_id) in f.get('stereo_destinations', []) else ''))
+    return int(s) - 1
 
 
 def build_route_command(profile: dict, dest: int, channels) -> bytes:

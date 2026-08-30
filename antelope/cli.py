@@ -43,16 +43,21 @@ S/PDIF input controls (2 channels, 0 = L / 1 = R; gain + link only):
                                                                             # no cross-space
                                                                             # ambiguity)
 
-Routing matrix -- EXPERIMENTAL (only hp1/hp2/mona/monb/reamp). The wire
-frame carries the WHOLE destination every time. Like the Antelope Launcher
-there is no "un-route" -- you replace a channel's source or set it to
-`mute`. There is NO device readback yet, so verify in the Launcher:
+Routing matrix -- EXPERIMENTAL (lineout=16ch, hp1/hp2/mona/monb/reamp=2ch).
+Address an output channel 1-based; `L`/`R` = 1/2 for the stereo dests
+(hp1/hp2/mona/monb -- NOT reamp, whose two outs are separate mono). The
+wire frame carries the WHOLE destination every time, so a per-channel
+change resends the others from this CLI's cache. Like the Antelope
+Launcher there is no "un-route" -- replace a source or set it to `mute`.
+No device readback yet, so verify in the Launcher:
 
-    antelope-ctl --profile profiles/orion_studio_3.json route hp1 preamp3 preamp4   # L=preamp3, R=preamp4
-    antelope-ctl --profile profiles/orion_studio_3.json route hp2 compplay5 compplay6
-    antelope-ctl --profile profiles/orion_studio_3.json route mona preamp1          # set L, keep R from cache
-    antelope-ctl --profile profiles/orion_studio_3.json route hp1 mute              # mute every channel
-    antelope-ctl --profile profiles/orion_studio_3.json matrix-status              # CLI-cached routes only
+    antelope-ctl ... route hp1 all preamp3 preamp4     # set every channel (seeds the cache)
+    antelope-ctl ... route hp1 R preamp7               # change one channel, keep the rest
+    antelope-ctl ... route lineout 3 afx5              # line-out channel 3 <- AFX 5
+    antelope-ctl ... route lineout 4 mix2R             # <- virtual mix 2, right
+    antelope-ctl ... route hp2 mute                    # mute every channel
+    antelope-ctl ... route lineout 6 mute              # mute one channel
+    antelope-ctl ... matrix-status                     # CLI-cached routes only
 
 Output-bus controls (monitor A/B, headphone 1/2 -- NOT the same "channel"
 numbers as inputs above; buses accept either their numeric id or a name,
@@ -980,30 +985,31 @@ def _save_matrix_dest(profile, dest, channels):
 
 
 def _parse_route_source(token):
-    """'preamp3' -> ('preamp', '3'); 'spdifL' -> ('spdif', 'L'); 'mute' -> ('mute', None);
-    'keep' -> ('keep', None). Returns (kind, number)."""
+    """'preamp3' -> ('preamp', '3'); 'spdifL' -> ('spdif', 'L'); 'mix2r' ->
+    ('mix2', 'r'); 'mute' -> ('mute', None); 'keep' -> ('keep', None)."""
     t = re.sub(r'[\s:_-]+', '', token.strip().lower())  # "comp play 2" -> "compplay2"
     if t in ('mute', 'off'):
         return 'mute', None
     if t in ('keep', 'same', ''):
         return 'keep', None
-    m = re.match(r'^([a-z]+?)([0-9]+|[lr])$', t)
+    m = re.match(r'^([a-z]+[0-9]*?)([0-9]+|[lr])$', t)   # mix2 + r ; preamp + 3
     if not m:
-        raise SystemExit(f"can't parse routing source '{token}' -- "
-                         f"try preamp3 / compplay1 / adat5 / spdifL / osc1 / mute / keep")
+        raise SystemExit(f"can't parse routing source '{token}' -- try "
+                         f"preamp3 / compplay1 / adat5 / afx7 / surround2 / spdifL / "
+                         f"mix2R / osc1 / mute / keep")
     return m.group(1), m.group(2)
 
 
-def _route_channel_tuple(profile, token, dest, chan, cache):
-    """Resolve one channel's source to (bank, idx). `keep` -> the cached value
-    for (dest, chan), erroring if there is none."""
+def _route_source_tuple(profile, token, dest, chan, cache):
+    """Resolve one channel's source token to (bank, idx). `keep` -> the cached
+    value for (dest, chan), erroring with a hint if there is none."""
     kind, number = _parse_route_source(token)
     if kind == 'keep':
         c = cache.get(str(dest), {}).get(str(chan))
         if not c:
-            sys.exit(f"'keep' for channel {chan}: this CLI has no cached source for it "
-                     f"(no device readback yet). Pass an explicit source for both channels "
-                     f"the first time.")
+            sys.exit(f"channel {chan + 1}: nothing cached to keep (no device readback yet). "
+                     f"Seed the whole group once with `route {_dest_word(profile, dest)} all "
+                     f"<src1> <src2> ...`, then you can change one channel at a time.")
         return c['bank'], c['idx']
     try:
         return proto.resolve_route_source(profile, kind, number)
@@ -1011,40 +1017,61 @@ def _route_channel_tuple(profile, token, dest, chan, cache):
         sys.exit(str(e))
 
 
+def _dest_word(profile, dest_id):
+    addr = profile['frame'].get('routing_command', {}).get('addressable_destinations', {})
+    return addr.get(str(dest_id), str(dest_id))
+
+
 def cmd_route(args, profile):
-    """Set the sources of a 2-channel destination (hp1/hp2/mona/monb/reamp).
+    """Route sources into an output group.  route <dest> <chan|all|mute> [<source>...]
 
     EXPERIMENTAL. The wire frame carries the WHOLE destination group every
-    time. Like the Antelope Launcher there is no "un-route": you either
-    replace a channel's source or set it to `mute`. Give both channels
-    (`route hp1 <Lsource> <Rsource>`); omit the second to keep it, or use
-    `keep` / `mute` explicitly. `mute` alone (`route hp1 mute`) mutes every
-    channel. `keep` needs a cached value -- there is no device readback.
+    time, so a per-channel change resends the other channels from this
+    CLI's cache (there is no device readback). Like the Antelope Launcher
+    there is no "un-route" -- replace a channel's source or set it to mute.
+
+      route lineout 3 afx5     set line-out channel 3, keep the rest
+      route hp1 L preamp3      L = channel 1 for stereo dests (hp1/hp2/mona/monb)
+      route hp1 all preamp3 preamp4     set every channel (seeds the cache)
+      route lineout 4 mute     mute one channel
+      route hp2 mute           mute every channel
     """
     dest = _resolve_route_dest_cli(profile, args.destination)
-    nchan = profile['frame'].get('routing_command', {}).get('addressable_destination_channels', 2)
+    try:
+        nchan = proto.route_dest_channels(profile, dest)
+    except ValueError as e:
+        sys.exit(str(e))
     mute = tuple(profile['frame']['routing_command'].get('mute_source', [11, 0]))
     cache = _load_matrix_state(profile)
+    sel = args.selector.strip().lower()
+    srcs = args.source
 
-    right = args.right
-    if right is None:
-        # `route hp1 mute` -> mute all channels; `route hp1 preamp3` -> keep the rest
-        right = 'mute' if _parse_route_source(args.left)[0] == 'mute' else 'keep'
-        if right == 'mute':
-            chans = [mute] * nchan
-        else:
-            chans = [_route_channel_tuple(profile, args.left, dest, 0, cache)]
-            chans += [_route_channel_tuple(profile, 'keep', dest, i, cache)
-                      for i in range(1, nchan)]
+    if sel == 'mute':
+        if srcs:
+            sys.exit('`route <dest> mute` takes no source argument (it mutes every channel)')
+        chans = [mute] * nchan
+    elif sel == 'all':
+        if len(srcs) != nchan:
+            sys.exit(f'`route {args.destination} all` needs exactly {nchan} sources '
+                     f'(one per channel), got {len(srcs)}')
+        chans = [_route_source_tuple(profile, t, dest, i, cache) for i, t in enumerate(srcs)]
     else:
-        toks = [args.left, right][:nchan]
-        chans = [_route_channel_tuple(profile, t, dest, i, cache) for i, t in enumerate(toks)]
+        try:
+            ch = proto.resolve_route_channel(profile, dest, sel)
+        except ValueError as e:
+            sys.exit(str(e))
+        if len(srcs) != 1:
+            sys.exit(f'`route {args.destination} {args.selector}` needs exactly one source')
+        chans = [_route_source_tuple(profile, 'keep', dest, i, cache) for i in range(nchan)]
+        chans[ch] = _route_source_tuple(profile, srcs[0], dest, ch, cache)
 
+    stereo = str(dest) in profile['frame']['routing_command'].get('stereo_destinations', [])
     labels = [proto.route_source_label(profile, b, i) for b, i in chans]
-    print(f'routing {args.destination}:  ' +
-          '   '.join(f'ch{i}/{("L","R")[i] if i < 2 else i} = {lab}'
-                     for i, lab in enumerate(labels)) +
-          '  (EXPERIMENTAL, no readback -- verify in the Launcher)')
+    print(f'routing {args.destination} ({nchan} ch):')
+    for i, lab in enumerate(labels):
+        tag = {0: ' (L)', 1: ' (R)'}.get(i, '') if stereo else ''
+        print(f'  ch {i + 1}{tag}: {lab}')
+    print('(EXPERIMENTAL, no readback -- verify in the Launcher)')
     transport = get_transport(profile)
     pkt = proto.build_route_command(profile, dest, chans)
     send_and_wait(transport, pkt, delay=0.3)
@@ -1055,7 +1082,9 @@ def cmd_route(args, profile):
 
 def cmd_matrix_status(args, profile):
     """Show the routes THIS CLI has sent (local cache -- NOT a device readback)."""
-    addr = profile['frame'].get('routing_command', {}).get('addressable_destinations', {})
+    rc = profile['frame'].get('routing_command', {})
+    addr = rc.get('addressable_destinations', {})
+    stereo = set(rc.get('stereo_destinations', []))
     routes = _load_matrix_state(profile)
     if not routes:
         print('no routes cached by this CLI yet. (Routing has no device readback -- '
@@ -1065,8 +1094,9 @@ def cmd_matrix_status(args, profile):
     for d in sorted(routes, key=lambda x: int(x) if x.isdigit() else x):
         name = addr.get(d, f'dest{d}')
         for c in sorted(routes[d], key=lambda x: int(x) if x.isdigit() else x):
-            cname = {'0': '0 (L)', '1': '1 (R)'}.get(c, c)
-            print(f"{name:<14} {cname:<10} {routes[d][c].get('label', '?')}")
+            n = int(c) + 1 if c.isdigit() else c
+            tag = {1: ' (L)', 2: ' (R)'}.get(n, '') if d in stereo else ''
+            print(f"{name:<14} {str(n) + tag:<10} {routes[d][c].get('label', '?')}")
     print('note: local cache only -- can be stale if routing changed via the Launcher.')
 
 
@@ -1406,13 +1436,15 @@ def main():
     sp.set_defaults(func=cmd_mark_spdif_link)
 
     sp = sub.add_parser('route',
-                         help='EXPERIMENTAL: set the sources of hp1/hp2/mona/monb/reamp '
+                         help='EXPERIMENTAL: route sources into lineout/hp1/hp2/mona/monb/reamp '
                               '(whole destination sent every time; no device readback -- verify in the Launcher)')
-    sp.add_argument('destination', help='hp1 | hp2 | mona | monb | reamp (or 1-5)')
-    sp.add_argument('left', help='ch0 / L / Reamp 1 source: preamp3 | compplay1 | adat5 | spdifL | osc1 | mute | keep')
-    sp.add_argument('right', nargs='?', default=None,
-                    help='ch1 / R / Reamp 2 source (same forms). Omit to keep it; '
-                         '`route <dest> mute` mutes every channel. Like the Launcher there is no "unroute".')
+    sp.add_argument('destination', help='lineout | hp1 | hp2 | mona | monb | reamp')
+    sp.add_argument('selector',
+                    help='output channel (1-based; L/R = 1/2 for the stereo dests), '
+                         'or "all" (then give one source per channel), or "mute" (mute all)')
+    sp.add_argument('source', nargs='*',
+                    help='preamp3 | compplay1 | adat5 | afx7 | surround2 | spdifL | mix2R | '
+                         'osc1 | mute | keep  (one for a channel selector; N for "all")')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_route)
 

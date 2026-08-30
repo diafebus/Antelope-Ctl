@@ -371,9 +371,26 @@ route the **mute** pseudo-source (`bank 0x0b, idx 0x00`).
 channel of that group -- the changed one plus the others unchanged. There
 is no single-channel frame.
 
-Source banks (`frame.routing_command.source_banks`): `0x00` preamps,
-`0x02` **compplay** (Computer Playback / USB, 24 ch), `0x03` ADAT, `0x04`
-S/PDIF, `0x0b` mute, `0x0c` oscillator. `0x01`, `0x05`-`0x0a` unseen.
+**Source banks** (`frame.routing_command.source_banks`):
+
+| bank | source | index |
+|---|---|---|
+| `0x00` | preamps | 0-11 |
+| `0x01` | *unknown* (probably emumic) | ? |
+| `0x02` | **compplay** (Computer Playback / USB) | 0-23 on the VM driver, 0-31 on native macOS |
+| `0x03` | ADAT in | 0-15 |
+| `0x04` | S/PDIF in | 0-1 (L/R) |
+| `0x05` | **AFX out** (Synergy Core FX returns) | 0-31 |
+| `0x06`-`0x09` | **mix 1-4** (virtual mixes) | 0/1 = L/R |
+| `0x0a` | **surround out** | 0-15 |
+| `0x0b` | **mute** pseudo-source | 0 |
+| `0x0c` | oscillator | 0/1 |
+
+`0x05`-`0x0a` decoded 2026-08 from `macos-matrix-afx1-19-to-line1-...`
+(AFX 1-19 → idx `0x00`-`0x12`, 29-32 → `0x1c`-`0x1f`),
+`macos-matrix-mix1234-lineo1-invphch6` (mix 1/2/3/4 → banks `0x06`/`0x07`/
+`0x08`/`0x09`, each idx 0/1 = L/R), `macos-matrix-surrnd1-16-to-lineo1`
+(surround 1-16 → bank `0x0a` idx `0x00`-`0x0f`). Only bank `0x01` unseen.
 
 **Destination map** (byte 18) -- confirmed from `matrix-compplay-allouts-1`:
 
@@ -399,28 +416,36 @@ S/PDIF, `0x0b` mute, `0x0c` oscillator. `0x01`, `0x05`-`0x0a` unseen.
 > literally `(bank 0x00, index 0x02)` = preamp 3, the *other channel's*
 > routing. The old CLI shipped this: `route hp1 R preamp4` put preamp4 in
 > the L slot and preamp3 in R, so the Launcher showed HP1 L=preamp4,
-> R=preamp3 (user-observed, 2026-08). Fixed: `route <dest> <Lsrc> <Rsrc>`
-> now sets both channels explicitly.
+> R=preamp3 (user-observed, 2026-08). Fixed.
 
-**CLI:** `route <dest> <Lsrc> [<Rsrc>]` / `matrix-status` (experimental)
-build this frame for the 5 two-channel destinations and cache the result
-locally (`frame.routing_command.channel_list_offset` / `channel_stride`),
-since there's no readback. Like the Launcher there is **no un-route** --
-replace a source or `route <dest> mute`. `0x53` is in
-`constraints.allowed_opcodes`.
+**Line out = a 16-channel destination group** (byte 18 = `0x00`).
+Confirmed from the `afx*`/`surrnd*`/`mix1234*` captures: each frame is
+`d3 41 00 <bank0> <idx0> | <bank1> <idx1> | ... | <bank15> <idx15>` --
+channel 0 (the one being changed) then the other 15 untouched, ending at
+byte 50. (A channel routed to `(bank 0, idx 0)` would read as `00 00` and
+be invisible, but 16 matches the Launcher's matrix.) In those captures
+channels 1-15 held preamp 2-12 then compplay 1-4 -- whatever the user had
+set, not a fixed default.
 
-**Multichannel destinations** (line out, ADAT out, …) use the same array,
-just longer. Not wired into the CLI: their channel counts aren't captured,
-and every macOS `macos-matrix-*lineout*` / `*mix*` / `*surrnd*` file is
-missing the OUT endpoint. Old note that adat_out is "15× `03 NN`" fits the
-array model exactly: entry 0 = the changed channel, entries 1-15 =
+**CLI:** `route <dest> <chan> <source>` sets one output channel (1-based;
+`L`/`R` = 1/2 for `stereo_destinations`) and resends the rest from the
+local cache; `route <dest> all <s1>...<sN>` sets the whole group;
+`route <dest> mute` / `route <dest> <chan> mute` mute. Wired dests:
+`line_out` (16) + hp1/hp2/mona/monb/reamp (2). Like the Launcher there is
+**no un-route**. `0x53` is in `constraints.allowed_opcodes`.
+
+**Other multichannel destinations** (ADAT out, com rec, AFX in, the mix
+channels, surround in) use the same array; their channel counts aren't
+captured yet. Old note that adat_out is "15× `03 NN`" fits the array model
+exactly: entry 0 = the changed channel, entries 1-15 =
 `(0x03, 1..15)` = the ADAT-in passthrough left untouched.
 
 **Routing is exclusive** per channel (one source per output channel) and
 **idempotent** (routing an already-present source sends nothing). Summing
 is via separate "virtual mixes".
 
-Also open: source banks `0x01`, `0x05`-`0x0a`; multichannel channel counts.
+Also open: source bank `0x01` (emumic?); the channel counts of the ADAT
+out / com rec / AFX in / mix / surround-in destinations.
 
 **Output mute and oscillator-insert both go through this frame** (bank
 `0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
@@ -645,7 +670,7 @@ isolated recapture, ideally on macOS.
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14) + the `(bank,index)`-per-channel array model confirmed (`ch1-12-mute-hp1L`/`-hp1R`, 2026-08); CLI `route <dest> <L> <R>` covers HP1/HP2/Mon A/Mon B/Reamp. Open: multichannel channel counts, source banks `0x01`/`0x05`-`0x0a`. **Routing readback exists** (cross-machine persistence) but is NOT at connect (macOS on2/on3) and not decoded -- prime suspect: routing-tab open (CAPTURE E'). |
+| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), source banks `0x00`-`0x0c` (all but `0x01`), and the `(bank,index)`-per-channel array model all confirmed (2026-08). CLI `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch). Open: channel counts of the other multichannel destinations; bank `0x01`. **Routing readback exists** (cross-machine persistence) but is NOT at connect (macOS on2/on3) and not decoded -- prime suspect: routing-tab open (CAPTURE E'). |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |

@@ -41,12 +41,14 @@ captures, 40-byte pseudo-header + 320-byte payload, `frame.len==360`);
 `tshark` 4.6.8 is on this machine. Anything needing full frames / both
 directions / USB metadata is offline now.
 
-**macOS matrix captures -- WATCH OUT:** most `macos-matrix-*` files
-(`compplay*lineout*`, `afx*`, `surrnd*`, `mix1234*`, `ch1-12-mute-hp2LR`)
-have **zero OUT frames** -- the user's Wireshark session only caught the
-IN endpoint (`20.x.2`). Only `ch1-12-mute-hp1L` and `-hp1R` have the OUT
-commands (endpoint `20.x.1`). Any recapture must confirm endpoint .1 is
-being logged.
+**macOS matrix captures -- WATCH OUT:** `compplay1-12lineout1-12`,
+`compplay17-32lineout1-12`, and `ch1-12-mute-hp2LR` have **zero OUT
+frames** -- that Wireshark session only caught the IN endpoint (`20.x.2`).
+The usable ones (OUT endpoint `20.x.1` present): `ch1-12-mute-hp1L`,
+`-hp1R`, `afx1-19-to-line1-afx29to32-to-line1`, `surrnd1-16-to-lineo1`,
+`mix1234-lineo1-invphch6`. Any recapture must confirm endpoint .1 is
+being logged (`tools/scan_macos_capture.py` prints an `OUT magic 70` line
+when a file is usable).
 
 **macOS captures not yet triaged** (`captures/macos-captures/`):
 `macos-mix1-send-pan-fader-mute-solo-link`, `macos-smplrt-*` (sample
@@ -60,63 +62,61 @@ rate), `macos-auraverb-on-off`, `macos-antelopeINIT-poweron` /
 DECODED (2026-08, `macos-matrix-ch1-12-mute-hp1L`/`-hp1R`):**
 `d3 41 <dest> | <bank0> <idx0> | <bank1> <idx1> | ...` -- after byte 18 it's
 a plain array of (source_bank, source_index) pairs, one per output channel
-of the destination group, from byte 19, stride 2. ch0 = L/out1/Reamp1,
-ch1 = R/out2/Reamp2. Multichannel groups just have more pairs. NO op bytes
-(the old `02 01`/`00 02` model was a misread of the other channel's
-untouched routing -- it caused the L/R swap the user saw). Whole group is
-always sent. mute = (bank `0x0b`, idx 0); no "no source". Routing is
-EXCLUSIVE per channel. No `0x73` readback / none at connect (CAPTURE E),
-but a readback **exists** (cross-machine persistence) -- undecoded, likely
-on routing-tab open (CAPTURE E'). Oscillator-insert (bank `0x0c`) goes
-through this same frame. Talkback is NOT a matrix source.
-CLI: `route <dest> <Lsrc> [<Rsrc>]` (omit R = keep; `route <dest> mute` =
-mute all), `matrix-status`. No `unroute` -- the Launcher has no such
-concept (replace or mute). Fixed 2026-08.
+of the destination group, from byte 19, stride 2. NO op bytes (the old
+`02 01`/`00 02` model was a misread of the other channel's untouched
+routing -- caused the L/R swap the user saw). Whole group always sent.
+mute = (bank `0x0b`, idx 0); no "no source". EXCLUSIVE per channel. No
+`0x73` readback / none at connect (CAPTURE E), but a readback **exists**
+(cross-machine persistence) -- undecoded, likely on routing-tab open
+(CAPTURE E'). Oscillator-insert goes through this frame. Talkback is NOT
+a matrix source.
+CLI: `route <dest> <chan> <source>` (1-based; `L`/`R`=1/2 for the stereo
+dests; resends other channels from cache), `route <dest> all <s1>..<sN>`,
+`route <dest> mute`, `matrix-status`. No `unroute` (Launcher has none).
+Fixed + extended 2026-08.
 
-**Matrix source banks** (byte 19) -- user's full source list:
-| source | bank | status |
+**Matrix source banks** (byte 19) -- ALL confirmed 2026-08 except `0x01`:
+| bank | source | idx |
 |---|---|---|
-| preamp 1-12 | `0x00` (idx 0-11) | confirmed |
-| comp play 1-24 | `0x02` (idx 0-23) | confirmed |
-| adat in 1-16 | `0x03` (idx 0-15) | confirmed |
-| spdif in L/R | `0x04` (idx 0-1) | confirmed |
-| mute (pseudo) | `0x0b` | confirmed |
-| oscillator 1/2 | `0x0c` (idx 0-1) | confirmed |
-| emumic | ? | **TBD** |
-| afx out | ? | **TBD** |
-| mix1/2/3/4 L/R | ? | **TBD** (also destinations -- the virtual mixes) |
-| surround out | ? | **TBD** |
+| `0x00` | preamp | 0-11 |
+| `0x01` | **UNKNOWN** (emumic?) -- CAPTURE C | ? |
+| `0x02` | compplay (Computer Playback) | 0-23 VM / 0-31 macOS |
+| `0x03` | adat in | 0-15 |
+| `0x04` | spdif in | 0-1 |
+| `0x05` | afx out | 0-31 |
+| `0x06`-`0x09` | mix 1-4 | 0/1 = L/R |
+| `0x0a` | surround out | 0-15 |
+| `0x0b` | mute (pseudo) | 0 |
+| `0x0c` | oscillator | 0-1 |
+(`0x05`-`0x0a` from `macos-matrix-afx1-19*` / `-mix1234-*` / `-surrnd1-16*`.)
 
 **Matrix destinations** (byte 18) -- **DONE** (`matrix-compplay-allouts-1`):
 `0`=line out, `1`=hp1, `2`=hp2, `3`=mona, `4`=monb, `5`=reamp, `6`=com rec,
 `7`=adat out, `8`=spdif out, `9`=afx in, `10`=mix ch1, `11`=mix ch2,
 `12`=mix ch3, `13`=mix ch4, `14`=surround in.
 
-**Big complication found:** the routing frame is NOT a simple crosspoint.
-Bytes 21+ are a variable-length list dumping the whole destination group's
-per-channel routing state (1 entry for hp1/reamp, 15-30 for adat out / mix
-channels). Routing an already-present source is idempotent (no frame).
+The routing frame is an array of (bank,idx) pairs, one per output channel
+of the destination group; the whole group is always sent (see the block
+above + `frame.routing_command`). Routing an already-present source is
+idempotent (no frame).
 
 - [x] ~~CAPTURE B -- destination enumeration~~ -- DONE (map above).
 - [x] ~~CAPTURE A -- L/R sub-channel + frame model~~ -- **DONE, REVISED
-      2026-08** (`macos-matrix-ch1-12-mute-hp1L`/`-hp1R`). NO op bytes:
-      after byte 18 the frame is an array of (bank,idx) pairs, one per
-      output channel, from byte 19 stride 2. ch0=(19,20), ch1=(21,22).
-      The old `02 01`/`00 02` reading was the OTHER channel's untouched
-      routing. mute=(0x0b,0). Whole group always sent. CLI fixed.
-- [ ] **CAPTURE C -- source-bank enumeration**: route each of emumic /
-      afx out / mix1 L / mix1 R / surround out -> a channel, one at a
-      time. Maps banks `0x01`, `0x05`-`0x0a`, `0x0d`+. (macOS
-      `macos-matrix-afx*` / `-surrnd*` are missing the OUT endpoint --
-      need a fresh capture that catches endpoint .1.)
-- [ ] **CAPTURE D -- multichannel channel counts**: how many (bank,idx)
-      pairs does line out / adat out / mix chN / com rec / afx in carry?
-      Change ONE channel of one such group. NOTE: the macOS
-      `macos-matrix-compplay*lineout*` / `-mix1234-lineo1-*` /
-      `-surrnd*` files ALL have zero OUT frames (only endpoint .2 was
-      captured) -- unusable. Need a recapture on the endpoint the OUT
-      commands actually use (see `macos-matrix-ch1-12-mute-hp1L` for the
-      working setup).
+      2026-08** (`macos-matrix-ch1-12-mute-hp1L`/`-hp1R`). Array of
+      (bank,idx) pairs, from byte 19 stride 2. Old `02 01`/`00 02`
+      reading was the OTHER channel's untouched routing. CLI fixed.
+- [x] ~~CAPTURE C -- source-bank enumeration~~ -- **DONE 2026-08 for
+      `0x05`-`0x0a`** (`macos-matrix-afx1-19-to-line1*` = AFX out bank
+      `0x05` idx 0-31; `-mix1234-lineo1-*` = mix 1-4 banks `0x06`-`0x09`
+      idx L/R; `-surrnd1-16-to-lineo1` = surround out bank `0x0a` idx
+      0-15 -- these 3 files DO have the OUT endpoint). Only bank `0x01`
+      (emumic?) still unseen -- a small follow-up.
+- [x] ~~CAPTURE D -- line-out channel count~~ -- **DONE 2026-08**: line
+      out (byte 18 = 0) is a **16-channel** group; the same 3 captures
+      show all 16 (bank,idx) pairs (bytes 19-50). Still open: channel
+      counts of adat out / com rec / afx in / mix chN / surround-in
+      destinations. NOTE `macos-matrix-compplay*lineout*` = zero OUT
+      frames, unusable.
 - [ ] **CAPTURE E' -- routing readback on TAB open**: with the Launcher
       already connected, capture (both dirs, no size filter) while
       clicking into the routing-matrix tab. Do it with two different
@@ -135,16 +135,20 @@ channels). Routing an already-present source is idempotent (no frame).
       Windows VM, moved to macOS, macOS Launcher showed the NEW routing
       (host cache can't cross machines). So it fires LATER, undecoded.
       -> CAPTURE E'. See `params.routing.readback`, PROTOCOL.md §4/§7.
-- [x] ~~**wire `route` / `matrix-status`**~~ -- **DONE, then REWRITTEN
-      2026-08** after the model revision. `build_route_command(profile,
-      dest, channels)` takes an ordered (bank,idx) list for the whole
-      group. CLI: `route <dest> <Lsrc> [<Rsrc>]` (omit/`keep` R = keep;
-      `route <dest> mute` = mute all), `matrix-status` (per-channel
-      cache). NO `unroute` (Launcher has no un-route -- replace or mute;
-      user-noted). Only hp1/hp2/mona/monb/reamp. Frame builds verified
-      byte-exact against the hp1L/hp1R captures.
+- [x] ~~**wire `route` / `matrix-status`**~~ -- **DONE, REWRITTEN twice
+      2026-08.** `build_route_command(profile, dest, channels)` takes an
+      ordered (bank,idx) list for the whole group. `route_dest_channels` /
+      `resolve_route_channel` map a 1-based channel selector (`L`/`R` =
+      1/2 for `stereo_destinations`). CLI: `route <dest> <chan> <source>`
+      (per-channel, keeps the rest from cache), `route <dest> all
+      <s1>..<sN>`, `route <dest> mute` / `route <dest> <chan> mute`,
+      `matrix-status`. NO `unroute` (user-noted: Launcher has none).
+      Dests: line_out (16 ch) + hp1/hp2/mona/monb/reamp (2 ch). Sources:
+      preamp/compplay/adat/afx/surround/osc (numbered), spdif/mix1-4
+      (L/R), mute, keep. Frame builds verified byte-exact vs the hp1L/
+      hp1R AND afx/mix/surround captures.
       **STILL NOT round-trip tested against hardware** -- user to test:
-      `antelope-ctl route hp1 preamp3 preamp4` then check the Launcher
+      `antelope-ctl route hp1 all preamp3 preamp4` then check the Launcher
       (should show HP1 L=preamp3, R=preamp4 -- the old code swapped them).
 
 ### Out of scope (deliberate)
@@ -301,11 +305,12 @@ are analyzable offline right now:
   offset 17; `0x73` readback offset 26 (1:1, 25/25 commands). VM showed
   nothing because the VM Launcher no-ops the slider.
   `params.screen_brightness`; CLI `set-brightness`.
-- **Routing** (`matrix-*` captures) -- **frame model decoded** for
-  2-channel destinations, active thread. Opcode `0x53`/`0xd3`; byte 18 =
-  destination group (full 0-14 map confirmed); from byte 19, an array of
-  (bank,idx) pairs, stride 2, one per output channel of the group. Whole
-  group always sent. mute=(0x0b,0). Exclusive per channel. CLI rewritten
-  (`route <dest> <Lsrc> [<Rsrc>]`). Multichannel channel counts + true
-  readback still open (readback exists per cross-machine persistence -> E').
+- **Routing** (`matrix-*` captures) -- **frame model + all source banks
+  (bar `0x01`) + line-out channel count (16) decoded** 2026-08. Opcode
+  `0x53`/`0xd3`; byte 18 = destination group (0-14 map confirmed); from
+  byte 19, an array of (bank,idx) pairs, stride 2, one per output channel.
+  Whole group always sent. mute=(0x0b,0). Exclusive per channel. CLI:
+  `route <dest> <chan> <source>` / `all` / `mute`. Still open: channel
+  counts of the other multichannel dests; bank `0x01`; the readback
+  (exists per cross-machine persistence -> E').
   See `frame.routing_command` + `params.routing`.

@@ -156,46 +156,46 @@ the same slider (see the "Screen brightness" section further down).
 
 ### Routing matrix (EXPERIMENTAL)
 
-The routing frame (opcode `0x53`) is now **understood for 2-channel
-destinations** but has **no device readback**. The frame carries the
-*whole* destination group's per-channel routing every time -- so `route`
-takes **both** channels. Supported destinations: **HP1, HP2, Monitor A,
-Monitor B, Reamp**. Verify in the Launcher; nothing is confirmed after
-sending.
+The routing frame (opcode `0x53`) is decoded: after the destination byte
+it's a plain array of `(source_bank, source_index)` pairs, **one per
+output channel of that destination**, all sent every time. There is **no
+device readback**, so `route` resends the channels it isn't changing from
+a local cache. Wired destinations: **line out** (16 channels), **HP1,
+HP2, Monitor A, Monitor B, Reamp** (2). Verify in the Launcher.
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp1 preamp3 preamp4     # L=preamp3, R=preamp4
-python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp2 compplay5 compplay6
-python3 -m antelope.cli --profile profiles/orion_studio_3.json route mona preamp1            # set L, keep R (from cache)
-python3 -m antelope.cli --profile profiles/orion_studio_3.json route hp1 mute                # mute every channel
-python3 -m antelope.cli --profile profiles/orion_studio_3.json matrix-status                 # what THIS CLI has routed
+python3 -m antelope.cli ... route hp1 all preamp3 preamp4    # set every channel (seeds the cache)
+python3 -m antelope.cli ... route hp1 R preamp7              # change one channel, keep the rest
+python3 -m antelope.cli ... route lineout 3 afx5             # line-out channel 3 <- AFX 5
+python3 -m antelope.cli ... route lineout 4 mix2R            # <- virtual mix 2, right
+python3 -m antelope.cli ... route hp2 mute                   # mute every channel
+python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
+python3 -m antelope.cli ... matrix-status                    # what THIS CLI has routed
 ```
 
-- **Source spec:** `preampN` (1-12), `compplayN` (Computer Playback 1-24;
-  `playbackN` still accepted), `adatN` (1-16), `spdifL`/`spdifR`, `oscN`
-  (1-2), `mute`, or `keep` (reuse this CLI's cached value for that channel).
+- **Channel selector:** 1-based (`route lineout 3 ...`). `L`/`R` = 1/2 for
+  the true stereo destinations (HP1/HP2/Mon A/Mon B) -- **not** Reamp,
+  whose two outs are separate mono (`route reamp 1` / `route reamp 2`).
+- **Source spec:** `preampN` (1-12), `compplayN` (Computer Playback;
+  `playbackN` alias), `adatN` (1-16), `afxN` (1-32), `surroundN` (1-16),
+  `spdifL/R`, `mix1L`…`mix4R`, `oscN` (1-2), `mute`, or `keep`.
 - **No un-route** -- same as the Antelope Launcher: you replace a
   channel's source or set it to `mute`; there is no "empty" state.
-- **The wire frame carries the whole destination.** `route` sends channel
-  0 (L / Reamp 1) and channel 1 (R / Reamp 2) together. Omit the second
-  arg (or pass `keep`) to leave it as this CLI last set it -- there's no
-  readback to look it up, so `keep` errors if nothing is cached. This
-  replaces the old `route <dest> <L|R> <source>` form, which had a bug: it
-  wrote the source to the L slot regardless and clobbered R.
-- **Routing is exclusive** per channel. To silence a channel, route `mute`.
-- **`matrix-status` is a local cache**, not a device readback -- it only shows
-  what `route` sent from this CLI, and goes stale if routing is
-  changed anywhere else. A device-side routing readback **does exist**
-  (the user changed routing on the Windows VM, switched to macOS, and the
-  macOS Launcher showed the new routing -- a host cache can't do that), but
-  it is **not** in the connect handshake (ruled out 2026-08 by diffing two
-  native-macOS cold-boot connects with swapped routing,
+- **Seed before per-channel edits.** A per-channel `route` needs every
+  *other* channel already in this CLI's cache (there's no readback to look
+  them up). `route <dest> all <s1> <s2> …` sets and caches the whole group
+  in one shot.
+- **`matrix-status` is a local cache**, not a device readback -- it only
+  shows what `route` sent from this CLI, and goes stale if routing is
+  changed anywhere else. A device-side routing readback **does exist** (the
+  user changed routing on the Windows VM, switched to macOS, and the macOS
+  Launcher showed the new routing -- a host cache can't do that), but it is
+  **not** in the connect handshake (ruled out 2026-08,
   `macos-antelopeINIT-poweroff-on2/on3`) and is **not decoded yet**. Prime
   suspect: opening the Launcher's routing *tab*.
-- Line out, ADAT out, S/PDIF out, com rec, AFX in, the mix channels and
-  surround in use the **same** frame, just with more `(bank,index)` pairs
-  (one per output channel). Not wired into the CLI: their channel counts
-  aren't captured yet.
+- ADAT out, com rec, AFX in, the mix channels and surround in use the
+  **same** frame; their channel counts aren't captured yet, so they're not
+  wired into the CLI.
 
 See `PROTOCOL.md` §7 and `frame.routing_command` in the profile.
 
