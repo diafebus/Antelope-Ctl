@@ -62,6 +62,7 @@ Wireshark/USBPcap captures, and building a **stdlib-only Python CLI**
 | `0x12` | SET_GLOBAL | param@16, value@17 (no channel) -- talkback_*, screen_brightness (`0x0e`, 0-100, readback @26) |
 | `0x14` | SET_LINK | `0xa2`@16, space@17 (0=phys/ADAT, 1=S/PDIF, 3=mixer), pair@18, enabled@19 |
 | `0x17` | SET_MIX | `0xd4`@16, `0x05`@17, mix@18, ch@19 (1-32), fader@20 (0-90dB), pan+flags@21 (0x20=centre; +0x40 mute; +0x80 solo), send@22 (0-96) |
+| `0x1d` | SET_AURAVERB | `0xda`@16, DSP params @17-27 (NOT decoded), enabled@28 -- AuraVerb reverb on/off (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3`@16, `0x41`@17, dest group@18, then (bank,idx) pair per output channel from @19 stride 2 |
 | `0xab` | surround-EQ | `0xeb`@16 -- barely decoded, needs a capture |
 
@@ -139,6 +140,13 @@ whole state each time. Solo re-sends all 32 strips (channel-count probe).
 Mix link = SET_LINK space `0x03`, software-mirrored. NO `0x73` readback.
 `frame.mix_command` + `params.mix_*` + `protocol.build_mix_command`. Not
 in the CLI. From `macos-mix1-send-pan-fader-mute-solo-link`.
+
+### AuraVerb reverb (opcode `0x1d` / `0xda`) -- on/off only
+Reverb on the Mix 1 window. `macos-auraverb-on-off`: 2 frames, identical
+except byte 28 (`01` on / `00` off). Frame bytes 17-27 = the reverb's DSP
+params -- DELIBERATELY not decoded (licensed-effect path we avoid). Only
+the on/off toggle documented. `frame.auraverb_command` + `params.auraverb`.
+NOT in `allowed_opcodes`, no builder, no CLI.
 
 ### Channel link is SOFTWARE-controlled
 Device firmware does **not** propagate mode/gain/phantom/phase between
@@ -310,9 +318,13 @@ L=preamp3, R=preamp4 (old code swapped them).
      flags> <send>` -- fader 0-90dB, pan (0x20 centre) + mute bit 0x40 +
      solo bit 0x80, send 0-96. 32 ch/mix (solo re-sends all 32). Mix link
      = SET_LINK space `0x03` (4th link domain). No `0x73` readback. Added
-     `frame.mix_command`, `params.mix_*`, `protocol.build_mix_command`;
-     no CLI command yet.
-  8. Added `tools/scan_macos_capture.py`; documented the Darwin XHC
+     `frame.mix_command`, `params.mix_*`, `protocol.build_mix_command`.
+  8. **AuraVerb on/off decoded** (`macos-auraverb-on-off`): NEW opcode
+     `0x1d` / param `0xda`, byte 28 = enabled. DSP params (bytes 17-27)
+     left undecoded on purpose (licensed-effect boundary). Added a
+     source-policy note to CLAUDE.md: public Antelope manuals are OK for
+     facts (cite, don't copy).
+  9. Added `tools/scan_macos_capture.py`; documented the Darwin XHC
      format. NOTE: `macos-matrix-compplay*lineout*` + `ch1-12-mute-hp2LR`
      are missing the OUT endpoint -> unusable for command decoding.
 - **2026-08-30 (routing-decode session)** -- Decoded routing matrix

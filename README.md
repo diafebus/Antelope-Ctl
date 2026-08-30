@@ -1,7 +1,9 @@
 # antelope-ctl
 
 Open-source Linux control for Antelope Audio USB interfaces, reverse-engineered
-from USB traffic capture (no official docs, no firmware modification).
+from USB traffic capture on hardware the contributors own (plus facts from
+Antelope's own public manuals). No vendor software, firmware, or source is
+used; the device firmware is not touched.
 
 > **Looking for the wire format?** The protocol spec -- frame types, the
 > bus-vs-channel address spaces, every bitmask, the `0x73` state-report
@@ -27,6 +29,11 @@ this software interoperates with.
   interoperability is recognised in the US (e.g. *Sega v. Accolade*,
   *Sony v. Connectix*) and expressly permitted in the EU (Software
   Directive 2009/24/EC, Art. 6).
+- **Antelope's own publicly published documentation** (user manuals, spec
+  sheets, signal-flow diagrams from their download pages) is used only as
+  a source of *facts* -- channel counts, feature names, signal flow. No
+  manual text, tables, or diagrams are reproduced here; documents are
+  cited in the profile's `evidence` fields.
 - **Packet captures** committed under `captures/` are recordings of the
   contributor's own device on the contributor's own machine, kept
   minimal and included only as evidence for a documented finding. Device
@@ -219,6 +226,12 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 mute, solo)` builds the frame. No CLI command yet. See `PROTOCOL.md` §12
 and `frame.mix_command`.
 
+**AuraVerb** (the reverb on the Mix 1 window) has its own frame -- opcode
+`0x1d` / param `0xda`, byte 28 = on/off (`macos-auraverb-on-off`). Only
+the on/off toggle is documented; the reverb's DSP parameters are **not
+decoded** -- that's the licensed-effect path this project stays out of.
+See `frame.auraverb_command`.
+
 ### Buses vs. channels
 
 The SET_PARAM command frame has one byte (`channel_offset`) that means
@@ -300,8 +313,8 @@ confirm, only then trust it. Nothing is inferred from byte patterns alone.
    an untrusted source: on the sibling Discrete 8 Pro, opcodes `0x01`/`0x02`
    and out-of-range indices wedged/BusFaulted the unit (see
    `profile["hazards"]` and `PROTOCOL.md` §14).
-7. **Don't assume a new feature fits the SET_PARAM shape.** Five opcodes
-   are known now (`0x12`/`0x13`/`0x14`/`0x53`/`0xab`), each with its own
+7. **Don't assume a new feature fits the SET_PARAM shape.** Seven opcodes
+   are known now (`0x12`/`0x13`/`0x14`/`0x17`/`0x1d`/`0x53`/`0xab`), each with its own
    frame block under `"frame"` and its own `build_*_command()` in
    `protocol.py`. Routing (`0x53` / `frame.routing_command`) is the worked
    example: a distinct opcode whose payload is an array of `(bank, index)`

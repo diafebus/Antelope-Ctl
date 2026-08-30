@@ -38,7 +38,7 @@ real discriminator (§14).
 
 ## 2. Outgoing command frames (magic `0x70`)
 
-Five opcodes are known. The opcode is at **offset 4**. The param_id is at
+Seven opcodes are known. The opcode is at **offset 4**. The param_id is at
 **offset 16** for all of them. What comes after offset 16 depends on the
 opcode -- this is the single most important thing to get right:
 
@@ -48,6 +48,7 @@ opcode -- this is the single most important thing to get right:
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
+| `0x1d` | SET_AURAVERB | `0xda` | `0b 00 51 64 00 64 0b 0d 18 42 32` (@17..27, reverb DSP params -- **not decoded, on purpose**), `enabled` @28 | AuraVerb on/off (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
 
@@ -349,7 +350,7 @@ gain-mirroring behaviour as the preamp link; the CLI's `set-spdif-gain` /
 
 ### Routing matrix (frame model decoded, 2026-08)
 
-A 5th command shape: opcode `0x53`, param `0xd3` (`frame.routing_command`).
+A distinct command shape (not the SET_PARAM layout): opcode `0x53`, param `0xd3` (`frame.routing_command`).
 
 ```
 d3 41 <dest> | <bank0> <idx0> | <bank1> <idx1> | <bank2> <idx2> | ...
@@ -658,7 +659,7 @@ too. See `params.screen_brightness`.
 ### Surround-EQ
 
 The one Settings-window control here that does talk to the device:
-opcode `0xab` / param `0xeb` (a 5th command shape), 2 frames, bit 7 of
+opcode `0xab` / param `0xeb` (its own command shape), 2 frames, bit 7 of
 payload byte @19 toggles. No `0x73` effect. Needs a dedicated capture to
 decode the `0xab` layout.
 
@@ -671,7 +672,7 @@ isolated recapture, ideally on macOS.
 
 ---
 
-## 12. Virtual mixer -- Mix 1-4 (`0x17` / `0xd4`)
+## 12. Virtual mixer (0x17) + AuraVerb (0x1d)
 
 A 6th command shape (`frame.mix_command`). The **Mix windows are a
 separate UI from the routing matrix**: mixing happens here, then each mix's
@@ -711,6 +712,28 @@ Mixer state has its own (undecoded) readback path, like routing.
 
 **Not in the CLI yet.** `protocol.build_mix_command(profile, mix, channel,
 fader, pan_deg, send, mute, solo)` builds the frame; `0x17` is in
+`constraints.allowed_opcodes`.
+
+### AuraVerb on/off (`0x1d` / `0xda`)
+
+A 7th command shape. AuraVerb is a bundled reverb that appears on the
+**Mix 1** window. Toggling it on/off (`macos-auraverb-on-off`, 2026-08)
+sent exactly two frames, byte-identical except **offset 28** (`01` on /
+`00` off):
+
+```
+da 0b 00 51 64 00 64 0b 0d 18 42 32 <enabled>
+@16                                  @28
+```
+
+Bytes @17-27 are the reverb's DSP parameters (decay / size / damping /
+mix / pre-delay …). They are **deliberately not decoded** -- that's the
+licensed-effect DSP path this project stays out of (see `README.md`
+"AFX / Synergy Core effects are out of scope" and the source-policy note
+in `CLAUDE.md`). Only the on/off toggle is documented. No `0x73` readback.
+Whether AuraVerb touches anything beyond Mix 1 is unclear from the
+capture -- the public Orion Studio Synergy Core manual may say (facts
+only, cite it). Not in the CLI; `0x1d` is **not** in
 `constraints.allowed_opcodes`.
 
 ---

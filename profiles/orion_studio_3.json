@@ -98,7 +98,7 @@
         "0x0c": "oscillator (idx 0-1 = oscillator 1 / oscillator 2 -- right-click -> insert oscillator on an output)"
       },
       "cli_support": "CLI `route` / `matrix-status` (experimental). `route <dest> <chan> <source>` sets ONE output channel (1-based; `L`/`R` = 1/2 for stereo_destinations) and keeps the rest from this CLI's cache -- errors if a kept channel was never set (no device readback). `route <dest> all <s1> <s2> ...` sets the whole group; `route <dest> mute` mutes all; `route <dest> <chan> mute` mutes one. Like the Launcher there is NO un-route. Source specs: preamp N -> (0x00,N-1); compplay N (alias playback) -> (0x02,N-1); adat N -> (0x03,N-1); spdif L|R -> (0x04,0|1); afx N -> (0x05,N-1); mix1..4 L|R -> (0x06..0x09, 0|1); surround N -> (0x0a,N-1); osc N -> (0x0c,N-1); mute -> mute_source. Dests wired: line_out (16 ch) + hp1/hp2/mona/monb/reamp (2 ch).",
-      "notes": "The matrix/routing frame -- a 5th distinct command shape (opcode 0x53, NOT 0x13/0x12/0x14). [16]=0xd3, [17]=0x41 (constant), [18]=destination group. After that: an array of (source_bank, source_index) pairs, one per output channel of the group, from channel_list_offset (19), stride 2 -- see frame_model. Source banks in source_banks. Destination map from capture matrix-compplay-allouts-1: 0=line_out 1=hp1 2=hp2 3=mona 4=monb 5=reamp 6=com_rec 7=adat_out 8=spdif_out 9=afx_in 10-13=mix_ch1..4 14=surround_in. Routing is EXCLUSIVE per channel (one source per output channel; 'virtual mixes' are the separate summing mechanism). NO 0x73 readback and none at connect, but a readback exists (cross-machine persistence) -- see params.routing.readback."
+      "notes": "The matrix/routing frame -- its own command shape (opcode 0x53, NOT the SET_PARAM layout). [16]=0xd3, [17]=0x41 (constant), [18]=destination group. After that: an array of (source_bank, source_index) pairs, one per output channel of the group, from channel_list_offset (19), stride 2 -- see frame_model. Source banks in source_banks. Destination map from capture matrix-compplay-allouts-1: 0=line_out 1=hp1 2=hp2 3=mona 4=monb 5=reamp 6=com_rec 7=adat_out 8=spdif_out 9=afx_in 10-13=mix_ch1..4 14=surround_in. Routing is EXCLUSIVE per channel (one source per output channel; 'virtual mixes' are the separate summing mechanism). NO 0x73 readback and none at connect, but a readback exists (cross-machine persistence) -- see params.routing.readback."
     },
     "global_command": {
       "magic_offset": 0,
@@ -129,7 +129,18 @@
       "pan_center": 32,
       "mute_bit": "0x40",
       "solo_bit": "0x80",
-      "notes": "A 6th distinct command shape -- the VIRTUAL MIXER (the Mix 1-4 windows, a SEPARATE UI from the routing matrix: mixing happens here, then Mix N's L/R appear as sources in the matrix, banks 0x06-0x09). One frame per (mix, channel) strip, carrying that strip's WHOLE state every time. CONFIRMED from macos-mix1-send-pan-fader-mute-solo-link (2026-08, native macOS): [16]=0xd4 [17]=0x05 constant; [18]=mix number (0 = Mix 1; 1/2/3 for Mix 2/3/4 presumed, only 0 seen); [19]=channel 1-32 (each mix has 32 input strips -- the user's solo click re-sent all 32, a handy channel-count probe); [20]=FADER, raw = attenuation in -dB, 0 = 0dB/unity .. 90 = -90dB (matches the UI's 0..-90 range); [21]=PAN + FLAGS -- low 6 bits (pan_mask) = pan, pan_center 0x20, so 0x02 = full-left (-30), 0x20 = center, 0x3e = full-right (+30) i.e. raw = 32 + degrees; bit 0x40 = MUTE; bit 0x80 = SOLO; [22]=SEND level, 0-96 (0x60 = 0dB, 0 = -inf; same 0-96 scale as bus_level). No target byte past 22. NO 0x73 readback (checked the whole capture -- only meter jitter moved). Mixer state has its own readback path, undecoded (like routing). Not yet wired into cli.py; use build_mix_command(profile, mix, channel, fader, pan_deg, send, mute, solo)."
+      "notes": "Its own command shape (opcode 0x17) -- the VIRTUAL MIXER (the Mix 1-4 windows, a SEPARATE UI from the routing matrix: mixing happens here, then Mix N's L/R appear as sources in the matrix, banks 0x06-0x09). One frame per (mix, channel) strip, carrying that strip's WHOLE state every time. CONFIRMED from macos-mix1-send-pan-fader-mute-solo-link (2026-08, native macOS): [16]=0xd4 [17]=0x05 constant; [18]=mix number (0 = Mix 1; 1/2/3 for Mix 2/3/4 presumed, only 0 seen); [19]=channel 1-32 (each mix has 32 input strips -- the user's solo click re-sent all 32, a handy channel-count probe); [20]=FADER, raw = attenuation in -dB, 0 = 0dB/unity .. 90 = -90dB (matches the UI's 0..-90 range); [21]=PAN + FLAGS -- low 6 bits (pan_mask) = pan, pan_center 0x20, so 0x02 = full-left (-30), 0x20 = center, 0x3e = full-right (+30) i.e. raw = 32 + degrees; bit 0x40 = MUTE; bit 0x80 = SOLO; [22]=SEND level, 0-96 (0x60 = 0dB, 0 = -inf; same 0-96 scale as bus_level). No target byte past 22. NO 0x73 readback (checked the whole capture -- only meter jitter moved). Mixer state has its own readback path, undecoded (like routing). Not yet wired into cli.py; use build_mix_command(profile, mix, channel, fader, pan_deg, send, mute, solo)."
+    },
+    "auraverb_command": {
+      "magic_offset": 0,
+      "magic": "0x70",
+      "opcode_offset": 4,
+      "opcode": "0x1d",
+      "opcode_name": "SET_AURAVERB",
+      "param_id_offset": 16,
+      "param_id": "0xda",
+      "enabled_offset": 28,
+      "notes": "Its own command shape (opcode 0x1d) -- the AuraVerb reverb on the Mix 1 window (a bundled Synergy Core effect, not part of the licensed AFX plugin chain). CONFIRMED from macos-auraverb-on-off (2026-08, native macOS): exactly 2 outgoing frames, byte-identical except offset 28 (01 = on, 00 = off). Full frame: da 0b 00 51 64 00 64 0b 0d 18 42 32 <en> at offsets 16-28. Bytes 17-27 (0b 00 51 64 00 64 0b 0d 18 42 32) are the reverb's DSP parameters (decay/size/damping/mix/pre-delay etc.) -- constant here because only on/off was toggled, and DELIBERATELY NOT decoded (that is the licensed-effect DSP path this project avoids -- see the boundary note in CLAUDE.md). Only the on/off toggle is exposed. NO 0x73 readback. Whether AuraVerb affects only Mix 1 or something wider is unclear from the capture -- check the public Orion Studio Synergy Core manual (facts only). Not wired into cli.py."
     },
     "state_report": {
       "magic_offset": 0,
@@ -603,7 +614,7 @@
       "id": "0xd3",
       "status": "partly decoded",
       "type": "matrix crosspoint (source -> destination)",
-      "frame": "frame.routing_command (opcode 0x53) -- a 5th distinct shape, NOT SET_PARAM",
+      "frame": "frame.routing_command (opcode 0x53) -- its own shape, NOT SET_PARAM",
       "destinations": {
         "0": "line_out",
         "1": "headphone_1",
@@ -708,7 +719,7 @@
       "id": "0xeb",
       "status": "unconfirmed",
       "type": "unknown",
-      "frame": "NEW opcode 0xab (opcode_offset 4) -- a 5th command shape. param_id 0xeb at offset 16, then payload bytes 99 b0 <flags> 06 00 58 02 (offsets 17-23).",
+      "frame": "NEW opcode 0xab (opcode_offset 4) -- its own command shape. param_id 0xeb at offset 16, then payload bytes 99 b0 <flags> 06 00 58 02 (offsets 17-23).",
       "notes": "Settings-tab 'Surround EQ' pre/post toggle -- the likely identity of the only 2 outgoing frames in settings-scrbrght-surroundEQ.pcapng (2026-08). The two frames are identical except offset 19: 0x03 -> 0x83 (bit 7 = the toggle). Payload 0x0258 (=600) at offsets 22-23 is unexplained. NO 0x73 state-report change either time. Screen brightness sent NOTHING in that capture (host-side, or the slider wasn't moved). Only 2 frames -- not enough to decode the 0xab frame properly; needs a dedicated capture toggling surround-EQ pre/post several times and sweeping screen brightness."
     },
     "mix_fader": {
@@ -749,6 +760,14 @@
       "type": "bool",
       "notes": "Clicking solo on one channel also makes the Launcher re-send a mix_command for ALL 32 channels of that mix (host-side implementation of solo -> mute-the-rest). A convenient way to probe the mix channel count -- it's 32 here.",
       "evidence": "same capture: solo on channel 1 -> byte 21 = 0x82 (0x02 | 0x80), followed by a 32-frame burst (channels 1..32)."
+    },
+    "auraverb": {
+      "status": "confirmed (on/off only)",
+      "frame": "auraverb_command (opcode 0x1d / param 0xda) -- byte 28 = 1 on / 0 off",
+      "type": "bool",
+      "per": "the AuraVerb instance on the Mix 1 window (a bundled effect; scope of its effect beyond Mix 1 unconfirmed)",
+      "notes": "Only the on/off toggle is exposed. The reverb's DSP parameters (frame bytes 17-27) are deliberately NOT decoded -- that's the licensed-effect path this project avoids. NO 0x73 readback.",
+      "evidence": "capture macos-auraverb-on-off (2026-08, native macOS): clicking AuraVerb on then off produced exactly 2 frames, identical except offset 28 (01 -> 00)."
     },
     "mix_channel_link": {
       "status": "confirmed",

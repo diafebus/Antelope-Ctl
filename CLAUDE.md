@@ -51,7 +51,7 @@ being logged (`tools/scan_macos_capture.py` prints an `OUT magic 70` line
 when a file is usable).
 
 **macOS captures not yet triaged** (`captures/macos-captures/`):
-`macos-smplrt-*` (sample rate), `macos-auraverb-on-off`,
+`macos-smplrt-*` (sample rate),
 `macos-antelopeINIT-poweron` /
 `-poweron1-itresettopreviousstate`
 (2 more INIT variants). INIT poweroff-on2/on3 = CAPTURE E, done.
@@ -171,8 +171,28 @@ yet. `frame.mix_command` + `params.mix_*`.
 purpose: plugins are per-user licensed with online activation, so
 touching that path drags in authentication/licensing concerns we want
 nothing to do with. Focus is the mixer/routing/preamp feature set needed
-for professional tracking + monitoring. Revisit only if a clean,
-license-free "is effect slot N bypassed" style control shows up.
+for professional tracking + monitoring.
+
+**Boundary (2026-08):** a clean *bypass/enable* toggle for a bundled
+effect is fine to document (the CLAUDE.md line above always allowed "is
+effect slot N bypassed"). AuraVerb on/off = opcode `0x1d` / param `0xda`,
+byte 28 = enabled (`macos-auraverb-on-off`). What we DON'T do: decode or
+replicate the effect's DSP parameter payload (bytes 17-27 of that frame),
+the plugin-chain layout, or anything that reads/writes license state.
+
+### Reverse-engineering sources -- what's allowed
+
+- **Observed USB traffic** to/from hardware we own (the whole project).
+- **Publicly published Antelope documentation** -- user manuals, spec
+  sheets, block/signal-flow diagrams from antelope's own download pages.
+  FINE to use: DMCA 1201 is about circumventing protection measures, not
+  reading a PDF; and facts (channel counts, feature names, signal flow,
+  parameter ranges) are not copyrightable. RULES: extract facts only,
+  never paste manual text/tables/diagrams into the repo, cite the
+  document + version + page in the `evidence` field. Don't use leaked
+  service manuals or SDK docs -- public downloads only.
+- **NOT allowed:** Antelope software / firmware / source, disassembly of
+  their binaries, anything behind their login.
 
 ### Other captures to record (hardware)
 
@@ -341,3 +361,9 @@ are analyzable offline right now:
   byte; mix link = SET_LINK space `0x03`; 32 channels/mix; no `0x73`
   readback. `frame.mix_command` + `params.mix_*` + `protocol.build_mix_command`.
   Not in CLI.
+- ~~`macos-auraverb-on-off`~~ -- **DONE (2026-08).** AuraVerb (Mix 1
+  reverb) on/off: new opcode `0x1d` / param `0xda`, byte 28 = enabled
+  (2 frames, identical bar byte 28). DSP params (bytes 17-27) left
+  undecoded on purpose (licensed-effect boundary -- see "Out of scope").
+  `frame.auraverb_command` + `params.auraverb`. Decode-only: no builder,
+  not in `allowed_opcodes`, not in CLI.
