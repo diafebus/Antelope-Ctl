@@ -418,7 +418,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | none found (gain bytes track together; preamp-link behaviour, CLI mirrors gain) |
 | spdif_channel_link | `0xa2` | `0x14` | **space=1** @17, pair_index @18 (0) | enabled @19 | none found (L/R gain bytes track together; CLI mirrors gain) |
 | talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
-| talkback_source | `0x27` | `0x12` | - | 0-12 @17 (0=internal mic, 1-12=input ch) | offset 73 bits 0-1 (low bits only) |
+| talkback_source | `0x27` | `0x12` | - | 0-12 @17 -- `0` = INT (built-in talkback mic behind the physical TB button), `1-12` = preamps 1-12 (user-confirmed) | offset 73 bits 0-1 (low bits only) |
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | ? | multi-byte, undecoded | ? |

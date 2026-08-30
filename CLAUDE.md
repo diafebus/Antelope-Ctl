@@ -158,8 +158,9 @@ are analyzable offline right now:
 
 - ~~`talkback-bttn` / `talkback-select` / `talkback-gain-int`~~ -- **DONE
   (2026-08).** Confirmed: new opcode `0x12` (`frame.global_command`),
-  params `talkback_button` (`0x1f`), `talkback_source` (`0x27`, 0=internal
-  mic / 1-12=input ch), `talkback_gain` (`0x20`, per-source, 0-96),
+  params `talkback_button` (`0x1f`), `talkback_source` (`0x27`, 0=INT
+  built-in mic / 1-12=preamps 1-12, user-confirmed), `talkback_gain`
+  (`0x20`, per-source, 0-96),
   `talkback_dest_assign` (opcode `0x13`, `0x5d`, dest 0-3). Readback in
   `state_report.talkback_block` (offsets 73 packed status, 74 gain). See
   README "Talkback" + profile. Not wired into cli.py (protocol-first).

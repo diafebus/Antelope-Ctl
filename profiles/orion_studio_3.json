@@ -555,9 +555,9 @@
         12
       ],
       "frame": "global_command (opcode 0x12) -- source index at offset 17",
-      "source_map": "0 = internal talkback mic; 1-12 = physical input channel 1-12",
+      "source_map": "13 sources, index 0-12: 0 = INT (the interface's built-in talkback microphone, the one behind the unit's physical talkback button); 1-12 = the 12 preamps / physical hybrid input channels 1-12 (1:1, source index == channel number).",
       "readback": "state_report.talkback_block offset 73 bits 0-1 give ONLY source_index & 0x03 -- the high bits are not exposed anywhere found. Track the full value client-side.",
-      "evidence": "captures talkback-select (2026-08, stepped through all 13 sources -- offset 73 low 2 bits matched source&3 every time) and talkback-gain-int-ch1-2-12 (source order internal/ch1/ch2/ch12 matches the 0/1/2/12 indices, and each re-select changed the talkback gain readback to that source's own value -- see talkback_gain)."
+      "evidence": "captures talkback-select (2026-08, stepped through all 13 sources -- offset 73 low 2 bits matched source&3 every time) and talkback-gain-int-ch1-2-12 (each re-select changed the talkback gain readback to that source's own value). SOURCE MAP USER-CONFIRMED (2026-08): index 0 = INT internal mic, indices 1-12 = preamps 1-12."
     },
     "talkback_gain": {
       "id": "0x20",

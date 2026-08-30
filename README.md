@@ -408,7 +408,7 @@ later if wanted). Full details in `profiles/orion_studio_3.json` --
 | Control | opcode / param | payload | readback (0x73 report) |
 |---|---|---|---|
 | Talkback button (hold-to-talk) | `0x12` / `0x1f` | value@17: 1=press, 0=release | offset 73, bit 6 (`0x40`) |
-| Talkback source | `0x12` / `0x27` | index@17: 0=internal mic, 1-12=input ch 1-12 | offset 73, **bits 0-1 only** (`source & 3`) |
+| Talkback source | `0x12` / `0x27` | index@17: **0 = INT** (built-in talkback mic, the one behind the unit's physical TB button), **1-12 = preamps 1-12** | offset 73, **bits 0-1 only** (`source & 3`) |
 | Talkback gain (per source) | `0x12` / `0x20` | value@17: 0-96 (same scale as `bus_level`) | offset 74 (selected source's gain) |
 | Talkback destination assign | `0x13` / `0x5d` | dest 0-3 @17, on/off @18 | offset 73, bits 2-5 (dest N = bit N+2) |
 
