@@ -26,7 +26,7 @@ see `README.md` and the profile's `evidence` fields for which capture.
 | Audio stream endpoints | `0x05` OUT / `0x84` IN, isochronous, 24-ch / 24-bit in the class-compliant descriptor -- **unrelated to control** |
 | Device address | 2 (`usb.dst 1.2.x` in the captures) |
 | Poll interval | 4 ms |
-| GET / query opcode | **none known** -- state is only ever read passively from the IN reports the device streams |
+| GET / query opcode | **none, and none possible** -- the HID report descriptor (54 B, dumped via `tools/hid_probe.py`) has no Feature report and no report IDs, and the device STALLs every control-pipe `GET_REPORT`. State is only ever read passively from the `0x73`/`0x74`/`0x75` IN reports the device streams -- and routing / mixer / AuraVerb are **not in any of them** (write-only over USB). |
 | String descriptors | **never fetched in any capture on file** -- so no channel/bus/category names are recoverable from the USB traffic |
 
 Byte 0 of every **incoming** report is a **magic** that identifies the
@@ -464,13 +464,43 @@ source. The settings-tab oscillator panel is separate and sends nothing
 (Mon A / Mon B / HP1 / HP2, which combine) use `talkback_dest_assign`
 (`0x13` / `0x5d`).
 
-**A routing readback exists -- but it is NOT in the connect sequence, and
-we have not found where it is.** User proof it exists (2026-08): routing
-changed on the Windows VM, then the machine was switched to macOS, and the
-macOS Launcher displayed the *new* routing -- even though the last time
-that Mac saw the card the routing was different. A host-side cache cannot
-agree across two machines, so the device must store routing in NVRAM
-**and** hand it to whichever host asks.
+**There is no USB routing readback. This is now near-certain (2026-08-31),
+not just "not found yet":**
+
+- **The HID report descriptor forbids it.** Dumped from Linux hidraw
+  (`tools/hid_probe.py`), the interface 3 report descriptor is 54 bytes
+  and declares **exactly one 320-byte Input report and one 320-byte
+  Output report -- no Feature report, no report IDs**. The device
+  **STALLs (EPIPE) every control-pipe `GET_REPORT`** -- both
+  `GET_FEATURE` and `GET_REPORT(Input)`, at every length tried. So the
+  only thing the device ever sends is the unsolicited `0x73`/`0x74`/`0x75`
+  interrupt stream, and none of those carry routing (verified full-width
+  on the on2/on3 diff pair and every `matrix-*` capture).
+- **UAC2 can't carry it either** -- the audio-control interface is a stub
+  (1 clock, 4 terminals, no Feature/Selector/Mixer units).
+- **Loading a preset is pure push.** `macos-session-load-pre-afx-to-line`
+  (8 preset loads): each is `SET_GLOBAL(0x2c, 1)` → the `0x53` routing
+  frame(s) → `SET_GLOBAL(0x2c, 0)` (a batch/edit-lock marker,
+  `params.routing_batch_marker`), plus gain frames. The Launcher **never
+  queries** -- it writes the file's contents.
+- **Cross-machine persistence** (the original reason to expect a readback)
+  is real -- the device stores routing in NVRAM (front panel; survives a
+  power cycle) -- but the *host-to-host* agreement the user saw is almost
+  certainly the **Antelope Launcher's own account/session sync**
+  (server-side), not a device→host report.
+
+**Last stone -- the front-panel test.** Change a route on the device's own
+touchscreen with no computer attached, then connect a fresh/offline
+Launcher. If it shows the change → there is a vendor request fired on
+routing-tab open (worth one more capture, CAPTURE E′, this time filtered
+to VID `0x23e5` -- see §14). If it shows stale/default routing → confirmed:
+**no device readback exists, and the CLI cache is the correct and only
+design** (the Launcher must hold session state the same way).
+
+*(Note: our macOS captures were never filtered to the Antelope -- the
+`session-load` capture is full of a Realtek USB SSD, a Logitech mouse and
+a Keychron keyboard on other endpoints. None of that is Antelope. Filter
+future captures to `usb.idVendor == 0x23e5`.)*
 
 What CAPTURE E ruled out is the **connect handshake**. The macOS
 `macos-antelopeINIT-poweroff-on2/on3` captures: device powered fully off,
@@ -498,14 +528,13 @@ comp-play, swapped). Diffing the two complete connect sequences:
   routing query.**
 
 So at connect the Launcher neither reads routing from the device nor
-pushes cached routing. The readback fires **later** -- prime suspect:
-opening the routing-matrix *tab* (CAPTURE E'). Other candidates: a HID
-`GET_REPORT` / vendor control transfer (Darwin captures dissect these
-poorly), or a request/response pair on the vendor interrupt endpoints.
-See `params.routing.readback`.
+pushes cached routing. Combined with the HID-descriptor finding above,
+the conclusion is that **there is no routing readback over USB** -- pending
+only the front-panel test. See `params.routing.readback`.
 
-Until the readback is decoded, `matrix-status` stays a local cache and
-goes stale if routing is changed outside this CLI.
+`matrix-status` is a local cache and goes stale if routing is changed
+outside this CLI -- and that is a permanent property of the device, not a
+gap to be closed.
 
 ---
 
@@ -714,8 +743,9 @@ Software-mirrored like every other link: while linked, the Launcher
 re-sends both strips' `mix_command` frames on each change; the device does
 not propagate.
 
-**No `0x73` readback** -- the whole capture moved only meter-jitter bytes.
-Mixer state has its own (undecoded) readback path, like routing.
+**No readback** -- the whole capture moved only meter-jitter bytes, and
+(like routing) the HID descriptor has no Feature report and the device
+STALLs control-pipe `GET_REPORT`. Mixer state is write-only over USB.
 
 **Not in the CLI yet.** `protocol.build_mix_command(profile, mix, channel,
 fader, pan_deg, send, mute, solo)` builds the frame; `0x17` is in
@@ -765,7 +795,7 @@ plugin chain and anything touching license state. `0x1d` is now in
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), source banks `0x00`-`0x0c` (all but `0x01`), and the `(bank,index)`-per-channel array model all confirmed (2026-08). CLI `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch). Open: channel counts of the other multichannel destinations; bank `0x01`. **Routing readback exists** (cross-machine persistence) but is NOT at connect (macOS on2/on3) and not decoded -- prime suspect: routing-tab open (CAPTURE E'). |
+| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), source banks `0x00`-`0x0c` (all but `0x01`), and the `(bank,index)`-per-channel array model all confirmed (2026-08). CLI `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch). Open: channel counts of the other multichannel destinations; bank `0x01`. **No routing readback over USB** (HID descriptor has no Feature report; device STALLs `GET_REPORT`; not in `0x73`/`0x74`; preset-load is pure push) -- pending only the front-panel test. The CLI cache is the correct design. |
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Open: only Mix 1 (`[18]=0`) captured; no readback found (like routing); not in the CLI. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |

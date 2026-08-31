@@ -210,12 +210,15 @@ python3 -m antelope.cli ... matrix-status                    # what THIS CLI has
   16-channel seed is one line.
 - **`matrix-status` is a local cache**, not a device readback -- it only
   shows what `route` sent from this CLI, and goes stale if routing is
-  changed anywhere else. A device-side routing readback **does exist** (the
-  user changed routing on the Windows VM, switched to macOS, and the macOS
-  Launcher showed the new routing -- a host cache can't do that), but it is
-  **not** in the connect handshake (ruled out 2026-08,
-  `macos-antelopeINIT-poweroff-on2/on3`) and is **not decoded yet**. Prime
-  suspect: opening the Launcher's routing *tab*.
+  changed anywhere else. This is a **device limitation, not a missing
+  feature**: the HID interface has no readable report for routing (report
+  descriptor declares only a streaming Input + Output report, no Feature
+  report; the device rejects every control-pipe `GET_REPORT` -- see
+  `tools/hid_probe.py`), routing is in none of the `0x73`/`0x74` reports,
+  and loading a preset in the Launcher is a pure one-way push. The
+  Antelope Launcher itself holds session state client-side the same way.
+  (One check outstanding: a route changed from the device's front panel,
+  read by a fresh offline Launcher -- see `PROTOCOL.md` §7.)
 - ADAT out, com rec, AFX in, the mix channels and surround in use the
   **same** frame; their channel counts aren't captured yet, so they're not
   wired into the CLI.
