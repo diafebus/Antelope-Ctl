@@ -194,6 +194,19 @@ has neither and the device STALLs `GET_REPORT`), which is why
 `--poke` sent a bare `0x74` with no sub-header, and the device ignores
 that.
 
+**It was in the INIT captures the whole time.** Re-scanned 2026-08-31:
+`AntelopeINIT.pcapng` (Windows) has all 113 `0x74` requests **and** 41
+non-empty `0x75`/@1=`0x00` responses, incl. `cat 0x03` idx 0-14.
+`macos-antelopeINIT-poweron` has 209 requests / 66 responses. And the
+`macos-antelopeINIT-poweroff-on2` / `-on3` pair -- the two captures used
+to conclude "no routing readback at connect" -- carry `cat 0x03 idx 0`
+with the **deliberately swapped** LineOut routing the user had set
+(on2 = compIn 1-12 + preamp 1-4; on3 = preamp 1-12 + compIn 1-4). We had
+the diff; we were reading the `0x74` *request* bytes (identical -- same
+category walk both times) and filtering the `0x75` responses as meter
+noise (see the discriminator note). The USB-only captures were never the
+problem.
+
 ```
 REQUEST   host → device, EP 0x01 OUT, full 320-byte report
   @0   0x74
@@ -626,7 +639,10 @@ comp-play, swapped). Diffing the two complete connect sequences:
   preamp gain byte, unrelated) and free-running meter-noise offsets. No
   routing.
 - `0x74` topology enumeration -- **byte-identical** between the two
-  (indices only, as always).
+  (indices only, as always). *(2026-08-31: we compared the `0x74`
+  **request** bytes. The device's `0x75`/@1=`0x00` **responses** to those
+  requests are in both captures and they DO differ -- `cat 0x03 idx 0` =
+  the swapped LineOut routing. §4a. That is the readback; it was here.)*
 - USB control transfers (EP0) -- byte-identical: plain descriptors
   (device / config / strings "Orion Studio III" etc / UAC2). No routing.
 - 48-byte HID interface -- only idle keepalives. No routing.
@@ -641,11 +657,14 @@ comp-play, swapped). Diffing the two complete connect sequences:
   don't register). Not device behaviour, not routing. **No `0x53`, no
   routing query.**
 
-So at connect the Launcher does not read routing *in the HID interrupt
-stream* and does not push cached routing. What this analysis missed: the
-Launcher reads it later (routing-tab open) via the `0x74`/`0x75` query
-protocol, which the HID-only INIT captures could not show. CAPTURE E'
-(`usbmon` on the Linux host, all endpoints) caught it.
+So at connect the Launcher does not push cached routing, and no `0x53` is
+sent. What this analysis got wrong: it read routing **is** in the connect
+sequence -- the Launcher walks `cat 0x03` with `0x74` queries and the
+device answers with the full matrix (`0x75`/@1=`0x00`). We classified
+`0x74` as request-only ("indices, not values") and `0x75` as the meter
+report, so the responses were filtered out before anyone looked. CAPTURE
+E' (`usbmon`, live) made the request→response pairing obvious; re-scanning
+these same INIT captures then confirmed the data was always there.
 
 </details>
 
