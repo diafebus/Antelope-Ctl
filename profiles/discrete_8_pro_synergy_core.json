@@ -42,51 +42,9 @@
       "evidence": "eight distinct gain values sent to channels 0..7, each read back on the front panel"
     },
     "state_report": {
-      "magic": "0x73",
-      "gain_base_offset": 33,
-      "status_base_offset": 41,
-      "status_bits": {
-        "type": {
-          "mask": "0x0f",
-          "shift": 0
-        },
-        "phantom": {
-          "mask": "0x10",
-          "shift": 4
-        },
-        "hpf": {
-          "mask": "0x20",
-          "shift": 5
-        },
-        "phase_inv": {
-          "mask": "0x40",
-          "shift": 6
-        },
-        "zero_cross": {
-          "mask": "0x80",
-          "shift": 7
-        }
-      },
-      "bus_block_offset": 28,
-      "bus_block_stride": 1,
-      "status": "derived",
-      "_comment": "This block previously read 'does not exist on this device'. The distinction that resolves it: the device does not EMIT a state report unprompted, which is what the captures showed, but a 0x73 layout is defined for it and it answers when asked.",
-      "notes": "Offsets computed by bit-walking the 0x73 field list Antelope declares for this model. The walk totals 1824 bits, 228 bytes of payload, a 244-byte frame - and the sibling model's differently sized layout totals the same 1824, which checks both. The status bit order agrees with what this repository already established by observation on other devices: phantom mask 0x10 shift 4, phase 0x40 shift 6, identical. hpf at bit 5 and zero_cross at bit 7 are additions the format declares that captures had not decoded. bus_block_offset 28 is the base zen_go_sc.json already carries. NOT 'confirmed': no real 0x73 frame from this unit has been parsed with these offsets yet. Promote on the first parse.",
-      "evidence": "Antelope's own machine-readable report format, shipped in plaintext beside the control panel at C:\\Users\\Public\\.AntelopeAudio\\<slug>\\panels\\report_format_<version> (macOS: /Users/Shared/...). It marks itself \"authorative\": true. Read 2026-08-31 from machines with the units attached.",
-      "provenance": {
-        "method": "vendor's own plaintext report format, read from the user's own disk",
-        "what_was_done": "Opened a JSON file that Antelope's installer places on the machine of anyone who installs their software, at .AntelopeAudio/<slug>/panels/report_format_<version>. It is world-readable, not encrypted, not obfuscated, carries no licence header and no confidentiality marking, and needs no credentials. Reading it is what the vendor's own control panel does at startup.",
-        "what_was_NOT_done": [
-          "No decompilation or disassembly of any Antelope binary.",
-          "No decryption, and no circumvention of any technical protection measure - there is none on this file.",
-          "No firmware modification, no firmware dump, no patching.",
-          "No credentials, no licence server, no account, nothing behind a login.",
-          "No redistribution of the vendor's file: only facts derived from it appear here.",
-          "No confidential or leaked material; nothing from an NDA or an internal source."
-        ],
-        "purpose": "Interoperability: making hardware the owner has paid for controllable from their own operating system. Field offsets and parameter layouts are facts about an interface, not creative expression.",
-        "caveat": "This records what was and was not done so the maintainer can judge it. It is not legal advice, and it is not a claim about any particular jurisdiction."
-      }
+      "status": "unconfirmed",
+      "notes": "Base offsets are NOT filled in, deliberately. parse_state() reads gain_base_offset, status_base_offset and status_bits without consulting status, so putting numbers there would make `status` report a gain and a phantom state that no one has checked against a real frame. The numbers below are good enough to be worth having and not good enough to act on. They are listed in unresolved_state_offsets. WHAT IS KNOWN: Antelope's own report format declares the 0x73 layout for this model field by field with bit widths - 66 fields totalling 1824 bits, 228 bytes of payload, a 244-byte frame. Three models walk to that same 1824 from 49, 66 and 69 declared fields. WHAT AGREES: the field list and struct shapes were checked against a live device through Antelope's server - every declared name appeared and nothing else did, preamp_gains came back with the declared length and sign, and the preamp status byte carried exactly five sub-fields: type (4 bits), phantom, hpf, phase_inv, zero_cross. That bit order matches what this repository already found by observation elsewhere - phantom 0x10 shift 4, phase 0x40 shift 6 - and adds hpf at bit 5 and zero_cross at bit 7. WHAT IS UNPROVEN: position. The server hands over decoded fields, not raw bytes, so the ordering of the walk has not been seen on the wire. Parse one raw 0x73 frame with these numbers, check it against a known gain, and they can move up.",
+      "evidence": "Antelope report_format for this model, plus a live field-name and value check through the vendor's server on port 2021, 2026-09-01. Provenance: a JSON file Antelope's installer places on the disk of anyone who installs their software, at .AntelopeAudio/<slug>/panels/report_format_<version>. World-readable, not encrypted, not obfuscated, no confidentiality marking, no credentials; reading it is what the vendor's own panel does at startup. No binary decompiled, no protection measure circumvented, no firmware touched, and the file itself is not redistributed - only facts derived from it."
     },
     "response_frame": {
       "magic_offset": 0,
@@ -218,5 +176,8 @@
       "notes": "Which of the two is responsible was not isolated, because narrowing it down costs another physical power cycle. Both are treated as forbidden. The unit's front panel display glitches at the same moment, which suggests the control channel and the display share one processor."
     }
   },
-  "unresolved_state_offsets": []
+  "unresolved_state_offsets": [
+    "state_report base offsets, derived from Antelope's declared 0x73 layout but NOT yet verified against a raw frame: gain_base_offset 33 (byte * 8), status_base_offset 41 (one byte per preamp, count 8), volumes_and_mutes at offset 28, stride 1, count 5 (volume in the low 7 bits, mute in the top bit).",
+    "status_bits from the same source: type mask 0x0f shift 0, phantom 0x10 shift 4, hpf 0x20 shift 5, phase_inv 0x40 shift 6, zero_cross 0x80 shift 7."
+  ]
 }

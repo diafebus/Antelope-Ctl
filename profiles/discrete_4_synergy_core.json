@@ -25,49 +25,9 @@
       "notes": "SET_PARAM shape (magic/opcode/param_id_offset/channel_offset/value_offset) not yet captured for this device. Do not assume it matches Orion Studio III's 0x70/0x13/16/17/18 -- confirm from a fresh capture first, per README.md step 4 (check the outgoing URB_INTERRUPT out frame, not just the state-report diff)."
     },
     "state_report": {
-      "magic": "0x73",
-      "gain_base_offset": 40,
-      "status_base_offset": 44,
-      "status_bits": {
-        "type": {
-          "mask": "0x0f",
-          "shift": 0
-        },
-        "phantom": {
-          "mask": "0x10",
-          "shift": 4
-        },
-        "hpf": {
-          "mask": "0x20",
-          "shift": 5
-        },
-        "phase_inv": {
-          "mask": "0x40",
-          "shift": 6
-        },
-        "zero_cross": {
-          "mask": "0x80",
-          "shift": 7
-        }
-      },
-      "status": "derived",
-      "_comment": "Offsets from bit-walking this model's declared 0x73 field list: 49 fields, 1824 bits, 228 bytes payload, 244-byte frame. The Discrete 4 Pro's 69-field layout and the Discrete 8 Pro's 66-field layout both total the same 1824, which checks the walk across three different devices.",
-      "notes": "This model has FOUR preamp gains (byte * 4) against the Pro's byte * 7, and it has no volumes_and_mutes block at all, so there is no bus_block_offset here. The status bit order matches what this repository already found by observation elsewhere: phantom mask 0x10 shift 4, phase 0x40 shift 6. hpf at bit 5 and zero_cross at bit 7 are additions the format declares. NOT 'confirmed': no real 0x73 frame from this unit has been parsed with these offsets yet. The unit is attached and enumerating on the machine the format was read from, so this is checkable. LIVE CHECK 2026-09-01, with the vendor's panel open and the unit attached: 354 frames collected over twelve seconds, and every field name matched the declared layout - 49 from 0x73 plus afx_meters from 0x83 against 50 observed, nothing unexplained either way. preamp_gains came back as [-1, -1, 0, 0]: four values, signed, exactly as declared. The preamp status byte carried exactly the five fields listed in status_bits, in this order, including hpf and zero_cross. What is still unproven is the byte POSITIONS: the server hands over decoded fields rather than raw bytes, so ordering remains the walked step and this stays derived.",
-      "evidence": "Antelope's own machine-readable report format for this model, report_format_1.4.39 under the discrete4_hybrid slug. Read 2026-08-31 from a machine with the unit attached; the identical file, same SHA-256, is present on a second machine. Live field-name and value check through the vendor's own server on port 2021.",
-      "provenance": {
-        "method": "vendor's own plaintext report format, read from the user's own disk",
-        "what_was_done": "Opened a JSON file that Antelope's installer places on the machine of anyone who installs their software, at .AntelopeAudio/<slug>/panels/report_format_<version>. World-readable, not encrypted, not obfuscated, no licence header, no confidentiality marking, no credentials. Reading it is what the vendor's own control panel does at startup.",
-        "what_was_NOT_done": [
-          "No decompilation or disassembly of any Antelope binary.",
-          "No decryption and no circumvention of any technical protection measure - there is none on this file.",
-          "No firmware modification, dump or patch.",
-          "Nothing behind a login, a licence server or an account.",
-          "No redistribution of the vendor's file: only facts derived from it appear here.",
-          "No confidential or leaked material."
-        ],
-        "purpose": "Interoperability: making hardware the owner has paid for controllable from their own operating system.",
-        "caveat": "A record of method so the maintainer can judge it. Not legal advice."
-      }
+      "status": "unconfirmed",
+      "notes": "Base offsets are NOT filled in, deliberately. parse_state() reads gain_base_offset, status_base_offset and status_bits without consulting status, so putting numbers there would make `status` report a gain and a phantom state that no one has checked against a real frame. The numbers below are good enough to be worth having and not good enough to act on. They are listed in unresolved_state_offsets. WHAT IS KNOWN: Antelope's own report format declares the 0x73 layout for this model field by field with bit widths - 49 fields totalling 1824 bits, 228 bytes of payload, a 244-byte frame. Three models walk to that same 1824 from 49, 66 and 69 declared fields. WHAT AGREES: the field list and struct shapes were checked against a live device through Antelope's server - every declared name appeared and nothing else did, preamp_gains came back with the declared length and sign, and the preamp status byte carried exactly five sub-fields: type (4 bits), phantom, hpf, phase_inv, zero_cross. That bit order matches what this repository already found by observation elsewhere - phantom 0x10 shift 4, phase 0x40 shift 6 - and adds hpf at bit 5 and zero_cross at bit 7. WHAT IS UNPROVEN: position. The server hands over decoded fields, not raw bytes, so the ordering of the walk has not been seen on the wire. Parse one raw 0x73 frame with these numbers, check it against a known gain, and they can move up.",
+      "evidence": "Antelope report_format for this model, plus a live field-name and value check through the vendor's server on port 2021, 2026-09-01. Provenance: a JSON file Antelope's installer places on the disk of anyone who installs their software, at .AntelopeAudio/<slug>/panels/report_format_<version>. World-readable, not encrypted, not obfuscated, no confidentiality marking, no credentials; reading it is what the vendor's own panel does at startup. No binary decompiled, no protection measure circumvented, no firmware touched, and the file itself is not redistributed - only facts derived from it."
     }
   },
   "params": {},
@@ -83,5 +43,8 @@
     "status": "unconfirmed",
     "notes": "Output bus ids (monitor A/B, headphone, etc.) not yet captured for this device -- do not assume Orion Studio III's 0/1/2/5 mapping applies."
   },
-  "unresolved_state_offsets": []
+  "unresolved_state_offsets": [
+    "state_report base offsets, derived from Antelope's declared 0x73 layout but NOT yet verified against a raw frame: gain_base_offset 40 (byte * 4), status_base_offset 44 (one byte per preamp, count 4), no volumes_and_mutes block on this model at all.",
+    "status_bits from the same source: type mask 0x0f shift 0, phantom 0x10 shift 4, hpf 0x20 shift 5, phase_inv 0x40 shift 6, zero_cross 0x80 shift 7."
+  ]
 }
