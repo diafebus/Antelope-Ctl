@@ -178,10 +178,13 @@ it's a plain array of `(source_bank, source_index)` pairs, **one per
 output channel of that destination**, all sent every time. There is **no
 device readback**, so `route` resends the channels it isn't changing from
 a local cache. Wired destinations: **line out** (16 channels), **HP1,
-HP2, Monitor A, Monitor B, Reamp** (2). Verify in the Launcher.
+HP2, Monitor A, Monitor B, Reamp** (2). The 2-channel destinations are
+hardware-verified (round-tripped against a real Orion Studio III); still
+verify in the Launcher.
 
 ```
 python3 -m antelope.cli ... route hp1 all preamp3 preamp4    # set every channel (seeds the cache)
+python3 -m antelope.cli ... route lineout all compplay1..16  # range shorthand for a 16-ch seed
 python3 -m antelope.cli ... route hp1 R preamp7              # change one channel, keep the rest
 python3 -m antelope.cli ... route lineout 3 afx5             # line-out channel 3 <- AFX 5
 python3 -m antelope.cli ... route lineout 4 mix2R            # <- virtual mix 2, right
@@ -201,7 +204,10 @@ python3 -m antelope.cli ... matrix-status                    # what THIS CLI has
 - **Seed before per-channel edits.** A per-channel `route` needs every
   *other* channel already in this CLI's cache (there's no readback to look
   them up). `route <dest> all <s1> <s2> …` sets and caches the whole group
-  in one shot.
+  in one shot -- seed it to match what the Launcher currently shows. In
+  `all`, a range token like `compplay1..16` (or `compplay1-16`, and
+  descending: `adat16..1`) expands to that many sequential sources, so a
+  16-channel seed is one line.
 - **`matrix-status` is a local cache**, not a device readback -- it only
   shows what `route` sent from this CLI, and goes stale if routing is
   changed anywhere else. A device-side routing readback **does exist** (the

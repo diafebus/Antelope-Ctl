@@ -1001,6 +1001,24 @@ def _parse_route_source(token):
     return m.group(1), m.group(2)
 
 
+def _expand_route_tokens(tokens):
+    """Expand shorthand range tokens in a `route ... all` source list so a
+    16-channel dest doesn't need 16 words. `compplay1..16` / `compplay1-16`
+    -> compplay1 compplay2 ... compplay16 (ascending or descending). A bare
+    `mute` / `keep` / non-range token passes straight through."""
+    out = []
+    for tok in tokens:
+        m = re.match(r'^([a-z]+)\s*([0-9]+)\s*(?:\.\.|-)\s*([0-9]+)$',
+                     tok.strip().lower())
+        if not m:
+            out.append(tok)
+            continue
+        name, a, b = m.group(1), int(m.group(2)), int(m.group(3))
+        step = 1 if b >= a else -1
+        out.extend(f'{name}{n}' for n in range(a, b + step, step))
+    return out
+
+
 def _route_source_tuple(profile, token, dest, chan, cache):
     """Resolve one channel's source token to (bank, idx). `keep` -> the cached
     value for (dest, chan), erroring with a hint if there is none."""
@@ -1008,9 +1026,11 @@ def _route_source_tuple(profile, token, dest, chan, cache):
     if kind == 'keep':
         c = cache.get(str(dest), {}).get(str(chan))
         if not c:
-            sys.exit(f"channel {chan + 1}: nothing cached to keep (no device readback yet). "
-                     f"Seed the whole group once with `route {_dest_word(profile, dest)} all "
-                     f"<src1> <src2> ...`, then you can change one channel at a time.")
+            word = _dest_word(profile, dest)
+            sys.exit(f"channel {chan + 1}: nothing cached to keep (routing has no device "
+                     f"readback yet). Seed the whole group once to match what the Launcher "
+                     f"currently shows, e.g. `route {word} all compplay1..16` (range shorthand) "
+                     f"or `route {word} all <src1> <src2> ...`, then change one channel at a time.")
         return c['bank'], c['idx']
     try:
         return proto.resolve_route_source(profile, kind, number)
@@ -1034,6 +1054,7 @@ def cmd_route(args, profile):
       route lineout 3 afx5     set line-out channel 3, keep the rest
       route hp1 L preamp3      L = channel 1 for stereo dests (hp1/hp2/mona/monb)
       route hp1 all preamp3 preamp4     set every channel (seeds the cache)
+      route lineout all compplay1..16   range shorthand for a 16-ch seed
       route lineout 4 mute     mute one channel
       route hp2 mute           mute every channel
     """
@@ -1045,7 +1066,7 @@ def cmd_route(args, profile):
     mute = tuple(profile['frame']['routing_command'].get('mute_source', [11, 0]))
     cache = _load_matrix_state(profile)
     sel = args.selector.strip().lower()
-    srcs = args.source
+    srcs = _expand_route_tokens(args.source)
 
     if sel == 'mute':
         if srcs:
@@ -1513,7 +1534,8 @@ def main():
                          'or "all" (then give one source per channel), or "mute" (mute all)')
     sp.add_argument('source', nargs='*',
                     help='preamp3 | compplay1 | adat5 | afx7 | surround2 | spdifL | mix2R | '
-                         'osc1 | mute | keep  (one for a channel selector; N for "all")')
+                         'osc1 | mute | keep  (one for a channel selector; N for "all"; '
+                         'in "all" a range like compplay1..16 expands to N sources)')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_route)
 
