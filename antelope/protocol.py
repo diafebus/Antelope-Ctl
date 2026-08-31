@@ -723,6 +723,71 @@ def parse_mixer_record(profile: dict, body: bytes):
     return slots
 
 
+IDENTITY_READBACK_CATEGORY = 0x01
+FIRMWARE_READBACK_CATEGORY = 0x00
+
+
+def parse_identity_record(profile: dict, body: bytes) -> dict:
+    """Decode a category-0x01 record: the device's own name, SERIAL and
+    hardware revision, as fixed-offset NUL-terminated ASCII fields.
+
+    The serial is deliberately NOT stored anywhere in this repo -- profiles
+    describe the *layout*, and the value is read from the device on demand.
+    Ask for it only when you actually need it, and don't write it to a file.
+
+    Layout (frame.readback.identity; identical on Orion Studio III and Zen Go
+    Synergy Core, so it looks like a family-wide record):
+
+        @0   model name        e.g. 'OrionStudio_III', 'Zen Go Synergy Core'
+        @20  serial            13 chars
+        @36  hardware revision e.g. '7.0', '6.6'
+        @44  4 bytes, binary   little-endian u32; plausibly a build/calibration
+                               unix timestamp (both units decode to mid-2021),
+                               but that is a guess, not confirmed.
+
+    Returns {'name', 'serial', 'revision', 'stamp'}; missing fields come back
+    as None rather than raising, since this record is device-reported."""
+    ident = profile['frame'].get('readback', {}).get('identity', {})
+    if not body:
+        raise ValueError('empty identity record')
+
+    def field(key, default):
+        off = ident.get(key)
+        off = _as_int(off) if off is not None else default
+        if off is None or off >= len(body):
+            return None
+        raw = body[off:].split(b'\x00')[0]
+        return raw.decode('latin1', 'replace') or None
+
+    stamp = None
+    so = ident.get('stamp_offset')
+    so = _as_int(so) if so is not None else 44
+    if so is not None and so + 4 <= len(body):
+        stamp = int.from_bytes(body[so:so + 4], 'little')
+    return {
+        'name': field('name_offset', 0),
+        'serial': field('serial_offset', 20),
+        'revision': field('revision_offset', 36),
+        'stamp': stamp,
+    }
+
+
+def parse_firmware_record(profile: dict, body: bytes):
+    """Decode a category-0x00 record -> the firmware version string, or None.
+
+    On the Orion Studio III this is ASCII at offset 8 ('4.41'). On the Zen Go
+    the record is only 2 bytes and binary (`01 5a`) with no string at all, so
+    this returns None there rather than inventing a version."""
+    ident = profile['frame'].get('readback', {}).get('identity', {})
+    off = ident.get('firmware_offset')
+    off = _as_int(off) if off is not None else 8
+    if body is None or off is None or off >= len(body):
+        return None
+    raw = body[off:].split(b'\x00')[0]
+    txt = raw.decode('latin1', 'replace').strip()
+    return txt or None
+
+
 def readback_categories(profile: dict) -> dict:
     """frame.readback.categories -- {hex_str: description}, for display/tools."""
     return profile['frame'].get('readback', {}).get('categories', {})

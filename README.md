@@ -191,6 +191,36 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json set-sample-rate 9
   it may refuse or immediately revert -- change it with nothing
   streaming, then confirm with `sample-rate`.
 
+### Device identity -- and why no serial is stored here
+
+```bash
+python3 -m antelope.cli identity            # name / hw rev / firmware
+python3 -m antelope.cli identity --serial   # ...and the serial, on request
+```
+
+```
+name      OrionStudio_III
+hw rev    7.0
+firmware  4.41
+stamp     1624266279 (?= 2021-06-21, unconfirmed)
+serial    <13 chars, hidden -- pass --serial to show>
+```
+
+**Policy: no device serial is committed to this repo, ever.** Profiles
+describe the *layout* of the identity record (`frame.readback.identity`);
+the value is read from the hardware on demand via readback category `0x01`.
+A serial identifies a specific physical unit and ties to an Antelope
+account, so it is treated as the owner's data, not project data.
+
+`identity` therefore hides it unless you pass `--serial`, so it can't slip
+into a pasted terminal log or a bug report by accident. If some future
+online feature needs it, it should ask the device at that moment rather
+than read it from a file.
+
+The same applies to captures and tool output: `tools/readback_enum.py`
+blanks category `0x01`, and `tools/*_out.txt` is gitignored. If you are
+filing an issue, redact it.
+
 ### Routing matrix
 
 The routing frame (opcode `0x53`) is decoded: after the destination byte

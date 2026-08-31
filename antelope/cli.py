@@ -1201,6 +1201,46 @@ def cmd_matrix_status(args, profile):
                   f"{routes[d][c].get('label', '?')}")
 
 
+def cmd_identity(args, profile):
+    """Ask the device who it is (frame.readback categories 0x01 + 0x00).
+
+    The SERIAL is never stored in this repo -- it is read from the hardware
+    on request, and only printed when explicitly asked for with --serial, so
+    it can't leak into a pasted terminal log or a bug report by accident."""
+    transport = get_transport(profile)
+
+    def read(cat):
+        req = proto.build_readback_query(profile, cat, 0)
+        data = transport.query(
+            req, lambda d: proto.is_readback_response(profile, d, cat, 0),
+            timeout=args.timeout)
+        return proto.readback_body(profile, data) if data is not None else None
+
+    body = read(proto.IDENTITY_READBACK_CATEGORY)
+    if body is None:
+        sys.exit('no identity response from the device (category 0x01)')
+    ident = proto.parse_identity_record(profile, body)
+
+    fw = proto.parse_firmware_record(profile, read(proto.FIRMWARE_READBACK_CATEGORY))
+
+    print(f"name      {ident['name'] or '-'}")
+    print(f"hw rev    {ident['revision'] or '-'}")
+    print(f"firmware  {fw or '-'}")
+    if ident['stamp']:
+        # plausibly a build/calibration unix timestamp -- shown as raw + a
+        # best-effort date, flagged, because it is a guess (see protocol.py)
+        try:
+            when = time.strftime('%Y-%m-%d', time.gmtime(ident['stamp']))
+            print(f"stamp     {ident['stamp']} (?= {when}, unconfirmed)")
+        except (OSError, OverflowError, ValueError):
+            print(f"stamp     {ident['stamp']} (unconfirmed)")
+    if args.serial:
+        print(f"serial    {ident['serial'] or '-'}")
+    else:
+        n = len(ident['serial'] or '')
+        print(f"serial    <{n} chars, hidden -- pass --serial to show>")
+
+
 def cmd_mix_status(args, profile):
     """Live-read the virtual mixer from the device (frame.readback category
     0x04, index = mix number 0-3). One record per mix, 33 three-byte slots in
@@ -1888,6 +1928,16 @@ def main():
                               'falls back to the CLI cache if unreachable')
     sp.add_argument('--timeout', type=float, default=2.0)
     sp.set_defaults(func=cmd_matrix_status)
+
+    sp = sub.add_parser('identity',
+                         help="ask the device its name / hw rev / firmware "
+                              "(readback cat 0x01 + 0x00); serial on request only")
+    sp.add_argument('--serial', action='store_true',
+                    help='also print the serial number. It is read live from the '
+                         'device and never stored in this repo -- avoid pasting it '
+                         'into logs, issues or captures.')
+    sp.add_argument('--timeout', type=float, default=2.0)
+    sp.set_defaults(func=cmd_identity)
 
     sp = sub.add_parser('mix-status',
                          help='live-read a virtual mix from the device '

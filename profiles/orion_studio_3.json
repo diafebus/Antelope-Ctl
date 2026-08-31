@@ -393,6 +393,17 @@
       "discriminator_note": "The response magic is 0x75 but byte 1 = 0x00. The free-running METER report is also magic 0x75 but byte 1 = 0x1f; the STATE report (frame.state_report) is the same family with magic 0x73 -- effectively 'category 0, pushed continuously'. So (magic 0x75 AND byte1 0x00 AND category AND index) uniquely identifies a readback response amid the ~250 Hz state/meter stream.",
       "liveness": "The device answers EVERY (category, index) that is IN RANGE -- one it has no record for just comes back with an empty body. 'has a non-empty body' is the real liveness signal. Scalar categories return the same record for every index. Pace queries and reopen on halt (tools/readback_enum.py, transport.HidTransport.query).",
       "hazard": "DO NOT QUERY AN INDEX PAST A CATEGORY'S RECORD COUNT. The firmware does not bounds-check the index: one index past the end returns adjacent memory with a WRONG layout, and a little further it faults. Confirmed 2026-08-31 on real hardware -- `category 0x04 index 5` hard-crashed the Orion Studio III (front panel: 'CRITICAL ERROR! / Failure.c / L: 204  E: 0 / BusFault_Handler' -- a Cortex-M BusFault) and the unit needed a physical power cycle. Diagnostic signature, in order: cat 0x04 idx 0-3 = four same-layout mixer records; idx 4 = answers but with a completely different layout (a float32 table = adjacent memory); idx 5 = NO response at all, then the OUT endpoint is dead. An EMPTY answer is normal; NO answer means the MCU just died inside the handler. NOTE: this supersedes the earlier diagnosis that the endpoint halt was caused by 'hammering' / query rate -- the 2026-08-31 crash took about ten slow queries. Rate was never the trigger; the out-of-range index was. Enforced by protocol.check_readback_index against readback.category_counts.",
+      "identity": {
+        "_comment": "LAYOUT ONLY -- the serial VALUE is never stored in this repo. It is read from the hardware on request (CLI `identity --serial`). Same record shape on the Orion Studio III and the Zen Go Synergy Core, so it is probably family-wide.",
+        "category": "0x01",
+        "name_offset": 0,
+        "serial_offset": 20,
+        "revision_offset": 36,
+        "stamp_offset": 44,
+        "firmware_category": "0x00",
+        "firmware_offset": 8,
+        "notes": "Category 0x01 is a 48-byte record of NUL-terminated ASCII at fixed offsets: model name @0, SERIAL @20 (13 chars), hardware revision @36, then 4 binary bytes @44 (little-endian u32; both units seen decode to mid-2021, so plausibly a build/calibration timestamp -- a GUESS, not confirmed). Category 0x00 is a separate record: 12 bytes with an ASCII firmware version at offset 8 (e.g. '4.41'). Parsed by protocol.parse_identity_record / parse_firmware_record."
+      },
       "category_counts": {
         "0x03": 15,
         "0x04": 4,
