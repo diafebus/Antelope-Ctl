@@ -495,13 +495,16 @@ not just "not found yet":**
   certainly the **Antelope Launcher's own account/session sync**
   (server-side), not a device→host report.
 
-**Last stone -- the front-panel test.** Change a route on the device's own
-touchscreen with no computer attached, then connect a fresh/offline
-Launcher. If it shows the change → there is a vendor request fired on
-routing-tab open (worth one more capture, CAPTURE E′, this time filtered
-to VID `0x23e5` -- see §14). If it shows stale/default routing → confirmed:
-**no device readback exists, and the CLI cache is the correct and only
-design** (the Launcher must hold session state the same way).
+**Last stone -- the offline-persistence test.** With **WiFi off**, change
+routing in the Launcher on one OS, then reboot to the other (macOS ↔
+Windows VM), still offline, and check whether the routing carried over.
+(Also: change a route from the device's own front panel with no computer,
+then open a fresh offline Launcher.) If routing persists **offline** →
+the device really does report it to the host, and there is a vendor
+request to find (CAPTURE E′, filtered to VID `0x23e5`). If it only
+persists **online** → it is Antelope-account sync, there is **no device
+readback**, and the CLI cache is the correct and only design (the
+Launcher holds session state the same way).
 
 *(Note: our macOS captures were never filtered to the Antelope -- the
 `session-load` capture is full of a Realtek USB SSD, a Logitech mouse and
