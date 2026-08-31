@@ -4,7 +4,9 @@ Everything reverse-engineered so far about how the device talks, in one
 place. `README.md` is the user-facing guide; this file is the spec you
 reach for once you've read it. `profiles/orion_studio_3.json` is the
 machine-readable source of truth -- if the two ever disagree, the profile
-wins and this file is stale.
+wins and this file is stale. For what the profile JSON's keys *mean*, see
+`docs/profile-schema.md`. Sibling devices are in §14
+(`profiles/zen_go_sc.json`, `profiles/discrete_8_pro_synergy_core.json`).
 
 All offsets are **byte offsets into the 320-byte HID report**, 0-indexed.
 "2026-08" on a claim means it was confirmed by capture in that session;

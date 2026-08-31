@@ -155,15 +155,14 @@
   },
 
   "channels": {
-    "input": {
-      "count": 2,
-      "index_base": 0,
-      "names": ["Preamp A1", "Preamp A2"],
-      "modes": { "0": "mic", "1": "line", "2": "hiz" },
-      "status": "confirmed",
-      "notes": "2 combo preamps. input_mode via param 0x4f (0 mic / 1 line / 2 hiz). Gain range is mode-dependent (param 0x50): mic 0-65, line a narrow range around 0x13, Hi-Z ~0-45 -- exact bounds not swept to the rail. Phantom = 0x51, phase_invert = 0x52. Readback: gain @40+ch, status @42+ch.",
-      "link_pairs": { "count": 1, "formula": "pair_index = channel_index // 2" }
-    }
+    "count": 2,
+    "addressing": "0-indexed input channel 0-1, written to frame.command.channel_offset",
+    "names": ["Preamp A1", "Preamp A2"],
+    "modes": { "0": "mic", "1": "line", "2": "hiz" },
+    "hiz_channels": [0, 1],
+    "status": "confirmed",
+    "notes": "2 combo preamps. input_mode via param 0x4f (0 mic / 1 line / 2 hiz). Gain range is mode-dependent (param 0x50): mic 0-65, line a narrow range around raw 0x13, Hi-Z ~0-45 -- exact bounds not swept to the rail. Phantom = 0x51, phase_invert = 0x52. Readback: gain @40+ch, status @42+ch.",
+    "link_pairs": { "count": 1, "formula": "pair_index = channel_index // 2", "confirmed_pair_indices": [] }
   },
 
   "buses": {
@@ -318,7 +317,11 @@
     "allowed_opcodes": ["0x12", "0x13", "0x14", "0x16", "0x53"],
     "allowed_opcodes_note": "0x16 (SET_MIX) and 0x53 (SET_ROUTE) are frame-decoded but NOT hardware round-trip tested from this project. 0x1a / 0x1c / 0x23 (DSP) are observed-only and excluded on purpose.",
     "forbidden_opcodes": ["0x1a", "0x1c", "0x23"],
-    "channel_index_bounds": { "input": [0, 1], "bus": [0, 2] },
+    "channel_bounds": { "min": 0, "max": 1 },
+    "bus_ids": [0, 1, 2],
+    "input_mode_allowed_values": [0, 1, 2],
+    "gain_bounds": { "mic": [0, 65], "line": [-6, 20], "hiz": [0, 45] },
+    "gain_bounds_note": "line/hiz bounds carried from Orion / approximate -- the Zen Go captures didn't sweep to the rail. mic 0-65 is from the a1/a2 mic-gain sweeps.",
     "min_write_interval_ms": 250,
     "value_from_user_input": "never send a raw value straight from user input; clamp to the documented range"
   },

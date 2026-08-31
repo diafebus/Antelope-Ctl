@@ -11,6 +11,16 @@ used; the device firmware is not touched.
 > lives in **[`PROTOCOL.md`](PROTOCOL.md)**. This README is the guide to
 > *using* the tool.
 
+### Documentation map
+
+| file | what's in it |
+|---|---|
+| **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
+| **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, per-device notes (§14) |
+| **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
+| **`CAPTURING.md`** | how to capture USB traffic (Windows VM + USBPcap, or native macOS) |
+| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_3` is the reference; also `zen_go_sc`, `discrete_8_pro_synergy_core`) + `mic_models.json` |
+
 ## Legal status & disclaimer
 
 This is an independent interoperability project. It is **not affiliated
