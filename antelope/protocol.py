@@ -259,6 +259,60 @@ def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
     return bytes(pkt)
 
 
+# canonical AuraVerb control order (matches the Launcher UI top-to-bottom).
+# The wire order is different (see frame.auraverb_command.param_offsets); the
+# builder maps by name so order here is purely cosmetic for the CLI.
+AURAVERB_PARAMS = (
+    'color', 'pre_delay', 'early_reflection_gain', 'late_reflection_delay',
+    'richness', 'reverb_time', 'room_size', 'reverb_level',
+)
+
+
+def auraverb_defaults(profile: dict) -> dict:
+    """The device power-on values for the 8 AuraVerb params (from the profile,
+    originally the frozen frame in macos-auraverb-on-off)."""
+    f = profile['frame'].get('auraverb_command')
+    if not f:
+        raise KeyError('this profile has no frame.auraverb_command -- AuraVerb not available')
+    return dict(f.get('defaults', {}))
+
+
+def build_auraverb_command(profile: dict, params: dict, enabled: bool = True,
+                           mix: int = 0) -> bytes:
+    """Build a SET_AURAVERB frame (profile['frame']['auraverb_command'], opcode
+    0x1d) -- the whole AuraVerb state for one mix's reverb. `params` must
+    carry all 8 DSP controls (keys = frame.auraverb_command.param_offsets,
+    values 0-100); the caller fills any it isn't changing from cache/defaults,
+    since the frame has no partial update and no device readback. `enabled`
+    is the on/off bit. `mix` is the mix index (only 0 / Mix 1 is confirmed)."""
+    f = profile['frame'].get('auraverb_command')
+    if not f:
+        raise KeyError('this profile has no frame.auraverb_command -- AuraVerb not available')
+    check_opcode(profile, _as_int(f['opcode']))
+    offs = f['param_offsets']
+    lo, hi = f.get('param_range', [0, 100])
+    missing = [k for k in offs if k not in params]
+    if missing:
+        raise ValueError(f'build_auraverb_command needs all {len(offs)} params; '
+                         f'missing {", ".join(sorted(missing))}')
+    size = profile['transport']['report_size']
+    pkt = bytearray(size)
+    pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
+    pkt[_as_int(f['opcode_offset'])] = _as_int(f['opcode'])
+    pkt[_as_int(f['param_id_offset'])] = _as_int(f['param_id'])
+    pkt[_as_int(f['subcmd_offset'])] = _as_int(f['subcmd'])
+    pkt[_as_int(f['mix_offset'])] = mix & 0xFF
+    if 'mix_wet_offset' in f:
+        pkt[_as_int(f['mix_wet_offset'])] = _as_int(f['mix_wet_constant']) & 0xFF
+    for name, off in offs.items():
+        v = int(params[name])
+        if not (lo <= v <= hi):
+            raise ValueError(f'AuraVerb {name} = {v} outside {lo}..{hi}')
+        pkt[_as_int(off)] = v & 0xFF
+    pkt[_as_int(f['enabled_offset'])] = 1 if enabled else 0
+    return bytes(pkt)
+
+
 # ---- routing matrix (frame.routing_command, opcode 0x53) ----
 #
 # EXPERIMENTAL, but the frame model is now understood (macOS captures

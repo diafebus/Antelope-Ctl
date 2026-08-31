@@ -243,11 +243,24 @@ mute, solo)` builds the frame. No CLI command yet. See `PROTOCOL.md` §12
 and `frame.mix_command`.
 
 **AuraVerb** (the bundled reverb on the Mix 1 window) has its own frame
--- opcode `0x1d` / param `0xda`, byte 28 = on/off (`macos-auraverb-on-off`).
-Its DSP parameters (bytes 17-27) aren't decoded yet -- that needs a
-capture sweeping each control. AuraVerb is bundled with the device (no
-per-plugin activation), so full controls are planned. See
-`frame.auraverb_command`.
+-- opcode `0x1d` / param `0xda`. Fully decoded (2026-08-31): byte 28 =
+on/off, plus 8 DSP controls, each a plain 0-100 byte -- Room Size (@19),
+Color (@20), Pre-Delay (@21, 0-100 → 0-32 ms), Early Reflection Gain
+(@23), Late Reflection Delay (@24), Richness (@25), Reverb Time (@26),
+Reverb Level (@27). AuraVerb is bundled with the device (no per-plugin
+activation), so it's in scope. No device readback, so the CLI caches
+what it sent:
+
+```
+antelope-ctl ... auraverb                          # show CLI-cached state
+antelope-ctl ... auraverb --on                      # enable
+antelope-ctl ... auraverb --reverb-time 55 --color 40 --room-size 70
+antelope-ctl ... auraverb --off --defaults          # reset params, disable
+```
+
+`protocol.build_auraverb_command(profile, params, enabled)`. See
+`PROTOCOL.md` §12 and `frame.auraverb_command`. Not hardware round-trip
+tested yet.
 
 ### Buses vs. channels
 
