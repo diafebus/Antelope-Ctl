@@ -369,9 +369,10 @@ def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
 # index). Source banks 0x05-0x0a (AFX / mix 1-4 / surround) decoded 2026-08.
 #
 # Consequence: to change one channel you must resend every channel of the
-# group. There is still no device readback, so the CLI must be told (or
-# have cached) every channel it isn't changing -- see cli.cmd_route. mute
-# is the pseudo-source (bank 0x0b, index 0); there is no "no source".
+# group -- the CLI reads the current group from the device first
+# (frame.readback category 0x03, parse_routing_record) and after the write
+# reads it back to confirm. mute is the pseudo-source (bank 0x0b, index 0);
+# there is no "no source".
 
 ROUTE_SOURCE_SPECS = {
     # canonical name: (source_bank, first_index, count, label, user_base)

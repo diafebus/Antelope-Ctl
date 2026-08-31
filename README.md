@@ -16,7 +16,7 @@ used; the device firmware is not touched.
 | file | what's in it |
 |---|---|
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
-| **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, per-device notes (§14) |
+| **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
 | **`CAPTURING.md`** | how to capture USB traffic (Windows VM + USBPcap, or native macOS) |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_3` is the reference; also `zen_go_sc`, `discrete_8_pro_synergy_core`) + `mic_models.json` |
@@ -96,6 +96,12 @@ shape* -- see `channel_link` below -- it gets its own block under
 `profile["frame"]`, rather than being forced into the existing one.)
 
 ## Using it (Orion Studio III)
+
+`--profile` accepts a path, a bare filename, or a short name
+(`orion` / `zen_go` / `discrete_8_pro`), and defaults to `orion` (or
+`$ANTELOPE_PROFILE`). The examples below spell out
+`--profile profiles/orion_studio_3.json`; `antelope-ctl status` on its own
+works too.
 
 Physical input channels (12 hybrid inputs, addressed 0-11):
 
@@ -496,10 +502,13 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
    0  mic     0dB   on   off -.
    1  mic     0dB   on   off -'   (linked, pair 0 -- CLI-tracked, not device-confirmed)
   ```
-  This is **not a device readback** -- there isn't one. It's a small local
-  cache (`~/.cache/antelope-ctl/link_state_<vid>_<pid>.json`) of the last
-  `set-link` command *this CLI* has sent for each pair. It will go stale if
-  link state changes some other way (the official Launcher, another
+  This is a small local cache
+  (`~/.cache/antelope-ctl/link_state_<vid>_<pid>.json`) of the last
+  `set-link` command *this CLI* has sent for each pair -- not yet a device
+  read. (The `0x74`/`0x75` readback protocol -- `PROTOCOL.md` §4a -- has
+  per-channel "link/config" tables at categories `0x0c` / `0x15` that
+  aren't decoded yet; link state may well be in there.) It will go stale
+  if link state changes some other way (the official Launcher, another
   instance of this tool, or the device losing/regaining power) -- `status`
   prints a note to that effect whenever it has anything cached. Treat the
   markers as "what I last told the device", not "what the device currently

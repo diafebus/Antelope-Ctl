@@ -927,7 +927,8 @@ bypassed) is the default. **This list is account-bound** -- Edge mics +
 model packs activate against an Antelope account, so the usable models
 are per-user, and it is not confirmed whether the ids are global or just
 positions in the list the Launcher shows you. Full id→name→pattern_class
-table in `profiles/mic_models.json`; no readback (write-only).
+table in `profiles/mic_models.json`; readback category not identified yet
+(§4a).
 Antelope's own naming (Berlin / Vienna / Tokyo / …) is used; the classic
 mics being emulated are not spelled out (that's the licensed IP).
 
@@ -984,9 +985,9 @@ plugin chain and anything touching license state. `0x1d` is now in
 
 | Item | Status |
 |---|---|
-| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), **all 12 source banks** (`0x00`-`0x0c`, bank `0x01` = emumic confirmed 2026-08-31), and the `(bank,index)`-per-channel array model all confirmed. CLI `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch), sources incl. `emumicN`. Open: channel counts of the other multichannel destinations. **No routing readback over USB** (HID descriptor has no Feature report; device STALLs `GET_REPORT`; not in `0x73`/`0x74`; preset-load is pure push) -- pending only the offline-persistence test. The CLI cache is the correct design. |
-| Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Open: only Mix 1 (`[18]=0`) captured; no readback found (like routing); not in the CLI. |
-| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded 2026-08-31 (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`). 18 emulation models + a pattern-class code in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Open: how a variable-pattern model's pattern is set after selection; whether model ids are global or list-position. |
+| Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. Open: wire `route` writes for the other 9 destinations. |
+| Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number) + `0x1b` (bus levels), partly decoded. Not in the CLI. |
+| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded 2026-08-31 (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`). 18 emulation models + a pattern-class code in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Open: how a variable-pattern model's pattern is set after selection; whether model ids are global or list-position. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |

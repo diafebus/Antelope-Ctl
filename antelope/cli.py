@@ -980,7 +980,7 @@ def _save_matrix_dest(profile, dest, channels):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w') as f:
             json.dump({'routes': routes,
-                       'source': 'cli-issued routing commands only, not a device readback'}, f)
+                       'source': 'last-known routing (CLI writes + device readbacks, cat 0x03)'}, f)
     except OSError:
         pass
 
@@ -1027,10 +1027,10 @@ def _route_source_tuple(profile, token, dest, chan, cache):
         c = cache.get(str(dest), {}).get(str(chan))
         if not c:
             word = _dest_word(profile, dest)
-            sys.exit(f"channel {chan + 1}: nothing cached to keep (routing has no device "
-                     f"readback yet). Seed the whole group once to match what the Launcher "
-                     f"currently shows, e.g. `route {word} all compplay1..16` (range shorthand) "
-                     f"or `route {word} all <src1> <src2> ...`, then change one channel at a time.")
+            sys.exit(f"channel {chan + 1}: no source for it to keep -- the device read "
+                     f"of {word} didn't return a value for this channel. Retry, or set the "
+                     f"whole group: `route {word} all <src1> <src2> ...` "
+                     f"(range shorthand like `compplay1..16` works).")
         return c['bank'], c['idx']
     try:
         return proto.resolve_route_source(profile, kind, number)
@@ -1046,15 +1046,16 @@ def _dest_word(profile, dest_id):
 def cmd_route(args, profile):
     """Route sources into an output group.  route <dest> <chan|all|mute> [<source>...]
 
-    EXPERIMENTAL. The wire frame carries the WHOLE destination group every
-    time, so a per-channel change resends the other channels from this
-    CLI's cache (there is no device readback). Like the Antelope Launcher
-    there is no "un-route" -- replace a channel's source or set it to mute.
+    The wire frame carries the WHOLE destination group every time, so a
+    per-channel change resends the other channels -- read live from the
+    device first (frame.readback cat 0x03). After the write we read the
+    group back and confirm it matches. Like the Antelope Launcher there is
+    no "un-route" -- replace a channel's source or set it to mute.
 
       route lineout 3 afx5     set line-out channel 3, keep the rest
       route hp1 L preamp3      L = channel 1 for stereo dests (hp1/hp2/mona/monb)
-      route hp1 all preamp3 preamp4     set every channel (seeds the cache)
-      route lineout all compplay1..16   range shorthand for a 16-ch seed
+      route hp1 all preamp3 preamp4     set every channel
+      route lineout all compplay1..16   range shorthand for a 16-ch set
       route lineout 4 mute     mute one channel
       route hp2 mute           mute every channel
     """
@@ -1566,7 +1567,7 @@ def cmd_auraverb(args, profile):
     for flag, k in _AURAVERB_FLAGS.items():
         tag = '  <-- changed' if k in overrides else ''
         print(f'  {flag.replace("_", "-"):<24} {params[k]}{tag}')
-    print('(EXPERIMENTAL, no readback -- verify in the Launcher)')
+    print('(EXPERIMENTAL -- a live read exists via readback cat 0x0a but is not wired in here yet)')
     send_and_wait(transport, pkt, delay=0.3)
     _save_auraverb_state(profile, params, enabled)
     print(f'sent: {pkt[16:29].hex()}  (cached locally -- see `auraverb`)')
@@ -1659,9 +1660,37 @@ def cmd_meter(args, profile):
         print()
 
 
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_PROFILE_ALIASES = {
+    'orion': 'orion_studio_3', 'orion_studio_3': 'orion_studio_3',
+    'zen_go': 'zen_go_sc', 'zen_go_sc': 'zen_go_sc',
+    'discrete_8_pro': 'discrete_8_pro_synergy_core',
+    'discrete8pro': 'discrete_8_pro_synergy_core',
+}
+
+
+def _resolve_profile_path(arg):
+    """Accept a path ('profiles/orion_studio_3.json', './x.json'), a bare
+    filename ('orion_studio_3.json'), or a short name/alias ('orion')."""
+    if arg and (os.path.sep in arg or arg.endswith('.json')):
+        for cand in (arg, os.path.join(_REPO_ROOT, arg),
+                     os.path.join(_REPO_ROOT, 'profiles', os.path.basename(arg))):
+            if os.path.exists(cand):
+                return cand
+        return arg  # let load_profile raise a clear error
+    name = _PROFILE_ALIASES.get((arg or '').lower().replace('-', '_'), arg)
+    cand = os.path.join(_REPO_ROOT, 'profiles', f'{name}.json')
+    if os.path.exists(cand):
+        return cand
+    sys.exit(f"profile '{arg}' not found. Try a path (profiles/orion_studio_3.json) "
+             f"or a short name: {', '.join(sorted(set(_PROFILE_ALIASES.values())))}")
+
+
 def main():
     p = argparse.ArgumentParser(description='Generic Antelope HID device control')
-    p.add_argument('--profile', required=True, help='Path to device profile JSON')
+    p.add_argument('-p', '--profile', default=os.environ.get('ANTELOPE_PROFILE', 'orion'),
+                   help="device profile: a path, a bare .json filename, or a short name "
+                        "(orion / zen_go / discrete_8_pro). Default: $ANTELOPE_PROFILE or 'orion'.")
     sub = p.add_subparsers(dest='cmd', required=True)
 
     sp = sub.add_parser('status', help='show all physical input channels')
@@ -1773,8 +1802,9 @@ def main():
     sp.set_defaults(func=cmd_mark_spdif_link)
 
     sp = sub.add_parser('route',
-                         help='EXPERIMENTAL: route sources into lineout/hp1/hp2/mona/monb/reamp '
-                              '(whole destination sent every time; no device readback -- verify in the Launcher)')
+                         help='route sources into lineout/hp1/hp2/mona/monb/reamp '
+                              '(whole destination sent every time; each write is verified against a '
+                              'live readback -- see also matrix-status / readback)')
     sp.add_argument('destination', help='lineout | hp1 | hp2 | mona | monb | reamp')
     sp.add_argument('selector',
                     help='output channel (1-based; L/R = 1/2 for the stereo dests), '
@@ -1881,6 +1911,7 @@ def main():
     sp.set_defaults(func=cmd_auraverb)
 
     args = p.parse_args()
+    args.profile = _resolve_profile_path(args.profile)
     profile = proto.load_profile(args.profile)
     args.func(args, profile)
 
