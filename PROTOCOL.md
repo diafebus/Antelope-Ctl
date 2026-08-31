@@ -1033,14 +1033,22 @@ own record -- previously only mix 0 had ever been observed) and that
 was wrong for the mixer too. AuraVerb is category `0x0a` (still partial);
 `0x1b` is the mixer bus level/range table (still undecoded).
 
-**Reading is in the CLI, writing is not.** `antelope-ctl mix-status [mix]`
-does the live read (`protocol.parse_mixer_record`).
-`protocol.build_mix_command(profile, mix, channel, fader, pan_deg, send,
-mute, solo)` builds the write frame and `0x17` is in
-`constraints.allowed_opcodes`, but there is still **no `mix-set` CLI
-command** -- see the backlog. With the readback decoded, a `mix-set` no
-longer needs a local cache: it can read the strip, change one field and
-write the whole strip back, exactly like `route` does.
+**Both directions are in the CLI.** `mix-status [mix]` is the live read
+(`protocol.parse_mixer_record`); `mix-set <mix> <ch|master> [--fader dB]
+[--pan] [--send] [--mute] [--solo]` is the write.
+
+Because this frame carries the strip's **whole** state every time, a
+partial write would silently reset every field the user didn't name. So
+`mix-set` read-modify-writes: read category `0x04`, apply the named flags,
+write the strip, re-read to verify. No local cache -- and if the read
+fails it refuses to write rather than clobber blindly. It also reports
+when *other* strips moved, which happens with a linked pair or when solo
+re-mutes the rest (both host-side, as in the Launcher).
+
+`protocol.build_mix_command(...)` builds the frame directly; `0x17` is in
+`constraints.allowed_opcodes`. Note the builder emits the send byte only
+if the profile declares a `send_offset` -- the Zen Go's mixer strip has no
+send (`protocol.mix_has_send`).
 
 ### Mic modeling / "emuMic" (`0x17` / `0xe5`) -- decoded 2026-08-31
 

@@ -259,8 +259,17 @@ def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
     pkt[_as_int(f['channel_offset'])] = channel & 0xFF
     pkt[_as_int(f['fader_offset'])] = fader & 0xFF
     pkt[_as_int(f['pan_flags_offset'])] = pan_flags & 0xFF
-    pkt[_as_int(f['send_offset'])] = send & 0xFF
+    # Not every device in this family has a per-strip send: the Zen Go Synergy
+    # Core's mixer strip is fader + pan + flags only (opcode 0x16 / subcmd
+    # 0x04, no byte at 22). Emit it only if the profile declares one.
+    if 'send_offset' in f:
+        pkt[_as_int(f['send_offset'])] = send & 0xFF
     return bytes(pkt)
+
+
+def mix_has_send(profile: dict) -> bool:
+    """True if this device's mixer strip carries a per-strip send level."""
+    return 'send_offset' in profile['frame'].get('mix_command', {})
 
 
 # canonical AuraVerb control order (matches the Launcher UI top-to-bottom).

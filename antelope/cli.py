@@ -1276,6 +1276,121 @@ def cmd_mix_status(args, profile):
                   f"{str(s['send']) + '/96':>8}  {flags}".rstrip())
 
 
+def _mix_strip_line(i, s, has_send):
+    name = 'master' if i == 0 else f'ch {i}'
+    flags = ' '.join(f for f, on in (('MUTE', s['mute']), ('SOLO', s['solo'])) if on)
+    send = f"  send {s['send']}/96" if has_send else ''
+    return (f"{name}: fader {-s['fader']} dB  pan {s['pan']:+d}{send}"
+            f"{'  ' + flags if flags else ''}")
+
+
+def _resolve_mix_channel(token, n_strips):
+    """`master`/`m`/`0` -> slot 0 (the mix master), else a 1-based strip
+    number. Slot N is the write frame's `channel` N either way -- see
+    protocol.parse_mixer_record."""
+    t = str(token).strip().lower()
+    if t in ('master', 'mast', 'm'):
+        return 0
+    try:
+        n = int(t, 0)
+    except ValueError:
+        raise SystemExit(f"bad channel {token!r} -- use 1-{n_strips}, or 'master'")
+    if not 0 <= n <= n_strips:
+        raise SystemExit(f"channel {n} out of range -- use 1-{n_strips}, "
+                         f"or 0/'master' for the mix master")
+    return n
+
+
+def cmd_mix_set(args, profile):
+    """Change one virtual-mixer strip (frame.mix_command, opcode 0x17/0xd4).
+
+    The write frame carries the strip's WHOLE state every time, so this reads
+    the current strip back first (readback cat 0x04), applies only the flags
+    you gave, and writes the result -- the same read-modify-write `route`
+    does. No local cache, and it refuses to write blind if the read fails."""
+    cat = proto.MIXER_READBACK_CATEGORY
+    has_send = proto.mix_has_send(profile)
+    if args.send is not None and not has_send:
+        sys.exit("this device's mixer strip has no send level "
+                 '(frame.mix_command declares no send_offset)')
+
+    n_mixes = proto.readback_category_count(profile, cat) or 4
+    if not 1 <= args.mix <= n_mixes:
+        sys.exit(f'mix must be 1..{n_mixes} (this device has {n_mixes} mixes)')
+    m = args.mix - 1
+
+    transport = get_transport(profile)
+
+    def read_slots():
+        req = proto.build_readback_query(profile, cat, m)
+        data = transport.query(
+            req, lambda d: proto.is_readback_response(profile, d, cat, m),
+            timeout=args.timeout)
+        if data is None:
+            return None
+        return proto.parse_mixer_record(profile, proto.readback_body(profile, data))
+
+    slots = read_slots()
+    if slots is None:
+        sys.exit(f'could not read Mix {args.mix} back from the device '
+                 f'(frame.readback cat {cat:#04x}). This frame carries the whole '
+                 f'strip every time, so writing now would clobber the fields you '
+                 f"didn't name -- refusing to write blind.")
+
+    ch = _resolve_mix_channel(args.channel, len(slots) - 1)
+    cur = slots[ch]
+
+    if not any(v is not None for v in
+               (args.fader, args.pan, args.send, args.mute, args.solo)):
+        print(f'Mix {args.mix} {_mix_strip_line(ch, cur, has_send)}')
+        opts = ['--fader', '--pan'] + (['--send'] if has_send else []) + ['--mute', '--solo']
+        print(f"(no change requested -- pass {'/'.join(opts)} to set one)")
+        return
+
+    fader = cur['fader'] if args.fader is None else abs(args.fader)
+    pan = cur['pan'] if args.pan is None else args.pan
+    send = cur['send'] if args.send is None else args.send
+    mute = cur['mute'] if args.mute is None else (args.mute == 'on')
+    solo = cur['solo'] if args.solo is None else (args.solo == 'on')
+
+    def _range(key, default):
+        return profile.get('params', {}).get(key, {}).get('range', default)
+
+    # fader is stored as attenuation but the user speaks dB, so report in dB
+    lo, hi = _range('mix_fader', (0, 90))
+    if not lo <= fader <= hi:
+        sys.exit(f'fader {-fader} dB out of range: {-lo} to {-hi} dB')
+    for name, val, key, default in (('pan', pan, 'mix_pan', (-30, 30)),
+                                    ('send', send, 'mix_send', (0, 96))):
+        lo, hi = _range(key, default)
+        if not lo <= val <= hi:
+            sys.exit(f'{name} {val} out of range {lo}..{hi}')
+
+    pkt = proto.build_mix_command(profile, m, ch, fader, pan, send, mute, solo)
+    print(f'Mix {args.mix} {_mix_strip_line(ch, cur, has_send)}')
+    send_and_wait(transport, pkt, delay=0.3)
+
+    after = read_slots()
+    if after is None:
+        print('warning: wrote the strip but could not read it back to verify.')
+        return
+    got = after[ch]
+    print(f'     -> {_mix_strip_line(ch, got, has_send)}')
+    want = (fader, pan, send if has_send else got['send'], mute, solo)
+    if (got['fader'], got['pan'], got['send'], got['mute'], got['solo']) == want:
+        print('verified: device readback matches')
+    else:
+        print('WARNING: device readback does NOT match what was sent '
+              f'(sent fader {fader} pan {pan:+d} '
+              + (f'send {send} ' if has_send else '')
+              + f'mute {mute} solo {solo}).')
+    moved = [i for i, (a, b) in enumerate(zip(slots, after)) if a != b and i != ch]
+    if moved:
+        print(f'note: other strips also changed: {moved} '
+              '(a linked pair, or solo re-muting the rest -- both are '
+              'host-side behaviours the Launcher does too)')
+
+
 def cmd_readback(args, profile):
     """Raw frame.readback query: `readback <category> [index]`. No args ->
     list the known categories."""
@@ -1948,6 +2063,23 @@ def main():
                     help=argparse.SUPPRESS)   # kept for compat; master is always shown now
     sp.add_argument('--timeout', type=float, default=2.0)
     sp.set_defaults(func=cmd_mix_status)
+
+    sp = sub.add_parser('mix-set',
+                         help='change one virtual-mixer strip '
+                              '(reads it back first, so unnamed fields are kept)')
+    sp.add_argument('mix', type=lambda x: int(x, 0), help='mix number 1-4')
+    sp.add_argument('channel', help="strip number 1-32, or 'master' for the mix master")
+    sp.add_argument('--fader', type=int, default=None,
+                    help='level in dB, 0 (unity) to -90. The sign is optional -- '
+                         'the mixer only attenuates, so 24 and -24 both mean -24 dB.')
+    sp.add_argument('--pan', type=int, default=None,
+                    help='-30 (full left) .. 0 (centre) .. +30 (full right)')
+    sp.add_argument('--send', type=int, default=None,
+                    help='send level 0-96 (96 = 0 dB). Not present on every device.')
+    sp.add_argument('--mute', choices=['on', 'off'], default=None)
+    sp.add_argument('--solo', choices=['on', 'off'], default=None)
+    sp.add_argument('--timeout', type=float, default=2.0)
+    sp.set_defaults(func=cmd_mix_set)
 
     sp = sub.add_parser('readback',
                          help='raw frame.readback query: `readback <category> [index]` '

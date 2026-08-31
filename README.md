@@ -326,11 +326,38 @@ write frame -- confirmed by capturing the Launcher sweeping the Mix 1
 master fader (68 frames, all `d4 05 00 00 <fader> 20 60`). See
 `PROTOCOL.md` §4a.
 
-**Writing is not in the CLI yet.** `protocol.build_mix_command(profile,
-mix, channel, fader, pan_deg, send, mute, solo)` builds the frame; there
-is still no `mix-set` command. Now that the readback is decoded, `mix-set`
-can read-modify-write a strip instead of keeping a local cache, the way
-`route` does. See `PROTOCOL.md` §12 and `frame.mix_command`.
+**Changing a strip.** `mix-set` names the mix, the strip, and only the
+fields you want to change:
+
+```bash
+python3 -m antelope.cli mix-set 1 5 --fader -24 --pan 10 --mute on
+python3 -m antelope.cli mix-set 1 master --fader -6      # the mix master
+python3 -m antelope.cli mix-set 2 12 --send 80 --solo off
+python3 -m antelope.cli mix-set 1 5                      # no flags = just show it
+```
+
+```
+Mix 1 ch 5: fader 0 dB  pan -30  send 95/96
+     -> ch 5: fader -24 dB  pan +10  send 95/96  MUTE
+verified: device readback matches
+```
+
+- **The strip is read back first, so unnamed fields are kept.** The write
+  frame carries the strip's whole state every time, so a naive `mix-set`
+  would silently reset everything you didn't mention. This one reads
+  category `0x04`, applies your flags, writes the result and re-reads to
+  verify -- the same read-modify-write `route` does. There is no local
+  cache. If the read fails it refuses to write rather than clobber blindly.
+- **`--fader` is dB**, 0 (unity) to −90. The sign is optional: the mixer
+  only attenuates, so `24` and `-24` both mean −24 dB.
+- **`master`** (or `0`) addresses the mix master; `1`-`32` are the input
+  strips. Same address space as the readback slots.
+- If other strips move too, it says so -- a linked pair or a solo
+  re-muting the rest, both host-side behaviours the Launcher also has.
+
+`protocol.build_mix_command(profile, mix, channel, fader, pan_deg, send,
+mute, solo)` builds the frame directly. See `PROTOCOL.md` §12 and
+`frame.mix_command`.
 
 > ⚠ **Never query a readback index past a category's record count.** The
 > firmware does not bounds-check it: `category 0x04 index 5` crashed the
