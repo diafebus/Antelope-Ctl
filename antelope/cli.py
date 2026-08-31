@@ -1068,6 +1068,19 @@ def cmd_route(args, profile):
     sel = args.selector.strip().lower()
     srcs = _expand_route_tokens(args.source)
 
+    # For a per-channel edit we need the OTHER channels' current sources. The
+    # device now supports a live read (frame.readback cat 0x03), so seed the
+    # cache from the device instead of erroring when it's empty.
+    if sel not in ('mute', 'all') and not cache.get(str(dest)):
+        try:
+            pairs = _read_routing_dest(get_transport(profile), profile, dest, timeout=args.timeout)
+        except SystemExit:
+            pairs = None
+        if pairs:
+            _save_matrix_dest(profile, dest, pairs)
+            cache = _load_matrix_state(profile)
+            print(f'(read current {args.destination} routing from the device)')
+
     if sel == 'mute':
         if srcs:
             sys.exit('`route <dest> mute` takes no source argument (it mutes every channel)')
@@ -1093,33 +1106,140 @@ def cmd_route(args, profile):
     for i, lab in enumerate(labels):
         tag = {0: ' (L)', 1: ' (R)'}.get(i, '') if stereo else ''
         print(f'  ch {i + 1}{tag}: {lab}')
-    print('(EXPERIMENTAL, no readback -- verify in the Launcher)')
     transport = get_transport(profile)
     pkt = proto.build_route_command(profile, dest, chans)
     send_and_wait(transport, pkt, delay=0.3)
     _save_matrix_dest(profile, dest, chans)
-    end = 19 + 2 * len(chans)
-    print(f'sent: {pkt[16:end].hex()}  (cached locally -- see `matrix-status`)')
+    # verify against a live read (frame.readback cat 0x03)
+    back = _read_routing_dest(transport, profile, dest, timeout=args.timeout)
+    if back is not None and back == chans:
+        print('verified: device readback matches')
+        _save_matrix_dest(profile, dest, back)
+    elif back is not None:
+        print('WARNING: device readback differs from what was sent:')
+        for i, (b, ix) in enumerate(back):
+            print(f'  ch {i + 1}: {proto.route_source_label(profile, b, ix)}')
+        _save_matrix_dest(profile, dest, back)
+    else:
+        end = 19 + 2 * len(chans)
+        print(f'sent: {pkt[16:end].hex()}  (no readback this time -- see `matrix-status`)')
+
+
+def _routing_dest_name(profile, dest_id):
+    rc = profile['frame'].get('routing_command', {})
+    names = dict(rc.get('addressable_destinations', {}))
+    for k, v in profile.get('params', {}).get('routing', {}).get('destinations', {}).items():
+        names.setdefault(str(k), v.split(' (')[0])
+    return names.get(str(dest_id), f'dest{dest_id}')
+
+
+def _read_routing_dest(transport, profile, dest_id, timeout=2.0):
+    """Live-read one destination group's routing via frame.readback cat 0x03.
+    Returns an ordered list of (bank, idx), or None if the device didn't answer."""
+    cat = proto.ROUTING_READBACK_CATEGORY
+    req = proto.build_readback_query(profile, cat, dest_id)
+    data = transport.query(req, lambda d: proto.is_readback_response(profile, d, cat, dest_id),
+                           timeout=timeout)
+    if data is None:
+        return None
+    try:
+        _did, pairs = proto.parse_routing_record(profile, proto.readback_body(profile, data))
+    except ValueError:
+        return None
+    return pairs
 
 
 def cmd_matrix_status(args, profile):
-    """Show the routes THIS CLI has sent (local cache -- NOT a device readback)."""
+    """Live-read the routing matrix from the device (frame.readback category
+    0x03). Falls back to this CLI's cache if the device is unreachable."""
     rc = profile['frame'].get('routing_command', {})
-    addr = rc.get('addressable_destinations', {})
     stereo = set(rc.get('stereo_destinations', []))
+    dest_ids = sorted((int(k) for k in rc.get('destination_channels', {})))
+
+    transport = None
+    try:
+        transport = get_transport(profile)
+    except SystemExit:
+        transport = None
+
+    live = {}
+    if transport is not None:
+        for d in dest_ids:
+            pairs = _read_routing_dest(transport, profile, d, timeout=args.timeout)
+            if pairs is not None:
+                live[d] = pairs
+
+    if live:
+        print(f"{'destination':<14} {'channel':<10} {'source (device)'}")
+        for d in dest_ids:
+            if d not in live:
+                continue
+            for c, (bank, idx) in enumerate(live[d]):
+                n = c + 1
+                tag = {1: ' (L)', 2: ' (R)'}.get(n, '') if str(d) in stereo else ''
+                print(f"{_routing_dest_name(profile, d):<14} {str(n) + tag:<10} "
+                      f"{proto.route_source_label(profile, bank, idx)}")
+            _save_matrix_dest(profile, d, live[d])   # keep the cache honest for `route ... keep`
+        missing = [d for d in dest_ids if d not in live]
+        if missing:
+            print(f"note: no response for dest {missing} (retry, or the group may be idle).")
+        return
+
+    # no device -> cache fallback
     routes = _load_matrix_state(profile)
     if not routes:
-        print('no routes cached by this CLI yet. (Routing has no device readback -- '
-              '`matrix-status` only shows what `route` has sent from here.)')
+        print('could not read the device, and this CLI has no cached routes yet. '
+              'Check the connection (or run with the udev rule / sudo).')
         return
-    print(f"{'destination':<14} {'channel':<10} {'source (CLI-cached)'}")
+    print(f"{'destination':<14} {'channel':<10} {'source (CLI-cached -- device unreachable)'}")
     for d in sorted(routes, key=lambda x: int(x) if x.isdigit() else x):
-        name = addr.get(d, f'dest{d}')
         for c in sorted(routes[d], key=lambda x: int(x) if x.isdigit() else x):
             n = int(c) + 1 if c.isdigit() else c
             tag = {1: ' (L)', 2: ' (R)'}.get(n, '') if d in stereo else ''
-            print(f"{name:<14} {str(n) + tag:<10} {routes[d][c].get('label', '?')}")
-    print('note: local cache only -- can be stale if routing changed via the Launcher.')
+            print(f"{_routing_dest_name(profile, d):<14} {str(n) + tag:<10} "
+                  f"{routes[d][c].get('label', '?')}")
+
+
+def cmd_readback(args, profile):
+    """Raw frame.readback query: `readback <category> [index]`. No args ->
+    list the known categories."""
+    cats = proto.readback_categories(profile)
+    if args.category is None:
+        if not cats:
+            print('this profile has no frame.readback.categories')
+            return
+        print('known readback categories (raw dump: `readback <cat> [idx]`):')
+        for k, v in cats.items():
+            if k == 'note':
+                continue
+            print(f'  {k:<6} {v}')
+        if 'note' in cats:
+            print(f'  ({cats["note"]})')
+        return
+    cat = int(args.category, 0)
+    idx = args.index
+    transport = get_transport(profile)
+    req = proto.build_readback_query(profile, cat, idx)
+    data = transport.query(req, lambda d: proto.is_readback_response(profile, d, cat, idx),
+                           timeout=args.timeout)
+    if data is None:
+        sys.exit(f'no readback response for category {cat:#04x} index {idx}')
+    body = proto.readback_body(profile, data)
+    trimmed = body.rstrip(b'\x00')
+    if cat == 0x01:
+        name = body[:16].split(b'\x00')[0].decode('latin1', 'replace')
+        print(f'category 0x01: model name {name!r} (serial + rev not printed)')
+        return
+    print(f'category {cat:#04x} index {idx}: {len(trimmed)} data bytes')
+    print(trimmed.hex())
+    if cat == proto.ROUTING_READBACK_CATEGORY:
+        try:
+            did, pairs = proto.parse_routing_record(profile, body)
+            print(f'  dest {did} ({_routing_dest_name(profile, did)}):')
+            for c, (b, i) in enumerate(pairs):
+                print(f'    ch {c + 1}: {proto.route_source_label(profile, b, i)}')
+        except ValueError as e:
+            print(f'  (not decodable as a routing record: {e})')
 
 
 def _resolve_route_dest_cli(profile, name):
@@ -1668,8 +1788,19 @@ def main():
     sp.set_defaults(func=cmd_route)
 
     sp = sub.add_parser('matrix-status',
-                         help='show the routes THIS CLI has sent (local cache, NOT a device readback)')
+                         help='live-read the routing matrix from the device (frame.readback cat 0x03); '
+                              'falls back to the CLI cache if unreachable')
+    sp.add_argument('--timeout', type=float, default=2.0)
     sp.set_defaults(func=cmd_matrix_status)
+
+    sp = sub.add_parser('readback',
+                         help='raw frame.readback query: `readback <category> [index]` '
+                              '(no args lists the known categories)')
+    sp.add_argument('category', nargs='?', default=None,
+                    help='category id, e.g. 0x03 (routing), 0x04 (mixer), 0x0a (auraverb)')
+    sp.add_argument('index', nargs='?', type=lambda x: int(x, 0), default=0)
+    sp.add_argument('--timeout', type=float, default=2.0)
+    sp.set_defaults(func=cmd_readback)
 
     sp = sub.add_parser('bus-status', help='show monitor A/B and headphone 1/2 levels+flags')
     sp.add_argument('--timeout', type=float, default=3.0)

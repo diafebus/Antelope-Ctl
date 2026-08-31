@@ -22,3 +22,9 @@ __pycache__/
 CLAUDE.md
 KERNEL.md
 SUMMARY.md
+
+# Local diagnostic tool output (may contain the device serial)
+tools/*_out.txt
+
+# For other query that aren't necessarily related to the main code'
+sidejob/

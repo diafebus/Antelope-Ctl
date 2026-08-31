@@ -536,6 +536,101 @@ def build_route_command(profile: dict, dest: int, channels) -> bytes:
     return bytes(pkt)
 
 
+# ---------------------------------------------------------------------------
+# In-band READBACK protocol  (frame.readback)
+# ---------------------------------------------------------------------------
+# Decoded 2026-08-31 from CAPTURE E' (usbmon on the Linux host while the
+# Windows Launcher connected over QEMU USB passthrough) + direct replay from
+# Linux (tools/readback_enum.py). The device answers a request/response
+# protocol on the SAME HID interrupt endpoints -- NOT a HID Feature report
+# and NOT a control transfer, which is why every earlier probe missed it
+# (hid_probe.py, the GET_REPORT sweep, tools/readback_probe.py --poke all
+# came up empty; --poke failed only because it sent a bare 0x74 with no
+# sub-header).
+#
+#   REQUEST   host->device, EP 0x01 OUT, full report:
+#     74 00 00 00 | 10 00 00 00 | <category> 00 00 00 | <index> 00 00 00 | 00...
+#   RESPONSE  device->host, EP 0x82 IN, full report:
+#     75 00 00 00 | 40 01 00 00 | <category> 00 00 00 | <index> 00 00 00 | <data...>
+#
+# The response magic is 0x75 but byte 1 = 0x00 -- the free-running METER
+# report is 0x75 with byte 1 = 0x1f, and the STATE report is the same family
+# with magic 0x73 (effectively "category 0, pushed continuously"). The
+# device also answers unknown (category, index) tuples, just with an empty
+# body -- so "has a non-empty body" is the liveness signal, not "answered".
+# Scalar categories return the same record for every index.
+#
+# The 0x74 "connect enumeration" documented in frame.init_enumeration_report
+# IS this protocol -- the Launcher walking every (category, index).
+#
+# Category 0x03 = the full routing matrix: one record per destination group
+# (index 0..14), each `<dest_id> <bank0> <idx0> <bank1> <idx1> ...` -- the
+# SAME (bank, index) array as the 0x53 write frame, one pair per output
+# channel of that group. This is the routing readback the earlier analysis
+# had ruled out.
+
+ROUTING_READBACK_CATEGORY = 0x03
+
+
+def build_readback_query(profile: dict, category: int, index: int = 0) -> bytes:
+    """Build a readback REQUEST frame (frame.readback.request). Read-only --
+    this is exactly what the Launcher issues on connect."""
+    r = profile['frame'].get('readback')
+    if not r:
+        raise KeyError('this profile has no frame.readback -- readback not available')
+    size = profile['transport']['report_size']
+    pkt = bytearray(size)
+    pkt[_as_int(r['magic_offset'])] = _as_int(r['request_magic'])
+    pkt[_as_int(r['subcmd_offset'])] = _as_int(r['subcmd'])
+    pkt[_as_int(r['category_offset'])] = category & 0xFF
+    pkt[_as_int(r['index_offset'])] = index & 0xFF
+    return bytes(pkt)
+
+
+def is_readback_response(profile: dict, data: bytes, category: int, index: int) -> bool:
+    """True if `data` is the readback RESPONSE for (category, index) -- and
+    not a free-running 0x73 state / 0x75 meter report."""
+    r = profile['frame'].get('readback')
+    if not r or data is None or len(data) <= _as_int(r['data_offset']):
+        return False
+    return (data[_as_int(r['magic_offset'])] == _as_int(r['response_magic'])
+            and data[_as_int(r['response_discriminator_offset'])]
+            == _as_int(r['response_discriminator'])
+            and data[_as_int(r['category_offset'])] == (category & 0xFF)
+            and data[_as_int(r['index_offset'])] == (index & 0xFF))
+
+
+def readback_body(profile: dict, data: bytes):
+    """The payload of a readback response, after the 16-byte header. Trailing
+    zero padding is NOT stripped (a routing record can legitimately end in
+    (bank 0, idx 0) = preamp 1, or in mute = (0x0b, 0))."""
+    r = profile['frame']['readback']
+    return data[_as_int(r['data_offset']):]
+
+
+def parse_routing_record(profile: dict, body: bytes):
+    """Decode one category-0x03 record. Returns (dest_id, [(bank, idx), ...])
+    with exactly destination_channels[dest_id] pairs (the wire record is
+    zero-padded to the report size). Raises if the destination's channel
+    count is unknown."""
+    if not body:
+        raise ValueError('empty routing record')
+    dest_id = body[0]
+    n = route_dest_channels(profile, dest_id)
+    pairs = []
+    for c in range(n):
+        o = 1 + 2 * c
+        if o + 1 >= len(body):
+            raise ValueError(f'routing record for dest {dest_id} truncated at channel {c}')
+        pairs.append((body[o], body[o + 1]))
+    return dest_id, pairs
+
+
+def readback_categories(profile: dict) -> dict:
+    """frame.readback.categories -- {hex_str: description}, for display/tools."""
+    return profile['frame'].get('readback', {}).get('categories', {})
+
+
 def pair_index_for_channel(channel: int) -> int:
     """channels.link_pairs.formula: pair_index = channel_index // 2. Kept as a
     tiny helper (not read from the profile) since it's arithmetic, not a magic

@@ -115,6 +115,7 @@ frame carries a fixed one). Then frame-specific offsets:
 | `auraverb_command` | SET_AURAVERB (`0x1d`) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant` | `build_auraverb_command(profile, params, enabled)` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}` | `build_route_command(profile, dest, channels)` |
+| `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, + `categories{}` (doc) | `build_readback_query(profile, cat, idx)`; parsed by `is_readback_response` / `readback_body` / `parse_routing_record`; driven by `transport.HidTransport.query` |
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two
@@ -139,8 +140,9 @@ at @16 is the real discriminator — give each its own `frame.*` block.
 - **`meter_report`** (`0x75` Orion / `0x83` Zen Go) — per-channel meters.
   `channel_meter_base_offset`, plus optional `db_curve` / `led_scale`
   for the `meter` command's dB calibration.
-- **`init_enumeration_report`** (`0x74`) — one-shot topology enum at
-  connect. Documentation only.
+- **`init_enumeration_report`** (`0x74`) — the connect-time walk of the
+  readback protocol (`frame.readback`). Documentation only; the live
+  reader is `frame.readback`.
 - **`name_report`** (`0x75` on Zen Go) — ASCII device name/serial/fw.
 - **`error_response`** (`0x61` in the family) — "unknown opcode" reply.
 

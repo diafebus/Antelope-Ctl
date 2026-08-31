@@ -75,6 +75,45 @@ class HidTransport:
             return data
         return None
 
+    def query(self, request: bytes, match, timeout: float = 1.0, retries: int = 2):
+        """Write a readback request, then read reports until `match(report)`
+        is truthy or `timeout` elapses; return that report or None.
+
+        The device free-runs state/meter reports on the same IN endpoint, so
+        `match` must identify the specific response (see
+        protocol.is_readback_response). Hammering the request endpoint too
+        fast can halt it (ETIMEDOUT / EPIPE on write) -- we reopen and retry.
+        """
+        if len(request) != self.report_size:
+            raise ValueError(f'request must be exactly {self.report_size} bytes')
+        for attempt in range(retries + 1):
+            try:
+                fd = os.open(self.path, os.O_RDWR)
+            except PermissionError:
+                sys.exit(f'Permission denied on {self.path}. Try sudo or a udev rule.')
+            try:
+                # drain anything already queued so we don't match a stale frame
+                while select.select([fd], [], [], 0)[0]:
+                    os.read(fd, self.report_size)
+                try:
+                    os.write(fd, request)
+                except OSError:
+                    if attempt < retries:
+                        continue
+                    raise
+                end = time.time() + timeout
+                while time.time() < end:
+                    r, _, _ = select.select([fd], [], [], 0.05)
+                    if not r:
+                        continue
+                    data = os.read(fd, self.report_size)
+                    if data and match(data):
+                        return data
+                return None
+            finally:
+                os.close(fd)
+        return None
+
     def write(self, payload: bytes):
         if len(payload) != self.report_size:
             raise ValueError(f'payload must be exactly {self.report_size} bytes, got {len(payload)}')

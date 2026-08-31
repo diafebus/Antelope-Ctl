@@ -28,7 +28,7 @@ see `README.md` and the profile's `evidence` fields for which capture.
 | Audio stream endpoints | `0x05` OUT / `0x84` IN, isochronous, 24-ch / 24-bit in the class-compliant descriptor -- **unrelated to control** |
 | Device address | 2 (`usb.dst 1.2.x` in the captures) |
 | Poll interval | 4 ms |
-| GET / query opcode | **none, and none possible** -- the HID report descriptor (54 B, dumped via `tools/hid_probe.py`) has no Feature report and no report IDs, and the device STALLs every control-pipe `GET_REPORT`. State is only ever read passively from the `0x73`/`0x74`/`0x75` IN reports the device streams -- and routing / mixer / AuraVerb are **not in any of them** (write-only over USB). |
+| GET / query opcode | **`0x74` request / `0x75` response, in-band on the interrupt endpoints** (decoded 2026-08-31 -- see §4a). Not a HID Feature report and not a control transfer (the report descriptor has none, and the device STALLs every control-pipe `GET_REPORT`), which is why the earlier analysis missed it. Routing, mixer, AuraVerb, EQ, device id -- all live-readable by `(category, index)`. |
 | String descriptors | **never fetched in any capture on file** -- so no channel/bus/category names are recoverable from the USB traffic |
 
 Byte 0 of every **incoming** report is a **magic** that identifies the
@@ -75,21 +75,24 @@ Notes:
 
 | Magic @0 | Name | Rate | Purpose |
 |---|---|---|---|
-| `0x73` | state report | continuous (~every 4-8 ms) | the readback for nearly everything -- see section 5 |
-| `0x75` | meter report | continuous | per-channel input meters, offset 32 + channel index |
-| `0x74` | init enumeration | **once**, ~t=7.5-16 s of the connect sequence, then never | device topology dump; see section 4 |
+| `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. Same frame family as a readback response for "category 0". |
+| `0x75` byte1 `0x1f` | meter report | continuous | per-channel input meters, offset 32 + channel index |
+| `0x75` byte1 `0x00` | **readback response** | on request | reply to a `0x74` query -- `(category, index)` at @8/@12, payload from @16. See §4a. |
+| `0x74` | readback / enumeration | at connect, then on demand | the host walking `(category, index)` -- see §4 / §4a |
 
 `0x75` meter bytes: one byte per channel from offset **32**, same channel
 order as gain/status. Scale is **inverted** -- `0x60` (96) at
 rest/silence, falls toward `0x00` as the signal gets louder. Calibration
 in section 9.
 
-### 2026-08 caveat: only `0x70` / `0x73` / `0x75` exist in normal use
+### 2026-08 caveat, REVISED 2026-08-31
 
-Every multi-thousand-report capture to date contains only those three
-magics (plus `0x74` in the INIT captures -- Windows `AntelopeINIT` and the
-four macOS `macos-antelopeINIT-*`). There is no hidden fourth report type
-carrying link state, oscillator state, routing state, etc.
+Passively, the device streams only `0x70` (out) / `0x73` / `0x75` (meter).
+But `0x74` is not just a one-shot connect dump -- **the host can send a
+`0x74` query at any time and the device answers with a `0x75`/byte1-`0x00`
+response** carrying live state (routing, mixer, AuraVerb, EQ, ...). See
+§4a. The earlier "there is no hidden fourth report type" was right about
+*passive* traffic and wrong about *solicited* traffic.
 
 **Connect handshake (cross-platform confirmed).** The Launcher's entire
 host→device init traffic is a single frame:
@@ -111,13 +114,13 @@ discriminate outgoing frames by magic `0x70` + opcode instead.
 
 ---
 
-## 4. Magic `0x74` -- init enumeration (unconfirmed)
+## 4. Magic `0x74` -- the connect enumeration walk
 
-One-shot at device connect (t=7.5-16 s of `all_reports_AntelopeINIT.tsv`,
-113 records total, never seen in any other capture). That capture is the
-Launcher being **started with no user interaction** -- so the whole burst,
-plus the single outgoing `SET_PARAM(param 0x49)` at t=7.7 s, is the
-Launcher's automatic startup handshake. Record layout:
+At device connect the Launcher walks its internal categories with `0x74`
+queries (t=7.5-16 s of `all_reports_AntelopeINIT.tsv`, 113 records). **This
+is the readback protocol of §4a** -- each record is a `(category, index)`
+query, and the device replies (the reply frames just weren't in that
+HID-only capture). The `0x74` request record layout:
 
 ```
 @0   0x74
@@ -158,25 +161,106 @@ Its 8 records carry index values `1, 2, 3, 3, 3, 3, 0, 4` and land only at
 section boundaries (after S/PDIF; after ADAT starts; after each `0x04`
 entry; before and after the `0x19` list). Treat it as structural.
 
-### What's still unmapped
+### What the categories are (resolved 2026-08-31 via §4a)
 
-- **`0x19` = 64** -- best guess: the 64 USB/TB streaming channels. Fairly
-  well-founded (matches the device spec and the routing index hint).
-- **`0x03` = 15** and **`0x04` = 4** -- physical-I/O or routing-node
-  groups; exact identity unknown. `0x04`=4 plausibly the headphone outs,
-  monitor outs, or clock sources (Internal / ADAT / S/PDIF / Word Clock);
-  `0x03`=15 has no obvious match. Don't guess in code.
-- **Singletons `0x1b` / `0x0a` / `0x15` / `0x16`** -- single-instance
-  subsystems (word clock? internal talkback mic? oscillator? monitor
-  controller?). Not distinguishable from this capture.
+- **`0x03` = 15** -- the **routing matrix**: 15 destination groups
+  (line_out, hp1/2, mona/b, reamp, comp_rec, adat_out, spdif_out, afx_in,
+  mix_ch1-4, surround_in). The `0x74` reply for `(0x03, dest)` is that
+  group's full source list.
+- **`0x04` = 4** -- the **virtual mixer**: 4 mixes. Reply = that mix's
+  strips.
+- **`0x19` = 64** -- the 64 USB/TB streaming channels (reply bodies are
+  empty in the connect walk).
+- **`0x1a` = 16** ADAT, **`0x11` = 2** S/PDIF -- confirmed earlier.
+- Singletons `0x0a` (AuraVerb), `0x15`/`0x0c` (link/config tables), `0x16`
+  (trim / pan-law), `0x1b` (mixer bus levels), `0x07` (EQ) -- see the §4a
+  category table.
+- `0x0b` -- still a structural section marker in the walk.
 
-To actually name these: capture the USB **control transfers** during
-connect (string descriptors), or match the counts against the labels in
-the Launcher's routing tab.
+Full raw dump of every category: `tools/readback_enum.py`.
 
-It carries **indices, not values** -- useless for reading current
-settings. Mainly documented so tools stop flagging `0x74` as unknown and
-so a future string-descriptor capture has something to line up against.
+---
+
+## 4a. In-band readback protocol (`0x74` request / `0x75` response)
+
+**Decoded 2026-08-31.** CAPTURE E' -- `usbmon` on the Linux host while the
+Windows Launcher connected to the Orion over QEMU USB passthrough -- caught
+the Launcher sending `0x74` frames on EP `0x01` OUT and the device
+replying on EP `0x82` IN. Replayed and enumerated directly from Linux with
+`tools/readback_enum.py`. This is a real device→host readback: **not** a
+HID Feature report and **not** a control transfer (the report descriptor
+has neither and the device STALLs `GET_REPORT`), which is why
+`tools/hid_probe.py` and `tools/readback_probe.py --poke` came up empty --
+`--poke` sent a bare `0x74` with no sub-header, and the device ignores
+that.
+
+```
+REQUEST   host → device, EP 0x01 OUT, full 320-byte report
+  @0   0x74
+  @4   0x10                (sub-command, constant)
+  @8   u32  category
+  @12  u32  index
+  @16+ zero
+
+RESPONSE  device → host, EP 0x82 IN, full 320-byte report
+  @0   0x75
+  @1   0x00                <- discriminator: meter report is 0x75/@1=0x1f
+  @4   0x0140  (u16 le)
+  @8   u32  category       (echoed)
+  @12  u32  index          (echoed)
+  @16+ payload             (zero-padded to 320)
+```
+
+The `0x73` state report is the same frame family (magic `0x73`, `@1`=0x00,
+category 0) pushed continuously. The device answers **every**
+`(category, index)` -- an unknown one just returns an empty payload, so
+"non-empty payload" is the liveness test. Scalar categories return the
+same record for every index. Hammering the OUT endpoint with hundreds of
+back-to-back queries can **halt** it (`ETIMEDOUT`/`EPIPE` on write) --
+pace the queries and reopen the node on halt.
+
+### Category map (Orion Studio III, 2026-08-31)
+
+| cat | payload | status |
+|---|---|---|
+| `0x00` | device id + firmware string (`4.41`) | — |
+| `0x01` | model name `OrionStudio_III` + **serial** + hw rev `7.0` | keep raw dumps out of git |
+| `0x02` | per-channel present flag (scalar `01`), idx 0..63 | — |
+| **`0x03`** | **routing matrix** -- 1 record per destination group, idx = dest_id 0-14. Record = `<dest_id>` then a `(source_bank, source_index)` pair per output channel (`destination_channels[dest]` pairs) -- the **same array as the `0x53` write frame**. | **decoded, verified byte-identical against CLI-written routes** |
+| `0x04` | virtual mixer -- idx = mix 0-3; ~16 strips × fader/pan/send/flags | partial |
+| `0x05` | preamp channel summary (~12 B) | partial |
+| `0x06` | channel status bits (mirrors `0x73` @61+) | — |
+| `0x07` | EQ curve, freq points ~30/200/1k/5k/15k Hz, 8 records | undecoded |
+| `0x0a` | AuraVerb params (mirrors `0x1d` payload) | partial |
+| `0x0c` / `0x15` | ~90-entry per-channel link/config tables | undecoded |
+| `0x11` | S/PDIF + a 128-B capability bitmask | undecoded |
+| `0x16` | output trim / pan-law (two `0x32` + flags) | partial |
+| `0x1a` | EQ curve, 8 bands, freq ~30-14000 Hz (116 B) | undecoded |
+| `0x1b` | mixer bus level/range table | undecoded |
+| `0x19` | 64 entries, empty bodies -- the 64-ch USB/TB slots | — |
+| `0x1c`-`0x60` | answer, empty bodies | — |
+
+### Reading routing back
+
+For destination group `d`, send `0x74 (category 0x03, index d)` and parse
+the reply payload: byte 0 = `d`, then `destination_channels[d]`
+`(bank, index)` pairs. Trailing `(0, 0)` (= preamp 1) or `(0x0b, 0)`
+(= mute) pairs are real -- do not strip trailing zeros; use the known
+channel count.
+
+Code: `protocol.build_readback_query` / `is_readback_response` /
+`parse_routing_record`; `transport.HidTransport.query`. CLI:
+`antelope-ctl … matrix-status` (full live read of all 15 groups) and
+`antelope-ctl … readback <cat> [idx]` (raw). `route` now verifies each
+write against a live read and reseeds `keep` from the device.
+
+### This resolves the cross-machine-persistence question
+
+The device stores routing in NVRAM and **does** report it to the host --
+via exactly this. A fresh Launcher connecting reads category `0x03` and
+shows whatever the device holds, regardless of which host last wrote it
+(confirmed: routes written by the Linux CLI showed up correctly in a
+fresh Windows Launcher). It was never Antelope account sync.
 
 ---
 
@@ -478,8 +562,21 @@ source. The settings-tab oscillator panel is separate and sends nothing
 (Mon A / Mon B / HP1 / HP2, which combine) use `talkback_dest_assign`
 (`0x13` / `0x5d`).
 
-**There is no USB routing readback. This is now near-certain (2026-08-31),
-not just "not found yet":**
+**Routing readback: FOUND (2026-08-31).** It is the `0x74`/`0x75`
+in-band protocol, **category `0x03`** -- one record per destination group,
+same `(bank, index)` array as the write frame. See **§4a**. Verified
+byte-identical against routes the CLI wrote from Linux, and against a
+fresh Windows Launcher. `matrix-status` is now a full live read of all 15
+groups; `route` verifies every write against a read-back. The rest of
+this section is the **superseded** pre-decode analysis -- kept because the
+reasoning (and what it correctly ruled out: HID Feature reports, control
+transfers, the connect handshake, preset-load) is still useful. Its one
+wrong assumption was that a readback *must* take one of those forms.
+
+---
+
+<details>
+<summary>Superseded (pre-2026-08-31) "there is no routing readback" analysis</summary>
 
 - **The HID report descriptor forbids it.** Dumped from Linux hidraw
   (`tools/hid_probe.py`), the interface 3 report descriptor is 54 bytes
@@ -544,14 +641,13 @@ comp-play, swapped). Diffing the two complete connect sequences:
   don't register). Not device behaviour, not routing. **No `0x53`, no
   routing query.**
 
-So at connect the Launcher neither reads routing from the device nor
-pushes cached routing. Combined with the HID-descriptor finding above,
-the conclusion is that **there is no routing readback over USB** -- pending
-only the front-panel test. See `params.routing.readback`.
+So at connect the Launcher does not read routing *in the HID interrupt
+stream* and does not push cached routing. What this analysis missed: the
+Launcher reads it later (routing-tab open) via the `0x74`/`0x75` query
+protocol, which the HID-only INIT captures could not show. CAPTURE E'
+(`usbmon` on the Linux host, all endpoints) caught it.
 
-`matrix-status` is a local cache and goes stale if routing is changed
-outside this CLI -- and that is a permanent property of the device, not a
-gap to be closed.
+</details>
 
 ---
 
@@ -644,7 +740,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | talkback_gain | `0x20` | `0x12` | - | 0-96 @17 (per selected source) | offset 74 |
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
-| routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | none decoded (exists) |
+| routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
 | surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
 | oscillator (matrix insert) | `0xd3` | `0x53` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | none |
 | oscillator (settings panel: freq/level/mute) | - | - | host-side, sends nothing (§11) | none |
@@ -760,9 +856,10 @@ Software-mirrored like every other link: while linked, the Launcher
 re-sends both strips' `mix_command` frames on each change; the device does
 not propagate.
 
-**No readback** -- the whole capture moved only meter-jitter bytes, and
-(like routing) the HID descriptor has no Feature report and the device
-STALLs control-pipe `GET_REPORT`. Mixer state is write-only over USB.
+**No readback in the passive stream** -- but mixer state IS available via
+the `0x74`/`0x75` query protocol (**category `0x04`**, idx = mix number;
+also `0x1b` for bus levels). Only partially decoded -- see §4a. AuraVerb
+is category `0x0a`. So "write-only over USB" was wrong for these too.
 
 **Not in the CLI yet.** `protocol.build_mix_command(profile, mix, channel,
 fader, pan_deg, send, mute, solo)` builds the frame; `0x17` is in

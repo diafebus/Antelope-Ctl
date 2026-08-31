@@ -185,16 +185,18 @@ python3 -m antelope.cli --profile profiles/orion_studio_3.json set-sample-rate 9
   it may refuse or immediately revert -- change it with nothing
   streaming, then confirm with `sample-rate`.
 
-### Routing matrix (EXPERIMENTAL)
+### Routing matrix
 
 The routing frame (opcode `0x53`) is decoded: after the destination byte
 it's a plain array of `(source_bank, source_index)` pairs, **one per
-output channel of that destination**, all sent every time. There is **no
-device readback**, so `route` resends the channels it isn't changing from
-a local cache. Wired destinations: **line out** (16 channels), **HP1,
-HP2, Monitor A, Monitor B, Reamp** (2). All wired destinations are
-hardware-verified (round-tripped against a real Orion Studio III --
-including the 16-channel line out); still worth verifying in the Launcher.
+output channel of that destination**, all sent every time. The device
+**does report routing back** -- via the `0x74`/`0x75` in-band query
+protocol, category `0x03` (decoded 2026-08-31, `PROTOCOL.md` §4a). So
+`matrix-status` is a **live read of all 15 destination groups**, and
+`route` verifies every write against a read-back and seeds `keep` from the
+device. Wired write destinations: **line out** (16 channels), **HP1, HP2,
+Monitor A, Monitor B, Reamp** (2) -- all hardware round-tripped against a
+real Orion Studio III.
 
 ```
 python3 -m antelope.cli ... route hp1 all preamp3 preamp4    # set every channel (seeds the cache)
@@ -204,7 +206,9 @@ python3 -m antelope.cli ... route lineout 3 afx5             # line-out channel 
 python3 -m antelope.cli ... route lineout 4 mix2R            # <- virtual mix 2, right
 python3 -m antelope.cli ... route hp2 mute                   # mute every channel
 python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
-python3 -m antelope.cli ... matrix-status                    # what THIS CLI has routed
+python3 -m antelope.cli ... matrix-status                    # LIVE read of the whole matrix from the device
+python3 -m antelope.cli ... readback 0x03 0                  # raw: routing record for dest 0 (line out)
+python3 -m antelope.cli ... readback                         # list the readback categories
 ```
 
 - **Channel selector:** 1-based (`route lineout 3 ...`). `L`/`R` = 1/2 for
@@ -217,29 +221,25 @@ python3 -m antelope.cli ... matrix-status                    # what THIS CLI has
   or `keep`.
 - **No un-route** -- same as the Antelope Launcher: you replace a
   channel's source or set it to `mute`; there is no "empty" state.
-- **Seed before per-channel edits.** A per-channel `route` needs every
-  *other* channel already in this CLI's cache (there's no readback to look
-  them up). `route <dest> all <s1> <s2> …` sets and caches the whole group
-  in one shot -- seed it to match what the Launcher currently shows. In
-  `all`, a range token like `compplay1..16` (or `compplay1-16`, and
-  descending: `adat16..1`) expands to that many sequential sources, so a
-  16-channel seed is one line.
-- **`matrix-status` is a local cache**, not a device readback -- it only
-  shows what `route` sent from this CLI, and goes stale if routing is
-  changed anywhere else. This is a **device limitation, not a missing
-  feature**: the HID interface has no readable report for routing (report
-  descriptor declares only a streaming Input + Output report, no Feature
-  report; the device rejects every control-pipe `GET_REPORT` -- see
-  `tools/hid_probe.py`), routing is in none of the `0x73`/`0x74` reports,
-  and loading a preset in the Launcher is a pure one-way push. The
-  Antelope Launcher itself holds session state client-side the same way.
-  (One check outstanding: a route changed from the device's front panel,
-  read by a fresh offline Launcher -- see `PROTOCOL.md` §7.)
-- ADAT out, com rec, AFX in, the mix channels and surround in use the
-  **same** frame; their channel counts aren't captured yet, so they're not
-  wired into the CLI.
+- **Per-channel edits just work now.** A per-channel `route` reads the
+  current group from the device first (category `0x03`), so you no longer
+  have to seed the cache. `route <dest> all <s1> <s2> …` still sets the
+  whole group at once; in `all`, a range token like `compplay1..16` (or
+  `compplay1-16`, descending `adat16..1`) expands to that many sequential
+  sources.
+- **`matrix-status` is a live device read** of all 15 destination groups
+  (line out, HP1/2, Mon A/B, Reamp, Comp Rec, ADAT out, S/PDIF out, AFX
+  in, Mix Ch 1-4, Surround in). It falls back to the CLI cache only if the
+  device is unreachable. The readback is the same `0x74`/`0x75` in-band
+  protocol the Antelope Launcher uses -- `PROTOCOL.md` §4a,
+  `frame.readback` in the profile.
+- ADAT out, Comp Rec, AFX in, the mix channels and Surround in are shown
+  by `matrix-status` but not yet wired for `route` writes (their channel
+  counts are now known from the readback -- adding them is a small
+  follow-up).
 
-See `PROTOCOL.md` §7 and `frame.routing_command` in the profile.
+See `PROTOCOL.md` §4a + §7 and `frame.readback` / `frame.routing_command`
+in the profile.
 
 ### Virtual mixer -- Mix 1-4 (decoded, not in the CLI yet)
 
@@ -255,7 +255,9 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
   we know each mix has 32 inputs).
 - **mix channel link** = `SET_LINK` with a new `space` byte `0x03`
   (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer); software-mirrored.
-- no `0x73` readback (like routing).
+- not in the passive `0x73` stream, but mixer state **is** readable via
+  the `0x74`/`0x75` query protocol (category `0x04`, idx = mix number;
+  `0x1b` for bus levels) -- only partly decoded so far (`PROTOCOL.md` §4a).
 
 `protocol.build_mix_command(profile, mix, channel, fader, pan_deg, send,
 mute, solo)` builds the frame. No CLI command yet. See `PROTOCOL.md` §12
@@ -271,8 +273,10 @@ mics). Same opcode `0x17` as the mixer -- `[16]` is `0xe5` instead of
 switch, and a **polar pattern** -- with model `0` a free 0-100 morph
 (omni → cardioid → figure-8), with a selected model the model's
 pattern-class (fixed / 3-way / variable). Enabling also auto-turns on
-48 V phantom and links the preamp pair. No readback. The modeled signal
-appears as routing source bank `0x01` (`emumicN`, N = preamp 5-12).
+48 V phantom and links the preamp pair. Not in the passive stream (the
+`0x74`/`0x75` query protocol may expose it -- category not yet identified).
+The modeled signal appears as routing source bank `0x01` (`emumicN`,
+N = preamp 5-12).
 
 `protocol.build_micmodeling_command(profile, channel, enabled, pattern,
 swap, model)` builds the frame. The model list is **account-bound** (Edge
@@ -286,8 +290,9 @@ on/off, plus 8 DSP controls, each a plain 0-100 byte -- Room Size (@19),
 Color (@20), Pre-Delay (@21, 0-100 → 0-32 ms), Early Reflection Gain
 (@23), Late Reflection Delay (@24), Richness (@25), Reverb Time (@26),
 Reverb Level (@27). AuraVerb is bundled with the device (no per-plugin
-activation), so it's in scope. No device readback, so the CLI caches
-what it sent:
+activation), so it's in scope. The CLI caches what it sent; a live read
+exists via the `0x74`/`0x75` query protocol (category `0x0a`, not yet
+wired into the CLI):
 
 ```
 antelope-ctl ... auraverb                          # show CLI-cached state
