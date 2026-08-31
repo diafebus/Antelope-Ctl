@@ -314,16 +314,20 @@ def build_auraverb_command(profile: dict, params: dict, enabled: bool = True,
 
 
 def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
-                              pattern: int = 50, swap: bool = False) -> bytes:
+                              pattern: int = 50, swap: bool = False,
+                              model: int = 0) -> bytes:
     """Build a SET_MIC_MODELING frame (profile['frame']['micmodeling_command'],
     opcode 0x17 / param 0xe5) -- the 'emuMic' mic-modeling DSP on a preamp.
     `channel` is the 0-based input channel index (mic modeling exists only on
     preamps 7-12, i.e. channel 6-11); it is written as channel + channel_bias.
-    `pattern` is the 0-100 polar-pattern morph (0 omni / 50 cardioid /
-    100 figure-8), `swap` the channel-order swap toggle.
-    Whole state every frame, no readback. NOTE: this does NOT select which mic
-    model is loaded (a separate, not-yet-captured frame) and does NOT do the
-    Launcher's side effects (auto phantom-on, preamp-pair link)."""
+    `model` is the emulation model id (0 = EdgeDuo / raw, no emulation).
+    `pattern` is the polar-pattern byte -- with model 0 it is the 0-100
+    continuous morph (0 omni / 50 cardioid / 100 figure-8); with an emulation
+    model the Launcher writes that model's pattern-class code (see
+    profiles/mic_models.json), so pass the model's `pattern_class` there.
+    `swap` is the channel-order swap toggle.
+    Whole state every frame, no readback. Does NOT do the Launcher's side
+    effects (auto phantom-on, preamp-pair link)."""
     f = profile['frame'].get('micmodeling_command')
     if not f:
         raise KeyError('this profile has no frame.micmodeling_command')
@@ -343,6 +347,7 @@ def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
     pkt[_as_int(f['channel_offset'])] = tgt & 0xFF
     pkt[_as_int(f['enabled_offset'])] = 1 if enabled else 0
     if enabled:
+        pkt[_as_int(f['model_offset'])] = int(model) & 0xFF
         pkt[_as_int(f['swap_offset'])] = 1 if swap else 0
         pkt[_as_int(f['pattern_offset'])] = int(pattern) & 0xFF
     return bytes(pkt)
@@ -369,13 +374,18 @@ def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
 # is the pseudo-source (bank 0x0b, index 0); there is no "no source".
 
 ROUTE_SOURCE_SPECS = {
-    # canonical name: (source_bank, first_index, count, label)
-    'preamp':   (0x00, 0, 12, 'preamp 1-12'),
-    'compplay': (0x02, 0, 32, 'computer playback (24 on VM, up to 32 on macOS)'),
-    'adat':     (0x03, 0, 16, 'ADAT in 1-16'),
-    'afx':      (0x05, 0, 32, 'AFX out 1-32'),
-    'surround': (0x0a, 0, 16, 'surround out 1-16'),
-    'osc':      (0x0c, 0, 2,  'oscillator 1-2'),
+    # canonical name: (source_bank, first_index, count, label, user_base)
+    # user_base = the number the user types that maps to first_index
+    # (1 for everything except emumic, which the Launcher labels by preamp
+    # number 5-12).
+    'preamp':   (0x00, 0, 12, 'preamp 1-12', 1),
+    'emumic':   (0x01, 0, 8,  'emumic / mic-modeled preamp 5-12 (the EMU button is on 7-12 only; '
+                              '5-6 exist in the matrix but have no model UI)', 5),
+    'compplay': (0x02, 0, 32, 'computer playback (24 on VM, up to 32 on macOS)', 1),
+    'adat':     (0x03, 0, 16, 'ADAT in 1-16', 1),
+    'afx':      (0x05, 0, 32, 'AFX out 1-32', 1),
+    'surround': (0x0a, 0, 16, 'surround out 1-16', 1),
+    'osc':      (0x0c, 0, 2,  'oscillator 1-2', 1),
 }
 
 # stereo (L/R) source banks -- name -> bank
@@ -392,6 +402,8 @@ ROUTE_SOURCE_ALIASES = {
     'afx': 'afx', 'fx': 'afx',
     'surround': 'surround', 'surr': 'surround', 'srnd': 'surround',
     'osc': 'osc', 'oscillator': 'osc',
+    'emumic': 'emumic', 'emu': 'emumic', 'micmodel': 'emumic',
+    'modeledmic': 'emumic', 'micemulation': 'emumic',
 }
 
 ROUTE_MUTE = (0x0b, 0)
@@ -417,13 +429,15 @@ def resolve_route_source(profile: dict, kind: str, number):
         return ROUTE_STEREO_SOURCE_BANKS[kind], idx
     canon = ROUTE_SOURCE_ALIASES.get(kind, kind)
     if canon in ROUTE_SOURCE_SPECS:
-        bank, first, count, label = ROUTE_SOURCE_SPECS[canon]
+        bank, first, count, label, base = ROUTE_SOURCE_SPECS[canon]
         n = int(number)
-        if not (1 <= n <= count):
-            raise ValueError(f"{canon} number {n} out of range 1..{count} ({label})")
-        return bank, first + (n - 1)
+        if not (base <= n <= base + count - 1):
+            raise ValueError(f"{canon} number {n} out of range "
+                             f"{base}..{base + count - 1} ({label})")
+        return bank, first + (n - base)
     raise ValueError(f"unknown routing source kind '{kind}' -- one of: "
-                     f"preamp, compplay, adat, afx, surround, osc, spdif, mix1..mix4, mute")
+                     f"preamp, emumic, compplay, adat, afx, surround, osc, "
+                     f"spdif, mix1..mix4, mute")
 
 
 def route_source_label(profile: dict, bank: int, index: int) -> str:
@@ -434,9 +448,9 @@ def route_source_label(profile: dict, bank: int, index: int) -> str:
     for name, b in ROUTE_STEREO_SOURCE_BANKS.items():
         if b == bank:
             return f"{name} {'L' if index == 0 else 'R'}"
-    for name, (b, first, count, _label) in ROUTE_SOURCE_SPECS.items():
-        if b == bank and index >= first:
-            return f'{name} {index - first + 1}'
+    for name, (b, first, count, _label, base) in ROUTE_SOURCE_SPECS.items():
+        if b == bank and first <= index <= first + count - 1:
+            return f'{name} {index - first + base}'
     return f'bank 0x{bank:02x} idx {index}'
 
 

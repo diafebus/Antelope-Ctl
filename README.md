@@ -196,9 +196,11 @@ python3 -m antelope.cli ... matrix-status                    # what THIS CLI has
 - **Channel selector:** 1-based (`route lineout 3 ...`). `L`/`R` = 1/2 for
   the true stereo destinations (HP1/HP2/Mon A/Mon B) -- **not** Reamp,
   whose two outs are separate mono (`route reamp 1` / `route reamp 2`).
-- **Source spec:** `preampN` (1-12), `compplayN` (Computer Playback;
-  `playbackN` alias), `adatN` (1-16), `afxN` (1-32), `surroundN` (1-16),
-  `spdifL/R`, `mix1L`…`mix4R`, `oscN` (1-2), `mute`, or `keep`.
+- **Source spec:** `preampN` (1-12), `emumicN` (mic-modeled preamp,
+  numbered **5-12** by preamp like the Launcher), `compplayN` (Computer
+  Playback; `playbackN` alias), `adatN` (1-16), `afxN` (1-32),
+  `surroundN` (1-16), `spdifL/R`, `mix1L`…`mix4R`, `oscN` (1-2), `mute`,
+  or `keep`.
 - **No un-route** -- same as the Antelope Launcher: you replace a
   channel's source or set it to `mute`; there is no "empty" state.
 - **Seed before per-channel edits.** A per-channel `route` needs every
@@ -250,17 +252,19 @@ and `frame.mix_command`.
 The front-panel **EMU** button on **preamps 7-12** runs Antelope's
 mic-emulation DSP (for their Edge Solo / Edge Duo / Edge Note modelling
 mics). Same opcode `0x17` as the mixer -- `[16]` is `0xe5` instead of
-`0xd4`. Decoded 2026-08-31 (`macos-ch7-8-micmodeling-*`,
-`macos-ch9-10_11-12-micmodeling-*`): per preamp, an **enable** bit, a
-**polar-pattern** morph (0 = omni, 50 = cardioid, 100 = bi-directional,
-continuous), and a **channel-order swap** switch. Enabling also auto-turns
-on 48 V phantom and links the preamp pair. No readback. The modeled
-signal appears as routing source bank `0x01` ("emumic").
+`0xd4`. Decoded 2026-08-31: per preamp, an **enable** bit, a **model id**
+(`0` = EdgeDuo / raw, `1`…`18` = emulations), a **channel-order swap**
+switch, and a **polar pattern** -- with model `0` a free 0-100 morph
+(omni → cardioid → figure-8), with a selected model the model's
+pattern-class (fixed / 3-way / variable). Enabling also auto-turns on
+48 V phantom and links the preamp pair. No readback. The modeled signal
+appears as routing source bank `0x01` (`emumicN`, N = preamp 5-12).
 
 `protocol.build_micmodeling_command(profile, channel, enabled, pattern,
-swap)` builds the frame. **Which mic model** is loaded is a separate,
-not-yet-captured frame -- and an account-bound one (Edge mics + model
-packs activate against an Antelope account); see `profiles/mic_models.json`.
+swap, model)` builds the frame. The model list is **account-bound** (Edge
+mics + model packs activate against an Antelope account), so it lives in
+`profiles/mic_models.json` as one account's snapshot -- a client should
+let the user pick by name. Not in the CLI yet.
 
 **AuraVerb** (the bundled reverb on the Mix 1 window) has its own frame
 -- opcode `0x1d` / param `0xda`. Fully decoded (2026-08-31): byte 28 =

@@ -996,8 +996,8 @@ def _parse_route_source(token):
     m = re.match(r'^([a-z]+[0-9]*?)([0-9]+|[lr])$', t)   # mix2 + r ; preamp + 3
     if not m:
         raise SystemExit(f"can't parse routing source '{token}' -- try "
-                         f"preamp3 / compplay1 / adat5 / afx7 / surround2 / spdifL / "
-                         f"mix2R / osc1 / mute / keep")
+                         f"preamp3 / emumic7 / compplay1 / adat5 / afx7 / surround2 / "
+                         f"spdifL / mix2R / osc1 / mute / keep")
     return m.group(1), m.group(2)
 
 
@@ -1660,9 +1660,10 @@ def main():
                     help='output channel (1-based; L/R = 1/2 for the stereo dests), '
                          'or "all" (then give one source per channel), or "mute" (mute all)')
     sp.add_argument('source', nargs='*',
-                    help='preamp3 | compplay1 | adat5 | afx7 | surround2 | spdifL | mix2R | '
-                         'osc1 | mute | keep  (one for a channel selector; N for "all"; '
-                         'in "all" a range like compplay1..16 expands to N sources)')
+                    help='preamp3 | emumic7 (emumic numbered 5-12 by preamp) | compplay1 | '
+                         'adat5 | afx7 | surround2 | spdifL | mix2R | osc1 | mute | keep  '
+                         '(one for a channel selector; N for "all"; in "all" a range like '
+                         'compplay1..16 expands to N sources)')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_route)
 
