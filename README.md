@@ -83,6 +83,7 @@ tools/capture_diff.py          <- offline helper for finding new params from cap
 tools/scan_capture.py          <- offline helper: auto-finds the transition across a whole capture (Windows TSV)
 tools/scan_macos_capture.py    <- same, for native-macOS (Darwin XHC) pcapng -- see CAPTURING.md
 tools/hid_probe.py             <- dump the HID report descriptor + probe for a readable Feature report
+tools/selftest.py              <- round-trip self-test against real hardware via the readback (read-only by default, --write for restore-guaranteed writes)
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
 captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
