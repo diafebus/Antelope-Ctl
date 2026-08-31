@@ -202,9 +202,13 @@ python3 -m antelope.cli identity --serial   # ...and the serial, on request
 name      OrionStudio_III
 hw rev    7.0
 firmware  4.41
-stamp     1624266279 (?= 2021-06-21, unconfirmed)
+stamp     <u32> (?= YYYY-MM-DD, unconfirmed)
 serial    <13 chars, hidden -- pass --serial to show>
 ```
+
+(The `stamp` is shown as a placeholder above for the same reason as the
+serial -- it is per-unit data, so no real value from anyone's hardware is
+committed here.)
 
 **Policy: no device serial is committed to this repo, ever.** Profiles
 describe the *layout* of the identity record (`frame.readback.identity`);
