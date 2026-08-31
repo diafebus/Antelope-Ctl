@@ -436,9 +436,13 @@ set, not a fixed default.
 **CLI:** `route <dest> <chan> <source>` sets one output channel (1-based;
 `L`/`R` = 1/2 for `stereo_destinations`) and resends the rest from the
 local cache; `route <dest> all <s1>...<sN>` sets the whole group;
-`route <dest> mute` / `route <dest> <chan> mute` mute. Wired dests:
-`line_out` (16) + hp1/hp2/mona/monb/reamp (2). Like the Launcher there is
-**no un-route**. `0x53` is in `constraints.allowed_opcodes`.
+`route <dest> mute` / `route <dest> <chan> mute` mute. In `all`, a range
+token like `compplay1..16` expands to N sequential sources (so a 16-ch
+seed is one line). Wired dests: `line_out` (16) + hp1/hp2/mona/monb/reamp
+(2). Like the Launcher there is **no un-route**. `0x53` is in
+`constraints.allowed_opcodes`. **Hardware round-trip confirmed
+(2026-08-31)** for every wired dest -- preamps->hp1/hp2 and a seeded
+16-ch line_out both persisted correctly in the Windows Launcher.
 
 **Other multichannel destinations** (ADAT out, com rec, AFX in, the mix
 channels, surround in) use the same array; their channel counts aren't

@@ -635,7 +635,7 @@
     },
     "routing": {
       "id": "0xd3",
-      "status": "partly decoded",
+      "status": "decoded; CLI hardware round-trip confirmed 2026-08-31 (preamps->hp1/hp2 and a seeded 16-ch line_out both persisted correctly in the Windows Launcher). Open items: bank 0x01, the readback, and channel counts of the other multichannel destinations.",
       "type": "matrix crosspoint (source -> destination)",
       "frame": "frame.routing_command (opcode 0x53) -- its own shape, NOT SET_PARAM",
       "destinations": {
@@ -866,7 +866,7 @@
       "0x17",
       "0x53"
     ],
-    "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). Neither is round-trip tested against hardware -- treat routing and mixer as experimental. 0x17 is not in a CLI command yet.",
+    "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). 0x53 is hardware round-trip confirmed (2026-08-31): preamps->hp1/hp2 and a seeded 16-ch line_out routed from cli.py persisted correctly in the Windows Launcher. 0x17 (mixer) is still untested and not in a CLI command yet -- treat the mixer as experimental.",
     "observed_opcodes_launcher_only": [
       "0xab"
     ],

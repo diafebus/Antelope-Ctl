@@ -178,9 +178,9 @@ it's a plain array of `(source_bank, source_index)` pairs, **one per
 output channel of that destination**, all sent every time. There is **no
 device readback**, so `route` resends the channels it isn't changing from
 a local cache. Wired destinations: **line out** (16 channels), **HP1,
-HP2, Monitor A, Monitor B, Reamp** (2). The 2-channel destinations are
-hardware-verified (round-tripped against a real Orion Studio III); still
-verify in the Launcher.
+HP2, Monitor A, Monitor B, Reamp** (2). All wired destinations are
+hardware-verified (round-tripped against a real Orion Studio III --
+including the 16-channel line out); still worth verifying in the Launcher.
 
 ```
 python3 -m antelope.cli ... route hp1 all preamp3 preamp4    # set every channel (seeds the cache)
