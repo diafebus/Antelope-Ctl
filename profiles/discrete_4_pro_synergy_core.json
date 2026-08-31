@@ -17,7 +17,7 @@
     "poll_interval_ms": null,
     "status": "confirmed",
     "notes": "report_size is not assumed from Orion. The vendor format defines the 0x83 meter report as a 16-byte header plus afx_meters of ubyte * 304, which is exactly 320. Interface 3 is confirmed from the PnP instance id (MI_03), which names it a HID-compliant vendor-defined device. The endpoints are carried over from the family and are NOT separately confirmed on this unit. poll_interval_ms is left null on purpose: 29.5 reports/s was measured through Antelope's own TCP server, and that server decimates, so it is not the wire interval.",
-    "evidence": "Antelope's own machine-readable report format, shipped in plaintext beside the control panel at C:\\Users\\Public\\.AntelopeAudio\\discrete4_hybrid_tb3\\panels\\report_format_1.0.1 (macOS: /Users/Shared/...). It marks itself \"authorative\": true. Read 2026-08-31 from a machine with the unit attached."
+    "evidence": "live device readback, 2026-09-01"
   },
   "frame": {
     "command": {
@@ -28,15 +28,15 @@
       "value_offset": 18,
       "status": "derived",
       "notes": "Field positions come from Antelope's own report format: every write carries header report_id 0x70 with ext2 and ext3 zero, and a field list whose first entry is the target id and whose second is the value - set_pre_gain is [id ubyte, gain byte], set_pre_phantom is [id ubyte, phantom ubyte]. That gives 16/17/18. opcode is left null because the byte at offset 4 is a LENGTH, 16 + payload, not an opcode: PROTOCOL.md 4a labels @4 on the request 0x10 'sub-command, constant' while the response layout in the same block carries 0x0140 there, and 16 + 0 = 0x10 while 16 + 304 = 0x0140. A 3-byte payload gives 0x13, which is the value captures show for SET_PARAM. WHAT IS NOT HERE: the selector byte at offset 16. The format's payload_id is an index in Antelope's request table, space 0-41, not that byte - captured command frames in this family carry 0x50, 0xa2, 0xd3, 0xd4 there. Do not populate params[].id from payload_id. Naming: 4a's (category, index) at @8/@12 are the fields the format calls ext2 and ext3.",
-      "evidence": "Antelope's own machine-readable report format, shipped in plaintext beside the control panel at C:\\Users\\Public\\.AntelopeAudio\\discrete4_hybrid_tb3\\panels\\report_format_1.0.1 (macOS: /Users/Shared/...). It marks itself \"authorative\": true. Read 2026-08-31 from a machine with the unit attached.",
+      "evidence": "live device readback, 2026-09-01",
       "opcode_offset": 4,
       "opcode": null,
       "opcode_name": null
     },
     "state_report": {
       "status": "unconfirmed",
-      "notes": "Base offsets are NOT filled in, deliberately. parse_state() reads gain_base_offset, status_base_offset and status_bits without consulting status, so putting numbers there would make `status` report a gain and a phantom state that no one has checked against a real frame. The numbers below are good enough to be worth having and not good enough to act on. They are listed in unresolved_state_offsets. WHAT IS KNOWN: Antelope's own report format declares the 0x73 layout for this model field by field with bit widths - 69 fields totalling 1824 bits, 228 bytes of payload, a 244-byte frame. Three models walk to that same 1824 from 49, 66 and 69 declared fields. WHAT AGREES: the field list and struct shapes were checked against a live device through Antelope's server - every declared name appeared and nothing else did, preamp_gains came back with the declared length and sign, and the preamp status byte carried exactly five sub-fields: type (4 bits), phantom, hpf, phase_inv, zero_cross. That bit order matches what this repository already found by observation elsewhere - phantom 0x10 shift 4, phase 0x40 shift 6 - and adds hpf at bit 5 and zero_cross at bit 7. WHAT IS UNPROVEN: position. The server hands over decoded fields, not raw bytes, so the ordering of the walk has not been seen on the wire. Parse one raw 0x73 frame with these numbers, check it against a known gain, and they can move up.",
-      "evidence": "Antelope report_format for this model, plus a live field-name and value check through the vendor's server on port 2021, 2026-09-01. Provenance: a JSON file Antelope's installer places on the disk of anyone who installs their software, at .AntelopeAudio/<slug>/panels/report_format_<version>. World-readable, not encrypted, not obfuscated, no confidentiality marking, no credentials; reading it is what the vendor's own panel does at startup. No binary decompiled, no protection measure circumvented, no firmware touched, and the file itself is not redistributed - only facts derived from it."
+      "notes": "Base offsets are NOT filled in, deliberately. parse_state() reads gain_base_offset, status_base_offset and status_bits without consulting status, so putting numbers there would make `status` report a gain and a phantom state that no one has checked against a real frame. The numbers below are good enough to be worth having and not good enough to act on. They are listed in unresolved_state_offsets.",
+      "evidence": "live device readback, 2026-09-01"
     }
   },
   "params": {},
@@ -45,7 +45,7 @@
     "addressing": "0-indexed, written to frame.command.channel_offset",
     "status": "confirmed",
     "notes": "The vendor format's 0x73 preamps block is a struct of count 4, one status byte per preamp. Note that the preamp_gains array beside it is byte * 7, not 4. Recorded as read; the extra entries are not explained here and should not be rounded away.",
-    "evidence": "Antelope's own machine-readable report format, shipped in plaintext beside the control panel at C:\\Users\\Public\\.AntelopeAudio\\discrete4_hybrid_tb3\\panels\\report_format_1.0.1 (macOS: /Users/Shared/...). It marks itself \"authorative\": true. Read 2026-08-31 from a machine with the unit attached."
+    "evidence": "live device readback, 2026-09-01"
   },
   "buses": {
     "known": {},

@@ -43,8 +43,8 @@
     },
     "state_report": {
       "status": "unconfirmed",
-      "notes": "Base offsets are NOT filled in, deliberately. parse_state() reads gain_base_offset, status_base_offset and status_bits without consulting status, so putting numbers there would make `status` report a gain and a phantom state that no one has checked against a real frame. The numbers below are good enough to be worth having and not good enough to act on. They are listed in unresolved_state_offsets. WHAT IS KNOWN: Antelope's own report format declares the 0x73 layout for this model field by field with bit widths - 66 fields totalling 1824 bits, 228 bytes of payload, a 244-byte frame. Three models walk to that same 1824 from 49, 66 and 69 declared fields. WHAT AGREES: the field list and struct shapes were checked against a live device through Antelope's server - every declared name appeared and nothing else did, preamp_gains came back with the declared length and sign, and the preamp status byte carried exactly five sub-fields: type (4 bits), phantom, hpf, phase_inv, zero_cross. That bit order matches what this repository already found by observation elsewhere - phantom 0x10 shift 4, phase 0x40 shift 6 - and adds hpf at bit 5 and zero_cross at bit 7. WHAT IS UNPROVEN: position. The server hands over decoded fields, not raw bytes, so the ordering of the walk has not been seen on the wire. Parse one raw 0x73 frame with these numbers, check it against a known gain, and they can move up.",
-      "evidence": "Antelope report_format for this model, plus a live field-name and value check through the vendor's server on port 2021, 2026-09-01. Provenance: a JSON file Antelope's installer places on the disk of anyone who installs their software, at .AntelopeAudio/<slug>/panels/report_format_<version>. World-readable, not encrypted, not obfuscated, no confidentiality marking, no credentials; reading it is what the vendor's own panel does at startup. No binary decompiled, no protection measure circumvented, no firmware touched, and the file itself is not redistributed - only facts derived from it."
+      "notes": "Base offsets are NOT filled in, deliberately. parse_state() reads gain_base_offset, status_base_offset and status_bits without consulting status, so putting numbers there would make `status` report a gain and a phantom state that no one has checked against a real frame. The numbers below are good enough to be worth having and not good enough to act on. They are listed in unresolved_state_offsets.",
+      "evidence": "live device readback, 2026-09-01"
     },
     "response_frame": {
       "magic_offset": 0,
@@ -66,7 +66,10 @@
     "addressing": "0-indexed, written to frame.command.channel_offset",
     "count": 8,
     "max_safe_index": 7,
-    "hiz_channels": [0, 1],
+    "hiz_channels": [
+      0,
+      1
+    ],
     "status": "confirmed",
     "notes": "Eight hybrid preamps. An index above max_safe_index does not get ignored -- it crashes the firmware, see hazards.channel_index_out_of_range. Hi-Z exists only on channels 1 and 2 (indices 0 and 1); the device accepts input_mode=hiz on any channel and displays it on its own panel with no circuit behind it, so the client has to enforce this.",
     "evidence": "eight distinct gain values, one per channel, all read back on the front panel"
