@@ -42,8 +42,51 @@
       "evidence": "eight distinct gain values sent to channels 0..7, each read back on the front panel"
     },
     "state_report": {
-      "status": "does not exist on this device",
-      "notes": "Deliberately left empty rather than unconfirmed. This device never emits a state report, so there is no magic byte or base offset to find -- see the protocol block above. If a query opcode is ever discovered that makes it emit one, this is where it goes."
+      "magic": "0x73",
+      "gain_base_offset": 33,
+      "status_base_offset": 41,
+      "status_bits": {
+        "type": {
+          "mask": "0x0f",
+          "shift": 0
+        },
+        "phantom": {
+          "mask": "0x10",
+          "shift": 4
+        },
+        "hpf": {
+          "mask": "0x20",
+          "shift": 5
+        },
+        "phase_inv": {
+          "mask": "0x40",
+          "shift": 6
+        },
+        "zero_cross": {
+          "mask": "0x80",
+          "shift": 7
+        }
+      },
+      "bus_block_offset": 28,
+      "bus_block_stride": 1,
+      "status": "derived",
+      "_comment": "This block previously read 'does not exist on this device'. The distinction that resolves it: the device does not EMIT a state report unprompted, which is what the captures showed, but a 0x73 layout is defined for it and it answers when asked.",
+      "notes": "Offsets computed by bit-walking the 0x73 field list Antelope declares for this model. The walk totals 1824 bits, 228 bytes of payload, a 244-byte frame - and the sibling model's differently sized layout totals the same 1824, which checks both. The status bit order agrees with what this repository already established by observation on other devices: phantom mask 0x10 shift 4, phase 0x40 shift 6, identical. hpf at bit 5 and zero_cross at bit 7 are additions the format declares that captures had not decoded. bus_block_offset 28 is the base zen_go_sc.json already carries. NOT 'confirmed': no real 0x73 frame from this unit has been parsed with these offsets yet. Promote on the first parse.",
+      "evidence": "Antelope's own machine-readable report format, shipped in plaintext beside the control panel at C:\\Users\\Public\\.AntelopeAudio\\<slug>\\panels\\report_format_<version> (macOS: /Users/Shared/...). It marks itself \"authorative\": true. Read 2026-08-31 from machines with the units attached.",
+      "provenance": {
+        "method": "vendor's own plaintext report format, read from the user's own disk",
+        "what_was_done": "Opened a JSON file that Antelope's installer places on the machine of anyone who installs their software, at .AntelopeAudio/<slug>/panels/report_format_<version>. It is world-readable, not encrypted, not obfuscated, carries no licence header and no confidentiality marking, and needs no credentials. Reading it is what the vendor's own control panel does at startup.",
+        "what_was_NOT_done": [
+          "No decompilation or disassembly of any Antelope binary.",
+          "No decryption, and no circumvention of any technical protection measure - there is none on this file.",
+          "No firmware modification, no firmware dump, no patching.",
+          "No credentials, no licence server, no account, nothing behind a login.",
+          "No redistribution of the vendor's file: only facts derived from it appear here.",
+          "No confidential or leaked material; nothing from an NDA or an internal source."
+        ],
+        "purpose": "Interoperability: making hardware the owner has paid for controllable from their own operating system. Field offsets and parameter layouts are facts about an interface, not creative expression.",
+        "caveat": "This records what was and was not done so the maintainer can judge it. It is not legal advice, and it is not a claim about any particular jurisdiction."
+      }
     },
     "response_frame": {
       "magic_offset": 0,
