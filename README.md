@@ -62,13 +62,17 @@ If you are a rights holder with a concern, please open an issue.
 ## Layout
 
 ```
-profiles/orion_studio_3.json   <- single source of truth for this device's protocol
+profiles/orion_studio_3.json   <- single source of truth for the Orion Studio III protocol
+profiles/discrete_8_pro_synergy_core.json  <- sibling device (peer-contributed)
+profiles/zen_go_sc.json        <- sibling device (Zen Go Synergy Core), first-pass profile
+profiles/mic_models.json       <- account-bound mic-modelling ("emuMic") model catalogue
 antelope/transport.py          <- generic HID open/read/write (no device-specific code)
 antelope/protocol.py           <- generic frame build/parse, driven entirely by the profile
 antelope/cli.py                <- generic CLI, driven entirely by the profile
 tools/capture_diff.py          <- offline helper for finding new params from captures
 tools/scan_capture.py          <- offline helper: auto-finds the transition across a whole capture (Windows TSV)
 tools/scan_macos_capture.py    <- same, for native-macOS (Darwin XHC) pcapng -- see CAPTURING.md
+tools/hid_probe.py             <- dump the HID report descriptor + probe for a readable Feature report
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
 captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
@@ -393,6 +397,19 @@ the new device follows the same general "vendor HID, N-byte reports,
 SET_PARAM(id, channel, value)" shape. If it doesn't, that's a sign the
 frame format itself needs to become part of the profile too (it already
 mostly is -- see `"frame"` in the JSON).
+
+**Sibling profiles so far:**
+
+| profile | device | PID | state |
+|---|---|---|---|
+| `orion_studio_3.json` | Orion Studio III | `0xa221` | reference; most complete |
+| `discrete_8_pro_synergy_core.json` | Discrete 8 Pro | `0xa2b5` | peer-contributed |
+| `zen_go_sc.json` | Zen Go Synergy Core | `0xa015` | first pass (2026-08-31) from USBPcap captures -- preamps / buses / sample rate / clock / mixer / routing-shape decoded; DSP, mic-modelling, full routing map, and the meter byte-map still open (see `open_questions` in the file) |
+
+The family shares `magic 0x70` command / opcode @4 / param_id @16 /
+320-byte reports / HID interface 3 (EP `0x01` OUT, `0x82` IN) and most
+param IDs. It does **not** share report magics, the mixer frame shape, or
+source-bank numbers -- verify each against a capture, don't inherit.
 
 ## What's still unconfirmed
 

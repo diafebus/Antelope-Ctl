@@ -1,0 +1,333 @@
+{
+  "_comment": "Antelope Zen Go Synergy Core -- reverse-engineered from USBPcap captures (Windows, VM) in sidejob/zen_go_synergy_core-filtered/ (2026-08-31). SAME HID vendor protocol family as Orion Studio III (profiles/orion_studio_3.json) and Discrete 8 Pro: magic 0x70 command, opcode @4, param_id @16, 320-byte reports on the same endpoints. Param IDs are largely shared with Orion; report magics and some frame shapes DIFFER (meter is 0x83 not 0x75; the mixer frame is opcode 0x16 / subcmd 0x04 with no send byte). Everything here is from observed traffic on hardware the capture owner controls. Fields carry status + evidence; anything marked 'observed' is not yet decoded.",
+
+  "device": {
+    "name": "Antelope Zen Go Synergy Core",
+    "vid": "0x23e5",
+    "pid": "0xa015",
+    "bcdDevice": "06.06",
+    "status": "confirmed",
+    "notes": "USB-C bus-powered 4-in / 8-out desktop interface, 2 mic/line/Hi-Z preamps, Synergy Core DSP. Composite device: UAC2 audio (interfaces 0/1/2, 16 in / 16 out, 24-bit, iso endpoints 0x05 OUT / 0x84 IN) plus a vendor HID control interface (interface 3). Device descriptor: class 0xef/0x02/0x01, bcdUSB 0x0200, iManufacturer/iProduct/iSerial 1/2/3. Config descriptor: 4 interfaces, bus-powered (bmAttributes 0x80), maxpower 500 mA.",
+    "evidence": "capture_01_enumeration.pcapng: device descriptor frame -> idVendor 0x23e5, idProduct 0xa015, bcdDevice 0x0606; config descriptor (243 bytes) decoded; 0x75 name report during connect = ASCII 'Zen Go Synergy Core' + serial + '6.6'."
+  },
+
+  "transport": {
+    "type": "hid",
+    "report_size": 320,
+    "out_endpoint": "0x01",
+    "in_endpoint": "0x82",
+    "poll_interval_ms": 4,
+    "uses_numbered_reports": false,
+    "status": "confirmed",
+    "notes": "Identical transport to Orion Studio III / Discrete 8 Pro: HID interface 3, interrupt EP 0x01 OUT / 0x82 IN, 320-byte reports, bInterval 6. The HID report descriptor was not captured (the GET_DESCRIPTOR(0x22) request is outside the trace window); the Discrete 8 Pro's is 54 bytes with one 320B Input + one 320B Output report and NO Feature report -- assume the same here until dumped from Linux hidraw (tools/hid_probe.py). If it has no Report ID, Linux hidraw writes need a leading 0x00 (321 bytes) -- see family_notes.",
+    "evidence": "capture_01_enumeration.pcapng config descriptor: interface 3 = HID, HID desc bcdHID 0x0111 / report desc type 0x22 len 54, EP 0x82 IN + EP 0x01 OUT both interrupt maxpacket 0x0140 (320) bInterval 6."
+  },
+
+  "frame": {
+    "_comment": "Outgoing command frames: magic 0x70 @0 (cosmetic in this family), opcode @4, param_id @16. Layout after @16 depends on the opcode.",
+
+    "command": {
+      "magic_offset": 0, "magic": "0x70",
+      "opcode_offset": 4, "opcode": "0x13", "opcode_name": "SET_PARAM",
+      "param_id_offset": 16,
+      "channel_offset": 17,
+      "value_offset": 18,
+      "status": "confirmed",
+      "notes": "The per-channel / per-bus setter, same as Orion's SET_PARAM. param @16, target (channel or bus id) @17, value @18. Used for: gain (0x50), input_mode (0x4f), phantom (0x51), phase_invert (0x52), bus_level (0x47), bus_mute (0x48), bus param 0x66, param 0x49 (see params).",
+      "evidence": "preamps/capture_preamp_a1_gain_mic.pcapng etc: op 0x13, param 0x50, [17]=0 (preamp A1) / 1 (A2), [18] swept the gain; mode/phantom/phase in the same layout."
+    },
+
+    "global_command": {
+      "magic_offset": 0, "magic": "0x70",
+      "opcode_offset": 4, "opcode": "0x12", "opcode_name": "SET_GLOBAL",
+      "param_id_offset": 16,
+      "value_offset": 17,
+      "status": "confirmed",
+      "notes": "Device-global setter, value at @17 (no channel byte). Used for sample_rate (param 0x03) and clock_source (param 0x04).",
+      "evidence": "capture_05_sample_rate...: op 0x12 param 0x03 value 0-6 @17. capture_06_clock_source...: op 0x12 param 0x04 value 0-2 @17."
+    },
+
+    "link_command": {
+      "magic_offset": 0, "magic": "0x70",
+      "opcode_offset": 4, "opcode": "0x14", "opcode_name": "SET_LINK",
+      "param_id_offset": 16, "param_id": "0xa2",
+      "space_offset": 17,
+      "pair_index_offset": 18,
+      "enabled_offset": 19,
+      "space_values": { "0": "physical preamp", "3": "mixer strip pair" },
+      "status": "confirmed (frame shape); space semantics partial",
+      "notes": "Same shape as Orion: 0xa2 @16, space @17, pair_index @18, enabled @19. Space 3 (mixer) is the only one exercised much -- the Launcher re-sends a burst of space-3 link commands for many pairs on connect / mixer-tab open (pairs 0-5 and 17-23 seen, which looks like it is enumerating both mixes' strips). Space 0 (physical preamp link) is assumed by analogy with Orion; not isolated here.",
+      "evidence": "capture_dsp / mixer_links/*: op 0x14 param 0xa2 [17]=3, [18] cycling pair indices, [19]=1. mixer_links/mix1_ch1_ch2_linked.pcapng also flips state_report offset 127."
+    },
+
+    "mix_command": {
+      "magic_offset": 0, "magic": "0x70",
+      "opcode_offset": 4, "opcode": "0x16", "opcode_name": "SET_MIX",
+      "param_id_offset": 16, "param_id": "0xd4",
+      "subcmd_offset": 17, "subcmd": "0x04",
+      "mix_offset": 18,
+      "channel_offset": 19,
+      "fader_offset": 20,
+      "pan_flags_offset": 21,
+      "pan_center": 32,
+      "pan_mask": "0x3f",
+      "mute_bit": "0x40",
+      "solo_bit": "0x80",
+      "status": "confirmed",
+      "notes": "The virtual mixer. NOTE this is opcode 0x16 (Orion's mixer is 0x17) and the sub-cmd byte @17 is 0x04 (Orion 0x05); there is NO per-strip send byte (Orion has one at @22) -- the Zen Go mixer strip is just fader + pan + mute + solo. [18]=mix number (0 = Mix 1, 1 = Mix 2; the Zen Go has 2 mixes), [19]=channel (0-15, 16 input strips per mix), [20]=fader raw = dB attenuation 0 (unity) .. 90 (-90 dB), [21]=pan (low 6 bits, 0x20 = centre, ~0x02 = full L, ~0x3e = full R) + mute bit 0x40 + solo bit 0x80. Whole strip state every frame. NO 0x73 readback (fader/pan/mute/solo captures showed no state-report change) -- treat as write-only, cache client-side, same as Orion.",
+      "evidence": "mixer/capture_mixer_09_fader_unlinked...: d4 04 00 01 <fader> 20 sweeping fader. capture_mixer_07_pan...: [21] swept around 0x20. capture_mixer_11_mute: [21] = 0x60 (0x20|0x40) vs 0x20. capture_mixer_13_solo: [21] = 0xa0 (0x20|0x80). capture_08_mixer_volume_faders_on_2_mixes: [18] = 0 and 1, [19] up to 10."
+    },
+
+    "output_command": {
+      "magic_offset": 0, "magic": "0x70",
+      "opcode_offset": 4, "opcode": "0x16",
+      "param_id_offset": 16, "param_id": "0xd4",
+      "subcmd_offset": 17, "subcmd": "0x04",
+      "status": "observed -- likely the same mix_command shape addressing a fixed output strip",
+      "notes": "The big monitor knob / output volume + mute also go through opcode 0x16 / 0xd4, as d4 04 01 03 <level> <flags> -- i.e. mix index 1, channel 3, with a pan/flags base of 0x02 (not 0x20). [20] = level (0-~0x5a), [21] bit 0x40 = mute. Whether ([18]=1,[19]=3) is a real (mix,channel) address or a special output-strip selector is not pinned down. Buses 0/1/2 have their OWN setter (bus_level 0x47 / bus_mute 0x48 / param 0x66, opcode 0x13) -- see params and 'buses'. Which of these two the Launcher uses for which physical output is not fully mapped.",
+      "evidence": "capture_02_volume_down / _03_volume_up: d4 04 01 03 <level> 02 sweeping level. capture_04_mute_toggle: [21] = 0x42 vs 0x02."
+    },
+
+    "routing_command": {
+      "magic_offset": 0, "magic": "0x70",
+      "opcode_offset": 4, "opcode": "0x53", "opcode_name": "SET_ROUTE",
+      "param_id_offset": 16, "param_id": "0xd3",
+      "subcmd_offset": 17, "subcmd": "0x41",
+      "destination_offset": 18,
+      "channel_list_offset": 19,
+      "channel_stride": 2,
+      "status": "frame shape confirmed; destination + source bank maps PRELIMINARY",
+      "notes": "Same shape as Orion: 0xd3 @16, 0x41 @17, destination group @18, then an array of (source_bank, source_index) pairs from @19, stride 2, one per output channel of the group. Whole group sent every time. The Zen Go 'channel assignments' tab assigns what each mixer input strip listens to. Destination groups seen: 3, 5, 6, 7, 8, 9 -- dest 5 is a 4-channel group ('early' channels 1-4), dests 6/7/8/9 are large (~16+ channel) groups that always appear together and identical (probably the 4 mixer-input maps or a full 16-strip map x N). NOT fully decoded. Source banks seen (PRELIMINARY, need isolation): 0x00 = preamp, 0x01 = computer playback (?), 0x02 = S/PDIF in, 0x03 = computer playback / ADAT-slot (?), 0x08 = MUTE pseudo-source, 0x09 = oscillator (idx 0/1), 0x0a = emumic (mic-modeled preamp). NO 0x73 readback for routing writes (like Orion).",
+      "source_banks_preliminary": {
+        "0x00": "preamp (idx 0-1)",
+        "0x01": "computer playback? (idx seen 0-7)",
+        "0x02": "S/PDIF in (idx 0-1)",
+        "0x03": "computer playback? / other (idx 0-3 seen)",
+        "0x08": "MUTE (pseudo-source, idx 0)",
+        "0x09": "oscillator (idx 0-1)",
+        "0x0a": "emumic / mic-modeled preamp (idx 0-1)"
+      },
+      "evidence": "channel_assignments/*: op 0x53 param 0xd3 [17]=0x41 (=65), [18] = 3/5/6/7/8/9. 'ch1-4 - was spdif1,spdif2,osc1,osc2 - changed ch1 to emu1' -> dest 5 = (0x0a,0)(0x02,1)(0x09,0)(0x09,1). 'capture_mixer_24_assignment_early_ch1' -> dest 5 first pair set to (0x08,0) = mute."
+    },
+
+    "observed_opcodes": {
+      "_comment": "Opcodes seen in captures but not decoded. Do NOT send these until a client understands them (see family constraints -- an unknown opcode cost a physical power cycle on the Discrete 8 Pro).",
+      "0x1a": "param 0xd5, [17]=8 [18]=5 -- in capture_07_dsp (DSP / FX slot?), 1 frame",
+      "0x1c": "param 0xd5, [17]=10 [18]=6 -- in capture_07_dsp, 1 frame",
+      "0x23": "param 0xd7, [17]=17 [18]=0 -- in capture_07_dsp, 3 frames (FX bypass / param?)"
+    },
+
+    "state_report": {
+      "magic_offset": 0, "magic": "0x73",
+      "sample_rate_byte_offset": 18,
+      "clock_source_byte_offset": 19,
+      "gain_base_offset": 40,
+      "status_base_offset": 42,
+      "bus_block_offset": 28,
+      "bus_block_stride": 2,
+      "status_bits": {
+        "input_mode": { "mask": "0x03", "shift": 0 },
+        "phantom": { "mask": "0x10", "shift": 4 },
+        "phase_invert": { "mask": "0x40", "shift": 6 }
+      },
+      "status": "confirmed for gain / mode / phantom / sample_rate / clock / bus; other offsets unmapped",
+      "notes": "Continuous state report, ~4 ms. Header: [4-5] = 0x0140 (report size). Confirmed readback fields: [18] = sample-rate index (0-6, tracks the SET value ~immediately); [19] = clock-source index (0-2); [40] + channel = preamp gain (2 channels, A1 @40, A2 @41), same 'raw = dB-ish' scale as Orion, mode-dependent range (mic 0-65, line small, Hi-Z ~0-45); [42] + channel = preamp status byte (input_mode bits 0-1, phantom bit 0x10, phase bit 0x40 -- masks carried from Orion, phantom + mode confirmed here, phase not isolated); [28] + 2*bus = bus block (byte 0 = level 0-96, byte 1 = flags incl. mute). [17]/[19] also show a ~3 s connect blip like Orion (17: 0x08->0x00) -- but [19] is ALSO the clock source, so only the [17] change is pure noise. Offsets ~90/122/126/127 move on mixer-link / param-0x49 writes (undecoded). Offsets ~150-260 = free-running meter jitter (resting ~0x60). [21-24] carry a sample-rate-derived clock word (moves with rate, like Orion @21-23)."
+    },
+
+    "meter_report": {
+      "magic_offset": 0, "magic": "0x83",
+      "status": "identified (magic); byte map not decoded",
+      "notes": "The per-channel meter report -- magic 0x83 (Orion uses 0x75 for this; on the Zen Go 0x75 is instead the connect-time NAME/topology report). Resting values ~0x60 (96), drop toward 0 with signal, same inverted scale as Orion's meter. Header [4-5] = 0x0140. Byte-to-channel mapping not worked out.",
+      "evidence": "capture_09_idle_polling.pcapng: 0x83 frames 1:1 with 0x73; metering/ch1.pcapng..ch16.pcapng exercise one channel each (not yet diffed)."
+    },
+
+    "name_report": {
+      "magic_offset": 0, "magic": "0x75",
+      "status": "identified",
+      "notes": "Connect-time report carrying ASCII strings: device name ('Zen Go Synergy Core'), serial number, firmware ('6.6'). Paired with 0x74 (a small category/index enumeration, [8] = category, [12] = index -- categories 0x00/0x01/0x11 seen). Far smaller than Orion's 113-record 0x74 burst. Unlike every Orion capture, the Zen Go DOES send readable names over HID here.",
+      "evidence": "capture_01_enumeration.pcapng frames ~7651-9379: 0x74 then 0x75 pairs; 0x75 for category 0x01 = 'Zen Go Synergy Core' + '45027210013...' + '6.6'."
+    }
+  },
+
+  "channels": {
+    "input": {
+      "count": 2,
+      "index_base": 0,
+      "names": ["Preamp A1", "Preamp A2"],
+      "modes": { "0": "mic", "1": "line", "2": "hiz" },
+      "status": "confirmed",
+      "notes": "2 combo preamps. input_mode via param 0x4f (0 mic / 1 line / 2 hiz). Gain range is mode-dependent (param 0x50): mic 0-65, line a narrow range around 0x13, Hi-Z ~0-45 -- exact bounds not swept to the rail. Phantom = 0x51, phase_invert = 0x52. Readback: gain @40+ch, status @42+ch.",
+      "link_pairs": { "count": 1, "formula": "pair_index = channel_index // 2" }
+    }
+  },
+
+  "buses": {
+    "_comment": "Output buses, addressed in frame.command.channel_offset (@17) like a channel but the id means an output. Only ids 0/1/2 seen. Physical mapping (Monitor / Headphones / ?) not confirmed -- the Zen Go has a main monitor out and a headphone out.",
+    "count": 3,
+    "known": {
+      "0": { "name": "bus_0" },
+      "1": { "name": "bus_1" },
+      "2": { "name": "bus_2" }
+    },
+    "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = flags (mute / the param-0x66 toggle).",
+    "status": "confirmed (level/mute exist on 3 ids); names + physical outputs unconfirmed",
+    "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: op 0x13 param 0x47 (level 0-96) / 0x48 (mute 0/1) / 0x66 (0/1) each on [17] = 0, 1, 2; state_report offsets 28-33 tracked."
+  },
+
+  "mixer": {
+    "mixes": 2,
+    "channels_per_mix": 16,
+    "fader": { "param": "mix_command byte 20", "range": [0, 90], "encoding": "raw = dB attenuation below unity: 0 = 0 dB, 90 = -90 dB" },
+    "pan": { "param": "mix_command byte 21 low 6 bits", "center": 32, "range_deg": [-30, 30] },
+    "mute_bit": "0x40 of mix_command byte 21",
+    "solo_bit": "0x80 of mix_command byte 21",
+    "link": "SET_LINK space 3, pair_index = channel // 2 (software-mirrored, like Orion)",
+    "readback": "NONE found -- fader/pan/mute/solo writes produce no state_report change. Cache client-side.",
+    "status": "confirmed",
+    "notes": "2 mixes ('Mix 1' / 'Mix 2'), 16 input strips each. Each strip = fader + pan + mute + solo (no send). See frame.mix_command. What each strip's input is comes from the 'channel assignments' routing (frame.routing_command)."
+  },
+
+  "params": {
+    "gain": {
+      "id": "0x50", "status": "confirmed", "type": "int",
+      "frame": "command (opcode 0x13) -- channel @17, value @18",
+      "readback": "state_report.gain_base_offset (40) + channel_index",
+      "range_by_mode": { "mic": [0, 65], "line": "narrow, ~around raw 0x13", "hiz": [0, 45] },
+      "notes": "Mode-dependent range, same idea as Orion. The captured sweeps did not always reach the rail, so bounds are approximate.",
+      "evidence": "preamps/capture_preamp_a1_gain_mic / _a2_gain_mic / _a1_gain_line / _a1_gain_hiz .pcapng"
+    },
+    "input_mode": {
+      "id": "0x4f", "status": "confirmed", "type": "enum",
+      "frame": "command (opcode 0x13) -- channel @17, value @18",
+      "values": { "0": "mic", "1": "line", "2": "hiz" },
+      "readback": "state_report.status byte (offset 42 + channel), bits 0-1",
+      "evidence": "preamps/capture_preamp_a1_gain_line.pcapng starts with 4f 00 01; _a1_gain_hiz with 4f 00 02; state_report offset 42 tracked 0/1/2."
+    },
+    "phantom": {
+      "id": "0x51", "status": "confirmed", "type": "bool",
+      "frame": "command (opcode 0x13) -- channel @17, value @18 (0/1)",
+      "readback": "state_report.status byte (offset 42 + channel), bit 0x10",
+      "constraint": "mic mode only (Launcher hides it otherwise)",
+      "evidence": "preamps/capture_preamp_a1_mode_phantom.pcapng; capture_07_dsp.pcapng showed state_report offset 43 (channel 1) gain bit 0x10 set."
+    },
+    "phase_invert": {
+      "id": "0x52", "status": "confirmed", "type": "bool",
+      "frame": "command (opcode 0x13) -- channel @17, value @18 (0/1)",
+      "readback": "state_report.status byte (offset 42 + channel), bit 0x40 (mask carried from Orion, not isolated here)",
+      "evidence": "preamps/capture_preamp_a1_phase.pcapng: 52 00 01 / 52 00 00 toggled."
+    },
+    "bus_level": {
+      "id": "0x47", "status": "confirmed", "type": "int", "range": [0, 96],
+      "applies_to": "buses (id in @17)",
+      "encoding": "0 = -inf, 96 (0x60) = 0 dB / unity -- same scale as Orion bus_level.",
+      "readback": "state_report.bus_block_offset (28) + 2*bus_id, byte 0",
+      "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: full 0-96 sweeps on bus 0/1/2."
+    },
+    "bus_mute": {
+      "id": "0x48", "status": "confirmed", "type": "bool",
+      "applies_to": "buses",
+      "readback": "state_report bus_block flags byte (offset 29 + 2*bus_id), a bit",
+      "evidence": "capture_11: op 0x13 param 0x48 [17] = 0/1/2, [18] = 0/1."
+    },
+    "bus_param_0x66": {
+      "id": "0x66", "status": "observed", "type": "bool",
+      "applies_to": "buses",
+      "notes": "A third per-bus toggle alongside level (0x47) and mute (0x48). Probably dim or mono. Not isolated.",
+      "evidence": "capture_11: op 0x13 param 0x66 [17] = 0/1/2, [18] = 0/1."
+    },
+    "param_0x49": {
+      "id": "0x49", "status": "observed", "type": "int",
+      "notes": "op 0x13 param 0x49, [17]=0, [18] set to 12 then 15 in the mixer captures; state_report offset 122 tracks it. On Orion, 0x49 was the lone connect-handshake frame (SET_PARAM(0x49, ch1, 0)). Here it is deliberately set to non-zero values during mixer use -- possibly an 'active mix' / solo-mask / surface selector. Not decoded.",
+      "evidence": "capture_08_mixer_volume_faders_on_2_mixes.pcapng, capture_11."
+    },
+    "sample_rate": {
+      "id": "0x03", "status": "confirmed", "type": "enum",
+      "frame": "global_command (opcode 0x12) -- index @17",
+      "range": [0, 6],
+      "values": { "0": 32000, "1": 44100, "2": 48000, "3": 88200, "4": 96000, "5": 176400, "6": 192000 },
+      "values_note": "Hz mapping carried from Orion (same opcode 0x12 / param 0x03). Zen Go idle report shows 44100 (0xAC44) as the active rate; the capture name confirms 48/32/44.1 were exercised with 44.1 the default. Index-to-Hz not individually re-verified for all 7.",
+      "readback": "state_report offset 18 (index, tracks ~immediately)",
+      "evidence": "capture_05_sample_rate_in_the_end_48_32_44.1_44.1default.pcapng: op 0x12 param 0x03 value 1..6..0, offset 18 followed 1:1; offsets 21-24 carry a rate-derived clock word."
+    },
+    "clock_source": {
+      "id": "0x04", "status": "confirmed", "type": "enum",
+      "frame": "global_command (opcode 0x12) -- index @17",
+      "range": [0, 2],
+      "values_note": "3 sources (the capture name notes 'no word clock exists' on the Zen Go). Likely Internal / USB / S/PDIF -- order not confirmed.",
+      "readback": "state_report offset 19",
+      "evidence": "capture_06_clock_source_no_word_clock_exists.pcapng: op 0x12 param 0x04 value 0/1/2, offset 19 followed 1:1."
+    },
+    "mix_fader": {
+      "status": "confirmed",
+      "frame": "mix_command (opcode 0x16) -- byte 20",
+      "range": [0, 90],
+      "encoding": "raw = dB attenuation, 0 = unity .. 90 = -90 dB",
+      "evidence": "mixer/capture_mixer_09_fader_unlinked(...).pcapng"
+    },
+    "mix_pan": {
+      "status": "confirmed",
+      "frame": "mix_command (opcode 0x16) -- byte 21 low 6 bits",
+      "encoding": "raw = 32 (centre) + degrees; ~0x02 full L, ~0x3e full R",
+      "evidence": "mixer/capture_mixer_07_pan_mono_strip(...).pcapng, mixer_pans/*"
+    },
+    "mix_mute": {
+      "status": "confirmed",
+      "frame": "mix_command byte 21 bit 0x40",
+      "evidence": "mixer/capture_mixer_11_mute_unlinked(...).pcapng"
+    },
+    "mix_solo": {
+      "status": "confirmed",
+      "frame": "mix_command byte 21 bit 0x80",
+      "evidence": "mixer/capture_mixer_13_solo_single(...).pcapng"
+    },
+    "mix_link": {
+      "status": "confirmed",
+      "frame": "link_command (opcode 0x14 / 0xa2) space 3, pair_index = channel // 2",
+      "readback": "no dedicated readback bit found; state_report offset ~127 moved on one link capture -- unverified",
+      "notes": "Software-mirrored like every other link in this family: while linked the Launcher re-sends both strips.",
+      "evidence": "mixer_links/mix1_ch1_ch2_linked.pcapng etc."
+    },
+    "mic_modeling": {
+      "status": "observed -- appears as routing source bank 0x0a ('emumic') and in the DSP capture; frame not decoded",
+      "notes": "The Zen Go supports Antelope's mic modeling (emuMic) on its 2 preamps, for use with Edge / Verge modelling mics. The modelled signal is routing source bank 0x0a. The control frame (enable / model / pattern) was not isolated -- on Orion it is opcode 0x17 / param 0xe5; the Zen Go's opcode 0x16 is the mixer and 0x1a/0x1c (param 0xd5) in capture_07_dsp are the likely candidates. See profiles/mic_models.json for the model catalogue idea (account-bound).",
+      "evidence": "channel_assignments/'ch1-4 - was spdif1,spdif2,osc1,osc2 - changed ch1 to emu1.pcapng' routes bank 0x0a; capture_07_dsp.pcapng has undecoded opcodes 0x1a/0x1c/0x23."
+    }
+  },
+
+  "family_notes": {
+    "_comment": "Antelope Synergy Core HID protocol family. Shared: magic 0x70 command / opcode @4 / param_id @16 / 320-byte reports / EP 0x01 OUT + 0x82 IN on HID interface 3. Param IDs are largely shared (0x50 gain, 0x4f mode, 0x51 phantom, 0x52 phase, 0x47/0x48 bus, 0x12/0x03 sample rate, 0x14/0xa2 link, 0x53/0xd3 routing). NOT shared / device-specific: report magics (Zen Go meter = 0x83, Orion = 0x75; Zen Go 0x75 = name report), the mixer opcode + shape (Zen Go 0x16/0xd4/subcmd 0x04, no send; Orion 0x17/0xd4/subcmd 0x05, has send), state-report offsets, channel/bus counts, source-bank numbers (Zen Go mute = 0x08, osc = 0x09, emumic = 0x0a; Orion mute = 0x0b, osc = 0x0c, emumic = 0x01).",
+    "siblings": [
+      "profiles/orion_studio_3.json (Orion Studio III, pid 0xa221) -- the reference, richest profile",
+      "profiles/discrete_8_pro_synergy_core.json (Discrete 8 Pro, pid 0xa2b5)"
+    ],
+    "carried_hazards": [
+      "An unrecognised opcode cost a physical power cycle on the Discrete 8 Pro, and a 0x61 'unknown opcode' error frame exists in the family -- do NOT send frame.observed_opcodes or any opcode not in constraints.allowed_opcodes.",
+      "An out-of-range channel/bus index BusFaulted a Discrete 8 Pro -- validate targets before writing.",
+      "Discrete 8 Pro HID report descriptor has no Report ID, so Linux hidraw writes are 321 bytes (leading 0x00 + 320 payload). Check the Zen Go's descriptor before writing from Linux.",
+      "min write interval ~250 ms on Discrete 8 Pro (Orion tolerates ~30-80 ms); unknown for Zen Go -- rate-limit."
+    ]
+  },
+
+  "constraints": {
+    "_comment": "Bounds a client should enforce before writing. Conservative first pass -- widen only as captures confirm.",
+    "allowed_opcodes": ["0x12", "0x13", "0x14", "0x16", "0x53"],
+    "allowed_opcodes_note": "0x16 (SET_MIX) and 0x53 (SET_ROUTE) are frame-decoded but NOT hardware round-trip tested from this project. 0x1a / 0x1c / 0x23 (DSP) are observed-only and excluded on purpose.",
+    "forbidden_opcodes": ["0x1a", "0x1c", "0x23"],
+    "channel_index_bounds": { "input": [0, 1], "bus": [0, 2] },
+    "min_write_interval_ms": 250,
+    "value_from_user_input": "never send a raw value straight from user input; clamp to the documented range"
+  },
+
+  "open_questions": [
+    "HID report descriptor -- dump from Linux hidraw (tools/hid_probe.py). Feature report? (Orion/Discrete have none -> no readback for routing/mixer.)",
+    "Routing (frame.routing_command): destination map (what are dests 3/5/6/7/8/9?), source bank numbers + which is computer-playback vs S/PDIF vs ADAT-slot, channel counts per dest group.",
+    "The two output-volume paths: opcode 0x16/0xd4 (d4 04 01 03 ...) vs buses 0/1/2 (0x47/0x48/0x66). Which drives the physical Monitor out and which the Headphone out? What does param 0x66 do (dim/mono)?",
+    "param 0x49 set to 12/15 during mixer use -- active-mix / solo-mask / surface selector?",
+    "Mic modeling frame (enable/model/pattern) -- capture the emuMic panel; likely opcode 0x1a or 0x1c (param 0xd5).",
+    "DSP/FX: opcodes 0x1a / 0x1c (0xd5) and 0x23 (0xd7) in capture_07_dsp.",
+    "Meter report 0x83 byte-to-channel map (metering/ch1..ch16 captures).",
+    "clock_source value order (Internal / USB / S/PDIF?).",
+    "Full state_report byte map -- offsets ~90 / 122 / 126 / 127 move on link / 0x49 writes.",
+    "Is there any device-side readback for routing / mixer, or is it write-only like the rest of the family (offline-persistence + hid_probe test)."
+  ]
+}

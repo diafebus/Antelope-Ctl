@@ -944,3 +944,31 @@ sibling device, folded into `orion_studio_3.json` as `family_notes`,
 | out-of-range `gain` | untested (reject? clamp?) | device clamps to mode range |
 | `channel_link` frame | works (frame.link_command) | frame shape does **not** link a pair |
 | min write interval | ~20 ms fine (Launcher does ~30-80) | ~250 ms |
+
+### Zen Go Synergy Core (`profiles/zen_go_sc.json`, PID `0xa015`)
+
+First-pass profile from USBPcap captures (2026-08-31). Same transport
+(HID iface 3, EP `0x01`/`0x82`, 320-byte reports) and most param IDs
+(`0x50` gain, `0x4f` mode, `0x51` phantom, `0x52` phase, `0x47`/`0x48`
+bus, `0x12`/`0x03` sample rate, `0x14`/`0xa2` link, `0x53`/`0xd3`
+routing). **Divergences from Orion:**
+
+| Thing | Orion | Zen Go |
+|---|---|---|
+| meter report magic | `0x75` | **`0x83`** |
+| connect name/topology report | `0x74` only (no names ever) | `0x74` + **`0x75` = ASCII device name / serial / fw** |
+| mixer frame | opcode `0x17`, subcmd `0x05`, has a **send** byte @22 | opcode **`0x16`**, subcmd **`0x04`**, **no send** byte |
+| mixes / strips | 4 mixes × 32 | 2 mixes × 16 |
+| preamps | 12 | 2 (A1 = ch0, A2 = ch1) |
+| gain array offset | `0x73` @49 | `0x73` **@40** |
+| status array offset | `0x73` @61 | `0x73` **@42** |
+| bus block | `28 + 3N` | `28 + 2N` |
+| clock source readback | — | `0x73` **@19** (`0x12`/`0x04`, 3 sources, no word clock) |
+| source bank: mute / osc / emumic | `0x0b` / `0x0c` / `0x01` | **`0x08` / `0x09` / `0x0a`** |
+| new: output volume | buses | *also* an `0x16`/`0xd4` strip at `(mix 1, ch 3)` |
+| new: DSP opcodes | `0x1d` AuraVerb | **`0x1a` / `0x1c` (`0xd5`), `0x23` (`0xd7`)** -- undecoded, forbidden |
+
+Still open: full routing map (dests 3/5/6/7/8/9), DSP/mic-modelling
+frames, meter byte-map, the two output-volume paths, `param 0x66` (bus
+dim/mono?), `param 0x49` (set to 12/15 during mixer use). See
+`open_questions` in the profile.
