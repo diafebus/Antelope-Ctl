@@ -313,6 +313,41 @@ def build_auraverb_command(profile: dict, params: dict, enabled: bool = True,
     return bytes(pkt)
 
 
+def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
+                              pattern: int = 50, swap: bool = False) -> bytes:
+    """Build a SET_MIC_MODELING frame (profile['frame']['micmodeling_command'],
+    opcode 0x17 / param 0xe5) -- the 'emuMic' mic-modeling DSP on a preamp.
+    `channel` is the 0-based input channel index (mic modeling exists only on
+    preamps 7-12, i.e. channel 6-11); it is written as channel + channel_bias.
+    `pattern` is the 0-100 polar-pattern morph (0 omni / 50 cardioid /
+    100 figure-8), `swap` the channel-order swap toggle.
+    Whole state every frame, no readback. NOTE: this does NOT select which mic
+    model is loaded (a separate, not-yet-captured frame) and does NOT do the
+    Launcher's side effects (auto phantom-on, preamp-pair link)."""
+    f = profile['frame'].get('micmodeling_command')
+    if not f:
+        raise KeyError('this profile has no frame.micmodeling_command')
+    check_opcode(profile, _as_int(f['opcode']))
+    lo, hi = f.get('pattern_range', [0, 100])
+    if not (lo <= int(pattern) <= hi):
+        raise ValueError(f'mic-modeling pattern {pattern} outside {lo}..{hi}')
+    tgt = channel + _as_int(f.get('channel_bias', 0))
+    if tgt < 0:
+        raise ValueError(f'channel {channel} has no mic modeling (preamps 7-12 only)')
+    size = profile['transport']['report_size']
+    pkt = bytearray(size)
+    pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
+    pkt[_as_int(f['opcode_offset'])] = _as_int(f['opcode'])
+    pkt[_as_int(f['param_id_offset'])] = _as_int(f['param_id'])
+    pkt[_as_int(f['subcmd_offset'])] = _as_int(f['subcmd'])
+    pkt[_as_int(f['channel_offset'])] = tgt & 0xFF
+    pkt[_as_int(f['enabled_offset'])] = 1 if enabled else 0
+    if enabled:
+        pkt[_as_int(f['swap_offset'])] = 1 if swap else 0
+        pkt[_as_int(f['pattern_offset'])] = int(pattern) & 0xFF
+    return bytes(pkt)
+
+
 # ---- routing matrix (frame.routing_command, opcode 0x53) ----
 #
 # EXPERIMENTAL, but the frame model is now understood (macOS captures

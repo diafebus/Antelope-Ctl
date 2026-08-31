@@ -245,6 +245,23 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 mute, solo)` builds the frame. No CLI command yet. See `PROTOCOL.md` §12
 and `frame.mix_command`.
 
+### Mic modeling / emuMic (decoded, not in the CLI yet)
+
+The front-panel **EMU** button on **preamps 7-12** runs Antelope's
+mic-emulation DSP (for their Edge Solo / Edge Duo / Edge Note modelling
+mics). Same opcode `0x17` as the mixer -- `[16]` is `0xe5` instead of
+`0xd4`. Decoded 2026-08-31 (`macos-ch7-8-micmodeling-*`,
+`macos-ch9-10_11-12-micmodeling-*`): per preamp, an **enable** bit, a
+**polar-pattern** morph (0 = omni, 50 = cardioid, 100 = bi-directional,
+continuous), and a **channel-order swap** switch. Enabling also auto-turns
+on 48 V phantom and links the preamp pair. No readback. The modeled
+signal appears as routing source bank `0x01` ("emumic").
+
+`protocol.build_micmodeling_command(profile, channel, enabled, pattern,
+swap)` builds the frame. **Which mic model** is loaded is a separate,
+not-yet-captured frame -- and an account-bound one (Edge mics + model
+packs activate against an Antelope account); see `profiles/mic_models.json`.
+
 **AuraVerb** (the bundled reverb on the Mix 1 window) has its own frame
 -- opcode `0x1d` / param `0xda`. Fully decoded (2026-08-31): byte 28 =
 on/off, plus 8 DSP controls, each a plain 0-100 byte -- Room Size (@19),
