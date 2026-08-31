@@ -352,9 +352,15 @@ send@22):
    +-- attenuation in -dB, 0 = unity .. 90 = -90 dB
 ```
 
-**Slot N (N = 1..32) is exactly the strip the write frame addresses as
-`channel` N.** The readback and the write frame share a layout, the same
-way routing does.
+**Slot index maps 1:1 onto the write frame's `channel` field, with no
+special case at either end:**
+
+| slot | is |
+|---|---|
+| `0` | the **mix master** strip |
+| `1`-`32` | the 32 input strips |
+
+The readback and the write frame share a layout, the same way routing does.
 
 **Hardware round trip, 2026-08-31 — verified byte-exact:**
 
@@ -373,16 +379,36 @@ its strips, which looks like meter jitter but is stable across reads.)
 Reading all four mixes also confirms `[18]` in the write frame really is
 the mix number — each index returns its own independent record.
 
-**Slot 0 is one extra leading entry and its role is unidentified.** It
-reads fader 0 / pan centre `0x20` / send 96 on all four mixes, and the
-write frame never addresses channel 0. Most likely the mix **master**
-strip. Not probed — writing `channel 0` would be an out-of-range write on
-firmware we now know does not bounds-check, and that is not a risk worth
-taking. The cheap safe test: move the Mix 1 master fader in the Launcher
-and re-read; if slot 0 moves, it's the master.
+### Slot 0 = the mix master (confirmed 2026-09-01)
 
-Code: `protocol.parse_mixer_record` (returns all 33 slots, index == slot).
-CLI: `antelope-ctl mix-status [mix] [--all-slots]`.
+Slot 0 reads fader 0 / pan centre `0x20` / send 96 on an untouched mix, and
+142 consecutive reads over 150 s never moved a byte. Settled by capturing
+the Launcher rather than by probing: `usbmon` on the Linux host while the
+Windows Launcher (QEMU passthrough) swept the **Mix 1 master fader** ->
+`captures/new/mix1-masterfaderplay.pcapng`.
+
+All 68 command frames in that capture are the *same* `0x17`/`0xd4` mix
+frame, and every one of them is:
+
+```
+70 .. 17 ..   d4 05 | 00 | 00 | <fader> | 20 | 60
+              @16 @17  @18   @19    @20    @21  @22
+                       mix=0  ch=0  sweeps  pan  send
+```
+
+- **`[19]` = 0** on all 68 frames -- no other channel was touched
+- `[20]` swept the full range (21 -> 90 -> 0 -> 90), i.e. 0 dB ... -90 dB
+- `[21]`/`[22]` held constant at `0x20` / `0x60`
+
+The sweep ended at fader 90, and slot 0 then read back as **-90 dB**.
+
+So **the Launcher itself writes `channel 0`** -- it is a normal address,
+not an out-of-range write, and the earlier caution against probing it was
+unnecessary (capturing the Launcher was still the cheaper way to find out).
+
+Code: `protocol.parse_mixer_record` (returns all 33 slots, index == slot ==
+channel). CLI: `antelope-ctl mix-status [mix]`, which shows the master as
+row `mast`.
 
 ### This resolves the cross-machine-persistence question
 

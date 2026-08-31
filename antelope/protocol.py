@@ -231,9 +231,13 @@ def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
                       pan_deg: int, send: int, mute: bool = False,
                       solo: bool = False) -> bytes:
     """Build a SET_MIX frame (profile['frame']['mix_command'], opcode 0x17) --
-    one virtual-mixer input strip's whole state. `mix` 0-3, `channel` 1-32,
+    one virtual-mixer strip's whole state. `mix` 0-3, `channel` **0-32** --
+    1-32 are the input strips and **0 is the mix master** (the Launcher writes
+    channel 0 itself; see parse_mixer_record for the evidence),
     `fader` 0-90 (dB attenuation), `pan_deg` -30..+30, `send` 0-96. The frame
-    carries every field every time (no partial update, no readback)."""
+    carries every field every time (no partial update) -- read the current
+    strip back first with parse_mixer_record if you only mean to change one
+    field."""
     if 'mix_command' not in profile['frame']:
         raise KeyError('this profile has no frame.mix_command -- SET_MIX not available')
     f = profile['frame']['mix_command']
@@ -675,15 +679,23 @@ def parse_mixer_record(profile: dict, body: bytes):
 
         <fader> <pan|mute|solo> <send>
 
-    Slot N (N = 1..32) is the strip that frame.mix_command addresses as
-    `channel` N -- confirmed byte-exact by a hardware round trip on
-    2026-08-31 (wrote mix 1 / ch 5 / fader 40 / pan +12 / mute / send 33 ->
-    `28 6c 21`, read back at slot 5 as `28 6c 21`, and NO other slot moved).
-    Slot 0 is one extra leading entry whose role is still unidentified (it
-    reads fader 0 / pan centre / send 96 on every mix -- most likely the mix
-    master strip; frame.mix_command never addresses channel 0). Returns all
-    33 slots so the caller can decide; slot index == list index.
+    Slot index maps 1:1 onto the write frame's `channel` field, with no
+    special case: **slot N == frame.mix_command channel N, for N = 0..32.**
 
+      slot 0      = the MIX MASTER strip
+      slots 1..32 = the 32 input strips
+
+    Both halves are hardware-confirmed (2026-08-31):
+      * inputs -- wrote mix 1 / ch 5 / fader 40 / pan +12 / mute / send 33
+        (`28 6c 21`), read back at slot 5 as `28 6c 21`, no other slot moved.
+      * master -- a usbmon capture of the Launcher sweeping the Mix 1 master
+        fader (`captures/new/mix1-masterfaderplay.pcapng`) shows 68 frames,
+        every one `d4 05 00 00 <fader> 20 60`: same opcode/param, mix 0,
+        **channel 0**, pan and send constant. The sweep ended at fader 90 and
+        slot 0 then read back as -90 dB. So the Launcher itself writes
+        channel 0 -- it is a normal address, not out of range.
+
+    Returns all 33 slots; list index == slot number == channel number.
     Each entry is a dict: fader (0-90 dB of attenuation), pan (-30..+30),
     send (0-96), mute, solo, raw (the 3 bytes)."""
     if not body:

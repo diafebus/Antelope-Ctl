@@ -10,6 +10,72 @@ Linux host), where USBPcap + Wireshark capture the traffic. The control
 script itself runs on the Linux host against the passed-through hardware.
 tshark ships with Wireshark, so no separate install is needed on the VM.
 
+## Capturing from LINUX with usbmon (the "CAPTURE E'" method)
+
+**This is usually the best option**, and it is how the `0x74`/`0x75`
+readback protocol and the mixer master-fader mapping were both found. You
+run the capture on the **Linux host** while the **Launcher drives the
+device from a VM** over QEMU USB passthrough. `usbmon` sits on the host's
+USB bus, so it sees every URB regardless of which guest owns the device --
+you get both directions, all endpoints, no VM-side tooling at all.
+
+Why it beats USBPcap/macOS captures:
+
+- **Both directions in one file**, correctly interleaved. Several of our
+  macOS captures caught only the IN endpoint and were unusable.
+- It is **already device-filtered by bus**, and nothing else on that bus
+  speaks 320-byte HID frames with our magics.
+- Request and response land in the same stream, which is what made the
+  `0x74` -> `0x75` pairing visible at all (offline captures split them
+  across two endpoints and two magic bytes -- see PROTOCOL.md §4a).
+
+### Procedure
+
+```bash
+# 1. host: load usbmon and find the bus (needs root)
+sudo modprobe usbmon
+lsusb | grep -i 23e5          # e.g. "Bus 001 Device 026: ID 23e5:a221"
+
+# 2. host: start capturing that bus -- 001 -> usbmon1
+sudo tshark -i usbmon1 -w ~/my-capture.pcapng
+
+# 3. redirect the USB device to the VM, drive ONE control in the Launcher,
+#    then redirect it back to Linux
+
+# 4. host: Ctrl-C the tshark, then move the file into captures/new/
+```
+
+### Rules that make the capture usable
+
+- **Nothing on the Linux side may hold the device** while it is passed
+  through -- stop any `antelope-ctl` command or watcher first.
+- **Move exactly one control**, deliberately, and leave everything else
+  alone. Brushing a neighbouring fader puts extra frames in the file that
+  have to be disentangled afterwards.
+- **Keep it short (~1 min).** If audio is streaming, the isochronous
+  endpoints flood `usbmon` -- our 68 useful frames arrived inside a 23 MB
+  file with 20 080 packets. Filtering offline is easy, but a long capture
+  is needlessly large.
+- The device state you changed **persists**, so you can hand the device
+  back to Linux and read it with `mix-status` / `matrix-status` /
+  `readback` to confirm what the capture showed.
+
+### Reading the file back
+
+The HID payload lands in the **`usbhid.data`** field, *not* `usb.capdata`
+(that one comes back empty for these frames -- an easy hour to lose):
+
+```bash
+tshark -r captures/new/my-capture.pcapng -T fields -e usbhid.data \
+  | tr -d ':' | awk 'length($0)>=32' > payloads.txt
+```
+
+Then classify by `(byte0, byte1)`: `0x70`/`0x00` = outgoing commands (the
+interesting ones), `0x73`/`0x00` = state, `0x75`/`0x1f` = meter,
+`0x75`/`0x00` = a readback response. For an outgoing frame the opcode is
+`@4` and the param id is `@16`. `tools/scan_readback.py` already handles
+this file type directly.
+
 ## Capturing on native macOS instead of the VM
 
 Some Launcher features behave differently under the VM than on a native

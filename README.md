@@ -271,14 +271,14 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 ```bash
 python3 -m antelope.cli mix-status          # all four mixes
 python3 -m antelope.cli mix-status 1        # just Mix 1
-python3 -m antelope.cli mix-status 1 --all-slots   # include the unidentified slot 0
 ```
 
 ```
-Mix 1  (32 strips)
-  ch   fader     pan     send    flags
-  1    -24 dB    -30     0/96
-  2    0 dB      +30     95/96
+Mix 1  (master + 32 strips)
+  ch     fader     pan     send    flags
+  mast   0 dB      +0      96/96
+  1      -24 dB    -30     0/96
+  2      0 dB      +30     95/96
   ...
 ```
 
@@ -287,8 +287,10 @@ The record is 33 three-byte slots `<fader> <pan|mute|solo> <send>` -- the
 write frame addresses as `channel` N. Verified by writing a distinctive
 strip (`mix 1 / ch 5 / fader 40 / pan +12 / mute / send 33` → `28 6c 21`)
 and reading exactly those bytes back at slot 5, with no other slot
-touched. Slot 0 is an extra leading entry whose role is still
-unidentified (probably the mix master). See `PROTOCOL.md` §4a.
+touched. **Slot 0 is the mix master**, addressed as `channel 0` by the
+write frame -- confirmed by capturing the Launcher sweeping the Mix 1
+master fader (68 frames, all `d4 05 00 00 <fader> 20 60`). See
+`PROTOCOL.md` §4a.
 
 **Writing is not in the CLI yet.** `protocol.build_mix_command(profile,
 mix, channel, fader, pan_deg, send, mute, solo)` builds the frame; there

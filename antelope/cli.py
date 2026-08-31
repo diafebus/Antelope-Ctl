@@ -1225,15 +1225,15 @@ def cmd_mix_status(args, profile):
             print(f'Mix {m + 1}: no response')
             continue
         slots = proto.parse_mixer_record(profile, proto.readback_body(profile, data))
-        print(f'\nMix {m + 1}  ({len(slots) - 1} strips)')
-        print(f"  {'ch':<4} {'fader':<9} {'pan':<7} {'send':<7} flags")
+        print(f'\nMix {m + 1}  (master + {len(slots) - 1} strips)')
+        print(f"  {'ch':<6} {'fader':<9} {'pan':>4} {'send':>8}  flags")
         for i, s in enumerate(slots):
-            if i == 0 and not args.all_slots:
-                continue        # slot 0: role unidentified, see parse_mixer_record
-            name = 'slot0' if i == 0 else str(i)
+            # slot 0 is the mix MASTER -- the Launcher writes it as channel 0
+            name = 'mast' if i == 0 else str(i)
             flags = ' '.join(f for f, on in (('MUTE', s['mute']), ('SOLO', s['solo'])) if on)
-            print(f"  {name:<4} {str(-s['fader']) + ' dB':<9} "
-                  f"{s['pan']:+d}".ljust(4) + f"    {str(s['send']) + '/96':<7} {flags}")
+            fader = f"{-s['fader']} dB"   # stored as attenuation; 0 -> "0 dB"
+            print(f"  {name:<6} {fader:<9} {s['pan']:>+4} "
+                  f"{str(s['send']) + '/96':>8}  {flags}".rstrip())
 
 
 def cmd_readback(args, profile):
@@ -1895,7 +1895,7 @@ def main():
     sp.add_argument('mix', nargs='?', type=lambda x: int(x, 0), default=None,
                     help='mix number 1-4 (default: all)')
     sp.add_argument('--all-slots', action='store_true',
-                    help='also show slot 0, the unidentified extra leading slot')
+                    help=argparse.SUPPRESS)   # kept for compat; master is always shown now
     sp.add_argument('--timeout', type=float, default=2.0)
     sp.set_defaults(func=cmd_mix_status)
 
