@@ -225,12 +225,78 @@ RESPONSE  device → host, EP 0x82 IN, full 320-byte report
 ```
 
 The `0x73` state report is the same frame family (magic `0x73`, `@1`=0x00,
-category 0) pushed continuously. The device answers **every**
-`(category, index)` -- an unknown one just returns an empty payload, so
-"non-empty payload" is the liveness test. Scalar categories return the
-same record for every index. Hammering the OUT endpoint with hundreds of
-back-to-back queries can **halt** it (`ETIMEDOUT`/`EPIPE` on write) --
-pace the queries and reopen the node on halt.
+category 0) pushed continuously. The device answers every **in-range**
+`(category, index)` -- one it has no record for just returns an empty
+payload, so "non-empty payload" is the liveness test. Scalar categories
+return the same record for every index.
+
+### ⚠ HAZARD -- an out-of-range index crashes the device
+
+**The firmware does not bounds-check the index.** One index past a
+category's record count returns *adjacent memory* with a completely
+different layout; a little further and it faults.
+
+Confirmed on real hardware, 2026-08-31 -- `category 0x04 index 5` hard-
+crashed the Orion Studio III. Front panel:
+
+```
+CRITICAL ERROR!
+Failure.c
+
+L: 204   E: 0
+BusFault_Handler
+```
+
+That is an ARM Cortex-M **BusFault** (invalid memory access) trapped in
+its exception vector; the MCU hangs. USB still enumerates (`lsusb` shows
+the device -- the USB PHY is separate silicon) but **nothing** works: no
+readback, no `0x73` state stream. Only a physical power cycle recovers
+it. It happened twice this session; NVRAM state survived both times.
+
+**Diagnostic signature, in order:**
+
+| index | response | meaning |
+|---|---|---|
+| in range | consistent layout | real records |
+| first over-range | answers, **wrong layout** | reading adjacent memory |
+| next | **no response at all**, endpoint dies | BusFault, MCU hung |
+
+An *empty* answer is normal. **No** answer means the MCU just died inside
+the handler.
+
+> **This supersedes the earlier diagnosis.** Previous notes here and in
+> `tools/readback_enum.py` blamed the halted endpoint on *hammering* --
+> "hundreds of rapid queries". That was wrong. The 2026-08-31 crash took
+> about **ten slow queries**; the fatal one was simply out of range. Rate
+> was never the trigger. Pacing is still polite (it keeps the free-running
+> `0x73`/`0x75` stream readable) but it is **not** the safety mechanism.
+> The index bound is.
+
+**Safe bound: `frame.readback.category_counts`**, taken from the device's
+own `0x74` connect enumeration (§4 -- 113 records = 16+2+64+15+4+4+8, so
+those ten categories are the entire walk):
+
+| cat | records | | cat | records |
+|---|---|---|---|---|
+| `0x03` | 15 | | `0x16` | 1 |
+| `0x04` | 4 | | `0x19` | 64 |
+| `0x0a` | 1 | | `0x1a` | 16 |
+| `0x0b` | 8 | | `0x1b` | 1 |
+| `0x11` | 2 | | `0x15` | 1 |
+
+Categories that answer but are **not** in the connect walk (`0x00`,
+`0x01`, `0x02`, `0x05`, `0x06`, `0x07`, `0x0c`, `0x0d`, `0x12`) have **no
+known count** and cannot be bounded -- treat any index above 0 on those as
+unproven and dangerous.
+
+Note `0x03` answers with distinct bodies at idx 15-24 even though there
+are only 15 destination groups: that is *already* adjacent memory, not
+extra routing data.
+
+Enforced in code by `protocol.check_readback_index`, called from
+`build_readback_query`. The CLI's `readback --force` additionally requires
+`ANTELOPE_ALLOW_UNSAFE_READBACK=1`; `tools/readback_enum.py` clamps every
+sweep to the declared count unless `--unsafe`.
 
 ### Category map (Orion Studio III, 2026-08-31)
 
@@ -240,7 +306,7 @@ pace the queries and reopen the node on halt.
 | `0x01` | model name `OrionStudio_III` + **serial** + hw rev `7.0` | keep raw dumps out of git |
 | `0x02` | per-channel present flag (scalar `01`), idx 0..63 | — |
 | **`0x03`** | **routing matrix** -- 1 record per destination group, idx = dest_id 0-14. Record = `<dest_id>` then a `(source_bank, source_index)` pair per output channel (`destination_channels[dest]` pairs) -- the **same array as the `0x53` write frame**. | **decoded, verified byte-identical against CLI-written routes** |
-| `0x04` | virtual mixer -- idx = mix 0-3; ~16 strips × fader/pan/send/flags | partial |
+| **`0x04`** | **virtual mixer** -- 1 record per mix, idx = mix 0-3. Record = 33 × 3-byte slots `<fader> <pan\|mute\|solo> <send>`, the **same field order as the `0x17`/`0xd4` write frame**; slot N = the strip written as `channel` N. See below. | **decoded, hardware round-trip verified** |
 | `0x05` | preamp channel summary (~12 B) | partial |
 | `0x06` | channel status bits (mirrors `0x73` @61+) | — |
 | `0x07` | EQ curve, freq points ~30/200/1k/5k/15k Hz, 8 records | undecoded |
@@ -266,6 +332,57 @@ Code: `protocol.build_readback_query` / `is_readback_response` /
 `antelope-ctl … matrix-status` (full live read of all 15 groups) and
 `antelope-ctl … readback <cat> [idx]` (raw). `route` now verifies each
 write against a live read and reseeds `keep` from the device.
+
+### Reading the virtual mixer back (category `0x04`) -- decoded 2026-08-31
+
+Send `0x74 (category 0x04, index m)` where `m` = 0-3 (Mix 1-4). **Never
+index above 3** -- see the hazard box above; `idx 5` is what crashed the
+unit.
+
+The payload is 99 bytes: a flat array of **33 three-byte slots**, in the
+*same field order as the `0x17`/`0xd4` write frame* (fader@20, pan|flags@21,
+send@22):
+
+```
+<fader>  <pan | mute | solo>  <send>
+   |            |                |
+   |            |                +-- 0-96, 0x60 = 0 dB, 0 = -inf
+   |            +-- low 6 bits = pan (0x20 centre, 0x02 = L30, 0x3e = R30)
+   |                bit 0x40 = MUTE, bit 0x80 = SOLO
+   +-- attenuation in -dB, 0 = unity .. 90 = -90 dB
+```
+
+**Slot N (N = 1..32) is exactly the strip the write frame addresses as
+`channel` N.** The readback and the write frame share a layout, the same
+way routing does.
+
+**Hardware round trip, 2026-08-31 — verified byte-exact:**
+
+| step | result |
+|---|---|
+| write mix 1 / ch 5 / fader 40 / pan +12 / **mute** / send 33 | frame bytes `28 6c 21` |
+| read back cat `0x04` idx 0, slot 5 | **`28 6c 21`** |
+| any other slot changed? | **no** — only slot 5 |
+| three reads 2.5 s apart | byte-identical |
+| restore original | exact |
+
+That last row settles a real ambiguity: the third byte is **stored send
+state**, not a live meter. (Mix 1 reads a scatter of 95s and 96s across
+its strips, which looks like meter jitter but is stable across reads.)
+
+Reading all four mixes also confirms `[18]` in the write frame really is
+the mix number — each index returns its own independent record.
+
+**Slot 0 is one extra leading entry and its role is unidentified.** It
+reads fader 0 / pan centre `0x20` / send 96 on all four mixes, and the
+write frame never addresses channel 0. Most likely the mix **master**
+strip. Not probed — writing `channel 0` would be an out-of-range write on
+firmware we now know does not bounds-check, and that is not a risk worth
+taking. The cheap safe test: move the Mix 1 master fader in the Launcher
+and re-read; if slot 0 moves, it's the master.
+
+Code: `protocol.parse_mixer_record` (returns all 33 slots, index == slot).
+CLI: `antelope-ctl mix-status [mix] [--all-slots]`.
 
 ### This resolves the cross-machine-persistence question
 
@@ -555,9 +672,11 @@ seed is one line). Wired dests: `line_out` (16) + hp1/hp2/mona/monb/reamp
 16-ch line_out both persisted correctly in the Windows Launcher.
 
 **Other multichannel destinations** (ADAT out, com rec, AFX in, the mix
-channels, surround in) use the same array; their channel counts aren't
-captured yet. Old note that adat_out is "15× `03 NN`" fits the array model
-exactly: entry 0 = the changed channel, entries 1-15 =
+channels, surround in) use the same array. **All 15 channel counts are now
+known** (2026-08-31, read straight off the cat-`0x03` readback records):
+line_out 16; hp1/hp2/mona/monb/reamp/spdif_out 2; com_rec/afx_in/mix_ch1-4
+32; adat_out/surround_in 16. Old note that adat_out is "15× `03 NN`" fits
+the array model exactly: entry 0 = the changed channel, entries 1-15 =
 `(0x03, 1..15)` = the ADAT-in passthrough left untouched.
 
 **Routing is exclusive** per channel (one source per output channel) and
@@ -565,8 +684,10 @@ exactly: entry 0 = the changed channel, entries 1-15 =
 is via separate "virtual mixes".
 
 All 12 source banks are now identified (bank `0x01` = emumic, idx 0-7 =
-preamps 5-12, confirmed 2026-08-31). Still open: the channel counts of
-the ADAT out / com rec / AFX in / mix / surround-in destinations.
+preamps 5-12, confirmed 2026-08-31), and all 15 destination channel counts
+are known (above). Still open: `route` can only *write* line_out and the
+2-channel destinations -- com rec / ADAT out / AFX in / mix ch1-4 /
+surround in appear in `matrix-status` but are not wired for writes yet.
 
 **Output mute and oscillator-insert both go through this frame** (bank
 `0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
@@ -876,13 +997,24 @@ re-sends both strips' `mix_command` frames on each change; the device does
 not propagate.
 
 **No readback in the passive stream** -- but mixer state IS available via
-the `0x74`/`0x75` query protocol (**category `0x04`**, idx = mix number;
-also `0x1b` for bus levels). Only partially decoded -- see §4a. AuraVerb
-is category `0x0a`. So "write-only over USB" was wrong for these too.
+the `0x74`/`0x75` query protocol: **category `0x04`, index = mix number
+0-3**, now **fully decoded and hardware round-trip verified** (§4a). The
+record is 33 three-byte slots in this frame's own field order, and slot N
+is the strip this frame writes as `channel` N. That round trip also
+confirmed `[18]` is genuinely the mix number (all four mixes return their
+own record -- previously only mix 0 had ever been observed) and that
+`[22]` is stored send state rather than a meter. So "write-only over USB"
+was wrong for the mixer too. AuraVerb is category `0x0a` (still partial);
+`0x1b` is the mixer bus level/range table (still undecoded).
 
-**Not in the CLI yet.** `protocol.build_mix_command(profile, mix, channel,
-fader, pan_deg, send, mute, solo)` builds the frame; `0x17` is in
-`constraints.allowed_opcodes`.
+**Reading is in the CLI, writing is not.** `antelope-ctl mix-status [mix]`
+does the live read (`protocol.parse_mixer_record`).
+`protocol.build_mix_command(profile, mix, channel, fader, pan_deg, send,
+mute, solo)` builds the write frame and `0x17` is in
+`constraints.allowed_opcodes`, but there is still **no `mix-set` CLI
+command** -- see the backlog. With the readback decoded, a `mix-set` no
+longer needs a local cache: it can read the strip, change one field and
+write the whole strip back, exactly like `route` does.
 
 ### Mic modeling / "emuMic" (`0x17` / `0xe5`) -- decoded 2026-08-31
 

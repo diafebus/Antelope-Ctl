@@ -1201,6 +1201,41 @@ def cmd_matrix_status(args, profile):
                   f"{routes[d][c].get('label', '?')}")
 
 
+def cmd_mix_status(args, profile):
+    """Live-read the virtual mixer from the device (frame.readback category
+    0x04, index = mix number 0-3). One record per mix, 33 three-byte slots in
+    the same field order as the frame.mix_command write frame; slot N is the
+    strip that command addresses as `channel` N."""
+    cat = proto.MIXER_READBACK_CATEGORY
+    n_mixes = proto.readback_category_count(profile, cat) or 4
+    if args.mix is None:
+        mixes = list(range(n_mixes))
+    else:
+        if not 1 <= args.mix <= n_mixes:
+            sys.exit(f'mix must be 1..{n_mixes} (this device has {n_mixes} mixes)')
+        mixes = [args.mix - 1]
+
+    transport = get_transport(profile)
+    for m in mixes:
+        req = proto.build_readback_query(profile, cat, m)
+        data = transport.query(
+            req, lambda d: proto.is_readback_response(profile, d, cat, m),
+            timeout=args.timeout)
+        if data is None:
+            print(f'Mix {m + 1}: no response')
+            continue
+        slots = proto.parse_mixer_record(profile, proto.readback_body(profile, data))
+        print(f'\nMix {m + 1}  ({len(slots) - 1} strips)')
+        print(f"  {'ch':<4} {'fader':<9} {'pan':<7} {'send':<7} flags")
+        for i, s in enumerate(slots):
+            if i == 0 and not args.all_slots:
+                continue        # slot 0: role unidentified, see parse_mixer_record
+            name = 'slot0' if i == 0 else str(i)
+            flags = ' '.join(f for f, on in (('MUTE', s['mute']), ('SOLO', s['solo'])) if on)
+            print(f"  {name:<4} {str(-s['fader']) + ' dB':<9} "
+                  f"{s['pan']:+d}".ljust(4) + f"    {str(s['send']) + '/96':<7} {flags}")
+
+
 def cmd_readback(args, profile):
     """Raw frame.readback query: `readback <category> [index]`. No args ->
     list the known categories."""
@@ -1219,8 +1254,28 @@ def cmd_readback(args, profile):
         return
     cat = int(args.category, 0)
     idx = args.index
+    n = proto.readback_category_count(profile, cat)
+    if n is None and idx > 0:
+        # no evidence-grade record count for this category -> we cannot bounds
+        # check it, and an over-range index can BusFault the device.
+        print(f'WARNING: category {cat:#04x} has no known record count, so index '
+              f'{idx} cannot be bounds-checked. An index past the end of the '
+              f"firmware's array can crash the device (power cycle required). "
+              f'See frame.readback.hazard.', file=sys.stderr)
+    if args.force and os.environ.get('ANTELOPE_ALLOW_UNSAFE_READBACK') != '1':
+        # --force alone is too easy to fire off by reflex -- it was used by
+        # accident on 2026-08-31 on the one index already known to be fatal,
+        # and crashed the device a second time. Require a deliberate second
+        # signal so it can never be a throwaway addition to another command.
+        sys.exit('--force needs ANTELOPE_ALLOW_UNSAFE_READBACK=1 in the '
+                 'environment too. An out-of-range readback index can crash the '
+                 'device firmware (BusFault -- physical power cycle required). '
+                 'See frame.readback.hazard.')
     transport = get_transport(profile)
-    req = proto.build_readback_query(profile, cat, idx)
+    try:
+        req = proto.build_readback_query(profile, cat, idx, force=args.force)
+    except proto.ConstraintError as e:
+        sys.exit(f'{e}\n(pass --force only if you accept crashing the device.)')
     data = transport.query(req, lambda d: proto.is_readback_response(profile, d, cat, idx),
                            timeout=args.timeout)
     if data is None:
@@ -1241,6 +1296,17 @@ def cmd_readback(args, profile):
                 print(f'    ch {c + 1}: {proto.route_source_label(profile, b, i)}')
         except ValueError as e:
             print(f'  (not decodable as a routing record: {e})')
+    if cat == proto.MIXER_READBACK_CATEGORY:
+        try:
+            slots = proto.parse_mixer_record(profile, body)
+            print(f'  mix {idx + 1}, {len(slots)} slots '
+                  f'(slot 0 = unidentified extra; slot N = mix_command channel N):')
+            for i, s in enumerate(slots):
+                flags = ''.join(f for f, on in ((' MUTE', s['mute']), (' SOLO', s['solo'])) if on)
+                print(f"    slot {i:<3} fader -{s['fader']} dB  pan {s['pan']:+d}  "
+                      f"send {s['send']}/96{flags}")
+        except ValueError as e:
+            print(f'  (not decodable as a mixer record: {e})')
 
 
 def _resolve_route_dest_cli(profile, name):
@@ -1823,12 +1889,26 @@ def main():
     sp.add_argument('--timeout', type=float, default=2.0)
     sp.set_defaults(func=cmd_matrix_status)
 
+    sp = sub.add_parser('mix-status',
+                         help='live-read a virtual mix from the device '
+                              '(frame.readback cat 0x04); no arg = all four mixes')
+    sp.add_argument('mix', nargs='?', type=lambda x: int(x, 0), default=None,
+                    help='mix number 1-4 (default: all)')
+    sp.add_argument('--all-slots', action='store_true',
+                    help='also show slot 0, the unidentified extra leading slot')
+    sp.add_argument('--timeout', type=float, default=2.0)
+    sp.set_defaults(func=cmd_mix_status)
+
     sp = sub.add_parser('readback',
                          help='raw frame.readback query: `readback <category> [index]` '
                               '(no args lists the known categories)')
     sp.add_argument('category', nargs='?', default=None,
                     help='category id, e.g. 0x03 (routing), 0x04 (mixer), 0x0a (auraverb)')
     sp.add_argument('index', nargs='?', type=lambda x: int(x, 0), default=0)
+    sp.add_argument('--force', action='store_true',
+                    help='skip the index bounds check. DANGEROUS: an index past a '
+                         'category\'s record count can crash the device firmware '
+                         '(BusFault -- needs a power cycle). See frame.readback.hazard.')
     sp.add_argument('--timeout', type=float, default=2.0)
     sp.set_defaults(func=cmd_readback)
 

@@ -115,7 +115,19 @@ frame carries a fixed one). Then frame-specific offsets:
 | `auraverb_command` | SET_AURAVERB (`0x1d`) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant` | `build_auraverb_command(profile, params, enabled)` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}` | `build_route_command(profile, dest, channels)` |
-| `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, + `categories{}` (doc) | `build_readback_query(profile, cat, idx)`; parsed by `is_readback_response` / `readback_body` / `parse_routing_record`; driven by `transport.HidTransport.query` |
+| `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounds-checked by `check_readback_index` / `readback_category_count`; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`); driven by `transport.HidTransport.query` |
+
+> **`frame.readback.category_counts` is safety-critical, not documentation.**
+> `{"<cat hex>": <record count>}` — how many records each readback category
+> actually has, taken from the device's own `0x74` connect enumeration.
+> `protocol.check_readback_index` refuses any index at or above the count,
+> because the firmware does **not** bounds-check it and an over-range index
+> can crash the MCU outright (Cortex-M BusFault → physical power cycle;
+> observed twice on the Orion Studio III, 2026-08-31 — `PROTOCOL.md` §4a).
+> A category absent from this map **cannot be bounded**, so the CLI warns and
+> a sweeping tool must not walk it. When you add a new device profile, fill
+> this in from that device's own connect enumeration before querying
+> anything, and leave it empty rather than guessing.
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two

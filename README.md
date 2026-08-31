@@ -213,6 +213,7 @@ python3 -m antelope.cli ... route lineout 4 mix2R            # <- virtual mix 2,
 python3 -m antelope.cli ... route hp2 mute                   # mute every channel
 python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
 python3 -m antelope.cli ... matrix-status                    # LIVE read of the whole matrix from the device
+python3 -m antelope.cli ... mix-status 1                     # LIVE read of virtual Mix 1 (cat 0x04)
 python3 -m antelope.cli ... readback 0x03 0                  # raw: routing record for dest 0 (line out)
 python3 -m antelope.cli ... readback                         # list the readback categories
 ```
@@ -247,7 +248,7 @@ python3 -m antelope.cli ... readback                         # list the readback
 See `PROTOCOL.md` §4a + §7 and `frame.readback` / `frame.routing_command`
 in the profile.
 
-### Virtual mixer -- Mix 1-4 (decoded, not in the CLI yet)
+### Virtual mixer -- Mix 1-4 (decoded; reading is in the CLI, writing is not)
 
 The **Mix windows** are a separate UI from the routing matrix -- mixing
 happens there, and each mix's L/R then shows up as a *source* in the
@@ -262,12 +263,44 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 - **mix channel link** = `SET_LINK` with a new `space` byte `0x03`
   (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer); software-mirrored.
 - not in the passive `0x73` stream, but mixer state **is** readable via
-  the `0x74`/`0x75` query protocol (category `0x04`, idx = mix number;
-  `0x1b` for bus levels) -- only partly decoded so far (`PROTOCOL.md` §4a).
+  the `0x74`/`0x75` query protocol -- **category `0x04`, index = mix
+  number 0-3**, fully decoded and hardware round-trip verified 2026-08-31.
 
-`protocol.build_mix_command(profile, mix, channel, fader, pan_deg, send,
-mute, solo)` builds the frame. No CLI command yet. See `PROTOCOL.md` §12
-and `frame.mix_command`.
+**Reading it back.** `mix-status` is a live read of the device:
+
+```bash
+python3 -m antelope.cli mix-status          # all four mixes
+python3 -m antelope.cli mix-status 1        # just Mix 1
+python3 -m antelope.cli mix-status 1 --all-slots   # include the unidentified slot 0
+```
+
+```
+Mix 1  (32 strips)
+  ch   fader     pan     send    flags
+  1    -24 dB    -30     0/96
+  2    0 dB      +30     95/96
+  ...
+```
+
+The record is 33 three-byte slots `<fader> <pan|mute|solo> <send>` -- the
+**same field order as the write frame** -- and slot N is the strip the
+write frame addresses as `channel` N. Verified by writing a distinctive
+strip (`mix 1 / ch 5 / fader 40 / pan +12 / mute / send 33` → `28 6c 21`)
+and reading exactly those bytes back at slot 5, with no other slot
+touched. Slot 0 is an extra leading entry whose role is still
+unidentified (probably the mix master). See `PROTOCOL.md` §4a.
+
+**Writing is not in the CLI yet.** `protocol.build_mix_command(profile,
+mix, channel, fader, pan_deg, send, mute, solo)` builds the frame; there
+is still no `mix-set` command. Now that the readback is decoded, `mix-set`
+can read-modify-write a strip instead of keeping a local cache, the way
+`route` does. See `PROTOCOL.md` §12 and `frame.mix_command`.
+
+> ⚠ **Never query a readback index past a category's record count.** The
+> firmware does not bounds-check it: `category 0x04 index 5` crashed the
+> Orion Studio III outright (Cortex-M `BusFault_Handler`, physical power
+> cycle required). The CLI and `tools/readback_enum.py` now refuse to go
+> out of range. See `PROTOCOL.md` §4a.
 
 ### Mic modeling / emuMic (decoded, not in the CLI yet)
 

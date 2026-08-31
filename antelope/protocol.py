@@ -571,14 +571,53 @@ def build_route_command(profile: dict, dest: int, channels) -> bytes:
 # had ruled out.
 
 ROUTING_READBACK_CATEGORY = 0x03
+MIXER_READBACK_CATEGORY = 0x04
 
 
-def build_readback_query(profile: dict, category: int, index: int = 0) -> bytes:
+def readback_category_count(profile: dict, category: int):
+    """How many records a readback category really has, or None if unknown.
+    Source: frame.readback.category_counts, which comes from the device's own
+    0x74 connect enumeration (frame.init_enumeration_report) -- the only
+    evidence-grade record count we have."""
+    counts = profile['frame'].get('readback', {}).get('category_counts', {})
+    for k, v in counts.items():
+        if _as_int(k) == category:
+            return int(v)
+    return None
+
+
+def check_readback_index(profile: dict, category: int, index: int) -> None:
+    """HAZARD GUARD -- see frame.readback.hazard.
+
+    Querying an index past the end of a category's record array makes the
+    firmware read adjacent memory, and one index further crashes it outright:
+    on 2026-08-31 `category 0x04 index 5` hard-faulted the Orion Studio III
+    (front panel: "CRITICAL ERROR! Failure.c  L: 204  E: 0  BusFault_Handler",
+    a Cortex-M BusFault) and the unit needed a power cycle. The symptom is
+    distinctive: an out-of-range-but-safe index answers with a WRONG-LAYOUT
+    body, and the fatal one answers with NOTHING at all -- the device normally
+    answers every (category, index), just with an empty body when it has no
+    record. Raises ConstraintError; callers pass force=True at their own risk."""
+    n = readback_category_count(profile, category)
+    if n is not None and index >= n:
+        raise ConstraintError(
+            f'readback category {category:#04x} has only {n} record(s) '
+            f'(index 0..{n - 1}); index {index} reads past the end of the '
+            f"firmware's array and can crash the device with a BusFault "
+            f'(needs a power cycle). Use force=True only if you accept that.')
+
+
+def build_readback_query(profile: dict, category: int, index: int = 0,
+                         force: bool = False) -> bytes:
     """Build a readback REQUEST frame (frame.readback.request). Read-only --
-    this is exactly what the Launcher issues on connect."""
+    this is exactly what the Launcher issues on connect. Bounds-checked
+    against frame.readback.category_counts unless `force` (see
+    check_readback_index -- an out-of-range index can crash the device)."""
     r = profile['frame'].get('readback')
     if not r:
         raise KeyError('this profile has no frame.readback -- readback not available')
+    if not force:
+        check_readback_index(profile, category, index)
     size = profile['transport']['report_size']
     pkt = bytearray(size)
     pkt[_as_int(r['magic_offset'])] = _as_int(r['request_magic'])
@@ -625,6 +664,51 @@ def parse_routing_record(profile: dict, body: bytes):
             raise ValueError(f'routing record for dest {dest_id} truncated at channel {c}')
         pairs.append((body[o], body[o + 1]))
     return dest_id, pairs
+
+
+def parse_mixer_record(profile: dict, body: bytes):
+    """Decode one category-0x04 record -- the whole state of one virtual mix.
+    The readback index IS the mix number (0..3 = Mix 1..4).
+
+    The record is a flat array of 3-byte slots, SAME field order as the
+    frame.mix_command write frame (fader@20, pan|flags@21, send@22):
+
+        <fader> <pan|mute|solo> <send>
+
+    Slot N (N = 1..32) is the strip that frame.mix_command addresses as
+    `channel` N -- confirmed byte-exact by a hardware round trip on
+    2026-08-31 (wrote mix 1 / ch 5 / fader 40 / pan +12 / mute / send 33 ->
+    `28 6c 21`, read back at slot 5 as `28 6c 21`, and NO other slot moved).
+    Slot 0 is one extra leading entry whose role is still unidentified (it
+    reads fader 0 / pan centre / send 96 on every mix -- most likely the mix
+    master strip; frame.mix_command never addresses channel 0). Returns all
+    33 slots so the caller can decide; slot index == list index.
+
+    Each entry is a dict: fader (0-90 dB of attenuation), pan (-30..+30),
+    send (0-96), mute, solo, raw (the 3 bytes)."""
+    if not body:
+        raise ValueError('empty mixer record')
+    f = profile['frame'].get('mix_command', {})
+    pan_center = _as_int(f.get('pan_center', 32))
+    pan_mask = _as_int(f.get('pan_mask', 0x3f))
+    mute_bit = _as_int(f.get('mute_bit', 0x40))
+    solo_bit = _as_int(f.get('solo_bit', 0x80))
+    # the record is exactly 3 * n_slots bytes; the wire frame is zero-padded to
+    # the report size and an all-zero slot is not a legal strip (pan 0 would be
+    # -32, outside the +-30 range), so trailing zeros are padding, not data.
+    body = body.rstrip(b'\x00')
+    slots = []
+    for o in range(0, len(body) - 2, 3):
+        fader, flags, send = body[o], body[o + 1], body[o + 2]
+        slots.append({
+            'fader': fader,
+            'pan': (flags & pan_mask) - pan_center,
+            'send': send,
+            'mute': bool(flags & mute_bit),
+            'solo': bool(flags & solo_bit),
+            'raw': bytes(body[o:o + 3]),
+        })
+    return slots
 
 
 def readback_categories(profile: dict) -> dict:

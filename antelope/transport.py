@@ -81,8 +81,15 @@ class HidTransport:
 
         The device free-runs state/meter reports on the same IN endpoint, so
         `match` must identify the specific response (see
-        protocol.is_readback_response). Hammering the request endpoint too
-        fast can halt it (ETIMEDOUT / EPIPE on write) -- we reopen and retry.
+        protocol.is_readback_response). A write can fail with ETIMEDOUT /
+        EPIPE -- we reopen and retry.
+
+        NOTE: if every retry fails AND the free-running 0x73 stream has also
+        stopped, the device is not busy, it has CRASHED -- almost certainly a
+        readback query with an out-of-range index (see
+        protocol.check_readback_index and frame.readback.hazard). Only a
+        physical power cycle recovers it; do NOT call dev.reset() on a hung
+        unit, that knocks it off USB entirely.
         """
         if len(request) != self.report_size:
             raise ValueError(f'request must be exactly {self.report_size} bytes')

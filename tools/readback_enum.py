@@ -16,19 +16,38 @@ Response magic is 0x75 but byte 1 = 0x00 (meter report is 0x75 / byte1 0x1f;
 0x73 state report is the same family with magic 0x73). The device free-runs
 0x73 + 0x75/1f on the same endpoint, so we filter on (magic, byte1, cat, idx).
 
+!!! DANGER -- READ THIS BEFORE SWEEPING INDICES !!!
+
+The firmware does NOT bounds-check the readback index. Query one index past a
+category's record count and it hands back adjacent memory (wrong layout); go a
+bit further and it faults. On 2026-08-31 `--cat 0x04 --max-idx 5` hard-crashed
+the Orion Studio III -- front panel "CRITICAL ERROR! / Failure.c / L: 204 E: 0
+/ BusFault_Handler" (a Cortex-M BusFault) -- and the unit needed a physical
+power cycle. The tell-tale sequence is: in-range indices answer with a
+consistent layout; the first over-range one answers with a DIFFERENT layout;
+the next answers with NOTHING and the OUT endpoint goes dead.
+
+NOTE: this supersedes the earlier note here blaming "hammering"/query rate for
+the halted endpoint. That crash took ~10 slow queries. Rate was never the
+trigger -- the out-of-range index was. Pacing is still polite, but it is not
+the safety mechanism; the index bound is.
+
+So by default this tool now sweeps ONLY indices the device itself declared, via
+frame.readback.category_counts (derived from the 0x74 connect enumeration).
+`--unsafe` lifts that, and is how you break the hardware.
+
 Notes learned from the first run:
-  * the device answers EVERY (cat, idx) -- an unknown one just comes back
-    empty. "has data" is the liveness signal, not "answered".
+  * the device answers every IN-RANGE (cat, idx) -- one it has no record for
+    just comes back empty. "has data" is the liveness signal, not "answered".
   * scalar categories (0x00 id, 0x01 name/serial, 0x02 ...) return the same
     record for every idx.
-  * hammering the OUT endpoint too fast eventually halts it (ETIMEDOUT on
-    write) -- we pace and reopen on halt.
+  * pace queries and reopen the node on write error.
 
 Read-only: every frame sent is a read request, exactly what the Launcher
 issues on connect.
 
   python3 tools/readback_enum.py --profile profiles/orion_studio_3.json
-  python3 tools/readback_enum.py --profile ... --cat 0x03 --max-idx 20
+  python3 tools/readback_enum.py --profile ... --cat 0x03
 """
 import argparse
 import os
@@ -107,7 +126,13 @@ def main():
     ap.add_argument("--profile", required=True)
     ap.add_argument("--cat", type=lambda x: int(x, 0), default=None)
     ap.add_argument("--max-cat", type=lambda x: int(x, 0), default=0x2a)
-    ap.add_argument("--max-idx", type=int, default=24)
+    ap.add_argument("--max-idx", type=int, default=24,
+                    help="upper index bound; still clamped to the category's "
+                         "declared record count unless --unsafe")
+    ap.add_argument("--unsafe", action="store_true",
+                    help="sweep past a category's declared record count. THIS CAN "
+                         "CRASH THE DEVICE (BusFault -> power cycle). See the "
+                         "module docstring.")
     ap.add_argument("--miss-break", type=int, default=3)
     ap.add_argument("--pace", type=float, default=0.03)
     ap.add_argument("--rest-every", type=int, default=25)
@@ -135,14 +160,26 @@ def main():
         time.sleep(args.pace)
         return r
 
+    if args.unsafe:
+        log("!!! --unsafe: sweeping past declared record counts. An out-of-range "
+            "index can BusFault the device and force a power cycle. !!!")
+
     for cat in cats:
+        # HARD SAFETY BOUND: never query past what the device declared in its own
+        # 0x74 connect enumeration. cat 0x04 idx 5 crashed the unit (see docstring).
+        declared = proto.readback_category_count(profile, cat)
+        hi = args.max_idx
+        if declared is not None and not args.unsafe:
+            hi = min(hi, declared - 1)
+        if hi < 0:
+            continue
         idx0 = paced_query(cat, 0)
         entries = []
         if idx0 is not None and idx0.rstrip(b"\x00"):
             entries.append((0, idx0.rstrip(b"\x00")))
             misses = 0
             prev = idx0
-            for idx in range(1, args.max_idx + 1):
+            for idx in range(1, hi + 1):
                 body = paced_query(cat, idx)
                 if body is None or not body.rstrip(b"\x00"):
                     misses += 1
