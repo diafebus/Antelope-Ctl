@@ -968,7 +968,19 @@ routing). **Divergences from Orion:**
 | new: output volume | buses | *also* an `0x16`/`0xd4` strip at `(mix 1, ch 3)` |
 | new: DSP opcodes | `0x1d` AuraVerb | **`0x1a` / `0x1c` (`0xd5`), `0x23` (`0xd7`)** -- undecoded, forbidden |
 
-Still open: full routing map (dests 3/5/6/7/8/9), DSP/mic-modelling
-frames, meter byte-map, the two output-volume paths, `param 0x66` (bus
-dim/mono?), `param 0x49` (set to 12/15 during mixer use). See
-`open_questions` in the profile.
+**Routing (`0x53`/`0xd3`) -- decoded 2026-08-31.** Same frame as Orion
+(`d3 41 <dest>` then `(bank,idx)` pairs from @19). The slot index in the
+mixer strip-input map = **mixer strip number − 1** (slot 0 = strip 1).
+Source banks: `0x00` preamp (0-1), `0x01` computer playback (idx N =
+playback N+1), `0x02` S/PDIF in (L/R), `0x08` MUTE, `0x09` oscillator
+(1/2), `0x0a` emumic; `0x03` (4 ch, strips 1-4's default) unidentified.
+Destination groups: **6/7/8/9** are one logical 32-slot map (slots 0-15 =
+the 16 strips, 16-31 unused) that the Launcher always writes to all four
+in lockstep -- the mixer's *global* strip-input assignment (per-mix
+level/pan/mute stays independent); **5** is a separate 4-slot map (strips
+1-4 only); **3** an 8-slot map mirroring the first 8 of 6-9.
+
+Still open: source bank `0x03`; the exact role of dest groups 3 and 5;
+the DSP/mic-modelling frames; the meter byte-map; the two output-volume
+paths; `param 0x66` (bus dim/mono?); `param 0x49` (set to 12/15 during
+mixer use). See `open_questions` in the profile.

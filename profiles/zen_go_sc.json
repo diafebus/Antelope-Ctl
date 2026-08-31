@@ -96,18 +96,23 @@
       "destination_offset": 18,
       "channel_list_offset": 19,
       "channel_stride": 2,
-      "status": "frame shape confirmed; destination + source bank maps PRELIMINARY",
-      "notes": "Same shape as Orion: 0xd3 @16, 0x41 @17, destination group @18, then an array of (source_bank, source_index) pairs from @19, stride 2, one per output channel of the group. Whole group sent every time. The Zen Go 'channel assignments' tab assigns what each mixer input strip listens to. Destination groups seen: 3, 5, 6, 7, 8, 9 -- dest 5 is a 4-channel group ('early' channels 1-4), dests 6/7/8/9 are large (~16+ channel) groups that always appear together and identical (probably the 4 mixer-input maps or a full 16-strip map x N). NOT fully decoded. Source banks seen (PRELIMINARY, need isolation): 0x00 = preamp, 0x01 = computer playback (?), 0x02 = S/PDIF in, 0x03 = computer playback / ADAT-slot (?), 0x08 = MUTE pseudo-source, 0x09 = oscillator (idx 0/1), 0x0a = emumic (mic-modeled preamp). NO 0x73 readback for routing writes (like Orion).",
-      "source_banks_preliminary": {
-        "0x00": "preamp (idx 0-1)",
-        "0x01": "computer playback? (idx seen 0-7)",
-        "0x02": "S/PDIF in (idx 0-1)",
-        "0x03": "computer playback? / other (idx 0-3 seen)",
-        "0x08": "MUTE (pseudo-source, idx 0)",
-        "0x09": "oscillator (idx 0-1)",
-        "0x0a": "emumic / mic-modeled preamp (idx 0-1)"
+      "status": "frame + index mapping + source banks DECODED (2026-08-31); destination groups partly decoded",
+      "notes": "Same shape as Orion: [16]=0xd3, [17]=0x41 (=65), [18]=destination group, then an array of (source_bank, source_index) pairs from @19, stride 2, one slot per output channel of the group. Whole group re-sent on any change; NO 0x73 readback (write-only, like the family). The Zen Go 'channel assignments' tab assigns what each MIXER INPUT STRIP listens to. THE SLOT INDEX = MIXER STRIP NUMBER - 1 (slot 0 = strip 1 ... slot 15 = strip 16), confirmed by the index_map_5_8 / 9_12 / 13_16 captures which set slot 4..15 to the oscillator one at a time. Set a slot to (0x08, 0) to mute that strip's input; there is no 'no source'.",
+      "destination_groups": {
+        "3": "8 slots -- mirrors the first 8 slots of dest 6/7/8/9 (changes propagate to both). A 'core'/8-channel view or a separate 8-ch bus; role not pinned down.",
+        "5": "4 slots -- mixer strips 1-4 only. dest 3 / 6-9 do NOT track dest 5, so it is a distinct target (best guess: the USB record / direct-monitor input map for the first 4 channels).",
+        "6, 7, 8, 9": "32 slots each -- slots 0-15 = the 16 mixer strips, slots 16-31 always MUTE (0x08, unused/reserved). The Launcher ALWAYS writes all four identically and in lockstep (the 'surface_propagation' captures confirm a change to one propagates to all four), so they are one logical map -- the mixer's global strip-input assignment. Per-mix level/pan/mute IS independent (capture_mixer_19); only the input assignment is shared."
       },
-      "evidence": "channel_assignments/*: op 0x53 param 0xd3 [17]=0x41 (=65), [18] = 3/5/6/7/8/9. 'ch1-4 - was spdif1,spdif2,osc1,osc2 - changed ch1 to emu1' -> dest 5 = (0x0a,0)(0x02,1)(0x09,0)(0x09,1). 'capture_mixer_24_assignment_early_ch1' -> dest 5 first pair set to (0x08,0) = mute."
+      "source_banks": {
+        "0x00": "preamp -- idx 0-1 = Preamp A1 / A2 (confirmed: 'ch1_preamp1...' -> (0x00,0), 'ch2_preamp2...' -> (0x00,1))",
+        "0x01": "computer playback -- idx N = playback channel N+1 (confirmed: 'ch3_cp1' -> (0x01,0), 'ch4_cp2' -> (0x01,1), 'ch5_cp3' -> (0x01,2); default maps use idx up to 7)",
+        "0x02": "S/PDIF in -- idx 0/1 = L/R (from 'ch1-4 - was spdif1,spdif2...': slot 2 was (0x02,1) = spdif R)",
+        "0x03": "UNCONFIRMED -- a 4-channel bank seen only as the DEFAULT source of strips 1-4 in dest 3/6-9 ((0x03,0)..(0x03,3)); no capture ever set a strip TO bank 0x03. Likely computer playback 1-4 via a second tap, or a loopback / mix-return / FX-return bus.",
+        "0x08": "MUTE (pseudo-source, idx 0) -- confirmed by all the '..._mute' captures",
+        "0x09": "oscillator -- idx 0/1 = Osc 1 / Osc 2 (the test-tone source used throughout the index-map captures)",
+        "0x0a": "emumic / mic-modeled preamp -- idx 0/1 (from 'changed ch1 to emu1' -> (0x0a,0))"
+      },
+      "evidence": "channel_assignments/*.pcapng and mixer/capture_mixer_03/04/18-30. Each single-strip capture (chN_<src>_oscillator1_<src>) changes exactly one slot and names the source; the index_map captures walk slots 4-15 through the oscillator; capture_mixer_03/04 cycle strip 11 through preamp / playback / emumic / spdif / osc / mute."
     },
 
     "observed_opcodes": {
@@ -320,7 +325,7 @@
 
   "open_questions": [
     "HID report descriptor -- dump from Linux hidraw (tools/hid_probe.py). Feature report? (Orion/Discrete have none -> no readback for routing/mixer.)",
-    "Routing (frame.routing_command): destination map (what are dests 3/5/6/7/8/9?), source bank numbers + which is computer-playback vs S/PDIF vs ADAT-slot, channel counts per dest group.",
+    "Routing: slot index = strip-1 and source banks 0x00-0x0a are decoded (2026-08-31). Left: what is source bank 0x03 (4 ch, only seen as strips 1-4's default -- playback 1-4? loopback? mix return?); and what exactly are destination groups 3 (8 slots) and 5 (4 slots, strips 1-4 only) as opposed to 6/7/8/9 (the shared 32-slot strip-input map).",
     "The two output-volume paths: opcode 0x16/0xd4 (d4 04 01 03 ...) vs buses 0/1/2 (0x47/0x48/0x66). Which drives the physical Monitor out and which the Headphone out? What does param 0x66 do (dim/mono)?",
     "param 0x49 set to 12/15 during mixer use -- active-mix / solo-mask / surface selector?",
     "Mic modeling frame (enable/model/pattern) -- capture the emuMic panel; likely opcode 0x1a or 0x1c (param 0xd5).",
