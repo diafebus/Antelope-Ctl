@@ -274,10 +274,19 @@ python3 -m antelope.cli ... readback                         # list the readback
   device is unreachable. The readback is the same `0x74`/`0x75` in-band
   protocol the Antelope Launcher uses -- `PROTOCOL.md` §4a,
   `frame.readback` in the profile.
-- ADAT out, Comp Rec, AFX in, the mix channels and Surround in are shown
-  by `matrix-status` but not yet wired for `route` writes (their channel
-  counts are now known from the readback -- adding them is a small
-  follow-up).
+- **All 15 destination groups are writable** (2026-09-01): `line_out`,
+  `hp1`, `hp2`, `mona`, `monb`, `reamp`, `com_rec`, `adat_out`,
+  `spdif_out`, `afx_in`, `mix_ch1`-`mix_ch4`, `surround_in`. `spdif_out`
+  takes `L`/`R` like the other stereo pairs.
+- **`mix_chN` is the virtual mixer's input side.** Its 32 channels are what
+  each of mix N's 32 strips listens to -- so `route mix_ch1 5 preamp3`
+  picks strip 5's source and `mix-set 1 5 --fader -6` sets that same
+  strip's level. Two halves of one signal path.
+- Mind what you are pointing at: `com_rec` is what the computer *records*
+  from the interface, and `adat_out` / `spdif_out` are physical digital
+  outputs. Re-pointing those changes real signal flow, not just monitoring.
+  Every write is read back and confirmed, so you will see exactly what
+  landed.
 
 See `PROTOCOL.md` §4a + §7 and `frame.readback` / `frame.routing_command`
 in the profile.

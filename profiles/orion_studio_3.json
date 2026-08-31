@@ -65,8 +65,18 @@
         "2": "headphone_2",
         "3": "monitor_a",
         "4": "monitor_b",
-        "5": "reamp"
+        "5": "reamp",
+        "6": "com_rec",
+        "7": "adat_out",
+        "8": "spdif_out",
+        "9": "afx_in",
+        "10": "mix_ch1",
+        "11": "mix_ch2",
+        "12": "mix_ch3",
+        "13": "mix_ch4",
+        "14": "surround_in"
       },
+      "addressable_destinations_note": "ALL 15 destination groups are now writable (2026-09-01). The first six are physical outputs; 6-14 are internal or digital and were left unwired until their channel counts were confirmed off the cat-0x03 readback. Each was live-read before wiring and the counts matched destination_channels exactly: com_rec 32, adat_out 16, spdif_out 2, afx_in 32, mix_ch1-4 32 each, surround_in 16. NOTE mix_chN (10-13) is the input side of the VIRTUAL MIXER: its 32 channels are what each of mix N's 32 strips listens to, so `route mix1 5 preamp3` chooses strip 5's source and `mix-set 1 5 --fader ...` sets that same strip's level -- two halves of one signal path (frame.mix_command, readback cat 0x04).",
       "destination_channels": {
         "0": 16,
         "1": 2,
@@ -85,7 +95,7 @@
         "14": 16
       },
       "destination_channels_note": "All 15 CONFIRMED 2026-08-31 by the routing readback (frame.readback category 0x03): each record is <dest_id> + destination_channels[dest_id] (bank,idx) pairs. line_out 16, hp1/hp2/mona/monb/reamp/spdif_out 2, comp_rec/afx_in/mix_ch1..4 32, adat_out/surround_in 16.",
-      "stereo_destinations": ["1", "2", "3", "4"],
+      "stereo_destinations": ["1", "2", "3", "4", "8"],
       "channel_addressing": "The CLI addresses an output channel 1-based: `route <dest> <N> <source>` sets channel N (1..destination_channels[dest]) of that group. For stereo_destinations (hp1/hp2/mona/monb) `L` = channel 1 and `R` = channel 2 are accepted aliases. Reamp is NOT a stereo pair (Reamp 1 / Reamp 2 are separate mono outs) so use 1/2 there. `route <dest> all <s1> <s2> ...` sets every channel at once; `route <dest> mute` mutes all; `route <dest> <N> mute` mutes one.",
       "frame_model": "CORRECTED 2026-08 (captures macos-matrix-ch1-12-mute-hp1L / -hp1R). The frame is `d3 41 <dest> | <bank0> <idx0> | <bank1> <idx1> | ...` -- after destination_offset (18) it is a plain array of (source_bank, source_index) pairs, one per output channel of the destination GROUP, starting at channel_list_offset (19) with channel_stride (2). Channel 0 = L / output 1 / Reamp 1; channel 1 = R / output 2 / Reamp 2. Multichannel groups (line_out, adat_out=16, ...) simply have more pairs. mute = mute_source (bank 0x0b, idx 0); there is no 'no source' encoding. THE WHOLE GROUP IS ALWAYS SENT -- there is no single-channel frame. EVIDENCE: hp1L capture swept preamp 1-12 into HP1 L; every frame was `d3 41 01 | 00 (n-1) | 00 02` -- [19][20] = the changing L source, [21][22] = (0x00,0x02) = preamp 3, HP1 R's unchanged source. hp1R capture then swept preamp 1-12 into HP1 R; every frame was `d3 41 01 | 0b 00 | 00 (n-1)` -- [19][20] = (0x0b,0) = MUTE (HP1 L, left muted by hp1L's final frame), [21][22] = the changing R source. The two captures are sequential and the L=mute state carries between them -- decisive. Final mutes: hp1L -> `d3 41 01 | 0b 00 | 00 02` (mute L, keep R); hp1R -> `d3 41 01 | 0b 00 | 0b 00` (mute both).",
       "supersedes": "This REPLACES the old op1_offset/op2_offset/output_ops model (bytes 21-22 = '02 01' for output 1, '00 02' for output 2). That was a misread: '00 02' is literally (bank 0x00, index 0x02) = preamp 3, i.e. the OTHER channel's untouched routing, not an opcode. The old CLI shipped this bug -- `route hp1 R preamp4` wrote preamp4 to [20] (the L slot) and preamp3 to [21][22] (R), so it set L=preamp4, R=preamp3 (user-observed on the Windows Launcher, 2026-08).",
@@ -107,7 +117,7 @@
         "0x0b": "MUTE -- putting (bank 0x0b, idx 0) in a channel slot mutes that output channel (right-click -> mute in the matrix). User-confirmed 2026-08. Un-mute = put a real source back.",
         "0x0c": "oscillator (idx 0-1 = oscillator 1 / oscillator 2 -- right-click -> insert oscillator on an output)"
       },
-      "cli_support": "CLI `route` / `matrix-status`. `route <dest> <chan> <source>` sets ONE output channel (1-based; `L`/`R` = 1/2 for stereo_destinations) -- the other channels are read live from the device first (frame.readback cat 0x03) and every write is read back and confirmed. `route <dest> all <s1> <s2> ...` sets the whole group; `route <dest> mute` mutes all; `route <dest> <chan> mute` mutes one. `matrix-status` is a full live read of all 15 groups. Like the Launcher there is NO un-route. Source specs: preamp N -> (0x00,N-1); emumic N (N = preamp number 5-12) -> (0x01,N-5); compplay N (alias playback) -> (0x02,N-1); adat N -> (0x03,N-1); spdif L|R -> (0x04,0|1); afx N -> (0x05,N-1); mix1..4 L|R -> (0x06..0x09, 0|1); surround N -> (0x0a,N-1); osc N -> (0x0c,N-1); mute -> mute_source. Dests wired: line_out (16 ch) + hp1/hp2/mona/monb/reamp (2 ch).",
+      "cli_support": "CLI `route` / `matrix-status`. `route <dest> <chan> <source>` sets ONE output channel (1-based; `L`/`R` = 1/2 for stereo_destinations) -- the other channels are read live from the device first (frame.readback cat 0x03) and every write is read back and confirmed. `route <dest> all <s1> <s2> ...` sets the whole group; `route <dest> mute` mutes all; `route <dest> <chan> mute` mutes one. `matrix-status` is a full live read of all 15 groups. Like the Launcher there is NO un-route. Source specs: preamp N -> (0x00,N-1); emumic N (N = preamp number 5-12) -> (0x01,N-5); compplay N (alias playback) -> (0x02,N-1); adat N -> (0x03,N-1); spdif L|R -> (0x04,0|1); afx N -> (0x05,N-1); mix1..4 L|R -> (0x06..0x09, 0|1); surround N -> (0x0a,N-1); osc N -> (0x0c,N-1); mute -> mute_source. Dests wired: ALL 15 (2026-09-01). line_out 16, hp1/hp2/mona/monb/reamp/spdif_out 2, adat_out/surround_in 16, com_rec/afx_in/mix_ch1-4 32. Names accept the ids in addressable_destinations (com_rec, adat_out, spdif_out, afx_in, mix_ch1..mix_ch4, surround_in). spdif_out is in stereo_destinations so L/R work there too.",
       "notes": "The matrix/routing frame -- its own command shape (opcode 0x53, NOT the SET_PARAM layout). [16]=0xd3, [17]=0x41 (constant), [18]=destination group. After that: an array of (source_bank, source_index) pairs, one per output channel of the group, from channel_list_offset (19), stride 2 -- see frame_model. Source banks in source_banks. Destination map from capture matrix-compplay-allouts-1: 0=line_out 1=hp1 2=hp2 3=mona 4=monb 5=reamp 6=com_rec 7=adat_out 8=spdif_out 9=afx_in 10-13=mix_ch1..4 14=surround_in. Routing is EXCLUSIVE per channel (one source per output channel; 'virtual mixes' are the separate summing mechanism). NO USB readback at all -- see params.routing.readback (HID descriptor has no Feature report; device STALLs GET_REPORT; preset-load is pure push)."
     },
     "global_command": {

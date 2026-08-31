@@ -709,11 +709,12 @@ the array model exactly: entry 0 = the changed channel, entries 1-15 =
 **idempotent** (routing an already-present source sends nothing). Summing
 is via separate "virtual mixes".
 
-All 12 source banks are now identified (bank `0x01` = emumic, idx 0-7 =
-preamps 5-12, confirmed 2026-08-31), and all 15 destination channel counts
-are known (above). Still open: `route` can only *write* line_out and the
-2-channel destinations -- com rec / ADAT out / AFX in / mix ch1-4 /
-surround in appear in `matrix-status` but are not wired for writes yet.
+All 12 source banks are identified (bank `0x01` = emumic, idx 0-7 =
+preamps 5-12, confirmed 2026-08-31), all 15 destination channel counts are
+known (above), and as of 2026-09-01 **`route` can write all 15 groups** --
+each was live-read first and its channel count matched
+`destination_channels` exactly. Writes were round-trip verified on
+`mix_ch4` (a 32-ch group) and `spdif_out` (2-ch, L/R).
 
 **Output mute and oscillator-insert both go through this frame** (bank
 `0x0b` and `0x0c`, right-click in the matrix). Un-mute = re-assign a real
