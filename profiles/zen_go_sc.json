@@ -8,7 +8,7 @@
     "bcdDevice": "06.06",
     "status": "confirmed",
     "notes": "USB-C bus-powered 4-in / 8-out desktop interface, 2 mic/line/Hi-Z preamps, Synergy Core DSP. Composite device: UAC2 audio (interfaces 0/1/2, 16 in / 16 out, 24-bit, iso endpoints 0x05 OUT / 0x84 IN) plus a vendor HID control interface (interface 3). Device descriptor: class 0xef/0x02/0x01, bcdUSB 0x0200, iManufacturer/iProduct/iSerial 1/2/3. Config descriptor: 4 interfaces, bus-powered (bmAttributes 0x80), maxpower 500 mA.",
-    "evidence": "capture_01_enumeration.pcapng: device descriptor frame -> idVendor 0x23e5, idProduct 0xa015, bcdDevice 0x0606; config descriptor (243 bytes) decoded; 0x75 name report during connect = ASCII 'Zen Go Synergy Core' + serial + '6.6'."
+    "evidence": "capture_01_enumeration.pcapng: device descriptor frame -> idVendor 0x23e5, idProduct 0xa015, bcdDevice 0x0606; config descriptor (243 bytes) decoded. The connect-time 0x75 frame carrying ASCII 'Zen Go Synergy Core' + serial + fw rev is a readback RESPONSE for category 0x01 -- see frame.readback, not a Zen-Go-specific name report."
   },
 
   "transport": {
@@ -74,7 +74,7 @@
       "mute_bit": "0x40",
       "solo_bit": "0x80",
       "status": "confirmed",
-      "notes": "The virtual mixer. NOTE this is opcode 0x16 (Orion's mixer is 0x17) and the sub-cmd byte @17 is 0x04 (Orion 0x05); there is NO per-strip send byte (Orion has one at @22) -- the Zen Go mixer strip is just fader + pan + mute + solo. [18]=mix number (0 = Mix 1, 1 = Mix 2; the Zen Go has 2 mixes), [19]=channel (0-15, 16 input strips per mix), [20]=fader raw = dB attenuation 0 (unity) .. 90 (-90 dB), [21]=pan (low 6 bits, 0x20 = centre, ~0x02 = full L, ~0x3e = full R) + mute bit 0x40 + solo bit 0x80. Whole strip state every frame. NO 0x73 readback (fader/pan/mute/solo captures showed no state-report change) -- treat as write-only, cache client-side, same as Orion.",
+      "notes": "The virtual mixer. NOTE this is opcode 0x16 (Orion's mixer is 0x17) and the sub-cmd byte @17 is 0x04 (Orion 0x05); there is NO per-strip send byte (Orion has one at @22) -- the Zen Go mixer strip is just fader + pan + mute + solo. [18]=mix number (0 = Mix 1, 1 = Mix 2; the Zen Go has 2 mixes), [19]=channel (0-15, 16 input strips per mix), [20]=fader raw = dB attenuation 0 (unity) .. 90 (-90 dB), [21]=pan (low 6 bits, 0x20 = centre, ~0x02 = full L, ~0x3e = full R) + mute bit 0x40 + solo bit 0x80. Whole strip state every frame. No 0x73 STATE-REPORT readback -- fader/pan/mute/solo writes produce no state_report change (that part is tested and still true). But do NOT read that as 'write-only': this device speaks the in-band 0x74/0x75 readback (frame.readback), and on the Orion the mixer turned out to be fully readable there as category 0x04 after years of being documented as write-only. Whether the Zen Go exposes its mixer the same way is UNTESTED -- its Launcher never asked during the connect capture, but the Orion's doesn't either and the category answers anyway. Test it: query cat 0x04 index 0. Until then, cache client-side.",
       "evidence": "mixer/capture_mixer_09_fader_unlinked...: d4 04 00 01 <fader> 20 sweeping fader. capture_mixer_07_pan...: [21] swept around 0x20. capture_mixer_11_mute: [21] = 0x60 (0x20|0x40) vs 0x20. capture_mixer_13_solo: [21] = 0xa0 (0x20|0x80). capture_08_mixer_volume_faders_on_2_mixes: [18] = 0 and 1, [19] up to 10."
     },
 
@@ -97,7 +97,7 @@
       "channel_list_offset": 19,
       "channel_stride": 2,
       "status": "frame + index mapping + source banks DECODED (2026-08-31); destination groups partly decoded",
-      "notes": "Same shape as Orion: [16]=0xd3, [17]=0x41 (=65), [18]=destination group, then an array of (source_bank, source_index) pairs from @19, stride 2, one slot per output channel of the group. Whole group re-sent on any change; NO 0x73 readback (write-only, like the family). The Zen Go 'channel assignments' tab assigns what each MIXER INPUT STRIP listens to. THE SLOT INDEX = MIXER STRIP NUMBER - 1 (slot 0 = strip 1 ... slot 15 = strip 16), confirmed by the index_map_5_8 / 9_12 / 13_16 captures which set slot 4..15 to the oscillator one at a time. Set a slot to (0x08, 0) to mute that strip's input; there is no 'no source'.",
+      "notes": "Same shape as Orion: [16]=0xd3, [17]=0x41 (=65), [18]=destination group, then an array of (source_bank, source_index) pairs from @19, stride 2, one slot per output channel of the group. Whole group re-sent on any change; no 0x73 STATE-REPORT readback. That does NOT mean write-only: this device speaks the in-band 0x74/0x75 readback (frame.readback), and on the Orion the routing matrix turned out to be fully readable there as category 0x03 -- the single most costly wrong conclusion in this project. Whether the Zen Go exposes routing the same way is UNTESTED; query cat 0x03 index 0 to find out. The Zen Go 'channel assignments' tab assigns what each MIXER INPUT STRIP listens to. THE SLOT INDEX = MIXER STRIP NUMBER - 1 (slot 0 = strip 1 ... slot 15 = strip 16), confirmed by the index_map_5_8 / 9_12 / 13_16 captures which set slot 4..15 to the oscillator one at a time. Set a slot to (0x08, 0) to mute that strip's input; there is no 'no source'.",
       "destination_groups": {
         "3": "8 slots -- mirrors the first 8 slots of dest 6/7/8/9 (changes propagate to both). A 'core'/8-channel view or a separate 8-ch bus; role not pinned down.",
         "5": "4 slots -- mixer strips 1-4 only. dest 3 / 6-9 do NOT track dest 5, so it is a distinct target (best guess: the USB record / direct-monitor input map for the first 4 channels).",
@@ -146,11 +146,32 @@
       "evidence": "capture_09_idle_polling.pcapng: 0x83 frames 1:1 with 0x73; metering/ch1.pcapng..ch16.pcapng exercise one channel each (not yet diffed)."
     },
 
-    "name_report": {
-      "magic_offset": 0, "magic": "0x75",
-      "status": "identified",
-      "notes": "Connect-time report carrying ASCII strings: device name ('Zen Go Synergy Core'), serial number, firmware ('6.6'). Paired with 0x74 (a small category/index enumeration, [8] = category, [12] = index -- categories 0x00/0x01/0x11 seen). Far smaller than Orion's 113-record 0x74 burst. Unlike every Orion capture, the Zen Go DOES send readable names over HID here.",
-      "evidence": "capture_01_enumeration.pcapng frames ~7651-9379: 0x74 then 0x75 pairs; 0x75 for category 0x01 = 'Zen Go Synergy Core' + '45027210013...' + '6.6'."
+    "readback": {
+      "status": "CONFIRMED PRESENT 2026-09-01 -- the Zen Go speaks the SAME in-band readback protocol as the Orion Studio III (frame.readback there, PROTOCOL.md 4a), byte-for-byte identical request and response headers. Re-analysed from capture_01_enumeration.pcapng after the protocol was decoded on the Orion. This block replaces the old 'name_report' entry, which described the 0x75 frames as a Zen-Go-specific 'connect-time NAME/topology report' -- they are not: they are ordinary readback RESPONSES, and the ASCII was simply category 0x01 (device name + serial + firmware), the same category that carries it on the Orion.",
+      "request": "host->device, EP 0x01 OUT, full 320-byte report: 74 00 00 00 | 10 00 00 00 | <category> 00 00 00 | <index> 00 00 00 | 00...",
+      "response": "device->host, EP 0x82 IN, full 320-byte report: 75 00 00 00 | 40 01 00 00 | <category> 00 00 00 | <index> 00 00 00 | <data...>",
+      "request_magic": "0x74",
+      "response_magic": "0x75",
+      "response_discriminator_offset": 1,
+      "response_discriminator": "0x00",
+      "magic_offset": 0,
+      "subcmd_offset": 4,
+      "subcmd": "0x10",
+      "category_offset": 8,
+      "index_offset": 12,
+      "data_offset": 16,
+      "discriminator_note": "On the Orion the discriminator matters because its METER report is also magic 0x75 (byte 1 = 0x1f). On the Zen Go the meter is magic 0x83 instead, so 0x75 is unambiguous here -- but the byte-1 check is kept so the same code path serves both devices.",
+      "categories": {
+        "0x00": "device id / firmware -- 2 bytes, observed `01 5a`. Orion's 0x00 is an ASCII firmware string ('4.41'); the Zen Go's is binary and NOT yet decoded (0x5a = 90; do not assume a version until confirmed).",
+        "0x01": "device name + serial + firmware revision -- 48 bytes, ASCII 'Zen Go Synergy C...' then the unit SERIAL then the fw rev. CONTAINS THE DEVICE SERIAL: never paste a raw dump of this category into the repo, an issue, or a capture that gets committed.",
+        "0x11": "1 byte, observed `02`. Orion's 0x11 is 'S/PDIF + a capability bitmask'; the Zen Go has S/PDIF, so `02` is plausibly a channel/capability count -- UNCONFIRMED, do not rely on it."
+      },
+      "observed_walk": "The Zen Go Launcher's connect walk is TINY compared to the Orion's: only 3 queries, categories 0x00 / 0x01 / 0x11, each at index 0 (identical in capture_01_enumeration.pcapng and capture_01_enumeration_diff_filter.pcapng). The Orion walks 113 records across 10 categories. So this capture gives us NO record counts for any category.",
+      "hazard": "!! NO SAFE INDEX BOUNDS ARE KNOWN FOR THIS DEVICE. !! On the Orion, an out-of-range readback index crashes the firmware outright (Cortex-M BusFault, physical power cycle required -- see orion_studio_3.json frame.readback.hazard). The Zen Go is the same protocol family and must be assumed to share the flaw until proven otherwise. Because its connect walk queries only index 0 of three categories, `category_counts` below is EMPTY, which means protocol.check_readback_index CANNOT bound anything here and the CLI will only warn. Query index 0 of a known category; do NOT sweep. Anyone with the hardware: capture a fuller Launcher session first to learn the real counts.",
+      "category_counts": {},
+      "category_counts_note": "Deliberately empty -- see .hazard. Fill this in ONLY from the device's own connect enumeration, never by probing and never by copying the Orion's counts (different device, different record arrays).",
+      "cli": "Works with the shared code: protocol.build_readback_query / is_readback_response / readback_body; CLI `readback <cat> [idx]`. parse_routing_record (cat 0x03) and parse_mixer_record (cat 0x04) are Orion decoders -- the Zen Go has NOT been shown to use those category numbers, so do not assume they apply.",
+      "still_unknown": "Whether the Zen Go exposes routing (Orion cat 0x03) or mixer (Orion cat 0x04) state via readback at all. Its Launcher never asked for them in this capture, but the Orion's Launcher only asks on connect too and the categories still answer. Testable on hardware: query cat 0x03 / 0x04 at index 0 and see whether a non-empty body comes back."
     }
   },
 
@@ -186,7 +207,7 @@
     "mute_bit": "0x40 of mix_command byte 21",
     "solo_bit": "0x80 of mix_command byte 21",
     "link": "SET_LINK space 3, pair_index = channel // 2 (software-mirrored, like Orion)",
-    "readback": "NONE found -- fader/pan/mute/solo writes produce no state_report change. Cache client-side.",
+    "readback": "None in the 0x73 STATE REPORT -- fader/pan/mute/solo writes produce no state_report change (tested). NOT the same as 'no readback exists': see frame.readback, the in-band 0x74/0x75 protocol this device confirmedly speaks. Whether the mixer is exposed there (Orion: category 0x04) is untested. Cache client-side until someone checks.",
     "status": "confirmed",
     "notes": "2 mixes ('Mix 1' / 'Mix 2'), 16 input strips each. Each strip = fader + pan + mute + solo (no send). See frame.mix_command. What each strip's input is comes from the 'channel assignments' routing (frame.routing_command)."
   },
@@ -336,6 +357,6 @@
     "Meter report 0x83 byte-to-channel map (metering/ch1..ch16 captures).",
     "clock_source value order (Internal / USB / S/PDIF?).",
     "Full state_report byte map -- offsets ~90 / 122 / 126 / 127 move on link / 0x49 writes.",
-    "Is there any device-side readback for routing / mixer, or is it write-only like the rest of the family (offline-persistence + hid_probe test)."
+    "Does the in-band readback (frame.readback) carry ROUTING and MIXER state on this device? On the Orion these are categories 0x03 and 0x04 and both are fully decoded, after being wrongly documented as write-only for months. The Zen Go Launcher only queries categories 0x00/0x01/0x11 on connect, but the Orion Launcher is equally sparse and its other categories answer regardless. CHEAP TEST, needs the hardware: `readback 0x03 0` and `readback 0x04 0` -- a non-empty body means it is there. Do NOT sweep indices while doing it (see frame.readback.hazard)."
   ]
 }

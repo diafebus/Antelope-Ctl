@@ -1233,7 +1233,9 @@ routing). **Divergences from Orion:**
 | Thing | Orion | Zen Go |
 |---|---|---|
 | meter report magic | `0x75` | **`0x83`** |
-| connect name/topology report | `0x74` only (no names ever) | `0x74` + **`0x75` = ASCII device name / serial / fw** |
+| in-band readback (§4a) | `0x74` req / `0x75`@1=`0x00` resp | **same, byte-identical** (re-checked 2026-09-01) |
+| ~~"connect name report"~~ | — | ~~`0x75` = ASCII name/serial/fw~~ **corrected: that IS a readback response, category `0x01`** -- the same category that carries name+serial on the Orion. It only looked device-specific because the Orion's `0x75` responses were being filtered as meter noise. |
+| readback connect walk | 113 records / 10 categories | **3 queries only** -- cat `0x00`, `0x01`, `0x11`, all index 0. So **no record counts are known for the Zen Go** → no safe index bounds → **do not sweep** (§4a hazard) |
 | mixer frame | opcode `0x17`, subcmd `0x05`, has a **send** byte @22 | opcode **`0x16`**, subcmd **`0x04`**, **no send** byte |
 | mixes / strips | 4 mixes × 32 | 2 mixes × 16 |
 | preamps | 12 | 2 (A1 = ch0, A2 = ch1) |
