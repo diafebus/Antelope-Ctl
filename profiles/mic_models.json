@@ -1,20 +1,29 @@
 {
   "_comment": "STUB (2026-08-31). Catalogue of Antelope mic-modelling ('emuMic') models for the Orion Studio III's per-preamp mic emulation. This file is intentionally separate from the device profile: the model list a given user can actually load depends on which Antelope modelling mic + model packs are registered to THEIR Antelope account, so a client should pick a model set per user, not per device. The DEVICE-SIDE control of the modelling DSP (enable / polar pattern / capsule swap) is in profiles/orion_studio_3.json -> frame.micmodeling_command + params.mic_modeling; THIS file is only about the model-selection layer.",
 
-  "status": "model list captured 2026-08-31 for ONE account (Edge Duo owner); IDs may be list-position, not global -- see models._comment",
+  "status": "model list captured 2026-08-31 for ONE account (Edge Duo owner); IDs may be list-position, not global -- see models._comment. Per-model polar-pattern index ranges swept 2026-09-01 (macos-emumic-polar-patterns).",
 
   "what_is_known": {
-    "dsp_control_frame": "opcode 0x17 / param_id 0xe5 (frame.micmodeling_command in orion_studio_3.json). Frame: e5 05 <ch> <enabled> <model> <swap> <pattern>. [20] = model id (0 = EdgeDuo / raw), [22] = polar pattern -- with model 0 it is the free 0-100 morph (0 omni / 50 cardioid / 100 fig-8); with a selected model the Launcher writes that model's pattern_class code (0/1/4, see models). Present on preamps 7-12 only.",
+    "dsp_control_frame": "opcode 0x17 / param_id 0xe5 (frame.micmodeling_command in orion_studio_3.json). Frame: e5 05 <ch> <enabled> <model> <swap> <pattern>. [20] = model id (0 = EdgeDuo / raw), [22] = polar-pattern INDEX (0-based) -- with model 0 it is the free 0-100 morph (0 omni / 50 cardioid / 100 fig-8); with a selected model it is a small index into that model's pattern list (range per model, see models[].patterns). Selecting a model presets [22] to that model's DEFAULT index (the value formerly called 'pattern_class' -- 0 for fixed, 1 for the 3-way mics, 4 for the 9-detent mics). Present on preamps 7-12 only.",
     "matrix_source": "the modelled (wet) signal is routing source bank 0x01 ('emumic'), idx 0-7 = preamps 5-12 (confirmed 2026-08-31, capture 'emumic-5to 12'). Distinct from bank 0x00 (dry preamp).",
-    "model_selection_frame": "SAME frame as the DSP control (0x17/0xe5), byte [20] = model id. Captured 2026-08-31 ('emumic-model-select-...', 18 models cycled). No readback -- write-only.",
+    "model_selection_frame": "SAME frame as the DSP control (0x17/0xe5), byte [20] = model id. Captured 2026-08-31 ('emumic-model-select-...', 18 models cycled). On select, [22] is preset to the model's default pattern index. No readback -- write-only.",
+    "polar_pattern_sweep": "macos-emumic-polar-patterns (2026-09-01): every model 0..18 selected on preamps 7-8 and its polar-pattern UI control clicked through. [22] is the pattern index and its observed range is per-model (models[].patterns). [21] channel-swap and [23]/[24] stayed 0 throughout. Enabling still fires one SET_LINK for the preamp pair. Models 1/12/16/18 (Tokyo 800T, Berlin M251/K86/47 TU) only had indices 0 and 1 exercised -- whether they also have index 2 is unconfirmed (their default index is 1, which for the 3-way mics is the middle position, so a third value is plausible; re-sweep to settle).",
     "side_effects_of_enabling": "the Launcher also turns on 48V phantom (param 0x51) for the pair and links the preamp pair (SET_LINK space 0)."
   },
 
   "pattern_class": {
-    "_comment": "byte [22] value the Launcher writes when a model is selected -- what polar-pattern behaviour that model has.",
-    "0": "fixed single pattern (the modelled mic's native one -- e.g. a FET cardioid or a ribbon figure-8; the pattern control is locked)",
-    "1": "3-way switchable (omni / cardioid / figure-8)",
-    "4": "continuously variable / multi-pattern (e.g. the classic 9-pattern and 5-pattern condensers)"
+    "_comment": "PARTIALLY CORRECTED 2026-09-01. This is the [22] value the Launcher presets when a model is selected -- it is the model's DEFAULT polar-pattern INDEX, not a separate class code (macos-emumic-polar-patterns showed [22] is always the pattern index). It still works as a rough family label because the default sits in the middle of the range: 0 => a single fixed pattern (control locked); 1 => a switchable mic, default = cardioid (models 3/4/7 confirmed 3-way 0/1/2; models 1/12/16/18 only 0/1 seen); 4 => a 9-detent multipattern mic, default = cardioid, index 0..8 (models 9/10/11). Kept under the old key name to avoid churn in this stub; see models[].patterns for the per-model observed range.",
+    "0": "fixed single pattern (the modelled mic's native one -- e.g. a FET cardioid or a ribbon figure-8; the pattern control is locked at index 0)",
+    "1": "switchable, default index 1 (cardioid). Confirmed 3-way (0 omni / 1 cardioid / 2 fig-8) for models 3, 4, 7; models 1, 12, 16, 18 had only 0 and 1 exercised.",
+    "4": "9-detent multipattern, default index 4 (cardioid), full range 0..8 (omni -> fig-8). Models 9, 10, 11."
+  },
+  "pattern_index_ranges_2026_09_01": {
+    "_comment": "byte [22] values observed per model in macos-emumic-polar-patterns (preamps 7-8, all 19 models). Index, not degrees. Model 0 is the exception: 0-100 continuous morph.",
+    "0": "0-100 continuous (Edge Duo raw morph; 0 omni / 50 cardioid / 100 fig-8)",
+    "fixed_at_0": [2, 5, 6, 8, 13, 14, 15, 17],
+    "0_1_only_seen": [1, 12, 16, 18],
+    "0_1_2": [3, 4, 7],
+    "0_to_8": [9, 10, 11]
   },
 
   "account_binding": {
@@ -38,7 +47,7 @@
   },
 
   "models": {
-    "_comment": "model id ([20] in the 0x17/0xe5 frame) -> {name as shown in the Launcher, pattern_class}. Captured 2026-08-31 from 'emumic-model-select-...' on ONE account (an Edge Duo owner). WARNING: it is not confirmed whether these ids are GLOBAL (each model has a fixed id) or POSITIONAL (index into the list the Launcher shows YOU, which depends on which model packs you own). If positional, a user with a different pack set gets a different mapping. Treat this as that account's snapshot; a client should let the user pick by name. 'name' uses Antelope's own city+number naming (what the Launcher shows); the classic mics they emulate are deliberately not spelled out here (see account_binding.do_not).",
+    "_comment": "model id ([20] in the 0x17/0xe5 frame) -> {name as shown in the Launcher, pattern_class}. The per-model `pattern_class` here is the DEFAULT polar-pattern index the Launcher presets on select (0/1/4) -- see the pattern_class block above for the 2026-09-01 correction, and pattern_index_ranges_2026_09_01 for each model's observed [22] range. Captured 2026-08-31 from 'emumic-model-select-...' on ONE account (an Edge Duo owner). WARNING: it is not confirmed whether these ids are GLOBAL (each model has a fixed id) or POSITIONAL (index into the list the Launcher shows YOU, which depends on which model packs you own). If positional, a user with a different pack set gets a different mapping. Treat this as that account's snapshot; a client should let the user pick by name. 'name' uses Antelope's own city+number naming (what the Launcher shows); the classic mics they emulate are deliberately not spelled out here (see account_binding.do_not).",
     "0":  { "name": "EdgeDuo (raw / no emulation)", "pattern_class": null, "note": "the mic's own sound; [22] is then the free 0-100 pattern morph" },
     "1":  { "name": "Tokyo 800T",       "pattern_class": 1 },
     "2":  { "name": "Berlin 47 FT",     "pattern_class": 0 },

@@ -1071,14 +1071,18 @@ e5 05 <ch> <enabled> <model> <swap> <pattern>
 | 19 | **enabled** | `1` = modeling on, `0` = off (also zeros @20-22) |
 | 20 | **model id** | `0` = EdgeDuo / raw (no emulation, default); `1`…`N` = the emulation models (`profiles/mic_models.json`) |
 | 21 | **channel-order swap** | `0`/`1` -- a switch that swaps the pair's channel order |
-| 22 | **polar pattern** | with model `0`: `0` omni / `50` cardioid / `100` figure-8, continuous. With a selected model: that model's **pattern-class** code -- `0` = fixed native pattern, `1` = 3-way switchable, `4` = continuously variable |
+| 22 | **polar pattern** | a **0-based index**, always. Model `0`: `0`-`100` continuous morph (`0` omni / `50` cardioid / `100` figure-8). A selected emulation model: a small index into that model's pattern list -- range per model: `0` only (fixed mic), `0`-`2` (3-way omni/cardioid/fig-8), or `0`-`8` (9-detent multipattern). Selecting a model presets `[22]` to the model's **default** index (`0` / `1` / `4`) -- this preset value is what `mic_models.json` earlier called `pattern_class` |
 
 Whole state every frame; params **mirror across the linked preamp pair**
 host-side (Launcher sends `[18]=N` then `[18]=N+1`). From
 `macos-ch7-8-micmodeling-*` / `macos-ch9-10_11-12-micmodeling-*` (model 0,
-pattern swept 0→100 step 4; swap; enable/disable) and
+pattern swept 0→100 step 4; swap; enable/disable),
 `emumic-model-select-tokyo800t-…-b47TU` (18 models cycled on preamps 7-8
-→ `[20]` = `0x01`…`0x12`, `[22]` = the model's class code).
+→ `[20]` = `0x01`…`0x12`), and **`macos-emumic-polar-patterns`
+(2026-09-01)** -- every model 0-18 selected and its polar-pattern control
+swept: `[22]` fixed at `0` for models 2/5/6/8/13/14/15/17, `0`-`1` for
+1/12/16/18 (a 3rd value not exercised), `0`-`2` for 3/4/7, `0`-`8` for
+9/10/11. `[21]`/`[23]`/`[24]` stayed `0`.
 
 **Enabling also triggers side effects** (the Launcher does these, not the
 device): 48 V **phantom on** for the pair (`SET_PARAM` param `0x51`) and a
@@ -1093,9 +1097,9 @@ order in that capture's filename. Id `0` = EdgeDuo (raw mic, emulation
 bypassed) is the default. **This list is account-bound** -- Edge mics +
 model packs activate against an Antelope account, so the usable models
 are per-user, and it is not confirmed whether the ids are global or just
-positions in the list the Launcher shows you. Full id→name→pattern_class
-table in `profiles/mic_models.json`; readback category not identified yet
-(§4a).
+positions in the list the Launcher shows you. Full id→name→default-pattern
+table in `profiles/mic_models.json` (+ each model's observed `[22]` range);
+readback category not identified yet (§4a).
 Antelope's own naming (Berlin / Vienna / Tokyo / …) is used; the classic
 mics being emulated are not spelled out (that's the licensed IP).
 
@@ -1154,7 +1158,7 @@ plugin chain and anything touching license state. `0x1d` is now in
 |---|---|
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. Open: wire `route` writes for the other 9 destinations. |
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number) + `0x1b` (bus levels), partly decoded. Not in the CLI. |
-| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded 2026-08-31 (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`). 18 emulation models + a pattern-class code in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Open: how a variable-pattern model's pattern is set after selection; whether model ids are global or list-position. |
+| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |

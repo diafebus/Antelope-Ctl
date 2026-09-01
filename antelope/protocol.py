@@ -363,10 +363,12 @@ def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
     `channel` is the 0-based input channel index (mic modeling exists only on
     preamps 7-12, i.e. channel 6-11); it is written as channel + channel_bias.
     `model` is the emulation model id (0 = EdgeDuo / raw, no emulation).
-    `pattern` is the polar-pattern byte -- with model 0 it is the 0-100
+    `pattern` is the polar-pattern INDEX -- with model 0 it is the 0-100
     continuous morph (0 omni / 50 cardioid / 100 figure-8); with an emulation
-    model the Launcher writes that model's pattern-class code (see
-    profiles/mic_models.json), so pass the model's `pattern_class` there.
+    model it is a small 0-based index into that model's pattern list, range
+    per model (0 for a fixed mic, 0..2 for a 3-way, 0..8 for a 9-detent
+    multipattern -- see profiles/mic_models.json). Selecting a model in the
+    Launcher presets it to the model's default index (0 / 1 / 4).
     `swap` is the channel-order swap toggle.
     Whole state every frame, no readback. Does NOT do the Launcher's side
     effects (auto phantom-on, preamp-pair link)."""
