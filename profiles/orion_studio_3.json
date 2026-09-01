@@ -201,6 +201,8 @@
       "channel_offset": 18,
       "channel_bias": -4,
       "channel_bias_note": "byte 18 = 0-based input channel index + channel_bias, i.e. preamp 7 (index 6) -> 2, preamp 12 (index 11) -> 7",
+      "channels": [6, 7, 8, 9, 10, 11],
+      "channels_note": "0-based input channel indices that have the EMU / mic-modeling button -- preamps 7-12.",
       "enabled_offset": 19,
       "model_offset": 20,
       "swap_offset": 21,
