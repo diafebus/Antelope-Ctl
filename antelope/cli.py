@@ -1847,33 +1847,37 @@ def cmd_meter(args, profile):
     each frame in place (bulletproof across terminals/multiplexers, unlike
     \\r-based line editing which some setups mishandle). Keeps the HID node
     open and just throttles how often it repaints, instead of re-invoking like
-    `watch` would. frame.meter_report.channel_meter_base_offset is confirmed
-    for all 12 channels, but the dB calibration (db_curve) is from a
-    channel-0-only sweep and applied to every channel regardless -- treat
-    the numbers/colors on channels 1-11 as a reasonable estimate, not an
-    independently verified reading. Run with --duration 0 to stream until
-    Ctrl-C."""
-    mr = profile['frame'].get('meter_report', {})
-    if mr.get('channel_meter_base_offset') is None:
-        sys.exit('This profile has no channel_meter_base_offset -- meter reading not available yet.')
+    `watch` would.
+
+    Reads whichever frame actually carries the per-channel input meters for
+    this profile -- see protocol.channel_meter_source(). On the Orion Studio
+    III that is the 0x73 state report at offset 157+channel; its separate 0x75
+    meter frame turned out to be only a monitor sum (see PROTOCOL.md sec 9).
+    The dB calibration (db_curve) is from a channel-0-only sweep applied to
+    every channel, so treat the numbers/colors on channels 1-11 as a
+    reasonable estimate, not an independently verified reading. Run with
+    --duration 0 to stream until Ctrl-C."""
+    try:
+        magic, meter_base = proto.channel_meter_source(profile)
+    except ValueError:
+        sys.exit('This profile has no channel_meter_base_offset (state_report or '
+                 'meter_report) -- meter reading not available yet.')
 
     n_channels = _resolve_channel_count(args, profile, 'input', fallback=12)
     transport = get_transport(profile)
-    magic = proto.meter_report_magic(profile)
     end = time.time() + args.duration if args.duration else None
     min_interval = 1.0 / args.refresh_hz if args.refresh_hz > 0 else 0
     last_draw = 0.0
-    header = 'meter offsets are UNCONFIRMED (candidate only, see profile notes)' \
-        if not str(mr.get('status', '')).startswith('confirmed') else ''
-    if not mr.get('db_curve'):
-        header += (' -- no db_curve calibration in profile, showing raw/uncolored bars '
-                   '(fill in meter_report.db_curve from a real sweep to get dB + color)')
+    mr = profile['frame'].get('meter_report', {})
+    header = '' if mr.get('db_curve') else (
+        'no db_curve calibration in profile, showing raw/uncolored bars '
+        '(fill in meter_report.db_curve from a real sweep to get dB + color)')
     try:
         while True:
             data = transport.read_one(magic, args.timeout)
             if not data:
                 sys.stdout.write('\x1b[2J\x1b[H')
-                print('no meter report received')
+                print('no meter frame received')
                 break
             now = time.time()
             if now - last_draw >= min_interval:
@@ -1881,7 +1885,7 @@ def cmd_meter(args, profile):
                 levels = []
                 for ch in range(n_channels):
                     try:
-                        levels.append(proto.parse_meter_level(profile, data, ch))
+                        levels.append(proto.parse_channel_meter(profile, data, ch, meter_base))
                     except ValueError:
                         break
                 line = '  '.join(f'ch{ch}[{_meter_bar(v, profile)}]' for ch, v in enumerate(levels))

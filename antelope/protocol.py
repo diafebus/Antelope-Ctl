@@ -929,6 +929,31 @@ def parse_meter_level(profile: dict, data: bytes, channel: int) -> int:
     return data[off]
 
 
+def channel_meter_source(profile: dict):
+    """Which frame carries the real per-channel input meters for this profile,
+    as (magic, base_offset). Prefers state_report.channel_meter_base_offset
+    (the 0x73 embedded block -- confirmed on the Orion Studio III, where the
+    separate 0x75 meter frame turned out to be only a monitor sum), and falls
+    back to meter_report.channel_meter_base_offset. Raises ValueError if
+    neither is set."""
+    sr = profile['frame'].get('state_report', {})
+    if sr.get('channel_meter_base_offset') is not None:
+        return state_report_magic(profile), _as_int(sr['channel_meter_base_offset'])
+    mr = profile['frame'].get('meter_report', {})
+    if mr.get('channel_meter_base_offset') is not None:
+        return meter_report_magic(profile), _as_int(mr['channel_meter_base_offset'])
+    raise ValueError('no channel_meter_base_offset in state_report or meter_report')
+
+
+def parse_channel_meter(profile: dict, data: bytes, channel: int, base: int) -> int:
+    """Raw meter byte for `channel` at `base + channel` in `data`. `base` comes
+    from channel_meter_source(). Inverted scale (see channel_meter_scale)."""
+    off = base + channel
+    if off >= len(data):
+        raise ValueError(f'meter frame too short for channel {channel}')
+    return data[off]
+
+
 def raw_to_db(profile: dict, raw_value: int):
     """Convert a raw meter byte to dBFS using profile['frame']['meter_report']['db_curve'],
     a list of [raw_byte, db] calibration points (any order), piecewise-linearly

@@ -75,15 +75,16 @@ Notes:
 
 | Magic @0 | Name | Rate | Purpose |
 |---|---|---|---|
-| `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. Same frame family as a readback response for "category 0". |
-| `0x75` byte1 `0x1f` | meter report | continuous | per-channel input meters, offset 32 + channel index |
+| `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. **Also carries the per-channel input meters** at offset `157 + channel` (section 9). Same frame family as a readback response for "category 0". |
+| `0x75` byte1 `0x1f` | meter report | continuous | on the Orion Studio III this is NOT per-channel -- only byte 32 is live (a monitor sum) and byte 33 is a flag. Per-channel meters are in `0x73`. See section 9. |
 | `0x75` byte1 `0x00` | **readback response** | on request | reply to a `0x74` query -- `(category, index)` at @8/@12, payload from @16. See §4a. |
 | `0x74` | readback / enumeration | at connect, then on demand | the host walking `(category, index)` -- see §4 / §4a |
 
-`0x75` meter bytes: one byte per channel from offset **32**, same channel
-order as gain/status. Scale is **inverted** -- `0x60` (96) at
-rest/silence, falls toward `0x00` as the signal gets louder. Calibration
-in section 9.
+Per-channel input meters: one byte per channel from **`0x73` offset 157**
+(mirror copies at 169 and 221), same channel order as gain/status. Scale is
+**inverted** -- `0x60` (96) at rest/silence, falls toward `0x00` as the
+signal gets louder. Calibration in section 9. The separate `0x75` meter
+frame is a monitor/summed level only on this unit (byte 32), not per-channel.
 
 ### 2026-08 caveat, REVISED 2026-08-31
 
@@ -446,7 +447,7 @@ offset for target *N*.
 | 75-90 | **ADAT gain array** -- 16 ADAT channels | ADAT channel *N* (0-indexed) gain @ `75+N`, int8 dB, range -6..+12 | confirmed |
 | 91-92 | **S/PDIF gain** -- L / R | ch 0 (L) @ `91`, ch 1 (R) @ `92`, int8 dB, range -6..+12 | confirmed |
 | 139-140 | *startup ramp* | both bytes ramp to `0x60` in the first ~0.12 s of every capture (a nearby block, 129-136, does the same in INIT) | startup settling, ignore |
-| 157-176, 221-232 | *embedded meter jitter* | free-runs `0x5a`<->`0x60` at rest; drops toward 0 on loud signal | unresolved (looks like a second meter copy) |
+| 157-168 | **per-channel input meters** -- 12 physical inputs | channel *N* meter @ `157+N`, inverted (96 silence -> 0 loud); mirror copies at 169-180 and 221-232 | confirmed 2026-09-01 (section 9) |
 
 Layout is tight and sequential: gain array (49-60), status array (61-72),
 talkback status+gain (73-74), ADAT gain array (75-90), S/PDIF gain (91-92)
@@ -847,9 +848,28 @@ behaviour itself if it wants Launcher-equivalent results.
 
 ---
 
-## 9. Meter calibration (`0x75` report)
+## 9. Meters
 
-Raw meter byte at offset `32 + channel_index`. Inverted scale.
+### Where they are (CORRECTED 2026-09-01)
+
+The per-channel input meters are in the **`0x73` state report** at
+`157 + channel_index` (12 physical channels). Inverted scale: raw `0x60`
+(96) at silence, falling toward `0x00` as level rises. Three byte-identical
+mirror copies of the 12-byte block exist at bases **157, 169, 221** -- use
+157.
+
+Recapture that pinned it (2026-09-01): feeding preamps 1/2/3/4 in turn drove
+offsets 157/158/159/160 to the single digits one after another, each
+recovering to ~96 on silence; unfed channels stayed at rest.
+
+The separate **`0x75` meter frame** (byte1 `0x1f`) was previously documented
+as `32 + channel`, "confirmed for all 12". That was wrong for this unit: only
+byte 32 is live -- a monitor / summed level that responds to any input --
+and byte 33 is a 0/1 flag. The old formula rendered byte 33 as channel 1
+pinned at clip. `0x75` is still fine as a single monitor meter (byte 32).
+
+`protocol.channel_meter_source()` returns `(magic, base)` -- state report
+first, meter report as fallback -- and `parse_channel_meter()` reads it.
 
 ### dB curve (channel 0 only, applied to all 12)
 
@@ -1215,7 +1235,7 @@ plugin chain and anything touching license state. `0x1d` is now in
 | Thunderbolt / latency | zero outgoing frames -- host driver setting; TB inactive over USB |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
-| Offsets 157-176 / 221-232 | free-running meter data embedded in the state report; exact byte->channel mapping not pinned down (cross-check against `0x75` offsets 32-43) |
+| Offsets 157-168 / 169-180 / 221-232 | **resolved 2026-09-01** -- per-channel input meters, `157 + channel` (three mirror copies). §9. |
 | Channel-link readback bit | none found; may not exist |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |

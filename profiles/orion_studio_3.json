@@ -216,6 +216,9 @@
       "status_base_offset": 61,
       "adat_gain_base_offset": 75,
       "spdif_gain_base_offset": 91,
+      "channel_meter_base_offset": 157,
+      "channel_meter_scale": "inverted: 0x60 (96) at rest/silence, falls toward 0x00 as level rises. Same scale as meter_report.db_curve (raw ~= -dBFS), reuse that curve.",
+      "channel_meter_notes": "CONFIRMED 2026-09-01 (dedicated vumeter recapture): the real per-channel input meters live HERE in the 0x73 state report, at 157 + channel_index for the 12 physical channels. Feeding preamps 1/2/3/4 in turn dropped offsets 157/158/159/160 to the single digits one after another, each returning to ~96 when the tone stopped; unfed channels stayed at 96 / noise-floor jitter. Three identical mirror copies of the whole 12-byte block exist at bases 157, 169 and 221 -- use 157. This supersedes meter_report.channel_meter_base_offset (0x75 @32), which on this unit is NOT per-channel: only its byte 32 is live (a monitor/summed level) and byte 33 is a 0/1 flag that the old 32+channel formula misreads as channel 1 pinned at clip. Resolves the unresolved_state_offsets '157/169/221' entry.",
       "status_bits": {
         "input_mode": {
           "mask": "0x03",
@@ -314,10 +317,10 @@
     "meter_report": {
       "magic_offset": 0,
       "magic": "0x75",
-      "status": "confirmed",
+      "status": "superseded_for_per_channel",
       "channel_meter_base_offset": 32,
-      "channel_meter_scale": "inverted: 0x60 (96) at rest/silence, falls toward 0x00 as input level rises",
-      "notes": "One byte per channel, same order as gain/status. Offset formula confirmed for all 12 physical channels (each channel's meter tracks its own signal correctly -- 2026-08). dB calibration (db_curve) comes from a channel-0-only sweep; applied to all channels for lack of a per-channel calibration, see db_curve_notes.",
+      "channel_meter_scale": "inverted: 0x60 (96) at rest/silence, falls toward 0x00 as level rises",
+      "notes": "CORRECTED 2026-09-01: on this unit the 0x75 frame is NOT a per-channel meter. Only byte 32 is live -- a monitor/summed level that moves for any input -- and byte 33 is a 0/1 flag. The old '32 + channel, confirmed for all 12' claim was wrong: a dedicated recapture feeding preamps 1-4 in turn showed no movement past byte 32, and the byte-33 flag was rendered as channel 1 stuck at clip. The real per-channel input meters are in the 0x73 state report -- see state_report.channel_meter_base_offset (157 + channel). db_curve below (raw ~= -dBFS) still applies to those. Kept here for the offset-32 monitor reading and the shared curve.",
       "db_curve": [
         [
           0,
@@ -1006,11 +1009,11 @@
     },
     {
       "offset": "157-176",
-      "notes": "candidate: per-channel meter/level data embedded directly in the state report (not just the separate 0x75 meter report). vumeter-test-ch1 session (2026-08): offsets 157/169/221 (spacing doesn't match the 1-byte-per-channel gain/status layout -- pattern not yet understood) track together and dropped from their ~0x60 (96) resting value down into the teens/single digits during the loud (mic, gain-75) stretch of the capture, then returned to ~0x60 once gain came back down -- same 'quiet=high, loud=low' shape as the confirmed meter_report.channel_meter_base_offset candidate. The whole 157-176 and 221-232 ranges flicker constantly between 0x5a (90) and 0x60 (96) even at rest, consistent with meter jitter rather than a static setting. Still not a controlled single-variable test -- do a dedicated one-channel sweep (silence/moderate/loud/clip) before trusting the exact byte-to-channel mapping or flipping this to confirmed. Also flickers the same way in the mona/monb/hp1/hp2/chlink captures (2026-08), unrelated to whatever bus/link action was being tested -- further support that this is free-running meter jitter, not a setting."
+      "notes": "RESOLVED 2026-09-01: this IS the per-channel input meter block -- 12 bytes from offset 157, one per physical channel, inverted scale (96 rest, ->0 loud). Dedicated recapture: feeding preamps 1/2/3/4 in turn dropped offsets 157/158/159/160 to the single digits one at a time, each recovering to ~96 on silence; channels 5-12 stayed at rest. The 'spacing doesn't match' confusion was from only ever watching offsets 157, 169, 221 -- those are the channel-0 byte in three IDENTICAL mirror copies of the block (bases 157, 169, 221). Use 157. Now in the profile as state_report.channel_meter_base_offset; the 0x75 meter_report on this unit is only a monitor sum + a flag byte (see its notes)."
     },
     {
       "offset": "221-232",
-      "notes": "see 157-176 above -- same session, same evidence, treated as one candidate meter block spanning both ranges rather than two separate features (was previously listed as a separate 'low-cut filter, digital trim, headphone level' guess; that guess is now superseded by the meter-correlation evidence, but not yet disproven)."
+      "notes": "RESOLVED 2026-09-01 -- see 157-176 above. This is the third mirror copy of the 12-byte per-channel input meter block (identical to the copies at 157 and 169). The old 'low-cut filter / digital trim / headphone level' guess is disproven."
     },
     {
       "offset": "bus status bit 0x04 at max level (was 'bus_mute coincidence')",
