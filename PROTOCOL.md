@@ -47,13 +47,13 @@ opcode -- this is the single most important thing to get right:
 | Opcode @4 | Name | param_id @16 | Payload | Used by |
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
-| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`) |
+| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), oscillator panel (`0x0a`, packed byte), DC-coupling (`0x26`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 7-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
-| `0xab` | (surround-EQ?) | `0xeb` | `99 b0 <flags@19> 06 00 58 02` (@17..23), **barely decoded** -- 2 frames, bit 7 of @19 is the toggle | surround-EQ pre/post (probably) |
+| `0xab` | SET_SURROUND | `0xeb` | whole-state frame: `99 <b18> <b19> <b20> 06 00 <delay LE16 @22-23> …`. **`[19]` bit 7 = EQ pre/post (confirmed)**, `[22-23]` = delay; rest partly mapped -- see §11 | surround monitoring tab (level/dim/mute/delay/bypass/EQ) |
 
 Notes:
 - **`0x17` is overloaded** -- the param_id at @16 is the real discriminator:
@@ -908,9 +908,10 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
-| surround_eq (pre/post?) | `0xeb` | `0xab` | - | bit 7 of payload byte @19, rest undecoded | none in `0x73` |
+| surround tab (EQ pre/post, delay, …) | `0xeb` | `0xab` | - | whole-state frame; `[19]` bit 7 = EQ pre/post (confirmed), `[22-23]` = delay LE16, rest partly mapped (§11) | none in `0x73` |
 | oscillator (matrix insert) | `0xd3` | `0x53` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | none |
-| oscillator (settings panel: freq/level/mute) | - | - | host-side, sends nothing (§11) | none |
+| oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
+| DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | none in `0x73` |
 
 ---
 
@@ -924,30 +925,46 @@ What the Settings/Device window controls actually do, from the captures
 | **Line-out level + mute** | `settings-linevol-...` | `bus_level` `0x47` / `bus_mute` `0x48` on **bus 3** | **real, confirmed** -- in CLI (`set-bus-level line` / `set-bus-mute line`) |
 | **Reamp-out level** | `settings-linevol-...` | `bus_level` `0x47` on **bus 4** | **real, confirmed** -- in CLI (`set-bus-level reamp`) |
 | **Output trim** (Mon A / Mon B / Line) | `settings-trim-...` | param `0x4b`, 20 frames | **real, confirmed** -- readback @24-25 (section 6); not yet in CLI |
-| **Surround-EQ pre/post** | `settings-scrbrght-surroundEQ` | opcode `0xab` / param `0xeb`, **2 frames** | **real command exists** -- layout undecoded, no `0x73` readback |
+| **Surround-EQ pre/post** | `macos-settings-srrndeq-post-pre` | opcode `0xab` / param `0xeb`, 4 frames | **confirmed** -- `[19]` bit 7 = the toggle; rest of the `0xab` frame is a whole-state blob (partly mapped, §11 below) |
 | Pan law | `settings-trim-...` | none (not sent in that capture) | unknown -- recapture |
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
-| **Oscillator** -- settings panel (freq/level/mute) | `settings-osc1-2-fq-lvl` | **zero frames** | host-side or uncaptured |
+| **Oscillator** -- settings panel (freq/level/mute) | `macos-settings-osc1-mute-1khz` etc. | opcode `0x12` / param `0x0a` / packed value @17 | **DECODED (native macOS, 2026-09-01)** -- the old "zero frames" was an inbound-only capture; see §11 below |
 | **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; in CLI (`set-brightness`). VM sent nothing because the slider is a no-op under the VM. |
-| **Thunderbolt / latency / DC-coupling** | `settigs-thunderb-lat-dccp` | **zero frames** | host driver settings; TB is inactive while connected over USB, so this tab does nothing in this setup |
+| **DC-coupling** | `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on` | opcode `0x12` / param `0x26` / value 0-1 @17 | **DECODED (native macOS, 2026-09-01)** -- talkback fast/normal/safe modes in the same capture sent nothing |
 
 So the Settings window is a genuine mix: output levels/mute, the three
-trims, surround-EQ pre/post and **screen brightness** are real device
-commands; the oscillator panel and latency are host-side. **Lesson: the
-VM Launcher silently no-ops some controls -- "zero frames under the VM"
-does not mean host-side. Re-check on native macOS before concluding.**
+trims, surround-EQ pre/post, screen brightness, **the oscillator panel**
+and **DC-coupling** are real device commands; talkback latency modes and
+Thunderbolt/buffer settings are host-side. **Lesson (seen twice now, osc +
+readback): an inbound-only or VM capture that shows "zero frames" is not
+proof a control is host-side -- recapture with the OUT endpoint on native
+macOS before concluding.**
 
-### Oscillator -- two access points
+### Oscillator -- two access points (settings panel DECODED 2026-09-01)
 
 **In the routing matrix:** right-click an output → insert oscillator. It
 becomes a matrix source, bank `0x0c` (idx 0/1 = oscillator 1/2), sent as
-the normal `0x53` routing frame (confirmed, §7). So *inserting* an
-oscillator into an output IS a real device command.
+the normal `0x53` routing frame (confirmed, §7).
 
-**The settings-tab oscillator panel** (freq 1kHz/400Hz, level 0..−18 dBFS,
-mute): `settings-osc1-2-fq-lvl.pcapng` had **zero** outgoing frames over
-27.7 s. So the per-signal parameters are configured host-side or via an
-uncaptured path -- only the matrix "insert into output" half is confirmed.
+**The settings-tab oscillator panel** (two oscillators, each freq
+1kHz/400Hz + mute, plus a level selector): `SET_GLOBAL` (opcode `0x12`),
+param **`0x0a`**, one **packed value byte** at offset 17:
+
+| bit | field |
+|---|---|
+| `0x01` | osc 1 frequency (0 / 1) |
+| `0x04` | osc 2 frequency (0 / 1) |
+| `0x30` | level, 2-bit field @ bits 4-5: `0`=0 dBFS `1`=−6 `2`=−12 `3`=−18 |
+| `0x40` | osc 1 mute |
+| `0x80` | osc 2 mute |
+
+No `0x73` readback (state stream shows only meter jitter through every
+change). Open: whether the level field is shared or per-oscillator (the
+capture only moved one); bits `0x02`/`0x08` unused. The earlier
+"`settings-osc1-2-fq-lvl` sent zero frames" was an **inbound-only
+capture** -- the recapture with the OUT endpoint present
+(`macos-settings-osc1-mute-1khz` / `-osc2-mute-400hz-1khz` /
+`-osclvl-6-12-18-0db`) shows every click is a `0x12`/`0x0a`.
 
 ### Screen brightness -- RESOLVED (native macOS, 2026-08)
 
@@ -972,19 +989,41 @@ the first `SET_GLOBAL` builder (opcode `0x12`, value @17). Readback via
 The talkback params (`0x1f`/`0x20`/`0x27`) can use `build_global_command`
 too. See `params.screen_brightness`.
 
-### Surround-EQ
+### Surround-EQ + the Surround monitoring tab (`0xab` / `0xeb`)
 
-The one Settings-window control here that does talk to the device:
-opcode `0xab` / param `0xeb` (its own command shape), 2 frames, bit 7 of
-payload byte @19 toggles. No `0x73` effect. Needs a dedicated capture to
-decode the `0xab` layout.
+Opcode `0xab` / param `0xeb` -- **its own whole-state command shape**, like
+AuraVerb: one frame carries every surround-monitor parameter (level, dim,
+mute, delay, bypass, EQ, pre/post). Frame:
+`ab .. eb 99 <b18> <b19> <b20> 06 00 <delay LE16 @22-23> <more @24+>`.
 
-### Thunderbolt / latency / DC-coupling
+Settled:
+- **`[19]` bit 7 (`0x80`) = surround-EQ pre / post** -- `macos-settings-srrndeq-post-pre`,
+  4 clean frames `0x1f` ↔ `0x9f`, nothing else moving. (The earlier
+  2-frame guess said `0x03`→`0x83`; base value differs because other
+  surround state does, but it is the same bit-7 toggle.)
+- **`[22-23]` = 16-bit LE delay value** -- swept 0..760+ in
+  `macos-srrnd-tab-...` (the surround-delay / total-delay controls).
+
+Not settled: `[18]` (base `0x02`, seen `0x82`/`0x42`), `[19]` bit `0x20`,
+`[20]` (base `0x06`, swept `0x09`..`0x2d`), and an `0xffff` marker that
+appears at shifting offsets 24-31 when EQ/delay sub-controls are touched.
+No `0x73` readback for any of it. A one-control-at-a-time pass over
+`macos-srrnd-tab-...` would finish the frame.
+
+### DC-coupling (`0x12` / `0x26`) -- DECODED 2026-09-01
+
+`macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on`: the DC-coupling
+toggle is `SET_GLOBAL` (opcode `0x12`), param **`0x26`**, value `0`/`1`.
+No `0x73` readback. The **talkback latency modes** (fast / normal / safe)
+in the same capture sent **nothing** -- host-side, or a path not on this
+interface. This closes the old `settigs-thunderb-lat-dccp` "zero frames"
+item: DC-coupling does talk to the device.
+
+### Thunderbolt / latency
 
 `settigs-thunderb-lat-dccp.pcapng` -- zero outgoing frames. Latency/buffer
-is a host driver setting. Thunderbolt is inactive over USB. DC-coupling
-*should* be hardware but wasn't exercised (or is TB-gated) -- worth an
-isolated recapture, ideally on macOS.
+is a host driver setting; Thunderbolt is inactive over USB. (DC-coupling,
+which that capture never exercised, is now decoded -- see above, `0x12`/`0x26`.)
 
 ---
 
@@ -1162,11 +1201,12 @@ plugin chain and anything touching license state. `0x1d` is now in
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
-| Oscillator | matrix insert is a real command (routing bank `0x0c`, §7); the settings-panel freq/level/mute sends nothing |
+| Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Sample rate | **resolved (native macOS)** -- opcode `0x12` / param `0x03` / index 0-6 @17, readback @18 (`macos-smplrt-...`). CLI `sample-rate` / `set-sample-rate`. Open: the clock/PLL/buffer bytes @21-23,27 that move only at 88.2k/176.4k. |
-| Surround-EQ pre/post | new opcode `0xab` / param `0xeb` seen (2 frames); layout undecoded, no `0x73` effect |
-| Thunderbolt / latency / DC-coupling | zero outgoing frames -- host-side, or not exercised |
+| Surround tab (`0xab`/`0xeb`) | EQ pre/post (`[19]` bit 7) + delay (`[22-23]`) decoded; `[18]`/`[20]`/other `[19]` bits + the `0xffff` marker still open (§11). No `0x73` effect |
+| DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
+| Thunderbolt / latency | zero outgoing frames -- host driver setting; TB inactive over USB |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
 | Offsets 157-176 / 221-232 | free-running meter data embedded in the state report; exact byte->channel mapping not pinned down (cross-check against `0x75` offsets 32-43) |

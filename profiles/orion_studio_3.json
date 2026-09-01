@@ -874,17 +874,41 @@
       "notes": "Because the S/PDIF link frame carries space byte 0x01, it does NOT collide with physical/ADAT links (unlike the ADAT/physical ambiguity). Safe to wire into a CLI without the both-spaces caveat."
     },
     "oscillator": {
-      "id": null,
-      "status": "partly understood -- two access points, only the matrix one talks to the device",
-      "type": "routing-matrix source (bank 0x0c) + a host-side settings panel",
-      "notes": "TWO oscillators (1 and 2). (A) ROUTING MATRIX: right-click an output -> insert oscillator -> it becomes a source, bank 0x0c idx 0/1 in frame.routing_command (CONFIRMED, capture matrix-source-enum 2026-08). So inserting an oscillator into an output IS a real device command (the 0x53 routing frame). (B) The settings-tab oscillator panel (mute / 1kHz-400Hz / level 0..-18 dBFS) sends the device NOTHING -- capture settings-osc1-2-fq-lvl (27.7s) had zero outgoing frames. So the oscillator per-signal parameters (freq/level/mute) are host-side or use an uncaptured path; only the matrix 'insert into output' half is a confirmed device command. Not in the CLI (routing decode incomplete -- see params.routing)."
+      "id": "0x0a",
+      "status": "DECODED 2026-09-01 (macos-settings-osc1-mute-1khz / -osc2-mute-400hz-1khz / -osclvl-6-12-18-0db, native macOS -- the recapture with the OUT endpoint present)",
+      "type": "SET_GLOBAL (opcode 0x12), one packed value byte at offset 17",
+      "frame": "build_global_command(profile, 0x0a, <packed>) -- opcode 0x12, param_id 0x0a @16, value @17. Whole state in one byte, both oscillators.",
+      "value_bits": {
+        "0x01": "osc 1 frequency -- 0 / 1 (the panel offers 1 kHz and 400 Hz; which value is which not pinned, filename order suggests 1 = 1 kHz)",
+        "0x04": "osc 2 frequency -- 0 / 1",
+        "0x30": "LEVEL, 2-bit field at bits 4-5: 0 = 0 dBFS, 1 = -6, 2 = -12, 3 = -18. Only one field seen -- whether it is shared by both oscillators or the capture just never moved the other one is UNCONFIRMED (the panel shows a level selector per oscillator).",
+        "0x40": "osc 1 MUTE",
+        "0x80": "osc 2 MUTE",
+        "0x02_0x08": "unused / unknown (bits 1 and 3 -- possibly a 2nd frequency bit per oscillator, only 2 freq options are offered so 1 bit each is used)"
+      },
+      "notes": "Settings-tab TWO-oscillator test-tone generator. SUPERSEDES the old 'sends the device NOTHING' note -- that was from settings-osc1-2-fq-lvl, an inbound-only capture (same class of miss as the readback). The recapture (both endpoints) shows every mute / freq / level click is a SET_GLOBAL 0x0a. Base value seen 0x30 (level -18, everything else 0); e.g. 0x70 = osc1 muted, 0x31 = osc1 freq bit + level -18, 0xb1 = osc2 muted + osc1 freq bit. NO 0x73 readback (the state stream only shows meter jitter through all of these -- a readback category may carry it, undecoded). SEPARATELY, the routing side is still true: inserting an oscillator INTO an output is routing-matrix source bank 0x0c idx 0/1 (frame.routing_command, capture matrix-source-enum). Not in the CLI."
     },
     "surround_eq": {
       "id": "0xeb",
-      "status": "unconfirmed",
-      "type": "unknown",
-      "frame": "NEW opcode 0xab (opcode_offset 4) -- its own command shape. param_id 0xeb at offset 16, then payload bytes 99 b0 <flags> 06 00 58 02 (offsets 17-23).",
-      "notes": "Settings-tab 'Surround EQ' pre/post toggle -- the likely identity of the only 2 outgoing frames in settings-scrbrght-surroundEQ.pcapng (2026-08). The two frames are identical except offset 19: 0x03 -> 0x83 (bit 7 = the toggle). Payload 0x0258 (=600) at offsets 22-23 is unexplained. NO 0x73 state-report change either time. Screen brightness sent NOTHING in that capture (host-side, or the slider wasn't moved). Only 2 frames -- not enough to decode the 0xab frame properly; needs a dedicated capture toggling surround-EQ pre/post several times and sweeping screen brightness."
+      "status": "pre/post toggle CONFIRMED 2026-09-01 (macos-settings-srrndeq-post-pre, 4 clean frames); the rest of the 0xab frame is a whole-state blob, partly mapped",
+      "type": "NEW opcode 0xab -- its own whole-state command shape (like AuraVerb: one frame carries every surround-monitor param)",
+      "frame": "opcode 0xab @4, param_id 0xeb @16, then 99 <b18> <b19> <b20> 06 00 <delay LE16 @22-23> <more @24+>. Not built by any helper yet; 0xab is in constraints.observed_opcodes_launcher_only, not allowed_opcodes.",
+      "field_map": {
+        "19_bit_0x80": "surround-EQ PRE / POST toggle -- CONFIRMED (macos-settings-srrndeq-post-pre: 0x1f <-> 0x9f, four times, nothing else moving)",
+        "19_bit_0x20": "another surround toggle (seen 0xbf / 0xff in the surround-tab capture) -- bypass? not isolated",
+        "22_23": "16-bit little-endian surround / total delay value -- swept 0..760+ in macos-srrnd-tab (the 'surrounddlay' / 'totaldelay' controls)",
+        "18": "0x02 baseline, seen 0x82 / 0x42 -- sub-control selector or more flags, not isolated",
+        "20": "0x06 baseline, swept 0x09/0x0d/0x10/0x1a/0x23/0x2d -- a surround level or EQ value, not isolated",
+        "ffff_markers": "an 0xffff pair appears at shifting offsets 24-31 when EQ / delay sub-controls are touched -- not decoded"
+      },
+      "notes": "Settings-tab 'Surround EQ' pre/post + the whole Surround monitoring tab (level / dim / mute / delay / bypass / EQ). The pre/post bit is settled (opcode 0xab, param 0xeb, [19] bit 7). The old note guessed [19] 0x03->0x83; the recaptures show base 0x1f (other surround state differs) but the SAME bit-7 toggle. Full frame decode = a dedicated one-control-at-a-time pass over macos-srrnd-tab. NO 0x73 readback for any of it."
+    },
+    "dc_coupling": {
+      "id": "0x26",
+      "status": "param identified 2026-09-01 (macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on)",
+      "type": "SET_GLOBAL (opcode 0x12), boolean value at offset 17",
+      "frame": "build_global_command(profile, 0x26, 0|1)",
+      "notes": "Output DC-coupling on/off. The capture also exercised the talkback latency modes (fast / normal / safe) -- those sent NO USB frames at all (host-side, or a path not on this interface). Only the DC-coupling toggle produced traffic: opcode 0x12 / param 0x26 / value 0 or 1, toggled off/on/off/on. NO 0x73 readback. Not in the CLI. (This closes the old 'thunderb-lat-dccp sent nothing' open item -- DC-coupling DOES talk to the device, param 0x26.)"
     },
     "mic_modeling": {
       "status": "confirmed -- enable / model / swap / pattern all decoded (2026-08-31); per-model polar-pattern index ranges added 2026-09-01",
