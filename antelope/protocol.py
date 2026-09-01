@@ -101,6 +101,35 @@ def channel_space_bounds(profile: dict, space: str):
     return None
 
 
+def space_channel_count(profile: dict, space: str):
+    """How many channels this device actually has in an address space
+    ('input', 'adat', 'spdif') -- for sizing `status` / `meter` /
+    `adat-status` per device instead of hardcoding the Orion's numbers.
+
+    Returns None if the space does not exist on the device (e.g. a unit
+    with no ADAT block) or the profile gives nothing to size it from.
+    Prefers an explicit count in the profile, then falls back to the width
+    of the matching constraints.<space>_channel_bounds (see
+    channel_space_bounds())."""
+    if space == 'input':
+        ch = profile.get('channels', {})
+        for key in ('count', 'count_confirmed', 'count_assumed_total'):
+            if isinstance(ch.get(key), int):
+                return ch[key]
+    elif space == 'adat':
+        if 'adat' not in profile:
+            return None
+        if isinstance(profile['adat'].get('count'), int):
+            return profile['adat']['count']
+    elif space == 'spdif':
+        if isinstance(profile.get('spdif', {}).get('count'), int):
+            return profile['spdif']['count']
+    bounds = channel_space_bounds(profile, space)
+    if bounds is None or isinstance(bounds, list):
+        return None
+    return bounds[1] - bounds[0] + 1
+
+
 def check_target(profile: dict, target: int, space: str, force: bool = False):
     """Refuse a channel/bus/adat target outside its address space's bounds
     (constraints). space is 'input', 'adat', or 'bus'. On a sibling device

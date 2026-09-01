@@ -250,14 +250,27 @@ def _link_bracket(profile, link_state, ch):
     return '', ''
 
 
+def _resolve_channel_count(args, profile, space, fallback=None):
+    """How many channels to iterate for a `status`/`meter`/`adat-status`
+    view: an explicit --channels if the user passed one, otherwise the
+    profile's own count for this address space (proto.space_channel_count),
+    otherwise `fallback`. Keeps device dimensions out of argparse -- the
+    Orion's 12/16 are wrong for a 2-preamp Zen Go or an ADAT-less device."""
+    if getattr(args, 'channels', None) is not None:
+        return args.channels
+    n = proto.space_channel_count(profile, space)
+    return n if n is not None else fallback
+
+
 def cmd_status(args, profile):
     transport = get_transport(profile)
     data = read_state(transport, profile, args.timeout)
     if not data:
         sys.exit('No state report captured. Try again, or run with sudo if permissions are an issue.')
+    n_channels = _resolve_channel_count(args, profile, 'input', fallback=12)
     link_state = _load_link_state(profile)
     print(f"{'ch':>2}  {'mode':<7} {'gain':>5}  {'48V':<3} {'phase':<5}")
-    for ch in range(args.channels):
+    for ch in range(n_channels):
         try:
             s = proto.parse_state(profile, data, ch)
         except ValueError:
@@ -269,7 +282,7 @@ def cmd_status(args, profile):
               f"{'on' if s.get('phase_invert') else 'off':<5}"
               f"{glyph}{tail}")
     confirmed = profile['channels'].get('confirmed_indices', [])
-    if confirmed and args.channels > max(confirmed) + 1:
+    if confirmed and n_channels > max(confirmed) + 1:
         print(f'note: only channels {confirmed} are explicitly verified for this device.')
     if link_state:
         print("note: the '-.'/\"-'\" markers above reflect the last `set-link` command THIS CLI has "
@@ -692,13 +705,17 @@ def _verify_adat(transport, profile, ch, timeout):
 
 
 def cmd_adat_status(args, profile):
+    n_channels = _resolve_channel_count(args, profile, 'adat')
+    if not n_channels:
+        sys.exit(f"{profile['device'].get('name', 'this device')} has no ADAT "
+                 f"(no `adat` block in the profile). Nothing to show.")
     transport = get_transport(profile)
     data = read_state(transport, profile, args.timeout)
     if not data:
         sys.exit('No state report captured. Try again, or run with sudo if permissions are an issue.')
     link_state = _load_link_state(profile, 'adat')
     print(f"{'adat':>4}  {'gain':>5}")
-    for ch in range(args.channels):
+    for ch in range(n_channels):
         try:
             g = proto.parse_adat_gain(profile, data, ch)
         except ValueError:
@@ -1840,6 +1857,7 @@ def cmd_meter(args, profile):
     if mr.get('channel_meter_base_offset') is None:
         sys.exit('This profile has no channel_meter_base_offset -- meter reading not available yet.')
 
+    n_channels = _resolve_channel_count(args, profile, 'input', fallback=12)
     transport = get_transport(profile)
     magic = proto.meter_report_magic(profile)
     end = time.time() + args.duration if args.duration else None
@@ -1861,7 +1879,7 @@ def cmd_meter(args, profile):
             if now - last_draw >= min_interval:
                 last_draw = now
                 levels = []
-                for ch in range(args.channels):
+                for ch in range(n_channels):
                     try:
                         levels.append(proto.parse_meter_level(profile, data, ch))
                     except ValueError:
@@ -1914,7 +1932,8 @@ def main():
     sub = p.add_subparsers(dest='cmd', required=True)
 
     sp = sub.add_parser('status', help='show all physical input channels')
-    sp.add_argument('--channels', type=int, default=12)
+    sp.add_argument('--channels', type=int, default=None,
+                    help='how many input channels to show (default: from the profile)')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_status)
 
@@ -1967,8 +1986,9 @@ def main():
     sp.add_argument('--force', action='store_true')
     sp.set_defaults(func=cmd_mark_link)
 
-    sp = sub.add_parser('adat-status', help='show the 16 ADAT input channel gains (+ CLI-tracked link markers)')
-    sp.add_argument('--channels', type=int, default=16)
+    sp = sub.add_parser('adat-status', help='show the ADAT input channel gains (+ CLI-tracked link markers)')
+    sp.add_argument('--channels', type=int, default=None,
+                    help='how many ADAT channels to show (default: from the profile)')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_adat_status)
 
@@ -2126,7 +2146,8 @@ def main():
     sp.set_defaults(func=cmd_set_bus_mono)
 
     sp = sub.add_parser('meter', help='live per-channel meter view (dB calibration from ch0 sweep, applied to all channels)')
-    sp.add_argument('--channels', type=int, default=12)
+    sp.add_argument('--channels', type=int, default=None,
+                    help='how many channels to meter (default: from the profile)')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.add_argument('--duration', type=float, default=0.0, help='seconds to stream, 0 = until Ctrl-C (default)')
     sp.add_argument('--refresh-hz', type=float, default=10.0, help='max screen repaints per second')
