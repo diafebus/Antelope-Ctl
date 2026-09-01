@@ -53,7 +53,7 @@ opcode -- this is the single most important thing to get right:
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 7-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
-| `0xab` | SET_SURROUND | `0xeb` | whole-state frame: `99 <b18> <b19> <b20> 06 00 <delay LE16 @22-23> …`. **`[19]` bit 7 = EQ pre/post (confirmed)**, `[22-23]` = delay; rest partly mapped -- see §11 | surround monitoring tab (level/dim/mute/delay/bypass/EQ) |
+| `0xab` | SET_SURROUND | `0xeb` | whole-state frame: `[19]` bit 7 = EQ pre/post, `[20]` = delay, `[22-23]` LE16 = level, `[25-30]` = bypass/mute/dim bools -- see §11 | surround monitoring tab (level/dim/mute/delay/bypass/EQ) |
 
 Notes:
 - **`0x17` is overloaded** -- the param_id at @16 is the real discriminator:
@@ -908,7 +908,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
-| surround tab (EQ pre/post, delay, …) | `0xeb` | `0xab` | - | whole-state frame; `[19]` bit 7 = EQ pre/post (confirmed), `[22-23]` = delay LE16, rest partly mapped (§11) | none in `0x73` |
+| surround tab (level/delay/dim/mute/bypass/EQ) | `0xeb` | `0xab` | - | whole-state frame: `[19]` bit 7 EQ pre/post, `[20]` delay, `[22-23]` LE16 level, `[25-30]` bypass/mute/dim bools (§11) | none in `0x73` |
 | oscillator (matrix insert) | `0xd3` | `0x53` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | none |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
 | DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | none in `0x73` |
@@ -989,26 +989,32 @@ the first `SET_GLOBAL` builder (opcode `0x12`, value @17). Readback via
 The talkback params (`0x1f`/`0x20`/`0x27`) can use `build_global_command`
 too. See `params.screen_brightness`.
 
-### Surround-EQ + the Surround monitoring tab (`0xab` / `0xeb`)
+### Surround monitoring tab (`0xab` / `0xeb`) -- partly decoded 2026-09-01
 
 Opcode `0xab` / param `0xeb` -- **its own whole-state command shape**, like
-AuraVerb: one frame carries every surround-monitor parameter (level, dim,
-mute, delay, bypass, EQ, pre/post). Frame:
-`ab .. eb 99 <b18> <b19> <b20> 06 00 <delay LE16 @22-23> <more @24+>`.
+AuraVerb: one frame carries the entire Surround monitoring tab. Layout
+(from `macos-settings-srrndeq-post-pre` + `macos-srrnd-tab-...`):
 
-Settled:
-- **`[19]` bit 7 (`0x80`) = surround-EQ pre / post** -- `macos-settings-srrndeq-post-pre`,
-  4 clean frames `0x1f` ↔ `0x9f`, nothing else moving. (The earlier
-  2-frame guess said `0x03`→`0x83`; base value differs because other
-  surround state does, but it is the same bit-7 toggle.)
-- **`[22-23]` = 16-bit LE delay value** -- swept 0..760+ in
-  `macos-srrnd-tab-...` (the surround-delay / total-delay controls).
+| off | field | notes |
+|---|---|---|
+| 16 | `0xeb` param | |
+| 17 | `0x99` | const |
+| 18 | flags A (base `0x02`) | bits `0x40`/`0x80` toggle during the EQ-tab part -- EQ enable/bypass, not individually pinned |
+| 19 | flags B (base `0x9f`) | **bit `0x80` = surround-EQ pre/post** (confirmed: `macos-settings-srrndeq-post-pre`, `0x1f`↔`0x9f` ×4, nothing else moving). Bits `0x20`/`0x40` = EQ enable/bypass |
+| 20 | **surround delay**, uint8 (base `0x06`) | swept `0x06`..`0x2d`; unit unknown |
+| 21 | `0x06` | const |
+| 22-23 | **surround monitor level**, LE16 (base `600`) | swept 0..760; scale unknown (0.1 dB? linear?) |
+| 24 | `0x00` | const |
+| 25-26 | **bypass**, LE16 bool (`0` / `0xFFFF`) | assignment among 25-30 by control order, not independently confirmed |
+| 27-28 | **mute**, LE16 bool | |
+| 29-30 | **dim**, LE16 bool | |
+| 31-39 | `0x00` | |
+| 40-168 | static template | `23 00 00` then `[80][80][600][0]` (LE16) repeated ~15×. Never changes -- fixed padding / per-band EQ defaults, **not live state** |
 
-Not settled: `[18]` (base `0x02`, seen `0x82`/`0x42`), `[19]` bit `0x20`,
-`[20]` (base `0x06`, swept `0x09`..`0x2d`), and an `0xffff` marker that
-appears at shifting offsets 24-31 when EQ/delay sub-controls are touched.
-No `0x73` readback for any of it. A one-control-at-a-time pass over
-`macos-srrnd-tab-...` would finish the frame.
+No `0x73` readback for any surround param. `0xab` is in
+`constraints.observed_opcodes_launcher_only` -- no builder, never sent by
+this tool. The toggle-bit assignments and the level/delay scaling still
+want a one-control-at-a-time recapture. `params.surround_monitor`.
 
 ### DC-coupling (`0x12` / `0x26`) -- DECODED 2026-09-01
 
@@ -1204,7 +1210,7 @@ plugin chain and anything touching license state. `0x1d` is now in
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Sample rate | **resolved (native macOS)** -- opcode `0x12` / param `0x03` / index 0-6 @17, readback @18 (`macos-smplrt-...`). CLI `sample-rate` / `set-sample-rate`. Open: the clock/PLL/buffer bytes @21-23,27 that move only at 88.2k/176.4k. |
-| Surround tab (`0xab`/`0xeb`) | EQ pre/post (`[19]` bit 7) + delay (`[22-23]`) decoded; `[18]`/`[20]`/other `[19]` bits + the `0xffff` marker still open (§11). No `0x73` effect |
+| Surround tab (`0xab`/`0xeb`) | whole-state frame mostly mapped -- EQ pre/post, level, delay, dim/mute/bypass (§11). Open: exact toggle-bit assignments, level/delay scaling, the static `[40:168]` block. No `0x73` effect |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | Thunderbolt / latency | zero outgoing frames -- host driver setting; TB inactive over USB |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |

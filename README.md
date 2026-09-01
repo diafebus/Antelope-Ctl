@@ -808,23 +808,24 @@ command (clock re-lock). CLI: `sample-rate` / `set-sample-rate <hz>`
 also move but only at the 88.2k / 176.4k steps -- undecoded clock/PLL
 state.
 
-### Oscillator, thunderbolt -- resolved as host-side (2026-08)
+### Oscillator, DC-coupling, surround tab -- decoded (2026-09-01, native macOS)
 
-- **Oscillator / test-tone generator** -- the *settings-tab panel*
-  (freq / level / mute) sends **zero** outgoing frames. But there are two
-  oscillators and the way you actually use them is a right-click in the
-  routing matrix ("insert oscillator into this output") -- and *that*
-  **is** a real device command: the `0x53` routing frame with source bank
-  `0x0c` (see `params.routing` / `params.oscillator`). So only the
-  per-signal parameters are host-side; the insert isn't. (Worth a
-  native-macOS recheck too, given the brightness lesson above.)
-- **Thunderbolt / latency / DC-coupling** -- also zero outgoing frames.
-  Host driver settings, or not exercised in the capture.
-- **Surround-EQ pre/post** -- the one thing here that *does* talk to the
-  device: 2 frames of a **new opcode `0xab` / param `0xeb`**, differing
-  only in bit 7 of payload byte @19. No `0x73` effect. Too few frames to
-  decode the frame layout -- needs a dedicated capture. See
-  `params.surround_eq`.
+- **Oscillator / test-tone generator** -- the settings-tab panel is
+  `SET_GLOBAL` (`0x12`), param `0x0a`, one **packed byte** @17:
+  `0x01`/`0x04` = osc 1/2 frequency, bits 4-5 (`0x30`) = level
+  (0 / -6 / -12 / -18 dBFS), `0x40`/`0x80` = osc 1/2 mute. The earlier
+  "sends zero frames" was an inbound-only capture. Separately, inserting an
+  oscillator *into an output* is the `0x53` routing frame, source bank
+  `0x0c` (`params.oscillator`, `params.routing`).
+- **DC-coupling** -- `SET_GLOBAL` (`0x12`), param `0x26`, value 0/1.
+  Talkback fast/normal/safe latency modes send nothing (host-side).
+  Thunderbolt/buffer settings are host driver only.
+- **Surround monitoring tab** -- one whole-state frame, **opcode `0xab` /
+  param `0xeb`** (like AuraVerb). Decoded: surround-EQ pre/post (`[19]`
+  bit 7), surround level (`[22-23]` LE16), delay (`[20]`), dim/mute/bypass
+  (LE16 booleans at `[25-30]`). No `0x73` readback. The exact toggle-bit
+  assignments still want a one-control-at-a-time recapture. See
+  `params.surround_monitor`.
 
 ### Connect handshake & routing readback -- resolved (2026-08, native macOS)
 

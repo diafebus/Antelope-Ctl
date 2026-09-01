@@ -888,20 +888,28 @@
       },
       "notes": "Settings-tab TWO-oscillator test-tone generator. SUPERSEDES the old 'sends the device NOTHING' note -- that was from settings-osc1-2-fq-lvl, an inbound-only capture (same class of miss as the readback). The recapture (both endpoints) shows every mute / freq / level click is a SET_GLOBAL 0x0a. Base value seen 0x30 (level -18, everything else 0); e.g. 0x70 = osc1 muted, 0x31 = osc1 freq bit + level -18, 0xb1 = osc2 muted + osc1 freq bit. NO 0x73 readback (the state stream only shows meter jitter through all of these -- a readback category may carry it, undecoded). SEPARATELY, the routing side is still true: inserting an oscillator INTO an output is routing-matrix source bank 0x0c idx 0/1 (frame.routing_command, capture matrix-source-enum). Not in the CLI."
     },
-    "surround_eq": {
+    "surround_monitor": {
       "id": "0xeb",
-      "status": "pre/post toggle CONFIRMED 2026-09-01 (macos-settings-srrndeq-post-pre, 4 clean frames); the rest of the 0xab frame is a whole-state blob, partly mapped",
-      "type": "NEW opcode 0xab -- its own whole-state command shape (like AuraVerb: one frame carries every surround-monitor param)",
-      "frame": "opcode 0xab @4, param_id 0xeb @16, then 99 <b18> <b19> <b20> 06 00 <delay LE16 @22-23> <more @24+>. Not built by any helper yet; 0xab is in constraints.observed_opcodes_launcher_only, not allowed_opcodes.",
+      "status": "partly decoded 2026-09-01 -- opcode 0xab whole-state frame; level / delay / dim / mute / bypass / EQ pre-post identified, exact bit assignments for the toggles not fully isolated",
+      "type": "NEW opcode 0xab -- its own whole-state command shape (like AuraVerb: ONE frame carries the entire Surround monitoring tab)",
+      "frame": "opcode 0xab @4, param_id 0xeb @16, then a fixed-layout payload. Not built by any helper yet; 0xab is in constraints.observed_opcodes_launcher_only, NOT allowed_opcodes (no builder, never sent by this tool).",
       "field_map": {
-        "19_bit_0x80": "surround-EQ PRE / POST toggle -- CONFIRMED (macos-settings-srrndeq-post-pre: 0x1f <-> 0x9f, four times, nothing else moving)",
-        "19_bit_0x20": "another surround toggle (seen 0xbf / 0xff in the surround-tab capture) -- bypass? not isolated",
-        "22_23": "16-bit little-endian surround / total delay value -- swept 0..760+ in macos-srrnd-tab (the 'surrounddlay' / 'totaldelay' controls)",
-        "18": "0x02 baseline, seen 0x82 / 0x42 -- sub-control selector or more flags, not isolated",
-        "20": "0x06 baseline, swept 0x09/0x0d/0x10/0x1a/0x23/0x2d -- a surround level or EQ value, not isolated",
-        "ffff_markers": "an 0xffff pair appears at shifting offsets 24-31 when EQ / delay sub-controls are touched -- not decoded"
+        "16": "0xeb param_id",
+        "17": "0x99 -- constant",
+        "18": "flags A, base 0x02. Bits 0x40 / 0x80 seen toggling during the EQ-tab part of the capture -- EQ-enable / bypass related, not individually pinned.",
+        "19": "flags B, base 0x9f. **bit 0x80 = surround-EQ PRE/POST** (CONFIRMED, macos-settings-srrndeq-post-pre: 0x1f <-> 0x9f four times, nothing else moving). Bits 0x20 / 0x40 toggle during the EQ-tab part -- EQ enable / EQ bypass, not individually pinned.",
+        "20": "SURROUND DELAY, uint8, base 0x06. Swept 0x06..0x2d in macos-srrnd-tab (the 'surrounddlay' / 'delay' controls -- unit/scale unknown). Const 0x06 at rest.",
+        "21": "0x06 -- constant",
+        "22_23": "SURROUND MONITOR LEVEL, 16-bit little-endian, base 600 (0x0258). Swept smoothly 0..760 in macos-srrnd-tab (the 'srrndlvl' slider). Scale unknown -- possibly 0.1 dB (0..-76) or a linear gain; 760 = top of the slider.",
+        "24": "0x00 -- constant",
+        "25_26": "BYPASS -- 16-bit boolean, 0x0000 = off / 0xFFFF = on ('bypass' toggle in the capture). Assignment among 25-26 / 27-28 / 29-30 is by the capture's control order, NOT independently confirmed.",
+        "27_28": "MUTE -- 16-bit boolean 0x0000 / 0xFFFF ('mute' toggle).",
+        "29_30": "DIM -- 16-bit boolean 0x0000 / 0xFFFF ('dim' toggle).",
+        "31_39": "0x00",
+        "40_168": "a STATIC block that never changes across the whole capture: `23 00 00` then `[50 00][50 00][58 02][00 00]` (LE16 80 / 80 / 600 / 0) repeated ~15x. Almost certainly a fixed template / per-band EQ defaults / padding echoed back every frame -- it is NOT live state (nothing the user did moved it). The `600` matches the [22-23] level default."
       },
-      "notes": "Settings-tab 'Surround EQ' pre/post + the whole Surround monitoring tab (level / dim / mute / delay / bypass / EQ). The pre/post bit is settled (opcode 0xab, param 0xeb, [19] bit 7). The old note guessed [19] 0x03->0x83; the recaptures show base 0x1f (other surround state differs) but the SAME bit-7 toggle. Full frame decode = a dedicated one-control-at-a-time pass over macos-srrnd-tab. NO 0x73 readback for any of it."
+      "open": "the [18]/[19] toggle bits beyond pre/post (EQ enable vs EQ bypass vs surround-bypass); the level and delay unit scaling; whether the [25-30] booleans are really dim/mute/bypass in that order; whether the static [40:168] block ever carries real data (e.g. after touching the surround-EQ curve). A one-control-at-a-time recapture would settle all of it.",
+      "notes": "The whole Surround monitoring tab. Decoded from macos-settings-srrndeq-post-pre (pre/post, clean) + macos-srrnd-tab (everything else, but ~9 controls touched in sequence without isolation, so the toggle-bit assignments are inferred from control order). NO 0x73 readback for any surround param (the state stream shows only meter jitter through all of it). Not in the CLI."
     },
     "dc_coupling": {
       "id": "0x26",
