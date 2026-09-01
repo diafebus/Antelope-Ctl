@@ -32,12 +32,12 @@
   },
 
   "modelling_mics": {
-    "_comment": "The Antelope modelling-mic hardware families, from public product pages (facts only). Fill in per-user which one(s) they own. The Orion's emuMic works with any of these feeding preamps 7-12.",
-    "edge_solo": { "capsules": 1, "pattern_control": false, "notes": "single large-diaphragm modelling mic" },
-    "edge_duo":  { "capsules": 2, "pattern_control": true,  "notes": "dual-capsule; the continuous polar-pattern morph (0 omni / 50 cardioid / 100 figure-8) and the channel-order swap apply here" },
-    "edge_note": { "capsules": 1, "pattern_control": false, "notes": "small-diaphragm pencil, matched-pair capable" },
-    "edge_go":   { "capsules": 1, "pattern_control": false, "notes": "USB modelling mic" },
-    "verge":     { "capsules": 1, "pattern_control": false, "notes": "compact modelling mic, matched-pair capable" }
+    "_comment": "The Antelope modelling-mic hardware families. capsules / pattern_control / the mic descriptions are public product-page facts. `confirmed` and `requires_pair` are OUR findings: `confirmed` = the Orion emuMic behaviour was exercised against the device WITH this mic -- true only for the Edge Duo (every emuMic capture on file -- emumic-model-select, macos-emumic-polar-patterns, macos-ch7-8-micmodeling-* -- was on an Edge Duo account; the model list, polar-morph range and channel swap all come from those). The single-capsule mics are untested here, so a client should offer only the confirmed one(s). `requires_pair` = enabling emuMic occupies BOTH preamps of a 7-8 / 9-10 / 11-12 pair: the captures show enable emitting SET_LINK for the pair (space 0) and the mic-modeling params written twice, [18]=N then [18]=N+1 (see params.mic_modeling.notes / what_is_known.side_effects_of_enabling). For the Edge Duo that matches its hardware -- two capsules on two XLRs -- so the pair must be linked and both channels carry the same model/pattern.",
+    "edge_solo": { "capsules": 1, "pattern_control": false, "confirmed": false, "requires_pair": false, "notes": "single large-diaphragm modelling mic. Orion emuMic behaviour with this mic: untested." },
+    "edge_duo":  { "capsules": 2, "pattern_control": true,  "confirmed": true,  "requires_pair": true,  "notes": "dual-capsule; occupies a linked preamp PAIR (7-8 / 9-10 / 11-12). The continuous polar-pattern morph (byte [22], 0 omni / 50 cardioid / 100 figure-8) and the channel-order swap ([21]) apply here -- both decoded from captures on this mic." },
+    "edge_note": { "capsules": 1, "pattern_control": false, "confirmed": false, "requires_pair": false, "notes": "small-diaphragm pencil, matched-pair capable. Orion emuMic behaviour with this mic: untested." },
+    "edge_go":   { "capsules": 1, "pattern_control": false, "confirmed": false, "requires_pair": false, "notes": "USB modelling mic -- connects over USB, not an Orion XLR preamp, so the Orion emuMic path likely does not apply. Untested." },
+    "verge":     { "capsules": 1, "pattern_control": false, "confirmed": false, "requires_pair": false, "notes": "compact modelling mic, matched-pair capable. Orion emuMic behaviour with this mic: untested." }
   },
 
   "user_owned": {
