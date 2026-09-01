@@ -26,5 +26,6 @@ SUMMARY.md
 # Local diagnostic tool output (may contain the device serial)
 tools/*_out.txt
 
-# For other query that aren't necessarily related to the main code'
+# For other query that aren't necessarily related or relevant to the main repository
 sidejob/
+CAPTURE-REQUESTS.md
