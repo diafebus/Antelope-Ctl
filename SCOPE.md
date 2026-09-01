@@ -58,11 +58,18 @@ profiles describe the *layout* of the identity record, never a value.
 ## 3. Jurisdiction note
 
 The project is maintained in the EU. EU law (Software Directive
-2009/24/EC, Art. 6) gives an explicit statutory right to reverse-engineer
-for **interoperability** of an independently created program, which is
-what §1 describes. US interoperability precedent (Sega v. Accolade, Sony
-v. Connectix) points the same way for the protocol-level work. None of
-this covers §4 buckets D/E/F -- those are gated separately.
+2009/24/EC, Arts. 5(3) and 6) gives mandatory rights to observe/study a
+program you may run, and to reverse-engineer for **interoperability** of
+an independently created program -- and Art. 8 voids contract terms that
+contradict them. US interoperability precedent (Sega v. Accolade, Sony v.
+Connectix) points the same way for protocol-level work.
+
+Antelope's own published EULA terms, and how the project stays inside
+them, are recorded in **`EULA-ANALYSIS.md`**. The short version: the core
+work falls under the general EULA (Bulgarian / EU law -- favourable); any
+plug-in-specific work would fall under the Cosmos EULA (Michigan / US law
+-- less favourable), which is another reason §4 buckets D/E/F are walled
+off. None of this is legal advice; bucket D needs a lawyer first.
 
 ---
 
