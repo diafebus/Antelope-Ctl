@@ -101,21 +101,20 @@ import time
 
 try:
     from . import protocol as proto
-    from .transport import HidTransport, find_hidraw
+    from .transport import open_transport
 except ImportError:
     # Allows running this file directly (python3 antelope/cli.py ...)
     # instead of only via `python3 -m antelope.cli ...`.
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from antelope import protocol as proto
-    from antelope.transport import HidTransport, find_hidraw
+    from antelope.transport import open_transport
 
 
-def get_transport(profile) -> HidTransport:
+def get_transport(profile):
     dev = profile['device']
     vid = int(dev['vid'], 16) if isinstance(dev['vid'], str) else dev['vid']
     pid = int(dev['pid'], 16) if isinstance(dev['pid'], str) else dev['pid']
-    path = find_hidraw(vid, pid)
-    return HidTransport(path, profile['transport']['report_size'])
+    return open_transport(vid, pid, profile['transport']['report_size'])
 
 
 def read_state(transport, profile, timeout):
