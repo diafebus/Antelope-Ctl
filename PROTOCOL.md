@@ -639,7 +639,7 @@ is no single-channel frame.
 |---|---|---|
 | `0x00` | preamps | 0-11 |
 | `0x01` | **emumic** -- the mic-modeling DSP output (wet tap; the DSP is `0x17`/`0xe5`, §12) | 0-7 = preamps 5-12 (the Launcher numbers them by preamp; EMU button only on 7-12, so idx 0-1 are configless) |
-| `0x02` | **compplay** (Computer Playback / USB) | 0-23 on the VM driver, 0-31 on native macOS |
+| `0x02` | **compplay** (Computer Playback / USB) | 0-23 on the VM driver, 0-31 on native macOS -- idx 24-31 (CP 25-32) CONFIRMED via routing readback (webui, 2026-09-03: wrote each of 25..32 into an output slot, all read back unchanged) |
 | `0x03` | ADAT in | 0-15 |
 | `0x04` | S/PDIF in | 0-1 (L/R) |
 | `0x05` | **AFX out** (Synergy Core FX returns) | 0-31 |
