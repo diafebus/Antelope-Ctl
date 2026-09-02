@@ -959,7 +959,7 @@ What the Settings/Device window controls actually do, from the captures
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
 | **Oscillator** -- settings panel (freq/level/mute) | `macos-settings-osc1-mute-1khz` etc. | opcode `0x12` / param `0x0a` / packed value @17 | **DECODED (native macOS, 2026-09-01)** -- the old "zero frames" was an inbound-only capture; see §11 below |
 | **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; in CLI (`set-brightness`). VM sent nothing because the slider is a no-op under the VM. |
-| **DC-coupling** | `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on` | opcode `0x12` / param `0x26` / value 0-1 @17 | **DECODED (native macOS, 2026-09-01)** -- talkback fast/normal/safe modes in the same capture sent nothing |
+| **DC-coupling** | `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on` | opcode `0x12` / param `0x26` / value 0-1 @17 | **DECODED (native macOS, 2026-09-01); HW round-trip confirmed 2026-09-02 (user, via webui)** -- talkback fast/normal/safe modes in the same capture sent nothing |
 
 So the Settings window is a genuine mix: output levels/mute, the three
 trims, surround-EQ pre/post, screen brightness, **the oscillator panel**
@@ -1049,6 +1049,9 @@ want a one-control-at-a-time recapture. `params.surround_monitor`.
 
 `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on`: the DC-coupling
 toggle is `SET_GLOBAL` (opcode `0x12`), param **`0x26`**, value `0`/`1`.
+**Hardware round-trip confirmed 2026-09-02** (user, via the webui
+`POST /api/dc-coupling`): the toggle does what it should on the outputs.
+No `0x73` readback, so state is tracked client-side.
 No `0x73` readback. The **talkback latency modes** (fast / normal / safe)
 in the same capture sent **nothing** -- host-side, or a path not on this
 interface. This closes the old `settigs-thunderb-lat-dccp` "zero frames"

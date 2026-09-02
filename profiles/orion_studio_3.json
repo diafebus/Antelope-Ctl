@@ -919,10 +919,10 @@
     },
     "dc_coupling": {
       "id": "0x26",
-      "status": "param identified 2026-09-01 (macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on)",
+      "status": "confirmed -- frame from macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on (2026-09-01); hardware round-trip verified via the webui 2026-09-02 (user: toggling it does what it should)",
       "type": "SET_GLOBAL (opcode 0x12), boolean value at offset 17",
       "frame": "build_global_command(profile, 0x26, 0|1)",
-      "notes": "Output DC-coupling on/off. The capture also exercised the talkback latency modes (fast / normal / safe) -- those sent NO USB frames at all (host-side, or a path not on this interface). Only the DC-coupling toggle produced traffic: opcode 0x12 / param 0x26 / value 0 or 1, toggled off/on/off/on. NO 0x73 readback. Not in the CLI. (This closes the old 'thunderb-lat-dccp sent nothing' open item -- DC-coupling DOES talk to the device, param 0x26.)"
+      "notes": "Output DC-coupling on/off. The capture also exercised the talkback latency modes (fast / normal / safe) -- those sent NO USB frames at all (host-side, or a path not on this interface). Only the DC-coupling toggle produced traffic: opcode 0x12 / param 0x26 / value 0 or 1, toggled off/on/off/on. NO 0x73 readback. Not in the CLI. (This closes the old 'thunderb-lat-dccp sent nothing' open item -- DC-coupling DOES talk to the device, param 0x26.) HARDWARE-CONFIRMED 2026-09-02: the webui wires this to POST /api/dc-coupling -> build_global_command(0x26, 0|1); the user confirms toggling it behaves as expected on the outputs. Still no 0x73 readback, so the webui tracks the state client-side (localStorage), like the preamp link."
     },
     "mic_modeling": {
       "status": "confirmed -- enable / model / swap / pattern all decoded (2026-08-31); per-model polar-pattern index ranges added 2026-09-01",
