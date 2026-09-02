@@ -508,6 +508,15 @@ how this byte reads with talkback *fully* configured is unverified.
 | 2 (~ Line trim) | 25 | `0xe0` | 5 | `0x00,0x20,0x40,0x60,0x80,0xa0,0xc0` |
 
 Readback value = `raw_bits >> shift` = the commanded value (0-6).
+
+**Value → dBu (all three targets, USER-CONFIRMED against the Launcher /
+Orion Studio Synergy Core, 2026-09-02):** it is an output-reference-level
+selector, 1 dBu per step — index `0 = 20 dBu`, `1 = 19`, `2 = 18`, `3 = 17`,
+`4 = 16`, `5 = 15`, `6 = 14 dBu`. Same scale on Monitor A, Monitor B and
+Line Out. Resolves the earlier "physical meaning not known". The 2026-08
+sweep hit exactly these 7 stops; the 3-bit field could carry a value 7 but
+the hardware has no 8th stop.
+
 Spare bits: offset 24 bits 0-3 and 7; offset 25 bits 0-1. Offset 25 bits
 0-1 (a 2-bit / 4-option field) is the likely home of **pan law**, which
 was never actually captured.
