@@ -46,6 +46,40 @@ def find_hidraw(vid: int, pid: int) -> str:
     )
 
 
+def list_connected_hid() -> set:
+    """{(vid, pid), ...} for every HID node this host exposes right now.
+
+    Read-only and best-effort: no device is opened, and an empty set means
+    "could not enumerate" (unsupported platform, no sysfs, no permission),
+    not "nothing is plugged in". Callers use it to pick a profile from what
+    is actually connected -- see webui/server.py.
+    """
+    if sys.platform == 'win32':
+        try:
+            return _list_windows_hid()
+        except Exception:
+            return set()
+
+    found = set()
+    for path in sorted(glob.glob('/sys/class/hidraw/hidraw*')):
+        for upath in (os.path.join(path, 'device', 'uevent'),
+                      os.path.join(path, 'uevent')):
+            try:
+                content = open(upath).read()
+            except OSError:
+                continue
+            for line in content.splitlines():
+                if line.startswith('HID_ID='):
+                    parts = line.split('=', 1)[1].split(':')
+                    if len(parts) == 3:
+                        try:
+                            found.add((int(parts[1], 16), int(parts[2], 16)))
+                        except ValueError:
+                            pass
+            break   # the first uevent that exists describes this node
+    return found
+
+
 class HidTransport:
     """Thin wrapper around a hidraw node: blocking-ish read with timeout, plain write."""
 
@@ -154,6 +188,52 @@ class HidTransport:
 # they see on Linux: report_size bytes starting with the frame magic.
 
 ERROR_SHARING_VIOLATION = 32
+
+
+def _iter_windows_hid():
+    """Yield (vid, pid) for each HID collection Windows can open. A collection
+    held by another process (vendor service) can't be queried and is skipped --
+    fine for enumeration; find_windows_hid() has the busy-vs-absent logic for
+    the single-device open path."""
+    W, GUID, IfaceData, Attributes = _win_structs()
+    setup, hid, k32 = ctypes.windll.setupapi, ctypes.windll.hid, ctypes.windll.kernel32
+    guid = GUID()
+    hid.HidD_GetHidGuid(ctypes.byref(guid))
+    devinfo = setup.SetupDiGetClassDevsW(ctypes.byref(guid), None, None, 0x12)
+    index = 0
+    try:
+        while True:
+            iface = IfaceData()
+            iface.cbSize = ctypes.sizeof(iface)
+            if not setup.SetupDiEnumDeviceInterfaces(
+                    devinfo, None, ctypes.byref(guid), index, ctypes.byref(iface)):
+                break
+            index += 1
+            need = W.DWORD()
+            setup.SetupDiGetDeviceInterfaceDetailW(
+                devinfo, ctypes.byref(iface), None, 0, ctypes.byref(need), None)
+            buf = ctypes.create_string_buffer(need.value)
+            ctypes.cast(buf, ctypes.POINTER(W.DWORD))[0] = (
+                8 if ctypes.sizeof(ctypes.c_void_p) == 8 else 6)
+            if not setup.SetupDiGetDeviceInterfaceDetailW(
+                    devinfo, ctypes.byref(iface), buf, need, None, None):
+                continue
+            path = ctypes.wstring_at(ctypes.addressof(buf) + ctypes.sizeof(W.DWORD))
+            handle = k32.CreateFileW(path, 0xC0000000, 3, None, 3, 0, None)
+            if handle == -1:
+                continue
+            attrs = Attributes()
+            attrs.Size = ctypes.sizeof(attrs)
+            ok = hid.HidD_GetAttributes(handle, ctypes.byref(attrs))
+            k32.CloseHandle(handle)
+            if ok:
+                yield attrs.VendorID, attrs.ProductID
+    finally:
+        setup.SetupDiDestroyDeviceInfoList(devinfo)
+
+
+def _list_windows_hid() -> set:
+    return set(_iter_windows_hid())
 
 
 def _win_structs():
