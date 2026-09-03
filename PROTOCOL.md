@@ -1067,7 +1067,7 @@ changes. Per speaker:
 |---|---|---|
 | 19-20 | **delay**, LE16, **0.1 ms/step** (UI 0.6–100.6 ms, user-confirmed) | |
 | 21-22 | **level**, LE16 (base `600` = 0 dB, 0.1 dB/step, **−60..+16 dB**, user-confirmed) | **`[22]` bit 7 = phase invert** (level tops at 760 = `0x02F8`, so bit 7 is free) |
-| 23… | **8 parametric EQ bands**, stride 8 | `<freq LE16 Hz> <0x47 type> <00> <gain LE16 signed, 0.01 dB> <00> <02>`. Default freqs 30 / 120 / 500 / 1400 / 3000 / 5500 / 9500 / 14000 Hz; **each band adjustable 20 Hz–20 kHz** (user-confirmed). Gain LE16 signed 0.01 dB, **−24 .. +12 dB** (user-confirmed). `47 00` after each freq = likely **Q** (LE16, 0x0047=71=Q0.71×100; range Q 0.1–20 user-confirmed, no capture swept it). **Band 1 = HPF slot, band 8 = LPF slot** (user-confirmed), each toggleable bell↔pass via a flag byte after gain (0/4 seen); bands 2-7 pure bells |
+| 23… | **8 parametric EQ bands**, stride 8 | `<freq LE16 Hz> <0x47 type> <00> <gain LE16 signed, 0.01 dB> <00> <02>`. Default freqs 30 / 120 / 500 / 1400 / 3000 / 5500 / 9500 / 14000 Hz; **each band adjustable 20 Hz–20 kHz** (user-confirmed). Gain LE16 signed 0.01 dB, **−24 .. +12 dB** (user-confirmed). `47 00` after each freq = likely **Q** (LE16, 0x0047=71=Q0.71×100; range Q 0.1–18 user-confirmed, no capture swept it). **Band 1 = HPF slot, band 8 = LPF slot** (user): each has 3 modes via a flag byte after gain — bell / shelf / pass; **in pass mode gain AND Q are inactive, only freq works**. Flag `0x00`=bell, `0x04`=shelf-or-pass (3rd value uncaptured). Bands 2-7 pure bells |
 
 Still open: EQ Q; page-2 LPF/HPF encoding; whether R speakers are
 byte-identical to L (captured, not diffed); level/delay units. `copy
