@@ -32,9 +32,13 @@ oscillator / screen brightness / output trim** (all `SET_GLOBAL`), talkback,
 and the **surround monitoring tab** (per-speaker 16-band EQ + global +
 2.1 bass management; Room Correction turned out to *be* the per-speaker
 EQ). In-band **readback** (`0x74`/`0x75`) covers routing, mixer, AuraVerb,
-device identity, preamp/channel state. Not decoded: the built-in channel
-**EQ** (`0x07`/`0x1a` readable, no write frame), and surround formats past
-2.1 (need the MRC licence). The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
+device identity, preamp/channel state, and **both surround frames**
+(categories `0x1a` per-speaker EQ / `0x1b` global — structure decoded
+2026-09-04, not yet wired into the CLI). There is **no built-in
+per-input-channel EQ** on this device: input EQ is an AFX plugin, which is
+out of scope (`SCOPE.md`). Not decoded: surround formats past 2.1 (need the
+MRC licence), readback categories `0x07` / `0x0c` / `0x15` / `0x16`, and
+the `0x74` channel-group names. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
 (`SCOPE.md`); plugin *parameters* stay off-repo. The AFX-tab channel
@@ -114,6 +118,8 @@ request you agree to license your contribution that way.
 profiles/orion_studio_sc.json   <- single source of truth for the Orion Studio Synergy Core protocol
 profiles/discrete_8_pro_sc.json  <- sibling device (peer-contributed)
 profiles/zen_go_sc.json        <- sibling device (Zen Go Synergy Core), first-pass profile
+profiles/discrete_4_sc.json      <- sibling device, STUB (status: UNCONFIRMED -- transport never captured)
+profiles/discrete_4_pro_sc.json  <- sibling device, STUB (status: UNCONFIRMED -- transport never captured)
 profiles/mic_models.json       <- account-bound mic-modelling ("emuMic") model catalogue
 antelope/transport.py          <- generic HID open/read/write (no device-specific code)
 antelope/protocol.py           <- generic frame build/parse, driven entirely by the profile
@@ -881,9 +887,10 @@ opcode `0x12` (global), param `0x03`, an **index 0-6** at offset 17
 (0 = 32000, 1 = 44100, 2 = 48000, 3 = 88200, 4 = 96000, 5 = 176400,
 6 = 192000). Readback is `0x73` **offset 18**, tracking ~1 s behind each
 command (clock re-lock). CLI: `sample-rate` / `set-sample-rate <hz>`
-(`params.sample_rate`). Not hardware round-trip tested. Offsets 21-23 & 27
-also move but only at the 88.2k / 176.4k steps -- undecoded clock/PLL
-state.
+(`params.sample_rate`). **Hardware round-trip verified 2026-09-04** across
+every rate 44.1k-192k. Offsets **21-23 are the same rate in Hz** (24-bit
+big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
+-- both decoded in that sweep; `sample-rate` prints the measured Hz too.
 
 ### Oscillator, DC-coupling, surround tab -- decoded (2026-09-01, native macOS)
 
@@ -895,14 +902,19 @@ state.
   oscillator *into an output* is the `0x53` routing frame, source bank
   `0x0c` (`params.oscillator`, `params.routing`).
 - **DC-coupling** -- `SET_GLOBAL` (`0x12`), param `0x26`, value 0/1.
-  Talkback fast/normal/safe latency modes send nothing (host-side).
-  Thunderbolt/buffer settings are host driver only.
-- **Surround monitoring tab** -- **two** whole-state frames (no readback):
+  Talkback fast/normal/safe latency modes send nothing (host-side) -- a
+  trustworthy negative, since the same capture carried DC-coupling's OUT
+  frames. Thunderbolt/buffer settings are *probably* host driver only, but
+  that rests on a capture that cannot be trusted -- see `PROTOCOL.md` §11.
+- **Surround monitoring tab** -- **two** whole-state frames:
   `0xab`/`0xeb` = global (EQ pre/post `[18]` bit 7, level, delay, format,
   per-speaker bypass/mute/dim masks, 2.1 bass-management window) and
   **`0x87`/`0xea` = per-speaker** ×16 (`[18]` = speaker 0-15, level +
   polarity, delay, a full 16-band parametric EQ per speaker). Decoded
-  2026-09-03 from the `srrnd-*` captures. **Room Correction** turned out to
+  2026-09-03 from the `srrnd-*` captures. **Both read back** (found
+  2026-09-04): global = readback category `0x1b`, per-speaker EQ =
+  category `0x1a`. Neither is wired into the CLI yet, and neither opcode
+  is ever *sent* — they are launcher-only observed. **Room Correction** turned out to
   be just the Launcher computing a curve host-side and writing it into
   that `0x87` per-speaker EQ -- no opcode, no toggle (`params.surround_speaker`
   *is* the RC interface). Only **2.0 / 2.1** could be captured, though --

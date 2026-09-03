@@ -164,7 +164,14 @@ def main():
         counts = Counter({m: len(recs) for m, recs in by_magic.items()})
         print(f'{len(all_records)} total reports, {len(by_magic)} distinct magic byte(s) found in {args.tsv}:')
         for m, c in sorted(counts.items()):
-            known_name = {0x70: 'outgoing command', 0x73: 'state report', 0x75: 'meter report'}.get(m, 'UNKNOWN -- not in profile yet!')
+            # 0x75 is dual-purpose on the Orion: byte[1] == 0x00 marks a readback
+            # RESPONSE (frame.readback), anything else is the meter report.
+            known_name = {
+                0x70: 'outgoing command',
+                0x73: 'state report',
+                0x74: 'readback request / connect enumeration',
+                0x75: 'meter report, or a readback response when byte[1] == 0x00',
+            }.get(m, 'UNKNOWN -- not in profile yet!')
             print(f'  0x{m:02x}: {c:>6} reports  ({known_name})')
         print()
 

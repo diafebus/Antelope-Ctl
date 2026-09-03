@@ -40,11 +40,15 @@ real discriminator (§14).
 
 ## 2. Outgoing command frames (magic `0x70`)
 
-Nine command opcodes are used by the CLI. The opcode is at **offset 4**.
-The param_id is at **offset 16** for all of them. What comes after offset
-16 depends on the opcode -- this is the single most important thing to get
-right. (`0x23` -- AFX slot assign -- is a 10th, **observed only, never
-emitted**; see §12a.)
+Ten command opcodes are known. **Six are emitted** by this CLI
+(`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
+`0x53`); the other four are **observed only, never sent** — `0xab` and
+`0x87` (surround, `constraints.observed_opcodes_launcher_only`) and `0x23`
+(AFX slot assign, in `constraints.forbidden_opcodes`; §12a).
+
+The opcode is at **offset 4**. The param_id is at **offset 16** for all of
+them. What comes after offset 16 depends on the opcode -- this is the
+single most important thing to get right.
 
 | Opcode @4 | Name | param_id @16 | Payload | Used by |
 |---|---|---|---|---|
@@ -150,7 +154,7 @@ read the counts off against the Launcher's routing-tab labels.
 |---|---|---|---|---|
 | 1 | `0x11` | 0-1 | 2 | **S/PDIF** (stereo L/R) -- matches the `0x11`x2 = S/PDIF read of the ADAT/`0x1a` pairing |
 | 2 | `0x0b` | 1, 2 | (2) | **section marker, not I/O** -- see below |
-| 3 | `0x1b` | 0 | 1 | singleton, grouped with the digital inputs |
+| 3 | `0x1b` | 0 | 1 | **surround GLOBAL state** (§4a, §11) -- not a digital-input entry, despite sitting here in the walk |
 | 4 | `0x1a` | 0-15 | 16 | **surround per-speaker EQ** (16 speakers) — *not* ADAT; the old "ADAT" label was a 16==16 count guess, corrected 2026-09-04 by a live read (§4a). ADAT has no readback category (its gain/link is `0x73` @75-90) |
 | 5 | `0x03` | 0-14 | 15 | unmapped -- see candidates below |
 | 6 | `0x04` | 0-3 | 4 | unmapped -- each entry is followed by its own `0x0b` index-3 marker (no other category does this) |
@@ -307,7 +311,7 @@ Enforced in code by `protocol.check_readback_index`, called from
 `ANTELOPE_ALLOW_UNSAFE_READBACK=1`; `tools/readback_enum.py` clamps every
 sweep to the declared count unless `--unsafe`.
 
-### Category map (Orion Studio Synergy Core, 2026-08-31)
+### Category map (Orion Studio Synergy Core; last revised 2026-09-04)
 
 | cat | payload | status |
 |---|---|---|
@@ -320,13 +324,41 @@ sweep to the declared count unless `--unsafe`.
 | `0x06` | **channel status** -- 1 byte/channel, same packing as `0x73` @61: `(phase<<6)\|(phantom<<4)\|(mode&3)`. | **decoded + differential-write confirmed 2026-09-03** (phantom bit inferred from the shared encoding) |
 | `0x07` | EQ/filter band data — same `<freq><Q><gain><mode>` stride as `0x1a`. 8 records; live-read 2026-09-04: idx 0/1 = 8× a flat 5-band EQ (30/200/1k/5k/15k Hz), idx 2 = 16× a 19-byte range/capability record. Purpose unresolved (monitor/phones EQ? a capability table?). **Not** a per-input-channel EQ — the SC has none | undecoded |
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
+| `0x0b` | **section/phase marker in the connect walk, not an I/O category** (8 records, idx 1/2/3/3/3/3/0/4 -- §4). A direct query at idx 0 gave a scalar `01` in 2026-08 and an empty body on 2026-09-04 | structural, not state |
 | `0x0c` / `0x15` | ~90-entry `<id><flags>` tables. **The Launcher re-reads both on every AFX slot change (§12a)** -- likely the AFX slot-occupancy / plugin map. In `0x0c`, bytes `[7]`/`[19]` go `0x30`→`0x32` when one plugin is placed and one entry in a trailing `0x60` run goes `0x60`→`0x00`. | undecoded (partial, §12a) |
+| `0x0d` | scalar `0x18` (=24), stable across re-reads. Meaning unknown | undecoded |
 | `0x11` | S/PDIF + a 128-B capability bitmask | undecoded |
+| `0x12` | **UNKNOWN**, empty body on 2026-09-04. The old "clock source or sample-rate index?" guess is **ruled out** -- both live in `0x73` instead (clock source @19, rate index @18, rate in Hz @21-23) | undecoded |
 | `0x16` | **UNKNOWN** -- NOT output trim, NOT pan law (both ruled out live 2026-09-03). Seen all-zero and `00 00 00 32 ×2 …` | undecoded |
-| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 B = 4-B header + 16 EQ bands in the `0x87`/`0xea` write-frame layout (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode>`). Live-read 2026-09-04: with a 2.0 Room Correction loaded, idx 0 & 1 both held the RC curve (identical L/R), the rest were flat defaults. So the surround EQ / Room Correction **does** read back. No parser/CLI yet | **decoded (structure); not wired** |
-| `0x1b` | mixer bus level/range table | undecoded |
 | `0x19` | 64 entries, empty bodies -- the 64-ch USB/TB slots | — |
+| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 B = 4-B header + 16 EQ bands in the `0x87`/`0xea` write-frame layout (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode>`). Live-read 2026-09-04: with a 2.0 Room Correction loaded, idx 0 & 1 both held the RC curve (identical L/R), the rest were flat defaults. So the surround EQ / Room Correction **does** read back. No parser/CLI yet | **decoded (structure); not wired** |
+| **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.1 bass-management block. See the alignment proof below | **decoded (structure); not wired** |
 | `0x1c`-`0x60` | answer, empty bodies | — |
+
+> ### ⚠ Category numbers and opcode numbers are two different namespaces
+>
+> The same byte value means different things depending on **where in the
+> frame it sits**: at offset 4 it is a command **opcode** (§2); at the
+> readback request's `category_offset` it is a **category** (above). They
+> overlap heavily:
+>
+> | value | as an opcode (@4) | as a readback category |
+> |---|---|---|
+> | `0x12` | SET_GLOBAL | unknown (empty body) |
+> | `0x13` | SET_PARAM | not queried |
+> | `0x14` | SET_LINK | not queried |
+> | `0x17` | SET_MIX / SET_MIC_MODELING | not queried |
+> | `0x1a` | **forbidden** (undecoded DSP/FX) | **surround per-speaker EQ** |
+> | `0x1b` | — | **surround global** |
+> | `0x1c` | **forbidden** (AFX plugin params) | answers empty |
+> | `0x1d` | SET_AURAVERB | answers empty |
+> | `0x23` | **forbidden** (AFX slot assign) | answers empty |
+>
+> This has already caused one documented misread: category `0x1a` was
+> labelled "ADAT" for weeks purely because its record count (16) matched
+> the ADAT channel count, and its actual (surround-EQ) content was never
+> checked — corrected 2026-09-04. **Always check which namespace a hex
+> value is in.**
 
 ### Reading routing back
 
@@ -969,9 +1001,9 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
-| surround tab (global) | `0xeb` | `0xab` | - | `[18]` bit7 pre/post + format, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | none |
-| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | none |
-| oscillator (matrix insert) | `0xd3` | `0x53` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | none |
+| surround tab (global) | `0xeb` | `0xab` | - | `[18]` bit7 pre/post + format, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`) |
+| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs, EQ bands only) |
+| oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
 | DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | none in `0x73` |
 
@@ -1057,12 +1089,41 @@ too. See `params.screen_brightness`.
 
 The Surround tab has a **global** whole-state frame and a **per-speaker**
 one. Both opcodes are `constraints.observed_opcodes_launcher_only` -- no
-builder, never sent. **Readback:** the global frame (`0xab`) has none
-found, but the **per-speaker EQ (`0x87`) reads back via `0x74` category
-`0x1a`** — 16 records (one per speaker), each = a 4-byte header then the
-16 EQ bands in this frame's exact `<freq><Q><gain><mode>` layout
-(live-confirmed 2026-09-04; Room Correction curves show up here too). Not
-wired into a parser or the CLI yet.
+builder, never sent.
+
+**Readback — BOTH frames read back.** This corrects the earlier "no `0x73`
+/ `0x74` readback for any surround param", which held only until the
+categories were actually read on 2026-09-04:
+
+| frame | readback | records |
+|---|---|---|
+| global `0xab`/`0xeb` | `0x74` category **`0x1b`** | 1 (idx 0) |
+| per-speaker `0x87`/`0xea` | `0x74` category **`0x1a`** | 16, one per speaker |
+
+Neither is parsed or wired into the CLI yet.
+
+**Category `0x1b` alignment proof** — `body[N]` == the `0xab` frame's byte
+`[18+N]`, from one live read against a known 2.0 state:
+
+| body | bytes | maps to | reading |
+|---|---|---|---|
+| `[0..1]` | `02 9f` | frame `[18][19]` | FORMAT = 2.0 ✓ |
+| `[2]` | `06` | frame `[20]` | global delay = 6 (the 0.6 ms floor) ✓ |
+| `[4..5]` | `58 02` | frame `[22-23]` | level = 600 = 0 dB ✓ |
+| `[7..8]` | `ff ff` | frame `[25-26]` | per-speaker bypass mask, all active ✓ |
+| `[9..10]` | `00 00` | frame `[27-28]` | mute mask ✓ |
+| `[22..24]` | `23 00 00` | frame `[40-42]` | the documented bass-management marker ✓ |
+
+The 8-byte bass-management **channel blocks** then begin at `body[25]` =
+frame `[43]`, exactly where the byte map (derived independently, from
+*write* captures) said they would, and read back sensible values —
+LP 320 Hz / HP 80 Hz / fader 360 / order 2 on the three used channels, then
+the `[80][80][600][0]` default. So this record is an **independent
+confirmation of the bass-management byte map**.
+
+It also retires the old "`0x1b` = mixer bus level/range table" label: the
+repeating `50 00 50 00 58 02 00` that prompted that guess is just the
+default channel block `[80][80][600][0]`.
 
 Antelope's docs say the Orion Studio SC surround system covers **23+
 layouts, stereo → Dolby Atmos 9.1.6**, but the full feature **needs the
@@ -1147,8 +1208,11 @@ toggle is `SET_GLOBAL` (opcode `0x12`), param **`0x26`**, value `0`/`1`.
 No `0x73` readback, so state is tracked client-side.
 No `0x73` readback. The **talkback latency modes** (fast / normal / safe)
 in the same capture sent **nothing** -- host-side, or a path not on this
-interface. This closes the old `settigs-thunderb-lat-dccp` "zero frames"
-item: DC-coupling does talk to the device.
+interface. **That negative is trustworthy**, unusually: the *same* capture
+carried the DC-coupling OUT frames, so the OUT endpoint was demonstrably
+being logged when the latency buttons were clicked. (Contrast the
+oscillator and thunderbolt files, where "zero frames" came from captures
+that never proved they were recording OUT at all — see §11's lesson.)
 
 ### Clock source (`0x12` / `0x04`) -- DECODED 2026-09-03
 
@@ -1205,9 +1269,23 @@ never captured" item, and confirms it is *not* a 4th target of
 
 ### Thunderbolt / latency
 
-`settigs-thunderb-lat-dccp.pcapng` -- zero outgoing frames. Latency/buffer
-is a host driver setting; Thunderbolt is inactive over USB. (DC-coupling,
-which that capture never exercised, is now decoded -- see above, `0x12`/`0x26`.)
+`settigs-thunderb-lat-dccp.pcapng` -- zero outgoing frames, which was read
+as: latency/buffer is a host driver setting and Thunderbolt is inactive
+over USB.
+
+> ⚠ **Treat that conclusion as unproven.** The file is named for
+> **dc**-**c**ou**p**ling, and DC-coupling is now *known* to emit a frame
+> (`0x12`/`0x26`, decoded from a different capture and hardware-confirmed).
+> So either that capture never actually exercised DC-coupling despite its
+> name, or it is another file that was not recording the OUT endpoint. In
+> **either** case the "zero outgoing frames" observation in it carries no
+> weight, and the thunderbolt/latency verdict drawn from it inherits the
+> doubt. It is plausible on its own merits — Thunderbolt genuinely is
+> inactive over USB, and buffer size genuinely is a host driver concept —
+> but it has not been *shown* here. To settle it: recapture the latency /
+> buffer controls on native macOS with the OUT endpoint verified present
+> (`tools/scan_macos_capture.py` prints an `OUT magic 70` line when a file
+> is usable).
 
 ---
 
@@ -1256,7 +1334,9 @@ own record -- previously only mix 0 had ever been observed) and that
 `[22]` is stored send state rather than a meter. So "write-only over USB"
 was wrong for the mixer too. AuraVerb is category `0x0a` (decoded +
 hardware round-trip verified 2026-09-03 -- see the §12 AuraVerb section);
-`0x1b` is the mixer bus level/range table (still undecoded).
+`0x1b` is NOT a mixer table at all -- it is the surround GLOBAL readback
+(§11). Mixer bus levels live in the `0x73` state report's `bus_block`
+(offsets 28-45, §5), not in a readback category.
 
 **Both directions are in the CLI.** `mix-status [mix]` is the live read
 (`protocol.parse_mixer_record`); `mix-set <mix> <ch|master> [--fader dB]
@@ -1468,8 +1548,8 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Item | Status |
 |---|---|
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. Open: wire `route` writes for the other 9 destinations. |
-| Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number) + `0x1b` (bus levels), partly decoded. Not in the CLI. |
-| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Preamps 5-6 CAPTURED 2026-09-03 (webUI usbmon, `webui-emumic-preamp56-...`): `[18]=0x00`/`0x01` on the wire, pair = link pair 2, disable reverses phantom+gain+link. Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position; the readback category (none found -- `0x07`/`0x1a` are the unmapped DSP-EQ candidates). |
+| Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number), decoded + hardware-verified; `mix-status` / `mix-set` in the CLI. (`0x1b` was once thought to be its bus-level table -- it is the surround global readback instead, §11; bus levels are `0x73` `bus_block`.) |
+| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not identified -- and the two old candidates are now ruled out (§4a `0x1a` is the surround per-speaker EQ, `0x07` is unresolved EQ/filter data; neither carries mic modeling). Preamps 5-6 CAPTURED 2026-09-03 (webUI usbmon, `webui-emumic-preamp56-...`): `[18]=0x00`/`0x01` on the wire, pair = link pair 2, disable reverses phantom+gain+link. Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position; the readback category (none found; `0x1a`/`0x07` ruled out 2026-09-04). |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | ~~Pan law~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x24` / 0-3 = -6/-3/-4.5/0 dB (`panning-law-6-3-45-0`). No readback. CLI `pan-law`. |
 | ~~Clock source~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x04` / 0-6 (Oven / WC / ADAT / ADATx2 / ADATx4 / S/PDIF / USB). Readback `0x73` @19 — which also explains the `0x73` @19 startup blip (USB→saved source re-lock). CLI `clock-source`. |
@@ -1477,11 +1557,11 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
-| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | decoded 2026-09-03 (§11). Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker = level (+invert) + delay + **16 EQ bands** (`<freq><Q><gain><mode>`, 7B each; Q ×100 0.1-18; mode `0x02` bell / `0x00` shelf / `0x04` band-pass on end bands 1 & 16; centre = bell only). **Per-speaker EQ reads back** — `0x74` cat `0x1a`, 16 records, live-confirmed 2026-09-04 (not wired). Global frame: no readback. Minor-open: speaker-index↔channel map for formats past 2.0; centre end-band mode value; a cat-`0x1a` parser + CLI |
+| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | decoded 2026-09-03 (§11). Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker = level (+invert) + delay + **16 EQ bands** (`<freq><Q><gain><mode>`, 7B each; Q ×100 0.1-18; mode `0x02` bell / `0x00` shelf / `0x04` band-pass on end bands 1 & 16; centre = bell only). **BOTH frames read back** (2026-09-04): per-speaker EQ = `0x74` cat `0x1a` (16 recs), global = cat `0x1b` (1 rec, `body[N]`==frame`[18+N]`, which independently confirms the bass-management byte map). Neither wired. Minor-open: speaker-index↔channel map for formats past 2.0; centre end-band mode value; parsers + a `surround-eq` CLI |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Open: handle encoding (slot-index vs instance id, 2 data points); the `0x0c`/`0x15` readback that maps slot occupancy; bypass polarity. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync, no readback. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
-| Thunderbolt / latency | zero outgoing frames -- host driver setting; TB inactive over USB |
+| Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
 | Offsets 157-168 / 169-180 / 221-232 | **resolved 2026-09-01** -- per-channel input meters, `157 + channel` (three mirror copies). §9. |
