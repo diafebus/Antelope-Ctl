@@ -9,8 +9,8 @@ different device.
 
 This doc describes the keys the code reads and the conventions the
 profiles follow. The reference implementations are
-`profiles/orion_studio_3.json` (most complete),
-`profiles/zen_go_sc.json` and `profiles/discrete_8_pro_synergy_core.json`.
+`profiles/orion_studio_sc.json` (most complete),
+`profiles/zen_go_sc.json` and `profiles/discrete_8_pro_sc.json`.
 
 ---
 
@@ -275,7 +275,7 @@ frame shape, source-bank numbers). See `PROTOCOL.md` §14.
 
 ## Adding a device
 
-1. Copy the closest existing profile (usually `orion_studio_3.json`).
+1. Copy the closest existing profile (usually `orion_studio_sc.json`).
 2. Set `device` from the enumeration capture (device descriptor →
    VID/PID/bcd; config descriptor → interfaces/endpoints).
 3. Verify **every** `frame` offset against a capture — do **not** assume

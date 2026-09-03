@@ -20,7 +20,7 @@ directly:
 
 Run it on the machine the device is plugged into:
 
-  python3 tools/hid_probe.py --profile profiles/orion_studio_3.json
+  python3 tools/hid_probe.py --profile profiles/orion_studio_sc.json
   # add --set-route-first  to change a route via the CLI first, so you can
   # tell whether a feature report actually reflects current routing.
 

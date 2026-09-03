@@ -4,12 +4,12 @@ Generic Antelope HID control CLI.
 
 Per-input-channel controls (physical inputs 1-12, addressed 0-11):
 
-    antelope-ctl --profile profiles/orion_studio_3.json status
-    antelope-ctl --profile profiles/orion_studio_3.json set-mode 0 mic
-    antelope-ctl --profile profiles/orion_studio_3.json set-gain 0 12
-    antelope-ctl --profile profiles/orion_studio_3.json set-phantom 0 on
-    antelope-ctl --profile profiles/orion_studio_3.json set-invert 0 on
-    antelope-ctl --profile profiles/orion_studio_3.json set-link 0 on      # links ch1+ch2
+    antelope-ctl --profile profiles/orion_studio_sc.json status
+    antelope-ctl --profile profiles/orion_studio_sc.json set-mode 0 mic
+    antelope-ctl --profile profiles/orion_studio_sc.json set-gain 0 12
+    antelope-ctl --profile profiles/orion_studio_sc.json set-phantom 0 on
+    antelope-ctl --profile profiles/orion_studio_sc.json set-invert 0 on
+    antelope-ctl --profile profiles/orion_studio_sc.json set-link 0 on      # links ch1+ch2
                                                                             # (checks gain/phantom/phase
                                                                             # sync before+after as an
                                                                             # indirect confirmation, and
@@ -22,9 +22,9 @@ Per-input-channel controls (physical inputs 1-12, addressed 0-11):
 ADAT input controls (16 ADAT channels, addressed 0-15 -- a separate space
 from the physical inputs; gain + link only, no mode/phantom/phase):
 
-    antelope-ctl --profile profiles/orion_studio_3.json adat-status
-    antelope-ctl --profile profiles/orion_studio_3.json set-adat-gain 0 6
-    antelope-ctl --profile profiles/orion_studio_3.json set-adat-link 0 on   # links ADAT ch1+ch2
+    antelope-ctl --profile profiles/orion_studio_sc.json adat-status
+    antelope-ctl --profile profiles/orion_studio_sc.json set-adat-gain 0 6
+    antelope-ctl --profile profiles/orion_studio_sc.json set-adat-link 0 on   # links ADAT ch1+ch2
                                                                             # (mirrors gain to the
                                                                             # partner while linked,
                                                                             # exactly like set-link;
@@ -35,9 +35,9 @@ from the physical inputs; gain + link only, no mode/phantom/phase):
 
 S/PDIF input controls (2 channels, 0 = L / 1 = R; gain + link only):
 
-    antelope-ctl --profile profiles/orion_studio_3.json spdif-status
-    antelope-ctl --profile profiles/orion_studio_3.json set-spdif-gain 0 6
-    antelope-ctl --profile profiles/orion_studio_3.json set-spdif-link on    # links L+R (distinct
+    antelope-ctl --profile profiles/orion_studio_sc.json spdif-status
+    antelope-ctl --profile profiles/orion_studio_sc.json set-spdif-gain 0 6
+    antelope-ctl --profile profiles/orion_studio_sc.json set-spdif-link on    # links L+R (distinct
                                                                             # link frame from the
                                                                             # physical/ADAT one --
                                                                             # no cross-space
@@ -61,23 +61,23 @@ No device readback yet, so verify in the Launcher:
 
 Output-bus controls (monitor A/B, headphone 1/2 -- NOT the same "channel"
 numbers as inputs above; buses accept either their numeric id or a name,
-see profiles/orion_studio_3.json -> "buses"):
+see profiles/orion_studio_sc.json -> "buses"):
 
-    antelope-ctl --profile profiles/orion_studio_3.json bus-status
-    antelope-ctl --profile profiles/orion_studio_3.json set-bus-level monitor_a 60
-    antelope-ctl --profile profiles/orion_studio_3.json set-bus-dim mona on
-    antelope-ctl --profile profiles/orion_studio_3.json set-bus-mute hp1 on
-    antelope-ctl --profile profiles/orion_studio_3.json set-bus-mono hp2 off
+    antelope-ctl --profile profiles/orion_studio_sc.json bus-status
+    antelope-ctl --profile profiles/orion_studio_sc.json set-bus-level monitor_a 60
+    antelope-ctl --profile profiles/orion_studio_sc.json set-bus-dim mona on
+    antelope-ctl --profile profiles/orion_studio_sc.json set-bus-mute hp1 on
+    antelope-ctl --profile profiles/orion_studio_sc.json set-bus-mono hp2 off
 
 Device-global settings:
 
-    antelope-ctl --profile profiles/orion_studio_3.json set-brightness 75    # front-panel screen, 0-100
-    antelope-ctl --profile profiles/orion_studio_3.json sample-rate           # show current rate
-    antelope-ctl --profile profiles/orion_studio_3.json set-sample-rate 96k   # 32k/44.1k/48k/88.2k/96k/176.4k/192k -- re-locks the clock
+    antelope-ctl --profile profiles/orion_studio_sc.json set-brightness 75    # front-panel screen, 0-100
+    antelope-ctl --profile profiles/orion_studio_sc.json sample-rate           # show current rate
+    antelope-ctl --profile profiles/orion_studio_sc.json set-sample-rate 96k   # 32k/44.1k/48k/88.2k/96k/176.4k/192k -- re-locks the clock
 
 Escape hatch for anything not yet in the profile:
 
-    antelope-ctl --profile profiles/orion_studio_3.json raw-set 0 0x53 7   # for a param
+    antelope-ctl --profile profiles/orion_studio_sc.json raw-set 0 0x53 7   # for a param
                                                                             # not yet in
                                                                             # the profile
 
@@ -1965,16 +1965,23 @@ def cmd_meter(args, profile):
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _PROFILE_ALIASES = {
-    'orion': 'orion_studio_3', 'orion_studio_3': 'orion_studio_3',
+    'orion': 'orion_studio_sc', 'orion_studio_sc': 'orion_studio_sc',
+    'orion_studio_3': 'orion_studio_sc',  # legacy name, kept as a silent alias
     'zen_go': 'zen_go_sc', 'zen_go_sc': 'zen_go_sc',
-    'discrete_8_pro': 'discrete_8_pro_synergy_core',
-    'discrete8pro': 'discrete_8_pro_synergy_core',
+    'discrete_8_pro': 'discrete_8_pro_sc', 'discrete8pro': 'discrete_8_pro_sc',
+    'discrete_8_pro_sc': 'discrete_8_pro_sc',
+    'discrete_4': 'discrete_4_sc', 'discrete_4_sc': 'discrete_4_sc',
+    'discrete_4_pro': 'discrete_4_pro_sc', 'discrete_4_pro_sc': 'discrete_4_pro_sc',
+    # legacy *_synergy_core names, kept as silent aliases
+    'discrete_8_pro_synergy_core': 'discrete_8_pro_sc',
+    'discrete_4_synergy_core': 'discrete_4_sc',
+    'discrete_4_pro_synergy_core': 'discrete_4_pro_sc',
 }
 
 
 def _resolve_profile_path(arg):
-    """Accept a path ('profiles/orion_studio_3.json', './x.json'), a bare
-    filename ('orion_studio_3.json'), or a short name/alias ('orion')."""
+    """Accept a path ('profiles/orion_studio_sc.json', './x.json'), a bare
+    filename ('orion_studio_sc.json'), or a short name/alias ('orion')."""
     if arg and (os.path.sep in arg or arg.endswith('.json')):
         for cand in (arg, os.path.join(_REPO_ROOT, arg),
                      os.path.join(_REPO_ROOT, 'profiles', os.path.basename(arg))):
@@ -1985,7 +1992,7 @@ def _resolve_profile_path(arg):
     cand = os.path.join(_REPO_ROOT, 'profiles', f'{name}.json')
     if os.path.exists(cand):
         return cand
-    sys.exit(f"profile '{arg}' not found. Try a path (profiles/orion_studio_3.json) "
+    sys.exit(f"profile '{arg}' not found. Try a path (profiles/orion_studio_sc.json) "
              f"or a short name: {', '.join(sorted(set(_PROFILE_ALIASES.values())))}")
 
 

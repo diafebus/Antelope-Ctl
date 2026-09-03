@@ -19,7 +19,7 @@ used; the device firmware is not touched.
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
 | **`CAPTURING.md`** | how to capture USB traffic (Windows VM + USBPcap, or native macOS) |
-| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_3` is the reference; also `zen_go_sc`, `discrete_8_pro_synergy_core`) + `mic_models.json` |
+| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`) + `mic_models.json` |
 
 ## Legal status & disclaimer
 
@@ -91,8 +91,8 @@ request you agree to license your contribution that way.
 ## Layout
 
 ```
-profiles/orion_studio_3.json   <- single source of truth for the Orion Studio III protocol
-profiles/discrete_8_pro_synergy_core.json  <- sibling device (peer-contributed)
+profiles/orion_studio_sc.json   <- single source of truth for the Orion Studio Synergy Core protocol
+profiles/discrete_8_pro_sc.json  <- sibling device (peer-contributed)
 profiles/zen_go_sc.json        <- sibling device (Zen Go Synergy Core), first-pass profile
 profiles/mic_models.json       <- account-bound mic-modelling ("emuMic") model catalogue
 antelope/transport.py          <- generic HID open/read/write (no device-specific code)
@@ -115,31 +115,31 @@ touching the Python. (When a new feature needs a genuinely different *frame
 shape* -- see `channel_link` below -- it gets its own block under
 `profile["frame"]`, rather than being forced into the existing one.)
 
-## Using it (Orion Studio III)
+## Using it (Orion Studio Synergy Core)
 
 `--profile` accepts a path, a bare filename, or a short name
 (`orion` / `zen_go` / `discrete_8_pro`), and defaults to `orion` (or
 `$ANTELOPE_PROFILE`). The examples below spell out
-`--profile profiles/orion_studio_3.json`; `antelope-ctl status` on its own
+`--profile profiles/orion_studio_sc.json`; `antelope-ctl status` on its own
 works too.
 
 Physical input channels (12 hybrid inputs, addressed 0-11):
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json status
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-mode 0 mic
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-gain 0 12
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-phantom 0 on
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-invert 0 on
-python3 -m antelope.cli --profile profiles/orion_studio_3.json meter          # see below re: dB calibration
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json status
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-mode 0 mic
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-gain 0 12
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-phantom 0 on
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-invert 0 on
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json meter          # see below re: dB calibration
 ```
 
 Channel link -- pairs adjacent inputs (ch1+ch2, ch3+ch4, ... ch11+ch12) for
 recording a stereo signal. Address either channel in the pair:
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-link 2 on   # links ch3+ch4
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-link 3 off  # same pair
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-link 2 on   # links ch3+ch4
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-link 3 off  # same pair
 ```
 
 **Important (2026-08, confirmed on real hardware):** the device itself does
@@ -153,9 +153,9 @@ ADAT inputs -- a separate 16-channel space (ADAT ch 0-15), gain + link
 only (no mode/phantom/phase):
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json adat-status
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-adat-gain 0 6      # ADAT ch1, +6 dB
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-adat-link 0 on     # links ADAT ch1+ch2
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json adat-status
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-gain 0 6      # ADAT ch1, +6 dB
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-link 0 on     # links ADAT ch1+ch2
 ```
 
 ADAT link behaves exactly like the preamp link (user-confirmed on
@@ -170,9 +170,9 @@ and physical `SET_LINK` frames are byte-identical (both `space` byte
 S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json spdif-status
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-spdif-gain 0 6   # S/PDIF L, +6 dB
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-spdif-link on    # links L+R
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json spdif-status
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-spdif-gain 0 6   # S/PDIF L, +6 dB
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-spdif-link on    # links L+R
 ```
 
 Same gain-mirroring behaviour as the other links. The S/PDIF `SET_LINK`
@@ -187,19 +187,19 @@ channels above (see "Buses vs. channels" below); use either the numeric
 bus id or its name:
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json bus-status
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-level monitor_a 60
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-dim mona on
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mute hp1 on
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-bus-mono hp2 off
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json bus-status
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-bus-level monitor_a 60
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-bus-dim mona on
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-bus-mute hp1 on
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-bus-mono hp2 off
 ```
 
 ### Device-global settings
 
 ```
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-brightness 75    # front-panel screen, 0-100
-python3 -m antelope.cli --profile profiles/orion_studio_3.json sample-rate           # show current rate
-python3 -m antelope.cli --profile profiles/orion_studio_3.json set-sample-rate 96k   # 32k/44.1k/48k/88.2k/96k/176.4k/192k
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-brightness 75    # front-panel screen, 0-100
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json sample-rate           # show current rate
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-sample-rate 96k   # 32k/44.1k/48k/88.2k/96k/176.4k/192k
 ```
 
 - **Screen brightness** only works when the device talks to a native
@@ -256,7 +256,7 @@ protocol, category `0x03` (decoded 2026-08-31, `PROTOCOL.md` §4a). So
 `route` verifies every write against a read-back and seeds `keep` from the
 device. Wired write destinations: **line out** (16 channels), **HP1, HP2,
 Monitor A, Monitor B, Reamp** (2) -- all hardware round-tripped against a
-real Orion Studio III.
+real Orion Studio Synergy Core.
 
 ```
 python3 -m antelope.cli ... route hp1 all preamp3 preamp4    # set every channel (seeds the cache)
@@ -390,7 +390,7 @@ mute, solo)` builds the frame directly. See `PROTOCOL.md` §12 and
 
 > ⚠ **Never query a readback index past a category's record count.** The
 > firmware does not bounds-check it: `category 0x04 index 5` crashed the
-> Orion Studio III outright (Cortex-M `BusFault_Handler`, physical power
+> Orion Studio Synergy Core outright (Cortex-M `BusFault_Handler`, physical power
 > cycle required). The CLI and `tools/readback_enum.py` now refuse to go
 > out of range. See `PROTOCOL.md` §4a.
 
@@ -515,12 +515,12 @@ confirm, only then trust it. Nothing is inferred from byte patterns alone.
    `_gain` all use it; `talkback_dest_assign` uses the ordinary `0x13`
    because it *does* take a target. Moral: check the opcode first, then
    figure out where the payload bytes actually are for that opcode.
-5. Add an entry to `profiles/orion_studio_3.json` under `"params"` with
+5. Add an entry to `profiles/orion_studio_sc.json` under `"params"` with
    `"status": "unconfirmed"` and your candidate offset/id in `"notes"`.
 6. If it looks like the existing SET_PARAM(param_id, channel, value) shape,
    test it deliberately with the CLI's escape hatch:
    ```
-   python3 -m antelope.cli --profile profiles/orion_studio_3.json raw-set 0 0x53 10
+   python3 -m antelope.cli --profile profiles/orion_studio_sc.json raw-set 0 0x53 10
    ```
    and confirm via another capture that *only* the expected offset moved,
    across a few different values, before calling it confirmed. `raw-set`
@@ -547,7 +547,7 @@ confirm, only then trust it. Nothing is inferred from byte patterns alone.
 
 ## Adding a new Antelope device
 
-Copy `profiles/orion_studio_3.json` to `profiles/<device>.json`, reverse
+Copy `profiles/orion_studio_sc.json` to `profiles/<device>.json`, reverse
 its VID/PID and protocol from a fresh capture (don't assume it matches --
 different product lines may use a different frame format entirely), and
 point `--profile` at the new file. `antelope/transport.py`,
@@ -561,8 +561,8 @@ mostly is -- see `"frame"` in the JSON).
 
 | profile | device | PID | state |
 |---|---|---|---|
-| `orion_studio_3.json` | Orion Studio III | `0xa221` | reference; most complete |
-| `discrete_8_pro_synergy_core.json` | Discrete 8 Pro | `0xa2b5` | peer-contributed |
+| `orion_studio_sc.json` | Orion Studio Synergy Core | `0xa221` | reference; most complete |
+| `discrete_8_pro_sc.json` | Discrete 8 Pro | `0xa2b5` | peer-contributed |
 | `zen_go_sc.json` | Zen Go Synergy Core | `0xa015` | first pass (2026-08-31) from USBPcap captures -- preamps / buses / sample rate / clock / mixer / routing-shape decoded; DSP, mic-modelling, full routing map, and the meter byte-map still open (see `open_questions` in the file) |
 
 The family shares `magic 0x70` command / opcode @4 / param_id @16 /
@@ -672,7 +672,7 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   proof (user, 2026-08):** turning the *physical gain wheel* on a linked
   channel moves only that channel -- the wheel bypasses all host software,
   so the device plainly has no link-propagation logic, and the Launcher
-  only mirrors changes it makes in its own UI. `profiles/orion_studio_3.json`'s
+  only mirrors changes it makes in its own UI. `profiles/orion_studio_sc.json`'s
   `params.channel_link.side_effects` and `.live_sync_while_linked` notes
   have been updated to say this plainly, so nobody re-discovers it as a
   "CLI bug" later.
@@ -764,7 +764,7 @@ link8, link7, link2, link1):
 Three captures (`talkback-bttn`, `talkback-select`, `talkback-gain-int-ch1-2-12`)
 pinned down the whole talkback feature. It is **protocol-confirmed but
 deliberately not wired into `cli.py` yet** (protocol-first; add commands
-later if wanted). Full details in `profiles/orion_studio_3.json` --
+later if wanted). Full details in `profiles/orion_studio_sc.json` --
 `frame.global_command`, `state_report.talkback_block`, and the four
 `talkback_*` params. Summary:
 
@@ -939,7 +939,7 @@ a per-channel one -- reasonable estimate, not independently verified past
 channel 0. Don't build anything on the deep-silence tail past -60dB either
 -- it isn't swept yet, and the stray raw=72 point above hints it may not
 stay linear that far down. Try `python3 -m antelope.cli --profile
-profiles/orion_studio_3.json meter` while making noise into a channel to see
+profiles/orion_studio_sc.json meter` while making noise into a channel to see
 it live.
 
 **Capture format matters.** Wireshark's plain-text/"Copy as Text" export

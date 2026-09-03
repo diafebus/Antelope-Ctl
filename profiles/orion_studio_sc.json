@@ -1,10 +1,10 @@
 {
   "device": {
-    "name": "Antelope Orion Studio III",
+    "name": "Antelope Orion Studio Synergy Core",
     "vid": "0x23e5",
     "pid": "0xa221",
     "bcdDevice": "7.00",
-    "notes": "Composite USB device; control is entirely via the vendor HID interface (iface 3). UAC2 audio-control interface has no Feature Units."
+    "notes": "Composite USB device; control is entirely via the vendor HID interface (iface 3). UAC2 audio-control interface has no Feature Units. Model lineage (for disambiguation): this is the 2020 'Orion Studio Synergy Core' -- the third Orion Studio generation, after the 2015 Orion Studio and the 2017 Orion Studio Rev.2017. Not the same as the Orion 32 / Orion 32+ / Orion HD (the multichannel converters). The device reports its own name as 'OrionStudio_III' in readback category 0x01, hence the file's old name orion_studio_3.json (renamed to orion_studio_sc.json 2026-09-03, matching the *_sc.json Synergy Core family naming -- zen_go_sc, discrete_8_pro_sc, discrete_4_sc, discrete_4_pro_sc)."
   },
   "transport": {
     "type": "hid",
@@ -13,7 +13,7 @@
     "in_endpoint": "0x82",
     "poll_interval_ms": 4,
     "notes": "Confirmed from raw pcapng (2026-08): the vendor control protocol is entirely HID interrupt on interface 3, endpoint 0x01 OUT / 0x82 IN, device address 2 (usb.dst 1.2.x). Endpoints 0x05 OUT / 0x84 IN are the UAC2 isochronous audio stream (24-ch / 24-bit in the class-compliant descriptor) -- unrelated to control. Only 16 USB control transfers in the whole connect sequence: standard descriptor GETs + SET_CONFIGURATION/SET_INTERFACE, NO string-descriptor fetches in any capture on file. The UAC2 audio-control descriptor is a stub (1 clock source, 4 terminals all nrChannels=1, no Feature Units), so it carries no usable channel topology or names.",
-    "hidraw_write_length_unverified": "The sibling Antelope Discrete 8 Pro (peer PR, profile discrete_8_pro_synergy_core.json) has a HID report descriptor with NO Report ID item, so on Linux hidraw a write there must be 321 bytes (leading 0x00 report-number byte + 320-byte payload), NOT 320. This CLI's transport.py currently writes exactly 320 bytes for Orion with no prefix, and the confirmed params suggest that works here -- but it has not been checked against Orion's actual descriptor. Verify with: cat /sys/class/hidraw/hidrawN/device/report_descriptor and look for a Report ID item (0x85 ...). If Orion's descriptor also lacks one, transport.py needs the leading 0x00 for Orion too. Discrete 8 Pro's full descriptor, for comparison: 06 a0 ff 09 01 a1 01 09 02 a1 00 06 a1 ff 09 03 09 04 15 80 25 7f 35 00 45 ff 75 08 96 40 01 81 02 09 05 09 06 15 80 25 7f 35 00 45 ff 75 08 96 40 01 91 02 c0 c0 (no 0x85)."
+    "hidraw_write_length_unverified": "The sibling Antelope Discrete 8 Pro (peer PR, profile discrete_8_pro_sc.json) has a HID report descriptor with NO Report ID item, so on Linux hidraw a write there must be 321 bytes (leading 0x00 report-number byte + 320-byte payload), NOT 320. This CLI's transport.py currently writes exactly 320 bytes for Orion with no prefix, and the confirmed params suggest that works here -- but it has not been checked against Orion's actual descriptor. Verify with: cat /sys/class/hidraw/hidrawN/device/report_descriptor and look for a Report ID item (0x85 ...). If Orion's descriptor also lacks one, transport.py needs the leading 0x00 for Orion too. Discrete 8 Pro's full descriptor, for comparison: 06 a0 ff 09 01 a1 01 09 02 a1 00 06 a1 ff 09 03 09 04 15 80 25 7f 35 00 45 ff 75 08 96 40 01 81 02 09 05 09 06 15 80 25 7f 35 00 45 ff 75 08 96 40 01 91 02 c0 c0 (no 0x85)."
   },
   "frame": {
     "command": {
@@ -1036,8 +1036,8 @@
     }
   ],
   "family_notes": {
-    "_comment": "Antelope Synergy Core devices share this HID protocol family (magic 0x70 command / opcode at offset 4 / param_id at 16). A peer got an Antelope Discrete 8 Pro working with it too -- see profiles/discrete_8_pro_synergy_core.json (contributed by PR). Param IDs are shared but SEMANTICS ARE NOT guaranteed to be: value sets, encodings, ranges, and even whether a frame shape works at all can differ per device. The constraints/hazards blocks below are the safety lessons from that sibling device, applied here as precautionary defaults.",
-    "shared_with": "discrete_8_pro_synergy_core.json (confirmed working by peer PR); discrete_4 / discrete_4_pro profiles are stubs",
+    "_comment": "Antelope Synergy Core devices share this HID protocol family (magic 0x70 command / opcode at offset 4 / param_id at 16). A peer got an Antelope Discrete 8 Pro working with it too -- see profiles/discrete_8_pro_sc.json (contributed by PR). Param IDs are shared but SEMANTICS ARE NOT guaranteed to be: value sets, encodings, ranges, and even whether a frame shape works at all can differ per device. The constraints/hazards blocks below are the safety lessons from that sibling device, applied here as precautionary defaults.",
+    "shared_with": "discrete_8_pro_sc.json (confirmed working by peer PR); discrete_4 / discrete_4_pro profiles are stubs",
     "known_divergences_on_discrete_8_pro": [
       "input_mode 0x4f: no 'direct' mode -- value 3 CRASHES its firmware (Orion has 3=direct, confirmed here)",
       "bus_level 0x47: encoding is plain negated dB (value N = -N dB), NOT Orion's 0-96 / 96=0dB-unity scale",

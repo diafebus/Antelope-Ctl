@@ -39,7 +39,7 @@ def hexdump(b, width=32):
         out(f"      [{i:3d}] {b[i:i + width].hex()}")
 
 
-profile = proto.load_profile(os.path.join(ROOT, "profiles/orion_studio_3.json"))
+profile = proto.load_profile(os.path.join(ROOT, "profiles/orion_studio_sc.json"))
 dv = profile["device"]
 VID = int(dv["vid"], 16) if isinstance(dv["vid"], str) else dv["vid"]
 PID = int(dv["pid"], 16) if isinstance(dv["pid"], str) else dv["pid"]

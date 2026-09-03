@@ -27,9 +27,9 @@ cannot show:
                         (0x12/0x13/0x14/0x17/0x1d/0x53). Still a write.
 
 Usage:
-  python3 tools/readback_probe.py --profile profiles/orion_studio_3.json
-  sudo python3 tools/readback_probe.py --profile profiles/orion_studio_3.json --ct
-  python3 tools/readback_probe.py --profile profiles/orion_studio_3.json --poke
+  python3 tools/readback_probe.py --profile profiles/orion_studio_sc.json
+  sudo python3 tools/readback_probe.py --profile profiles/orion_studio_sc.json --ct
+  python3 tools/readback_probe.py --profile profiles/orion_studio_sc.json --poke
 
 Every run also writes its full output next to this file as
 readback_probe_out.txt so it can be inspected after the fact.

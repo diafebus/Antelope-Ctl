@@ -46,7 +46,7 @@ Notes learned from the first run:
 Read-only: every frame sent is a read request, exactly what the Launcher
 issues on connect.
 
-  python3 tools/readback_enum.py --profile profiles/orion_studio_3.json
+  python3 tools/readback_enum.py --profile profiles/orion_studio_sc.json
   python3 tools/readback_enum.py --profile ... --cat 0x03
 """
 import argparse

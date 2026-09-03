@@ -1,5 +1,5 @@
 {
-  "_comment": "Antelope Zen Go Synergy Core -- reverse-engineered from USBPcap captures (Windows, VM) in sidejob/zen_go_synergy_core-filtered/ (2026-08-31). SAME HID vendor protocol family as Orion Studio III (profiles/orion_studio_3.json) and Discrete 8 Pro: magic 0x70 command, opcode @4, param_id @16, 320-byte reports on the same endpoints. Param IDs are largely shared with Orion; report magics and some frame shapes DIFFER (meter is 0x83 not 0x75; the mixer frame is opcode 0x16 / subcmd 0x04 with no send byte). Everything here is from observed traffic on hardware the capture owner controls. Fields carry status + evidence; anything marked 'observed' is not yet decoded.",
+  "_comment": "Antelope Zen Go Synergy Core -- reverse-engineered from USBPcap captures (Windows, VM) in sidejob/zen_go_synergy_core-filtered/ (2026-08-31). SAME HID vendor protocol family as Orion Studio III (profiles/orion_studio_sc.json) and Discrete 8 Pro: magic 0x70 command, opcode @4, param_id @16, 320-byte reports on the same endpoints. Param IDs are largely shared with Orion; report magics and some frame shapes DIFFER (meter is 0x83 not 0x75; the mixer frame is opcode 0x16 / subcmd 0x04 with no send byte). Everything here is from observed traffic on hardware the capture owner controls. Fields carry status + evidence; anything marked 'observed' is not yet decoded.",
 
   "device": {
     "name": "Antelope Zen Go Synergy Core",
@@ -167,7 +167,7 @@
         "0x11": "1 byte, observed `02`. Orion's 0x11 is 'S/PDIF + a capability bitmask'; the Zen Go has S/PDIF, so `02` is plausibly a channel/capability count -- UNCONFIRMED, do not rely on it."
       },
       "observed_walk": "The Zen Go Launcher's connect walk is TINY compared to the Orion's: only 3 queries, categories 0x00 / 0x01 / 0x11, each at index 0 (identical in capture_01_enumeration.pcapng and capture_01_enumeration_diff_filter.pcapng). The Orion walks 113 records across 10 categories. So this capture gives us NO record counts for any category.",
-      "hazard": "!! NO SAFE INDEX BOUNDS ARE KNOWN FOR THIS DEVICE. !! On the Orion, an out-of-range readback index crashes the firmware outright (Cortex-M BusFault, physical power cycle required -- see orion_studio_3.json frame.readback.hazard). The Zen Go is the same protocol family and must be assumed to share the flaw until proven otherwise. Because its connect walk queries only index 0 of three categories, `category_counts` below is EMPTY, which means protocol.check_readback_index CANNOT bound anything here and the CLI will only warn. Query index 0 of a known category; do NOT sweep. Anyone with the hardware: capture a fuller Launcher session first to learn the real counts.",
+      "hazard": "!! NO SAFE INDEX BOUNDS ARE KNOWN FOR THIS DEVICE. !! On the Orion, an out-of-range readback index crashes the firmware outright (Cortex-M BusFault, physical power cycle required -- see orion_studio_sc.json frame.readback.hazard). The Zen Go is the same protocol family and must be assumed to share the flaw until proven otherwise. Because its connect walk queries only index 0 of three categories, `category_counts` below is EMPTY, which means protocol.check_readback_index CANNOT bound anything here and the CLI will only warn. Query index 0 of a known category; do NOT sweep. Anyone with the hardware: capture a fuller Launcher session first to learn the real counts.",
       "identity": {
         "_comment": "LAYOUT ONLY -- the serial VALUE is never stored in this repo. It is read from the hardware on request (CLI `identity --serial`). Same record shape on the Orion Studio III and the Zen Go Synergy Core, so it is probably family-wide.",
         "category": "0x01",
@@ -333,8 +333,8 @@
   "family_notes": {
     "_comment": "Antelope Synergy Core HID protocol family. Shared: magic 0x70 command / opcode @4 / param_id @16 / 320-byte reports / EP 0x01 OUT + 0x82 IN on HID interface 3. Param IDs are largely shared (0x50 gain, 0x4f mode, 0x51 phantom, 0x52 phase, 0x47/0x48 bus, 0x12/0x03 sample rate, 0x14/0xa2 link, 0x53/0xd3 routing). NOT shared / device-specific: report magics (Zen Go meter = 0x83, Orion = 0x75; Zen Go 0x75 = name report), the mixer opcode + shape (Zen Go 0x16/0xd4/subcmd 0x04, no send; Orion 0x17/0xd4/subcmd 0x05, has send), state-report offsets, channel/bus counts, source-bank numbers (Zen Go mute = 0x08, osc = 0x09, emumic = 0x0a; Orion mute = 0x0b, osc = 0x0c, emumic = 0x01).",
     "siblings": [
-      "profiles/orion_studio_3.json (Orion Studio III, pid 0xa221) -- the reference, richest profile",
-      "profiles/discrete_8_pro_synergy_core.json (Discrete 8 Pro, pid 0xa2b5)"
+      "profiles/orion_studio_sc.json (Orion Studio III, pid 0xa221) -- the reference, richest profile",
+      "profiles/discrete_8_pro_sc.json (Discrete 8 Pro, pid 0xa2b5)"
     ],
     "carried_hazards": [
       "An unrecognised opcode cost a physical power cycle on the Discrete 8 Pro, and a 0x61 'unknown opcode' error frame exists in the family -- do NOT send frame.observed_opcodes or any opcode not in constraints.allowed_opcodes.",

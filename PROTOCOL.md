@@ -1,12 +1,12 @@
-# Antelope Orion Studio III -- protocol & hardware reference
+# Antelope Orion Studio Synergy Core -- protocol & hardware reference
 
 Everything reverse-engineered so far about how the device talks, in one
 place. `README.md` is the user-facing guide; this file is the spec you
-reach for once you've read it. `profiles/orion_studio_3.json` is the
+reach for once you've read it. `profiles/orion_studio_sc.json` is the
 machine-readable source of truth -- if the two ever disagree, the profile
 wins and this file is stale. For what the profile JSON's keys *mean*, see
 `docs/profile-schema.md`. Sibling devices are in §14
-(`profiles/zen_go_sc.json`, `profiles/discrete_8_pro_synergy_core.json`).
+(`profiles/zen_go_sc.json`, `profiles/discrete_8_pro_sc.json`).
 
 All offsets are **byte offsets into the 320-byte HID report**, 0-indexed.
 "2026-08" on a claim means it was confirmed by capture in that session;
@@ -18,7 +18,7 @@ see `README.md` and the profile's `evidence` fields for which capture.
 
 | | |
 |---|---|
-| Device | Antelope Orion Studio III |
+| Device | Antelope Orion Studio Synergy Core (a.k.a. "Orion Studio III") |
 | USB VID:PID | `0x23e5:0xa221` |
 | bcdDevice | 7.00 |
 | Control interface | vendor **HID, interface 3** (the UAC2 audio-control interface is a stub -- 1 clock, 4 terminals `nrChannels=1`, no Feature Units -- all control is HID) |
@@ -76,7 +76,7 @@ Notes:
 | Magic @0 | Name | Rate | Purpose |
 |---|---|---|---|
 | `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. **Also carries the per-channel input meters** at offset `157 + channel` (section 9). Same frame family as a readback response for "category 0". |
-| `0x75` byte1 `0x1f` | meter report | continuous | on the Orion Studio III this is NOT per-channel -- only byte 32 is live (a monitor sum) and byte 33 is a flag. Per-channel meters are in `0x73`. See section 9. |
+| `0x75` byte1 `0x1f` | meter report | continuous | on this device this is NOT per-channel -- only byte 32 is live (a monitor sum) and byte 33 is a flag. Per-channel meters are in `0x73`. See section 9. |
 | `0x75` byte1 `0x00` | **readback response** | on request | reply to a `0x74` query -- `(category, index)` at @8/@12, payload from @16. See §4a. |
 | `0x74` | readback / enumeration | at connect, then on demand | the host walking `(category, index)` -- see §4 / §4a |
 
@@ -239,7 +239,7 @@ category's record count returns *adjacent memory* with a completely
 different layout; a little further and it faults.
 
 Confirmed on real hardware, 2026-08-31 -- `category 0x04 index 5` hard-
-crashed the Orion Studio III. Front panel:
+crashed the device. Front panel:
 
 ```
 CRITICAL ERROR!
@@ -300,7 +300,7 @@ Enforced in code by `protocol.check_readback_index`, called from
 `ANTELOPE_ALLOW_UNSAFE_READBACK=1`; `tools/readback_enum.py` clamps every
 sweep to the declared count unless `--unsafe`.
 
-### Category map (Orion Studio III, 2026-08-31)
+### Category map (Orion Studio Synergy Core, 2026-08-31)
 
 | cat | payload | status |
 |---|---|---|
@@ -1322,9 +1322,9 @@ Mix 1 has been written).
 Antelope **Synergy Core** interfaces share this HID protocol family (magic
 `0x70` command, opcode @4, param_id @16). A peer got an **Antelope Discrete
 8 Pro** working with this same driver -- see
-`profiles/discrete_8_pro_synergy_core.json` (contributed by PR). Param IDs
+`profiles/discrete_8_pro_sc.json` (contributed by PR). Param IDs
 are shared; **semantics are not guaranteed to be.** The lessons from that
-sibling device, folded into `orion_studio_3.json` as `family_notes`,
+sibling device, folded into `orion_studio_sc.json` as `family_notes`,
 `constraints`, and `hazards`:
 
 ### Safety (precautionary on Orion -- confirmed on the Discrete 8 Pro, cost a physical power cycle each)
