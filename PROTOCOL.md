@@ -1114,8 +1114,10 @@ just re-send `0x87` frames. `params.surround_monitor` +
   arbitrary freq/Q/gain, bands 1 & 16 left default. So
   `params.surround_speaker` *is* the RC interface. "RC off" = bypass the
   surround EQ for that speaker (the `[25-26]` per-speaker mask). The 3 RC
-  types differ only in the measurement (the "short" one applied one
-  averaged correction to L+R; longer ones presumably per-speaker).
+  types (more sweeps / more precision) differ only in the measurement — in
+  a 2.0 setup **all of them write the same curve to L and R** (user tested
+  short and advanced; identical each time), so stereo RC is a single
+  averaged correction, not per-speaker.
 
 ### DC-coupling (`0x12` / `0x26`) -- DECODED 2026-09-01
 
