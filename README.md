@@ -200,16 +200,20 @@ python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-bus-mono hp2
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-brightness 75    # front-panel screen, 0-100
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json sample-rate           # show current rate
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-sample-rate 96k   # 32k/44.1k/48k/88.2k/96k/176.4k/192k
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json clock-source           # show (0=Oven 1=WordClock 2=ADAT 3=ADATx2 4=ADATx4 5=SPDIF 6=USB)
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json clock-source --set 1   # -> Word Clock (disruptive)
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json pan-law --set 2        # 0=-6dB 1=-3dB 2=-4.5dB 3=0dB
 ```
 
 - **Screen brightness** only works when the device talks to a native
   host -- a VM Launcher no-ops the same slider (see the section further
   down).
-- **`set-sample-rate` is disruptive**: the device drops audio and
-  re-locks its clock (~1 s), and the readback lags the command by about
-  that long. If a DAW or the OS audio engine is holding the stream open
-  it may refuse or immediately revert -- change it with nothing
-  streaming, then confirm with `sample-rate`.
+- **`set-sample-rate` and `clock-source --set` are disruptive**: the
+  device drops audio and re-locks its clock (~1 s), and selecting a clock
+  source that is not present/locked leaves the device unlocked. Change
+  them with nothing streaming, then confirm (`sample-rate` /
+  `clock-source`). Clock source reads back from `0x73` @19; **pan law has
+  no device readback**, so `pan-law` reports only what this CLI last sent.
 
 ### Device identity -- and why no serial is stored here
 
@@ -807,12 +811,21 @@ offset 25 bits 2-4 (`value << 2`), target 2 at offset 25 bits 5-7
 all three targets, the readback tracked `value << shift` exactly, restored.
 See `params.output_trim` and `state_report.output_trim_block`.
 
-- **Pan law is still not captured** and is **not** `0x4b` target 3 (ruled
-  out live 2026-09-03: values 0-3 had zero effect anywhere). It's a
-  different `param_id` or opcode. Needs its own capture (a pan-law-only
-  click in the Launcher / webUI).
+- **Pan law — DECODED 2026-09-03** (`panning-law-6-3-45-0`): it is *not*
+  `0x4b` target 3 (ruled out) but its own `SET_GLOBAL` param `0x24`, value
+  `0`=-6 dB `1`=-3 dB `2`=-4.5 dB `3`=0 dB (Launcher button order). No
+  device readback. CLI `pan-law [--set N]`.
 - **Readback category `0x16`**, once guessed to hold trim/pan-law, tracks
   neither -- still undecoded.
+
+### Clock source -- DECODED 2026-09-03
+
+`clock-source-WC-adat-adatx2-adatx4-spdif-usb-oven`: `SET_GLOBAL` param
+`0x04`, value `0`=Oven (internal) `1`=Word Clock `2`=ADAT `3`=ADAT x2
+`4`=ADAT x4 `5`=S/PDIF `6`=USB. **Readback = `0x73` offset 19**, 1:1 —
+which also finally explains the "`0x73` @19 blip ~3 s after connect" seen
+in every capture (the device re-locking from USB to its saved source at
+startup). CLI `clock-source [--set N]`.
 
 ### Screen brightness -- CONFIRMED, real device command (2026-08, native macOS)
 

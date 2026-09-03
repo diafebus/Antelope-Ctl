@@ -1701,6 +1701,76 @@ def cmd_set_sample_rate(args, profile):
         print(f'readback unavailable: {e}')
 
 
+# ---- subcommands: clock source (0x12/0x04) + pan law (0x12/0x24) ----
+#
+# Both are SET_GLOBAL enums decoded 2026-09-03. clock_source reads back in
+# the 0x73 state report (offset 19); pan_law has no known readback.
+
+def _enum_values(profile, param):
+    v = profile['params'].get(param, {}).get('values', {})
+    return {int(k): s for k, s in v.items()}
+
+
+def cmd_clock_source(args, profile):
+    """Show, or with `--set N`, set the device clock source (SET_GLOBAL 0x04)."""
+    vals = _enum_values(profile, 'clock_source')
+    if not vals:
+        sys.exit('this profile has no params.clock_source')
+    transport = get_transport(profile)
+    if args.set is None:
+        data = read_state(transport, profile, args.timeout)
+        if not data:
+            sys.exit('no state report captured')
+        cur = proto.parse_state_scalar(profile, data, 'clock_source_byte_offset')
+        print(f'clock source: {cur} = {vals.get(cur, "?")}')
+        print('options: ' + ', '.join(f'{k}={s.split(" (")[0]}' for k, s in sorted(vals.items())))
+        return
+    if args.set not in vals and not args.force:
+        sys.exit(f'{args.set} is not a known clock source (0..{max(vals)}). --force to send anyway.')
+    pkt = proto.build_global_command(profile, 'clock_source', args.set)
+    print(f'clock source -> {args.set} = {vals.get(args.set, "?")}  (sent {pkt[16:18].hex()})')
+    print('  DISRUPTIVE: if that source is not present/locked the device clock will unlock.')
+    send_and_wait(transport, pkt, delay=1.2)
+    data = read_state(transport, profile, args.timeout)
+    if data:
+        got = proto.parse_state_scalar(profile, data, 'clock_source_byte_offset')
+        print(f'readback: {got} = {vals.get(got, "?")}'
+              + ('' if got == args.set else '  (!= commanded -- give it a moment)'))
+
+
+def cmd_pan_law(args, profile):
+    """Show the cached pan-law setting, or with `--set N` change it
+    (SET_GLOBAL 0x24). The device has no known pan-law readback, so a bare
+    `pan-law` reports only what this CLI last sent."""
+    vals = _enum_values(profile, 'pan_law')
+    if not vals:
+        sys.exit('this profile has no params.pan_law')
+    path = _link_state_path(profile, 'pan_law')
+    if args.set is None:
+        cached = None
+        if path and os.path.exists(path):
+            try:
+                cached = json.load(open(path)).get('value')
+            except (OSError, ValueError):
+                pass
+        print(f'pan law: {cached} = {vals.get(cached, "unknown -- no device readback; set it once to seed")}'
+              if cached is not None else
+              'pan law: unknown (no device readback). Options: '
+              + ', '.join(f'{k}={s}' for k, s in sorted(vals.items())))
+        return
+    if args.set not in vals and not args.force:
+        sys.exit(f'{args.set} is not a known pan law (0..{max(vals)} = {vals}). --force to send anyway.')
+    transport = get_transport(profile)
+    pkt = proto.build_global_command(profile, 'pan_law', args.set)
+    print(f'pan law -> {args.set} = {vals.get(args.set, "?")}  (sent {pkt[16:18].hex()}, no readback to verify)')
+    send_and_wait(transport, pkt, delay=0.3)
+    if path:
+        try:
+            json.dump({'value': args.set, 'source': 'cli-issued, not a device readback'}, open(path, 'w'))
+        except OSError:
+            pass
+
+
 # ---- subcommand: AuraVerb (opcode 0x1d) ----
 #
 # AuraVerb is the device-BUNDLED Synergy Core reverb on the Mix 1 window
@@ -2250,6 +2320,20 @@ def main():
     sp.add_argument('rate', help='48000 | 48k | 44.1k | 88.2k | 96k | 176.4k | 192k | 32k')
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.set_defaults(func=cmd_set_sample_rate)
+
+    sp = sub.add_parser('clock-source',
+                         help='show the clock source (readback 0x73 @19); --set N to change it (disruptive)')
+    sp.add_argument('--set', type=int, metavar='N', help='0=Oven 1=WordClock 2=ADAT 3=ADATx2 4=ADATx4 5=SPDIF 6=USB')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true', help='send a value outside the known enum')
+    sp.set_defaults(func=cmd_clock_source)
+
+    sp = sub.add_parser('pan-law',
+                         help='show/set stereo pan law (SET_GLOBAL 0x24); no device readback -- CLI-cached')
+    sp.add_argument('--set', type=int, metavar='N', help='0=-6dB 1=-3dB 2=-4.5dB 3=0dB')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.add_argument('--force', action='store_true', help='send a value outside the known enum')
+    sp.set_defaults(func=cmd_pan_law)
 
     sp = sub.add_parser('auraverb',
                          help='show/set the AuraVerb reverb (Mix 1); live device read via '

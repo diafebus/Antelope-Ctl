@@ -47,7 +47,7 @@ opcode -- this is the single most important thing to get right:
 | Opcode @4 | Name | param_id @16 | Payload | Used by |
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
-| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), oscillator panel (`0x0a`, packed byte), DC-coupling (`0x26`) |
+| `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), **clock_source (`0x04`)**, oscillator panel (`0x0a`, packed byte), **pan_law (`0x24`)**, DC-coupling (`0x26`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
@@ -520,12 +520,13 @@ Line Out. Resolves the earlier "physical meaning not known". The 2026-08
 sweep hit exactly these 7 stops; the 3-bit field could carry a value 7 but
 the hardware has no 8th stop.
 
-Spare bits: offset 24 bits 0-3 and 7; offset 25 bits 0-1. **Pan law is
-NOT here.** Tested live 2026-09-03: `SET_PARAM 0x4b target 3` (a 4th trim
-target) with values 0-3 had **zero effect** on `[24]`/`[25]`, on readback
-cat `0x16`, or anywhere. Pan law is a different `param_id` (or opcode) and
-still needs its own Launcher capture (a pan-law-only click). Readback cat
-`0x16`, once guessed to hold trim/pan-law, tracks neither.
+Spare bits: offset 24 bits 0-3 and 7; offset 25 bits 0-1 — none of them
+carry pan law. **Pan law = `SET_GLOBAL` (opcode `0x12`) / param `0x24` /
+value @17, DECODED 2026-09-03** (`panning-law-6-3-45-0`): enum `0` = -6 dB,
+`1` = -3 dB, `2` = -4.5 dB, `3` = 0 dB (the Launcher's own button order —
+not monotonic in dB). **No readback** — nothing in `0x73` moved through
+the sweep, and readback cat `0x16` (once guessed to hold trim/pan-law)
+tracks neither. `params.pan_law`; CLI `pan-law [--set N]`.
 
 ---
 
@@ -971,7 +972,9 @@ What the Settings/Device window controls actually do, from the captures
 | **Reamp-out level** | `settings-linevol-...` | `bus_level` `0x47` on **bus 4** | **real, confirmed** -- in CLI (`set-bus-level reamp`) |
 | **Output trim** (Mon A / Mon B / Line) | `settings-trim-...` | param `0x4b`, 20 frames | **real, confirmed** -- readback @24-25 (section 6); not yet in CLI |
 | **Surround-EQ pre/post** | `macos-settings-srrndeq-post-pre` | opcode `0xab` / param `0xeb`, 4 frames | **confirmed** -- `[19]` bit 7 = the toggle; rest of the `0xab` frame is a whole-state blob (partly mapped, §11 below) |
-| Pan law | `settings-trim-...` (none) + live probe 2026-09-03 | ruled out `0x4b` target 3 (no effect) | **needs a pan-law-only capture** -- param unknown |
+| **Pan law** | `panning-law-6-3-45-0` (usbmon, 2026-09-03) | `SET_GLOBAL` `0x12` / param `0x24` / value @17 | **DECODED** -- enum `0`=-6 `1`=-3 `2`=-4.5 `3`=0 dB (Launcher button order); no readback. CLI `pan-law` |
+| **Clock source** | `clock-source-WC-adat-adatx2-adatx4-spdif-usb-oven` (usbmon, 2026-09-03) | `SET_GLOBAL` `0x12` / param `0x04` / value @17 | **DECODED** -- enum `0`=Oven `1`=WordClock `2`=ADAT `3`=ADATx2 `4`=ADATx4 `5`=S/PDIF `6`=USB; readback `0x73` @19. CLI `clock-source` |
+| **Reamp mute** | `reamp-mute` (usbmon, 2026-09-03) | `SET_PARAM` `0x13` / param `0x48` (`bus_mute`) / bus `4` | **confirmed** — reamp is bus 4; `bus_mute` works there |
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
 | **Oscillator** -- settings panel (freq/level/mute) | `macos-settings-osc1-mute-1khz` etc. | opcode `0x12` / param `0x0a` / packed value @17 | **DECODED (native macOS, 2026-09-01)** -- the old "zero frames" was an inbound-only capture; see §11 below |
 | **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; in CLI (`set-brightness`). VM sent nothing because the slider is a no-op under the VM. |
@@ -1072,6 +1075,49 @@ No `0x73` readback. The **talkback latency modes** (fast / normal / safe)
 in the same capture sent **nothing** -- host-side, or a path not on this
 interface. This closes the old `settigs-thunderb-lat-dccp` "zero frames"
 item: DC-coupling does talk to the device.
+
+### Clock source (`0x12` / `0x04`) -- DECODED 2026-09-03
+
+`clock-source-WC-adat-adatx2-adatx4-spdif-usb-oven` (usbmon): `SET_GLOBAL`
+(opcode `0x12`), param **`0x04`**, value @17:
+
+| value | source |
+|---|---|
+| 0 | Oven (internal OCXO — power-on default) |
+| 1 | Word Clock (BNC in) |
+| 2 | ADAT |
+| 3 | ADAT x2 (S/MUX2) |
+| 4 | ADAT x4 (S/MUX4) |
+| 5 | S/PDIF |
+| 6 | USB (follow host) |
+
+**Readback = `0x73` offset 19**, 1:1 with the commanded value. This
+resolves the "`0x73` @19 blips `0x06`→`0x00` ~3 s after connect" startup
+artifact that appears in *every* capture: `[19]` is the clock source, and
+at connect the device is USB-clocked (`6`) then re-locks to its saved
+source (`0` on the reference unit). (Offset 17's separate `0x08`→`0x00`
+blip is probably a clock-lock status byte — still undecoded, but now
+clearly distinct from 19.) Same param `0x12`/`0x04` as the Zen Go, which
+has only 3 sources and no word clock. CLI `clock-source [--set N]`.
+
+### Pan law (`0x12` / `0x24`) -- DECODED 2026-09-03
+
+`panning-law-6-3-45-0` (usbmon): `SET_GLOBAL` (opcode `0x12`), param
+**`0x24`**, value @17 — a 4-way enum:
+
+| value | centre attenuation |
+|---|---|
+| 0 | -6 dB |
+| 1 | -3 dB |
+| 2 | -4.5 dB |
+| 3 | 0 dB |
+
+The order is the Launcher's own button order (not monotonic in dB). **No
+readback** — nothing in `0x73` moved through the whole sweep, and cat
+`0x16` (once suspected) tracks it neither. Closes the long-open "pan law
+never captured" item, and confirms it is *not* a 4th target of
+`output_trim` `0x4b` (ruled out by a live probe the same day). CLI
+`pan-law [--set N]` (CLI-cached, no device verify).
 
 ### Thunderbolt / latency
 
@@ -1297,7 +1343,8 @@ Mix 1 has been written).
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number) + `0x1b` (bus levels), partly decoded. Not in the CLI. |
 | Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Preamps 5-6 CAPTURED 2026-09-03 (webUI usbmon, `webui-emumic-preamp56-...`): `[18]=0x00`/`0x01` on the wire, pair = link pair 2, disable reverses phantom+gain+link. Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position; the readback category (none found -- `0x07`/`0x1a` are the unmapped DSP-EQ candidates). |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
-| Pan law | never captured; NOT `0x4b` target 3 (ruled out live 2026-09-03); param unknown -- needs a pan-law-only Launcher capture |
+| ~~Pan law~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x24` / 0-3 = -6/-3/-4.5/0 dB (`panning-law-6-3-45-0`). No readback. CLI `pan-law`. |
+| ~~Clock source~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x04` / 0-6 (Oven / WC / ADAT / ADATx2 / ADATx4 / S/PDIF / USB). Readback `0x73` @19 — which also explains the `0x73` @19 startup blip (USB→saved source re-lock). CLI `clock-source`. |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
@@ -1393,7 +1440,7 @@ routing). **Divergences from Orion:**
 | gain array offset | `0x73` @49 | `0x73` **@40** |
 | status array offset | `0x73` @61 | `0x73` **@42** |
 | bus block | `28 + 3N` | `28 + 2N` |
-| clock source readback | — | `0x73` **@19** (`0x12`/`0x04`, 3 sources, no word clock) |
+| clock source readback | **`0x73` @19** (`0x12`/`0x04`, 7 sources incl. word clock — confirmed 2026-09-03) | `0x73` **@19** (`0x12`/`0x04`, 3 sources, no word clock) |
 | source bank: mute / osc / emumic | `0x0b` / `0x0c` / `0x01` | **`0x08` / `0x09` / `0x0a`** |
 | new: output volume | buses | *also* an `0x16`/`0xd4` strip at `(mix 1, ch 3)` |
 | new: DSP opcodes | `0x1d` AuraVerb | **`0x1a` / `0x1c` (`0xd5`), `0x23` (`0xd7`)** -- undecoded, forbidden |
