@@ -853,9 +853,14 @@ panel. But:
   - `input_mode` cannot be changed while linked (Launcher greys it out).
     Workflow: unlink -> set mode per channel (gain resets to the new
     mode's range) -> re-link.
-- **No link-enabled bit has been found in the `0x73` report.** Diffing
-  the state report immediately before/after link toggles shows zero
-  changed bytes. Link readback may not exist; track it client-side.
+- **There is no channel-link readback anywhere.** CLOSED 2026-09-03 by a
+  dedicated live-device whole-report diff: raw `0x14` toggle on preamp
+  pair 3 (no gain/mode sync), `0x73` read 3× keeping only bytes stable
+  across all reads, before vs after, for both on and off, plus a re-read
+  of readback cats `0x0c` / `0x15` / `0x06`. Zero stable bytes changed
+  anywhere; the readback tables were byte-identical. The device stores
+  link state (front panel shows it) but exposes it nowhere over USB HID.
+  Track it client-side.
 
 Any non-Launcher controller must replicate the two-commands-per-change
 behaviour itself if it wants Launcher-equivalent results.

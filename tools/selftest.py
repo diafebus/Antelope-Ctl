@@ -440,7 +440,7 @@ def t_write_brightness(dev):
 def t_unverifiable():
     for name, why in (
             ('mic modeling / emuMic', 'no readback found; only the phantom bit moves'),
-            ('channel link', 'host-side by design -- the device does not propagate it'),
+            ('channel link', 'no link readback exists (proven 2026-09-03) -- state is client-tracked'),
             ('sample rate', 'writing it drops audio, so it is not round-tripped here')):
         record(SKIP, f'{name}: cannot self-verify', why)
 
