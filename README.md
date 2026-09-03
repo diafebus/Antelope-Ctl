@@ -874,11 +874,13 @@ state.
   per-speaker bypass/mute/dim masks, 2.1 bass-management window) and
   **`0x87`/`0xea` = per-speaker** ×16 (`[18]` = speaker 0-15, level +
   polarity, delay, a full 16-band parametric EQ per speaker). Decoded
-  2026-09-03 from the `srrnd-*` captures. Only **2.0 / 2.1** could be
-  captured -- **the bigger formats (5.1 … 9.1.6) and Room Correction are
-  NOT supported and NOT tested**; a best-effort deduction is in
-  `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED` for anyone
-  who wants to try, clearly marked as inference. See
+  2026-09-03 from the `srrnd-*` captures. **Room Correction** turned out to
+  be just the Launcher computing a curve host-side and writing it into
+  that `0x87` per-speaker EQ -- no opcode, no toggle (`params.surround_speaker`
+  *is* the RC interface). Only **2.0 / 2.1** could be captured, though --
+  **the bigger formats (5.1 … 9.1.6) are NOT supported and NOT tested**;
+  a clearly-marked best-effort deduction is in
+  `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED`. See
   `params.surround_monitor` + `params.surround_speaker`.
 
 ### Connect handshake & routing readback -- resolved (2026-08, native macOS)

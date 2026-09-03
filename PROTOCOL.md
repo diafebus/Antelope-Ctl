@@ -1106,11 +1106,16 @@ just re-send `0x87` frames. `params.surround_monitor` +
   (`[18]` 1-4/6, all of `[19]`) are **unknown** — two data points, no
   derivable pattern. The ~21 unseen values need one capture of the format
   dropdown.
-- **Room correction**: **NOT MRC-gated** — runs in plain 2.0, so it *is*
-  capturable on the reference unit (capture pending). 3 correction types
-  (differing sweep count / precision); the applied-correction frame is
-  likely one shape regardless. Deduced location: an `0x87`-frame extension
-  past byte ~135, a new opcode, or readback cats `0x07`/`0x1a`.
+- **Room correction — FULLY RESOLVED** (`roomeq-swipe-short`): not a
+  subsystem at all. No opcode, no frame, **no on/off toggle**. The
+  Launcher runs the measurement (device traffic during it = just preamp
+  phantom + gain on the mic input), computes the curve host-side, and
+  writes it into the `0x87`/`0xea` per-speaker EQ — bands 2-15 filled with
+  arbitrary freq/Q/gain, bands 1 & 16 left default. So
+  `params.surround_speaker` *is* the RC interface. "RC off" = bypass the
+  surround EQ for that speaker (the `[25-26]` per-speaker mask). The 3 RC
+  types differ only in the measurement (the "short" one applied one
+  averaged correction to L+R; longer ones presumably per-speaker).
 
 ### DC-coupling (`0x12` / `0x26`) -- DECODED 2026-09-01
 
