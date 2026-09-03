@@ -588,10 +588,17 @@ pair 1 = ch3&ch4, ... pair 5 = ch11&ch12. 6 pairs (index 0-5).
 | `0x00` | physical inputs **and** ADAT (shared) | physical 0-5, ADAT 0-7 |
 | `0x01` | S/PDIF | 0 only (the L/R pair) |
 | `0x03` | virtual mixer (Mix 1-4 strips) | `channel // 2` (§12) |
+| `0x04` | **AFX-tab channel stereo-link** | `channel // 2`, 16 pairs over 32 ch |
 
 `0x01` discovered from `spdif-gain-link`, `0x03` from
-`macos-mix1-send-pan-fader-mute-solo-link` (both 2026-08). Previously this
-byte was thought to be unused/always-0. `0x02` unseen.
+`macos-mix1-send-pan-fader-mute-solo-link` (both 2026-08). `0x04` from
+`macos-afx-stereolink-1-2_3-4_5-6_27-28_29-30_31-32` (2026-09-04): the AFX
+tab's per-channel stereo-link buttons — each toggle is one bare
+`a2 04 <pair> <en>` frame, nothing after `[19]`, **no** partner gain-sync
+frame (there is no per-channel gain in this space, just the flag) and
+**no** readback. It's a plain channel-pairing toggle — bucket A/B, not
+plugin-internal — buildable with `build_link_command(…, space=4)`; no CLI
+command. Previously offset 17 was thought unused/always-0. `0x02` unseen.
 
 ### ADAT link pairs
 
@@ -1464,6 +1471,7 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | decoded 2026-09-03 (§11). Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker = level (+invert) + delay + **16 EQ bands** (`<freq><Q><gain><mode>`, 7B each; Q ×100 0.1-18; mode `0x02` bell / `0x00` shelf / `0x04` band-pass on end bands 1 & 16; centre = bell only). No readback. Minor-open: speaker-index↔channel map for formats past 2.0; centre end-band mode value |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Open: handle encoding (slot-index vs instance id, 2 data points); the `0x0c`/`0x15` readback that maps slot occupancy; bypass polarity. Full work deferred to `antelope-ctl-afx`. |
+| AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync, no readback. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | zero outgoing frames -- host driver setting; TB inactive over USB |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
