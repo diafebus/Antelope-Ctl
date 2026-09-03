@@ -1055,7 +1055,9 @@ one. No `0x73` / `0x74` readback for any surround param. Both opcodes are
 | 19 | flags B (base `0x9f`) | moves only with the format (`0x9f` 2.0 / `0x82` 2.1) |
 | 20 | **global surround delay**, uint8, 0.1 ms/step (base `0x06` = 0.6 ms floor) | swept `0x06`..`0x2d` |
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
-| 25-26 / 27-28 / 29-30 | **bypass / mute / dim**, LE16 bools | order still by control-click order |
+| 25-26 | **per-speaker BYPASS mask**, LE16 — bit N = speaker N (1 = active, 0 = bypassed); default `0xFFFF` | confirmed (`srrnd-L-bypass`: bypassing L → `0xFFFF`→`0xFFFE`) |
+| 27-28 / 29-30 | **mute / dim**, LE16 — probably per-speaker masks too (only all-on/all-off captured) | order by click order |
+| 39-40 | **format-dependent** — `00 23` in 2.0, `04 64` in 2.1 (`srrnd-LFE`); `[40]`=`0x64` in 2.1 likely an LFE param | the `[40:168]` "template" is not fully static |
 | 40-168 | fixed default template | `23 00 00` then `[80][80][600][0]` repeated -- **not** the live EQ curve (that's the `0x87` frame) |
 
 **Per-speaker: `0x87` / `0xea`** -- DECODED 2026-09-03 (`srrnd-L/R-*`,
@@ -1067,7 +1069,7 @@ changes. Per speaker:
 |---|---|---|
 | 19-20 | **delay**, LE16, **0.1 ms/step** (UI 0.6–100.6 ms, user-confirmed) | |
 | 21-22 | **level**, LE16 (base `600` = 0 dB, 0.1 dB/step, **−60..+16 dB**, user-confirmed) | **`[22]` bit 7 = phase invert** (level tops at 760 = `0x02F8`, so bit 7 is free) |
-| 23… | **16 parametric EQ bands**, 7-byte stride — **fully decoded** (`srrnd-EQ-Q-and-mode`) | The frame carries all 16; the Launcher shows them as 2 pages of 8. **Band N at `23 + 7·N` (N 0-15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** Freq = literal Hz, 20–20000 Hz/band. **Q = LE16, value ×100** — `10`=0.1 … `1800`=18.0, default `0x0047`=71=Q 0.71 (the byte earlier mislabelled a `0x47` marker is the Q low byte). Gain = LE16 signed 0.01 dB, `−2400`…`+1200` = −24…+12 dB. **Mode byte:** `0x02` = bell (bands 2-15). **Bands 1 & 16 are the end slots** (band 1 = HPF end, band 16 = LPF end): two modes, `0x00` = shelving, `0x04` = band-pass (Antelope's labels — a "flat" line in the UI is just shelf/pass at 0 gain, not a 3rd mode). Gain + Q both work in either mode (Q sets the slope). Centre channel(s): end bands offer only bell (`0x02`). Ranges user-confirmed |
+| 23… | **16 parametric EQ bands**, 7-byte stride — **fully decoded** (`srrnd-EQ-Q-and-mode`) | The frame carries all 16; the Launcher shows them as 2 pages of 8. **Band N at `23 + 7·N` (N 0-15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** Freq = literal Hz, 20–20000 Hz/band. **Q = LE16, value ×100** — `10`=0.1 … `1800`=18.0, default `0x0047`=71=Q 0.71 (the byte earlier mislabelled a `0x47` marker is the Q low byte). Gain = LE16 signed 0.01 dB, `−2400`…`+1200` = −24…+12 dB. **Mode byte:** `0x02` = bell (bands 2-15). **Bands 1 & 16 are the end slots** — two user modes each (shelving / band-pass; a "flat" UI line is just shelf/pass at 0 gain). Observed mode-byte values: band 1 `{0x00, 0x04}`, band 16 `{0x01, 0x03}` (both rest at `0x00` before first touch) — not a clean bitfield; which value is shelf vs band-pass not yet pinned. Gain + Q work in both modes (Q sets the slope). Centre channel: end bands are bell (`0x02`) only. **LFE** (`srrnd-LFE`) = speaker index 2 in 2.1, a normal `0x87` strip (same 16 bands, level, delay, invert). Ranges user-confirmed |
 
 Still open: EQ Q; page-2 LPF/HPF encoding; whether R speakers are
 byte-identical to L (captured, not diffed); level/delay units. `copy
