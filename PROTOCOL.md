@@ -1080,9 +1080,35 @@ changes. Per speaker:
 | 23… | **16 parametric EQ bands**, 7-byte stride — **fully decoded** (`srrnd-EQ-Q-and-mode`) | The frame carries all 16; the Launcher shows them as 2 pages of 8. **Band N at `23 + 7·N` (N 0-15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** Freq = literal Hz, 20–20000 Hz/band. **Q = LE16, value ×100** — `10`=0.1 … `1800`=18.0, default `0x0047`=71=Q 0.71 (the byte earlier mislabelled a `0x47` marker is the Q low byte). Gain = LE16 signed 0.01 dB, `−2400`…`+1200` = −24…+12 dB. **Mode byte:** `0x02` = bell (bands 2-15). **Bands 1 & 16 are the end slots** — two user modes each (shelving / band-pass; a "flat" UI line is just shelf/pass at 0 gain). Observed mode-byte values: band 1 `{0x00, 0x04}`, band 16 `{0x01, 0x03}` (both rest at `0x00` before first touch) — not a clean bitfield; which value is shelf vs band-pass not yet pinned. Gain + Q work in both modes (Q sets the slope). Centre channel: end bands are bell (`0x02`) only. **LFE** (`srrnd-LFE`) = speaker index 2 in 2.1, a normal `0x87` strip (same 16 bands, level, delay, invert). Ranges user-confirmed |
 
 R speaker = index 1, byte-identical to L. `copy speaker` / `paste speaker`
-just re-send `0x87` frames. Essentially fully decoded — only the exact
-end-band mode-byte ↔ UI-label mapping and formats past 2.1 (need the MRC)
-remain. `params.surround_monitor` + `params.surround_speaker`.
+just re-send `0x87` frames. `params.surround_monitor` +
+`params.surround_speaker`.
+
+#### Bigger surround formats — DEDUCED, NOT SUPPORTED, NOT TESTED
+
+> The reference unit **cannot activate any surround format past 2.1**
+> (needs Antelope's MRC / surround licence), so none of this was captured.
+> It is inference from the ~4 observed `0xab` states, the confirmed
+> indices L=0 / R=1 / LFE=2, the format-agnostic `0x87` frame, standard
+> Dolby/SMPTE channel order, and Antelope's public docs (23+ formats,
+> stereo → 9.1.6; the MRC "mirrors" the same controls). **Do not rely on
+> it.** Full detail + a capture checklist in
+> `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED`.
+
+- **Per-speaker control should work for every format** (strongest
+  inference): the `0x87`/`0xea` strip is identical for slots 0–15 and does
+  not change with format; the `[25-30]` masks are already 16-bit.
+- **Speaker index → channel**: likely *positional* in Dolby order —
+  2.0 `[L,R]`, 2.1 `[L,R,LFE]` (confirmed); deduced 5.1
+  `[L,R,C,LFE,Ls,Rs]`, 7.1 `[L,R,C,LFE,Lss,Rss,Lsr,Rsr]`, +heights to
+  fill 16 for 9.1.6. Manual p.76 has the real list.
+- **Format selector** is `[18]`+`[19]`. Confirmed `[18]` bits: 0 = LFE,
+  5 = bass-management, 7 = EQ pre/post. The layout/channel-count bits
+  (`[18]` 1-4/6, all of `[19]`) are **unknown** — two data points, no
+  derivable pattern. The ~21 unseen values need one capture of the format
+  dropdown.
+- **Room correction**: no data. Probably an `0x87`-frame extension, a new
+  opcode, or readback cats `0x07`/`0x1a` (undecoded "EQ curve" categories,
+  readable now).
 
 ### DC-coupling (`0x12` / `0x26`) -- DECODED 2026-09-01
 

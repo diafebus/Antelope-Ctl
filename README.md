@@ -869,12 +869,17 @@ state.
 - **DC-coupling** -- `SET_GLOBAL` (`0x12`), param `0x26`, value 0/1.
   Talkback fast/normal/safe latency modes send nothing (host-side).
   Thunderbolt/buffer settings are host driver only.
-- **Surround monitoring tab** -- one whole-state frame, **opcode `0xab` /
-  param `0xeb`** (like AuraVerb). Decoded: surround-EQ pre/post (`[19]`
-  bit 7), surround level (`[22-23]` LE16), delay (`[20]`), dim/mute/bypass
-  (LE16 booleans at `[25-30]`). No `0x73` readback. The exact toggle-bit
-  assignments still want a one-control-at-a-time recapture. See
-  `params.surround_monitor`.
+- **Surround monitoring tab** -- **two** whole-state frames (no readback):
+  `0xab`/`0xeb` = global (EQ pre/post `[18]` bit 7, level, delay, format,
+  per-speaker bypass/mute/dim masks, 2.1 bass-management window) and
+  **`0x87`/`0xea` = per-speaker** ×16 (`[18]` = speaker 0-15, level +
+  polarity, delay, a full 16-band parametric EQ per speaker). Decoded
+  2026-09-03 from the `srrnd-*` captures. Only **2.0 / 2.1** could be
+  captured -- **the bigger formats (5.1 … 9.1.6) and Room Correction are
+  NOT supported and NOT tested**; a best-effort deduction is in
+  `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED` for anyone
+  who wants to try, clearly marked as inference. See
+  `params.surround_monitor` + `params.surround_speaker`.
 
 ### Connect handshake & routing readback -- resolved (2026-08, native macOS)
 
