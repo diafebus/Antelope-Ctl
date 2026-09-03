@@ -1045,6 +1045,13 @@ The Surround tab has a **global** whole-state frame and a **per-speaker**
 one. No `0x73` / `0x74` readback for any surround param. Both opcodes are
 `constraints.observed_opcodes_launcher_only` -- no builder, never sent.
 
+Antelope's docs say the Orion Studio SC surround system covers **23+
+layouts, stereo → Dolby Atmos 9.1.6**, but the full feature **needs the
+MRC (Multichannel Remote Control)** hardware. Without it only **2.0**
+(`[18]`/`[19]` = `0x02`/`0x9f`) and **2.1** (`0x23`/`0x82`) are selectable
+— all that could be captured. Manual p.76 has the full layout list. A
+**Room Correction** subsystem also exists (undecoded).
+
 **Global: `0xab` / `0xeb`** (`macos-settings-srrndeq-post-pre` +
 `macos-srrnd-tab-...` + `srrnd-20-21`):
 
@@ -1056,7 +1063,7 @@ one. No `0x73` / `0x74` readback for any surround param. Both opcodes are
 | 20 | **global surround delay**, uint8, 0.1 ms/step (base `0x06` = 0.6 ms floor) | swept `0x06`..`0x2d` |
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
 | 25-26 | **per-speaker BYPASS mask**, LE16 — bit N = speaker N (1 = active, 0 = bypassed); default `0xFFFF` | confirmed (`srrnd-L-bypass`: bypassing L → `0xFFFF`→`0xFFFE`) |
-| 27-28 / 29-30 | **mute / dim**, LE16 — probably per-speaker masks too (only all-on/all-off captured) | order by click order |
+| 27-28 / 29-30 | **mute / dim**, per-speaker LE16 masks | mute confirmed by the Ctrl-click SOLO ("mute all others") writing only the selected bit |
 | 39-40 | **format-dependent** — `00 23` in 2.0, `04 64` in 2.1 (`srrnd-LFE`); `[40]`=`0x64` in 2.1 likely an LFE param | the `[40:168]` "template" is not fully static |
 | 40-168 | fixed default template | `23 00 00` then `[80][80][600][0]` repeated -- **not** the live EQ curve (that's the `0x87` frame) |
 
