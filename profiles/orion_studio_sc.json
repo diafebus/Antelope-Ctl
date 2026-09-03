@@ -1128,8 +1128,12 @@
     ],
     "forbidden_opcodes": [
       "0x01",
-      "0x02"
+      "0x02",
+      "0x1a",
+      "0x1c",
+      "0x23"
     ],
+    "forbidden_opcodes_note": "0x01 / 0x02 = crash / unknown-dangerous (BusFault family). 0x1a / 0x1c / 0x23 added 2026-09-03 as a PRECAUTION before any AFX / Synergy Core plugin-chain work: on the sibling Zen Go these opcodes (params 0xd5 / 0xd7) carry undecoded DSP/FX traffic, which is the plugin-parameter layer -- OFF-LIMITS in this repo per SCOPE.md (buckets D/E/F). If an AFX investigation ever classifies one of these as a safe bucket-A/B/C control it can be moved to allowed_opcodes then, in the separate AFX repo's own profile, not here. build_* refuses a forbidden opcode.",
     "channel_bounds": {
       "min": 0,
       "max": 11

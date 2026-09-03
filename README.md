@@ -18,8 +18,23 @@ used; the device firmware is not touched.
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
-| **`CAPTURING.md`** | how to capture USB traffic (Windows VM + USBPcap, or native macOS) |
-| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`) + `mic_models.json` |
+| **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
+| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
+| **`SCOPE.md` / `EULA-ANALYSIS.md`** | the AFX / Synergy Core plugin boundary — what this repo does and doesn't touch, and why (the plugin *parameter* layer is off-repo pending an IP-lawyer review) |
+
+**Roughly what's decoded** (2026-09): preamp gain/mode/phantom/phase +
+link, ADAT & S/PDIF I/O, output buses (monitor/HP/line/reamp) with
+dim/mute/mono, the full **routing matrix** (15 dests, 12 source banks, read
++ write, self-verifying), the **virtual mixer** (4 mixes, read + write),
+**AuraVerb** (read/write, hw-verified), **mic modeling / emuMic** (frame
+decoded), **sample rate / clock source / pan law / DC-coupling /
+oscillator / screen brightness / output trim** (all `SET_GLOBAL`), talkback,
+and the **surround monitoring tab** (per-speaker 16-band EQ + global +
+2.1 bass management; Room Correction turned out to *be* the per-speaker
+EQ). In-band **readback** (`0x74`/`0x75`) covers routing, mixer, AuraVerb,
+device identity, preamp/channel state. Not decoded: the built-in channel
+**EQ** (`0x07`/`0x1a` readable, no write frame), and surround formats past
+2.1 (need the MRC licence). See `PROTOCOL.md` §13 for the live open list.
 
 ## Legal status & disclaimer
 
