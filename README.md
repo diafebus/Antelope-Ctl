@@ -82,9 +82,11 @@ request you agree to license your contribution that way.
   or add a udev rule granting your user access to the Antelope device's
   `vid`/`pid` (see `device` in the profile JSON) so you don't need root
   every time.
-- Captures for adding new params are done from a Windows VM (Antelope
-  Launcher + USBPcap + Wireshark/tshark) against the same passed-through
-  hardware the Linux side controls -- see `CAPTURING.md`.
+- Captures for adding new params are done either from a Windows VM
+  (Antelope Launcher + USBPcap) against the passed-through hardware, or --
+  simpler, when the control exists in this project's own web UI -- with
+  `usbmon` on the Linux host while the web UI drives one control. See
+  `CAPTURING.md`.
 
 ## Layout
 
@@ -401,13 +403,22 @@ mics). Same opcode `0x17` as the mixer -- `[16]` is `0xe5` instead of
 `0xd4`. Decoded 2026-08-31: per preamp, an **enable** bit, a **model id**
 (`0` = EdgeDuo / raw, `1`…`18` = emulations), a **channel-order swap**
 switch, and a **polar pattern** -- with model `0` a free 0-100 morph
-(omni → cardioid → figure-8), with a selected model the model's
-pattern-class (fixed / 3-way / variable). Enabling also auto-turns on
-48 V phantom and links the preamp pair. Not in the passive stream (the
-`0x74`/`0x75` query protocol may expose it -- category not yet identified).
+(omni → cardioid → figure-8), with a selected model a 0-based index into
+that model's pattern list (fixed / 3-way / 9-detent), preset to the
+model's default on select. Enabling also auto-turns on 48 V phantom and
+links the preamp pair; disabling reverses all of it (phantom off, gain
+re-sync, unlink). No readback category exists for the modeling state.
+
 The modeled signal appears as routing source bank `0x01` (`emumicN`,
-N = preamp 5-12). Range corrected 2026-09-03 (was 7-12): the EMU button
-is Mic-mode-gated, and the device routes + reads back emumic 5/6 like 7-12.
+N = preamp 5-12). **Preamps 5-12 confirmed on the wire 2026-09-03** (a
+usbmon capture of the project's webUI driving EMU on preamp 5/6): the
+`0xe5` frame's channel byte is `0x00` for preamp 5 … `0x07` for preamp 12
+(a `-4` bias on the 0-based index), and each change is written to both
+channels of the pair. The EMU button shows per channel only in Mic mode
+(earlier work saw "7-12" because that unit had 5-6 in Line). A listening
+test confirmed the taps carry the modeled sound and model selection
+audibly changes it, matching the Launcher; `emumic5` and `emumic6` are
+one mono signal for a mono emulation.
 
 `protocol.build_micmodeling_command(profile, channel, enabled, pattern,
 swap, model)` builds the frame. The model list is **account-bound** (Edge
@@ -421,20 +432,22 @@ on/off, plus 8 DSP controls, each a plain 0-100 byte -- Room Size (@19),
 Color (@20), Pre-Delay (@21, 0-100 → 0-32 ms), Early Reflection Gain
 (@23), Late Reflection Delay (@24), Richness (@25), Reverb Time (@26),
 Reverb Level (@27). AuraVerb is bundled with the device (no per-plugin
-activation), so it's in scope. The CLI caches what it sent; a live read
-exists via the `0x74`/`0x75` query protocol (category `0x0a`, not yet
-wired into the CLI):
+activation), so it's in scope. **Decoded + hardware round-trip verified
+2026-09-03**: it reads back via the `0x74`/`0x75` query protocol as
+category `0x0a` (one record, a block per mix), so the CLI now live-reads
+the device and does a verified read-modify-write; the local cache is only
+an offline fallback:
 
 ```
-antelope-ctl ... auraverb                          # show CLI-cached state
+antelope-ctl ... auraverb                          # live device state (all 4 mixes)
 antelope-ctl ... auraverb --on                      # enable
 antelope-ctl ... auraverb --reverb-time 55 --color 40 --room-size 70
 antelope-ctl ... auraverb --off --defaults          # reset params, disable
 ```
 
-`protocol.build_auraverb_command(profile, params, enabled)`. See
-`PROTOCOL.md` §12 and `frame.auraverb_command`. Not hardware round-trip
-tested yet.
+`protocol.build_auraverb_command(profile, params, enabled)` /
+`protocol.parse_auraverb_record`. See `PROTOCOL.md` §12 / §4a and
+`frame.auraverb_command`.
 
 ### Buses vs. channels
 
@@ -629,15 +642,17 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   ```
   This is a small local cache
   (`~/.cache/antelope-ctl/link_state_<vid>_<pid>.json`) of the last
-  `set-link` command *this CLI* has sent for each pair -- not yet a device
-  read. (The `0x74`/`0x75` readback protocol -- `PROTOCOL.md` §4a -- has
-  per-channel "link/config" tables at categories `0x0c` / `0x15` that
-  aren't decoded yet; link state may well be in there.) It will go stale
-  if link state changes some other way (the official Launcher, another
-  instance of this tool, or the device losing/regaining power) -- `status`
-  prints a note to that effect whenever it has anything cached. Treat the
-  markers as "what I last told the device", not "what the device currently
-  is".
+  `set-link` command *this CLI* has sent for each pair. **There is no
+  device-side link readback** -- closed 2026-09-03 by a dedicated
+  whole-report diff on the live device (toggle a pair link with the raw
+  `0x14` frame, read the entire `0x73` report before/after plus readback
+  categories `0x0c` / `0x15` / `0x06`: zero stable bytes moved anywhere).
+  The device stores link state (its front panel shows it) but exposes it
+  nowhere over USB HID, so a client must track it client-side, as this
+  CLI and the Launcher both do. The cache goes stale if link state changes
+  some other way (the Launcher, another instance, a power cycle) --
+  `status` prints a note to that effect whenever it has anything cached.
+  Treat the markers as "what I last told the device".
 
   **Channel link is real, but the syncing you see isn't the device doing
   it (confirmed 2026-08, real hardware).** Using an earlier version of this
@@ -779,23 +794,25 @@ Key takeaways:
   (the bitmask holds multiple bits). Exact index→name order (0-3) isn't
   pinned down; likely 0=Mon A, 1=Mon B, 2=HP1, 3=HP2.
 
-### Output trim (confirmed, 2026-08 -- not yet in the CLI)
+### Output trim (confirmed -- not yet in the CLI)
 
 `settings-trim-mona-monb-line-panlaw` pinned down the settings-tab output
-**trim** selectors: `SET_PARAM(0x4b, target, value)`, `target` 0/1/2,
-`value` a 7-position selector (0-6). Readback is packed into two bytes just
-before `bus_block`: target 0 at offset 24 (`value << 4`), target 1 at
+**trim** selectors: `SET_PARAM(0x4b, target, value)`, `target` 0/1/2 =
+Monitor A / Monitor B / Line Out, `value` a 7-position selector. It's an
+output-reference-level selector, **1 dBu per step: 0 = 20 dBu … 6 = 14 dBu**
+(user-confirmed against the Launcher). Readback is packed into two bytes
+just before `bus_block`: target 0 at offset 24 (`value << 4`), target 1 at
 offset 25 bits 2-4 (`value << 2`), target 2 at offset 25 bits 5-7
-(`value << 5`). Targets 0/1/2 are almost certainly Monitor A / Monitor B /
-Line output trim (capture-order inference). See `params.output_trim` and
-`state_report.output_trim_block`.
+(`value << 5`). **Re-confirmed live on the device 2026-09-03** -- swept
+all three targets, the readback tracked `value << shift` exactly, restored.
+See `params.output_trim` and `state_report.output_trim_block`.
 
-- What the 7 steps *mean* physically (dB? reference level?) isn't in the
-  capture -- only the raw index.
-- **Pan law was not actually captured** despite the filename -- no 4th
-  target or other param_id was ever sent. The readback block has spare
-  bits (offset 25 bits 0-1 = a 2-bit / 4-option field) that could hold it.
-  Needs its own capture.
+- **Pan law is still not captured** and is **not** `0x4b` target 3 (ruled
+  out live 2026-09-03: values 0-3 had zero effect anywhere). It's a
+  different `param_id` or opcode. Needs its own capture (a pan-law-only
+  click in the Launcher / webUI).
+- **Readback category `0x16`**, once guessed to hold trim/pan-law, tracks
+  neither -- still undecoded.
 
 ### Screen brightness -- CONFIRMED, real device command (2026-08, native macOS)
 
