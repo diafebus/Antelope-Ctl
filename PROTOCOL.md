@@ -1193,8 +1193,19 @@ confirmed 2026-08-31 to have 8 indices = preamps 5-12 -- the full
 modeling range. The EMU *button* shows on a channel only in **Mic mode**
 (hence the earlier "7-12": 5-6 were in Line on the reference unit).
 Confirmed 2026-09-03: emumic 5/6 route + read back on the device like 7-12.
-Not yet captured: a `0xe5` frame with `[18]=0`/`1`; a listening test of
-the wet taps.
+
+**Listening test -- CONFIRMED 2026-09-03 (via the webUI, user report).**
+The `emumic` taps carry the *modeled* signal, and it is correct: routing
+`emumic5` and playing a mic through preamp 5 with EMU engaged sounds like
+the selected model (an R112 model sounds like an R112, a U87 model has the
+expected character), and switching the model in the UI audibly changes it
+-- matching the official Launcher. **`emumic5` and `emumic6` carry the
+same mono signal** when EMU is engaged with a mono emulation: the Edge Duo
+(2 physical inputs) collapses to one signal on both taps for a mono model,
+so only one tap is needed; the two distinct taps matter for a stereo
+modelling mic (e.g. Edge Quadro: 4 inputs -> 2 different output signals).
+This is the behaviour the Launcher produces too. Still not captured: a
+Launcher `0xe5` frame with `[18]=0`/`1` (preamp 5/6).
 
 `protocol.build_micmodeling_command(profile, channel, enabled, pattern,
 swap, model)` builds the frame; not in the CLI.
