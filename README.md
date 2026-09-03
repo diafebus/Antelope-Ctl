@@ -58,6 +58,23 @@ this software interoperates with.
 
 If you are a rights holder with a concern, please open an issue.
 
+## License
+
+- **Code, CLI, web UI and docs: GPL-3.0-or-later** (see `LICENSE`).
+  Copyleft on purpose -- a fork that ships a modified version has to ship
+  its source too, so this can't be quietly taken closed. GPL-3.0 (not 2.0)
+  for the explicit contributor patent grant, which is the real protection
+  a reverse-engineering project has, and for Apache-2.0 dependency
+  compatibility.
+- **Device profiles (`profiles/`): MIT** (see `profiles/LICENSE`). The
+  hardware knowledge -- request tables, offsets, ranges, bounds, quirks,
+  evidence -- is kept permissive so it can flow into any project,
+  including copyleft ones. Most of it is uncopyrightable fact anyway.
+
+Copyright (c) 2026 diafebus. Contributions are accepted under the same
+terms (GPL-3.0-or-later for code, MIT for profiles); by opening a pull
+request you agree to license your contribution that way.
+
 ## Requirements
 
 - Linux, Python 3.9+ (no third-party packages -- stdlib only).
