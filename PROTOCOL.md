@@ -173,9 +173,10 @@ entry; before and after the `0x19` list). Treat it as structural.
 - **`0x19` = 64** -- the 64 USB/TB streaming channels (reply bodies are
   empty in the connect walk).
 - **`0x1a` = 16** ADAT, **`0x11` = 2** S/PDIF -- confirmed earlier.
-- Singletons `0x0a` (AuraVerb), `0x15`/`0x0c` (link/config tables), `0x16`
-  (trim / pan-law), `0x1b` (mixer bus levels), `0x07` (EQ) -- see the §4a
-  category table.
+- Singletons `0x0a` (AuraVerb -- decoded), `0x15`/`0x0c` (90-entry
+  `<id><flags>` tables, not the link table), `0x16` (unknown -- not trim,
+  not pan-law), `0x1b` (repeating `[80][80][600][0]` -- maybe the surround
+  tab / EQ-band template), `0x07` (EQ) -- see the §4a category table.
 - `0x0b` -- still a structural section marker in the walk.
 
 Full raw dump of every category: `tools/readback_enum.py`.
@@ -314,7 +315,7 @@ sweep to the declared count unless `--unsafe`.
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
 | `0x0c` / `0x15` | ~90-entry per-channel link/config tables | undecoded |
 | `0x11` | S/PDIF + a 128-B capability bitmask | undecoded |
-| `0x16` | output trim / pan-law (two `0x32` + flags) | partial |
+| `0x16` | **UNKNOWN** -- NOT output trim, NOT pan law (both ruled out live 2026-09-03). Seen all-zero and `00 00 00 32 ×2 …` | undecoded |
 | `0x1a` | EQ curve, 8 bands, freq ~30-14000 Hz (116 B) | undecoded |
 | `0x1b` | mixer bus level/range table | undecoded |
 | `0x19` | 64 entries, empty bodies -- the 64-ch USB/TB slots | — |
@@ -508,6 +509,8 @@ how this byte reads with talkback *fully* configured is unverified.
 | 2 (~ Line trim) | 25 | `0xe0` | 5 | `0x00,0x20,0x40,0x60,0x80,0xa0,0xc0` |
 
 Readback value = `raw_bits >> shift` = the commanded value (0-6).
+**Re-confirmed live on the device 2026-09-03** -- swept all 3 targets,
+`[24]`/`[25]` tracked `value << shift` exactly, restored to baseline.
 
 **Value → dBu (all three targets, USER-CONFIRMED against the Launcher /
 Orion Studio Synergy Core, 2026-09-02):** it is an output-reference-level
@@ -517,9 +520,12 @@ Line Out. Resolves the earlier "physical meaning not known". The 2026-08
 sweep hit exactly these 7 stops; the 3-bit field could carry a value 7 but
 the hardware has no 8th stop.
 
-Spare bits: offset 24 bits 0-3 and 7; offset 25 bits 0-1. Offset 25 bits
-0-1 (a 2-bit / 4-option field) is the likely home of **pan law**, which
-was never actually captured.
+Spare bits: offset 24 bits 0-3 and 7; offset 25 bits 0-1. **Pan law is
+NOT here.** Tested live 2026-09-03: `SET_PARAM 0x4b target 3` (a 4th trim
+target) with values 0-3 had **zero effect** on `[24]`/`[25]`, on readback
+cat `0x16`, or anywhere. Pan law is a different `param_id` (or opcode) and
+still needs its own Launcher capture (a pan-law-only click). Readback cat
+`0x16`, once guessed to hold trim/pan-law, tracks neither.
 
 ---
 
@@ -965,7 +971,7 @@ What the Settings/Device window controls actually do, from the captures
 | **Reamp-out level** | `settings-linevol-...` | `bus_level` `0x47` on **bus 4** | **real, confirmed** -- in CLI (`set-bus-level reamp`) |
 | **Output trim** (Mon A / Mon B / Line) | `settings-trim-...` | param `0x4b`, 20 frames | **real, confirmed** -- readback @24-25 (section 6); not yet in CLI |
 | **Surround-EQ pre/post** | `macos-settings-srrndeq-post-pre` | opcode `0xab` / param `0xeb`, 4 frames | **confirmed** -- `[19]` bit 7 = the toggle; rest of the `0xab` frame is a whole-state blob (partly mapped, §11 below) |
-| Pan law | `settings-trim-...` | none (not sent in that capture) | unknown -- recapture |
+| Pan law | `settings-trim-...` (none) + live probe 2026-09-03 | ruled out `0x4b` target 3 (no effect) | **needs a pan-law-only capture** -- param unknown |
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
 | **Oscillator** -- settings panel (freq/level/mute) | `macos-settings-osc1-mute-1khz` etc. | opcode `0x12` / param `0x0a` / packed value @17 | **DECODED (native macOS, 2026-09-01)** -- the old "zero frames" was an inbound-only capture; see §11 below |
 | **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; in CLI (`set-brightness`). VM sent nothing because the slider is a no-op under the VM. |
@@ -1278,7 +1284,7 @@ Mix 1 has been written).
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number) + `0x1b` (bus levels), partly decoded. Not in the CLI. |
 | Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position; a Launcher capture of a `0xe5` frame on preamp 5 or 6 (`[18]=0`/`1`) -- the 5-12 range was corrected 2026-09-03 from the routing bank + `channel_bias` -4 + owner report, not yet a direct modeling capture. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
-| Pan law | never captured; likely offset 25 bits 0-1 |
+| Pan law | never captured; NOT `0x4b` target 3 (ruled out live 2026-09-03); param unknown -- needs a pan-law-only Launcher capture |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |

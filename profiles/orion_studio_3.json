@@ -283,7 +283,7 @@
             "notes": "3-bit field, value<<5 at offset 25 bits 5-7. Same capture: SET_PARAM(0x4b, target=2, value 0..6) -> 0x00/0x20/0x40/0x60/0x80/0xa0/0xc0. Almost certainly Line output trim."
           }
         },
-        "notes": "A small packed block just before bus_block, holding the settings-tab output-trim selectors (param 0x4b). Three targets (0/1/2) confirmed, each a 7-position selector (value 0-6) -- the physical meaning of the 7 steps (dB values? reference levels?) is not known, only that the readback is value<<shift. UNUSED bits so far: offset 24 bits 0-3 and 7, offset 25 bits 0-1 -- offset 25 bits 0-1 (a 2-bit field, 4 options) is a plausible home for the PAN LAW setting, and offset 24 bits 0-3 for a 4th trim target, but the capture named 'panlaw' never actually sent a 4th target or any other param, so pan law is still uncaptured. See params.output_trim."
+        "notes": "A small packed block just before bus_block, holding the settings-tab output-trim selectors (param 0x4b). Three targets (0/1/2 = Monitor A / Monitor B / Line Out) confirmed, each a 7-position 1-dBu-per-step selector (0 = 20 dBu .. 6 = 14 dBu, see params.output_trim.trim_dbu); readback is value<<shift. RE-CONFIRMED live on the device 2026-09-03 (swept all 3, restored). UNUSED bits: offset 24 bits 0-3 and 7, offset 25 bits 0-1. Pan law is NOT here and NOT a 4th target of 0x4b -- tested live 2026-09-03 (SET_PARAM 0x4b target 3 values 0..3 had zero effect anywhere); it needs its own Launcher capture. Readback cat 0x16 (once guessed to hold trim/pan-law) does NOT track either -- ruled out the same day."
       },
       "sample_rate_byte_offset": {
         "offset": 18,
@@ -449,7 +449,7 @@
         "0x11": "S/PDIF + a capability bitmask block (128 bytes)",
         "0x12": "scalar (clock source or sample-rate index?)",
         "0x15": "~90-entry table, sibling of 0x0c",
-        "0x16": "output trim / pan-law scalars (two 0x32 values + flags)",
+        "0x16": "UNKNOWN, ~8-16 bytes. NOT output trim and NOT pan law -- both ruled out 2026-09-03 by a live differential test: sweeping SET_PARAM 0x4b targets 0/1/2 (the confirmed output-trim targets) moved 0x73 [24]/[25] exactly as documented but left 0x16 untouched, and SET_PARAM 0x4b target 3 (the pan-law hypothesis) did nothing anywhere. Content seen: all-zero (2026-09-03), '00 00 00 32 00 00 00 32 01 12 00 01 01 12 00 01' (2026-09-01) -- so it does carry state sometimes; source unidentified (possibly transient / a webUI-touched value). Still undecoded.",
         "0x1a": "EQ curve, 8 bands x freq points ~30..14000 Hz (116 bytes). Undecoded.",
         "0x1b": "mixer bus level/range table (repeating 50 00 50 00 58 02 00). Undecoded.",
         "0x19": "64 entries, all empty in the connect walk -- the 64-ch USB/TB stream slots",
@@ -685,7 +685,7 @@
     },
     "output_trim": {
       "id": "0x4b",
-      "status": "confirmed (3 targets; dBu scale user-confirmed 2026-09-02; pan law not captured)",
+      "status": "confirmed (3 targets; dBu scale user-confirmed 2026-09-02; RE-CONFIRMED live on the device 2026-09-03 -- swept all 3 targets, 0x73 [24]/[25] tracked value<<shift exactly, restored). Pan law: NOT param 0x4b target 3 (tested live 2026-09-03, no effect) -- still needs a Launcher capture.",
       "type": "enum",
       "frame": "command (opcode 0x13 / SET_PARAM) -- target index at offset 17, value 0-6 at offset 18",
       "targets": {
@@ -701,7 +701,7 @@
       "trim_dbu": { "0": 20, "1": 19, "2": 18, "3": 17, "4": 16, "5": 15, "6": 14 },
       "readback": "state_report.output_trim_block -- target 0 at offset 24 (value<<4), target 1 at offset 25 bits 2-4 (value<<2), target 2 at offset 25 bits 5-7 (value<<5)",
       "evidence": "capture settings-trim-mona-monb-line-panlaw (2026-08): each of the 3 targets swept 0->6 and back to 0; the packed readback bytes tracked value<<shift exactly on every one of the 20 steps.",
-      "panlaw_note": "The capture is named '...-panlaw' but never sent a 4th target or any other param_id -- pan law was not actually captured. state_report.output_trim_block has spare bits (offset 25 bits 0-1 = a 2-bit/4-option field; offset 24 bits 0-3) that could hold it. Needs its own capture."
+      "panlaw_note": "The capture is named '...-panlaw' but never sent a 4th target or any other param_id -- pan law was not actually captured. TESTED LIVE 2026-09-03: SET_PARAM 0x4b target 3, values 0..3 -- zero effect on 0x73 [24]/[25], on readback cat 0x16, or anywhere. So pan law is NOT a 4th target of 0x4b. It is a different param_id (or opcode); the spare bits at 0x73 [25] bits 0-1 / [24] bits 0-3 stayed 0 throughout, so if pan law lands there it needs its own write to reveal the param. Still needs a Launcher capture (a pan-law-only click)."
     },
     "routing_batch_marker": {
       "id": "0x2c",
