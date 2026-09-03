@@ -45,10 +45,22 @@ sudo tshark -i usbmon1 -w ~/my-capture.pcapng
 # 4. host: Ctrl-C the tshark, then move the file into captures/new/
 ```
 
+**Simpler variant -- the webUI on Linux (proven 2026-09-03).** If the
+control you need exists in this project's own webUI, you don't need the VM
+or the Launcher at all: the webUI daemon drives the device over `hidraw`
+on the same box, and `usbmon` still sees every URB. Skip step 3 -- just
+start `dumpcap -i usbmonN`, click one control in the webUI, stop. The
+"nothing may hold the device" rule below does NOT apply here (the daemon
+must hold it; `usbmon` is a passive bus tap). This confirmed the emuMic
+`0xe5` frame on preamps 5/6 (`captures/new/webui-emumic-preamp56-...`).
+The user is in the `wireshark` group, so `dumpcap` needs no `sudo`; only
+`modprobe usbmon` does (and `/dev/usbmon*` may already exist).
+
 ### Rules that make the capture usable
 
 - **Nothing on the Linux side may hold the device** while it is passed
-  through -- stop any `antelope-ctl` command or watcher first.
+  through to a VM -- stop any `antelope-ctl` command or watcher first.
+  (N/A for the webUI-on-Linux variant above.)
 - **Move exactly one control**, deliberately, and leave everything else
   alone. Brushing a neighbouring fader puts extra frames in the file that
   have to be disentangled afterwards.
@@ -74,7 +86,14 @@ Then classify by `(byte0, byte1)`: `0x70`/`0x00` = outgoing commands (the
 interesting ones), `0x73`/`0x00` = state, `0x75`/`0x1f` = meter,
 `0x75`/`0x00` = a readback response. For an outgoing frame the opcode is
 `@4` and the param id is `@16`. `tools/scan_readback.py` already handles
-this file type directly.
+this file type directly. To drop the audio flood, filter to the OUT
+endpoint: `-Y 'usbhid.data && usb.endpoint_address == 0x01'`.
+
+**A raw usbmon `.pcapng` contains USB string descriptors, including the
+device SERIAL** (and any control transfers from a fresh enumerate). Keep
+the raw file local only (`captures/` is gitignored), extract the HID
+command payloads to a text file, and delete the raw when done -- never
+commit or paste a raw capture.
 
 ## Capturing on native macOS instead of the VM
 

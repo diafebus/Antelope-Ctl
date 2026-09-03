@@ -1200,23 +1200,36 @@ Antelope's own naming (Berlin / Vienna / Tokyo / …) is used; the classic
 mics being emulated are not spelled out (that's the licensed IP).
 
 The modeled signal is routing **source bank `0x01`** ("emumic", §7),
-confirmed 2026-08-31 to have 8 indices = preamps 5-12 -- the full
-modeling range. The EMU *button* shows on a channel only in **Mic mode**
-(hence the earlier "7-12": 5-6 were in Line on the reference unit).
-Confirmed 2026-09-03: emumic 5/6 route + read back on the device like 7-12.
+8 indices = preamps 5-12 -- the full modeling range. The EMU *button*
+shows on a channel only in **Mic mode** (hence the earlier "7-12": 5-6
+were in Line on the reference unit).
 
-**Listening test -- CONFIRMED 2026-09-03 (via the webUI, user report).**
-The `emumic` taps carry the *modeled* signal, and it is correct: routing
-`emumic5` and playing a mic through preamp 5 with EMU engaged sounds like
-the selected model (an R112 model sounds like an R112, a U87 model has the
-expected character), and switching the model in the UI audibly changes it
--- matching the official Launcher. **`emumic5` and `emumic6` carry the
-same mono signal** when EMU is engaged with a mono emulation: the Edge Duo
-(2 physical inputs) collapses to one signal on both taps for a mono model,
-so only one tap is needed; the two distinct taps matter for a stereo
-modelling mic (e.g. Edge Quadro: 4 inputs -> 2 different output signals).
-This is the behaviour the Launcher produces too. Still not captured: a
-Launcher `0xe5` frame with `[18]=0`/`1` (preamp 5/6).
+**Preamps 5-6 -- CAPTURED 2026-09-03** (`webui-emumic-preamp56-...frames.txt`,
+usbmon while the webUI drove EMU on preamp 5/6). Directly on the wire:
+
+- `[18] = 0x00` for **preamp 5**, `0x01` for **preamp 6** -- the
+  `channel_bias -4` mapping holds to the bottom of the range (was
+  extrapolation). Each change is written to **both** channels of the pair,
+  `[18]=1` then `[18]=0`, ~72 ms apart (same two-per-pair pattern as the
+  Launcher's link sync).
+- `[20]` model seen `0x01`/`0x08`/`0x10`; selecting a model presets `[22]`
+  to that model's default (model 8 -> 0, model 16 -> 1). `[21]` swap and
+  `[22]` pattern both exercised (0 and 1).
+- **Disable** = `e5` with `[19]=0` and model/swap/pattern zeroed, then
+  `SET_PARAM 0x51` ch 4 & 5 = 0 (phantom off), then a `SET_PARAM 0x50`
+  ch 4 & 5 gain re-sync (both channels stepped to the same values), then
+  `SET_LINK 0x14 a2 00 02` enable 0 (**unlink pair 2** = preamps 5&6).
+  So preamps 5-6 are link pair 2, and the phantom/gain sync addresses
+  them as channel index 4 & 5.
+
+**Listening test -- CONFIRMED 2026-09-03 (webUI).** The `emumic` taps
+carry the *modeled* signal and it is correct: an R112 model sounds like an
+R112, a U87 model has the expected character, switching the model audibly
+changes it -- matching the Launcher. **`emumic5` and `emumic6` carry the
+same mono signal** for a mono emulation: the Edge Duo's 2 inputs collapse
+to one signal on both taps, so only one is needed; the two distinct taps
+matter only for a stereo modelling mic (Edge Quadro: 4 inputs -> 2
+signals).
 
 `protocol.build_micmodeling_command(profile, channel, enabled, pattern,
 swap, model)` builds the frame; not in the CLI.
@@ -1282,7 +1295,7 @@ Mix 1 has been written).
 |---|---|
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. Open: wire `route` writes for the other 9 destinations. |
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number) + `0x1b` (bus levels), partly decoded. Not in the CLI. |
-| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position; a Launcher capture of a `0xe5` frame on preamp 5 or 6 (`[18]=0`/`1`) -- the 5-12 range was corrected 2026-09-03 from the routing bank + `channel_bias` -4 + owner report, not yet a direct modeling capture. |
+| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Preamps 5-6 CAPTURED 2026-09-03 (webUI usbmon, `webui-emumic-preamp56-...`): `[18]=0x00`/`0x01` on the wire, pair = link pair 2, disable reverses phantom+gain+link. Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position; the readback category (none found -- `0x07`/`0x1a` are the unmapped DSP-EQ candidates). |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; NOT `0x4b` target 3 (ruled out live 2026-09-03); param unknown -- needs a pan-law-only Launcher capture |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
