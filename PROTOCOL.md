@@ -1064,7 +1064,8 @@ MRC (Multichannel Remote Control)** hardware. Without it only **2.0**
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
 | 25-26 | **per-speaker BYPASS mask**, LE16 — bit N = speaker N (1 = active, 0 = bypassed); default `0xFFFF` | confirmed (`srrnd-L-bypass`: bypassing L → `0xFFFF`→`0xFFFE`) |
 | 27-28 / 29-30 | **mute / dim**, per-speaker LE16 masks | mute confirmed by the Ctrl-click SOLO ("mute all others") writing only the selected bit |
-| 23-95 | **2.1 bass-management window** — structure identified (`srrnd-bassmanagement-*`): a HIGH-PASS section + LOW-PASS section (each: cutoff LE16 Hz 20–320, type Butterworth/Linkwitz-Riley, order 2/4/8 one-hot, bypass — packed as bits near `[25]`/`[26]`) + a MIXER (per-channel fader + mute/solo = high bit on a level word). Full byte-map = a focused pass; frames saved | `[23-24]` = `04 64` = LFE marker |
+| 23-42 | **2.1 bass-management** header | `[23-24]` `04 64` LFE marker; `[25-26]` LE16 flags (`0xFFFF` in captures); `[41-42]` ~9-bit bitfield — filter *type* (Butterworth/Linkwitz-Riley) + link toggles, one bit/click, not individually mapped |
+| 43… | **BM mixer — 8-byte channel blocks** (3 used, LINK-mirrored) | `[+0]` LP cutoff (Hz 20–320, **bit 15 = LP bypass**); `[+2]` HP cutoff (same, **bit 15 = HP bypass**); `[+4]` **fader** (LE16, base `600` = 0 dB; **bit 15 = mute**, bits 13-14 = solo+1); `[+6]` filter **order** (LP low byte / HP high byte, `0/1/2` = 2/4/8) |
 | 40-168 | fixed default template | `23 00 00` then `[80][80][600][0]` repeated -- **not** the live EQ curve (that's the `0x87` frame) |
 
 **Per-speaker: `0x87` / `0xea`** -- DECODED 2026-09-03 (`srrnd-L/R-*`,
