@@ -1064,7 +1064,7 @@ MRC (Multichannel Remote Control)** hardware. Without it only **2.0**
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
 | 25-26 | **per-speaker BYPASS mask**, LE16 — bit N = speaker N (1 = active, 0 = bypassed); default `0xFFFF` | confirmed (`srrnd-L-bypass`: bypassing L → `0xFFFF`→`0xFFFE`) |
 | 27-28 / 29-30 | **mute / dim**, per-speaker LE16 masks | mute confirmed by the Ctrl-click SOLO ("mute all others") writing only the selected bit |
-| 39-40+ | **format-dependent** — `00 23` in 2.0, `04 64` in 2.1 (`srrnd-LFE`). **2.1 has a whole bass-management window** (LFE crossover / sub level) whose state lives in `[40:168]` — needs its own capture. `[40:168]` is not the static template it looked like | |
+| 23-95 | **2.1 bass-management window** — structure identified (`srrnd-bassmanagement-*`): a HIGH-PASS section + LOW-PASS section (each: cutoff LE16 Hz 20–320, type Butterworth/Linkwitz-Riley, order 2/4/8 one-hot, bypass — packed as bits near `[25]`/`[26]`) + a MIXER (per-channel fader + mute/solo = high bit on a level word). Full byte-map = a focused pass; frames saved | `[23-24]` = `04 64` = LFE marker |
 | 40-168 | fixed default template | `23 00 00` then `[80][80][600][0]` repeated -- **not** the live EQ curve (that's the `0x87` frame) |
 
 **Per-speaker: `0x87` / `0xea`** -- DECODED 2026-09-03 (`srrnd-L/R-*`,
