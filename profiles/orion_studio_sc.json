@@ -900,26 +900,41 @@
     },
     "surround_monitor": {
       "id": "0xeb",
-      "status": "partly decoded 2026-09-01 -- opcode 0xab whole-state frame; level / delay / dim / mute / bypass / EQ pre-post identified, exact bit assignments for the toggles not fully isolated",
-      "type": "NEW opcode 0xab -- its own whole-state command shape (like AuraVerb: ONE frame carries the entire Surround monitoring tab)",
-      "frame": "opcode 0xab @4, param_id 0xeb @16, then a fixed-layout payload. Not built by any helper yet; 0xab is in constraints.observed_opcodes_launcher_only, NOT allowed_opcodes (no builder, never sent by this tool).",
+      "status": "GLOBAL state partly decoded (0xab/0xeb whole-state frame): pre/post, level, delay, dim/mute/bypass, surround format. PER-SPEAKER state is a separate frame -- see params.surround_speaker.",
+      "type": "NEW opcode 0xab -- whole-state command for the Surround tab's GLOBAL controls (like AuraVerb)",
+      "frame": "opcode 0xab @4, param_id 0xeb @16, then a fixed-layout payload. No builder; 0xab is launcher-only observed, NOT in allowed_opcodes.",
       "field_map": {
         "16": "0xeb param_id",
         "17": "0x99 -- constant",
-        "18": "flags A, base 0x02. Bits 0x40 / 0x80 seen toggling during the EQ-tab part of the capture -- EQ-enable / bypass related, not individually pinned.",
-        "19": "flags B, base 0x9f. **bit 0x80 = surround-EQ PRE/POST** (CONFIRMED, macos-settings-srrndeq-post-pre: 0x1f <-> 0x9f four times, nothing else moving). Bits 0x20 / 0x40 toggle during the EQ-tab part -- EQ enable / EQ bypass, not individually pinned.",
-        "20": "SURROUND DELAY, uint8, base 0x06. Swept 0x06..0x2d in macos-srrnd-tab (the 'surrounddlay' / 'delay' controls -- unit/scale unknown). Const 0x06 at rest.",
-        "21": "0x06 -- constant",
-        "22_23": "SURROUND MONITOR LEVEL, 16-bit little-endian, base 600 (0x0258). Swept smoothly 0..760 in macos-srrnd-tab (the 'srrndlvl' slider). Scale unknown -- possibly 0.1 dB (0..-76) or a linear gain; 760 = top of the slider.",
-        "24": "0x00 -- constant",
-        "25_26": "BYPASS -- 16-bit boolean, 0x0000 = off / 0xFFFF = on ('bypass' toggle in the capture). Assignment among 25-26 / 27-28 / 29-30 is by the capture's control order, NOT independently confirmed.",
-        "27_28": "MUTE -- 16-bit boolean 0x0000 / 0xFFFF ('mute' toggle).",
-        "29_30": "DIM -- 16-bit boolean 0x0000 / 0xFFFF ('dim' toggle).",
+        "18": "flags A, base 0x02. **bit 0x80 = surround-EQ PRE/POST** -- CORRECTED 2026-09-03: macos-srrnd-tab shows [18] 0x82<->0x02 on the toggle with [19] unchanged (2026-09-01 wrongly put this on [19]). Also carries FORMAT bits: srrnd-20-21 switching 2.0<->2.1 moved [18] 0x02<->0x23 AND [19] 0x9f<->0x82 together, so [18]/[19] jointly encode the speaker layout (only 2.0/2.1 captured).",
+        "19": "flags B, base 0x9f. Moves only with the surround FORMAT (0x9f = 2.0, 0x82 = 2.1). NOT the pre/post bit.",
+        "20": "GLOBAL/total surround DELAY, uint8, base 0x06, swept 0x06..0x2d. Per-speaker delay is in the 0x87 frame.",
+        "21": "0x00 -- constant",
+        "22_23": "SURROUND MONITOR LEVEL (main slider), LE16. base 600 (0x0258) = 0 dB; 0.1 dB/step; range 0 = -60 dB .. 760 = +16 dB. USER-CONFIRMED 2026-09-03 (range -60..+16 dB). Swept smoothly in macos-srrnd-tab.",
+        "24": "0x00",
+        "25_26": "BYPASS -- LE16 boolean 0x0000 / 0xFFFF (0xFFFE seen once -- possible 2nd bit, unconfirmed).",
+        "27_28": "MUTE -- LE16 boolean.",
+        "29_30": "DIM -- LE16 boolean. (25-30 order still inferred from click order.)",
         "31_39": "0x00",
-        "40_168": "a STATIC block that never changes across the whole capture: `23 00 00` then `[50 00][50 00][58 02][00 00]` (LE16 80 / 80 / 600 / 0) repeated ~15x. Almost certainly a fixed template / per-band EQ defaults / padding echoed back every frame -- it is NOT live state (nothing the user did moved it). The `600` matches the [22-23] level default."
+        "40_168": "a fixed template (`23 00 00` then `[80][80][600][0]` LE16 repeated). Nothing moved it in any capture, and the real per-speaker EQ is in the 0x87 frame -- so this is a default block, NOT the live EQ curve."
       },
-      "open": "the [18]/[19] toggle bits beyond pre/post (EQ enable vs EQ bypass vs surround-bypass); the level and delay unit scaling; whether the [25-30] booleans are really dim/mute/bypass in that order; whether the static [40:168] block ever carries real data (e.g. after touching the surround-EQ curve). A one-control-at-a-time recapture would settle all of it.",
-      "notes": "The whole Surround monitoring tab. Decoded from macos-settings-srrndeq-post-pre (pre/post, clean) + macos-srrnd-tab (everything else, but ~9 controls touched in sequence without isolation, so the toggle-bit assignments are inferred from control order). NO 0x73 readback for any surround param (the state stream shows only meter jitter through all of it). Not in the CLI."
+      "open": "the [18]/[19] bit map for formats beyond 2.0/2.1 (5.1, 7.1, ...); level/delay unit scaling (0.1 dB assumed); [25-30] boolean order; the 0xFFFE. NO 0x73 or 0x74/0x75 readback for any surround param.",
+      "notes": "The Surround tab's GLOBAL controls. PER-SPEAKER (level/invert/delay/8-band EQ x16) = params.surround_speaker (opcode 0x87/0xea). Changing the format re-sends this frame then all 16 0x87 frames. Sources: macos-settings-srrndeq-post-pre + macos-srrnd-tab + srrnd-20-21 + srrnd-L/R-bypass-invert-lvl-delay + srrnd-EQ-L/R-* (2026-09-01/03). Not in the CLI."
+    },
+    "surround_speaker": {
+      "id": "0xea",
+      "status": "decoded 2026-09-03 -- opcode 0x87 / param 0xea, per-speaker whole-state frame. level / invert / delay / 8-band EQ freq+gain confirmed; EQ Q and the page-2 LPF/HPF not fully pinned.",
+      "type": "NEW opcode 0x87 -- one frame per speaker carries that speaker's whole surround-monitor strip",
+      "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. No builder; launcher-only observed opcode.",
+      "field_map": {
+        "17": "0x75 -- constant subcmd",
+        "18": "speaker index 0..15",
+        "19_20": "per-speaker DELAY, LE16, unit 0.1 ms (USER-CONFIRMED 2026-09-03: the UI ranges 0.6 ms .. 100.6 ms). At rest 0; swept ~0..0x035a in srrnd-L-delay (0x035a = 858 = 85.8 ms). The 0.6 ms floor is a fixed processing latency the UI adds on top.",
+        "21_22": "per-speaker LEVEL, LE16. base 600 (0x0258) = 0 dB; 0.1 dB/step; range 0 = -60 dB .. 760 = +16 dB (USER-CONFIRMED 2026-09-03). **bit 7 of [22] = phase INVERT** (level tops at 760 = 0x02F8 so [22] bit 7 is free: 0x02 -> 0x82 on the invert toggle).",
+        "23_onward": "8 parametric EQ bands, ~`<freq LE16 Hz> <47 00 (Q?)> <gain LE16 signed> <flag>` per band (band 1 at [23], no leading 02; bands 2-8 preceded by 00 02). FREQ = literal Hz LE16, each band adjustable 20 Hz .. 20000 Hz (USER-CONFIRMED 2026-09-03); defaults 30/120/500/1400/3000/5500/9500/14000 Hz. GAIN = LE16 signed 0.01 dB/step, range -24 dB (0xF6A0=-2400) .. +12 dB (0x04B0=+1200) (USER-CONFIRMED). Q = range 0.1..20 (USER-CONFIRMED from the UI) but NO capture swept it -- the constant `47 00` after each freq (LE16 0x0047 = 71 = Q 0.71 x100, a Butterworth default) is the likely home; needs a Q-sweep to confirm. **Band 1 is the HPF slot and band 8 is the LPF slot** (USER-CONFIRMED 2026-09-03): each can be switched between 'flat band' (a normal bell) and the pass-filter mode. That switch is the flag byte after the band's gain -- it toggled 0<->4 in srrnd-*-page2 while band-1 freq was swept down to 20 Hz (0 = bell / 4 = high-pass for band 1; band 8's flag = LPF). Bands 2-7 are pure bells. LPF/HPF slope encoding still unknown."
+      },
+      "open": "EQ Q/bandwidth; page-2 LPF & HPF type bytes + freq/slope; CONFIRMED 2026-09-03: R speaker = index 1, 0x87 frame layout byte-identical to L (index 0). Open: the Q byte position, LPF/HPF slope encoding, a possible per-band enable. NO readback. The Launcher's `copy speaker`/`paste speaker` just re-send 0x87 frames -- not a distinct opcode.",
+      "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. Not in the CLI."
     },
     "dc_coupling": {
       "id": "0x26",
@@ -1099,7 +1114,8 @@
     ],
     "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). 0x53 is hardware round-trip confirmed (2026-08-31): preamps->hp1/hp2 and a seeded 16-ch line_out routed from cli.py persisted correctly in the Windows Launcher. 0x17 (mixer) is still untested and not in a CLI command yet -- treat the mixer as experimental. 0x1d (SET_AURAVERB) added 2026-08-31 -- all 8 DSP params decoded (frame.auraverb_command); AuraVerb is device-bundled (no per-plugin activation) so it is in scope; not hardware round-trip tested yet.",
     "observed_opcodes_launcher_only": [
-      "0xab"
+      "0xab",
+      "0x87"
     ],
     "forbidden_opcodes": [
       "0x01",
