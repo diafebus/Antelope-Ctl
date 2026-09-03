@@ -906,7 +906,7 @@
       "field_map": {
         "16": "0xeb param_id",
         "17": "0x99 -- constant",
-        "18": "flags A, base 0x02. **bit 0x80 = surround-EQ PRE/POST** -- CORRECTED 2026-09-03: macos-srrnd-tab shows [18] 0x82<->0x02 on the toggle with [19] unchanged (2026-09-01 wrongly put this on [19]). Also carries FORMAT bits: srrnd-20-21 switching 2.0<->2.1 moved [18] 0x02<->0x23 AND [19] 0x9f<->0x82 together, so [18]/[19] jointly encode the speaker layout (only 2.0/2.1 captured).",
+        "18": "flags A -- a bitfield, decoded 2026-09-03. **bit 0 (0x01) = LFE present / 2.1** (2.0 = 0x02, 2.1 = 0x03 base). **bit 5 (0x20) = BASS MANAGEMENT on** -- srrnd-bass-management-on-off: 2.1 with BM on = 0x23, BM off = 0x03; BM defaults ON when you switch to 2.1. **bit 7 (0x80) = surround-EQ PRE/POST** (macos-srrnd-tab: 0x02<->0x82; the 2026-09-01 note wrongly put this on [19]). bit 1 (0x02) always set (surround engaged). Observed full values: 0x02 (2.0), 0x82 (2.0 EQ-post), 0x03 (2.1 BM-off), 0x23 (2.1 BM-on). [19] moves with the format too (0x9f 2.0 / 0x82 2.1). Formats past 2.1 need the MRC.",
         "19": "flags B, base 0x9f. Moves only with the surround FORMAT (0x9f = 2.0, 0x82 = 2.1). NOT the pre/post bit.",
         "20": "GLOBAL/total surround DELAY, uint8, base 0x06, swept 0x06..0x2d. Per-speaker delay is in the 0x87 frame.",
         "21": "0x00 -- constant",

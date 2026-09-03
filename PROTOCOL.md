@@ -1058,7 +1058,7 @@ MRC (Multichannel Remote Control)** hardware. Without it only **2.0**
 | off | field | notes |
 |---|---|---|
 | 16-17 | `0xeb` param, `0x99` const | |
-| 18 | flags A (base `0x02`) | **bit `0x80` = surround-EQ pre/post** (CORRECTED 2026-09-03 -- `macos-srrnd-tab` toggles `[18]` `0x82`↔`0x02` with `[19]` unchanged; the 2026-09-01 note had this on `[19]`). `[18]`/`[19]` **jointly** carry the surround FORMAT: `srrnd-20-21` moved `[18]` `0x02`↔`0x23` and `[19]` `0x9f`↔`0x82` together on the 2.0↔2.1 switch |
+| 18 | **flags A — bitfield** | **bit 0** = LFE / 2.1 (`0x02` 2.0 → `0x03` 2.1). **bit 5 (`0x20`) = bass-management on** (`srrnd-bass-management-on-off`: 2.1 BM-on `0x23` / BM-off `0x03`; BM defaults on when you enable 2.1). **bit 7 (`0x80`) = EQ pre/post** (`macos-srrnd-tab` `0x02`↔`0x82`; the 2026-09-01 note wrongly put this on `[19]`). `[19]` also moves with format (`0x9f` 2.0 / `0x82` 2.1) |
 | 19 | flags B (base `0x9f`) | moves only with the format (`0x9f` 2.0 / `0x82` 2.1) |
 | 20 | **global surround delay**, uint8, 0.1 ms/step (base `0x06` = 0.6 ms floor) | swept `0x06`..`0x2d` |
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
