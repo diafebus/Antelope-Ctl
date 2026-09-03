@@ -268,6 +268,31 @@ def t_auraverb(dev):
           got == ref, f'{got.hex()} != {ref.hex()}')
 
 
+def t_channel_state(dev):
+    """cat 0x05 (preamp gain) + 0x06 (channel status) must agree with the
+    pushed 0x73 state report -- two independent device reports of the same
+    thing, so a mismatch means a parser (or the device) drifted."""
+    g_body = dev.read(proto.PREAMP_GAIN_READBACK_CATEGORY)
+    s_body = dev.read(proto.CHANNEL_STATUS_READBACK_CATEGORY)
+    st = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
+    if g_body is None or s_body is None or st is None:
+        return record(SKIP, 'channel state cross-check',
+                      'no cat 0x05/0x06 or no 0x73 report on this device')
+    gains = proto.parse_preamp_gain_record(dev.p, g_body)
+    stats = proto.parse_channel_status_record(dev.p, s_body)
+    bad = []
+    for c in range(len(gains)):
+        ref = proto.parse_state(dev.p, st, c)
+        if gains[c] != ref['gain']:
+            bad.append(f'ch{c} gain {gains[c]}!={ref["gain"]}')
+        if (stats[c]['mode'] != ref['input_mode']
+                or int(stats[c]['phantom']) != ref['phantom']
+                or int(stats[c]['phase_invert']) != ref['phase_invert']):
+            bad.append(f'ch{c} status {stats[c]["raw"]:#04x}')
+    check(f'cat 0x05/0x06 agree with 0x73 for {len(gains)} channels',
+          not bad, '; '.join(bad[:4]))
+
+
 def t_state_report(dev):
     """The pushed 0x73 report should still parse and agree with the readback
     where they overlap."""
@@ -459,6 +484,8 @@ def main():
     t_mixer(dev)
     print('\nAuraVerb (readback cat 0x0a)')
     t_auraverb(dev)
+    print('\nchannel state (readback cat 0x05 / 0x06)')
+    t_channel_state(dev)
     print('\npushed state report (0x73)')
     t_state_report(dev)
 

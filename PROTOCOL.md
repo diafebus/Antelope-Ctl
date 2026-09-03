@@ -308,8 +308,8 @@ sweep to the declared count unless `--unsafe`.
 | `0x02` | per-channel present flag (scalar `01`), idx 0..63 | — |
 | **`0x03`** | **routing matrix** -- 1 record per destination group, idx = dest_id 0-14. Record = `<dest_id>` then a `(source_bank, source_index)` pair per output channel (`destination_channels[dest]` pairs) -- the **same array as the `0x53` write frame**. | **decoded, verified byte-identical against CLI-written routes** |
 | **`0x04`** | **virtual mixer** -- 1 record per mix, idx = mix 0-3. Record = 33 × 3-byte slots `<fader> <pan\|mute\|solo> <send>`, the **same field order as the `0x17`/`0xd4` write frame**; slot N = the strip written as `channel` N. See below. | **decoded, hardware round-trip verified** |
-| `0x05` | preamp channel summary (~12 B) | partial |
-| `0x06` | channel status bits (mirrors `0x73` @61+) | — |
+| `0x05` | **preamp gain** -- 1 byte/channel = gain in dB (line/direct = 0). Independent copy of `0x73` @49. | **decoded + differential-write confirmed 2026-09-03** |
+| `0x06` | **channel status** -- 1 byte/channel, same packing as `0x73` @61: `(phase<<6)\|(phantom<<4)\|(mode&3)`. | **decoded + differential-write confirmed 2026-09-03** (phantom bit inferred from the shared encoding) |
 | `0x07` | EQ curve, freq points ~30/200/1k/5k/15k Hz, 8 records | undecoded |
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
 | `0x0c` / `0x15` | ~90-entry per-channel link/config tables | undecoded |

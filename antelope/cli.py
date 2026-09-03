@@ -1487,6 +1487,15 @@ def cmd_readback(args, profile):
                 print(f'  Mix {m + 1}: {en}   {vals}')
         except ValueError as e:
             print(f'  (not decodable as an auraverb record: {e})')
+    if cat == proto.PREAMP_GAIN_READBACK_CATEGORY:
+        gains = proto.parse_preamp_gain_record(profile, body)
+        print('  preamp gain (dB), per channel:  ' +
+              '  '.join(f'{c}:{g}' for c, g in enumerate(gains)))
+    if cat == proto.CHANNEL_STATUS_READBACK_CATEGORY:
+        for c, s in enumerate(proto.parse_channel_status_record(profile, body)):
+            extra = ''.join(t for t, on in ((' +48V', s['phantom']),
+                                            (' invert', s['phase_invert'])) if on)
+            print(f"    ch {c:<2} {s['mode_name']}{extra}")
 
 
 def _resolve_route_dest_cli(profile, name):

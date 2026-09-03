@@ -816,6 +816,54 @@ def parse_auraverb_record(profile: dict, body: bytes):
     return out
 
 
+PREAMP_GAIN_READBACK_CATEGORY = 0x05
+CHANNEL_STATUS_READBACK_CATEGORY = 0x06
+
+
+def parse_preamp_gain_record(profile: dict, body: bytes):
+    """Decode a category-0x05 record: one plain byte per physical input
+    channel = that preamp's gain in dB (line/direct modes read 0). This is an
+    independent copy of the 0x73 state report's gain array (@49); confirmed
+    2026-09-03 by a differential write (`set-gain 7 33` moved byte [7] to
+    0x21, nothing else) and used as a cross-check against the pushed report.
+    Returns a list of ints, length = the device's physical channel count."""
+    n = space_channel_count(profile, 'input') or len(body)
+    return [body[i] for i in range(min(n, len(body)))]
+
+
+def parse_channel_status_record(profile: dict, body: bytes):
+    """Decode a category-0x06 record: one status byte per physical input
+    channel, SAME packing as the 0x73 state report's status array (@61) --
+    `status = (phase_invert << 6) | (phantom << 4) | (mode & 0x03)`
+    (frame.state_report.status_bits). Independent copy of that array;
+    confirmed 2026-09-03 by differential writes (`set-invert 7 on` -> byte
+    [7] = 0x40; `set-mode 7 line` -> 0x41). The phantom bit (0x10) follows
+    the same shared encoding but was not re-exercised here (no +48V on the
+    reference unit during the sweep).
+
+    Returns a list of dicts {mode, mode_name, phantom, phase_invert, raw}."""
+    sb = profile['frame'].get('state_report', {}).get('status_bits', {})
+    mode_mask = _as_int(sb.get('input_mode', {}).get('mask', 0x03))
+    ph_mask = _as_int(sb.get('phantom', {}).get('mask', 0x10))
+    ph_shift = int(sb.get('phantom', {}).get('shift', 4))
+    inv_mask = _as_int(sb.get('phase_invert', {}).get('mask', 0x40))
+    inv_shift = int(sb.get('phase_invert', {}).get('shift', 6))
+    modes = profile.get('params', {}).get('input_mode', {}).get('values', {})
+    n = space_channel_count(profile, 'input') or len(body)
+    out = []
+    for i in range(min(n, len(body))):
+        v = body[i]
+        m = v & mode_mask
+        out.append({
+            'mode': m,
+            'mode_name': modes.get(str(m), str(m)),
+            'phantom': bool((v & ph_mask) >> ph_shift),
+            'phase_invert': bool((v & inv_mask) >> inv_shift),
+            'raw': v,
+        })
+    return out
+
+
 IDENTITY_READBACK_CATEGORY = 0x01
 FIRMWARE_READBACK_CATEGORY = 0x00
 
