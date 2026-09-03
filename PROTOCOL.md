@@ -40,21 +40,24 @@ real discriminator (§14).
 
 ## 2. Outgoing command frames (magic `0x70`)
 
-Seven opcodes are known. The opcode is at **offset 4**. The param_id is at
-**offset 16** for all of them. What comes after offset 16 depends on the
-opcode -- this is the single most important thing to get right:
+Nine command opcodes are used by the CLI. The opcode is at **offset 4**.
+The param_id is at **offset 16** for all of them. What comes after offset
+16 depends on the opcode -- this is the single most important thing to get
+right. (`0x23` -- AFX slot assign -- is a 10th, **observed only, never
+emitted**; see §12a.)
 
 | Opcode @4 | Name | param_id @16 | Payload | Used by |
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), **clock_source (`0x04`)**, oscillator panel (`0x0a`, packed byte), **pan_law (`0x24`)**, DC-coupling (`0x26`) |
-| `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
+| `0x14` | SET_LINK | `0xa2` (links) / `0x98` (AFX slot bypass, §12a) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim -- §11 | surround tab global (level/dim/mute/delay/bypass/EQ/format) |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | surround tab per-speaker strip (×16) |
+| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
 
 Notes:
 - **`0x17` is overloaded** -- the param_id at @16 is the real discriminator:
@@ -314,7 +317,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x06` | **channel status** -- 1 byte/channel, same packing as `0x73` @61: `(phase<<6)\|(phantom<<4)\|(mode&3)`. | **decoded + differential-write confirmed 2026-09-03** (phantom bit inferred from the shared encoding) |
 | `0x07` | EQ curve, freq points ~30/200/1k/5k/15k Hz, 8 records | undecoded |
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
-| `0x0c` / `0x15` | ~90-entry per-channel link/config tables | undecoded |
+| `0x0c` / `0x15` | ~90-entry `<id><flags>` tables. **The Launcher re-reads both on every AFX slot change (§12a)** -- likely the AFX slot-occupancy / plugin map. In `0x0c`, bytes `[7]`/`[19]` go `0x30`→`0x32` when one plugin is placed and one entry in a trailing `0x60` run goes `0x60`→`0x00`. | undecoded (partial, §12a) |
 | `0x11` | S/PDIF + a 128-B capability bitmask | undecoded |
 | `0x16` | **UNKNOWN** -- NOT output trim, NOT pan law (both ruled out live 2026-09-03). Seen all-zero and `00 00 00 32 ×2 …` | undecoded |
 | `0x1a` | EQ curve, 8 bands, freq ~30-14000 Hz (116 B) | undecoded |
@@ -1398,6 +1401,50 @@ verified read-modify-write (cache kept only as an offline fallback);
 for **all four mixes**, so each mix has its own AuraVerb instance (only
 Mix 1 has been written).
 
+### 12a. AFX plugin-chain SLOT control (`0x23` / `0xd7`) -- observation only
+
+**Bucket boundary (SCOPE.md).** This subsection documents the *slot* frame
+for **observation** and future readback decoding. It does **not** cover
+plugin parameters (opcode `0x1c` / param `0xd5` -- bucket D, frozen) or
+activation traffic (bucket F). `0x23` stays in
+`constraints.forbidden_opcodes`; no builder emits it. Source: two macOS
+Launcher captures (a "Tuner" utility on ch1/ch4, "MemoryCat Brigade" delay
+on ch1) held in the separate `antelope-ctl-afx` repo, 2026-09-04.
+Frame-identification only -- the `0x1c`/`0xd5` parameter stream was
+frame-counted, never read.
+
+**Slot assign** -- `70 … 23 … d7 11 <ch> <handle> 00` (opcode `0x23`):
+
+| byte | field | encoding |
+|---|---|---|
+| 16 | `0xd7` param | |
+| 17 | `0x11` const | sub-command = slot assign |
+| 18 | insert channel | 0-based (`0x00` = ch1, `0x03` = ch4 seen) |
+| 19 | plugin-instance **handle** | `0x48` = Tuner, `0x49` = MemoryCat Brigade; `0x00` = clear this channel's insert |
+| 20 | `0x00` | |
+
+The handle also keys the bypass frame and the parameter frame. Plausibly
+`0x40 | slot_index` (→ AFX slots 8, 9) or a sequential instance id -- only
+two data points. The handles pre-existed at capture start (plugins were
+loaded in a prior Launcher session); this frame only moves an existing
+instance onto/off a channel -- it was **not** seen to instantiate one.
+Placing/clearing is bucket **E** regardless, hence `0x23` stays forbidden.
+
+**Slot bypass** -- `70 … 14 … 98 00 <handle> <0|1>` (reuses the `SET_LINK`
+opcode `0x14`, param `0x98`, sub-cmd `0x00`): `[18]` = handle, `[19]` =
+bypass toggle. Polarity not certain -- in the MemoryCat capture `[19]=1`
+was held all through parameter editing, so likely **1 = active / 0 =
+bypassed**. This is bucket **B** (a mixer-level insert mute, cf. AuraVerb
+`enabled@28`) and `0x14` is not forbidden, but a builder needs a handle
+from the readback, so none ships yet.
+
+**Readback.** On every slot change the Launcher re-reads §4a categories
+**`0x0c` and `0x15`** (index 0) -- the "90-entry `<id><flags>`" tables --
+so those are very likely the AFX slot-occupancy / plugin map (bucket C).
+Partial: in the `0x0c` response, bytes `[7]` and `[19]` step `0x30`→`0x32`
+when one plugin is placed, and one entry in a trailing run of `0x60` (=96)
+goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
+
 ---
 
 ## 13. Open questions
@@ -1416,6 +1463,7 @@ Mix 1 has been written).
 | Sample rate | **resolved (native macOS)** -- opcode `0x12` / param `0x03` / index 0-6 @17, readback @18 (`macos-smplrt-...`). CLI `sample-rate` / `set-sample-rate`. Open: the clock/PLL/buffer bytes @21-23,27 that move only at 88.2k/176.4k. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | decoded 2026-09-03 (§11). Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker = level (+invert) + delay + **16 EQ bands** (`<freq><Q><gain><mode>`, 7B each; Q ×100 0.1-18; mode `0x02` bell / `0x00` shelf / `0x04` band-pass on end bands 1 & 16; centre = bell only). No readback. Minor-open: speaker-index↔channel map for formats past 2.0; centre end-band mode value |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
+| AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Open: handle encoding (slot-index vs instance id, 2 data points); the `0x0c`/`0x15` readback that maps slot occupancy; bypass polarity. Full work deferred to `antelope-ctl-afx`. |
 | Thunderbolt / latency | zero outgoing frames -- host driver setting; TB inactive over USB |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |

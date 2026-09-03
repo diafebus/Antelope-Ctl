@@ -211,6 +211,35 @@
       "pattern_range_note": "[0,100] is the model-0 (EdgeDuo raw) continuous morph range. For a selected emulation model [22] is a small index whose max is model-dependent: 0 (fixed), 2 (3-way), or 8 (9-detent multipattern). See notes and mic_models.json.",
       "notes": "MIC MODELING / 'emuMic' -- the front-panel EMU button on preamps 5-12 (8 channels), shown per channel only in Mic mode. Runs Antelope's mic-emulation DSP (for their Edge Solo / Edge Duo / Edge Note modelling mics + model packs). Opcode 0x17 is SHARED: param_id at [16] disambiguates -- 0xd4 = virtual mixer (frame.mix_command), 0xe5 = mic modeling. Frame `e5 05 <ch> <en> <model> <swap> <pattern>`, bytes 16-22, rest 0. [17]=0x05 const; [18]=channel = 0-based input channel index - 4 (preamp 7 -> 2 ... preamp 12 -> 7); [19]=modeling ENABLED (1/0); [20]=MODEL ID (0 = EdgeDuo / raw mic, no emulation -- the default; 1..N = the emulation models, see profiles/mic_models.json); [21]=CHANNEL-ORDER SWAP (0/1); [22]=POLAR PATTERN, always a 0-based INDEX (NOT a class code -- corrected 2026-09-01 from macos-emumic-polar-patterns). With model 0 (EdgeDuo raw) it is the free 0-100 continuous morph (0 omni / 50 cardioid / 100 figure-8), user-confirmed. With an emulation model selected it is a small integer index into that model's pattern list, and its range is per-model: fixed mics lock it at 0 (models 2,5,6,8,13,14,15,17 -- one pattern); models 3,4,7 sweep 0..2 (omni/cardioid/fig-8); models 9,10,11 sweep 0..8 (9-detent multipattern); models 1,12,16,18 only 0..1 were swept (a 3rd value may exist -- not confirmed). Selecting a model writes [22] = that model's DEFAULT pattern index (0 for fixed, 1 = cardioid for the 3-way mics, 4 = cardioid for the 9-way mics) -- this is the value earlier misrecorded as 'pattern_class' in mic_models.json. Enable/pattern(model 0)/swap decoded 2026-08-31 from macos-ch7-8-micmodeling-* / macos-ch9-10_11-12-micmodeling-*; model IDs from 'emumic-model-select-...' (Windows KVM, 18 models cycled on preamps 7-8); per-model pattern-index ranges from macos-emumic-polar-patterns (2026-09-01, all 19 models swept on preamps 7-8). Whole state every frame; params MIRROR across the linked preamp pair (Launcher sends [18]=N then [18]=N+1). Disabling sets [19]=[21]=[22]=0. SIDE EFFECTS of enabling: the Launcher also turns on 48V phantom for the pair (SET_PARAM param 0x51) and links the preamp pair (SET_LINK space 0). No readback CATEGORY identified yet in the 0x74/0x75 protocol (the DSP-EQ categories 0x07/0x1a are unmapped -- one of them may cover this); in the passive 0x73 stream only the phantom bit (0x10) moves. build_micmodeling_command(profile, channel, enabled, pattern, swap, model); not in cli.py."
     },
+    "afx_slot": {
+      "status": "OBSERVED / field-mapped 2026-09-04. Bucket C (read 'which channel holds which plugin instance') is documented here; bucket B (per-slot bypass) is documented but ships NO builder; the write that places/clears a plugin (opcode 0x23) stays in constraints.forbidden_opcodes = bucket E, OFF-LIMITS. Source: two macOS Launcher captures (Tuner utility toggled on ch1/ch4; MemoryCat Brigade delay on ch1) held in ../antelope-ctl-afx per the SCOPE.md firewall. FRAME IDENTIFICATION ONLY -- the plugin PARAMETER stream (opcode 0x1c / param 0xd5) was frame-counted, never decoded.",
+      "assign": {
+        "magic": "0x70",
+        "opcode": "0x23",
+        "opcode_note": "0x23 is in constraints.forbidden_opcodes; build_* refuses it. Placing or clearing a plugin on a channel insert = bucket E (instantiate/load/remove), OFF-LIMITS per SCOPE.md. Documented here for observation + future readback decoding, not to emit.",
+        "param_id_offset": 16, "param_id": "0xd7",
+        "subcmd_offset": 17, "subcmd": "0x11",
+        "channel_offset": 18,
+        "channel_note": "0-based insert-channel index. Observed 0x00 (ch1) and 0x03 (ch4).",
+        "handle_offset": 19,
+        "handle_note": "plugin-instance HANDLE. Observed 0x48 (Tuner), 0x49 (MemoryCat Brigade); 0x00 = clear this channel's insert. The same handle keys the bypass frame ([18]) and the parameter frame (0x1c/0xd5 [18]). Plausibly 0x40 | slot_index (-> AFX slots 8, 9) or a sequential instance id -- only 2 data points. The handles pre-existed at capture start (plugins loaded in a prior Launcher session); this frame moves an existing instance onto/off a channel, it was never seen to create one.",
+        "tail_offset": 20, "tail": "0x00"
+      },
+      "bypass": {
+        "magic": "0x70",
+        "opcode": "0x14",
+        "opcode_name": "SET_LINK opcode, reused",
+        "param_id_offset": 16, "param_id": "0x98",
+        "subcmd_offset": 17, "subcmd": "0x00",
+        "handle_offset": 18,
+        "handle_note": "plugin-instance handle, = assign.handle.",
+        "value_offset": 19,
+        "value_note": "0/1 toggle driven by the plugin's bypass control. Polarity not certain -- in the MemoryCat capture value=1 was held throughout parameter editing, suggesting 1 = ACTIVE / 0 = BYPASSED. Bucket B (a mixer-level insert mute, cf. AuraVerb enabled@28): exposing it is permitted, but a builder needs a handle from the readback (not decoded), so none ships.",
+        "bucket": "B"
+      },
+      "readback": "On each slot change the Launcher re-reads readback categories 0x0c AND 0x15 (index 0) -- the '90-entry <id><flags>' tables -- so those are very likely the AFX slot-occupancy / plugin map (bucket C). Partial only: in the 0x0c response, bytes [7] and [19] step 0x30->0x32 when one plugin is placed, and one entry in a trailing run of 0x60 (=96) goes 0x60->0x00. Full decode deferred to ../antelope-ctl-afx (Phase 1).",
+      "notes": "AFX plugin-chain SLOT control -- NOT plugin parameters. SCOPE.md buckets: read 'channel N holds plugin X / bypassed' = C (here); per-slot bypass = B (here, builder gated on the readback); place/remove a plugin = E (0x23 forbidden); plugin parameters (0x1c/0xd5) and activation traffic = F, never in this repo. AuraVerb (0x1d, frame.auraverb_command) is the only plugin fully in scope here, and only because it is device-bundled with no activation."
+    },
     "state_report": {
       "magic_offset": 0,
       "magic": "0x73",
@@ -1133,7 +1162,7 @@
       "0x1c",
       "0x23"
     ],
-    "forbidden_opcodes_note": "0x01 / 0x02 = crash / unknown-dangerous (BusFault family). 0x1a / 0x1c / 0x23 added 2026-09-03 as a PRECAUTION before any AFX / Synergy Core plugin-chain work: on the sibling Zen Go these opcodes (params 0xd5 / 0xd7) carry undecoded DSP/FX traffic, which is the plugin-parameter layer -- OFF-LIMITS in this repo per SCOPE.md (buckets D/E/F). If an AFX investigation ever classifies one of these as a safe bucket-A/B/C control it can be moved to allowed_opcodes then, in the separate AFX repo's own profile, not here. build_* refuses a forbidden opcode.",
+    "forbidden_opcodes_note": "0x01 / 0x02 = crash / unknown-dangerous (BusFault family). 0x1a / 0x1c / 0x23 added 2026-09-03 as a PRECAUTION before any AFX / Synergy Core plugin-chain work. Since 2026-09-04, from two macOS Launcher captures: 0x23 / param 0xd7 = the AFX SLOT-ASSIGN frame (put plugin instance <handle> on channel <ch>, or 0x00 to clear) -- see frame.afx_slot. Placing/clearing a plugin is bucket E (instantiate/load/remove), so 0x23 STAYS forbidden and build_* must never emit it; frame.afx_slot documents it for observation + readback decoding only. 0x1c / param 0xd5 = the plugin PARAMETER stream -- bucket D, frame-counted but never decoded, stays forbidden. 0x1a not yet seen on this hardware. The per-slot BYPASS toggle is a different frame (opcode 0x14 / param 0x98, bucket B, frame.afx_slot.bypass) and is NOT forbidden -- but ships no builder yet (needs a handle from the 0x0c/0x15 readback, undecoded). build_* refuses a forbidden opcode.",
     "channel_bounds": {
       "min": 0,
       "max": 11

@@ -34,7 +34,11 @@ and the **surround monitoring tab** (per-speaker 16-band EQ + global +
 EQ). In-band **readback** (`0x74`/`0x75`) covers routing, mixer, AuraVerb,
 device identity, preamp/channel state. Not decoded: the built-in channel
 **EQ** (`0x07`/`0x1a` readable, no write frame), and surround formats past
-2.1 (need the MRC licence). See `PROTOCOL.md` §13 for the live open list.
+2.1 (need the MRC licence). The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
+which channel holds which plugin instance) is field-mapped for *observation*
+in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
+(`SCOPE.md`); plugin *parameters* stay off-repo. See `PROTOCOL.md` §13 for
+the live open list.
 
 ## Legal status & disclaimer
 
