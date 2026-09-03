@@ -435,13 +435,14 @@ offset for target *N*.
 |---|---|---|---|
 | 0 | magic `0x73` | | confirmed |
 | 4-7 | header `0x40 0x01 0x00 0x00` | (meaning unknown, constant) | - |
-| 17, 19 | *Launcher-handshake blip* | one byte each, `0x08->0x00` / `0x06->0x00`, ~3.0 s after the Launcher starts (incl. the no-user INIT capture) | startup noise, ignore |
-| 18 | **sample rate** | index 0-6 (0=32k, 1=44.1k, 2=48k, 3=88.2k, 4=96k, 5=176.4k, 6=192k) | confirmed (`macos-smplrt-...`) |
-| 21-23, 27 | clock / PLL / buffer state | only move at the 88.2k & 176.4k steps; 27 halves 16→8→4 | undecoded (§13) |
+| 17 | *clock re-lock flag?* | one byte `0x08->0x00` ~3.0 s after the Launcher starts (incl. no-user INIT); stayed `0x00` through a full OVEN rate sweep; a stuck-at-192k device once showed `0x08` | probably `bit3` = unlocked/re-locking, else ignore |
+| 19 | **clock source** | index 0-6 (0=Oven, 1=WC, 2=ADAT, 3=ADATx2, 4=ADATx4, 5=S/PDIF, 6=USB) | confirmed (`clock-source-...`) |
+| 18 | **sample rate (index)** | 0-6 (0=32k, 1=44.1k, 2=48k, 3=88.2k, 4=96k, 5=176.4k, 6=192k) | confirmed (`macos-smplrt-...`) |
+| 21-23 | **sample rate (Hz)** | 24-bit **big-endian**: `[21]<<16 \| [22]<<8 \| [23]` = Hz. 48000=`00 bb 80`, 88200=`01 58 88`, 192000=`02 ee 00` | **confirmed** 2026-09-04 (live OVEN rate sweep) |
+| 27 | **rate family** | one-hot `0x10 >> [21]`: `0x10` base (≤48k), `0x08` 2× (88.2/96k), `0x04` 4× (176.4/192k) | confirmed 2026-09-04 |
 | 24 | output_trim target 0 | `value << 4` (bits 4-6) | confirmed |
 | 25 | output_trim targets 1 & 2 | t1 = `value << 2` (bits 2-4); t2 = `value << 5` (bits 5-7) | confirmed |
 | 26 | **screen brightness** | plain byte, 0-100 (= commanded value) | confirmed (`macos-scrbrght-0-100-50-multvalue`) |
-| 27 | (unmapped) | -- | -- |
 | 28-45 | **bus_block** -- 6 buses x 3 bytes | bus *N*: level @ `28+3N`, status @ `29+3N`, reserved @ `30+3N` | confirmed |
 | 37 / 38 | bus 3 (line_out) level / status | (= the `28+3N` formula, N=3) | confirmed |
 | 40 / 41 | bus 4 (reamp) level / status | (N=4) | confirmed |
@@ -1467,7 +1468,7 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
-| Sample rate | **resolved (native macOS)** -- opcode `0x12` / param `0x03` / index 0-6 @17, readback @18 (`macos-smplrt-...`). CLI `sample-rate` / `set-sample-rate`. Open: the clock/PLL/buffer bytes @21-23,27 that move only at 88.2k/176.4k. |
+| Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | decoded 2026-09-03 (§11). Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker = level (+invert) + delay + **16 EQ bands** (`<freq><Q><gain><mode>`, 7B each; Q ×100 0.1-18; mode `0x02` bell / `0x00` shelf / `0x04` band-pass on end bands 1 & 16; centre = bell only). No readback. Minor-open: speaker-index↔channel map for formats past 2.0; centre end-band mode value |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Open: handle encoding (slot-index vs instance id, 2 data points); the `0x0c`/`0x15` readback that maps slot occupancy; bypass polarity. Full work deferred to `antelope-ctl-afx`. |

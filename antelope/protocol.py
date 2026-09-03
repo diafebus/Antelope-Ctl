@@ -1016,6 +1016,28 @@ def meter_report_magic(profile: dict) -> int:
     return _as_int(profile['frame']['meter_report']['magic'])
 
 
+def state_clock_rate_hz(profile: dict, data: bytes):
+    """The device's actual running sample rate in Hz, read from the 0x73 state
+    report at state_report.clock_rate_hz_offset (a `width`-byte big-endian
+    integer -- 3 bytes on the Orion Studio SC: [21..23]). Returns None if this
+    profile has no clock_rate_hz_offset or the frame is too short.
+
+    Complements state_report.sample_rate_byte_offset, which is only the 0-6
+    enum index. Decoded 2026-09-04 by a live OVEN-clock rate sweep."""
+    sr = profile['frame'].get('state_report', {})
+    spec = sr.get('clock_rate_hz_offset')
+    if spec is None:
+        return None
+    off = _as_int(spec['offset'])
+    width = int(spec.get('width', 3))
+    if off + width > len(data):
+        return None
+    v = 0
+    for b in data[off:off + width]:          # big-endian
+        v = (v << 8) | b
+    return v
+
+
 def parse_meter_level(profile: dict, data: bytes, channel: int) -> int:
     """Read a channel's raw meter byte, if this profile has a (possibly unconfirmed)
     channel_meter_base_offset. Returns the raw byte value -- caller decides how to

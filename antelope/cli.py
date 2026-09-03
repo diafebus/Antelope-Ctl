@@ -1671,6 +1671,10 @@ def cmd_sample_rate(args, profile):
         sys.exit(str(e))
     hz = table.get(idx)
     print(f'sample rate: {hz} Hz' if hz else f'sample rate: index {idx} (not in the profile table)')
+    live_hz = proto.state_clock_rate_hz(profile, data)
+    if live_hz is not None:
+        note = '' if (hz is None or live_hz == hz) else '  (!= the index -- external clock / re-locking?)'
+        print(f'clock rate:  {live_hz} Hz  (measured, 0x73){note}')
 
 
 def cmd_set_sample_rate(args, profile):

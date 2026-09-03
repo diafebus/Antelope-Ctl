@@ -308,6 +308,23 @@ def t_state_report(dev):
             pass
     record(PASS, 'state report parses', ', '.join(ok))
 
+    # clock rate in Hz (0x73 @21-23) should agree with the 0-6 index (0x73 @18)
+    try:
+        idx = proto.parse_state_scalar(dev.p, data, 'sample_rate_byte_offset')
+        table = {int(k): v for k, v in dev.p['params']['sample_rate']['values'].items()}
+        want = table.get(idx)
+        got = proto.state_clock_rate_hz(dev.p, data)
+        if got is None:
+            record(SKIP, 'clock rate Hz (0x73 @21-23)', 'no clock_rate_hz_offset in profile')
+        elif want is None:
+            record(SKIP, 'clock rate Hz (0x73 @21-23)', f'index {idx} not in table')
+        else:
+            record(PASS if got == want else FAIL, 'clock rate Hz (0x73 @21-23)',
+                   f'{got} Hz vs index {idx} = {want} Hz'
+                   + ('' if got == want else '  (mismatch -- external clock or mid-relock?)'))
+    except Exception as e:
+        record(SKIP, 'clock rate Hz (0x73 @21-23)', str(e))
+
 
 # --------------------------------------------------------------------------
 # write tests -- each restores in a finally
