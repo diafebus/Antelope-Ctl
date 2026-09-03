@@ -27,9 +27,9 @@ SAFETY
 
 WHAT IT CANNOT CHECK
   Reported as SKIP, not PASS, so the summary never overstates coverage:
-  AuraVerb (readback cat 0x0a undecoded), mic modeling (no readback found),
-  channel link (host-side by design -- the device does not propagate it),
-  sample rate (writing it drops audio, so it is not round-tripped here).
+  mic modeling (no readback found), channel link (host-side by design --
+  the device does not propagate it), sample rate (writing it drops audio,
+  so it is not round-tripped here).
 """
 import argparse
 import os
@@ -238,6 +238,36 @@ def t_mixer(dev):
               not bad2, 'slots ' + ','.join(bad2[:6]))
 
 
+def t_auraverb(dev):
+    """AuraVerb readback (cat 0x0a) parses, values in range, builder matches."""
+    cat = proto.AURAVERB_READBACK_CATEGORY
+    if 'auraverb_command' not in dev.p.get('frame', {}):
+        return record(SKIP, 'auraverb readback', 'no frame.auraverb_command in profile')
+    body = dev.read(cat, 0)
+    if body is None:
+        return record(SKIP, 'auraverb readback', 'no response to cat 0x0a on this device')
+    mixes = proto.parse_auraverb_record(dev.p, body)
+    bad = []
+    for m, mx in enumerate(mixes):
+        for k, v in mx['params'].items():
+            if not 0 <= v <= 100:
+                bad.append(f'mix {m + 1} {k}={v}')
+        if mx['wet'] not in (None, 100):
+            bad.append(f'mix {m + 1} wet={mx["wet"]}')
+    check(f'auraverb readback: {len(mixes)} mixes, params in range', not bad,
+          '; '.join(bad[:3]))
+    # builder round-trip: build Mix 1's frame from the readback, compare bytes
+    m1 = mixes[0]
+    pkt = proto.build_auraverb_command(dev.p, m1['params'], bool(m1['enabled']), mix=0)
+    f = dev.p['frame']['auraverb_command']
+    a = proto._as_int(f['param_offsets']['room_size'])
+    e = proto._as_int(f['enabled_offset'])
+    ref = m1['raw'][:9] + bytes([1 if m1['enabled'] else 0])
+    got = bytes(pkt[a:a + 9]) + bytes([pkt[e]])
+    check('auraverb builder round-trip (build == what device reports)',
+          got == ref, f'{got.hex()} != {ref.hex()}')
+
+
 def t_state_report(dev):
     """The pushed 0x73 report should still parse and agree with the readback
     where they overlap."""
@@ -290,6 +320,37 @@ def t_write_mixer(dev, mix):
         restored = back is not None and proto.parse_mixer_record(dev.p, back)[ch]['raw'] == orig['raw']
         record(PASS if restored else FAIL, 'WRITE mixer: restored original',
                '' if restored else 'RESTORE FAILED -- check the mixer by hand!')
+
+
+def t_write_auraverb(dev):
+    """Nudge Mix 1's reverb-level, verify via readback cat 0x0a, restore.
+    Keeps the enabled bit and every other param as read, so a disabled
+    AuraVerb stays disabled and inaudible throughout."""
+    cat = proto.AURAVERB_READBACK_CATEGORY
+    if 'auraverb_command' not in dev.p.get('frame', {}):
+        return record(SKIP, 'WRITE auraverb', 'no frame.auraverb_command in profile')
+    body = dev.read(cat, 0)
+    if body is None:
+        return record(SKIP, 'WRITE auraverb', 'no cat 0x0a readback on this device')
+    mx = proto.parse_auraverb_record(dev.p, body)[0]
+    en = bool(mx['enabled'])
+    orig = dict(mx['params'])
+    probe = dict(orig, reverb_level=(33 if orig['reverb_level'] != 33 else 44))
+    try:
+        dev.write(proto.build_auraverb_command(dev.p, probe, en, mix=0))
+        got = proto.parse_auraverb_record(dev.p, dev.read(cat, 0))[0]
+        check('WRITE auraverb: Mix 1 reverb-level changes',
+              got['params']['reverb_level'] == probe['reverb_level'],
+              f"read back {got['params']['reverb_level']}")
+        check('WRITE auraverb: other params + enabled preserved',
+              got['enabled'] == en and all(
+                  got['params'][k] == orig[k] for k in orig if k != 'reverb_level'))
+    finally:
+        dev.write(proto.build_auraverb_command(dev.p, orig, en, mix=0))
+        back = dev.read(cat, 0)
+        ok = back is not None and proto.parse_auraverb_record(dev.p, back)[0]['raw'] == mx['raw']
+        record(PASS if ok else FAIL, 'WRITE auraverb: restored original',
+               '' if ok else 'RESTORE FAILED -- check `auraverb` by hand!')
 
 
 def t_write_routing(dev, destname):
@@ -353,7 +414,6 @@ def t_write_brightness(dev):
 
 def t_unverifiable():
     for name, why in (
-            ('AuraVerb', 'readback cat 0x0a not decoded yet -- CLI state is cached'),
             ('mic modeling / emuMic', 'no readback found; only the phantom bit moves'),
             ('channel link', 'host-side by design -- the device does not propagate it'),
             ('sample rate', 'writing it drops audio, so it is not round-tripped here')):
@@ -397,6 +457,8 @@ def main():
     t_routing_builder(dev)
     print('\nvirtual mixer (readback cat 0x04)')
     t_mixer(dev)
+    print('\nAuraVerb (readback cat 0x0a)')
+    t_auraverb(dev)
     print('\npushed state report (0x73)')
     t_state_report(dev)
 
@@ -404,6 +466,7 @@ def main():
         print('\nwrite round trips (each restores)')
         t_write_brightness(dev)
         t_write_mixer(dev, args.write_mix)
+        t_write_auraverb(dev)
         t_write_routing(dev, args.write_dest)
     else:
         print('\nwrite round trips')

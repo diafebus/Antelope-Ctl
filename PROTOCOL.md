@@ -311,7 +311,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x05` | preamp channel summary (~12 B) | partial |
 | `0x06` | channel status bits (mirrors `0x73` @61+) | — |
 | `0x07` | EQ curve, freq points ~30/200/1k/5k/15k Hz, 8 records | undecoded |
-| `0x0a` | AuraVerb params (mirrors `0x1d` payload) | partial |
+| **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
 | `0x0c` / `0x15` | ~90-entry per-channel link/config tables | undecoded |
 | `0x11` | S/PDIF + a 128-B capability bitmask | undecoded |
 | `0x16` | output trim / pan-law (two `0x32` + flags) | partial |
@@ -1113,7 +1113,8 @@ is the strip this frame writes as `channel` N. That round trip also
 confirmed `[18]` is genuinely the mix number (all four mixes return their
 own record -- previously only mix 0 had ever been observed) and that
 `[22]` is stored send state rather than a meter. So "write-only over USB"
-was wrong for the mixer too. AuraVerb is category `0x0a` (still partial);
+was wrong for the mixer too. AuraVerb is category `0x0a` (decoded +
+hardware round-trip verified 2026-09-03 -- see the §12 AuraVerb section);
 `0x1b` is the mixer bus level/range table (still undecoded).
 
 **Both directions are in the CLI.** `mix-status [mix]` is the live read
@@ -1213,7 +1214,7 @@ da 0b 00 RS CO PD 64 EG LD RI RT RL .. .. .. .. <enabled>
 | 19 | Room Size | 0-100 | 0x51 (81) |
 | 20 | Color | 0-100 (dark→bright) | 0x64 (100) |
 | 21 | Pre-Delay | 0-100 → 0-32 ms | 0x00 (0) |
-| 22 | *(constant `0x64`)* -- never swept; assumed wet/mix locked at 100% | -- | 0x64 |
+| 22 | *(constant `0x64`)* -- wet/mix locked at 100%; stayed 100 through the 2026-09-03 differential sweep and is mirrored as such in the `0x0a` readback (not a hidden 9th control) | -- | 0x64 |
 | 23 | Early Reflection Gain | 0-100 | 0x0b (11) |
 | 24 | Late Reflection Delay | 0-100 | 0x0d (13) |
 | 25 | Richness | 0-100 | 0x18 (24) |
@@ -1229,12 +1230,27 @@ predelay-earlyrefgaij-laterefdelay-richness-reverbtime-roomsize-\
 reverblevel` (2026-08-31, each of the 8 controls swept in isolation →
 one byte each). Control names/ranges cross-checked against the Orion
 Studio Synergy Core manual p.50 and antelopeaudio.com/products/auraverb
-(facts only). **No `0x73` readback** (checked the whole capture) → the
-CLI caches CLI-issued state. AuraVerb is device-*bundled* (no per-plugin
-activation) so it is **in scope**; still off-limits is the licensed AFX
-plugin chain and anything touching license state. `0x1d` is now in
-`constraints.allowed_opcodes`; `protocol.build_auraverb_command`; CLI
-`auraverb`. Not hardware round-trip tested yet.
+(facts only). AuraVerb is device-*bundled* (no per-plugin activation) so
+it is **in scope**; still off-limits is the licensed AFX plugin chain and
+anything touching license state. `0x1d` is in `constraints.allowed_opcodes`;
+`protocol.build_auraverb_command`; CLI `auraverb`.
+
+**Readback + hardware round-trip -- DONE 2026-09-03.** No `0x73` effect,
+but there is a dedicated readback: **`0x74` category `0x0a`** (§4a table).
+One record: a `0x00` header then four 11-byte blocks (Mix 1..4), each the
+`0x1d` payload minus `@18`, in the same order, then `[9]` = enabled
+(`01`/`00`) and `[10]` = `0xff` const. The 43-byte record truncates
+Mix 4's block to 9 bytes (no enable byte). Decoded by **differential
+readback** against the live Orion: set each param via `auraverb --<flag>`,
+re-read `0x0a`, watch which byte of the Mix-1 block moved -- all 8 params
++ the enable bit mapped 1:1, and rewriting the pre-sweep values
+reproduced the record byte-for-byte. A reverb-level round trip
+(26→33→26) verified against the readback and restored clean.
+`protocol.parse_auraverb_record`; CLI `auraverb` now live-reads and does a
+verified read-modify-write (cache kept only as an offline fallback);
+`selftest.py` `t_auraverb` / `t_write_auraverb`. The `0x0a` block exists
+for **all four mixes**, so each mix has its own AuraVerb instance (only
+Mix 1 has been written).
 
 ---
 

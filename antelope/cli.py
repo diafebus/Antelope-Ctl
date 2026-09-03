@@ -1478,6 +1478,15 @@ def cmd_readback(args, profile):
                       f"send {s['send']}/96{flags}")
         except ValueError as e:
             print(f'  (not decodable as a mixer record: {e})')
+    if cat == proto.AURAVERB_READBACK_CATEGORY:
+        try:
+            for m, mx in enumerate(proto.parse_auraverb_record(profile, body)):
+                en = {True: 'ON', False: 'off', None: '?'}[mx['enabled']]
+                vals = '  '.join(f'{f.replace("_", "-")}={mx["params"].get(k)}'
+                                 for f, k in _AURAVERB_FLAGS.items())
+                print(f'  Mix {m + 1}: {en}   {vals}')
+        except ValueError as e:
+            print(f'  (not decodable as an auraverb record: {e})')
 
 
 def _resolve_route_dest_cli(profile, name):
@@ -1687,11 +1696,11 @@ def cmd_set_sample_rate(args, profile):
 #
 # AuraVerb is the device-BUNDLED Synergy Core reverb on the Mix 1 window
 # (no per-plugin activation, so in scope). All 8 DSP controls + on/off are
-# decoded (frame.auraverb_command). Like routing and the mixer there is NO
-# device readback -- the frame carries the whole param block every time --
-# so this command caches the state THIS CLI has sent (kind 'auraverb') and
-# fills unspecified params from that cache, falling back to the profile's
-# power-on defaults. Cache can be stale if the Launcher changed AuraVerb.
+# decoded (frame.auraverb_command). There IS a device readback -- frame.readback
+# category 0x0a, decoded 2026-09-03 -- so this command now READS the live state
+# from the device (all 4 mixes) and does a read-modify-write for changes, like
+# `mix-set`. The local cache (kind 'auraverb') is kept only as an offline
+# fallback for when the device is unreachable.
 
 def _auraverb_state_path(profile):
     return _link_state_path(profile, 'auraverb')
@@ -1738,12 +1747,30 @@ _AURAVERB_FLAGS = {
 }
 
 
-def cmd_auraverb(args, profile):
-    """Show or set the AuraVerb reverb (Mix 1). No device readback -- state is
-    this CLI's local cache (see the section comment).
+def _read_auraverb_live(profile, transport, timeout=1.0):
+    """Live-read AuraVerb for all four mixes via frame.readback cat 0x0a.
+    Returns proto.parse_auraverb_record()'s list, or None if unreachable."""
+    cat = proto.AURAVERB_READBACK_CATEGORY
+    try:
+        req = proto.build_readback_query(profile, cat, 0)
+    except (KeyError, proto.ConstraintError):
+        return None
+    data = transport.query(
+        req, lambda d: proto.is_readback_response(profile, d, cat, 0), timeout=timeout)
+    if data is None:
+        return None
+    try:
+        return proto.parse_auraverb_record(profile, proto.readback_body(profile, data))
+    except ValueError:
+        return None
 
-      auraverb                         show CLI-cached AuraVerb state
-      auraverb --on                    enable (keeps cached/default params)
+
+def cmd_auraverb(args, profile):
+    """Show or set the AuraVerb reverb (Mix 1). Reads live device state via
+    frame.readback cat 0x0a; changes are a read-modify-write and verified.
+
+      auraverb                         show live AuraVerb state (all 4 mixes)
+      auraverb --on                    enable (keeps current params)
       auraverb --off                   disable
       auraverb --reverb-time 55 --color 40 --room-size 70
       auraverb --off --defaults        reset params to the power-on defaults
@@ -1752,30 +1779,43 @@ def cmd_auraverb(args, profile):
         defaults = proto.auraverb_defaults(profile)
     except KeyError as e:
         sys.exit(str(e))
-    cached_params, cached_enabled = _load_auraverb_state(profile)
 
     overrides = {k: getattr(args, flag) for flag, k in _AURAVERB_FLAGS.items()
                  if getattr(args, flag) is not None}
     want_set = bool(overrides) or args.on or args.off or args.defaults
 
+    transport = get_transport(profile)
+    live = _read_auraverb_live(profile, transport)
+    cached_params, cached_enabled = _load_auraverb_state(profile)
+
     if not want_set:
-        print('AuraVerb (Mix 1) -- CLI-cached state (NOT a device readback):')
-        if cached_params is None and cached_enabled is None:
-            print('  nothing cached yet. Run `auraverb --on` or `auraverb --off` once to '
-                  'seed, or pass params. Power-on defaults would be used for anything unset:')
+        if live:
+            print('AuraVerb -- live device readback (frame.readback cat 0x0a):')
+            for m, mx in enumerate(live):
+                en = {True: 'ON', False: 'off', None: '?'}[mx['enabled']]
+                if m == 0:
+                    print(f'  Mix 1: {en}')
+                    for flag, k in _AURAVERB_FLAGS.items():
+                        print(f'    {flag.replace("_", "-"):<24} {mx["params"].get(k)}')
+                else:
+                    vals = ' '.join(f'{mx["params"].get(k)}' for k in _AURAVERB_FLAGS.values())
+                    print(f'  Mix {m + 1}: {en:<3}  [{vals}]')
+            return
+        print('AuraVerb (Mix 1) -- device unreachable, showing CLI cache (may be stale):')
         base = cached_params or defaults
         en = {True: 'on', False: 'off', None: 'unknown'}[cached_enabled]
         print(f'  enabled: {en}')
         for flag, k in _AURAVERB_FLAGS.items():
-            src = '' if cached_params and k in cached_params else '  (default)'
-            print(f'  {flag.replace("_", "-"):<24} {base.get(k, defaults.get(k))}{src}')
-        print('note: local cache only -- can be stale if AuraVerb was changed in the Launcher.')
+            print(f'  {flag.replace("_", "-"):<24} {base.get(k, defaults.get(k))}')
         return
 
-    # build the full param block: cache (or defaults) + overrides
+    # base param block: live Mix 1 > CLI cache > power-on defaults
     params = dict(defaults)
-    if cached_params and not args.defaults:
-        params.update({k: v for k, v in cached_params.items() if k in params})
+    if not args.defaults:
+        if live:
+            params.update(live[0]['params'])
+        elif cached_params:
+            params.update({k: v for k, v in cached_params.items() if k in params})
     params.update(overrides)
 
     lo, hi = profile['frame']['auraverb_command'].get('param_range', [0, 100])
@@ -1789,25 +1829,37 @@ def cmd_auraverb(args, profile):
         enabled = True
     elif args.off:
         enabled = False
+    elif live and live[0]['enabled'] is not None:
+        enabled = live[0]['enabled']
     elif cached_enabled is not None:
         enabled = bool(cached_enabled)
     else:
-        sys.exit("AuraVerb on/off is not cached yet -- the frame always carries it, so pass "
-                 "--on or --off with your param change this first time.")
+        sys.exit("AuraVerb on/off is unknown (no device read, nothing cached) -- the frame "
+                 "always carries it, so pass --on or --off with your change this first time.")
 
-    transport = get_transport(profile)
     try:
         pkt = proto.build_auraverb_command(profile, params, enabled)
     except (ValueError, KeyError) as e:
         sys.exit(str(e))
-    print(f'AuraVerb -> {"ON" if enabled else "off"}')
+    print(f'AuraVerb (Mix 1) -> {"ON" if enabled else "off"}')
     for flag, k in _AURAVERB_FLAGS.items():
         tag = '  <-- changed' if k in overrides else ''
         print(f'  {flag.replace("_", "-"):<24} {params[k]}{tag}')
-    print('(EXPERIMENTAL -- a live read exists via readback cat 0x0a but is not wired in here yet)')
     send_and_wait(transport, pkt, delay=0.3)
     _save_auraverb_state(profile, params, enabled)
-    print(f'sent: {pkt[16:29].hex()}  (cached locally -- see `auraverb`)')
+
+    after = _read_auraverb_live(profile, transport)
+    if after:
+        got = after[0]
+        ok = got['enabled'] == enabled and all(
+            got['params'].get(k) == params[k] for k in _AURAVERB_FLAGS.values())
+        if ok:
+            print('verified: device readback matches')
+        else:
+            print('WARNING: device readback differs from what was sent:')
+            print(f'  enabled={got["enabled"]}  params={got["params"]}')
+    else:
+        print(f'sent: {pkt[16:29].hex()}  (no readback this time -- re-run `auraverb`)')
 
 
 _ANSI_COLOR = {'red': '\x1b[31m', 'orange': '\x1b[33m', 'yellow': '\x1b[93m', 'green': '\x1b[32m'}
@@ -2184,8 +2236,8 @@ def main():
     sp.set_defaults(func=cmd_set_sample_rate)
 
     sp = sub.add_parser('auraverb',
-                         help='EXPERIMENTAL: show/set the AuraVerb reverb (Mix 1); no device '
-                              'readback -- state is this CLI\'s cache, verify in the Launcher')
+                         help='show/set the AuraVerb reverb (Mix 1); live device read via '
+                              'frame.readback cat 0x0a, changes are read-modify-write + verified')
     sp.add_argument('--on', action='store_true', help='enable AuraVerb')
     sp.add_argument('--off', action='store_true', help='disable AuraVerb')
     sp.add_argument('--defaults', action='store_true',
@@ -2193,6 +2245,7 @@ def main():
     for _flag in _AURAVERB_FLAGS:
         sp.add_argument('--' + _flag.replace('_', '-'), dest=_flag, type=int, metavar='0-100',
                         help='0-100' + (' (maps to 0-32 ms)' if _flag == 'pre_delay' else ''))
+    sp.add_argument('--timeout', type=float, default=3.0)
     sp.add_argument('--force', action='store_true', help='allow a value outside 0-100')
     sp.set_defaults(func=cmd_auraverb)
 

@@ -764,6 +764,58 @@ def parse_mixer_record(profile: dict, body: bytes):
     return slots
 
 
+AURAVERB_READBACK_CATEGORY = 0x0a
+
+
+def parse_auraverb_record(profile: dict, body: bytes):
+    """Decode a category-0x0a record -- the AuraVerb reverb state for all four
+    mixes.
+
+    DECODED + HARDWARE-CONFIRMED 2026-09-03 by differential readback: set one
+    param via `auraverb --<flag>`, re-read this category, see which byte moved.
+    Every one of the 8 DSP params plus the enabled bit was pinned that way, and
+    writing the pre-sweep values back reproduced the record byte-for-byte.
+
+    Layout: a leading 0x00 header byte, then four 11-byte blocks (Mix 1..4).
+    The record is 43 bytes, so the fourth block is truncated to 9 -- its
+    enabled / pad bytes fall off the end and come back as None. Each block has
+    the SAME field order as the frame.auraverb_command write frame (minus that
+    frame's [18] mix byte), i.e. offsets 19..28 shifted so room_size == 0:
+
+        [0] room_size   [1] color              [2] pre_delay
+        [3] 0x64  -- wet/mix amount, constant (frame.auraverb_command [22])
+        [4] early_reflection_gain              [5] late_reflection_delay
+        [6] richness    [7] reverb_time        [8] reverb_level
+        [9] enabled  (0x01 on / 0x00 off)      [10] 0xff  -- constant
+
+    Returns a list of up to 4 dicts: {params: {the 8 keys -> 0-100},
+    enabled: bool|None, wet: int|None, raw: bytes}."""
+    f = profile['frame'].get('auraverb_command', {})
+    offs = f.get('param_offsets', {})
+    if not offs:
+        raise ValueError('profile has no frame.auraverb_command.param_offsets')
+    if not body:
+        raise ValueError('empty auraverb record')
+    zero = min(_as_int(v) for v in offs.values())
+    rel = {k: _as_int(v) - zero for k, v in offs.items()}
+    wet_rel = _as_int(f.get('mix_wet_offset', 22)) - zero
+    en_rel = _as_int(f.get('enabled_offset', 28)) - zero
+    payload = body[1:]  # drop the leading header byte
+    stride = 11
+    out = []
+    for m in range(4):
+        blk = payload[m * stride:m * stride + stride]
+        if len(blk) < 9:
+            break
+        out.append({
+            'params': {k: blk[r] for k, r in rel.items() if r < len(blk)},
+            'enabled': bool(blk[en_rel]) if en_rel < len(blk) else None,
+            'wet': blk[wet_rel] if wet_rel < len(blk) else None,
+            'raw': bytes(blk),
+        })
+    return out
+
+
 IDENTITY_READBACK_CATEGORY = 0x01
 FIRMWARE_READBACK_CATEGORY = 0x00
 
