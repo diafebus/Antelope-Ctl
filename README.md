@@ -394,7 +394,8 @@ mute, solo)` builds the frame directly. See `PROTOCOL.md` §12 and
 
 ### Mic modeling / emuMic (decoded, not in the CLI yet)
 
-The front-panel **EMU** button on **preamps 7-12** runs Antelope's
+The front-panel **EMU** button on **preamps 5-12** (8 channels; the
+button shows per channel only in Mic mode) runs Antelope's
 mic-emulation DSP (for their Edge Solo / Edge Duo / Edge Note modelling
 mics). Same opcode `0x17` as the mixer -- `[16]` is `0xe5` instead of
 `0xd4`. Decoded 2026-08-31: per preamp, an **enable** bit, a **model id**
@@ -405,7 +406,8 @@ pattern-class (fixed / 3-way / variable). Enabling also auto-turns on
 48 V phantom and links the preamp pair. Not in the passive stream (the
 `0x74`/`0x75` query protocol may expose it -- category not yet identified).
 The modeled signal appears as routing source bank `0x01` (`emumicN`,
-N = preamp 5-12).
+N = preamp 5-12). Range corrected 2026-09-03 (was 7-12): the EMU button
+is Mic-mode-gated, and the device routes + reads back emumic 5/6 like 7-12.
 
 `protocol.build_micmodeling_command(profile, channel, enabled, pattern,
 swap, model)` builds the frame. The model list is **account-bound** (Edge

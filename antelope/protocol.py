@@ -360,8 +360,9 @@ def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
                               model: int = 0) -> bytes:
     """Build a SET_MIC_MODELING frame (profile['frame']['micmodeling_command'],
     opcode 0x17 / param 0xe5) -- the 'emuMic' mic-modeling DSP on a preamp.
-    `channel` is the 0-based input channel index (mic modeling exists only on
-    preamps 7-12, i.e. channel 6-11); it is written as channel + channel_bias.
+    `channel` is the 0-based input channel index (mic modeling covers
+    preamps 5-12, i.e. channel 4-11 -- the front-panel EMU button shows per
+    channel only in Mic mode); it is written as channel + channel_bias.
     `model` is the emulation model id (0 = EdgeDuo / raw, no emulation).
     `pattern` is the polar-pattern INDEX -- with model 0 it is the 0-100
     continuous morph (0 omni / 50 cardioid / 100 figure-8); with an emulation
@@ -381,7 +382,7 @@ def build_micmodeling_command(profile: dict, channel: int, enabled: bool,
         raise ValueError(f'mic-modeling pattern {pattern} outside {lo}..{hi}')
     tgt = channel + _as_int(f.get('channel_bias', 0))
     if tgt < 0:
-        raise ValueError(f'channel {channel} has no mic modeling (preamps 7-12 only)')
+        raise ValueError(f'channel {channel} has no mic modeling (preamps 5-12 only)')
     size = profile['transport']['report_size']
     pkt = bytearray(size)
     pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
@@ -424,8 +425,8 @@ ROUTE_SOURCE_SPECS = {
     # (1 for everything except emumic, which the Launcher labels by preamp
     # number 5-12).
     'preamp':   (0x00, 0, 12, 'preamp 1-12', 1),
-    'emumic':   (0x01, 0, 8,  'emumic / mic-modeled preamp 5-12 (the EMU button is on 7-12 only; '
-                              '5-6 exist in the matrix but have no model UI)', 5),
+    'emumic':   (0x01, 0, 8,  'emumic / mic-modeled preamp 5-12 (8 modeling-capable preamps; '
+                              'the EMU button shows per channel only in Mic mode)', 5),
     'compplay': (0x02, 0, 32, 'computer playback (24 on VM, up to 32 on macOS)', 1),
     'adat':     (0x03, 0, 16, 'ADAT in 1-16', 1),
     'afx':      (0x05, 0, 32, 'AFX out 1-32', 1),

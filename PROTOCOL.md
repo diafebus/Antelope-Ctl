@@ -50,7 +50,7 @@ opcode -- this is the single most important thing to get right:
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), oscillator panel (`0x0a`, packed byte), DC-coupling (`0x26`) |
 | `0x14` | SET_LINK | `0xa2` (fixed) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
-| `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 7-12) |
+| `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND | `0xeb` | whole-state frame: `[19]` bit 7 = EQ pre/post, `[20]` = delay, `[22-23]` LE16 = level, `[25-30]` = bypass/mute/dim bools -- see §11 | surround monitoring tab (level/dim/mute/delay/bypass/EQ) |
@@ -638,7 +638,7 @@ is no single-channel frame.
 | bank | source | index |
 |---|---|---|
 | `0x00` | preamps | 0-11 |
-| `0x01` | **emumic** -- the mic-modeling DSP output (wet tap; the DSP is `0x17`/`0xe5`, §12) | 0-7 = preamps 5-12 (the Launcher numbers them by preamp; EMU button only on 7-12, so idx 0-1 are configless) |
+| `0x01` | **emumic** -- the mic-modeling DSP output (wet tap; the DSP is `0x17`/`0xe5`, §12) | 0-7 = preamps 5-12 (8 modeling-capable preamps; the EMU button shows per channel only in Mic mode) |
 | `0x02` | **compplay** (Computer Playback / USB) | 0-23 on the VM driver, 0-31 on native macOS -- idx 24-31 (CP 25-32) CONFIRMED via routing readback (webui, 2026-09-03: wrote each of 25..32 into an output slot, all read back unchanged) |
 | `0x03` | ADAT in | 0-15 |
 | `0x04` | S/PDIF in | 0-1 (L/R) |
@@ -656,9 +656,14 @@ is no single-channel frame.
 confirmed 2026-08-31 from `emumic-5to 12` (Windows KVM): emumic routed
 into line-out ch 1-8 one at a time → pairs `(0x01, 0)`…`(0x01, 7)`. The
 Launcher lists emumic as *preamps 5-12*, so `0x01` idx = preamp − 5. The
-front-panel EMU button is only on preamps 7-12, so idx 0-1 (preamps 5-6)
-are selectable matrix sources with no model UI -- a Launcher bug or
-unfinished feature; **untested** whether the card outputs audio there.
+8 taps = preamps 5-12, the full modeling-capable range. The
+front-panel/Launcher EMU button shows on a channel only in **Mic mode**
+(absent in Line/Hi-Z) -- earlier notes said "7-12" because the reference
+unit had preamps 5-6 in Line. Confirmed 2026-09-03 (webui): emumic 5/6 =
+`(0x01, 0)`/`(0x01, 1)` route + read back on the device exactly like 7-12;
+`channel_bias` -4 puts `[18]=0` at preamp 5; the owner confirms the EMU
+button appears on 5-6 in Mic mode. Not yet captured: the Launcher emitting
+a `0xe5` frame with `[18]=0`/`1`, and a listening test of the wet taps.
 **All 12 source banks are now identified.**
 
 **Destination map** (byte 18) -- confirmed from `matrix-compplay-allouts-1`:
@@ -1130,8 +1135,10 @@ send (`protocol.mix_has_send`).
 
 ### Mic modeling / "emuMic" (`0x17` / `0xe5`) -- decoded 2026-08-31
 
-The front-panel **EMU** button, present only on **preamps 7-12** (6
-channels). Runs Antelope's mic-emulation DSP on that preamp (for use with
+The front-panel **EMU** button, on **preamps 5-12** (8 channels -- the 8
+emumic routing taps). It shows on a channel only in **Mic mode**; earlier
+notes said "7-12" because the reference unit had 5-6 in Line (corrected
+2026-09-03). Runs Antelope's mic-emulation DSP on that preamp (for use with
 their Edge Solo / Edge Duo / Edge Note modelling mics + model packs). Same
 opcode `0x17` as the mixer -- `[16]` is `0xe5` instead of `0xd4`.
 
@@ -1144,7 +1151,7 @@ e5 05 <ch> <enabled> <model> <swap> <pattern>
 |---|---|---|
 | 16 | `0xe5` param | |
 | 17 | `0x05` const | |
-| 18 | **channel** | 0-based input channel index − 4 (preamp 7 → `2` … preamp 12 → `7`) |
+| 18 | **channel** | 0-based input channel index − 4 (preamp 5 → `0` … preamp 7 → `2` … preamp 12 → `7`) |
 | 19 | **enabled** | `1` = modeling on, `0` = off (also zeros @20-22) |
 | 20 | **model id** | `0` = EdgeDuo / raw (no emulation, default); `1`…`N` = the emulation models (`profiles/mic_models.json`) |
 | 21 | **channel-order swap** | `0`/`1` -- a switch that swaps the pair's channel order |
@@ -1181,10 +1188,12 @@ Antelope's own naming (Berlin / Vienna / Tokyo / …) is used; the classic
 mics being emulated are not spelled out (that's the licensed IP).
 
 The modeled signal is routing **source bank `0x01`** ("emumic", §7),
-confirmed 2026-08-31 to have 8 indices = preamps 5-12. The EMU *button*
-is only on preamps 7-12, so bank `0x01` idx 0-1 (preamps 5-6) can be
-selected as a source but have no way to load a model -- a Launcher bug or
-unfinished feature; untested whether the card produces audio there.
+confirmed 2026-08-31 to have 8 indices = preamps 5-12 -- the full
+modeling range. The EMU *button* shows on a channel only in **Mic mode**
+(hence the earlier "7-12": 5-6 were in Line on the reference unit).
+Confirmed 2026-09-03: emumic 5/6 route + read back on the device like 7-12.
+Not yet captured: a `0xe5` frame with `[18]=0`/`1`; a listening test of
+the wet taps.
 
 `protocol.build_micmodeling_command(profile, channel, enabled, pattern,
 swap, model)` builds the frame; not in the CLI.
@@ -1235,7 +1244,7 @@ plugin chain and anything touching license state. `0x1d` is now in
 |---|---|
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. Open: wire `route` writes for the other 9 destinations. |
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number) + `0x1b` (bus levels), partly decoded. Not in the CLI. |
-| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position. |
+| Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Readback category not yet identified (§4a `0x07`/`0x1a` are the unmapped DSP-EQ candidates). Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position; a Launcher capture of a `0xe5` frame on preamp 5 or 6 (`[18]=0`/`1`) -- the 5-12 range was corrected 2026-09-03 from the routing bank + `channel_bias` -4 + owner report, not yet a direct modeling capture. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | Pan law | never captured; likely offset 25 bits 0-1 |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
