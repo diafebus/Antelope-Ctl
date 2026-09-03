@@ -1106,9 +1106,11 @@ just re-send `0x87` frames. `params.surround_monitor` +
   (`[18]` 1-4/6, all of `[19]`) are **unknown** — two data points, no
   derivable pattern. The ~21 unseen values need one capture of the format
   dropdown.
-- **Room correction**: no data. Probably an `0x87`-frame extension, a new
-  opcode, or readback cats `0x07`/`0x1a` (undecoded "EQ curve" categories,
-  readable now).
+- **Room correction**: **NOT MRC-gated** — runs in plain 2.0, so it *is*
+  capturable on the reference unit (capture pending). 3 correction types
+  (differing sweep count / precision); the applied-correction frame is
+  likely one shape regardless. Deduced location: an `0x87`-frame extension
+  past byte ~135, a new opcode, or readback cats `0x07`/`0x1a`.
 
 ### DC-coupling (`0x12` / `0x26`) -- DECODED 2026-09-01
 
