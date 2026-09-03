@@ -37,8 +37,9 @@ device identity, preamp/channel state. Not decoded: the built-in channel
 2.1 (need the MRC licence). The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
-(`SCOPE.md`); plugin *parameters* stay off-repo. See `PROTOCOL.md` §13 for
-the live open list.
+(`SCOPE.md`); plugin *parameters* stay off-repo. The AFX-tab channel
+stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
+`PROTOCOL.md` §13 for the live open list.
 
 ## Legal status & disclaimer
 
@@ -231,8 +232,16 @@ python3 -m antelope.cli --profile profiles/orion_studio_sc.json pan-law --set 2 
   device drops audio and re-locks its clock (~1 s), and selecting a clock
   source that is not present/locked leaves the device unlocked. Change
   them with nothing streaming, then confirm (`sample-rate` /
-  `clock-source`). Clock source reads back from `0x73` @19; **pan law has
-  no device readback**, so `pan-law` reports only what this CLI last sent.
+  `clock-source`). Clock source reads back from `0x73` @19; the running
+  rate reads back both as the 0-6 index (`0x73` @18) **and in Hz**
+  (`0x73` @21-23, shown by `sample-rate`). **pan law has no device
+  readback**, so `pan-law` reports only what this CLI last sent.
+- **Two things block a rate/clock *write* on Linux** (neither is a device
+  limit -- macOS is unaffected): (1) any app or the audio server holding
+  the USB audio interface -- release it first, e.g.
+  `pactl set-card-profile <orion-card> off` (restore afterwards); (2) the
+  write is also ignored while the clock source is USB (the device follows
+  the host) -- set the clock to Oven, change the rate, set the clock back.
 
 ### Device identity -- and why no serial is stored here
 

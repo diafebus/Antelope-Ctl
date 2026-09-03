@@ -110,11 +110,12 @@ frame carries a fixed one). Then frame-specific offsets:
 |---|---|---|---|
 | `command` | SET_PARAM (`0x13`) | `channel_offset`, `value_offset` | `build_command(profile, param_name, channel, value)` |
 | `global_command` | SET_GLOBAL (`0x12`) | `value_offset` (no channel) | `build_global_command(profile, param, value)` |
-| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` | `build_link_command(profile, pair, enabled, space)` |
+| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=physical/ADAT, `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link) | `build_link_command(profile, pair, enabled, space)` |
 | `mix_command` | SET_MIX (`0x17` Orion / `0x16` Zen Go) | `subcmd_offset`+`subcmd`, `mix_offset`, `channel_offset`, `fader_offset`, `pan_flags_offset`, optional `send_offset`, `pan_center`, `pan_mask`, `mute_bit`, `solo_bit` | `build_mix_command(...)` |
 | `auraverb_command` | SET_AURAVERB (`0x1d`) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant` | `build_auraverb_command(profile, params, enabled)`; **readback** = `frame.readback` cat `0x0a`, parsed by `parse_auraverb_record` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
 | — (no `frame.*` block) | SET_SURROUND `0xab`/`0xeb` (global) + SET_SURROUND_SPEAKER `0x87`/`0xea` (per-speaker ×16) | documented byte-for-byte in `params.surround_monitor.field_map` / `params.surround_speaker.field_map` | **no builder** — launcher-only observed opcodes; see `constraints.observed_opcodes_launcher_only`. A client reads the offsets from the `field_map` and builds the frame itself |
+| `afx_slot` | *(AFX plugin-chain slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cats `0x0c`/`0x15`, partial) | **no builder — observation only.** `0x23` is in `constraints.forbidden_opcodes` (placing a plugin = bucket E, `SCOPE.md`); plugin parameters (`0x1c`/`0xd5`) are frozen. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}` | `build_route_command(profile, dest, channels)` |
 | `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounds-checked by `check_readback_index` / `readback_category_count`; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`); driven by `transport.HidTransport.query` |
 
@@ -148,6 +149,10 @@ at @16 is the real discriminator — give each its own `frame.*` block.
     `parse_state_scalar(profile, data, "<name>_byte_offset")`
     (e.g. `sample_rate_byte_offset`, `screen_brightness_byte_offset`,
     `clock_source_byte_offset`)
+  - `clock_rate_hz_offset` — `{ offset, width, endian, family_offset }`,
+    the running sample rate in Hz as a `width`-byte big-endian int
+    (Orion: `[21..23]`), read by `state_clock_rate_hz(profile, data)`.
+    Complements the 0-6 `sample_rate_byte_offset` enum
   - `bus_block_offset` + `bus_block_stride` — bus state array
     (`28 + 3N` on Orion, `28 + 2N` on Zen Go)
 - **`meter_report`** (`0x75` Orion / `0x83` Zen Go) — per-channel meters.
