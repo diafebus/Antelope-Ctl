@@ -864,6 +864,111 @@ def parse_channel_status_record(profile: dict, body: bytes):
     return out
 
 
+SURROUND_SPEAKER_EQ_READBACK_CATEGORY = 0x1a
+SURROUND_GLOBAL_READBACK_CATEGORY = 0x1b
+
+
+def parse_surround_speaker_eq_record(profile: dict, body: bytes):
+    """Decode a category-0x1a record: one surround speaker's 16-band EQ
+    (params.surround_speaker, write frame 0x87/0xea). The readback index IS
+    the speaker number (0-15; 2.0 L=0/R=1, 2.1 adds LFE=2).
+
+    NOTE this record only carries the EQ bands -- the write frame's delay /
+    level / invert head (its bytes 19-22) is NOT visible here; that state is
+    write-only. When a 2.0 Room Correction curve is loaded, speakers 0 and 1
+    read back identical curves (RC writes the same correction to L and R).
+
+    Layout: a 4-byte header (`00 00 58 02`, purpose unconfirmed) then 16 EQ
+    bands, 7 bytes each, in the exact write-frame layout:
+        <freq LE16 Hz> <Q LE16, value = Q x100> <gain LE16 signed, 0.01 dB> <mode>
+    freq 20-20000 Hz; Q 0.10-18.0 (default 0x0047 = 71 = Q 0.71); gain
+    -24..+12 dB. mode 0x02 = bell (bands 2-15, always); bands 1 & 16 are the
+    end slots (shelving / band-pass, two modes each -- see
+    params.surround_speaker.field_map.23_onward for the observed values).
+
+    Returns {'header': bytes, 'bands': [{freq_hz, q, gain_db, mode, raw}, ...]}
+    (up to 16 bands; fewer if the record is short)."""
+    header_len = 4
+    stride = 7
+    n_bands = 16
+    if len(body) < header_len:
+        raise ValueError('surround speaker EQ record too short for its header')
+    bands = []
+    for i in range(n_bands):
+        o = header_len + i * stride
+        chunk = body[o:o + stride]
+        if len(chunk) < stride:
+            break
+        gain_raw = int.from_bytes(chunk[4:6], 'little', signed=True)
+        bands.append({
+            'freq_hz': int.from_bytes(chunk[0:2], 'little'),
+            'q': int.from_bytes(chunk[2:4], 'little') / 100.0,
+            'gain_db': gain_raw / 100.0,
+            'mode': chunk[6],
+            'raw': bytes(chunk),
+        })
+    return {'header': bytes(body[:header_len]), 'bands': bands}
+
+
+SURROUND_BASS_MGMT_DEFAULT_BLOCK = bytes((0x50, 0x00, 0x50, 0x00, 0x58, 0x02, 0x00, 0x00))
+
+
+def parse_surround_global_record(profile: dict, body: bytes):
+    """Decode the category-0x1b record (1 record, idx 0): the surround-tab
+    GLOBAL state (params.surround_monitor, write frame 0xab/0xeb).
+
+    `body[N]` == the write frame's byte `[18+N]` (established 2026-09-04 by a
+    live read against a known state -- see frame.readback.categories.0x1b).
+    So this decodes the same fields the write frame does, just offset by -18.
+
+    Returns a dict: lfe_present, bass_mgmt_on, eq_post (flags-A bits),
+    global_delay_ms, level_db (surround monitor level, -60..+16 dB),
+    bypass_mask / mute_mask / dim_mask (LE16, bit N = speaker N), and
+    bass_mgmt_channels -- a list of 8-byte 2.1 bass-management mixer blocks
+    (3 normally in use, the rest at the `[80][80][600][0]` factory default):
+    lp_cutoff_hz/lp_bypass, hp_cutoff_hz/hp_bypass, fader_db/fader_mute,
+    lp_order/hp_order, is_default, raw."""
+    if len(body) < 13:
+        raise ValueError('surround global record too short')
+    flags_a = body[0]
+    flags_b = body[1]
+    level_raw = int.from_bytes(body[4:6], 'little')
+    out = {
+        'flags_a_raw': flags_a,
+        'flags_b_raw': flags_b,
+        'lfe_present': bool(flags_a & 0x01),
+        'bass_mgmt_on': bool(flags_a & 0x20),
+        'eq_post': bool(flags_a & 0x80),
+        'global_delay_ms': body[2] / 10.0,
+        'level_db': (level_raw - 600) / 10.0,
+        'bypass_mask': int.from_bytes(body[7:9], 'little'),
+        'mute_mask': int.from_bytes(body[9:11], 'little'),
+        'dim_mask': int.from_bytes(body[11:13], 'little') if len(body) >= 13 else None,
+        'bass_mgmt_channels': [],
+    }
+    stride = 8
+    off = 25  # frame byte 43 -- field_map.23_onward_bass_mgmt
+    while off + stride <= len(body):
+        chunk = body[off:off + stride]
+        lp_raw = int.from_bytes(chunk[0:2], 'little')
+        hp_raw = int.from_bytes(chunk[2:4], 'little')
+        fader_raw = int.from_bytes(chunk[4:6], 'little')
+        out['bass_mgmt_channels'].append({
+            'lp_cutoff_hz': lp_raw & 0x7fff,
+            'lp_bypass': bool(lp_raw & 0x8000),
+            'hp_cutoff_hz': hp_raw & 0x7fff,
+            'hp_bypass': bool(hp_raw & 0x8000),
+            'fader_db': ((fader_raw & 0x7fff) - 600) / 10.0,
+            'fader_mute': bool(fader_raw & 0x8000),
+            'lp_order': chunk[6],
+            'hp_order': chunk[7],
+            'is_default': bytes(chunk) == SURROUND_BASS_MGMT_DEFAULT_BLOCK,
+            'raw': bytes(chunk),
+        })
+        off += stride
+    return out
+
+
 IDENTITY_READBACK_CATEGORY = 0x01
 FIRMWARE_READBACK_CATEGORY = 0x00
 

@@ -1496,6 +1496,34 @@ def cmd_readback(args, profile):
             extra = ''.join(t for t, on in ((' +48V', s['phantom']),
                                             (' invert', s['phase_invert'])) if on)
             print(f"    ch {c:<2} {s['mode_name']}{extra}")
+    if cat == proto.SURROUND_SPEAKER_EQ_READBACK_CATEGORY:
+        try:
+            rec = proto.parse_surround_speaker_eq_record(profile, body)
+            print(f"  speaker {idx}, header {rec['header'].hex()}, {len(rec['bands'])} bands:")
+            for b, band in enumerate(rec['bands']):
+                print(f"    band {b + 1:<2} {band['freq_hz']:>5} Hz  Q {band['q']:<5} "
+                      f"{band['gain_db']:+.2f} dB  mode {band['mode']:#04x}")
+        except ValueError as e:
+            print(f'  (not decodable as a surround speaker EQ record: {e})')
+    if cat == proto.SURROUND_GLOBAL_READBACK_CATEGORY:
+        try:
+            g = proto.parse_surround_global_record(profile, body)
+            print(f"  format: {'2.1' if g['lfe_present'] else '2.0'}  "
+                  f"EQ {'post' if g['eq_post'] else 'pre'}  "
+                  f"bass-mgmt {'on' if g['bass_mgmt_on'] else 'off'}")
+            print(f"  delay {g['global_delay_ms']} ms  level {g['level_db']:+.1f} dB  "
+                  f"bypass mask {g['bypass_mask']:#06x}  mute mask {g['mute_mask']:#06x}  "
+                  f"dim mask {g['dim_mask']:#06x}")
+            for c, ch in enumerate(g['bass_mgmt_channels']):
+                if ch['is_default']:
+                    continue
+                print(f"    bass-mgmt ch {c}: LP {ch['lp_cutoff_hz']} Hz"
+                      f"{' (bypass)' if ch['lp_bypass'] else ''}  "
+                      f"HP {ch['hp_cutoff_hz']} Hz{' (bypass)' if ch['hp_bypass'] else ''}  "
+                      f"fader {ch['fader_db']:+.1f} dB{' (mute)' if ch['fader_mute'] else ''}  "
+                      f"order LP={ch['lp_order']} HP={ch['hp_order']}")
+        except ValueError as e:
+            print(f'  (not decodable as a surround global record: {e})')
 
 
 def _resolve_route_dest_cli(profile, name):
@@ -1945,6 +1973,74 @@ def cmd_auraverb(args, profile):
         print(f'sent: {pkt[16:29].hex()}  (no readback this time -- re-run `auraverb`)')
 
 
+def cmd_surround_eq(args, profile):
+    """Live-read the surround per-speaker EQ (frame.readback cat 0x1a) --
+    the bands only; delay/level/invert are write-only (the 0x87 frame's
+    head is not part of this readback). Read-only: 0x87 stays
+    launcher-only, this never sends it. No arg -> all 16 speakers."""
+    cat = proto.SURROUND_SPEAKER_EQ_READBACK_CATEGORY
+    n = proto.readback_category_count(profile, cat) or 16
+    if args.speaker is None:
+        speakers = list(range(n))
+    else:
+        if not 0 <= args.speaker < n:
+            sys.exit(f'speaker must be 0..{n - 1} (this device has {n} surround speakers)')
+        speakers = [args.speaker]
+
+    transport = get_transport(profile)
+    for s in speakers:
+        req = proto.build_readback_query(profile, cat, s)
+        data = transport.query(
+            req, lambda d: proto.is_readback_response(profile, d, cat, s),
+            timeout=args.timeout)
+        if data is None:
+            print(f'speaker {s}: no response')
+            continue
+        try:
+            rec = proto.parse_surround_speaker_eq_record(profile, proto.readback_body(profile, data))
+        except ValueError as e:
+            print(f'speaker {s}: (not decodable: {e})')
+            continue
+        print(f"\nspeaker {s}  ({len(rec['bands'])} bands, header {rec['header'].hex()})")
+        for b, band in enumerate(rec['bands']):
+            print(f"  band {b + 1:<2} {band['freq_hz']:>5} Hz  Q {band['q']:<5} "
+                  f"{band['gain_db']:+.2f} dB  mode {band['mode']:#04x}")
+
+
+def cmd_surround_status(args, profile):
+    """Live-read the surround GLOBAL state (frame.readback cat 0x1b, 1
+    record). Read-only: 0xab stays launcher-only, this never sends it."""
+    cat = proto.SURROUND_GLOBAL_READBACK_CATEGORY
+    transport = get_transport(profile)
+    req = proto.build_readback_query(profile, cat, 0)
+    data = transport.query(
+        req, lambda d: proto.is_readback_response(profile, d, cat, 0), timeout=args.timeout)
+    if data is None:
+        sys.exit('no readback response for the surround global state (cat 0x1b)')
+    try:
+        g = proto.parse_surround_global_record(profile, proto.readback_body(profile, data))
+    except ValueError as e:
+        sys.exit(f'not decodable as a surround global record: {e}')
+
+    print(f"format: {'2.1' if g['lfe_present'] else '2.0'}  "
+          f"EQ {'post' if g['eq_post'] else 'pre'}-fader  "
+          f"bass-management {'on' if g['bass_mgmt_on'] else 'off'}")
+    print(f"delay: {g['global_delay_ms']} ms   level: {g['level_db']:+.1f} dB")
+    print(f"per-speaker bypass mask: {g['bypass_mask']:#06x}   "
+          f"mute mask: {g['mute_mask']:#06x}   dim mask: {g['dim_mask']:#06x}")
+    active = [c for c, ch in enumerate(g['bass_mgmt_channels']) if not ch['is_default']]
+    if active:
+        print('bass-management mixer channels:')
+        for c in active:
+            ch = g['bass_mgmt_channels'][c]
+            print(f"  ch {c}: LP {ch['lp_cutoff_hz']} Hz{' (bypass)' if ch['lp_bypass'] else ''}  "
+                  f"HP {ch['hp_cutoff_hz']} Hz{' (bypass)' if ch['hp_bypass'] else ''}  "
+                  f"fader {ch['fader_db']:+.1f} dB{' (mute)' if ch['fader_mute'] else ''}  "
+                  f"order LP={ch['lp_order']} HP={ch['hp_order']}")
+    else:
+        print('bass-management mixer channels: all at factory default')
+
+
 _ANSI_COLOR = {'red': '\x1b[31m', 'orange': '\x1b[33m', 'yellow': '\x1b[93m', 'green': '\x1b[32m'}
 _ANSI_RESET = '\x1b[0m'
 _ANSI_BOLD = '\x1b[1m'
@@ -2352,6 +2448,20 @@ def main():
     sp.add_argument('--timeout', type=float, default=3.0)
     sp.add_argument('--force', action='store_true', help='allow a value outside 0-100')
     sp.set_defaults(func=cmd_auraverb)
+
+    sp = sub.add_parser('surround-eq',
+                         help='show the surround per-speaker EQ, live from the device '
+                              '(frame.readback cat 0x1a); read-only, no arg = all 16 speakers')
+    sp.add_argument('speaker', nargs='?', type=lambda x: int(x, 0), default=None,
+                    help='speaker index 0-15 (2.0: L=0/R=1; 2.1 adds LFE=2)')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.set_defaults(func=cmd_surround_eq)
+
+    sp = sub.add_parser('surround-status',
+                         help='show the surround tab global state, live from the device '
+                              '(frame.readback cat 0x1b); read-only')
+    sp.add_argument('--timeout', type=float, default=3.0)
+    sp.set_defaults(func=cmd_surround_status)
 
     args = p.parse_args()
     args.profile = _resolve_profile_path(args.profile)
