@@ -43,8 +43,15 @@ real discriminator (§14).
 Ten command opcodes are known. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
 `0x53`); the other four are **observed only, never sent** — `0xab` and
-`0x87` (surround, `constraints.observed_opcodes_launcher_only`) and `0x23`
-(AFX slot assign, in `constraints.forbidden_opcodes`; §12a).
+`0x87` (surround, `constraints.observed_opcodes_launcher_only`), and
+`0x23` and `0x1c` (AFX slot assign / AFX plugin *parameters*, both
+confirmed frames — §12a — and both in `constraints.forbidden_opcodes`).
+
+**`0x1a` is not one of these ten.** It has never been observed as a write
+opcode on this device at all — it is not the surround EQ's write opcode
+either (that's `0x87`/`0xea`, see §11). `constraints.forbidden_opcodes`
+blocks it anyway, purely as an unconfirmed precaution — see the note after
+the namespace-collision table below for the full story.
 
 The opcode is at **offset 4**. The param_id is at **offset 16** for all of
 them. What comes after offset 16 depends on the opcode -- this is the
@@ -62,6 +69,7 @@ single most important thing to get right.
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim -- §11 | surround tab global (level/dim/mute/delay/bypass/EQ/format) |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | surround tab per-speaker strip (×16) |
 | `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
+| `0x1c` | *(AFX plugin parameters)* | `0xd5` | frame-identified only (§12a) -- payload never decoded on purpose | **observed only, never emitted** -- `0x1c` is in `forbidden_opcodes` (a licensed plugin's parameter set = bucket D) |
 
 Notes:
 - **`0x17` is overloaded** -- the param_id at @16 is the real discriminator:
@@ -83,16 +91,19 @@ Notes:
 
 | Magic @0 | Name | Rate | Purpose |
 |---|---|---|---|
-| `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. **Also carries the per-channel input meters** at offset `157 + channel` (section 9). Same frame family as a readback response for "category 0". |
-| `0x75` byte1 `0x1f` | meter report | continuous | on this device this is NOT per-channel -- only byte 32 is live (a monitor sum) and byte 33 is a flag. Per-channel meters are in `0x73`. See section 9. |
+| `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. **Also carries the 4 virtual-Mixer master meters** (NOT per-preamp, see the 2026-09-05 correction) at offset `157 + N` (section 9). Same frame family as a readback response for "category 0". |
+| `0x75` byte1 `0x1f` | meter report | continuous | on this device this is NOT per-channel -- only byte 32 is live (a monitor sum) and byte 33 is a flag. No per-channel meters exist in either `0x73` or `0x75` -- see section 9. |
 | `0x75` byte1 `0x00` | **readback response** | on request | reply to a `0x74` query -- `(category, index)` at @8/@12, payload from @16. See §4a. |
 | `0x74` | readback / enumeration | at connect, then on demand | the host walking `(category, index)` -- see §4 / §4a |
 
-Per-channel input meters: one byte per channel from **`0x73` offset 157**
-(mirror copies at 169 and 221), same channel order as gain/status. Scale is
-**inverted** -- `0x60` (96) at rest/silence, falls toward `0x00` as the
-signal gets louder. Calibration in section 9. The separate `0x75` meter
-frame is a monitor/summed level only on this unit (byte 32), not per-channel.
+Virtual-Mixer master meters: one byte per mix bus (Mix 1-4) from **`0x73`
+offset 157** (mirror copies at 169 and 221) -- NOT one byte per preamp
+channel, despite the offset's name; see the 2026-09-05 correction in
+section 9. Scale is **inverted** -- `0x60` (96) at rest/silence, falls
+toward `0x00` as the signal gets louder. Calibration in section 9. The
+separate `0x75` meter frame is a monitor/summed level only on this unit
+(byte 32), not per-channel. No routing-independent physical-preamp meter
+is known to exist over USB HID; see section 9's isochronous-audio note.
 
 ### 2026-08 caveat, REVISED 2026-08-31
 
@@ -331,8 +342,8 @@ sweep to the declared count unless `--unsafe`.
 | `0x12` | **UNKNOWN**, empty body on 2026-09-04. The old "clock source or sample-rate index?" guess is **ruled out** -- both live in `0x73` instead (clock source @19, rate index @18, rate in Hz @21-23) | undecoded |
 | `0x16` | **UNKNOWN** -- NOT output trim, NOT pan law (both ruled out live 2026-09-03). Seen all-zero and `00 00 00 32 ×2 …` | undecoded |
 | `0x19` | 64 entries, empty bodies -- the 64-ch USB/TB slots | — |
-| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 B = 4-B header + 16 EQ bands in the `0x87`/`0xea` write-frame layout (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode>`). Live-read 2026-09-04: with a 2.0 Room Correction loaded, idx 0 & 1 both held the RC curve (identical L/R), the rest were flat defaults. So the surround EQ / Room Correction **does** read back. No parser/CLI yet | **decoded (structure); not wired** |
-| **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.1 bass-management block. See the alignment proof below | **decoded (structure); not wired** |
+| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 B = 4-B header + 16 EQ bands in the `0x87`/`0xea` write-frame layout (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode>`). Live-read 2026-09-04: with a 2.0 Room Correction loaded, idx 0 & 1 both held the RC curve (identical L/R), the rest were flat defaults. So the surround EQ / Room Correction **does** read back | **decoded + wired 2026-09-04** — `protocol.parse_surround_speaker_eq_record`, CLI `surround-eq [speaker]` |
+| **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.1 bass-management block. See the alignment proof below | **decoded + wired 2026-09-04** — `protocol.parse_surround_global_record`, CLI `surround-status` |
 | `0x1c`-`0x60` | answer, empty bodies | — |
 
 > ### ⚠ Category numbers and opcode numbers are two different namespaces
@@ -348,17 +359,36 @@ sweep to the declared count unless `--unsafe`.
 > | `0x13` | SET_PARAM | not queried |
 > | `0x14` | SET_LINK | not queried |
 > | `0x17` | SET_MIX / SET_MIC_MODELING | not queried |
-> | `0x1a` | **forbidden** (undecoded DSP/FX) | **surround per-speaker EQ** |
+> | `0x1a` | **blocked as a precaution -- never actually observed as a write opcode on this device** (see below) | **surround per-speaker EQ** (decoded, in scope) |
 > | `0x1b` | — | **surround global** |
-> | `0x1c` | **forbidden** (AFX plugin params) | answers empty |
-> | `0x1d` | SET_AURAVERB | answers empty |
-> | `0x23` | **forbidden** (AFX slot assign) | answers empty |
+> | `0x1c` | **forbidden** (AFX plugin *parameter* stream — bucket D, licensed-plugin content) | answers empty |
+> | `0x1d` | SET_AURAVERB (bundled, no activation — in scope) | answers empty |
+> | `0x23` | **forbidden** (AFX slot assign — bucket E, places/clears a plugin) | answers empty |
 >
-> This has already caused one documented misread: category `0x1a` was
-> labelled "ADAT" for weeks purely because its record count (16) matched
-> the ADAT channel count, and its actual (surround-EQ) content was never
-> checked — corrected 2026-09-04. **Always check which namespace a hex
-> value is in.**
+> This table exists because of a real, already-documented bug: category
+> `0x1a` was mislabelled "ADAT" for weeks from a count coincidence (16
+> speakers == 16 ADAT channels) before anyone checked its actual content
+> — see §4a. **Always check which namespace a hex value is in before
+> trusting a label.**
+>
+> **The `0x1a` *opcode* row in the table above needs one more caveat: it
+> has never been observed as a write frame on this device, period** — not
+> the surround EQ's write frame (that's `0x87`/`0xea`) and not anything
+> else. `0x1c` and `0x23`, right below it in that same table, ARE real,
+> confirmed AFX-plugin frames (§12a, §2); `0x1a` is not their peer, it
+> just sits next to them in `constraints.forbidden_opcodes`. That list
+> blocks it anyway,
+> purely as a **blanket cross-device precaution** added 2026-09-03,
+> carried over from the Zen Go profile — where `0x1a` and `0x1c` share
+> param `0xd5` in a single undecoded capture (`capture_07_dsp`), and
+> `0x1a` there is actually a *candidate for the mic-modeling/emuMic frame*
+> (SCOPE.md §1, in scope, not an AFX plugin) rather than a confirmed
+> licensed-plugin opcode. So "forbidden" for `0x1a` means "unconfirmed,
+> blocked defensively" — not "known DSP, therefore off-limits." The policy
+> itself (SCOPE.md §4) targets Antelope's **purchasable, activation-gated
+> plugin catalogue**, not the device's built-in DSP: AuraVerb and the
+> surround EQ run on the same DSP unit and are both fully decoded and in
+> scope.
 
 ### Reading routing back
 
@@ -488,7 +518,7 @@ offset for target *N*.
 | 75-90 | **ADAT gain array** -- 16 ADAT channels | ADAT channel *N* (0-indexed) gain @ `75+N`, int8 dB, range -6..+12 | confirmed |
 | 91-92 | **S/PDIF gain** -- L / R | ch 0 (L) @ `91`, ch 1 (R) @ `92`, int8 dB, range -6..+12 | confirmed |
 | 139-140 | *startup ramp* | both bytes ramp to `0x60` in the first ~0.12 s of every capture (a nearby block, 129-136, does the same in INIT) | startup settling, ignore |
-| 157-168 | **per-channel input meters** -- 12 physical inputs | channel *N* meter @ `157+N`, inverted (96 silence -> 0 loud); mirror copies at 169-180 and 221-232 | confirmed 2026-09-01 (section 9) |
+| 157-160 (161-168 unused) | **virtual-Mixer 1-4 master meters** (NOT per-preamp -- corrected 2026-09-05) | Mix *N* master @ `157+N`, inverted (96 silence -> 0 loud); mirror copies at 169-172 and 221-224 | corrected 2026-09-05 (section 9) |
 
 Layout is tight and sequential: gain array (49-60), status array (61-72),
 talkback status+gain (73-74), ADAT gain array (75-90), S/PDIF gain (91-92)
@@ -923,28 +953,60 @@ behaviour itself if it wants Launcher-equivalent results.
 
 ## 9. Meters
 
-### Where they are (CORRECTED 2026-09-01)
+### Where they are (RESOLVED 2026-09-05, reframing the 2026-09-01 finding -- see the antelope-ctl-UI-test sandbox's webui/METERS.md for the full evidence trail)
 
-The per-channel input meters are in the **`0x73` state report** at
-`157 + channel_index` (12 physical channels). Inverted scale: raw `0x60`
+`0x73` offset **157 + N is NOT a per-preamp-channel meter block**. It is
+the **four virtual Mixer buses' own master meters** -- byte 157 = Mix 1
+master, 158 = Mix 2, 159 = Mix 3, 160 = Mix 4. Inverted scale: raw `0x60`
 (96) at silence, falling toward `0x00` as level rises. Three byte-identical
-mirror copies of the 12-byte block exist at bases **157, 169, 221** -- use
-157.
+mirror copies of the SAME 4-byte signal exist at bases **157, 169, 221**
+(each padded out to a nominal 12-byte span -- bytes 161-168/etc never
+moved in an exhaustive scan and are unexplained/unused, there are only 4
+mixers, not 12 channels).
 
-Recapture that pinned it (2026-09-01): feeding preamps 1/2/3/4 in turn drove
-offsets 157/158/159/160 to the single digits one after another, each
-recovering to ~96 on silence; unfed channels stayed at rest.
+The 2026-09-01 recapture that pinned "157+channel = preamp meter" (feeding
+preamps 1/2/3/4 in turn, seeing offsets 157-160 respond) was real but drew
+the wrong conclusion: it only looked like a per-preamp block because each
+mix bus's DEFAULT strip patching happens to include the matching preamp
+among its many sources (e.g. Mix 1 strip 1 defaults from `surround 1` <-
+`surround_in` ch1 <- preamp 1; Mix 2's 32 default strips include preamp
+1-8). Reroute a mix bus's inputs (or `surround_in`) away from that default
+and the "preamp N" meter shows whatever's actually patched there instead
+-- Computer Playback, another mix bus, anything -- with no indication in
+any client that this happened. This was confirmed decisively multiple ways
+(live mic tests, oscillator injection into `mix_ch1`, a Windows Launcher
+cross-check where the real Preamp tab stayed silent under the same
+routing that lit this block up) -- see the sandbox's webui/METERS.md
+"step 4" for the full chain of evidence.
+
+**No true, routing-independent physical-preamp meter was found anywhere
+in the HID control stream** after an exhaustive byte-by-byte scan of both
+`0x73` and `0x75` across five capture files. This device is USB Audio
+Class; actual signal travels over a separate **isochronous audio
+endpoint** (confirmed present in every capture examined: endpoint `0x84`
+IN, 24-bit PCM, ~432-byte ISO packets / 3456-byte URBs, byte-rate math
+best matching ~48 channels @ ~48kHz). The real per-input levels the
+Launcher's Preamp tab shows -- and real clip detection on the physical
+input, which matters more than any DSP-stage meter for tracking safely --
+most likely come from that PCM stream computed host-side, not from any
+HID register. Decoding that stream's exact channel layout is open, tracked
+below.
 
 The separate **`0x75` meter frame** (byte1 `0x1f`) was previously documented
 as `32 + channel`, "confirmed for all 12". That was wrong for this unit: only
 byte 32 is live -- a monitor / summed level that responds to any input --
 and byte 33 is a 0/1 flag. The old formula rendered byte 33 as channel 1
 pinned at clip. `0x75` is still fine as a single monitor meter (byte 32).
+Also re-scanned in the 2026-09-05 investigation: nothing else in `0x75`
+moves either, beyond byte 32 and a little noise-floor jitter around it.
 
-`protocol.channel_meter_source()` returns `(magic, base)` -- state report
-first, meter report as fallback -- and `parse_channel_meter()` reads it.
+`protocol.channel_meter_source()` / `parse_channel_meter()` still work
+mechanically as documented below, but callers should treat the result as
+**"Mix N master level"**, not "preamp N input" -- `cli.py meter` and
+anything in the webui reading this block need the same relabeling
+(tracked in CLAUDE.md).
 
-### dB curve (channel 0 only, applied to all 12)
+### dB curve (Mix 1 only, applied to all 4)
 
 `raw_byte == -dBFS`, essentially exactly, across 0 to -60 dB:
 
@@ -1100,7 +1162,9 @@ categories were actually read on 2026-09-04:
 | global `0xab`/`0xeb` | `0x74` category **`0x1b`** | 1 (idx 0) |
 | per-speaker `0x87`/`0xea` | `0x74` category **`0x1a`** | 16, one per speaker |
 
-Neither is parsed or wired into the CLI yet.
+Both are now parsed and wired 2026-09-04: `protocol.parse_surround_speaker_eq_record`
+/ `parse_surround_global_record`, CLI `surround-eq [speaker]` / `surround-status`
+(read-only -- `0x87`/`0xab` stay launcher-only, neither is ever sent).
 
 **Category `0x1b` alignment proof** — `body[N]` == the `0xab` frame's byte
 `[18+N]`, from one live read against a known 2.0 state:
@@ -1564,7 +1628,7 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
-| Offsets 157-168 / 169-180 / 221-232 | **resolved 2026-09-01** -- per-channel input meters, `157 + channel` (three mirror copies). §9. |
+| Offsets 157-160 / 169-172 / 221-224 | **corrected 2026-09-05** -- these are the 4 virtual-Mixer master meters, `157 + N` (three mirror copies), NOT per-preamp as the 2026-09-01 entry claimed. §9. The true routing-independent preamp meter is unresolved -- likely in the isochronous audio stream (endpoint `0x84`), not HID. Channel layout of that stream not yet decoded (see antelope-ctl-UI-test sandbox webui/METERS.md). |
 | Channel-link readback bit | none found; may not exist |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |
@@ -1653,7 +1717,7 @@ routing). **Divergences from Orion:**
 | clock source readback | **`0x73` @19** (`0x12`/`0x04`, 7 sources incl. word clock — confirmed 2026-09-03) | `0x73` **@19** (`0x12`/`0x04`, 3 sources, no word clock) |
 | source bank: mute / osc / emumic | `0x0b` / `0x0c` / `0x01` | **`0x08` / `0x09` / `0x0a`** |
 | new: output volume | buses | *also* an `0x16`/`0xd4` strip at `(mix 1, ch 3)` |
-| new: DSP opcodes | `0x1d` AuraVerb | **`0x1a` / `0x1c` (`0xd5`), `0x23` (`0xd7`)** -- undecoded, forbidden |
+| new: DSP opcodes | `0x1d` AuraVerb | **`0x1a` / `0x1c` (`0xd5`), `0x23` (`0xd7`)**, all in `capture_07_dsp`, undecoded, blocked as a precaution. `0x1a`/`0x1c` share param `0xd5` in that single capture — `0x1a` is likely the Zen Go's mic-modeling/emuMic frame (in-scope), not necessarily AFX content like `0x23`; see zen_go_sc.json `params.mic_modeling` and §4a's namespace-collision note for the Orion side of this |
 
 **Routing (`0x53`/`0xd3`) -- decoded 2026-08-31.** Same frame as Orion
 (`d3 41 <dest>` then `(bank,idx)` pairs from @19). The slot index in the

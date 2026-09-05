@@ -76,10 +76,21 @@ off. None of this is legal advice; bucket D needs a lawyer first.
 ## 4. AFX / Synergy Core plugin chain -- the bucket policy
 
 Antelope's DSP plugins (Auto-Tune, the modelled EQ / comp / preamp
-collections, etc.) are sold **per user** with **online activation**, and
-the DSP algorithms are Antelope's IP. This project is interop for the
-*mixer / routing / preamp / clocking* feature set. The plugin chain is an
-**edge we approach carefully, not a target**.
+collections, guitar-amp sims, etc.) are sold **per user** with **online
+activation**, and the DSP algorithms are Antelope's IP. This project is
+interop for the *mixer / routing / preamp / clocking* feature set. The
+plugin chain is an **edge we approach carefully, not a target**.
+
+**This policy is about licensed, per-user-activated plugin content -- not
+about the device's DSP/FX unit in general.** A feature that ships with the
+hardware/firmware and needs no separate online activation is not a bucket
+D/E/F concern just because it happens to run on the same DSP: **AuraVerb**
+(§1, the bundled reverb) and the **surround per-speaker EQ / Room
+Correction** (part of the surround-monitoring feature, §1) are both fully
+in scope and already decoded. The buckets exist to wall off *Antelope's
+purchasable, activation-gated plugin catalogue* (AFX plugins, Cosmos
+plug-ins), not to discourage using or documenting the unit's built-in
+signal processing.
 
 Every AFX-related frame is classified into one of these buckets **before**
 it is ever sent, decoded-for-replication, or documented:
