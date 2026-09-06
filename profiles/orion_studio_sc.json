@@ -118,6 +118,27 @@
         "0x0b": "MUTE -- putting (bank 0x0b, idx 0) in a channel slot mutes that output channel (right-click -> mute in the matrix). User-confirmed 2026-08. Un-mute = put a real source back.",
         "0x0c": "oscillator (idx 0-1 = oscillator 1 / oscillator 2 -- right-click -> insert oscillator on an output)"
       },
+      "source_semantics": {
+        "0x00": {"kind": "numbered", "name": "Preamp", "display_index_base": 1},
+        "0x01": {"kind": "numbered", "name": "emuMic", "display_index_base": 5},
+        "0x02": {
+          "kind": "numbered",
+          "name": "Computer Playback",
+          "display_index_base": 1,
+          "writable_index_count": 24,
+          "evidence": "WebUI/protocol ROUTE_SOURCE_SPECS defines Computer Playback as a writable source; 24 channels are available on the verified Windows host. Native macOS writes 25-32 were acknowledged, but selecting that wider host-dependent capability is deferred until runtime has an active-host channel-capability signal."
+        },
+        "0x03": {"kind": "numbered", "name": "ADAT In", "display_index_base": 1},
+        "0x04": {"kind": "stereo", "name": "S/PDIF In", "display_index_base": 0},
+        "0x05": {"kind": "numbered", "name": "AFX Out", "display_index_base": 1},
+        "0x06": {"kind": "stereo", "name": "Mix 1", "display_index_base": 0},
+        "0x07": {"kind": "stereo", "name": "Mix 2", "display_index_base": 0},
+        "0x08": {"kind": "stereo", "name": "Mix 3", "display_index_base": 0},
+        "0x09": {"kind": "stereo", "name": "Mix 4", "display_index_base": 0},
+        "0x0a": {"kind": "numbered", "name": "Surround Out", "display_index_base": 1},
+        "0x0b": {"kind": "mute", "name": "MUTE", "display_index_base": 0},
+        "0x0c": {"kind": "numbered", "name": "Oscillator", "display_index_base": 1}
+      },
       "readback_source_banks": {
         "0x02": {
           "indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
