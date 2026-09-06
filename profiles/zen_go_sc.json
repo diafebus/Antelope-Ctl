@@ -124,8 +124,22 @@
 
     "state_report": {
       "candidate_preamp_meters": [
-        {"input_index": 0, "offset": "0xce", "status": "observed", "caveat": "mixed-signal candidate"},
-        {"input_index": 1, "offset": "0xcf", "status": "observed", "caveat": "mixed-signal candidate"}
+        {
+          "input_index": 0,
+          "offset": "0xce",
+          "status": "observed",
+          "confidence": "provisional",
+          "caveat": "mixed-signal candidate",
+          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]]
+        },
+        {
+          "input_index": 1,
+          "offset": "0xcf",
+          "status": "observed",
+          "confidence": "provisional",
+          "caveat": "mixed-signal candidate",
+          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]]
+        }
       ],
       "meter_mappings": [
         {"target": "mix_master", "target_index": 0, "lane": 0, "payload_offset": "0xda", "status": "observed", "evidence": "Capture-backed active MIX 1 mix-master lane; not a physical output meter."},
