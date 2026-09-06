@@ -123,6 +123,10 @@
     },
 
     "state_report": {
+      "candidate_preamp_meters": [
+        {"input_index": 0, "offset": "0xce", "status": "observed", "caveat": "mixed-signal candidate"},
+        {"input_index": 1, "offset": "0xcf", "status": "observed", "caveat": "mixed-signal candidate"}
+      ],
       "magic_offset": 0, "magic": "0x73",
       "sample_rate_byte_offset": 18,
       "clock_source_byte_offset": 19,
@@ -180,6 +184,94 @@
         "notes": "Category 0x01 is a 48-byte record of NUL-terminated ASCII at fixed offsets: model name @0, SERIAL @20 (13 chars), hardware revision @36, then 4 binary bytes @44 (little-endian u32; both units seen decode to mid-2021, so plausibly a build/calibration timestamp -- a GUESS, not confirmed). Category 0x00 is a separate record: only 2 bytes here and BINARY (`01 5a`), with no version string -- firmware_offset is null so parse_firmware_record returns None rather than inventing a version. The ASCII fw rev for this device is the '6.6' at offset 36 of category 0x01. Parsed by protocol.parse_identity_record / parse_firmware_record."
       },
       "category_counts": {},
+      "safe_queries": [
+        {"category": "0x01", "index": 0},
+        {"category": "0x11", "index": 0},
+        {"category": "0x0a", "index": 0},
+        {"category": "0x17", "index": 0},
+        {"category": "0x18", "index": 0},
+        {"category": "0x11", "index": 1},
+        {"category": "0x03", "index": 0},
+        {"category": "0x03", "index": 1},
+        {"category": "0x03", "index": 2},
+        {"category": "0x03", "index": 3},
+        {"category": "0x03", "index": 4},
+        {"category": "0x03", "index": 5},
+        {"category": "0x03", "index": 6},
+        {"category": "0x03", "index": 7},
+        {"category": "0x03", "index": 8},
+        {"category": "0x03", "index": 9},
+        {"category": "0x0b", "index": 0},
+        {"category": "0x16", "index": 0},
+        {"category": "0x0a", "index": 0},
+        {"category": "0x04", "index": 0},
+        {"category": "0x0b", "index": 3},
+        {"category": "0x04", "index": 1},
+        {"category": "0x0b", "index": 3},
+        {"category": "0x04", "index": 2},
+        {"category": "0x0b", "index": 3},
+        {"category": "0x04", "index": 3},
+        {"category": "0x0b", "index": 3},
+        {"category": "0x15", "index": 0},
+        {"category": "0x19", "index": 0},
+        {"category": "0x19", "index": 1},
+        {"category": "0x07", "index": 39},
+        {"category": "0x07", "index": 44},
+        {"category": "0x07", "index": 9},
+        {"category": "0x07", "index": 20},
+        {"category": "0x07", "index": 76},
+        {"category": "0x19", "index": 2},
+        {"category": "0x19", "index": 3},
+        {"category": "0x19", "index": 4},
+        {"category": "0x19", "index": 5},
+        {"category": "0x19", "index": 6},
+        {"category": "0x19", "index": 7},
+        {"category": "0x19", "index": 8},
+        {"category": "0x19", "index": 9},
+        {"category": "0x19", "index": 10},
+        {"category": "0x19", "index": 11},
+        {"category": "0x0b", "index": 4},
+        {"category": "0x12", "index": 0}
+      ],
+      "layouts": [
+        {
+          "category": "0x04",
+          "index": 0,
+          "kind": "mixer_state",
+          "body_size": 34,
+          "record_count": 16,
+          "record_stride": 2,
+          "level_offset": 2,
+          "state_offset": 3,
+          "surface": 0,
+          "status": "capture-confirmed"
+        },
+        {
+          "category": "0x04",
+          "index": 1,
+          "kind": "mixer_state",
+          "body_size": 34,
+          "record_count": 16,
+          "record_stride": 2,
+          "level_offset": 2,
+          "state_offset": 3,
+          "surface": 1,
+          "status": "capture-confirmed"
+        },
+        {
+          "category": "0x18",
+          "index": 0,
+          "kind": "observed_mixer_records",
+          "body_size": 64,
+          "record_count": 32,
+          "record_stride": 2,
+          "level_offset": 0,
+          "state_offset": 1,
+          "surface_stride": 16,
+          "supported_fields": ["solo"],
+          "status": "observed"
+        }
+      ],
       "category_counts_note": "Deliberately empty -- see .hazard. Fill this in ONLY from the device's own connect enumeration, never by probing and never by copying the Orion's counts (different device, different record arrays).",
       "cli": "Works with the shared code: protocol.build_readback_query / is_readback_response / readback_body; CLI `readback <cat> [idx]`. parse_routing_record (cat 0x03) and parse_mixer_record (cat 0x04) are Orion decoders -- the Zen Go has NOT been shown to use those category numbers, so do not assume they apply.",
       "still_unknown": "Whether the Zen Go exposes routing (Orion cat 0x03) or mixer (Orion cat 0x04) state via readback at all. Its Launcher never asked for them in this capture, but the Orion's Launcher only asks on connect too and the categories still answer. Testable on hardware: query cat 0x03 / 0x04 at index 0 and see whether a non-empty body comes back."
@@ -189,7 +281,7 @@
   "channels": {
     "count": 2,
     "addressing": "0-indexed input channel 0-1, written to frame.command.channel_offset",
-    "names": ["Preamp A1", "Preamp A2"],
+    "names": ["Preamp 1", "Preamp 2"],
     "modes": { "0": "mic", "1": "line", "2": "hiz" },
     "hiz_channels": [0, 1],
     "status": "confirmed",
@@ -198,22 +290,23 @@
   },
 
   "buses": {
-    "_comment": "Output buses, addressed in frame.command.channel_offset (@17) like a channel but the id means an output. Only ids 0/1/2 seen. Physical mapping (Monitor / Headphones / ?) not confirmed -- the Zen Go has a main monitor out and a headphone out.",
+    "_comment": "Output buses, addressed in frame.command.channel_offset (@17) like a channel but the id means an output. Captured target ids 0/1/2 map to Monitor / HP1 / HP2.",
     "count": 3,
     "known": {
-      "0": { "name": "bus_0" },
-      "1": { "name": "bus_1" },
-      "2": { "name": "bus_2" }
+      "0": { "name": "Monitor", "verified": true },
+      "1": { "name": "HP1", "verified": true },
+      "2": { "name": "HP2", "verified": true }
     },
     "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = flags (mute / the param-0x66 toggle).",
-    "status": "confirmed (level/mute exist on 3 ids); names + physical outputs unconfirmed",
-    "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: op 0x13 param 0x47 (level 0-96) / 0x48 (mute 0/1) / 0x66 (0/1) each on [17] = 0, 1, 2; state_report offsets 28-33 tracked."
+    "status": "confirmed",
+    "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: isolated Monitor / HP1 / HP2 controls emitted op 0x13 param 0x47 (level 0-96) / 0x48 (mute 0/1) / 0x66 (0/1) with target ids 0/1/2; state_report offsets 28-33 tracked."
   },
 
   "mixer": {
     "mixes": 2,
+    "names": ["MIX 1 / Monitor-HP1", "MIX 2 / HP2"],
     "channels_per_mix": 16,
-    "fader": { "param": "mix_command byte 20", "range": [0, 90], "encoding": "raw = dB attenuation below unity: 0 = 0 dB, 90 = -90 dB" },
+    "fader": { "param": "mix_command byte 20", "range": [0, 90], "min": 0, "max": 90, "direction": "attenuation", "unity": 0, "encoding": "raw = dB attenuation below unity: 0 = 0 dB, 90 = -90 dB" },
     "pan": { "param": "mix_command byte 21 low 6 bits", "center": 32, "range_deg": [-30, 30] },
     "mute_bit": "0x40 of mix_command byte 21",
     "solo_bit": "0x80 of mix_command byte 21",
@@ -235,7 +328,7 @@
     "input_mode": {
       "id": "0x4f", "status": "confirmed", "type": "enum",
       "frame": "command (opcode 0x13) -- channel @17, value @18",
-      "values": { "0": "mic", "1": "line", "2": "hiz" },
+      "values": { "0": "Mic", "1": "Line", "2": "HiZ" },
       "readback": "state_report.status byte (offset 42 + channel), bits 0-1",
       "evidence": "preamps/capture_preamp_a1_gain_line.pcapng starts with 4f 00 01; _a1_gain_hiz with 4f 00 02; state_report offset 42 tracked 0/1/2."
     },
@@ -254,8 +347,9 @@
     },
     "bus_level": {
       "id": "0x47", "status": "confirmed", "type": "int", "range": [0, 96],
+      "direction": "attenuation", "unity": 0,
       "applies_to": "buses (id in @17)",
-      "encoding": "0 = -inf, 96 (0x60) = 0 dB / unity -- same scale as Orion bus_level.",
+      "encoding": "raw = dB attenuation below unity: 0 = 0 dB, 96 = -96 dB",
       "readback": "state_report.bus_block_offset (28) + 2*bus_id, byte 0",
       "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: full 0-96 sweeps on bus 0/1/2."
     },
