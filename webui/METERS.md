@@ -1,55 +1,44 @@
-# Preamp meters -- RESOLVED 2026-09-01
+# Orion meter evidence -- provisional (bounded six-capture review)
 
-## The bug
+## Scope and filter
 
-- Preamp meter strip **CH2 was pinned at clip**; strips **CH3/CH4** showed an
-  output/monitor level, not their preamp input.
-- Cause: both `webui/server.py` and `antelope/cli.py meter` read per-channel
-  meters from the **`0x75` meter frame** at `channel_meter_base_offset (32) +
-  channel`. On this Orion Studio III that frame is **not** a per-channel
-  meter: only byte 32 is live (a monitor / summed level, moves for any
-  input) and byte 33 is a 0/1 flag -- which the `32 + channel` formula
-  renders as channel 1 stuck at raw 0 = clip. Bytes 34+ never move.
-- The profile's `meter_report` note claimed "confirmed for all 12 channels";
-  that was wrong.
+This note records the current evidence boundary; it does not change the
+WebUI parser, upstream CLI, or hardware behavior. Offsets below are **full
+320-byte report offsets**. Profile `payload_offset` values are relative to
+the report payload and therefore add `0x10`. Free-running `0x75` meter
+reports require byte 1 == `0x1f`; byte 1 == `0x00` is a readback response
+and is excluded.
 
-## Where the real meters are
+The bounded review covered `vumeter-test-ch1.pcapng`,
+`audioplaying-audiostop-meter.pcapng`, `vumeters-sinewave.pcapng`,
+`preamp1-2-allouts mute.pcapng`, `matrixtest-pre1-cmpplay1-2.pcapng`, and
+`mix1-masterfaderplay.pcapng`. These captures establish activity and
+correlation only; they do not provide route-independent ownership isolation,
+stereo/physical mapping, or a new hardware confirmation.
 
-A live recapture (feed preamp 1, then 2, then 3, then 4, gaps between, while
-polling the device):
+## Current interpretation
 
-| fed        | byte that dropped to ~1 |
-|------------|-------------------------|
-| preamp 1   | `0x73` offset **157**   |
-| preamp 2   | `0x73` offset **158**   |
-| preamp 3   | `0x73` offset **159**   |
-| preamp 4   | `0x73` offset **160**   |
+- Retain full-report `0x73` offsets **157..160** as one provisional mono lane
+  per current Mix 1..4 label. DSP activity is observed, but fixed lane
+  ownership is low confidence. Do not infer stereo or physical-preamp
+  ownership.
+- Repeated regions are not universal four-lane mirrors. Across the six
+  captures, only `158↔222`, `159↔223`, and `160↔224` are exact throughout;
+  first-lane copies `157↔169` and `157↔221` diverge in some captures.
+- Playback `0x73` @177/@178 and meter-only `0x75` @34/@35 co-varied nearest in
+  time within 5 ms (`r≈0.998`) in the playback capture. The owner is
+  unresolved; this is not evidence for L/R, Mix 1 stereo, or physical input.
+- `0x75` @32 is an aggregate/monitor observation and @33 is a flag. Do not
+  describe @32 as the only live byte.
 
-So the per-channel input meters are in the **`0x73` state report** at
-**`157 + channel_index`** for the 12 physical channels. Inverted scale (96 =
-silence, → 0 = clip), same `db_curve` as before (`raw ≈ -dBFS`). Three
-identical mirror copies of the 12-byte block exist at bases 157 / 169 / 221
--- we use 157. (This resolves the profile's old `unresolved_state_offsets`
-entry for "157/169/221".)
+## Runtime/documentation boundary
 
-## The fix
-
-- `profiles/orion_studio_sc.json`: `frame.state_report.channel_meter_base_offset
-  = 157` (+ scale/notes); `frame.meter_report` (0x75) demoted to
-  "monitor/sum only", not per-channel.
-- `webui/server.py` `_parse_meters(state)` now reads `157 + ch` from the
-  `0x73` frame. `meters_db` is populated from the state frame, not the meter
-  frame.
-
-## Still to do
-
-- **`antelope/cli.py` `cmd_meter`** has the same bug -- it reads `0x75` via
-  `transport.read_one` + `protocol.parse_meter_level`. Point it at the
-  `0x73` state report / `state_report.channel_meter_base_offset` the same way.
-- Confirm `157 + ch` on channels 5-12 (only 1-4 were fed in the recapture;
-  5-12 sat at noise floor, consistent with the contiguous formula).
-- `?meterdebug=1` (in this build) still dumps both the `0x75` frame and the
-  `0x73` 150-235 block live, with movers ringed -- use it for the above.
+The profile retains `state_report.channel_meter_base_offset = 157` as the
+canonical base and carries four candidate mapping entries. This document and
+`PROTOCOL.md` deliberately qualify that mapping; source WebUI and upstream
+CLI behavior remain outside this evidence correction. The dated investigation
+sections below are historical trail, not stronger provenance than this
+summary.
 
 ## Correction 2026-09-04: `157+ch` is NOT a fixed preamp-input meter
 
@@ -213,7 +202,7 @@ out one plausible-sounding but wrong theory.
   (only observed during the unreliable async-timing period -- not
   reproduced under careful timing since).
 
-## 2026-09-05, step 3 -- byte 177/178 is a much stronger, cleaner candidate: the Mix 1 MASTER meter, not preamp/surround at all
+## 2026-09-05, step 3 -- historical 177/178 observation (owner unresolved)
 
 Cross-checked against the real Windows Launcher, which changed the picture:
 
@@ -243,16 +232,13 @@ Cross-checked against the real Windows Launcher, which changed the picture:
   -- a single pair of bytes is exactly what a mix bus's own master meter
   should look like, unlike the 12-byte-per-block shape of 157+ch.
 
-**Working hypothesis, not yet fully proven:** byte 177 = Mix 1 master L,
-byte 178 = Mix 1 master R (the VIRTUAL MIXER's own summed output level),
-a genuinely different and better-isolated meter than the 157+ch block.
-This is a DIFFERENT thing from a preamp meter -- per the user, mixers
-(virtual, software-summed buses) and preamps (physical analog inputs) are
-two distinct concepts and must not be conflated in the profile. The
-157+ch block's true identity is now less certain than the 2026-09-05 step
-2 entry implied -- it may be the Surround tab's meters, or something else
-entirely; it is NOT confirmed to be, and increasingly looks like it is
-NOT, a physical preamp-input meter.
+**Owner unresolved:** 177/178 are retained as an observed playback-active
+pair, not as Mix 1 L/R or any stereo mapping. In the same playback capture,
+meter-only `0x75` @34/@35 reports (byte 1 == `0x1f`) co-varied with
+`0x73` @177/@178 within 5 ms (`r≈0.998`); this does not establish ownership.
+The pair is distinct from the 157..160 candidate lanes, and neither pair is
+claimed as a physical-preamp meter. The capture contained no route-command
+frame, so route ownership remains unresolved.
 
 **2026-09-05 addendum -- the "channel 1 went missing" scare was a muted route, not a missing register.** A follow-up capture (`preamp1-2-allouts mute.pcapng`) showed byte 157 completely flat despite the user confirming real signal was on preamp 1, while byte 158 correctly tracked preamp 2 -- looked like channel 1 specifically might be broken or metered somewhere else. Checked live: `surround_in` channels 1-4 were ALL set to MUTE at that point (likely a side effect of the "mute all outputs" test setup also muting `surround_in`'s own input routing, which is a distinct thing from the monitor/headphone/line output buses). Restoring `surround_in` ch1/ch2 to preamp 1/preamp 2 immediately brought signal back on both channels, user-confirmed live. So byte 157 is not missing or wrong for channel 1 -- it behaves exactly like channel 2, tied to `surround_in`'s actual routing, and that routing had simply been muted. An older, unrelated capture (`vumeter-test-ch1.pcapng`, 2026-08-26, predating this whole investigation) independently confirms byte 157 (+mirrors 169/221) cleanly tracking real signal fed only into preamp 1, full range down to 0.
 
@@ -272,15 +258,16 @@ elsewhere, scanning the WHOLE 320-byte report for a byte that moves with
 the physical signal and stays flat through everything else -- the mirror
 image of the tests done so far.
 
-## 2026-09-05, step 4 -- RESOLVED (reframing, not a new byte): 157/158/159/160 are the four virtual Mixer buses' own master meters
+## 2026-09-05, step 4 -- historical reframing (superseded by six-capture bounded review)
 
-The user's correction: this whole investigation had been reverse-engineered
-backwards from the start -- the 2026-09-01 capture that fed preamps 1-4 in
-turn and saw offsets 157/158/159/160 respond wasn't watching four
-per-preamp-channel bytes. It was watching **Mix 1 / Mix 2 / Mix 3 / Mix 4's
-own master meters**, one byte each, and it only looked like "preamp N"
-because each mix bus's default strip patching happens to include the
-matching preamp among its sources:
+The historical reframing below is retained as a hypothesis trail, not a
+resolved ownership claim. The 2026-09-01 default-route capture showed
+activity at offsets 157/158/159/160 when preamps 1-4 were fed, but that
+observation does not distinguish fixed Mix ownership from downstream DSP
+activity or physical-input metering. The current bounded review therefore
+retains one provisional mono candidate lane per Mix 1..4 label, with low
+confidence and no stereo/physical inference. The default strip-routing
+context was:
 
 - Mix 1 (routing dest 10) strip 1 defaults from `surround 1`, which
   defaults from `surround_in` ch1, which defaults from preamp 1 -- three
@@ -290,65 +277,36 @@ matching preamp among its sources:
 - Mix 3 / Mix 4 (dest 12/13) likewise carry preamp content among their many
   default sources.
 
-This reframing is consistent with EVERY piece of evidence gathered this
-session, cleanly:
+The earlier observations remain useful activity evidence but do not prove
+ownership: `surround_in` and `mix_ch1` routing can light candidate bytes, while
+`com_rec` did not in the tested setup. Bytes 161-168 were not confirmed to
+move in the examined captures, but that is not proof that they are unused.
+The 177/178 playback-active pair remains separate and unresolved. Mirror
+relations are documented by the bounded six-capture result above, not by the
+historical three-copy wording in this trail.
 
-- `surround_in` correlation (step 1/2 above): real, because Mix 1 draws
-  from the surround bus's output by default.
-- The `mix_ch1` oscillator test lighting byte 157, and `com_rec` producing
-  no change: exactly what "byte 157 = Mix 1's own master meter" predicts
-  (`com_rec` isn't a mix bus; `mix_ch1`'s own input strips summing to its
-  master is exactly a mixer-master mechanism).
-- Bytes 161-168 (the rest of the nominal 12-byte "per-channel" block) were
-  NEVER confirmed to move in ANY capture examined this session, across an
-  exhaustive full-320-byte scan of five different .pcapng files -- because
-  there are only 4 mixers, not 12 channels. There was never a real
-  contiguous 12-byte block; 157-160 (Mix 1-4) is real, 161-168 is
-  unexplained/likely unused padding or something unrelated, still open.
-- Bytes 177/178 (step 3): still a strong, distinct, cleanly-isolated
-  signal (returns to exactly 96, unlike 157's incomplete decay) --
-  possibly a higher-resolution or stereo (L/R) representation specific to
-  Mix 1, or something else again; not yet reconciled with the 157-160
-  four-mixer reframing. Left open rather than forced to fit.
-
-**Where the TRUE preamp (physical-input) meter lives is very likely
-outside the HID control stream entirely.** An exhaustive scan of every
-byte in both 320-byte report types (0x73 state, 0x75 meter) across five
-capture files (`vumetertest.pcapng`, `audioplaying-audiostop-meter.pcapng`,
-`preamp1-2-allouts mute.pcapng`, `vumeter-test-ch1.pcapng`,
-`vumeters-sinewave.pcapng`) found NOTHING beyond the known mixer-meter
-mirrors, gain bytes, one status byte, and already-documented startup-ramp
-noise -- and the profile's own hard-won HID descriptor analysis
-(`frame.readback` notes) already established this device exposes exactly
-ONE 320-byte input report type family (0x73/0x74/0x75), nothing else, on
-the HID interface. This is a USB Audio Class device -- actual signal
-travels over a separate isochronous audio endpoint, not HID interrupt
-reports. The Launcher's Preamp tab most likely computes its meters
-host-side from the live PCM audio stream itself (a standard driver-side
-technique), a completely different mechanism this project has never
-captured or analyzed. If that's right, there is no missing HID byte to
-find for a true preamp meter -- it was never going to be there.
+**Physical-preamp ownership remains unresolved.** The examined HID captures
+show candidate DSP activity but do not provide route-independent physical
+isolation. This is a USB Audio Class device with a separate isochronous audio
+endpoint; the Launcher's Preamp tab may derive levels from PCM, but that is
+not established here. No HID candidate in this note should be promoted to a
+physical-input meter without a capture that isolates a real input from other
+sources.
 
 **Net effect for the webui/profile:** `channel_meter_base_offset` (157) is
-being renamed in concept from "per-channel input meter" to "Mix 1-4
-master meter (byte N = Mix N+1)" -- see the profile's corrected notes.
-The webui's preamp meter strips should stop reading this block; there is
-currently no known way to show a true, routing-isolated physical preamp
-level in this tool, short of analyzing the audio stream directly (out of
-scope for the HID-only control daemon this project has built so far).
+retained as the canonical base for the current provisional candidate mapping.
+The profile and `PROTOCOL.md` qualify it as one mono lane per current Mix 1..4
+label with low ownership confidence; this evidence note does not prescribe a
+source-code or upstream-CLI change.
 
-**Reassurance for normal use:** with the pool otherwise idle, live signal on
-**preamp 1 and preamp 2 simultaneously** (both still on their default
-`surround_in` routing) read back as two distinct, correct values at the
-same time -- byte 157 = 17 (-17 dB), byte 158 = 21 (-21 dB), both mirrors
-(221=16, 222=21) agreeing. So default, untouched routing tracks multiple
-real inputs independently and correctly; the shared-pool ambiguity only
-bites once `surround_in`/`mix_ch` routing is repatched away from that
-default, which is not something normal tracking workflows do.
+**Capture-specific observation:** with default `surround_in` routing, live
+signals on preamps 1 and 2 produced distinct values at 157/158 and the
+corresponding 222 lane matched in that capture. This demonstrates activity
+under that route, not route-independent physical ownership; first-lane mirror
+relationships are not universal.
 
-**Profile status:** `profiles/orion_studio_sc.json`'s
-`channel_meter_base_offset` / `channel_meter_notes` and the two "157-176" /
-"221-232" `unresolved_state_offsets` entries have been updated (both this
-sandbox copy and canonical `../antelope-ctl/profiles/orion_studio_sc.json`)
-to describe the shared-pool finding instead of the superseded
-`surround_in`-only claim.
+**Profile status:** `profiles/orion_studio_sc.json` retains
+`channel_meter_base_offset` 157 and four provisional mapping entries. Its
+notes and the `157-176` / `221-232` unresolved entries now state the
+six-capture limits, precise later mirror table, unresolved 177/178 owner, and
+strict `0x75` byte-1 filter.
