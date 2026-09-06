@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MONITOR A / B knob, pure SVG, ~2 KB, scalable. No mesh gradient (that made
+     mon-knob.svg ~490 KB): the body's 3-D shading is one offset radial
+     gradient + an edge vignette, and the glossy hotspot is an
+     feSpecularLighting filter fed a dome height-map (blurred alpha) lit by a
+     point light. This is the master; the same markup is inlined in
+     static/index.html by monKnobSVG() with per-instance id prefixes. The
+     <g data-rot> indicator is what the UI rotates about the viewBox centre
+     (50,50): rotate(-150..150 50 50). Tuning: fePointLight x/y/z + the filter's
+     surfaceScale / specularConstant / specularExponent / stdDeviation. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="mk-tint" cx="41%" cy="34%" r="78%">
+      <stop offset="0" stop-color="#e9605f"/>
+      <stop offset=".3" stop-color="#c22530"/>
+      <stop offset=".62" stop-color="#84121b"/>
+      <stop offset=".86" stop-color="#500912"/>
+      <stop offset="1" stop-color="#2a050b"/>
+    </radialGradient>
+    <radialGradient id="mk-bezel" cx="50%" cy="28%" r="72%">
+      <stop offset="0" stop-color="#8f9297"/>
+      <stop offset=".4" stop-color="#3c3e42"/>
+      <stop offset=".8" stop-color="#141416"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+    <radialGradient id="mk-vig" cx="50%" cy="50%" r="50%">
+      <stop offset=".72" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".5"/>
+    </radialGradient>
+    <radialGradient id="mk-bump" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".62" stop-color="#ffffff" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="mk-spec" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="b"/>
+      <feSpecularLighting in="b" surfaceScale="4.5" specularConstant="1" specularExponent="16" lighting-color="#ffffff" result="s">
+        <fePointLight x="30" y="16" z="42"/>
+      </feSpecularLighting>
+      <feComposite in="s" in2="SourceAlpha" operator="in"/>
+    </filter>
+    <clipPath id="mk-face"><circle cx="50" cy="50" r="38.5"/></clipPath>
+  </defs>
+  <circle cx="50" cy="50" r="49" fill="url(#mk-bezel)"/>
+  <circle cx="50" cy="50" r="49" fill="none" stroke="#ffffff" stroke-opacity=".13" stroke-width=".7"/>
+  <circle cx="50" cy="50" r="40" fill="#09090a"/>
+  <g clip-path="url(#mk-face)">
+    <circle cx="50" cy="50" r="38.5" fill="url(#mk-tint)"/>
+    <circle cx="50" cy="50" r="38.5" fill="url(#mk-vig)"/>
+    <circle cx="50" cy="50" r="40" fill="url(#mk-bump)" filter="url(#mk-spec)"/>
+  </g>
+  <circle cx="50" cy="50" r="38.5" fill="none" stroke="#000000" stroke-opacity=".4" stroke-width="1.4"/>
+  <g data-rot="" transform="rotate(0 50 50)">
+    <circle cx="50" cy="12" r="3.4" fill="#000000" fill-opacity=".38"/>
+    <circle cx="50" cy="11.3" r="2.8" fill="#f0eaea"/>
+    <circle cx="50" cy="10.6" r="1.2" fill="#ffffff"/>
+  </g>
+</svg>

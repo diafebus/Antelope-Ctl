@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="43.935429mm"
+   height="50.106869mm"
+   viewBox="0 0 43.935429 50.106869"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer7"
+     transform="translate(-32.038855,-29.919821)">
+    <g
+       id="layer4"
+       style="display:inline">
+      <g
+         id="g34"
+         transform="translate(7.1875545,-3.3370787)">
+        <g
+           id="g3"
+           transform="translate(-8.0219269,5.3254312)"
+           style="display:inline">
+          <circle
+             style="fill:none;stroke:#000000;stroke-width:0.1;stroke-linejoin:round"
+             id="path2"
+             cx="54.840942"
+             cy="-52.983658"
+             r="12.5"
+             transform="scale(1,-1)" />
+          <path
+             id="path1"
+             style="fill:#4b0404;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-linejoin:round"
+             d="m 51.840763,40.483834 v 4.547009 a 8.5,8.5 0 0 0 -5.499922,7.953003 8.5,8.5 0 0 0 5.499922,7.953003 v 4.547009 h 6.000151 v -4.547009 a 8.5,8.5 0 0 0 5.499923,-7.953003 8.5,8.5 0 0 0 -5.499923,-7.953003 v -4.547009 z" />
+          <rect
+             style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.104584;stroke-linejoin:round"
+             id="rect2"
+             width="0.78835768"
+             height="4.4360867"
+             x="54.446659"
+             y="40.486126" />
+          <rect
+             style="fill:#800000;fill-opacity:1;stroke:#000000;stroke-width:0.104584;stroke-linejoin:round"
+             id="rect2-3"
+             width="0.78835768"
+             height="4.4360867"
+             x="54.446659"
+             y="61.047771" />
+          <circle
+             style="fill:#5e0000;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-linejoin:round"
+             id="path3"
+             cx="54.840942"
+             cy="52.983658"
+             r="6.5" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
