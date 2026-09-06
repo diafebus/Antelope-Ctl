@@ -33,7 +33,7 @@
       "channel_offset": 17,
       "value_offset": 18,
       "status": "confirmed",
-      "notes": "The per-channel / per-bus setter, same as Orion's SET_PARAM. param @16, target (channel or bus id) @17, value @18. Used for: gain (0x50), input_mode (0x4f), phantom (0x51), phase_invert (0x52), bus_level (0x47), bus_mute (0x48), bus param 0x66, param 0x49 (see params).",
+      "notes": "The per-channel / per-bus setter, same as Orion's SET_PARAM. param @16, target (channel or bus id) @17, value @18. Used for: gain (0x50), input_mode (0x4f), phantom (0x51), phase_invert (0x52), bus_level (0x47), bus_mute (0x48), bus_dim (0x66), param 0x49 (see params).",
       "evidence": "preamps/capture_preamp_a1_gain_mic.pcapng etc: op 0x13, param 0x50, [17]=0 (preamp A1) / 1 (A2), [18] swept the gain; mode/phantom/phase in the same layout."
     },
 
@@ -303,7 +303,7 @@
       "1": { "name": "HP1", "verified": true },
       "2": { "name": "HP2", "verified": true }
     },
-    "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = flags (mute / the param-0x66 toggle).",
+    "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = flags (mute / dim).",
     "status": "confirmed",
     "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: isolated Monitor / HP1 / HP2 controls emitted op 0x13 param 0x47 (level 0-96) / 0x48 (mute 0/1) / 0x66 (0/1) with target ids 0/1/2; state_report offsets 28-33 tracked."
   },
@@ -365,11 +365,12 @@
       "readback": "state_report bus_block flags byte (offset 29 + 2*bus_id), a bit",
       "evidence": "capture_11: op 0x13 param 0x48 [17] = 0/1/2, [18] = 0/1."
     },
-    "bus_param_0x66": {
-      "id": "0x66", "status": "observed", "type": "bool",
+    "bus_dim": {
+      "id": "0x66", "status": "confirmed", "type": "bool",
       "applies_to": "buses",
-      "notes": "A third per-bus toggle alongside level (0x47) and mute (0x48). Probably dim or mono. Not isolated.",
-      "evidence": "capture_11: op 0x13 param 0x66 [17] = 0/1/2, [18] = 0/1."
+      "readback": "state_report bus_block flags byte (offset 29 + 2*bus_id), dim state",
+      "notes": "Per-bus output dim toggle alongside level (0x47) and mute (0x48). The captured command uses the confirmed SET_PARAM frame with bus id @17 and enabled state @18.",
+      "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: op 0x13 param 0x66 [17] = 0/1/2, [18] = 0/1; the state report bus flags track the output control state at offsets 29, 31, and 33."
     },
     "param_0x49": {
       "id": "0x49", "status": "observed", "type": "int",
@@ -461,7 +462,7 @@
   "open_questions": [
     "HID report descriptor -- dump from Linux hidraw (tools/hid_probe.py). Feature report? (Orion/Discrete have none -> no readback for routing/mixer.)",
     "Routing: slot index = strip-1 and source banks 0x00-0x0a are decoded (2026-08-31). Left: what is source bank 0x03 (4 ch, only seen as strips 1-4's default -- playback 1-4? loopback? mix return?); and what exactly are destination groups 3 (8 slots) and 5 (4 slots, strips 1-4 only) as opposed to 6/7/8/9 (the shared 32-slot strip-input map).",
-    "The two output-volume paths: opcode 0x16/0xd4 (d4 04 01 03 ...) vs buses 0/1/2 (0x47/0x48/0x66). Which drives the physical Monitor out and which the Headphone out? What does param 0x66 do (dim/mono)?",
+    "The two output-volume paths: opcode 0x16/0xd4 (d4 04 01 03 ...) vs buses 0/1/2 (0x47/0x48/0x66). Which drives the physical Monitor out and which the Headphone out?",
     "param 0x49 set to 12/15 during mixer use -- active-mix / solo-mask / surface selector?",
     "Mic modeling frame (enable/model/pattern) -- capture the emuMic panel; likely opcode 0x1a or 0x1c (param 0xd5).",
     "DSP/FX: opcodes 0x1a / 0x1c (0xd5) and 0x23 (0xd7) in capture_07_dsp.",
