@@ -1185,6 +1185,22 @@
       "id": "0x04",
       "status": "DECODED 2026-09-03 -- capture clock-source-WC-adat-adatx2-adatx4-spdif-usb-oven (usbmon). Readback confirmed.",
       "type": "SET_GLOBAL (opcode 0x12), enum value at offset 17",
+      "runtime_status": "confirmed",
+      "runtime_type": "enum",
+      "runtime_applies_to": "globals",
+      "runtime_range": [0, 6],
+      "runtime_internal_value": 0,
+      "runtime_frame": {
+        "text": "SET_GLOBAL opcode 0x12: clock-source param 0x04 at offset 16, value at offset 17",
+        "offsets": [
+          {"name": "param_id", "offset": 16},
+          {"name": "value", "offset": 17}
+        ]
+      },
+      "runtime_readback": {
+        "text": "state_report clock source index at offset 19",
+        "offset": 19
+      },
       "frame": "build_global_command(profile, 'clock_source', value)",
       "values": {
         "0": "Oven (internal OCXO clock -- the device's own reference; power-on default)",

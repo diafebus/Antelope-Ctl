@@ -402,9 +402,16 @@
     },
     "clock_source": {
       "id": "0x04", "status": "confirmed", "type": "enum",
+      "runtime_applies_to": "globals",
+      "runtime_internal_value": 0,
+      "runtime_values": {
+        "0": "Raw 0 (label unconfirmed)",
+        "1": "Raw 1 (label unconfirmed)",
+        "2": "Raw 2 (label unconfirmed)"
+      },
       "frame": "global_command (opcode 0x12) -- index @17",
       "range": [0, 2],
-      "values_note": "3 sources (the capture name notes 'no word clock exists' on the Zen Go). Likely Internal / USB / S/PDIF -- order not confirmed.",
+      "values_note": "3 sources (the capture name notes 'no word clock exists' on the Zen Go). Likely Internal / USB / S/PDIF -- order not confirmed. Runtime labels intentionally remain raw because the source order is unconfirmed. Raw 0 retains the legacy application's internal-clock/sample-rate gating assumption; this does not promote its source name to confirmed.",
       "readback": "state_report offset 19",
       "evidence": "capture_06_clock_source_no_word_clock_exists.pcapng: op 0x12 param 0x04 value 0/1/2, offset 19 followed 1:1."
     },
