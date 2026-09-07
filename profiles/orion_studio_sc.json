@@ -931,6 +931,15 @@
       "value_meaning": "7-position output-reference-level selector, 1 dBu per step: index 0 = 20 dBu, 1 = 19, 2 = 18, 3 = 17, 4 = 16, 5 = 15, 6 = 14 dBu. Same scale on all three targets (Monitor A, Monitor B, Line Out). USER-CONFIRMED against the Antelope Launcher / Orion Studio Synergy Core, 2026-09-02 -- resolves the earlier 'meaning not known from the capture'. The 2026-08 sweep covered exactly these 7 stops (0-6); the readback field is 3 bits so a value 7 is representable but the hardware offers no 8th stop.",
       "trim_dbu": { "0": 20, "1": 19, "2": 18, "3": 17, "4": 16, "5": 15, "6": 14 },
       "readback": "state_report.output_trim_block -- target 0 at offset 24 (value<<4), target 1 at offset 25 bits 2-4 (value<<2), target 2 at offset 25 bits 5-7 (value<<5)",
+      "runtime_readback": {
+        "frame": "state_report",
+        "semantic": "output_trim",
+        "fields": [
+          { "kind": "bit_field", "target": 0, "offset": 24, "mask": "0x70", "shift": 4 },
+          { "kind": "bit_field", "target": 1, "offset": 25, "mask": "0x1c", "shift": 2 },
+          { "kind": "bit_field", "target": 2, "offset": 25, "mask": "0xe0", "shift": 5 }
+        ]
+      },
       "evidence": "capture settings-trim-mona-monb-line-panlaw (2026-08): each of the 3 targets swept 0->6 and back to 0; the packed readback bytes tracked value<<shift exactly on every one of the 20 steps.",
       "panlaw_note": "The capture is named '...-panlaw' but never sent a 4th target or any other param_id -- pan law was not actually captured. TESTED LIVE 2026-09-03: SET_PARAM 0x4b target 3, values 0..3 -- zero effect on 0x73 [24]/[25], on readback cat 0x16, or anywhere. So pan law is NOT a 4th target of 0x4b. It is a different param_id (or opcode); the spare bits at 0x73 [25] bits 0-1 / [24] bits 0-3 stayed 0 throughout, so if pan law lands there it needs its own write to reveal the param. Still needs a Launcher capture (a pan-law-only click)."
     },
@@ -969,6 +978,13 @@
       "range": [0, 100],
       "value_meaning": "Front-panel screen brightness as a percentage, 0 = off/darkest, 100 (0x64) = brightest. Raw byte == the percentage, no scaling.",
       "readback": "state_report offset 26 (state_report.screen_brightness_byte_offset) -- one plain byte, equals the last commanded value.",
+      "runtime_readback": {
+        "frame": "state_report",
+        "semantic": "brightness",
+        "fields": [
+          { "kind": "scalar", "offset": 26, "width": 1 }
+        ]
+      },
       "evidence": "capture macos-scrbrght-0-100-50-multvalue (2026-08, native macOS): user dragged the brightness slider through 0 / 100 / 50 and many intermediate values while watching the device's physical screen change. 25 outgoing frames, all opcode 0x12 / param 0x0e / value at offset 17 (0x00..0x64); every one matched offset 26 in the next 0x73 report exactly (25/25). This overturns the earlier 'screen brightness is host-side, sends nothing' conclusion -- that was a VM artifact (the slider did nothing under the VM; the frames never reached the device). On native macOS it is a real, persisted, readable device parameter.",
       "notes": "First confirmed user of opcode 0x12 with a genuine 0x73 readback (talkback params 0x1f/0x20/0x27 use 0x12 too but read back in the packed talkback_block). WIRED INTO cli.py (2026-08): `set-brightness <0-100>`, via protocol.build_global_command(profile, 'screen_brightness', value) + protocol.parse_state_scalar(profile, data, 'screen_brightness_byte_offset'). HARDWARE ROUND-TRIP CONFIRMED by the user (2026-08) -- the CLI command changes the device's physical screen."
     },
