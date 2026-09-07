@@ -1403,6 +1403,17 @@
       4,
       5
     ],
+    "output_mono_targets": {
+      "parameter": "bus_mono",
+      "status": "confirmed",
+      "values": [
+        0,
+        1,
+        2,
+        5
+      ],
+      "evidence": "Captures mona/monb/hp1/hp2 (2026-08): Mono was toggled on then off in isolation on bus IDs 0, 5, 1, and 2 respectively; every SET_PARAM(0x69, bus_id, bool) matched state_report offset 29 + 3*bus_id bit 0x10. No Mono write/readback evidence exists for Line bus 3 or Reamp bus 4."
+    },
     "input_mode_allowed_values": [
       0,
       1,
