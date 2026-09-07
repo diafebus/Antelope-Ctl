@@ -845,6 +845,10 @@
       "status": "confirmed",
       "type": "int8",
       "encoding": "two's complement, dB",
+      "runtime_range": [
+        -6,
+        75
+      ],
       "per_mode_range": {
         "mic": [
           0,
@@ -863,7 +867,7 @@
           20
         ]
       },
-      "evidence": "capture2, gain sweeps per mode, ranges match UI drag limits (not a spec sheet -- worth cross-checking)"
+      "evidence": "capture2, gain sweeps per mode, ranges match UI drag limits; line-mode minimum -6 dB user-confirmed"
     },
     "phantom": {
       "id": "0x51",
