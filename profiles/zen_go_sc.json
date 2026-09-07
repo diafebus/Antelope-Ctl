@@ -142,10 +142,12 @@
         }
       ],
       "meter_mappings": [
-        {"target": "mix_master", "target_index": 0, "lane": 0, "payload_offset": "0xda", "status": "observed", "evidence": "Capture-backed active MIX 1 mix-master lane; not a physical output meter."},
-        {"target": "mix_master", "target_index": 0, "lane": 1, "payload_offset": "0xdb", "status": "observed", "evidence": "Capture-backed active MIX 1 mix-master lane; not a physical output meter."},
-        {"target": "mix_master", "target_index": 1, "lane": 0, "payload_offset": "0xde", "status": "observed", "evidence": "Capture-backed active MIX 2 mix-master lane; not a physical output meter."},
-        {"target": "mix_master", "target_index": 1, "lane": 1, "payload_offset": "0xdf", "status": "observed", "evidence": "Capture-backed active MIX 2 mix-master lane; not a physical output meter."}
+        {"target": "physical_output", "target_index": 0, "lane": 0, "payload_offset": "0xda", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xea to Monitor left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 0, "lane": 1, "payload_offset": "0xdb", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xeb to Monitor right; this lane is read independently and the output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 1, "lane": 0, "payload_offset": "0xdc", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xec to HP1 left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 1, "lane": 1, "payload_offset": "0xdd", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xed to HP1 right; this lane is read independently and the output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 2, "lane": 0, "payload_offset": "0xde", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xee to HP2 left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 2, "lane": 1, "payload_offset": "0xdf", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xef to HP2 right; this lane is read independently and the output meter feed and stage are unknown."}
       ],
       "magic_offset": 0, "magic": "0x73",
       "sample_rate_byte_offset": 18,
