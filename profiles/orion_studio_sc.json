@@ -293,6 +293,84 @@
       "physical_meter_evidence": "Sequential preamp 1-12 sine sweep maps full-report 0x73 offsets 221-232 (payload 0xcd-0xd8) one byte per physical input; clipping sweep for preamps 1-4 reaches raw 0. Selector values 15 and 18 demonstrate that this physical bank is selector-independent.",
       "meter_mappings": [
         {
+          "target": "mixer_strip", "target_index": 1, "lane": 20,
+          "payload_offset": "0x80", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 20 is positively observed at full-report 0x73 @144 only after selector @121 changed to 22; inverted one-byte lane, with 96 at rest and 0 under the captured oscillator route."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 21,
+          "payload_offset": "0x81", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 21 independently changed only full-report 0x73 @145 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 22,
+          "payload_offset": "0x82", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 22 independently changed only full-report 0x73 @146 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 23,
+          "payload_offset": "0x83", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 23 independently changed only full-report 0x73 @147 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 24,
+          "payload_offset": "0x84", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 24 independently changed only full-report 0x73 @148 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 25,
+          "payload_offset": "0x85", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 25 independently changed only full-report 0x73 @149 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 26,
+          "payload_offset": "0x86", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 26 independently changed only full-report 0x73 @150 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 27,
+          "payload_offset": "0x87", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 27 independently changed only full-report 0x73 @151 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 28,
+          "payload_offset": "0x88", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 28 independently changed only full-report 0x73 @152 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 29,
+          "payload_offset": "0x89", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 29 independently changed only full-report 0x73 @153 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 30,
+          "payload_offset": "0x8a", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 30 independently changed only full-report 0x73 @154 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 31,
+          "payload_offset": "0x8b", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 31 independently changed only full-report 0x73 @155 under selector @121=22, then returned to 96 after mute."
+        },
+        {
+          "target": "mixer_strip", "target_index": 1, "lane": 32,
+          "payload_offset": "0x8c", "raw_range": [0, 96], "status": "confirmed",
+          "byte_equals": { "payload_offset": "0x69", "value": 22 },
+          "evidence": "Mix 2 strip 32 independently changed only full-report 0x73 @156 under selector @121=22, then returned to 96 after mute."
+        },
+        {
           "target": "physical_output", "target_index": 0, "lane": 0,
           "payload_offset": "0x8d", "raw_range": [0, 96], "status": "observed",
           "evidence": "User-approved packet-order hypothesis assigns active candidate full-report 0x73 @157 to profile output 0 (monitor_a). This is a provisional feed; physical post-fader ownership and meter stage unknown. One mono candidate only; no L/R inference."
@@ -324,7 +402,7 @@
         }
       ],
       "channel_meter_scale": "inverted raw 0..96: 0x60 (96) at rest/silence, falls toward 0x00 at top-of-scale saturation. No calibrated transfer curve is claimed for this physical bank.",
-      "channel_meter_notes": "CONFIRMED physical preamps 1-12: full-report 0x73 @221-232 (payload 0xcd-0xd8), one byte per input, selector-independent across observed selector values 15 and 18. Inverted raw range 0..96: 96 is rest/silence and values fall toward raw 0 at top-of-scale saturation; no separate clip flag or newly calibrated transfer curve is claimed. The older @157-168 region conditionally mirrors @221-232 when selector @121 is 0 but diverges in other states, so it must not drive physical meters. Separately, the user-approved provisional output hypotheses at @157/@158/@159/@160/@177/@178 remain one mono candidate each with unresolved ownership and no L/R geometry. Free-running 0x75 requires byte 1 == 0x1f; byte 1 == 0x00 readback responses are excluded.",
+      "channel_meter_notes": "CONFIRMED physical preamps 1-12: full-report 0x73 @221-232 (payload 0xcd-0xd8), one byte per input, selector-independent across observed selector values 15 and 18. CONFIRMED bounded selected bank: only Mix 2 strips 20-32 are mapped, at full-report @144-156 (payload 0x80-0x8c), and only while selector full-report @121 (payload 0x69) equals 22. Mix 2 strips 1-19 and every Mix 1/3/4 strip remain unknown; @205 is not a strip lane. Inverted raw range 0..96: 96 is rest/silence and values fall toward raw 0 at top-of-scale saturation; no separate clip flag or newly calibrated transfer curve is claimed. The older @157-168 region conditionally mirrors @221-232 when selector @121 is 0 but diverges in other states, so it must not drive physical meters. Separately, the user-approved provisional output hypotheses at @157/@158/@159/@160/@177/@178 remain one mono candidate each with unresolved ownership and no L/R geometry. Free-running 0x75 requires byte 1 == 0x1f; byte 1 == 0x00 readback responses are excluded.",
       "status_bits": {
         "input_mode": {
           "mask": "0x03",
