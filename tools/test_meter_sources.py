@@ -1,0 +1,107 @@
+"""Offline meter-source checks. Run: python3 -m unittest tools.test_meter_sources."""
+import copy
+import importlib
+import json
+from pathlib import Path
+import sys
+import types
+import unittest
+from unittest import mock
+
+from antelope import cli
+from antelope import protocol
+from antelope import transport
+
+
+def load_server_without_web_or_hid_boundaries():
+    class FakeFastAPI:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def get(self, *args, **kwargs):
+            return lambda function: function
+
+        post = get
+
+    fastapi = types.ModuleType('fastapi')
+    fastapi.FastAPI = FakeFastAPI
+    responses = types.ModuleType('fastapi.responses')
+    responses.FileResponse = object
+    responses.JSONResponse = object
+    responses.StreamingResponse = object
+    pydantic = types.ModuleType('pydantic')
+    pydantic.BaseModel = object
+    uvicorn = types.ModuleType('uvicorn')
+    with mock.patch.dict(sys.modules, {
+        'fastapi': fastapi,
+        'fastapi.responses': responses,
+        'pydantic': pydantic,
+        'uvicorn': uvicorn,
+    }), mock.patch.object(transport, 'list_connected_hid', return_value=set()):
+        return importlib.import_module('webui.server')
+
+
+class MeterSourceTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json'
+        cls.profile = json.loads(path.read_text())
+        cls.server = load_server_without_web_or_hid_boundaries()
+
+    def test_orion_state_bank_preserves_raw_endpoints_without_meter_report_calibration(self):
+        source, magic, base = protocol.channel_meter_source_details(self.profile)
+        self.assertEqual((source, magic, base), ('state_report', 0x73, 221))
+
+        report = bytearray(233)
+        report[221] = 0
+        report[232] = 96
+        self.assertEqual(protocol.parse_channel_meter(self.profile, report, 0, base), 0)
+        self.assertEqual(protocol.parse_channel_meter(self.profile, report, 11, base), 96)
+        self.assertIsNone(protocol.raw_to_db(self.profile, 0, source))
+        self.assertIsNone(protocol.meter_led(self.profile, None, source))
+        self.assertEqual(cli._meter_bar(0, self.profile, source_frame=source), '########')
+        self.assertEqual(cli._meter_bar(96, self.profile, source_frame=source), '........')
+
+    def test_web_samples_keep_channel_one_activity_and_channel_twelve_silence_uncalibrated(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.profile
+        device.n_ch = 12
+        report = bytearray(233)
+        report[221] = 0
+        report[232] = 96
+
+        samples = device._parse_meters(report)
+        self.assertEqual(len(samples), 12)
+        self.assertEqual(samples[0], {
+            'raw': 0, 'db': None, 'clip': None, 'silence': False,
+        })
+        self.assertEqual(samples[11], {
+            'raw': 96, 'db': None, 'clip': None, 'silence': True,
+        })
+
+    def test_orion_state_bank_truncation_does_not_invent_channel_twelve(self):
+        _, _, base = protocol.channel_meter_source_details(self.profile)
+        report = bytearray(232)
+        report[221] = 48
+        self.assertEqual(protocol.parse_channel_meter(self.profile, report, 0, base), 48)
+        with self.assertRaisesRegex(ValueError, 'channel 11'):
+            protocol.parse_channel_meter(self.profile, report, 11, base)
+
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.profile
+        device.n_ch = 12
+        self.assertEqual(len(device._parse_meters(report)), 11)
+
+    def test_meter_report_source_keeps_existing_curve_and_clip_behavior(self):
+        profile = copy.deepcopy(self.profile)
+        profile['frame']['state_report'].pop('channel_meter_base_offset')
+        source, magic, base = protocol.channel_meter_source_details(profile)
+        self.assertEqual((source, magic, base), ('meter_report', 0x75, 32))
+        self.assertEqual(protocol.raw_to_db(profile, 0, source), 0.0)
+        self.assertEqual(protocol.raw_to_db(profile, 96, source), -60.0)
+        self.assertIn('CLIP', cli._meter_bar(0, profile, source_frame=source))
+        self.assertNotIn('CLIP', cli._meter_bar(96, profile, source_frame=source))
+
+
+if __name__ == '__main__':
+    unittest.main()

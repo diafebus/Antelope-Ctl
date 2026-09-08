@@ -91,22 +91,23 @@ Notes:
 
 | Magic @0 | Name | Rate | Purpose |
 |---|---|---|---|
-| `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. **Also carries four provisional DSP candidate lanes** (not confirmed physical/stereo ownership) at full-report offsets `157..160` (section 9). Same frame family as a readback response for "category 0". |
-| `0x75` byte1 `0x1f` | meter report | continuous | free-running meter reports are selected by byte 1 `0x1f`; byte 32 is an aggregate/monitor observation, while `@34/@35` also co-varied with `0x73 @177/@178` in one playback capture. This is not a per-channel array. Byte 1 `0x00` responses are readback and excluded. |
+| `0x73` | state report | continuous (~every 4-8 ms) | passive readback for preamp/bus/etc -- see section 5. It also carries the 12 physical-input lanes at full-report offsets `221..232` and separate provisional output candidates (section 9). Same frame family as a readback response for "category 0". |
+| `0x75` byte1 `0x1f` | meter report | continuous | free-running meter reports use byte 1 `0x1f`. The route-correlated pairs @32/@48 and @33/@49 have unresolved ownership. Do not classify them as aggregate or flag lanes. Byte 1 `0x00` responses are readback and excluded. |
 | `0x75` byte1 `0x00` | **readback response** | on request | reply to a `0x74` query -- `(category, index)` at @8/@12, payload from @16. See §4a. |
 | `0x74` | readback / enumeration | at connect, then on demand | the host walking `(category, index)` -- see §4 / §4a |
 
-The runtime retains full-report `0x73` offsets **157..160** as one
-provisional mono candidate lane per current Mix 1..4 label. This is observed
-DSP activity, not confirmed fixed lane ownership; do not infer a physical
-preamp or stereo mapping. The schema's meter `payload_offset` is payload-
-relative (`full_report_offset - 0x10`). Repeated regions are capture- and
-lane-dependent: in the six bounded captures, only `158↔222`, `159↔223`, and
-`160↔224` are exact throughout; first-lane copies `157↔169` and `157↔221`
-are not universal. Scale is **inverted** -- `0x60` (96) at rest/silence,
-falling toward `0x00` as signal rises. No routing-independent physical-preamp
-meter was identified in the bounded HID captures; see section 9's
-isochronous-audio note.
+The runtime uses full-report `0x73` offsets **221..232** for physical
+preamps 1..12. The profile stores 221 as
+`state_report.channel_meter_base_offset`. The bank is selector-independent
+for the observed selector values 15 and 18. Its raw range is inverted: 96 is
+silence, and values fall toward 0 at top-of-scale saturation. Raw 0 does not
+assert a separate clip condition. No calibrated transfer curve is available
+for this physical bank.
+
+Offsets 157..160 and 177..178 remain separate provisional output hypotheses.
+Their ownership, meter stage, and L/R geometry remain unresolved. The
+schema's output `meter_mappings.payload_offset` values are payload-relative
+(`full_report_offset - 0x10`).
 
 ### 2026-08 caveat, REVISED 2026-08-31
 
@@ -956,18 +957,18 @@ behaviour itself if it wants Launcher-equivalent results.
 
 ## 9. Meters
 
-### Where they are (PROVISIONAL, six-capture bounded review)
+### Historical six-capture interpretation (superseded for physical inputs)
 
 Capture names, report/payload offset limits, and the bounded correlation
 method are summarized in the repository's [compact Orion meter evidence note](../../docs/protocol/orion-meter-evidence.md).
 
-Full-report `0x73` offsets **157..160** show observed DSP activity and remain
-the current runtime candidate: one mono lane per current Mix 1..4 label. The
-labels are retained provisionally, with low confidence in fixed lane
-ownership. This is not a physical-preamp or stereo mapping. Scale is
-inverted: raw `0x60` (96) at silence, falling toward `0x00` as level rises.
-The profile's schema offsets are payload-relative (`full_report_offset -
-0x10`), so full-report 157..160 correspond to payload 0x8d..0x90.
+Full-report `0x73` offsets **157..160** showed observed DSP activity. This
+review treated them as one mono runtime candidate per Mix 1..4 label. It kept
+those labels provisionally because fixed lane ownership had low confidence.
+This was not a physical-preamp or stereo mapping. The observed scale was
+inverted, from raw `0x60` (96) at silence toward `0x00` as signal rose. The
+output-candidate schema offsets were payload-relative, so full-report
+157..160 corresponded to payload 0x8d..0x90.
 
 Repeated regions are capture- and lane-dependent, not universal mirrors. In
 the six bounded captures, only full-report `158↔222`, `159↔223`, and
@@ -976,28 +977,31 @@ diverge in some captures; do not promote them to extra lanes. The default-route
 recapture that saw 157..160 respond remains evidence of activity, not proof
 of fixed Mix ownership or physical-input metering.
 
-No routing-independent physical-preamp meter was identified in the examined
-HID captures. This device is USB Audio Class; actual signal travels over a
-separate **isochronous audio endpoint** (endpoint `0x84` IN was present in the
-captures examined). The available evidence does not establish that the HID
-candidate lanes are physical-input levels; decoding the PCM channel layout
-remains open.
+That review did not identify a routing-independent physical-preamp meter in
+the examined HID captures. It therefore considered the separate USB Audio
+isochronous endpoint `0x84` IN as a possible source. The later correction
+below supersedes that physical-input conclusion.
 
-The separate **`0x75` meter frame** is filtered by byte 1 `0x1f` for
-free-running reports; byte 1 `0x00` is a readback response and is excluded.
-Byte 32 is an aggregate/monitor observation and byte 33 is a 0/1 flag. In the
-playback capture, `0x75` @34/@35 also co-varied with `0x73` @177/@178 within
-5 ms (`r≈0.998`), but ownership is unresolved. Do not claim @32 is the only
-live byte or infer stereo/physical ownership from that correlation.
+### Current physical-input contract
 
-`protocol.channel_meter_source()` / `parse_channel_meter()` still work
-mechanically as documented below, but callers should treat the result as a
-**provisional Mix N candidate level**, not "preamp N input" -- `cli.py meter`
-and anything in the webui reading this block need the same relabeling.
+`channel_meter_source_details()` selects the `0x73` state-report source and
+base 221 for Orion. `parse_channel_meter()` returns the raw lane byte. The
+WebUI publishes the 12 lanes as `input_meters` samples with `raw`, `db`,
+`clip`, and `silence` fields.
 
-### dB curve (Mix 1 only, applied to all 4)
+Meter calibration is source-specific. The current `state_report` has no
+dB curve or LED scale, so its `db` and `clip` values are `null`. Raw 0 is the
+top of the observed range without a CLIP claim. Raw 96 is silence, and a
+missing sample is unknown.
 
-`raw_byte == -dBFS`, essentially exactly, across 0 to -60 dB:
+Free-running `0x75` reports require byte 1 `0x1f`. Controlled routing found
+correlated pairs @32/@48 and @33/@49, but their fixed ownership is unresolved.
+They are not classified as aggregate or flag lanes. Byte 1 `0x00` responses
+remain excluded from meter observations.
+
+### Historical `0x75` dB curve (not used for the `0x73` physical bank)
+
+The old single-lane sweep found `raw_byte == -dBFS` across 0 to -60 dB:
 
 | raw | dBFS |
 |---|---|
@@ -1009,11 +1013,10 @@ and anything in the webui reading this block need the same relabeling.
 | 40 | -40 |
 | 60 | -60 |
 
-Not swept below -60 dB (one stray raw=72 point at deep silence doesn't fit
-the line). Not independently verified past channel 0, but the offset
-formula holds for all 12 so the curve probably does too.
+This historical sweep did not test values below -60 dB. It did not calibrate
+the current 12-lane `0x73` physical-input bank.
 
-### LED colour thresholds
+### Historical `0x75` LED thresholds
 
 | Band | Range | Colour |
 |---|---|---|

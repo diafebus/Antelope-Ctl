@@ -283,7 +283,14 @@
       "status_base_offset": 61,
       "adat_gain_base_offset": 75,
       "spdif_gain_base_offset": 91,
-      "channel_meter_base_offset": 157,
+      "channel_meter_base_offset": 221,
+      "physical_meter_base_offset": 221,
+      "physical_meter_stride": 1,
+      "physical_meter_count": 12,
+      "physical_meter_raw_range": [0, 96],
+      "physical_meter_direction": "inverted",
+      "physical_meter_status": "confirmed",
+      "physical_meter_evidence": "Sequential preamp 1-12 sine sweep maps full-report 0x73 offsets 221-232 (payload 0xcd-0xd8) one byte per physical input; clipping sweep for preamps 1-4 reaches raw 0. Selector values 15 and 18 demonstrate that this physical bank is selector-independent.",
       "meter_mappings": [
         {
           "target": "physical_output", "target_index": 0, "lane": 0,
@@ -316,8 +323,8 @@
           "evidence": "User-approved packet-order hypothesis assigns playback-coupled candidate full-report 0x73 @178 to profile output 5 (monitor_b). The observed @177/@178 pair was playback-coupled; splitting it across outputs 4/5 is an ordering assumption, not proof of distinct physical outputs. Provisional feed; physical post-fader ownership and meter stage unknown; no L/R inference."
         }
       ],
-      "channel_meter_scale": "inverted: 0x60 (96) at rest/silence, falls toward 0x00 as level rises. Same scale as meter_report.db_curve (raw ~= -dBFS), reuse that curve.",
-      "channel_meter_notes": "OBSERVED / PROVISIONAL (six-capture bounded review; see PROTOCOL.md section 9 and docs/protocol/orion-meter-evidence.md). A user-approved packet-order hypothesis explicitly assigns full-report 0x73 candidates 157/158/159/160/177/178 to profile output ids 0/1/2/3/4/5, one mono lane each. This is not observed output ownership: physical post-fader ownership and meter stage remain unknown, and no L/R geometry is inferred. @177/@178 were observed as a playback-coupled pair; splitting them across Reamp and Monitor B is an ordering assumption, not proof of distinct outputs. Inverted scale: raw 0x60 at rest/silence falling toward 0x00 as level rises. Capture-dependent mirror regions @169..172 and @221..224 are excluded, as are duplicate candidate 0x75 @34/@35 and aggregate @32. Free-running 0x75 requires byte 1 == 0x1f; byte 1 == 0x00 readback responses are excluded. No physical-preamp mapping is claimed.",
+      "channel_meter_scale": "inverted raw 0..96: 0x60 (96) at rest/silence, falls toward 0x00 at top-of-scale saturation. No calibrated transfer curve is claimed for this physical bank.",
+      "channel_meter_notes": "CONFIRMED physical preamps 1-12: full-report 0x73 @221-232 (payload 0xcd-0xd8), one byte per input, selector-independent across observed selector values 15 and 18. Inverted raw range 0..96: 96 is rest/silence and values fall toward raw 0 at top-of-scale saturation; no separate clip flag or newly calibrated transfer curve is claimed. The older @157-168 region conditionally mirrors @221-232 when selector @121 is 0 but diverges in other states, so it must not drive physical meters. Separately, the user-approved provisional output hypotheses at @157/@158/@159/@160/@177/@178 remain one mono candidate each with unresolved ownership and no L/R geometry. Free-running 0x75 requires byte 1 == 0x1f; byte 1 == 0x00 readback responses are excluded.",
       "status_bits": {
         "input_mode": {
           "mask": "0x03",
@@ -430,7 +437,7 @@
       "status": "superseded_for_per_channel",
       "channel_meter_base_offset": 32,
       "channel_meter_scale": "inverted: 0x60 (96) at rest/silence, falls toward 0x00 as level rises",
-      "notes": "CORRECTED 2026-09-01: on this unit the 0x75 frame is NOT a per-channel meter. Byte 32 is a broad monitor/summed activity lane and byte 33 is a 0/1 flag; bytes 34/35 also co-varied with 0x73 @177/@178 in the playback capture, so @32 is not the only observed live byte. The old '32 + channel, confirmed for all 12' claim was wrong: a dedicated recapture feeding preamps 1-4 in turn showed no movement past byte 32, and the byte-33 flag was rendered as channel 1 stuck at clip. The retained 0x73 mapping is the provisional four-lane candidate at full-report offsets 157..160; it is not a physical-preamp or stereo mapping. db_curve below (raw ~= -dBFS) still applies to those. Kept here for the offset-32 monitor reading and the shared curve. Free-running meter observations require full-report 0x75 with byte 1 == 0x1f; 0x75 responses with byte 1 == 0x00 are readback and excluded.",
+      "notes": "SUPERSEDED FOR PER-CHANNEL INPUTS: this 0x75 frame is not the physical-preamp bank. Controlled routing shows unresolved route-correlated pairs at full-report @32/@48 and @33/@49; @34/@35 also co-varied with 0x73 @177/@178 during playback. Do not assign these bytes fixed input, output, surround, or aggregate ownership. Physical preamps 1-12 use the selector-independent 0x73 @221-232 bank. Free-running meter observations require full-report 0x75 with byte 1 == 0x1f; 0x75 responses with byte 1 == 0x00 are readback and excluded. The retained db_curve is historical single-lane evidence and is not a new calibration claim for the physical bank.",
       "db_curve": [
         [
           0,
@@ -1368,11 +1375,11 @@
     },
     {
       "offset": "157-176",
-      "notes": "PROVISIONAL / six-capture bounded review: full-report offsets 157-160 show observed DSP activity and are retained as one mono candidate lane per current Mix 1..4 label; fixed lane ownership is low confidence, with no physical or stereo mapping inferred (see state_report.channel_meter_notes and docs/protocol/orion-meter-evidence.md for the compact evidence summary). Inverted scale (96 rest, ->0 loud). Default-route recaptures can resemble per-input metering, but that does not establish fixed ownership; no physical-preamp mapping is claimed. The 2026-09-01 recapture (feeding preamps 1/2/3/4 in turn, seeing 157/158/159/160 move) is real but didn't control for what else was active. The exact allocation rule is unresolved. The repeated regions are not universal mirrors. In the six captures, full-report 158↔222, 159↔223, and 160↔224 are exact throughout; first-lane copies 157↔169 and 157↔221 diverge in some captures. Use canonical 157..160 only. Now in the profile as state_report.channel_meter_base_offset; 0x75 @32 remains an aggregate observation, while @34/@35 are an unresolved playback-only observation (see meter_report notes and the strict byte-1 filter)."
+      "notes": "PROVISIONAL OUTPUT HYPOTHESES ONLY: full-report @157-160 remain one mono candidate each for profile outputs 0-3 under the explicit user-approved packet-order assignment; fixed output ownership, meter stage, and L/R geometry remain unresolved. Full-corpus review found that @157-168 exactly mirrors the confirmed physical bank @221-232 only when selector @121 is 0 and diverges in other states. Therefore this region must not drive physical-preamp meters. The physical meter base is @221, not @157. See state_report.channel_meter_notes and docs/protocol/orion-meter-evidence.md."
     },
     {
       "offset": "221-232",
-      "notes": "See 157-176 above. This region is repeated/copy-like but not a universal four-lane mirror; in the six captures only full-report 222↔158, 223↔159, and 224↔160 are exact. The old 'low-cut filter / digital trim / headphone level' guess is disproven."
+      "notes": "CONFIRMED physical preamps 1-12, full-report @221-232 / payload 0xcd-0xd8, count 12, stride 1, width 1. Sequential preamp sweeps isolate every lane; clipping preamps 1-4 reaches raw 0. Raw range is inverted 0..96, with 96 rest/silence and 0 top-of-scale saturation. Selector values 15 and 18 preserve this bank. State 0 can mirror these bytes at @125-136 and @157-168, but those conditional copies are not independent physical owners."
     },
     {
       "offset": "177-178",

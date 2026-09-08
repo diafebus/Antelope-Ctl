@@ -1,13 +1,12 @@
-# Orion meter evidence -- provisional (bounded six-capture review)
+# Orion meter evidence: current correction and historical review
 
 ## Scope and filter
 
-This note records the current evidence boundary; it does not change the
-WebUI parser, upstream CLI, or hardware behavior. Offsets below are **full
-320-byte report offsets**. Profile `payload_offset` values are relative to
-the report payload and therefore add `0x10`. Free-running `0x75` meter
-reports require byte 1 == `0x1f`; byte 1 == `0x00` is a readback response
-and is excluded.
+This note gives the current meter contract and preserves the earlier
+six-capture research below. Offsets are **full 320-byte report offsets**.
+Profile `payload_offset` values are relative to the report payload and
+therefore add `0x10`. Free-running `0x75` meter reports require byte 1 ==
+`0x1f`; byte 1 == `0x00` is a readback response and is excluded.
 
 The bounded review covered `vumeter-test-ch1.pcapng`,
 `audioplaying-audiostop-meter.pcapng`, `vumeters-sinewave.pcapng`,
@@ -16,7 +15,7 @@ The bounded review covered `vumeter-test-ch1.pcapng`,
 correlation only; they do not provide route-independent ownership isolation,
 stereo/physical mapping, or a new hardware confirmation.
 
-## Current interpretation
+## Historical six-capture interpretation (superseded)
 
 - Retain full-report `0x73` offsets **157..160** as one provisional mono lane
   per current Mix 1..4 label. DSP activity is observed, but fixed lane
@@ -28,17 +27,29 @@ stereo/physical mapping, or a new hardware confirmation.
 - Playback `0x73` @177/@178 and meter-only `0x75` @34/@35 co-varied nearest in
   time within 5 ms (`r≈0.998`) in the playback capture. The owner is
   unresolved; this is not evidence for L/R, Mix 1 stereo, or physical input.
-- `0x75` @32 is an aggregate/monitor observation and @33 is a flag. Do not
-  describe @32 as the only live byte.
+- `0x75` @32 was described as an aggregate/monitor observation and @33 as a
+  flag. The controlled route-correlation result below supersedes those labels.
 
-## Runtime/documentation boundary
+## Current runtime and documentation boundary
 
-The profile retains `state_report.channel_meter_base_offset = 157` as the
-canonical base and carries four candidate mapping entries. This document and
-`PROTOCOL.md` deliberately qualify that mapping; source WebUI and upstream
-CLI behavior remain outside this evidence correction. The dated investigation
-sections below are historical trail, not stronger provenance than this
-summary.
+The current profile and Python runtime use full-report `0x73` offsets
+**221..232** for physical preamps 1..12. The canonical
+`state_report.channel_meter_base_offset` is 221, not 157.
+
+The WebUI publishes these lanes as `input_meters` JSON samples. Each sample
+has `raw`, `db`, `clip`, and `silence` fields. Orion currently has no
+`state_report` dB or LED calibration, so `db` and `clip` are `null`. Raw 0 is
+the top of the observed range, not a CLIP claim. Raw 96 is silence. A missing
+sample is unknown.
+
+Calibration is source-specific. The historical `0x75` curve is not used for
+the physical `0x73` bank. The route-correlated `0x75` pairs @32/@48 and
+@33/@49 have unresolved ownership. They are not aggregate or categorical
+lanes.
+
+Offsets 157..160 and 177..178 remain separate provisional output hypotheses.
+They do not define the physical-input base. The dated sections below preserve
+the earlier research trail and can contain superseded interpretations.
 
 ## Correction 2026-09-04: `157+ch` is NOT a fixed preamp-input meter
 

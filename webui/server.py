@@ -272,14 +272,13 @@ class Device:
                         self.profile, state, "clock_source_byte_offset")
                 except Exception:
                     pass
-                # per-channel input meters: 0x73 @ 157 + channel (confirmed
-                # 2026-09-01, see profile state_report.channel_meter_notes).
-                snap["meters_db"] = self._parse_meters(state)
+                # Confirmed physical preamp bank: full-report 0x73 @221..232.
+                snap["input_meters"] = self._parse_meters(state)
                 # raw slice of the same region for ?meterdebug=1.
                 snap["state_raw"] = {"base": 150, "bytes": list(state[150:236])}
             if meter:
-                # 0x75 frame -- on this unit only byte 32 is live (a monitor
-                # sum) and byte 33 is a flag; kept for ?meterdebug=1 only.
+                # 0x75 @32/@48 and @33/@49 are route-correlated lane pairs.
+                # Their fixed ownership is unresolved; retain raw debug only.
                 base = int(self.profile["frame"]["meter_report"]
                            ["channel_meter_base_offset"])
                 snap["meters_raw"] = {"base": base,
@@ -287,7 +286,7 @@ class Device:
             # keep last values if this cycle only got one of the two frames
             with self._lock:
                 for k in ("channels", "buses", "adat", "spdif", "trim", "brightness",
-                          "sample_rate_idx", "clock_source_idx", "meters_db", "state_raw"):
+                          "sample_rate_idx", "clock_source_idx", "input_meters", "state_raw"):
                     if k not in snap and k in self.snapshot:
                         snap[k] = self.snapshot[k]
             self._publish(snap)
@@ -443,20 +442,32 @@ class Device:
         return out
 
     def _parse_meters(self, state):
-        """Per-channel input meters from the 0x73 state report at
-        state_report.channel_meter_base_offset (157) + channel. Inverted scale,
-        reuse meter_report.db_curve (raw ~= -dBFS)."""
-        base = self.profile["frame"]["state_report"].get("channel_meter_base_offset")
+        """Return source-aware samples from the configured 0x73 meter bank."""
+        source = "state_report"
+        spec = self.profile["frame"][source]
+        base = spec.get("channel_meter_base_offset")
         if base is None:
             return []
         base = int(base)
+        raw_range = spec.get("physical_meter_raw_range")
+        silence_raw = (int(raw_range[1])
+                       if spec.get("physical_meter_direction") == "inverted"
+                       and isinstance(raw_range, list) and len(raw_range) == 2
+                       else None)
         out = []
         for ch in range(self.n_ch):
             off = base + ch
             if off >= len(state):
                 break
-            db = proto.raw_to_db(self.profile, state[off])
-            out.append(round(db, 1) if db is not None else None)
+            raw = state[off]
+            db = proto.raw_to_db(self.profile, raw, source)
+            led = proto.meter_led(self.profile, db, source)
+            out.append({
+                "raw": raw,
+                "db": round(db, 1) if db is not None else None,
+                "clip": led["clip"] if led is not None else None,
+                "silence": raw == silence_raw if silence_raw is not None else None,
+            })
         return out
 
 
