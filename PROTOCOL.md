@@ -91,19 +91,23 @@ Notes:
 
 | Magic @0 | Name | Rate | Purpose |
 |---|---|---|---|
-| `0x73` | state report | continuous (~every 4-8 ms) | the passive readback for preamp/bus/etc -- see section 5. **Also carries the 4 virtual-Mixer master meters** (NOT per-preamp, see the 2026-09-05 correction) at offset `157 + N` (section 9). Same frame family as a readback response for "category 0". |
-| `0x75` byte1 `0x1f` | meter report | continuous | on this device this is NOT per-channel -- only byte 32 is live (a monitor sum) and byte 33 is a flag. No per-channel meters exist in either `0x73` or `0x75` -- see section 9. |
+| `0x73` | state report | continuous (~every 4-8 ms) | passive readback for preamp/bus/etc -- see section 5. It also carries the 12 physical-input lanes at full-report offsets `221..232` and separate provisional output candidates (section 9). Same frame family as a readback response for "category 0". |
+| `0x75` byte1 `0x1f` | meter report | continuous | free-running meter reports use byte 1 `0x1f`. The route-correlated pairs @32/@48 and @33/@49 have unresolved ownership. Do not classify them as aggregate or flag lanes. Byte 1 `0x00` responses are readback and excluded. |
 | `0x75` byte1 `0x00` | **readback response** | on request | reply to a `0x74` query -- `(category, index)` at @8/@12, payload from @16. See §4a. |
 | `0x74` | readback / enumeration | at connect, then on demand | the host walking `(category, index)` -- see §4 / §4a |
 
-Virtual-Mixer master meters: one byte per mix bus (Mix 1-4) from **`0x73`
-offset 157** (mirror copies at 169 and 221) -- NOT one byte per preamp
-channel, despite the offset's name; see the 2026-09-05 correction in
-section 9. Scale is **inverted** -- `0x60` (96) at rest/silence, falls
-toward `0x00` as the signal gets louder. Calibration in section 9. The
-separate `0x75` meter frame is a monitor/summed level only on this unit
-(byte 32), not per-channel. No routing-independent physical-preamp meter
-is known to exist over USB HID; see section 9's isochronous-audio note.
+The runtime uses full-report `0x73` offsets **221..232** for physical
+preamps 1..12. The profile stores 221 as
+`state_report.channel_meter_base_offset`. The bank is selector-independent
+for the observed selector values 15 and 18. Its raw range is inverted: 96 is
+silence, and values fall toward 0 at top-of-scale saturation. Raw 0 does not
+assert a separate clip condition. No calibrated transfer curve is available
+for this physical bank.
+
+Offsets 157..160 and 177..178 remain separate provisional output hypotheses.
+Their ownership, meter stage, and L/R geometry remain unresolved. The
+schema's output `meter_mappings.payload_offset` values are payload-relative
+(`full_report_offset - 0x10`).
 
 ### 2026-08 caveat, REVISED 2026-08-31
 
@@ -342,7 +346,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x12` | **UNKNOWN**, empty body on 2026-09-04. The old "clock source or sample-rate index?" guess is **ruled out** -- both live in `0x73` instead (clock source @19, rate index @18, rate in Hz @21-23) | undecoded |
 | `0x16` | **UNKNOWN** -- NOT output trim, NOT pan law (both ruled out live 2026-09-03). Seen all-zero and `00 00 00 32 ×2 …` | undecoded |
 | `0x19` | 64 entries, empty bodies -- the 64-ch USB/TB slots | — |
-| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 B = 4-B header + 16 EQ bands in the `0x87`/`0xea` write-frame layout (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode>`). Live-read 2026-09-04: with a 2.0 Room Correction loaded, idx 0 & 1 both held the RC curve (identical L/R), the rest were flat defaults. So the surround EQ / Room Correction **does** read back | **decoded + wired 2026-09-04** — `protocol.parse_surround_speaker_eq_record`, CLI `surround-eq [speaker]` |
+| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 meaningful B = 4 opaque candidate-head bytes + 16 EQ bands (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode raw>`). **Correction:** EQ begins at response byte 20, not 16. The candidate head aligns positionally with OUT delay and packed level/invert, but init captures prove only geometry/default values, not dynamic semantics. L/R held the non-flat 2.0 Room Correction curve; mode labels remain unproven. | **read-only runtime decoder**; candidate head omitted and unknown modes retained raw |
 | **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.1 bass-management block. See the alignment proof below | **decoded + wired 2026-09-04** — `protocol.parse_surround_global_record`, CLI `surround-status` |
 | `0x1c`-`0x60` | answer, empty bodies | — |
 
@@ -518,7 +522,7 @@ offset for target *N*.
 | 75-90 | **ADAT gain array** -- 16 ADAT channels | ADAT channel *N* (0-indexed) gain @ `75+N`, int8 dB, range -6..+12 | confirmed |
 | 91-92 | **S/PDIF gain** -- L / R | ch 0 (L) @ `91`, ch 1 (R) @ `92`, int8 dB, range -6..+12 | confirmed |
 | 139-140 | *startup ramp* | both bytes ramp to `0x60` in the first ~0.12 s of every capture (a nearby block, 129-136, does the same in INIT) | startup settling, ignore |
-| 157-160 (161-168 unused) | **virtual-Mixer 1-4 master meters** (NOT per-preamp -- corrected 2026-09-05) | Mix *N* master @ `157+N`, inverted (96 silence -> 0 loud); mirror copies at 169-172 and 221-224 | corrected 2026-09-05 (section 9) |
+| 157-160 (161-168 unused/unknown) | **provisional virtual-mixer/DSP candidate lanes** (NOT physical preamp; corrected 2026-09-06) | Current Mix 1..4 labels use full-report `157+N`, one mono lane each, inverted (96 silence -> 0 loud); repeated regions are not universal mirrors. Only `158↔222`, `159↔223`, `160↔224` are exact in the six bounded captures; first-lane copies are not. | observed activity; fixed ownership low confidence (section 9) |
 
 Layout is tight and sequential: gain array (49-60), status array (61-72),
 talkback status+gain (73-74), ADAT gain array (75-90), S/PDIF gain (91-92)
@@ -953,62 +957,51 @@ behaviour itself if it wants Launcher-equivalent results.
 
 ## 9. Meters
 
-### Where they are (RESOLVED 2026-09-05, reframing the 2026-09-01 finding -- see the antelope-ctl-UI-test sandbox's webui/METERS.md for the full evidence trail)
+### Historical six-capture interpretation (superseded for physical inputs)
 
-`0x73` offset **157 + N is NOT a per-preamp-channel meter block**. It is
-the **four virtual Mixer buses' own master meters** -- byte 157 = Mix 1
-master, 158 = Mix 2, 159 = Mix 3, 160 = Mix 4. Inverted scale: raw `0x60`
-(96) at silence, falling toward `0x00` as level rises. Three byte-identical
-mirror copies of the SAME 4-byte signal exist at bases **157, 169, 221**
-(each padded out to a nominal 12-byte span -- bytes 161-168/etc never
-moved in an exhaustive scan and are unexplained/unused, there are only 4
-mixers, not 12 channels).
+Capture names, report/payload offset limits, and the bounded correlation
+method are summarized in the repository's [compact Orion meter evidence note](../../docs/protocol/orion-meter-evidence.md).
 
-The 2026-09-01 recapture that pinned "157+channel = preamp meter" (feeding
-preamps 1/2/3/4 in turn, seeing offsets 157-160 respond) was real but drew
-the wrong conclusion: it only looked like a per-preamp block because each
-mix bus's DEFAULT strip patching happens to include the matching preamp
-among its many sources (e.g. Mix 1 strip 1 defaults from `surround 1` <-
-`surround_in` ch1 <- preamp 1; Mix 2's 32 default strips include preamp
-1-8). Reroute a mix bus's inputs (or `surround_in`) away from that default
-and the "preamp N" meter shows whatever's actually patched there instead
--- Computer Playback, another mix bus, anything -- with no indication in
-any client that this happened. This was confirmed decisively multiple ways
-(live mic tests, oscillator injection into `mix_ch1`, a Windows Launcher
-cross-check where the real Preamp tab stayed silent under the same
-routing that lit this block up) -- see the sandbox's webui/METERS.md
-"step 4" for the full chain of evidence.
+Full-report `0x73` offsets **157..160** showed observed DSP activity. This
+review treated them as one mono runtime candidate per Mix 1..4 label. It kept
+those labels provisionally because fixed lane ownership had low confidence.
+This was not a physical-preamp or stereo mapping. The observed scale was
+inverted, from raw `0x60` (96) at silence toward `0x00` as signal rose. The
+output-candidate schema offsets were payload-relative, so full-report
+157..160 corresponded to payload 0x8d..0x90.
 
-**No true, routing-independent physical-preamp meter was found anywhere
-in the HID control stream** after an exhaustive byte-by-byte scan of both
-`0x73` and `0x75` across five capture files. This device is USB Audio
-Class; actual signal travels over a separate **isochronous audio
-endpoint** (confirmed present in every capture examined: endpoint `0x84`
-IN, 24-bit PCM, ~432-byte ISO packets / 3456-byte URBs, byte-rate math
-best matching ~48 channels @ ~48kHz). The real per-input levels the
-Launcher's Preamp tab shows -- and real clip detection on the physical
-input, which matters more than any DSP-stage meter for tracking safely --
-most likely come from that PCM stream computed host-side, not from any
-HID register. Decoding that stream's exact channel layout is open, tracked
-below.
+Repeated regions are capture- and lane-dependent, not universal mirrors. In
+the six bounded captures, only full-report `158↔222`, `159↔223`, and
+`160↔224` are exact throughout. First-lane copies `157↔169` and `157↔221`
+diverge in some captures; do not promote them to extra lanes. The default-route
+recapture that saw 157..160 respond remains evidence of activity, not proof
+of fixed Mix ownership or physical-input metering.
 
-The separate **`0x75` meter frame** (byte1 `0x1f`) was previously documented
-as `32 + channel`, "confirmed for all 12". That was wrong for this unit: only
-byte 32 is live -- a monitor / summed level that responds to any input --
-and byte 33 is a 0/1 flag. The old formula rendered byte 33 as channel 1
-pinned at clip. `0x75` is still fine as a single monitor meter (byte 32).
-Also re-scanned in the 2026-09-05 investigation: nothing else in `0x75`
-moves either, beyond byte 32 and a little noise-floor jitter around it.
+That review did not identify a routing-independent physical-preamp meter in
+the examined HID captures. It therefore considered the separate USB Audio
+isochronous endpoint `0x84` IN as a possible source. The later correction
+below supersedes that physical-input conclusion.
 
-`protocol.channel_meter_source()` / `parse_channel_meter()` still work
-mechanically as documented below, but callers should treat the result as
-**"Mix N master level"**, not "preamp N input" -- `cli.py meter` and
-anything in the webui reading this block need the same relabeling
-(tracked in CLAUDE.md).
+### Current physical-input contract
 
-### dB curve (Mix 1 only, applied to all 4)
+`channel_meter_source_details()` selects the `0x73` state-report source and
+base 221 for Orion. `parse_channel_meter()` returns the raw lane byte. The
+WebUI publishes the 12 lanes as `input_meters` samples with `raw`, `db`,
+`clip`, and `silence` fields.
 
-`raw_byte == -dBFS`, essentially exactly, across 0 to -60 dB:
+Meter calibration is source-specific. The current `state_report` has no
+dB curve or LED scale, so its `db` and `clip` values are `null`. Raw 0 is the
+top of the observed range without a CLIP claim. Raw 96 is silence, and a
+missing sample is unknown.
+
+Free-running `0x75` reports require byte 1 `0x1f`. Controlled routing found
+correlated pairs @32/@48 and @33/@49, but their fixed ownership is unresolved.
+They are not classified as aggregate or flag lanes. Byte 1 `0x00` responses
+remain excluded from meter observations.
+
+### Historical `0x75` dB curve (not used for the `0x73` physical bank)
+
+The old single-lane sweep found `raw_byte == -dBFS` across 0 to -60 dB:
 
 | raw | dBFS |
 |---|---|
@@ -1020,11 +1013,10 @@ anything in the webui reading this block need the same relabeling
 | 40 | -40 |
 | 60 | -60 |
 
-Not swept below -60 dB (one stray raw=72 point at deep silence doesn't fit
-the line). Not independently verified past channel 0, but the offset
-formula holds for all 12 so the curve probably does too.
+This historical sweep did not test values below -60 dB. It did not calibrate
+the current 12-lane `0x73` physical-input bank.
 
-### LED colour thresholds
+### Historical `0x75` LED thresholds
 
 | Band | Range | Colour |
 |---|---|---|
@@ -1064,7 +1056,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
 | surround tab (global) | `0xeb` | `0xab` | - | `[18]` bit7 pre/post + format, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`) |
-| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs, EQ bands only) |
+| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: 4 opaque candidate-head bytes + EQ; dynamic head semantics unverified) |
 | oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
 | DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | none in `0x73` |
@@ -1162,9 +1154,13 @@ categories were actually read on 2026-09-04:
 | global `0xab`/`0xeb` | `0x74` category **`0x1b`** | 1 (idx 0) |
 | per-speaker `0x87`/`0xea` | `0x74` category **`0x1a`** | 16, one per speaker |
 
-Both are now parsed and wired 2026-09-04: `protocol.parse_surround_speaker_eq_record`
-/ `parse_surround_global_record`, CLI `surround-eq [speaker]` / `surround-status`
-(read-only -- `0x87`/`0xab` stay launcher-only, neither is ever sent).
+Both are parsed by the reference tools. The TUI additionally validates the exact
+320-byte category-`0x1a` header/index/zero-tail contract and exposes only its EQ
+bands read-only. Response bytes 16–19 are an opaque candidate head: positional
+alignment is known, but isolated level/delay/invert changes have not proven that
+it refreshes dynamically. Todo 45 blocks any whole-record RMW until that test.
+Mode bytes remain raw because shelf/pass labels are unproven. No `0x87` action is
+authorized.
 
 **Category `0x1b` alignment proof** — `body[N]` == the `0xab` frame's byte
 `[18+N]`, from one live read against a known 2.0 state:
@@ -1621,14 +1617,14 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
-| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | decoded 2026-09-03 (§11). Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker = level (+invert) + delay + **16 EQ bands** (`<freq><Q><gain><mode>`, 7B each; Q ×100 0.1-18; mode `0x02` bell / `0x00` shelf / `0x04` band-pass on end bands 1 & 16; centre = bell only). **BOTH frames read back** (2026-09-04): per-speaker EQ = `0x74` cat `0x1a` (16 recs), global = cat `0x1b` (1 rec, `body[N]`==frame`[18+N]`, which independently confirms the bass-management byte map). Neither wired. Minor-open: speaker-index↔channel map for formats past 2.0; centre end-band mode value; parsers + a `surround-eq` CLI |
+| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The TUI's finite `0x1a` decoder is read-only, begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, keeps modes raw, and labels only captured 2.0 L/R plus 2.1 L/R/LFE ownership. Todo 45 blocks `0x87` RMW; no higher-format or centre mapping is inferred. |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Open: handle encoding (slot-index vs instance id, 2 data points); the `0x0c`/`0x15` readback that maps slot occupancy; bypass polarity. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync, no readback. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
-| Offsets 157-160 / 169-172 / 221-224 | **corrected 2026-09-05** -- these are the 4 virtual-Mixer master meters, `157 + N` (three mirror copies), NOT per-preamp as the 2026-09-01 entry claimed. §9. The true routing-independent preamp meter is unresolved -- likely in the isochronous audio stream (endpoint `0x84`), not HID. Channel layout of that stream not yet decoded (see antelope-ctl-UI-test sandbox webui/METERS.md). |
+| Offsets 157-160 / 169-172 / 221-224 | **provisional, six-capture bounded review** -- current runtime retains full-report 157..160 as one mono candidate lane per Mix 1..4 label; fixed ownership is low confidence, with no physical/stereo mapping. Only 158↔222, 159↔223, 160↔224 are exact throughout; first-lane copies are not universal. The true routing-independent preamp meter remains unresolved -- likely in the isochronous audio stream (endpoint `0x84`), not HID. |
 | Channel-link readback bit | none found; may not exist |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |

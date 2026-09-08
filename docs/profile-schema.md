@@ -155,6 +155,14 @@ at @16 is the real discriminator — give each its own `frame.*` block.
     Complements the 0-6 `sample_rate_byte_offset` enum
   - `bus_block_offset` + `bus_block_stride` — bus state array
     (`28 + 3N` on Orion, `28 + 2N` on Zen Go)
+
+For runtime-exposed Orion settings, `params.<name>.runtime_readback` is the
+canonical machine-readable declaration. It names the full-report coordinate
+system with `frame: "state_report"`, a semantic, and typed fields. Brightness
+uses one scalar field (`offset: 26`, `width: 1`); output trim uses exactly three
+`bit_field` records with explicit targets, offsets, masks, and shifts. The
+neighboring `readback` string remains informative provenance and is never
+parsed to grant capability.
 - **`meter_report`** (`0x75` Orion / `0x83` Zen Go) — per-channel meters.
   `channel_meter_base_offset`, plus optional `db_curve` / `led_scale`
   for the `meter` command's dB calibration.

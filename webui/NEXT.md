@@ -66,11 +66,13 @@ and sits between the hardware-tested Python core (`antelope/…`,
 from the profile.
 
 - `server.py`: one background thread owns the device.
-  - FAST state: free-running `0x73` state (+ `0x75` monitor byte) parsed into
-    an in-memory snapshot, streamed over **SSE `/api/stream`** (~12 Hz).
-    EventSource reconnects itself. Snapshot keys: `channels buses adat spdif
-    trim meters_db brightness sample_rate_idx clock_source_idx state_raw`
-    (+ `rb_ver`).
+  - FAST state: free-running `0x73` state and raw `0x75` debug lanes are
+    parsed into an in-memory snapshot. SSE `/api/stream` sends it at ~12 Hz.
+    EventSource reconnects itself. Snapshot keys include `channels buses adat
+    spdif trim input_meters brightness sample_rate_idx clock_source_idx
+    state_raw meters_raw` (+ `rb_ver`). Orion `input_meters` samples contain
+    `raw`, `db`, `clip`, and `silence`. The current uncalibrated `0x73` source
+    returns `null` for `db` and `clip`.
   - SLOW state: routing matrix (readback cat `0x03`) + virtual mixer (cat
     `0x04`) re-read on connect, on a 20 s timer, and **only after a
     route/mix write** -- `DEV.submit(fn, readback=True)`. Plain param writes
@@ -319,13 +321,18 @@ the last sync, relevant to the UI:
 - `3d21dce` readback: decode cat 0x05 (preamp gain) + 0x06 (channel status)
 - `27bb70a` mic modeling: EMU is preamps 5-12, not 7-12 (Mic-mode-gated)
 
-## Known limitation 2026-09-05 -- preamp meter strips are actually showing Mix 1-4 master levels
+## Historical meter plan from 2026-09-05 (superseded)
 
-Full investigation + evidence trail in `webui/METERS.md`; protocol-level
-writeup in `PROTOCOL.md` §9 and `profiles/orion_studio_sc.json`
-(`state_report.channel_meter_notes`), synced to canonical.
+The current implementation supersedes this plan. It reads physical preamps
+1..12 from full-report `0x73` offsets 221..232 and publishes `input_meters`.
+These samples are raw and uncalibrated. Raw 0 is top-of-scale saturation,
+not a CLIP claim. Raw 96 is silence, and a missing sample is unknown.
 
-**The finding:** the 12 preamp meter strips (`applyMeters` ->
+Current details are in `webui/METERS.md`, `PROTOCOL.md` §9, and
+`profiles/orion_studio_sc.json` (`state_report.channel_meter_notes`). The
+text below preserves the old proposal as history.
+
+**Historical finding at that date:** the 12 preamp meter strips (`applyMeters` ->
 `.pre[data-ch] [data-meter]`, reading `meters_db` from `0x73` offset
 `157+ch`) are NOT showing physical preamp input. Bytes 157/158/159/160
 are the **4 virtual Mixer buses' own master meters** (Mix 1/2/3/4), which
@@ -341,7 +348,7 @@ the isochronous USB Audio stream instead (confirmed present, endpoint
 separate, bigger reverse-engineering task, different capture methodology
 entirely from anything done on this project so far).
 
-**Explicit decision (user, 2026-09-05): do NOT change the webui code yet.**
+**Historical decision on 2026-09-05, now superseded:** do not change the WebUI code yet.
 Seeing *some* meter activity on the preamp strips -- even mislabeled,
 even if it's actually Mix-bus content -- is still useful for now (it
 tracks the preamps correctly as long as routing is untouched, which is
@@ -349,7 +356,7 @@ true for most normal use). Revisit once the real preamp/clip meter is
 sorted out (isochronous audio decode, or another approach), rather than
 ripping out the current display for nothing in its place.
 
-When this does get addressed, the known TODOs are:
+The superseded plan listed these TODOs:
 - Relabel `cli.py meter` (canonical) and this webui's preamp strips from
   "preamp N" to "Mix N master" if the display stays as-is, OR replace it
   with a real decoded preamp/clip meter once the isochronous audio
@@ -375,8 +382,8 @@ When this does get addressed, the known TODOs are:
    isolated -- cat `0x1b` may be its readback, untested). Need dedicated
    captures before wiring (the webUI + usbmon method now works from Linux).
 4. **Re-sweep emuMic pattern range** for models 1/12/16/18. ~~Confirm the
-   `157 + ch` meter offset on channels 5-12~~ -- MOOT, see "Known
-   limitation 2026-09-05" above: `157+ch` isn't a per-preamp meter at all.
+   `157 + ch` meter offset on channels 5-12~~ -- MOOT. See the superseded
+   historical meter plan above. The current physical-input base is 221.
    (emuMic-range correction is
    CLOSED -- `0xe5` on preamp 5/6 captured 2026-09-03, `[18]=0x00/0x01`;
    listen test done -- `emumic5`==`emumic6` mono for a mono emulation,

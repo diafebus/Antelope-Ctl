@@ -33,7 +33,7 @@
       "channel_offset": 17,
       "value_offset": 18,
       "status": "confirmed",
-      "notes": "The per-channel / per-bus setter, same as Orion's SET_PARAM. param @16, target (channel or bus id) @17, value @18. Used for: gain (0x50), input_mode (0x4f), phantom (0x51), phase_invert (0x52), bus_level (0x47), bus_mute (0x48), bus param 0x66, param 0x49 (see params).",
+      "notes": "The per-channel / per-bus setter, same as Orion's SET_PARAM. param @16, target (channel or bus id) @17, value @18. Used for: gain (0x50), input_mode (0x4f), phantom (0x51), phase_invert (0x52), bus_level (0x47), bus_mute (0x48), bus_dim (0x66), param 0x49 (see params).",
       "evidence": "preamps/capture_preamp_a1_gain_mic.pcapng etc: op 0x13, param 0x50, [17]=0 (preamp A1) / 1 (A2), [18] swept the gain; mode/phantom/phase in the same layout."
     },
 
@@ -124,8 +124,30 @@
 
     "state_report": {
       "candidate_preamp_meters": [
-        {"input_index": 0, "offset": "0xce", "status": "observed", "caveat": "mixed-signal candidate"},
-        {"input_index": 1, "offset": "0xcf", "status": "observed", "caveat": "mixed-signal candidate"}
+        {
+          "input_index": 0,
+          "offset": "0xce",
+          "status": "observed",
+          "confidence": "provisional",
+          "caveat": "mixed-signal candidate",
+          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]]
+        },
+        {
+          "input_index": 1,
+          "offset": "0xcf",
+          "status": "observed",
+          "confidence": "provisional",
+          "caveat": "mixed-signal candidate",
+          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]]
+        }
+      ],
+      "meter_mappings": [
+        {"target": "physical_output", "target_index": 0, "lane": 0, "payload_offset": "0xda", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xea to Monitor left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 0, "lane": 1, "payload_offset": "0xdb", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xeb to Monitor right; this lane is read independently and the output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 1, "lane": 0, "payload_offset": "0xdc", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xec to HP1 left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 1, "lane": 1, "payload_offset": "0xdd", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xed to HP1 right; this lane is read independently and the output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 2, "lane": 0, "payload_offset": "0xde", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xee to HP2 left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 2, "lane": 1, "payload_offset": "0xdf", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xef to HP2 right; this lane is read independently and the output meter feed and stage are unknown."}
       ],
       "magic_offset": 0, "magic": "0x73",
       "sample_rate_byte_offset": 18,
@@ -297,7 +319,7 @@
       "1": { "name": "HP1", "verified": true },
       "2": { "name": "HP2", "verified": true }
     },
-    "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = flags (mute / the param-0x66 toggle).",
+    "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = flags (mute / dim).",
     "status": "confirmed",
     "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: isolated Monitor / HP1 / HP2 controls emitted op 0x13 param 0x47 (level 0-96) / 0x48 (mute 0/1) / 0x66 (0/1) with target ids 0/1/2; state_report offsets 28-33 tracked."
   },
@@ -359,11 +381,12 @@
       "readback": "state_report bus_block flags byte (offset 29 + 2*bus_id), a bit",
       "evidence": "capture_11: op 0x13 param 0x48 [17] = 0/1/2, [18] = 0/1."
     },
-    "bus_param_0x66": {
-      "id": "0x66", "status": "observed", "type": "bool",
+    "bus_dim": {
+      "id": "0x66", "status": "confirmed", "type": "bool",
       "applies_to": "buses",
-      "notes": "A third per-bus toggle alongside level (0x47) and mute (0x48). Probably dim or mono. Not isolated.",
-      "evidence": "capture_11: op 0x13 param 0x66 [17] = 0/1/2, [18] = 0/1."
+      "readback": "state_report bus_block flags byte (offset 29 + 2*bus_id), dim state",
+      "notes": "Per-bus output dim toggle alongside level (0x47) and mute (0x48). The captured command uses the confirmed SET_PARAM frame with bus id @17 and enabled state @18.",
+      "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: op 0x13 param 0x66 [17] = 0/1/2, [18] = 0/1; the state report bus flags track the output control state at offsets 29, 31, and 33."
     },
     "param_0x49": {
       "id": "0x49", "status": "observed", "type": "int",
@@ -381,11 +404,18 @@
     },
     "clock_source": {
       "id": "0x04", "status": "confirmed", "type": "enum",
+      "runtime_applies_to": "globals",
+      "runtime_internal_value": 0,
+      "runtime_values": {
+        "0": "Internal",
+        "1": "S/PDIF",
+        "2": "USB"
+      },
       "frame": "global_command (opcode 0x12) -- index @17",
       "range": [0, 2],
-      "values_note": "3 sources (the capture name notes 'no word clock exists' on the Zen Go). Likely Internal / USB / S/PDIF -- order not confirmed.",
+      "values_note": "Zen Go exposes exactly 3 clock sources: 0 = Internal, 1 = S/PDIF, 2 = USB. Raw 0 is the internal-clock value used for sample-rate gating.",
       "readback": "state_report offset 19",
-      "evidence": "capture_06_clock_source_no_word_clock_exists.pcapng: op 0x12 param 0x04 value 0/1/2, offset 19 followed 1:1."
+      "evidence": "capture_06_clock_source_no_word_clock_exists.pcapng: op 0x12 param 0x04 values 0/1/2/0 and offset 19 followed 1:1; the capture-derived project clock-source map and the existing antelope-protocol ClockSource code/label mapping both identify 0=Internal, 1=S/PDIF, 2=USB."
     },
     "mix_fader": {
       "status": "confirmed",
@@ -455,12 +485,11 @@
   "open_questions": [
     "HID report descriptor -- dump from Linux hidraw (tools/hid_probe.py). Feature report? (Orion/Discrete have none -> no readback for routing/mixer.)",
     "Routing: slot index = strip-1 and source banks 0x00-0x0a are decoded (2026-08-31). Left: what is source bank 0x03 (4 ch, only seen as strips 1-4's default -- playback 1-4? loopback? mix return?); and what exactly are destination groups 3 (8 slots) and 5 (4 slots, strips 1-4 only) as opposed to 6/7/8/9 (the shared 32-slot strip-input map).",
-    "The two output-volume paths: opcode 0x16/0xd4 (d4 04 01 03 ...) vs buses 0/1/2 (0x47/0x48/0x66). Which drives the physical Monitor out and which the Headphone out? What does param 0x66 do (dim/mono)?",
+    "The two output-volume paths: opcode 0x16/0xd4 (d4 04 01 03 ...) vs buses 0/1/2 (0x47/0x48/0x66). Which drives the physical Monitor out and which the Headphone out?",
     "param 0x49 set to 12/15 during mixer use -- active-mix / solo-mask / surface selector?",
     "Mic modeling frame (enable/model/pattern) -- capture the emuMic panel; likely opcode 0x1a or 0x1c (param 0xd5).",
     "DSP/FX: opcodes 0x1a / 0x1c (0xd5) and 0x23 (0xd7) in capture_07_dsp.",
     "Meter report 0x83 byte-to-channel map (metering/ch1..ch16 captures).",
-    "clock_source value order (Internal / USB / S/PDIF?).",
     "Full state_report byte map -- offsets ~90 / 122 / 126 / 127 move on link / 0x49 writes.",
     "Does the in-band readback (frame.readback) carry ROUTING and MIXER state on this device? On the Orion these are categories 0x03 and 0x04 and both are fully decoded, after being wrongly documented as write-only for months. The Zen Go Launcher only queries categories 0x00/0x01/0x11 on connect, but the Orion Launcher is equally sparse and its other categories answer regardless. CHEAP TEST, needs the hardware: `readback 0x03 0` and `readback 0x04 0` -- a non-empty body means it is there. Do NOT sweep indices while doing it (see frame.readback.hazard)."
   ]

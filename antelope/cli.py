@@ -2046,25 +2046,18 @@ _ANSI_RESET = '\x1b[0m'
 _ANSI_BOLD = '\x1b[1m'
 
 
-def _meter_bar(raw_value, profile, width=8):
-    """Renders one channel's raw byte as a bar. Scale is the 'inverted
-    0x60(96)=quiet .. 0x00=loud' one from the profile -- offset formula
-    confirmed for all 12 channels; the dB calibration (db_curve) is from a
-    channel-0-only sweep, applied to every channel for lack of a per-channel
-    one (see meter_report.db_curve_notes).
+def _meter_bar(raw_value, profile, width=8, source_frame='meter_report'):
+    """Render raw inverted activity, with calibration only from its source.
 
-    If the profile has a filled-in meter_report.db_curve, also colors the bar
-    and appends a CLIP marker using meter_report.led_scale (see
-    protocol.raw_to_db / protocol.meter_led). Until db_curve is filled in from
-    a real sweep, raw_to_db() returns None and this silently falls back to a
-    plain, uncolored bar -- same behavior as before this was added.
+    A source without its own curve remains an uncolored raw bar. It does not
+    inherit dB values, LED colors, or a clip verdict from another report.
     """
-    level = max(0, min(96, 96 - raw_value))  # 0 = quiet, 96 = loud/near-clip
+    level = max(0, min(96, 96 - raw_value))  # 0 = silence, 96 = top of raw range
     filled = round(level / 96 * width)
     bar = '#' * filled + '.' * (width - filled)
 
-    db = proto.raw_to_db(profile, raw_value)
-    led = proto.meter_led(profile, db)
+    db = proto.raw_to_db(profile, raw_value, source_frame)
+    led = proto.meter_led(profile, db, source_frame)
     if led is None:
         return bar
 
@@ -2080,16 +2073,12 @@ def cmd_meter(args, profile):
     open and just throttles how often it repaints, instead of re-invoking like
     `watch` would.
 
-    Reads whichever frame actually carries the per-channel input meters for
-    this profile -- see protocol.channel_meter_source(). On the Orion Studio
-    III that is the 0x73 state report at offset 157+channel; its separate 0x75
-    meter frame turned out to be only a monitor sum (see PROTOCOL.md sec 9).
-    The dB calibration (db_curve) is from a channel-0-only sweep applied to
-    every channel, so treat the numbers/colors on channels 1-11 as a
-    reasonable estimate, not an independently verified reading. Run with
-    --duration 0 to stream until Ctrl-C."""
+    Reads whichever frame carries the physical input meters. Orion uses the
+    confirmed 0x73 bank at full-report offsets 221..232. Its raw activity is
+    shown without borrowing the unresolved 0x75 lanes' dB curve or clip scale.
+    Run with --duration 0 to stream until Ctrl-C."""
     try:
-        magic, meter_base = proto.channel_meter_source(profile)
+        source_frame, magic, meter_base = proto.channel_meter_source_details(profile)
     except ValueError:
         sys.exit('This profile has no channel_meter_base_offset (state_report or '
                  'meter_report) -- meter reading not available yet.')
@@ -2099,10 +2088,9 @@ def cmd_meter(args, profile):
     end = time.time() + args.duration if args.duration else None
     min_interval = 1.0 / args.refresh_hz if args.refresh_hz > 0 else 0
     last_draw = 0.0
-    mr = profile['frame'].get('meter_report', {})
-    header = '' if mr.get('db_curve') else (
-        'no db_curve calibration in profile, showing raw/uncolored bars '
-        '(fill in meter_report.db_curve from a real sweep to get dB + color)')
+    meter_source = profile['frame'].get(source_frame, {})
+    header = '' if meter_source.get('db_curve') else (
+        f'no {source_frame}.db_curve calibration, showing raw/uncolored bars')
     try:
         while True:
             data = transport.read_one(magic, args.timeout)
@@ -2119,7 +2107,10 @@ def cmd_meter(args, profile):
                         levels.append(proto.parse_channel_meter(profile, data, ch, meter_base))
                     except ValueError:
                         break
-                line = '  '.join(f'ch{ch}[{_meter_bar(v, profile)}]' for ch, v in enumerate(levels))
+                line = '  '.join(
+                    f'ch{ch}[{_meter_bar(v, profile, source_frame=source_frame)}]'
+                    for ch, v in enumerate(levels)
+                )
                 sys.stdout.write('\x1b[2J\x1b[H')  # clear screen, cursor to top-left
                 if header:
                     sys.stdout.write(header + '\n\n')

@@ -1157,20 +1157,23 @@ def parse_meter_level(profile: dict, data: bytes, channel: int) -> int:
     return data[off]
 
 
-def channel_meter_source(profile: dict):
-    """Which frame carries the real per-channel input meters for this profile,
-    as (magic, base_offset). Prefers state_report.channel_meter_base_offset
-    (the 0x73 embedded block -- confirmed on the Orion Studio III, where the
-    separate 0x75 meter frame turned out to be only a monitor sum), and falls
-    back to meter_report.channel_meter_base_offset. Raises ValueError if
-    neither is set."""
+def channel_meter_source_details(profile: dict):
+    """Return (source_frame, magic, base_offset) for physical input meters."""
     sr = profile['frame'].get('state_report', {})
     if sr.get('channel_meter_base_offset') is not None:
-        return state_report_magic(profile), _as_int(sr['channel_meter_base_offset'])
+        return ('state_report', state_report_magic(profile),
+                _as_int(sr['channel_meter_base_offset']))
     mr = profile['frame'].get('meter_report', {})
     if mr.get('channel_meter_base_offset') is not None:
-        return meter_report_magic(profile), _as_int(mr['channel_meter_base_offset'])
+        return ('meter_report', meter_report_magic(profile),
+                _as_int(mr['channel_meter_base_offset']))
     raise ValueError('no channel_meter_base_offset in state_report or meter_report')
+
+
+def channel_meter_source(profile: dict):
+    """Return the legacy (magic, base_offset) physical-meter source tuple."""
+    _, magic, base = channel_meter_source_details(profile)
+    return magic, base
 
 
 def parse_channel_meter(profile: dict, data: bytes, channel: int, base: int) -> int:
@@ -1182,17 +1185,15 @@ def parse_channel_meter(profile: dict, data: bytes, channel: int, base: int) -> 
     return data[off]
 
 
-def raw_to_db(profile: dict, raw_value: int):
-    """Convert a raw meter byte to dBFS using profile['frame']['meter_report']['db_curve'],
-    a list of [raw_byte, db] calibration points (any order), piecewise-linearly
-    interpolated. Returns None if the profile has no db_curve yet -- callers should
-    treat that as "no calibrated reading available" and fall back to the raw byte /
-    uncalibrated bar, not invent a scale. This intentionally does NOT default to
-    assuming the 0-96 range is linear dB; that shape is explicitly unconfirmed (see
-    meter_report.channel_meter_scale notes) and gain's own per_mode_range shows this
-    protocol doesn't always use a flat linear scale."""
-    mr = profile['frame'].get('meter_report', {})
-    curve = mr.get('db_curve')
+def raw_to_db(profile: dict, raw_value: int, source_frame='meter_report'):
+    """Use only the meter source's own calibration curve to convert raw to dBFS.
+
+    The default keeps legacy meter_report callers unchanged. A state_report source
+    without its own db_curve returns None instead of borrowing 0x75 calibration.
+    """
+    if source_frame not in ('state_report', 'meter_report'):
+        raise ValueError(f'unknown meter source frame {source_frame!r}')
+    curve = profile['frame'].get(source_frame, {}).get('db_curve')
     if not curve:
         return None
     pts = sorted(((_as_int(r), float(d)) for r, d in curve), key=lambda p: p[0])
@@ -1209,14 +1210,13 @@ def raw_to_db(profile: dict, raw_value: int):
     return pts[-1][1]  # unreachable given the bounds checks above, kept defensive
 
 
-def meter_led(profile: dict, db):
-    """Map a dBFS value to a color/clip verdict using profile['frame']['meter_report']
-    ['led_scale']. Returns None if db is None (no calibration yet) or the profile has
-    no led_scale. Pure lookup -- has no opinion on how `db` was derived."""
+def meter_led(profile: dict, db, source_frame='meter_report'):
+    """Use only the meter source's own scale for a color or clip verdict."""
     if db is None:
         return None
-    mr = profile['frame'].get('meter_report', {})
-    scale = mr.get('led_scale')
+    if source_frame not in ('state_report', 'meter_report'):
+        raise ValueError(f'unknown meter source frame {source_frame!r}')
+    scale = profile['frame'].get(source_frame, {}).get('led_scale')
     if not scale:
         return None
     for band in scale['bands']:

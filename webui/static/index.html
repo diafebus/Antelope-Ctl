@@ -116,6 +116,7 @@
                 background:var(--meter-grad, linear-gradient(0deg,
                   var(--meter) 64%, var(--warn) 64%, var(--warn) 81%,
                   var(--orange) 81%, var(--orange) 93%, var(--clip) 93%)); }
+  .vmeter > i.raw { background:var(--meter); }
   .pre .btns { display:flex; gap:6px; }
   .btn { flex:1; cursor:pointer; background:#0e1116; color:var(--dim); border:1px solid var(--line);
          border-radius:5px; padding:5px 4px; font:600 11px/1 ui-monospace,monospace; text-align:center; }
@@ -1378,13 +1379,20 @@ function meterGradient() {
 const CLIP_HOLD_MS = 1500;   // clip LED latches this long after the last 0-dB sample
 const CLIP_TIMER = {};
 function applyMeters(meters) {
-  (meters || []).forEach((db, ch) => {
+  (meters || []).forEach((sample, ch) => {
     const bar = document.querySelector(`.pre[data-ch="${ch}"] [data-meter]`); if (!bar) return;
-    const pct = db == null ? 0 : dbToPct(db);
-    // `i` fills the track; hide the part above the current level so the fixed
-    // colour zones stay put as the fill rises through them.
+    const legacyDb = typeof sample === 'number' ? sample : null;
+    const db = legacyDb ?? sample?.db ?? null;
+    const raw = typeof sample === 'object' ? sample?.raw : null;
+    const rawOnly = db == null && raw != null;
+    const pct = rawOnly
+      ? Math.max(0, Math.min(100, (96 - raw) / 96 * 100))
+      : (db == null ? 0 : dbToPct(db));
+    // Raw-only samples show activity without claiming dB zones or clip state.
+    bar.classList.toggle('raw', rawOnly);
     bar.style.clipPath = `inset(${(100 - pct).toFixed(1)}% 0 0 0)`;
-    if (db != null && db >= 0) {
+    const clipped = legacyDb != null ? legacyDb >= 0 : sample?.clip === true;
+    if (clipped) {
       const led = document.querySelector(`.pre[data-ch="${ch}"] [data-clip]`);
       if (led) {
         led.classList.add('on');
@@ -2288,7 +2296,7 @@ function applyState(s) {
   if (!ONLINE) return;
 
   applyChannels(s.channels);
-  applyMeters(s.meters_db);
+  applyMeters(s.input_meters || s.meters_db);
   if (METER_DEBUG) applyMeterDebug(s);
   applyBuses(s.buses);
   applyDig('adat', s.adat);
