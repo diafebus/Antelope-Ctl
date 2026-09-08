@@ -407,15 +407,15 @@
       "runtime_applies_to": "globals",
       "runtime_internal_value": 0,
       "runtime_values": {
-        "0": "Raw 0 (label unconfirmed)",
-        "1": "Raw 1 (label unconfirmed)",
-        "2": "Raw 2 (label unconfirmed)"
+        "0": "Internal",
+        "1": "S/PDIF",
+        "2": "USB"
       },
       "frame": "global_command (opcode 0x12) -- index @17",
       "range": [0, 2],
-      "values_note": "3 sources (the capture name notes 'no word clock exists' on the Zen Go). Likely Internal / USB / S/PDIF -- order not confirmed. Runtime labels intentionally remain raw because the source order is unconfirmed. Raw 0 retains the legacy application's internal-clock/sample-rate gating assumption; this does not promote its source name to confirmed.",
+      "values_note": "Zen Go exposes exactly 3 clock sources: 0 = Internal, 1 = S/PDIF, 2 = USB. Raw 0 is the internal-clock value used for sample-rate gating.",
       "readback": "state_report offset 19",
-      "evidence": "capture_06_clock_source_no_word_clock_exists.pcapng: op 0x12 param 0x04 value 0/1/2, offset 19 followed 1:1."
+      "evidence": "capture_06_clock_source_no_word_clock_exists.pcapng: op 0x12 param 0x04 values 0/1/2/0 and offset 19 followed 1:1; the capture-derived project clock-source map and the existing antelope-protocol ClockSource code/label mapping both identify 0=Internal, 1=S/PDIF, 2=USB."
     },
     "mix_fader": {
       "status": "confirmed",
@@ -490,7 +490,6 @@
     "Mic modeling frame (enable/model/pattern) -- capture the emuMic panel; likely opcode 0x1a or 0x1c (param 0xd5).",
     "DSP/FX: opcodes 0x1a / 0x1c (0xd5) and 0x23 (0xd7) in capture_07_dsp.",
     "Meter report 0x83 byte-to-channel map (metering/ch1..ch16 captures).",
-    "clock_source value order (Internal / USB / S/PDIF?).",
     "Full state_report byte map -- offsets ~90 / 122 / 126 / 127 move on link / 0x49 writes.",
     "Does the in-band readback (frame.readback) carry ROUTING and MIXER state on this device? On the Orion these are categories 0x03 and 0x04 and both are fully decoded, after being wrongly documented as write-only for months. The Zen Go Launcher only queries categories 0x00/0x01/0x11 on connect, but the Orion Launcher is equally sparse and its other categories answer regardless. CHEAP TEST, needs the hardware: `readback 0x03 0` and `readback 0x04 0` -- a non-empty body means it is there. Do NOT sweep indices while doing it (see frame.readback.hazard)."
   ]
