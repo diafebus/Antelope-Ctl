@@ -224,6 +224,46 @@
       },
       "notes": "Its own command shape (opcode 0x1d) -- the AuraVerb reverb on the Mix 1 window (a device-BUNDLED Synergy Core effect: always present, no per-plugin activation -- IN SCOPE, unlike the licensed AFX plugin chain). DSP PARAMS DECODED from macos-auraverb-ctl-color-predelay-earlyrefgaij-laterefdelay-richness-reverbtime-roomsize-reverblevel (2026-08-31, native macOS): the user swept each of the 8 AuraVerb controls one at a time. Frame offsets 16-28: [16]=0xda param_id; [17]=0x0b constant sub-cmd; [18]=0x00 constant (only Mix 1 captured -- likely the mix index, AuraVerb lives on a mix window); [19]=Room Size; [20]=Color; [21]=Pre-Delay (0-100 maps to 0-32 ms per the public manual); [22]=0x64 (100) constant, NEVER swept -- assumed the wet/mix amount locked at 100% (AuraVerb runs 100% wet as a mix send), could also be a 9th unexposed control; [23]=Early Reflection Gain; [24]=Late Reflection Delay; [25]=Richness; [26]=Reverb Time; [27]=Reverb Level; [28]=enabled (01 on / 00 off, from macos-auraverb-on-off). Every param is a plain 0-100 byte (UI drags land on even values, granularity 2, but odd values are presumably legal); Color reached exactly 0x64=100, the rest topped out at 0x62=98 only because the drag stopped short. The frame carries ALL 8 params + enabled every time (whole-state, like the mixer). Control names + ranges cross-checked against the Orion Studio Synergy Core user manual p.50 and antelopeaudio.com/products/auraverb (facts only). No 0x73 readback -- BUT there IS a dedicated readback: frame.readback category 0x0a (decoded + hardware-confirmed 2026-09-03, see readback.categories.0x0a and protocol.parse_auraverb_record). CLI `auraverb` now live-reads that and does a verified read-modify-write; the old CLI cache is kept only as an offline fallback. defaults[] = the device power-on values seen frozen in macos-auraverb-on-off. build_auraverb_command + CLI `auraverb`; 0x1d in constraints.allowed_opcodes (2026-08-31). The [22]=0x64 wet/mix constant is mirrored in the 0x0a readback and stayed 100 through the whole differential sweep -- consistent with a fixed 100%-wet lock, not a hidden 9th control."
     },
+    "surround_global_command": {
+      "magic_offset": 0,
+      "magic": "0x70",
+      "opcode_offset": 4,
+      "opcode": "0xab",
+      "opcode_name": "SET_SURROUND_GLOBAL",
+      "runtime_status": "confirmed",
+      "runtime_operations": [
+        {"op": "fixed_byte", "offset": 0, "value": "0x70"},
+        {"op": "fixed_byte", "offset": 4, "value": "0xab"},
+        {"op": "fixed_byte", "offset": 16, "value": "0xeb"},
+        {"op": "fixed_byte", "offset": 17, "value": "0x99"},
+        {"op": "scalar", "field": "global_delay", "offset": 20, "width": 1},
+        {"op": "scalar", "field": "global_level", "offset": 22, "width": 2, "endian": "little"}
+      ],
+      "contract": {
+        "status": "confirmed",
+        "readback_category": "0x1b",
+        "readback_index": 0,
+        "readback_header": ["0x75", 0, 0, 0, "0x40", "0x01", 0, 0, "0x1b", 0, 0, 0, 0, 0, 0, 0],
+        "readback_payload_offset": 18,
+        "template_size": 151,
+        "fixed_tail_offset": 169,
+        "flags_a_offset": 18,
+        "flags_b_offset": 19,
+        "flags_a_mask": "0x5f",
+        "flags_b_mask": "0x7f",
+        "formats": [
+          {"name": "2.0", "flags_a": "0x02", "flags_b": "0x9f", "writable": true},
+          {"name": "2.1", "flags_a": "0x03", "flags_b": "0x82", "writable": false}
+        ],
+        "delay_offset": 20,
+        "delay_range": [6, 45],
+        "level_offset": 22,
+        "level_range": [0, 760],
+        "mask_offsets": [25, 27, 29],
+        "evidence": "Writable 2.0 full OUT reports: macos-captures/macos-settings-srrndeq-post-pre.pcapng SHA-256 f809a52ebbade7cda3697202e4c10e05309d139ff810a95a304fdb0870f9190a frames 2383 at 3.388074 s (report SHA-256 e7c3435ee97cb73ec3c9d937d26852fcc0e232ee9184d1be4d459273ce2b2a3f) and 3808 at 7.060227 s (report SHA-256 d3f3e25e83f6df83dfb14ec28ac866d20a22ac05be75f4652253d38afbf51930). Paired 2.0 readback: macos-captures/macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frame 17664 at 26.573382 s, report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e. Meaningful body is command offsets 18..168; captured offsets 169..319 are fixed zero padding. User-supplied full 320-byte export new/srrnd-20-21.frames.txt SHA-256 3a2ad5b8710beda965bc1fe5ff07673371cd961897d4bc957baaa88d51deac8b lines 1 at 7.248712 s and 35 at 13.730188 s supports 2.1 read-only decoding, not writes. Delay 6..45 and level 0..760 are observed head bounds only."
+      },
+      "notes": "Complete-state writes are restricted to readback-verified 2.0. Runtime preserves the 151 meaningful bytes at frame offsets 18..168, fixes the captured padding at offsets 169..319 to zero, and mutates only global delay or level. Recognized 2.1 remains read-only until its full readback pairing is verified."
+    },
     "micmodeling_command": {
       "magic_offset": 0,
       "magic": "0x70",
@@ -771,7 +811,7 @@
         "0x15": "~90-entry table, sibling of 0x0c",
         "0x16": "UNKNOWN, ~8-16 bytes. NOT output trim and NOT pan law -- both ruled out 2026-09-03 by a live differential test: sweeping SET_PARAM 0x4b targets 0/1/2 (the confirmed output-trim targets) moved 0x73 [24]/[25] exactly as documented but left 0x16 untouched, and SET_PARAM 0x4b target 3 (the pan-law hypothesis) did nothing anywhere. Content seen: all-zero (2026-09-03), '00 00 00 32 00 00 00 32 01 12 00 01 01 12 00 01' (2026-09-01) -- so it does carry state sometimes; source unidentified (possibly transient / a webUI-touched value). Still undecoded.",
         "0x1a": "SURROUND PER-SPEAKER EQ readback -- the readback for the launcher-only 0x87/0xea frame (params.surround_speaker). 116 bytes = 4-byte header (`00 00 58 02`) + 16 EQ bands x 7 bytes, EXACT same layout as the write frame: `<freq LE16 Hz><Q LE16 x100><gain LE16 signed 0.01 dB><mode 0/1/2>`. One record per surround speaker, index 0..15 (this is what the 0x74 connect walk's `0x1a x16` actually is -- NOT ADAT; ADAT was a 16==16 count guess and has NO readback category, its gain/link is in 0x73 @75-90). LIVE-READ 2026-09-04: idx 0 == idx 1 both carried a non-flat low-frequency curve (bands clustered 30-600 Hz, cuts/boosts to +/-12 dB) = the room-correction curve the user had generated in 2.0 -- matches their observation that RC writes an identical curve to L and R. idx 2+ were flat default templates (Q 0.71, gain 0, the log-spaced 30 Hz..15 kHz band layout). So the surround EQ / Room Correction DOES have a readback after all. Not yet wired into a parser or the CLI.",
-        "0x1b": "SURROUND GLOBAL readback -- the readback for the launcher-only 0xab/0xeb frame (params.surround_monitor). 1 record (idx 0). ALIGNMENT: body[N] == the 0xab write frame's byte [18+N], established 2026-09-04 by a live read against a known surround state, six independent field matches: body[0..1]=`02 9f` = frame[18][19] FORMAT 2.0; body[2]=`06` = frame[20] global delay (the 0.6 ms floor); body[4..5]=`58 02` = frame[22-23] LEVEL 600 = 0 dB; body[7..8]=`ff ff` = frame[25-26] per-speaker BYPASS mask, all active; body[9..10] = frame[27-28] MUTE mask; body[22..24]=`23 00 00` = frame[40-42], the documented bass-management marker. The 8-byte bass-management CHANNEL BLOCKS then start at body[25] = frame[43] exactly as field_map.23_onward_bass_mgmt says, and read back sensible values (LP 320 Hz / HP 80 Hz / fader 360 / order 2 on the 3 used channels, `[80][80][600][0]` defaults after) -- so this record INDEPENDENTLY CONFIRMS that byte map, which had been derived only from write captures. The earlier 'mixer bus level/range table' label was wrong: the repeating `50 00 50 00 58 02 00` that prompted it is the bass-management default channel block `[80][80][600][0]`, not bus levels. Parsed + wired 2026-09-04: protocol.parse_surround_global_record, CLI `surround-status`.",
+        "0x1b": "SURROUND GLOBAL readback, 1 record (idx 0). Four raw macOS init captures contain the same full 320-byte response (report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e), including header `75 00 00 00 40 01 00 00 1b 00 00 00 00 00 00 00`. Its first 151 body bytes equal command offsets 18..168 of raw 2.0 OUT frame 2383; the remaining mapped 151 bytes and final two response bytes are observed zero padding, not claimed variable state. Runtime therefore decodes the 151 meaningful bytes, requires the full captured header and zero tail, permits RMW only for recognized 2.0, and keeps the user-supplied full 2.1 export read-only pending paired readback verification.",
         "0x19": "64 entries, all empty in the connect walk -- the 64-ch USB/TB stream slots",
         "note": "Categories 0x1c..0x60 answer but with empty bodies (probed 2026-08-31). Full raw enumeration: tools/readback_enum.py."
       },
@@ -1263,8 +1303,8 @@
       "id": "0xeb",
       "status": "GLOBAL state partly decoded (0xab/0xeb whole-state frame): pre/post, level, delay, dim/mute/bypass, surround format. PER-SPEAKER state is a separate frame -- see params.surround_speaker.",
       "type": "NEW opcode 0xab -- whole-state command for the Surround tab's GLOBAL controls (like AuraVerb)",
-      "frame": "opcode 0xab @4, param_id 0xeb @16, then a fixed-layout payload. No builder; 0xab is launcher-only observed, NOT in allowed_opcodes.",
-      "readback": "frame.readback category 0x1b (1 record, idx 0). body[N] == this frame's byte [18+N] -- see frame.readback.categories.0x1b for the six-field alignment proof. Gives back format, global delay, level, the bypass/mute masks and the whole 2.1 bass-management block. Parsed + wired 2026-09-04: protocol.parse_surround_global_record, CLI `surround-status` (read-only -- the 0xab write frame itself stays launcher-only, never sent).",
+      "frame": "opcode 0xab @4, param_id 0xeb @16, then a fixed-layout payload. The runtime builder is restricted to readback-verified 2.0 and mutates only global delay or level within observed bounds; 2.1 remains read-only.",
+      "readback": "frame.readback category 0x1b (1 record, idx 0). Raw 2.0 captures verify the exact 16-byte response header, the 151-byte meaningful body mapping to command offsets 18..168, and the fixed zero tail. The user-supplied full 320-byte 2.1 export new/srrnd-20-21.frames.txt (SHA-256 3a2ad5b8710beda965bc1fe5ff07673371cd961897d4bc957baaa88d51deac8b, matching lines 1 at 7.248712 s and 35 at 13.730188 s) is retained as read-only format evidence, not a writable readback contract.",
       "field_map": {
         "16": "0xeb param_id",
         "17": "0x99 -- constant",
@@ -1502,11 +1542,11 @@
       "0x14",
       "0x17",
       "0x1d",
-      "0x53"
+      "0x53",
+      "0xab"
     ],
     "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). 0x53 is hardware round-trip confirmed (2026-08-31): preamps->hp1/hp2 and a seeded 16-ch line_out routed from cli.py persisted correctly in the Windows Launcher. 0x17 (mixer) is still untested and not in a CLI command yet -- treat the mixer as experimental. 0x1d (SET_AURAVERB) added 2026-08-31 -- all 8 DSP params decoded (frame.auraverb_command); AuraVerb is device-bundled (no per-plugin activation) so it is in scope; not hardware round-trip tested yet.",
     "observed_opcodes_launcher_only": [
-      "0xab",
       "0x87"
     ],
     "forbidden_opcodes": [
