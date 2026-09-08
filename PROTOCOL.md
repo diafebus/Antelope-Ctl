@@ -346,7 +346,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x12` | **UNKNOWN**, empty body on 2026-09-04. The old "clock source or sample-rate index?" guess is **ruled out** -- both live in `0x73` instead (clock source @19, rate index @18, rate in Hz @21-23) | undecoded |
 | `0x16` | **UNKNOWN** -- NOT output trim, NOT pan law (both ruled out live 2026-09-03). Seen all-zero and `00 00 00 32 ×2 …` | undecoded |
 | `0x19` | 64 entries, empty bodies -- the 64-ch USB/TB slots | — |
-| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 B = 4-B header + 16 EQ bands in the `0x87`/`0xea` write-frame layout (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode>`). Live-read 2026-09-04: with a 2.0 Room Correction loaded, idx 0 & 1 both held the RC curve (identical L/R), the rest were flat defaults. So the surround EQ / Room Correction **does** read back | **decoded + wired 2026-09-04** — `protocol.parse_surround_speaker_eq_record`, CLI `surround-eq [speaker]` |
+| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 meaningful B = 4 opaque candidate-head bytes + 16 EQ bands (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode raw>`). **Correction:** EQ begins at response byte 20, not 16. The candidate head aligns positionally with OUT delay and packed level/invert, but init captures prove only geometry/default values, not dynamic semantics. L/R held the non-flat 2.0 Room Correction curve; mode labels remain unproven. | **read-only runtime decoder**; candidate head omitted and unknown modes retained raw |
 | **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.1 bass-management block. See the alignment proof below | **decoded + wired 2026-09-04** — `protocol.parse_surround_global_record`, CLI `surround-status` |
 | `0x1c`-`0x60` | answer, empty bodies | — |
 
@@ -1056,7 +1056,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
 | surround tab (global) | `0xeb` | `0xab` | - | `[18]` bit7 pre/post + format, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`) |
-| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs, EQ bands only) |
+| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: 4 opaque candidate-head bytes + EQ; dynamic head semantics unverified) |
 | oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
 | DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | none in `0x73` |
@@ -1154,9 +1154,13 @@ categories were actually read on 2026-09-04:
 | global `0xab`/`0xeb` | `0x74` category **`0x1b`** | 1 (idx 0) |
 | per-speaker `0x87`/`0xea` | `0x74` category **`0x1a`** | 16, one per speaker |
 
-Both are now parsed and wired 2026-09-04: `protocol.parse_surround_speaker_eq_record`
-/ `parse_surround_global_record`, CLI `surround-eq [speaker]` / `surround-status`
-(read-only -- `0x87`/`0xab` stay launcher-only, neither is ever sent).
+Both are parsed by the reference tools. The TUI additionally validates the exact
+320-byte category-`0x1a` header/index/zero-tail contract and exposes only its EQ
+bands read-only. Response bytes 16–19 are an opaque candidate head: positional
+alignment is known, but isolated level/delay/invert changes have not proven that
+it refreshes dynamically. Todo 45 blocks any whole-record RMW until that test.
+Mode bytes remain raw because shelf/pass labels are unproven. No `0x87` action is
+authorized.
 
 **Category `0x1b` alignment proof** — `body[N]` == the `0xab` frame's byte
 `[18+N]`, from one live read against a known 2.0 state:
@@ -1613,7 +1617,7 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
-| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | decoded 2026-09-03 (§11). Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker = level (+invert) + delay + **16 EQ bands** (`<freq><Q><gain><mode>`, 7B each; Q ×100 0.1-18; mode `0x02` bell / `0x00` shelf / `0x04` band-pass on end bands 1 & 16; centre = bell only). **BOTH frames read back** (2026-09-04): per-speaker EQ = `0x74` cat `0x1a` (16 recs), global = cat `0x1b` (1 rec, `body[N]`==frame`[18+N]`, which independently confirms the bass-management byte map). Neither wired. Minor-open: speaker-index↔channel map for formats past 2.0; centre end-band mode value; parsers + a `surround-eq` CLI |
+| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The TUI's finite `0x1a` decoder is read-only, begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, keeps modes raw, and labels only captured 2.0 L/R plus 2.1 L/R/LFE ownership. Todo 45 blocks `0x87` RMW; no higher-format or centre mapping is inferred. |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Open: handle encoding (slot-index vs instance id, 2 data points); the `0x0c`/`0x15` readback that maps slot occupancy; bypass polarity. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync, no readback. §7 space table; `build_link_command(space=4)`. Bucket A/B. |

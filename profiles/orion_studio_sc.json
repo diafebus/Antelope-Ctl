@@ -858,7 +858,7 @@
         "0x12": "UNKNOWN. A 2026-08 probe saw a scalar; a direct query at idx 0 returned an EMPTY body on 2026-09-04. The old 'clock source or sample-rate index?' guess is RULED OUT -- both of those read back from the 0x73 state report instead (clock source @19, sample-rate index @18, rate in Hz @21-23), confirmed on hardware 2026-09-03/04. Not in the 0x74 connect walk, so no safe index bound above 0. NB: readback category 0x12 is NOT the same thing as command opcode 0x12 (SET_GLOBAL) -- see frame.readback.namespace_warning.",
         "0x15": "~90-entry table, sibling of 0x0c",
         "0x16": "UNKNOWN, ~8-16 bytes. NOT output trim and NOT pan law -- both ruled out 2026-09-03 by a live differential test: sweeping SET_PARAM 0x4b targets 0/1/2 (the confirmed output-trim targets) moved 0x73 [24]/[25] exactly as documented but left 0x16 untouched, and SET_PARAM 0x4b target 3 (the pan-law hypothesis) did nothing anywhere. Content seen: all-zero (2026-09-03), '00 00 00 32 00 00 00 32 01 12 00 01 01 12 00 01' (2026-09-01) -- so it does carry state sometimes; source unidentified (possibly transient / a webUI-touched value). Still undecoded.",
-        "0x1a": "SURROUND PER-SPEAKER EQ readback -- the readback for the launcher-only 0x87/0xea frame (params.surround_speaker). 116 bytes = 4-byte header (`00 00 58 02`) + 16 EQ bands x 7 bytes, EXACT same layout as the write frame: `<freq LE16 Hz><Q LE16 x100><gain LE16 signed 0.01 dB><mode 0/1/2>`. One record per surround speaker, index 0..15 (this is what the 0x74 connect walk's `0x1a x16` actually is -- NOT ADAT; ADAT was a 16==16 count guess and has NO readback category, its gain/link is in 0x73 @75-90). LIVE-READ 2026-09-04: idx 0 == idx 1 both carried a non-flat low-frequency curve (bands clustered 30-600 Hz, cuts/boosts to +/-12 dB) = the room-correction curve the user had generated in 2.0 -- matches their observation that RC writes an identical curve to L and R. idx 2+ were flat default templates (Q 0.71, gain 0, the log-spaced 30 Hz..15 kHz band layout). So the surround EQ / Room Correction DOES have a readback after all. Not yet wired into a parser or the CLI.",
+        "0x1a": "SURROUND PER-SPEAKER EQ readback -- 116 meaningful bytes: a 4-byte opaque candidate head plus 16 EQ bands x 7 bytes. CORRECTION: the candidate head is not absent and is not an EQ header; response bytes 16..19 positionally align with speaker-OUT delay plus packed level/invert, but all four init captures saw only defaults, so dynamic head semantics remain unverified and are omitted from the runtime view. EQ begins at response byte 20 and uses `<freq LE16 Hz><Q LE16 x100><gain LE16 signed 0.01 dB><mode raw>`. One record per speaker index 0..15; only indices 0=L, 1=R, 2=LFE have capture-grounded labels. L/R carried the non-flat room-correction curve and LFE a distinct captured record. Runtime support is strictly read-only: no opcode-0x87 capability, action, preset, copy/paste, or reset.",
         "0x1b": "SURROUND GLOBAL readback, 1 record (idx 0). Four raw macOS init captures contain the same full 320-byte response (report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e), including header `75 00 00 00 40 01 00 00 1b 00 00 00 00 00 00 00`. Its first 151 body bytes equal command offsets 18..168 of raw 2.0 OUT frame 2383; the remaining mapped 151 bytes and final two response bytes are observed zero padding, not claimed variable state. Runtime therefore decodes the 151 meaningful bytes, requires the full captured header and zero tail, permits RMW only for recognized 2.0, and keeps the user-supplied full 2.1 export read-only pending paired readback verification.",
         "0x19": "64 entries, all empty in the connect walk -- the 64-ch USB/TB stream slots",
         "note": "Categories 0x1c..0x60 answer but with empty bodies (probed 2026-08-31). Full raw enumeration: tools/readback_enum.py."
@@ -1382,10 +1382,10 @@
     },
     "surround_speaker": {
       "id": "0xea",
-      "status": "FULLY DECODED 2026-09-03 -- opcode 0x87 / param 0xea, per-speaker whole-state frame (x16 speakers). delay / level / invert / 16-band EQ (freq, Q, gain, mode) all confirmed with user-verified ranges. Only untested bit: the mode-byte value for a centre channel's end bands (assumed 0x02).",
+      "status": "WRITE frame geometry decoded from Launcher captures; runtime support is read-only category-0x1a EQ only. Frequency/Q/gain units and bounds are captured; mode bytes remain raw because endpoint labels are unproven. The four readback head bytes align positionally with OUT delay and packed level/invert, but dynamic refresh is unverified.",
       "type": "NEW opcode 0x87 -- one frame per speaker carries that speaker's whole surround-monitor strip",
       "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. No builder; launcher-only observed opcode.",
-      "readback": "frame.readback category 0x1a -- 16 records (one per speaker), 116 bytes each = a 4-byte header (`00 00 58 02`) then the 16 EQ bands in the EXACT `<freq LE16><Q LE16 x100><gain LE16 signed><mode>` layout of this write frame's [23_onward]. LIVE-CONFIRMED 2026-09-04: with a 2.0 Room Correction curve loaded, cat 0x1a idx 0 and idx 1 both carried that curve (identical L/R, as RC does), other indices were flat defaults. So this frame IS readable -- only the delay/level/invert head of the strip is not visible in cat 0x1a (bands only). Parsed + wired 2026-09-04: protocol.parse_surround_speaker_eq_record, CLI `surround-eq`. (The GLOBAL 0xab frame's readback is a separate category, 0x1b -- see params.surround_monitor.)",
+      "readback": "frame.readback category 0x1a -- 16 records (one per speaker), 116 meaningful bytes. CORRECTION: bytes 0..3 are an opaque candidate head, not an EQ header and not absent; they positionally equal OUT delay plus packed level/invert but were captured only at defaults, so dynamic semantics are unverified. The 16 EQ bands begin at record byte 4 / response byte 20 in exact `<freq LE16><Q LE16 x100><gain LE16 signed><mode raw>` geometry. L/R carry the captured non-flat Room Correction curve. Runtime decoding is read-only and omits the candidate head.",
       "field_map": {
         "17": "0x75 -- constant subcmd",
         "18": "speaker index 0..15. Confirmed: 2.0 -> L=0, R=1; 2.1 -> L=0, R=1, LFE=2 (srrnd-LFE, 2026-09-03). The LFE strip is a full 0x87 frame like any other -- same 16-band EQ, level, delay, invert (user + capture). Higher formats (5.1/7.1) not captured.",
@@ -1393,7 +1393,7 @@
         "21_22": "per-speaker LEVEL, LE16. base 600 (0x0258) = 0 dB; 0.1 dB/step; range 0 = -60 dB .. 760 = +16 dB (USER-CONFIRMED 2026-09-03). **bit 7 of [22] = phase INVERT** (level tops at 760 = 0x02F8 so [22] bit 7 is free: 0x02 -> 0x82 on the invert toggle).",
         "23_onward": "SIXTEEN parametric EQ bands, FULLY DECODED 2026-09-03 (srrnd-EQ-Q-and-mode + srrnd-EQ-L/R-* + srrnd-EQ-L-gain). One `0x87` frame carries all 16; the Launcher shows them as 2 pages of 8. **7-byte stride, band N at [23 + 7*N] (N 0..15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** FREQ = literal Hz, 20 .. 20000 Hz per band (user). Q = LE16, value = Q x100, range 10 (Q 0.10) .. 1800 (Q 18.0), default 0x0047 = 71 = Q 0.71 (Butterworth) -- the byte I earlier called a `0x47` marker IS the Q low byte. GAIN = LE16 signed, 0.01 dB, -2400 (-24 dB) .. +1200 (+12 dB) (user). MODE byte: `0x02` = bell (bands 2-15, always). **Bands 1 and 16 are the end-band slots** (band 1 = low end, band 16 = high end), each with TWO user modes: SHELVING and BAND-PASS (Antelope's labels; a 'flat' line in the UI is just shelf/pass at 0 gain and is NOT a separate mode). **Observed mode-byte values** -- band 1: `0x00` (rest) toggling to `0x04` (srrnd-EQ-Q-and-mode, L); band 16: `0x00` (rest) toggling `0x01` <-> `0x03` (srrnd-LFE, on the LFE strip). So the encoding is NOT a clean bitfield -- band 1 uses {0x00, 0x04}, band 16 uses {0x01, 0x03} (plus 0x00 as the untouched default). Which of the two is 'shelving' vs 'band-pass' is not yet pinned -- ask the user, they toggled it. In BOTH modes gain works and Q sets the slope. On the CENTRE channel the end bands are bell (`0x02`) only. Default freqs per page 30/120/500/1400/3000/5500/9500/14000 Hz."
       },
-      "open": "Nothing material -- freq/Q/gain all decoded, ranges user-confirmed. Speaker index: 2.0 L=0/R=1, 2.1 adds LFE=2 (srrnd-LFE). READBACK EXISTS and is wired: frame.readback category 0x1a, 16 records (the EQ bands only -- the delay/level/invert head of the strip is not in that record); protocol.parse_surround_speaker_eq_record, CLI `surround-eq`. `copy speaker`/`paste speaker` just re-send 0x87 frames. Minor: the exact mode-byte -> UI-label mapping for the end bands (band 1 {0x00,0x04}, band 16 {0x01,0x03} -- ask the user which is shelf vs band-pass); centre-channel end-band mode value (assumed 0x02).",
+      "open": "Todo 45 blocks every per-speaker write: dynamically prove category-0x1a candidate-head bytes after isolated delay/level/invert changes before any whole-record RMW. Exact endpoint mode-byte labels also remain unproven. Runtime must retain modes as raw read-only values, label only captured indices 0=L, 1=R, 2=LFE under known 2.0/2.1, and make no centre or higher-format guesses.",
       "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. No write command in the CLI (0x87 stays launcher-only); the readback is wired -- `surround-eq`."
     },
     "dc_coupling": {
@@ -1581,6 +1581,31 @@
       "error frame 0x61 ('unknown opcode') exists in the family -- see frame.error_response",
       "min write interval ~250ms on Discrete 8 (Orion tolerates the Launcher's ~30-80ms double-sends fine)"
     ]
+  },
+  "runtime_contracts": {
+    "surround_speaker_eq": {
+      "status": "confirmed",
+      "readback_category": "0x1a",
+      "record_count": 16,
+      "header_prefix": ["0x75", 0, 0, 0, "0x40", "0x01", 0, 0, "0x1a", 0, 0, 0],
+      "index_offset": 12,
+      "header_suffix": [0, 0, 0],
+      "data_offset": 16,
+      "record_size": 116,
+      "fixed_tail_offset": 132,
+      "candidate_head_size": 4,
+      "band_count": 16,
+      "band_stride": 7,
+      "frequency_offset": 0,
+      "frequency_range": [20, 20000],
+      "q_offset": 2,
+      "q_raw_range": [10, 1800],
+      "gain_offset": 4,
+      "gain_raw_range": [-2400, 1200],
+      "mode_offset": 6,
+      "read_only": true,
+      "evidence": "Four raw macOS init captures each contain all 16 complete category-0x1a reports. Representative capture macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frames 17676/17686/17696; full-report hashes index 0 1d24d575830495cc8ee035e4167c916c20aef8ffec02e6dba3d6608e4a555457, index 1 e64c226aa323787d2da3a40e43e173a8d3b7c6a02489b5fd60c08b59bdff5591, index 2 102b1b66a5e7abcd74c67f381a24a821dbb373d6bcc26272bdc6762afef848ef. Response bytes 16..19 are an opaque four-byte candidate head positionally aligned with speaker OUT delay and packed level/invert, but all readbacks captured only defaults, so dynamic semantics are unverified and omitted from the runtime view. EQ begins at response byte 20; 16 bands use the captured 7-byte little-endian geometry. Bytes 132..319 are captured zero padding. Read-only: no opcode-0x87 capability or action is authorized."
+    }
   },
   "constraints": {
     "_comment": "Machine-readable bounds a client should enforce before writing. Confirmed values are from Orion captures; the forbidden_opcodes and the general 'don't sweep' rule are carried from the Discrete 8 Pro, where crossing them cost a physical power cycle -- see hazards. A bound here should have a matching hazards entry explaining why.",
