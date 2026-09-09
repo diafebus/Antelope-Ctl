@@ -410,11 +410,12 @@
   .mixer-meter > i.unavailable { height:0; }
   .mixer-meter > i.peak { background:var(--warn); }
   .mixer-control { width:100%; display:flex; flex-direction:column; gap:2px; }
+  .mixer-control.after-fader { margin-top:9px; }
   .mixer-control label { display:flex; justify-content:space-between; align-items:baseline;
                          color:var(--dim); font:9px/1 ui-monospace,monospace; }
   .mixer-control output { color:var(--fg); font:9px/1 ui-monospace,monospace; }
   .mixer-control input[type=range] { width:100%; height:12px; margin:0; accent-color:var(--accent); }
-  .mixer-buttons { display:flex; gap:3px; width:100%; margin-top:auto; }
+  .mixer-buttons { display:flex; gap:3px; width:100%; }
   .mixer-buttons button { flex:1; min-width:0; cursor:pointer; background:#0e1116; color:var(--dim);
                           border:1px solid var(--line); border-radius:3px; padding:4px 0;
                           font:700 10px/1 ui-monospace,monospace; }
@@ -2521,14 +2522,6 @@ function renderMix(pane, m) {
       <span class="mxname">${ch === 0 ? 'MASTER' : 'CH ' + String(ch).padStart(2, '0')}</span>
       ${linkStart ? `<button class="linkbtn" data-mix-link title="link CH${ch}+CH${ch + 1}">${LINK_ICON}</button>` : ''}
       <span class="mxval" data-fval>${mixerFaderLabel(fader)}</span>
-      ${hasSend && ch > 0 ? `<div class="mixer-control">
-        <label><span>SEND</span><output data-sval>${mixerSendLabel(send, sHi)}</output></label>
-        <input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} AuraVerb send">
-      </div>` : ''}
-      ${ch > 0 ? `<div class="mixer-control">
-        <label><span>PAN</span><output data-pval>${mixerPanLabel(pan)}</output></label>
-        <input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="channel ${ch} pan">
-      </div>` : ''}
       <div class="mixer-fader-row">
         <div class="mixer-fader-well">
           <span class="mixer-fader-thumb" aria-hidden="true">
@@ -2542,6 +2535,14 @@ function renderMix(pane, m) {
         <button type="button" data-mute class="${s.mute ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} mute">M</button>
         ${ch > 0 ? `<button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="channel ${ch} solo">S</button>` : ''}
       </div>
+      ${ch > 0 ? `<div class="mixer-control after-fader">
+        <label><span>PAN</span><output data-pval>${mixerPanLabel(pan)}</output></label>
+        <input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="channel ${ch} pan">
+      </div>` : ''}
+      ${hasSend && ch > 0 ? `<div class="mixer-control">
+        <label><span>SEND</span><output data-sval>${mixerSendLabel(send, sHi)}</output></label>
+        <input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} AuraVerb send">
+      </div>` : ''}
     </div>`;
   }).join('');
 
