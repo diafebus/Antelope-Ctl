@@ -1021,17 +1021,52 @@ Out, Line Out, HP1, HP2, Monitor A, Monitor B, Reamp, ADAT Out, S/PDIF Out,
 AFX In, [unnamed], [unnamed], Mix 1, Mix 2, Mix 3, Mix 4, Surround In.
 Meter selection is not evidence of an audio-routing change.
 
-The shared virtual-meter region is silent in this capture (normally raw
-`0x60`), so it confirms the selector and its ordering but does not identify
-new lane boundaries or per-source meter offsets. Existing active-signal
-evidence still identifies `@121=22` as the Mix 2 selection for the gated
-Mix 2 strip lanes at full-report `0x73[144..156]`. Keep physical inputs at
-`[221..232]` and do not treat the selector itself as a meter lane.
+### Controlled live selector/meter test — 2026-09-09
 
-Decoder implication: tag shared samples with observed selector state;
-invalidate stale samples on changes and leave unselected sources unknown.
-Do not extrapolate the existing `[121]=22` Mix 2 strip mappings to other
-mixes without signal evidence. Keep physical inputs at `[221..232]`.
+`tools/meter_selftest.py` performed a restore-safe live test using the user's
+Preamp 1 tone. It saved all 15 routing groups, all four 33-slot mixer records,
+the six output-bus states, and both selector values; every temporary route,
+mixer value, bus level, and selector was restored. The final ordinary
+self-test passed 13/13 checks.
+
+The test isolated each virtual-mixer strip by routing Preamp 1 into one
+`mix_chN` slot at a time, setting that mixer strip to unity, and comparing the
+active report with the same slot muted:
+
+| Meter control | Active lane | Result |
+|---|---:|---|
+| Meters window, target 0, value 21..24 (Mix 1..4) | `0x73 @125..156`, strip N = `@124+N` | all four Mixes × all 32 strips confirmed |
+| Mixer window, target 1, value 0..3 (Mix 1..4) | `0x73 @157..188`, strip N = `@156+N` | all four Mixes × all 32 strips confirmed; only matching target-1 value activates its bank |
+
+These are two independently gated copies of the virtual-mixer strip bank.
+The Meters-window values 5..8 (“Mix 1 L/R” through “Mix 4 L/R”) produced the
+target-1 bank when the corresponding mixer target was selected, but were not
+independently separable from that second selector in this pass; their exact
+master/L-R meaning remains open.
+
+The same test found these additional paths while scanning all data bytes 16..
+319 in both `0x73` and free-running `0x75` reports:
+
+- Meters selector 9 (“Surround Out”) and 25 (“Surround In”) changed `0x75
+  @34/@50` when Preamp 1 was routed through the surround destination. The
+  bytes are confirmed as a surround selector path, but input-vs-output stage
+  ownership is not separated.
+- Meters selector 18 (“AFX In”) changed `0x75 @32` when Preamp 1 was routed
+  to AFX In. No plugin parameter or activation traffic was used.
+- Selectors 10..17 (“Line Out”, HP1, HP2, Monitor A/B, Reamp, ADAT Out,
+  S/PDIF Out) produced no stable transition in either report type, even with
+  the corresponding bus temporarily set to level 96 and all other channels
+  muted. This rules out a fixed HID meter lane under these conditions; it does
+  not rule out a Launcher/WebUI meter calculated from the USB isochronous audio
+  stream.
+
+The physical-input test observed the user's tone at `0x73 @221` (raw 18,
+reaching raw 0 at louder moments). The remaining physical inputs require
+separate signals. emuMic, Computer Playback, ADAT In, and S/PDIF In likewise
+remain untested because they require their corresponding live sources; values
+19 and 20 remain unnamed. Keep physical inputs at `[221..232]` and tag all
+shared samples with both selector states, invalidating stale samples when a
+selector changes.
 The startup `0x49 / target 1 / value 0` has the same encoding as selecting
 Mix 1; this does not establish that sending it is required for startup.
 
@@ -1442,15 +1477,22 @@ d4 05 <mix> <ch> <fader> <pan|flags> <send>
 | 16 | `0xd4` param | |
 | 17 | `0x05` const | |
 | 18 | **mix** | 0 = Mix 1 (1/2/3 = Mix 2/3/4 presumed; only 0 captured) |
-| 19 | **channel** | 1-32 (each mix has 32 input strips) |
+| 19 | **channel** | 0 = master; 1-32 = input strips (each mix has 32 input strips) |
 | 20 | **fader** | attenuation in dB: `0` = 0 dB / unity … `90` = −90 dB |
 | 21 | **pan + flags** | bits 0-5 = pan: `0x02` = L30, `0x20` = centre, `0x3e` = R30 (raw = `0x20` + degrees); bit `0x40` = **mute**; bit `0x80` = **solo** |
-| 22 | **send** | this channel's send *into* this mix, `0`-`96` (`96` = 0 dB, same scale as `bus_level`) |
+| 22 | **send** | Mix 1 input-strip AuraVerb send, inverted `0`-`96` (`0` = 0 dB, `96` = −∞) |
 
 One frame per `(mix, channel)` strip; it carries the whole strip state
 every time. Confirmed from `macos-mix1-send-pan-fader-mute-solo-link`
 (2026-08, native macOS): send / pan / fader sweeps each moved exactly one
 byte 1:1; mute → `[21] |= 0x40`; solo → `[21] |= 0x80`.
+
+The corrected USB AuraVerb-send capture (2026-09-09) also shows four
+independent, unlabelled AuraVerb-return candidate lanes at `0x73 @235..238`.
+They continue moving when the selected mixer-window meter bank switches to
+Mix 2/3, so they are not the selected mixer-strip bank (`@157..188`). They
+are documented but deliberately not shown in the WebUI until their exact
+lane ownership is isolated.
 
 **Solo mutes the rest host-side** -- clicking solo on one channel makes
 the Launcher re-send a `mix_command` for **all 32 channels** of that mix

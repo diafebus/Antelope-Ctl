@@ -3,20 +3,22 @@
 antelope-ctl web UI -- DRAFT / sandbox.
 
 A thin local daemon: one background thread owns the HID device, keeps an
-in-memory state snapshot, and pushes it to the browser over a WebSocket.
+in-memory state snapshot, and pushes it to the browser over SSE.
 Commands from the browser are queued and executed by that same thread, so
 there is exactly one writer/reader on the node.
 
 Two kinds of state:
 
-  * FAST  -- the free-running 0x73 state report + 0x75 meters, parsed every
-             loop and streamed at ~12 Hz over SSE (channels, buses,
-             brightness, meters). SSE, not a WebSocket, so it needs no
-             package beyond fastapi + uvicorn.
+  * FAST  -- the free-running 0x73 state report, including visible meters,
+             parsed every loop and streamed at ~25 Hz over SSE (channels,
+             buses, brightness, meters). The 0x75 bank is retained only for
+             lower-rate diagnostics.
   * SLOW  -- the routing matrix (readback cat 0x03) and the virtual mixer
-             (readback cat 0x04), refreshed on connect, after every write,
-             and on a slow timer. The snapshot carries a monotonic `rb_ver`;
-             the browser refetches /api/routing + /api/mixer when it bumps.
+             (readback cat 0x04), refreshed incrementally on connect and on
+             a slow timer. Writes use and update that serialized cache,
+             querying first if it is not populated yet. The snapshot carries
+             a monotonic `rb_ver`; the browser refetches /api/routing +
+             /api/mixer when it bumps.
 
 ⚠ HARDWARE RULE (see ../antelope-ctl/CLAUDE.md "STANDING HARDWARE RULE"):
 never query a readback index past a category's record count -- it BusFaults
@@ -44,6 +46,7 @@ from antelope.transport import list_connected_hid, open_transport
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
@@ -99,7 +102,7 @@ print(f"[antelope-ctl] profile: {os.path.basename(PROFILE_PATH)} "
 
 ROUTING_CAT = proto.ROUTING_READBACK_CATEGORY   # 0x03
 MIXER_CAT = proto.MIXER_READBACK_CATEGORY       # 0x04
-READBACK_REFRESH_S = 45.0   # slow background poll; a write triggers one immediately
+READBACK_REFRESH_S = 45.0   # slow background poll, one record per fast-state cycle
 
 # The free-running meter report and a readback RESPONSE are BOTH magic 0x75.
 # They differ only at byte 1: meter = 0x1f, readback response = 0x00 (see
@@ -130,10 +133,25 @@ class Device:
         self.bus_ids = sorted(int(x) for x in proto.constraints(profile).get("bus_ids", []))
         self.state_magic = proto.state_report_magic(profile)
         self.meter_magic = proto.meter_report_magic(profile)
+        readback_magic = profile["frame"].get("readback", {}).get("response_magic")
+        self.meter_shares_readback_magic = (
+            isinstance(readback_magic, str)
+            and self.meter_magic == int(readback_magic, 0))
 
         rc = profile["frame"].get("routing_command", {})
         self.route_dests = sorted(int(k) for k in rc.get("destination_channels", {}))
-        self.n_mixes = proto.readback_category_count(profile, MIXER_CAT) or 4
+        mixer = profile.get("mixer", {})
+        self.n_mixes = int(mixer.get("mixes")
+                           or proto.readback_category_count(profile, MIXER_CAT) or 0)
+        self.mix_channels = int(mixer.get("channels_per_mix", 0))
+        self.routing_readback = bool(
+            proto.readback_category_count(profile, ROUTING_CAT))
+        self.mixer_readback = bool(
+            proto.readback_category_count(profile, MIXER_CAT))
+        self.routing_available = bool(self.route_dests and self.routing_readback)
+        self.mixer_available = bool(
+            self.n_mixes and self.mix_channels and self.mixer_readback
+            and profile["frame"].get("mix_command"))
 
         self.cmds = queue.Queue()          # callables: fn(transport) -> None
         self.snapshot = {"online": False}  # last known state, read by the web side
@@ -141,24 +159,18 @@ class Device:
         self.rb_ver = 0
         self.routing = {}                  # dest_id(int) -> [(bank, idx), ...]
         self.mixer = {}                    # mix(int)     -> [slot dict, ...]
+        self.solo_state = {}               # mix -> {restore: flags, active: channels}
         self._lock = threading.Lock()
         self._t = None
-        self._want_readback = threading.Event()
 
     def start(self):
         self._t = threading.Thread(target=self.run, daemon=True)
         self._t.start()
 
-    def submit(self, fn, readback=False):
-        """Queue fn(transport). readback=True also schedules a routing+mixer
-        re-read after it (for route/mix writes). Plain param writes (gain,
-        toggle, mode, bus, brightness) show up in the free-running 0x73 stream
-        on their own, so they skip the readback pass -- that pass is slow and
-        was the source of the knob 'snap back then jump'."""
-        self.cmds.put((fn, readback))
-
-    def request_readback(self):
-        self._want_readback.set()
+    def submit(self, fn):
+        """Queue fn(transport). At most one queued function runs per fast
+        state cycle, so a burst of controls cannot starve meter updates."""
+        self.cmds.put(fn)
 
     def get(self):
         with self._lock:
@@ -192,8 +204,60 @@ class Device:
             self.snapshot = snap
             self.version += 1
 
+    def _cache_routing(self, dest, pairs):
+        """Store the serialized routing record after a successful write."""
+        with self._lock:
+            if self.routing.get(dest) == pairs:
+                return
+            self.routing[dest] = pairs
+            self.rb_ver += 1
+
+    def _cache_mixer(self, mix, slots):
+        """Store the serialized mixer record after a successful write."""
+        with self._lock:
+            if self.mixer.get(mix) == slots:
+                return
+            self.mixer[mix] = slots
+            self.rb_ver += 1
+
+    def _routing_record_for_write(self, transport, dest):
+        """Copy the serialized cache, querying once only if it is not ready."""
+        with self._lock:
+            cached = self.routing.get(dest)
+            if cached is not None:
+                return list(cached)
+        req = proto.build_readback_query(self.profile, ROUTING_CAT, dest)
+        data = transport.query(
+            req,
+            lambda x: proto.is_readback_response(self.profile, x, ROUTING_CAT, dest),
+            timeout=1.5)
+        if data is None:
+            raise RuntimeError(f"no routing readback for dest {dest} -- not writing blind")
+        _dest, pairs = proto.parse_routing_record(
+            self.profile, proto.readback_body(self.profile, data))
+        return list(pairs)
+
+    def _mixer_record_for_write(self, transport, mix):
+        """Copy the serialized cache, querying once only if it is not ready."""
+        with self._lock:
+            cached = self.mixer.get(mix)
+            if cached is not None:
+                return [dict(slot) for slot in cached]
+        req = proto.build_readback_query(self.profile, MIXER_CAT, mix)
+        data = transport.query(
+            req,
+            lambda x: proto.is_readback_response(self.profile, x, MIXER_CAT, mix),
+            timeout=1.5)
+        if data is None:
+            raise RuntimeError(f"no mixer readback for mix {mix} -- not writing blind")
+        return proto.parse_mixer_record(
+            self.profile, proto.readback_body(self.profile, data))
+
     def run(self):
         transport = None
+        readback_plan = []
+        readback_changed = False
+        last_debug_meter = 0.0
         while True:
             if transport is None:
                 try:
@@ -202,49 +266,44 @@ class Device:
                     self._publish({"online": False})
                     time.sleep(2.0)
                     continue
-                self._want_readback.set()
-                last_readback = 0.0
+                last_readback = time.time()
+                readback_plan = self._readback_plan()
+                readback_changed = False
 
-            # 1. run queued commands (writes + read-modify-writes)
-            ran_cmd = ran_cmd_rb = False
+            # 1. Run at most one queued command. Draining the queue here used
+            # to freeze meters for the duration of every pending HID write.
             try:
-                while True:
-                    fn, want_rb = self.cmds.get_nowait()
-                    try:
-                        fn(transport)
-                        ran_cmd = True
-                        ran_cmd_rb = ran_cmd_rb or want_rb
-                    except OSError:
-                        transport = None
-                        break
-                    except Exception as e:                       # noqa: BLE001
-                        print(f"[cmd] {e!r}", file=sys.stderr)
-                    time.sleep(0.02)
+                fn = self.cmds.get_nowait()
+                try:
+                    fn(transport)
+                except OSError:
+                    transport = None
+                except Exception as e:                           # noqa: BLE001
+                    print(f"[cmd] {e!r}", file=sys.stderr)
             except queue.Empty:
                 pass
             if transport is None:
                 self._publish({"online": False})
                 continue
-            if ran_cmd_rb:
-                time.sleep(0.15)            # let the device apply before we read it back
-                self._want_readback.set()
 
-            # 2. slow state: routing matrix + virtual mixer (bounded readback)
+            # 2. Prepare a bounded slow-state sweep. Only one record is read
+            # after each fast-state publish below, keeping meter cadence live.
             now = time.time()
-            if self._want_readback.is_set() or now - last_readback > READBACK_REFRESH_S:
-                self._want_readback.clear()
-                try:
-                    self._refresh_readback(transport)
-                except OSError:
-                    transport = None
-                    self._publish({"online": False})
-                    continue
-                last_readback = time.time()
+            if not readback_plan and now - last_readback > READBACK_REFRESH_S:
+                readback_plan = self._readback_plan()
+                readback_changed = False
+                last_readback = now
 
-            # 3. fast state: one 0x73 read + one filtered 0x75 read
+            # 3. Fast state. Visible meters live in 0x73. Sample the legacy
+            # 0x75 diagnostic bank only twice a second; polling it every loop
+            # added avoidable latency without improving any visible meter.
             try:
                 state = transport.read_one(self.state_magic, timeout=0.4)
-                meter = self._read_meter(transport, timeout=0.2)
+                meter = None
+                monotonic_now = time.monotonic()
+                if monotonic_now - last_debug_meter >= 0.5:
+                    meter = self._read_meter(transport, timeout=0.01)
+                    last_debug_meter = monotonic_now
             except OSError:
                 transport = None
                 self._publish({"online": False})
@@ -274,6 +333,10 @@ class Device:
                     pass
                 # Confirmed physical preamp bank: full-report 0x73 @221..232.
                 snap["input_meters"] = self._parse_meters(state)
+                # Selected mixer-window bank: full-report 0x73 @157..188.
+                mixer_meters = self._parse_mixer_meters(state)
+                if mixer_meters is not None:
+                    snap["mixer_meters"] = mixer_meters
                 # raw slice of the same region for ?meterdebug=1.
                 snap["state_raw"] = {"base": 150, "bytes": list(state[150:236])}
             if meter:
@@ -286,79 +349,72 @@ class Device:
             # keep last values if this cycle only got one of the two frames
             with self._lock:
                 for k in ("channels", "buses", "adat", "spdif", "trim", "brightness",
-                          "sample_rate_idx", "clock_source_idx", "input_meters", "state_raw"):
+                          "sample_rate_idx", "clock_source_idx", "input_meters",
+                          "mixer_meters", "state_raw", "meters_raw"):
                     if k not in snap and k in self.snapshot:
                         snap[k] = self.snapshot[k]
             self._publish(snap)
 
+            # 4. One slow readback record per meter cycle. Changes are
+            # announced together when the sweep completes, avoiding a browser
+            # refetch after every individual routing destination.
+            if readback_plan:
+                category, index = readback_plan.pop(0)
+                try:
+                    readback_changed = self._refresh_readback_one(
+                        transport, category, index) or readback_changed
+                except OSError:
+                    transport = None
+                    self._publish({"online": False})
+                    continue
+                if not readback_plan and readback_changed:
+                    with self._lock:
+                        self.rb_ver += 1
+
     # -- readback (routing + mixer) -----------------------------------------
 
-    def _refresh_readback(self, transport):
-        """Re-read the routing matrix (cat 0x03) and virtual mixer (cat 0x04).
+    def _readback_plan(self):
+        routes = [(ROUTING_CAT, d) for d in self.route_dests] \
+            if self.routing_available else []
+        mixes = [(MIXER_CAT, m) for m in range(self.n_mixes)] \
+            if self.mixer_available else []
+        return routes + mixes
 
-        Only bounded indices -- build_readback_query raises ConstraintError
-        past a category's record count and we skip it, so this can never hit
-        the BusFault. A group that simply doesn't answer keeps its last value.
-        """
-        changed = False
-        misses = 0
-        for d in self.route_dests:
-            try:
-                req = proto.build_readback_query(self.profile, ROUTING_CAT, d)
-            except proto.ConstraintError:
-                continue
-            data = transport.query(
-                req,
-                lambda x, d=d: proto.is_readback_response(self.profile, x, ROUTING_CAT, d),
-                timeout=0.5)
-            if data is None:
-                misses += 1
-                if misses >= 4 and not self.routing:
-                    break               # device isn't answering readback at all
-                continue
-            misses = 0
-            try:
-                _did, pairs = proto.parse_routing_record(
-                    self.profile, proto.readback_body(self.profile, data))
-            except ValueError:
-                continue
-            with self._lock:
-                if self.routing.get(d) != pairs:
-                    self.routing[d] = pairs
-                    changed = True
+    def _refresh_readback_one(self, transport, category, index):
+        """Read one bounded routing or mixer record; return whether it changed."""
+        try:
+            req = proto.build_readback_query(self.profile, category, index)
+        except proto.ConstraintError:
+            return False
+        data = transport.query(
+            req,
+            lambda x: proto.is_readback_response(self.profile, x, category, index),
+            timeout=0.1)
+        if data is None:
+            return False
+        try:
+            body = proto.readback_body(self.profile, data)
+            if category == ROUTING_CAT:
+                _dest, value = proto.parse_routing_record(self.profile, body)
+                cache = self.routing
+            else:
+                value = proto.parse_mixer_record(self.profile, body)
+                cache = self.mixer
+        except ValueError:
+            return False
+        with self._lock:
+            if cache.get(index) == value:
+                return False
+            cache[index] = value
+            return True
 
-        for m in range(self.n_mixes):
-            try:
-                req = proto.build_readback_query(self.profile, MIXER_CAT, m)
-            except proto.ConstraintError:
-                continue
-            data = transport.query(
-                req,
-                lambda x, m=m: proto.is_readback_response(self.profile, x, MIXER_CAT, m),
-                timeout=0.5)
-            if data is None:
-                continue
-            try:
-                slots = proto.parse_mixer_record(
-                    self.profile, proto.readback_body(self.profile, data))
-            except ValueError:
-                continue
-            with self._lock:
-                if self.mixer.get(m) != slots:
-                    self.mixer[m] = slots
-                    changed = True
-
-        if changed:
-            with self._lock:
-                self.rb_ver += 1
-
-    def _read_meter(self, transport, timeout=0.2):
-        """A meter frame, not a readback response. Both are magic 0x75; only
-        byte 1 tells them apart (0x1f meter / 0x00 readback). read_one matches
-        byte 0 only, so filter here."""
+    def _read_meter(self, transport, timeout=0.03):
+        """Read a meter frame, filtering readbacks only where they share the
+        meter report magic (as they do on the Orion)."""
         for data in transport.read_reports(self.meter_magic, timeout):
-            if len(data) > METER_DISCRIMINATOR_OFFSET \
-                    and data[METER_DISCRIMINATOR_OFFSET] == METER_DISCRIMINATOR:
+            if not self.meter_shares_readback_magic or (
+                    len(data) > METER_DISCRIMINATOR_OFFSET
+                    and data[METER_DISCRIMINATOR_OFFSET] == METER_DISCRIMINATOR):
                 return data
         return None
 
@@ -470,6 +526,39 @@ class Device:
             })
         return out
 
+    def _parse_mixer_meters(self, state):
+        """Return the selector-gated virtual-mixer strip bank.
+
+        The Orion's mixer-window selector is SET_PARAM(0x49, target=1,
+        mix=0..3), echoed at state-report byte 122. The corresponding
+        strips 1..32 are raw 0x73 lanes @157..188. Slot 0 is the mixer
+        master, for which no meter lane is currently mapped.
+        """
+        spec = self.profile["frame"].get("state_report", {})
+        selection = spec.get("mixer_window_selection", {})
+        mapping = next((m for m in spec.get("meter_mappings", [])
+                        if m.get("target") == "mixer_window_strip"), None)
+        if not selection or not mapping:
+            return None
+        selector_off = int(selection.get("state_byte_offset", 122))
+        base = int(mapping.get("payload_offset_base", 157))
+        strip_range = mapping.get("strip_index_range", [1, 32])
+        if selector_off >= len(state) or len(strip_range) != 2:
+            return None
+        selected = state[selector_off]
+        allowed = {int(v) for v in selection.get("values", [])}
+        if allowed and selected not in allowed:
+            return {"mix": selected, "strips": []}
+        first, last = int(strip_range[0]), int(strip_range[1])
+        strips = []
+        for ch in range(first, last + 1):
+            off = base + (ch - first)
+            if off >= len(state):
+                break
+            raw = state[off]
+            strips.append({"ch": ch, "raw": raw, "silence": raw == 96})
+        return {"mix": selected, "strips": strips}
+
 
 try:
     DEV = Device(PROFILE)
@@ -488,9 +577,11 @@ except (KeyError, ValueError, TypeError) as _e:
     PROFILE = proto.load_profile(PROFILE_PATH)
     DEV = Device(PROFILE)
 
-# ---------------------------------------------------------------- HTTP / WS
+# ---------------------------------------------------------------- HTTP / SSE
 
 app = FastAPI(title="antelope-ctl webui (draft)")
+app.mount("/webui/assets", StaticFiles(directory=os.path.join(HERE, "assets")),
+          name="webui-assets")
 
 
 class Gain(BaseModel):
@@ -540,6 +631,9 @@ class EmuMic(BaseModel):
 class Scalar(BaseModel):
     value: int
 
+class MixerSelect(BaseModel):
+    mix: int                  # 0-based Mix 1..4, target 1 of param 0x49
+
 class Bus(BaseModel):
     bus: int
     level: int
@@ -568,6 +662,17 @@ class MixStrip(BaseModel):
     mute: bool | None = None
     solo: bool | None = None
 
+class MixSolo(BaseModel):
+    mix: int
+    channel: int
+    on: bool
+
+
+class MixerLink(BaseModel):
+    """A virtual-mixer stereo pair (0 = channels 1+2)."""
+    pair: int
+    enabled: bool
+
 
 def _bad(msg):
     return JSONResponse({"ok": False, "error": msg}, status_code=400)
@@ -580,7 +685,12 @@ def index():
 
 @app.get("/api/profile")
 def api_profile():
-    return PROFILE
+    return {**PROFILE, "webui": {
+        "routing": DEV.routing_available,
+        "mixer": DEV.mixer_available,
+        "mixes": DEV.n_mixes if DEV.mixer_available else 0,
+        "mix_channels": DEV.mix_channels if DEV.mixer_available else 0,
+    }}
 
 
 _MIC_MODELS_PATH = os.path.join(os.path.dirname(PROFILE_PATH), "mic_models.json")
@@ -836,6 +946,8 @@ def api_routing():
 
 @app.post("/api/route")
 def api_route(r: Route):
+    if not DEV.routing_available:
+        return _bad("routing readback is not safely mapped for this profile")
     dc = PROFILE["frame"].get("routing_command", {}).get("destination_channels", {})
     if str(r.dest) not in dc:
         return _bad(f"unknown routing destination {r.dest}")
@@ -849,18 +961,12 @@ def api_route(r: Route):
         return _bad(str(e))
 
     def do(t, dest=r.dest, ch=r.channel, tgt=tgt):
-        req = proto.build_readback_query(PROFILE, ROUTING_CAT, dest)
-        data = t.query(
-            req, lambda x: proto.is_readback_response(PROFILE, x, ROUTING_CAT, dest),
-            timeout=1.5)
-        if data is None:
-            raise RuntimeError(f"no routing readback for dest {dest} -- not writing blind")
-        _d, pairs = proto.parse_routing_record(PROFILE, proto.readback_body(PROFILE, data))
-        pairs = list(pairs)
+        pairs = DEV._routing_record_for_write(t, dest)
         pairs[ch] = tgt
         t.write(proto.build_route_command(PROFILE, dest, pairs))
+        DEV._cache_routing(dest, pairs)
 
-    DEV.submit(do, readback=True)
+    DEV.submit(do)
     return {"ok": True}
 
 
@@ -870,6 +976,8 @@ def api_route_batch(b: RouteBatch):
     read-modify-write (one 0x74 readback + one 0x53 write) -- for the matrix
     group ops (1:1, mute all) and, later, patchbay group drops. Same
     'refuse to write blind' guard as /api/route."""
+    if not DEV.routing_available:
+        return _bad("routing readback is not safely mapped for this profile")
     dc = PROFILE["frame"].get("routing_command", {}).get("destination_channels", {})
     if str(b.dest) not in dc:
         return _bad(f"unknown routing destination {b.dest}")
@@ -888,30 +996,133 @@ def api_route_batch(b: RouteBatch):
         resolved.append((c.channel, tgt))
 
     def do(t, dest=b.dest, changes=resolved):
-        req = proto.build_readback_query(PROFILE, ROUTING_CAT, dest)
-        data = t.query(
-            req, lambda x: proto.is_readback_response(PROFILE, x, ROUTING_CAT, dest),
-            timeout=1.5)
-        if data is None:
-            raise RuntimeError(f"no routing readback for dest {dest} -- not writing blind")
-        _d, pairs = proto.parse_routing_record(PROFILE, proto.readback_body(PROFILE, data))
-        pairs = list(pairs)
+        pairs = DEV._routing_record_for_write(t, dest)
         for ch, tgt in changes:
             pairs[ch] = tgt
         t.write(proto.build_route_command(PROFILE, dest, pairs))
+        DEV._cache_routing(dest, pairs)
 
-    DEV.submit(do, readback=True)
+    DEV.submit(do)
     return {"ok": True, "n": len(resolved)}
 
 
 # -- virtual mixer -------------------------------------------------------
 
+@app.post("/api/mixer-select")
+def api_mixer_select(s: MixerSelect):
+    """Select the mixer-window meter bank (SET_PARAM 0x49, target 1).
+
+    This is a UI selection, not a routing change. The selector command is
+    described under frame.state_report because the same param id has target 0
+    for the Meters-window source picker.
+    """
+    if not DEV.mixer_available:
+        return _bad("mixer readback is not safely mapped for this profile")
+    if not 0 <= s.mix < DEV.n_mixes:
+        return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
+    selector = PROFILE["frame"].get("state_report", {}).get("mixer_window_selection", {})
+    try:
+        param_id = selector["param_id"]
+        param_id = int(param_id, 0) if isinstance(param_id, str) else int(param_id)
+        target = int(selector.get("target", 1))
+        pkt = proto.build_raw_command(PROFILE, param_id, target, s.mix)
+    except (KeyError, TypeError, ValueError, proto.ConstraintError) as e:
+        return _bad(str(e))
+    DEV.submit(lambda t: t.write(pkt))
+    return {"ok": True, "mix": s.mix}
+
+
+@app.post("/api/mix-link")
+def api_mix_link(link: MixerLink):
+    """Toggle one of the virtual-mixer's 16 stereo links (SET_LINK space 3).
+
+    The hardware does not report these flags back, and linked value mirroring
+    is Launcher-side behavior, so the browser owns that companion state.
+    """
+    if not DEV.mixer_available:
+        return _bad("mixer readback is not safely mapped for this profile")
+    pairs = DEV.mix_channels // 2
+    if not 0 <= link.pair < pairs:
+        return _bad(f"pair {link.pair} out of range 0..{pairs - 1}")
+    try:
+        pkt = proto.build_link_command(PROFILE, link.pair, link.enabled, space=3)
+    except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
+        return _bad(str(e))
+    DEV.submit(lambda t: t.write(pkt))
+    return {"ok": True, "pair": link.pair, "enabled": link.enabled}
+
+@app.post("/api/mix-solo")
+def api_mix_solo(s: MixSolo):
+    """Apply a mix-wide solo, matching the Launcher's host-side behavior.
+
+    One or more channels may be soloed together. While any solo is active,
+    non-solo channels are muted; when the last Solo is released, restore the
+    flags that existed before the first Solo instead of blindly unmuting.
+    """
+    if not DEV.mixer_available:
+        return _bad("mixer readback is not safely mapped for this profile")
+    if not 0 <= s.mix < DEV.n_mixes:
+        return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
+    if not 0 <= s.channel <= DEV.mix_channels:
+        return _bad(f"channel {s.channel} out of range 0..{DEV.mix_channels} (0 = master)")
+
+    def do(t, m=s.mix, ch=s.channel, on=s.on):
+        slots = DEV._mixer_record_for_write(t, m)
+        if len(slots) < DEV.mix_channels + 1:
+            raise RuntimeError(
+                f"mixer {m} returned {len(slots)} slots; expected {DEV.mix_channels + 1}")
+
+        if on:
+            group = DEV.solo_state.get(m)
+            if group is None:
+                group = {
+                    "restore": [
+                        (bool(slot["mute"]), bool(slot["solo"]))
+                        for slot in slots[:DEV.mix_channels + 1]
+                    ],
+                    "active": set(),
+                }
+                DEV.solo_state[m] = group
+            group["active"].add(ch)
+            active = group["active"]
+            updated = [(idx not in active, idx in active)
+                       for idx in range(DEV.mix_channels + 1)]
+        else:
+            group = DEV.solo_state.get(m)
+            if group is None:
+                updated = [(False, False) for _ in range(DEV.mix_channels + 1)]
+            else:
+                group["active"].discard(ch)
+                active = group["active"]
+                if active:
+                    updated = [(idx not in active, idx in active)
+                               for idx in range(DEV.mix_channels + 1)]
+                else:
+                    updated = group["restore"]
+                    DEV.solo_state.pop(m, None)
+
+        for idx, slot in enumerate(slots[:DEV.mix_channels + 1]):
+            mute, solo = updated[idx]
+            t.write(proto.build_mix_command(
+                PROFILE, m, idx, slot["fader"], slot["pan"], slot["send"],
+                mute, solo))
+            slots[idx] = {**slot, "mute": mute, "solo": solo}
+        DEV._cache_mixer(m, slots)
+
+    DEV.submit(do)
+    return {"ok": True, "mix": s.mix, "channel": s.channel, "on": s.on}
+
 @app.get("/api/mixer")
 def api_mixer():
     p = PROFILE.get("params", {})
+    send = p.get("mix_send", {})
     return {
+        "available": DEV.mixer_available,
         "n_mixes": DEV.n_mixes,
+        "channels_per_mix": DEV.mix_channels,
         "has_send": proto.mix_has_send(PROFILE),
+        "send_mixes": [int(m) for m in send.get("mix_indices", [])],
+        "send_master": bool(send.get("include_master", False)),
         "ranges": {
             "fader": p.get("mix_fader", {}).get("range", [0, 90]),
             "pan": p.get("mix_pan", {}).get("range", [-30, 30]),
@@ -923,22 +1134,26 @@ def api_mixer():
 
 @app.post("/api/mix")
 def api_mix(s: MixStrip):
+    if not DEV.mixer_available:
+        return _bad("mixer readback is not safely mapped for this profile")
     if not 0 <= s.mix < DEV.n_mixes:
         return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
-    if not 0 <= s.channel <= 32:
-        return _bad(f"channel {s.channel} out of range 0..32 (0 = master)")
+    if not 0 <= s.channel <= DEV.mix_channels:
+        return _bad(f"channel {s.channel} out of range 0..{DEV.mix_channels} (0 = master)")
     has_send = proto.mix_has_send(PROFILE)
+    send_spec = PROFILE.get("params", {}).get("mix_send", {})
+    send_mixes = {int(m) for m in send_spec.get("mix_indices", [])}
+    send_allowed = has_send and s.mix in send_mixes \
+        and (s.channel != 0 or bool(send_spec.get("include_master", False)))
+    if s.send is not None and not send_allowed:
+        return _bad("this mixer strip has no AuraVerb send")
 
     def do(t, m=s.mix, ch=s.channel):
-        req = proto.build_readback_query(PROFILE, MIXER_CAT, m)
-        data = t.query(
-            req, lambda x: proto.is_readback_response(PROFILE, x, MIXER_CAT, m),
-            timeout=1.5)
-        if data is None:
-            raise RuntimeError(f"no mixer readback for mix {m} -- not writing blind")
-        slots = proto.parse_mixer_record(PROFILE, proto.readback_body(PROFILE, data))
-        cur = slots[ch] if ch < len(slots) else {
-            "fader": 0, "pan": 0, "send": 0, "mute": False, "solo": False}
+        slots = DEV._mixer_record_for_write(t, m)
+        if ch >= len(slots):
+            raise RuntimeError(
+                f"mixer {m} returned {len(slots)} slots; channel {ch} is unavailable")
+        cur = slots[ch]
         fader = cur["fader"] if s.fader is None else max(0, min(90, abs(s.fader)))
         pan = cur["pan"] if s.pan is None else max(-30, min(30, s.pan))
         send = cur["send"] if s.send is None else max(0, min(96, s.send))
@@ -946,15 +1161,18 @@ def api_mix(s: MixStrip):
         solo = cur["solo"] if s.solo is None else bool(s.solo)
         t.write(proto.build_mix_command(PROFILE, m, ch, fader, pan,
                                         send if has_send else 0, mute, solo))
+        slots[ch] = {**cur, "fader": fader, "pan": pan, "send": send,
+                     "mute": mute, "solo": solo}
+        DEV._cache_mixer(m, slots)
 
-    DEV.submit(do, readback=True)
+    DEV.submit(do)
     return {"ok": True}
 
 
 @app.get("/api/stream")
 async def stream():
     """Server-Sent Events: one JSON snapshot per line whenever the version
-    bumps, ~12 Hz. EventSource on the browser side reconnects on its own."""
+    bumps, ~25 Hz. EventSource on the browser side reconnects on its own."""
     async def gen():
         last = -1
         # prime the stream so a just-connected client gets state immediately
@@ -965,7 +1183,7 @@ async def stream():
                 yield f"data: {json.dumps({'version': ver, **snap})}\n\n"
             else:
                 yield ": keep-alive\n\n"
-            await asyncio.sleep(0.08)
+            await asyncio.sleep(0.04)
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache",

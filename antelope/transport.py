@@ -97,7 +97,9 @@ class HidTransport:
         end = time.time() + timeout
         try:
             while time.time() < end:
-                r, _, _ = select.select([fd], [], [], 0.2)
+                remaining = end - time.time()
+                wait = min(0.2, max(0.0, remaining))
+                r, _, _ = select.select([fd], [], [], wait)
                 if r:
                     data = os.read(fd, self.report_size)
                     if data and data[0] == magic:

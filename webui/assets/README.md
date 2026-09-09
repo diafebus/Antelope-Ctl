@@ -3,12 +3,10 @@
 Source art that is **actually wired into the UI** (`static/index.html`).
 Distinct from `../ideas/`, which is the scratch / exploration dump.
 
-**Convention: inline, don't serve.** `server.py` has no static mount and ships
-one self-contained `index.html`. These SVGs are the master copies; their shapes
-are hand-lifted (or, for the small ones, whole) into `index.html` -- as raw
-text in `<script type="image/svg+xml">` blocks that become data URIs, or lifted
-into inline `<svg>`. Editing one here does nothing until the change is carried
-into `index.html`.
+Most art is inlined into `index.html`; the mixer fader art is the exception.
+`server.py` serves `assets/` at `/webui/assets/` so the full fader shadow can
+remain as a source SVG. Editing an asset still requires checking the UI against
+the changed source.
 
 ## Preamp knob
 
@@ -24,6 +22,12 @@ into `index.html`.
 |------|--|
 | `mon-knob-lit.svg` | **in use.** Pure-SVG glossy knob, ~2 KB, scalable. Offset radial gradient + edge vignette for the dome, `feSpecularLighting` filter for the hotspot. Inlined into `index.html` by `monKnobSVG()` (ids namespaced per instance). `<g data-rot>` = the rotating indicator. Tune via the `fePointLight x/y/z` and the filter's `surfaceScale` / `specularConstant` / `specularExponent` / `stdDeviation`. |
 | `mon-knob.svg` / `mon-knob-dot.svg` | earlier photoreal masters (Inkscape). The face is a **mesh gradient** -> exports as 456 quad paths + ~450 gradient refs = ~490 KB. Superseded by `mon-knob-lit.svg`; kept for reference. |
+
+## Virtual mixer
+
+| file | used for |
+|------|----------|
+| `fader-shadow.svg` | compact vertical mixer fader well, shown behind the moving thumb in the Mix 1–4 tabs |
 
 ## History
 

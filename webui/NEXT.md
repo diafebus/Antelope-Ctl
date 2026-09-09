@@ -66,19 +66,22 @@ and sits between the hardware-tested Python core (`antelope/…`,
 from the profile.
 
 - `server.py`: one background thread owns the device.
-  - FAST state: free-running `0x73` state and raw `0x75` debug lanes are
-    parsed into an in-memory snapshot. SSE `/api/stream` sends it at ~12 Hz.
+  - FAST state: free-running `0x73` state is parsed into an in-memory
+    snapshot; raw `0x75` debug lanes are sampled at a lower rate. SSE
+    `/api/stream` polls for new snapshots at ~25 Hz.
     EventSource reconnects itself. Snapshot keys include `channels buses adat
     spdif trim input_meters brightness sample_rate_idx clock_source_idx
     state_raw meters_raw` (+ `rb_ver`). Orion `input_meters` samples contain
     `raw`, `db`, `clip`, and `silence`. The current uncalibrated `0x73` source
     returns `null` for `db` and `clip`.
   - SLOW state: routing matrix (readback cat `0x03`) + virtual mixer (cat
-    `0x04`) re-read on connect, on a 20 s timer, and **only after a
-    route/mix write** -- `DEV.submit(fn, readback=True)`. Plain param writes
-    ride the `0x73` stream (`readback=False`). Snapshot carries a monotonic
-    `rb_ver`; the browser refetches `/api/routing` + `/api/mixer` when it bumps.
-  - Commands queued as callables `fn(transport)` on that thread.
+    `0x04`) re-read incrementally on connect and every 45 s, one record per
+    fast-state cycle. Route/mix commands use the serialized cache after its
+    initial verified readback and update it after a successful write.
+    Snapshot carries a monotonic `rb_ver`; the browser refetches
+    `/api/routing` + `/api/mixer` when it bumps.
+  - Commands are queued as callables `fn(transport)` and run at most one per
+    fast-state cycle, so control bursts do not starve meter updates.
 - **Profile auto-detect (done):** `server.resolve_profile()` -- `ANTELOPE_PROFILE`
   (path or `profiles/` basename) wins; else `transport.list_connected_hid()`
   matches a connected HID node's `(vid,pid)` against `profiles/*.json`
@@ -118,7 +121,7 @@ from the profile.
 - **Collapsible sections:** any `<h2 class="sechd">` with a `.secmin`
   button (`data-min="<bodyId>"`) toggles `.secbody.min` (persisted
   `localStorage["min:<id>"]`). Wired on **Output Buses** and **Routing**
-  by `wireMinButtons()`. Easy to add to Virtual mixer.
+  by `wireMinButtons()`.
 - **Settings gear** top-right of the header (`#gearbtn`, `assets/set-gear.svg`)
   opens `#settings`, a draggable non-blocking panel: output trim, Line Out /
   Reamp levels + Line Out mute, DC coupled, brightness.
@@ -139,10 +142,13 @@ from the profile.
 
 ### Routing UI (the `#routesec` section)
 
-- **Sub-tabs** `Routing Matrix | Mixer 1 | Mixer 2 | Mixer 3 | Mixer 4`
-  (`#routetabs` / `initRouteTabs()`, `[data-rpane]`, persisted). Mixer panes
-  are **placeholders** -- mixer sends aren't wired; route into the mixers via
-  the Routing Matrix tab (destinations `mix ch1…4`), levels in Virtual mixer.
+- **Tabs** `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4` (`#routetabs` /
+  `initRouteTabs()`, `[data-rpane]`, persisted). The Mix tabs now host the
+  compact vertical-strip virtual mixer: fader, pan, send, mute, solo, and the
+  selected raw mixer meter. Selecting a Mix tab automatically selects the
+  hardware's matching mixer-window meter bank. Solo is mix-wide, supports
+  multiple simultaneous solo channels, and restores the pre-solo flags after
+  the last Solo is released.
 - `buildRouting()`'s `.rtop` now holds only the `Grid | Matrix` toggle
   (`setRouteView`, persisted). The **Destination `<select>`** lives in
   `renderMatrix()`'s sticky `.rdtitle` bar (right above the grid) -- so it's
@@ -265,7 +271,7 @@ If revisited: `git show 252ad5b` etc. has the whole implementation.
 
 ### Layout
 - S/PDIF folded into the ADAT tab; standalone S/PDIF tab removed.
-- Routing sub-tabs (Matrix + 4 mixer placeholders).
+- Routing tabs (Routing + 4 compact mixer views).
 - Collapse buttons on Output Buses + Routing.
 - Tab-switch no longer shifts the page (`.panewrap` grid-stack).
 - Grid cells uniform 30px; tighter `cellTag` labels; emumic its own colour.
@@ -367,14 +373,10 @@ The superseded plan listed these TODOs:
 
 ## Still open / next
 
-1. **Mixer sub-tabs are placeholders -- do NOT build yet.** Blocked on the
-   user: they need to make the SVG assets for the mixer strips and settle the
-   look with you first. It's a design conversation, not something to just
-   implement. (Underneath: the 32 sources feeding `mix ch<n>` with per-source
-   send level; levels are cat `0x04` / `0x17` mix command, still
-   "experimental" and never verified side-by-side with the CLI.)
-2. **Hardware side-by-side for the virtual mixer** -- routing is verified;
-   mixer read/write is not.
+1. **Virtual mixer follow-up:** map the master meter lane if one is exposed;
+   the current live mapping covers strips 1..32 at `0x73 @157..188`.
+2. **Hardware side-by-side for the compact mixer UI** -- verify the new visual
+   layout and meter response against the Launcher with a live signal.
 3. **More settings, once decoded** -- panel notes what's not wired:
    oscillator (`0x0a` packed byte, fields unconfirmed), pan law (never
    captured -- NOT `0x4b` target 3, ruled out live 2026-09-03), TB latency
@@ -401,7 +403,8 @@ The superseded plan listed these TODOs:
    reads matrix-only ("click a group to expand") though it sits under both
    views; Firefox pop-out still shows a thin origin strip (browser-imposed).
 
-**Art:** in-use SVGs are inlined in `index.html`; `webui/assets/` holds the
+**Art:** most in-use SVGs are inlined in `index.html`; the mixer
+`fader-shadow.svg` is served from `/webui/assets/`; `webui/assets/` holds the
 source files (some now `.png`), `webui/ideas/` is the scratch dump
 (`popup1-3.svg`, `routing matrix.png`, …). Pattern: inline the SVG, strip
 the mesh-polyfill `<script>` + Inkscape cruft, prefix gradient ids per

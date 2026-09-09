@@ -31,10 +31,20 @@ ownership is not established here. The Meters-window selector is now decoded
 from `meterstab-select-preamp-emumic-compplay-adatin-spdifin-mix1lr-mix2lr-mix3lr-mix4lr-surroundout-lineout-hp1-hp2-mona-monb-reamp-adatout-spdifout-afxin-mix1-mix2-mix3-mix4-surroundin.pcapng`:
 `SET_PARAM(0x49, target=0, value=0..25)`, echoed at `0x73[121]`. The filename
 has two unnamed positions, values 19 and 20; the profile preserves them as
-unknown rather than guessing. Consumers must associate shared samples with selector
-state and invalidate stale values on switching, rather than show one
-lane as several simultaneously measured buses. This is a documentation
-finding; runtime selector handling is not implemented by this change.
+unknown rather than guessing. Consumers must associate shared samples with
+selector state and invalidate stale values on switching, rather than show one
+lane as several simultaneously measured buses. The webUI now selects the
+matching mixer-window bank whenever the corresponding Mix tab becomes active.
+
+The corrected `captures/new/auraverb-meters.pcapng` is a USBPcap capture.
+It shows three paired Mix 1 CH1/CH2 AuraVerb-send sweeps and identifies four
+independent **AuraVerb-return candidates** at full-report `0x73 @235..238`.
+They correlate with the send ramps (0.835–0.969), use the inverted raw
+0..96 convention (96 = silence), and continue changing while the selected
+mixer meter bank is switched to Mix 2 and Mix 3. They are therefore not the
+selected `@157..188` mixer-strip bank. Their exact lane/stage labels still
+need an isolated return test, so AuraVerb metering remains intentionally
+unwired for now.
 
 ## Scope and filter
 

@@ -960,16 +960,26 @@ Physical-input raw meters use `0x73` full-report bytes **221–232**. Their
 dBFS calibration and separate clip indication remain unknown; the old
 `0x75` curve below does not apply to this bank.
 
-**Mixer windows share meter lanes according to the selected mix**, as
-observed by the user. The Mix 2 → 3 → 4 → 1 capture confirms selection via
-`SET_PARAM(0x49, target 1, value 1/2/3/0)` and readback at `0x73 [122]`.
-It is silent in the shared banks, so it does not establish individual
-strip/master offsets. The separate **Meters window** switches shared meters
-by source/destination selection. Its selector is now captured:
-`SET_PARAM(0x49, target 0, value 0..25)`, echoed at `0x73 [121]`. The
-capture filename supplies the ordering; two positions (values 19 and 20)
-are unnamed there. See PROTOCOL.md §9 and the profile for the full map.
-This is distinct from the mixer-window selector at `[122]`.
+**Mixer windows expose a selector-gated 32-strip meter bank.** The live
+restore-safe test confirmed all four mixer-window selections:
+`SET_PARAM(0x49, target 1, value 0..3)` gates `0x73 @157..188` (strip N is
+`@156+N`), while the separate Meters-window selections 21..24 gate a second
+copy at `@125..156` (strip N is `@124+N`). The selectors read back at
+`0x73[122]` and `[121]` respectively.
+
+The physical Preamp 1 tone was observed at `0x73 @221` (raw 18, reaching 0
+at louder moments); the other physical preamps, emuMic, Computer Playback,
+ADAT In, and S/PDIF In still need their corresponding live sources. A
+separate top-level-tab capture contains only device-to-host reports: no HID
+OUT command, no `0x49` selector transition, and fixed selector bytes
+`0x73[121]=22`, `[122]=0`. It therefore does not prove that ADAT metering is
+independent; ADAT input must be tested with a signal, ideally in a capture
+that includes both OUT and IN traffic. See PROTOCOL.md §9 and the profile.
+
+The live route tests for Line Out, HP1, HP2, Monitor A/B, Reamp, ADAT Out,
+and S/PDIF Out found no stable meter lane in the HID reports; host-side
+isochronous-audio metering remains possible. This is distinct from the
+mixer-window selector at `[122]`.
 
 ### Historical meter interpretation (superseded for physical inputs)
 

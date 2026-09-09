@@ -7,34 +7,46 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
 
 - **`server.py`** -- a small FastAPI daemon. One background thread owns the
   HID device. It pushes two kinds of state to the browser:
-  - **fast** -- the free-running `0x73` state + `0x75` meters, over a
-    WebSocket at ~12 Hz (channels, buses, brightness, meters).
+  - **fast** -- the free-running `0x73` state and meters, over SSE at up to
+    ~25 Hz (channels, buses, brightness, meters). The raw `0x75` diagnostic
+    bank is sampled separately at a lower rate.
   - **slow** -- the routing matrix (readback cat `0x03`) and virtual mixer
-    (cat `0x04`), refreshed on connect / after each write / on a 20 s
-    timer. Every query is bounds-checked by
+    (cat `0x04`), refreshed one record per meter cycle on connect and every
+    45 s. Route/mixer writes update the serialized cache directly. Every
+    query is bounds-checked by
     `protocol.check_readback_index`, so the BusFault hazard is never hit.
     The snapshot carries an `rb_ver` counter; the browser refetches
     `/api/routing` + `/api/mixer` when it changes.
 
-  Commands are queued as callables run on the device thread, so a
-  routing/mixer write can read-modify-write there (the only safe place).
+  Commands are queued as callables run one per meter cycle on the device
+  thread, so control bursts cannot monopolize the live meter path.
 - **`static/index.html`** -- one file, vanilla JS, no build step:
   - input strips styled after `ideas/PreampUI.svg` -- 270° gain knob
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
   - output buses, screen brightness;
-  - a **routing matrix** panel (collapsible per destination group) and a
-    **virtual mixer** panel (per mix: master + 32 strips);
+  - a **Routing** panel with `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4` tabs;
+    each Mix tab contains a compact horizontal board of vertical strips with
+    fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
+    input strips additionally expose the AuraVerb send; Mix 2-4 and all
+    master strips deliberately do not. Selecting a Mix tab automatically
+    selects its matching mixer meter bank; multiple Solo buttons may be
+    stacked and the original mute/solo state is restored when the last Solo
+    is released;
   - reconnect UX -- the UI dims and goes non-interactive while the device
-    is offline, the WebSocket reconnects with backoff.
+    is offline, and EventSource reconnects automatically.
 
-  Channel count, modes, gain limits, Hi-Z channels and the mixer ranges
-  all come from `GET /api/profile` / `/api/routing` / `/api/mixer`, so a
-  different device profile gets a UI without frontend changes.
+  Channel count, modes, gain limits, Hi-Z channels, digital inputs and mixer
+  ranges come from the active profile. The daemon autodetects the connected
+  VID/PID and exposes only capabilities with safe, profile-declared readback.
+  For example, Zen Go renders its verified input/output controls but hides
+  routing and mixer panels until their safe readback maps are confirmed. The
+  mixer fader artwork is served from `/webui/assets/fader-shadow.svg`.
 
 ## What it deliberately does NOT do
 
 - **No unbounded readback.** Routing/mixer indices are always inside
-  `frame.readback.category_counts`; it never sweeps.
+  `frame.readback.category_counts`; the incremental sweep never probes beyond
+  the declared record counts.
 - No auth (binds to `127.0.0.1` only).
 - No packaging. It is a sketch.
 

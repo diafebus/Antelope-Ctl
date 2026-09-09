@@ -27,14 +27,18 @@
   #clockbar select { background:#0e1116; color:var(--fg); border:1px solid var(--line);
                      border-radius:4px; padding:3px 6px; font-size:12px; cursor:pointer; }
   #clockbar select.stuck { border-color:var(--warn); color:var(--warn); }
-  #clockmsg { display:flex; align-items:flex-start; gap:12px; padding:9px 16px;
-              background:#2b2410; border-bottom:1px solid var(--line);
-              font-size:12px; line-height:1.5; color:var(--warn); }
-  #clockmsg code { display:inline-block; margin:2px 0; background:#0e1116; color:var(--fg);
-                   padding:2px 6px; border-radius:3px; font:11px ui-monospace,monospace;
-                   white-space:pre-wrap; word-break:break-all; }
-  #clockmsg button { margin-left:auto; background:none; border:0; color:var(--dim);
-                     font-size:18px; line-height:1; cursor:pointer; flex:0 0 auto; }
+  #messagesbtn { position:relative; border:1px solid var(--line); border-radius:4px;
+                 background:#171a20; color:var(--dim); padding:4px 7px; font-size:11px; cursor:pointer; }
+  #messagesbtn.has { color:var(--warn); border-color:var(--warn); }
+  #messagespanel { position:fixed; z-index:30; top:44px; right:10px; width:min(440px,calc(100vw - 20px));
+                   max-height:calc(100vh - 58px); overflow:auto; background:var(--panel); border:1px solid var(--line);
+                   border-radius:7px; box-shadow:0 12px 32px #0009; }
+  .messages-hd { display:flex; align-items:center; gap:8px; padding:9px 10px; border-bottom:1px solid var(--line); }
+  .messages-hd strong { font-size:12px; } .messages-hd button { margin-left:auto; }
+  .message { padding:9px 10px; border-bottom:1px solid #252a33; font-size:12px; line-height:1.45; }
+  .message:last-child { border-bottom:0; } .message b { color:var(--warn); }
+  .message code { display:inline-block; margin:2px 0; background:#0e1116; color:var(--fg); padding:2px 5px;
+                  border-radius:3px; font:11px ui-monospace,monospace; white-space:pre-wrap; word-break:break-all; }
   main { padding:16px; display:flex; flex-direction:column; gap:22px; max-width:1200px; }
   main.offline { opacity:.45; pointer-events:none; filter:grayscale(.4); }
   h2 { font-size:13px; margin:0 0 8px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
@@ -232,11 +236,6 @@
   .vbtns .btn { padding:5px 2px; font-size:10px; }
 
   /* ---- routing + mixer panels ---- */
-  details.panel { background:var(--panel2); border:1px solid var(--line); border-radius:8px; margin-bottom:8px; }
-  details.panel > summary { cursor:pointer; padding:9px 12px; font-weight:600; font-size:13px;
-                            display:flex; justify-content:space-between; gap:10px; align-items:center; }
-  details.panel > summary .sub { color:var(--dim); font-weight:400; font-size:11px; font-family:ui-monospace,monospace; }
-  details.panel[open] > summary { border-bottom:1px solid var(--line); }
   /* ---- routing matrix (per-destination grid) ---- */
   .rtop { display:flex; align-items:center; gap:16px; margin-bottom:8px; flex-wrap:wrap; }
   .rviews { display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
@@ -356,15 +355,73 @@
              max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .fam-pre{color:#43c96a}.fam-emu{color:#93e0b4}.fam-play{color:#4a9eff}.fam-adat{color:#e05561}.fam-afx{color:#b07cff}
   .fam-sur{color:#38c6c0}.fam-osc{color:#8b93a3}.fam-spdif{color:#5ad0e6}.fam-mix{color:#f5911e}.fam-mute{color:#6b7280}
-  .mstrip { display:grid; grid-template-columns:60px 1fr 78px 70px auto auto; gap:8px; align-items:center;
-            padding:5px 12px; border-top:1px solid var(--line); font-size:12px; }
-  .mstrip:first-child { border-top:0; }
-  .mstrip .nm { color:var(--dim); font:11px ui-monospace,monospace; }
-  .mstrip .mono { font:11px ui-monospace,monospace; color:var(--dim); text-align:right; }
-  .mstrip button { cursor:pointer; background:#0e1116; color:var(--dim); border:1px solid var(--line);
-                   border-radius:4px; padding:3px 7px; font:600 10px/1 ui-monospace,monospace; }
-  .mstrip button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
-  .mstrip button.solo.on { background:var(--warn); border-color:var(--warn); color:#111; }
+  /* ---- compact virtual mixer ----------------------------------------- */
+  .mixer-shell { background:var(--panel2); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .mixer-hd { display:flex; align-items:center; gap:10px; padding:9px 12px;
+              border-bottom:1px solid var(--line); }
+  .mixer-hd strong { font-size:12px; }
+  .mixer-hd .hint { margin:0; }
+  .mixer-pane { min-width:0; }
+  .mixer-pane[hidden] { display:none; }
+  .mixer-pane-hd { display:flex; align-items:center; gap:8px; padding:8px 10px 0; }
+  .mixer-pane-hd .hint { margin:0; }
+  .mixer-scroll { overflow-x:auto; overflow-y:hidden; padding:10px 10px 12px; }
+  .mixer-strips { display:grid; grid-auto-flow:column; grid-auto-columns:68px; gap:5px;
+                 align-items:stretch; width:max-content; min-width:100%; }
+  .mixer-strip { width:68px; min-height:330px; padding:7px 5px 6px; display:flex;
+                flex-direction:column; align-items:center; gap:5px; background:linear-gradient(180deg,#242831,#191c22);
+                border:1px solid var(--line); border-radius:6px; }
+  .mixer-strip.master { border-color:#586170; background:linear-gradient(180deg,#2b303a,#1b1e25); }
+  .mixer-strip.linkstart { box-shadow:inset -3px 0 0 rgba(223,227,234,.55); }
+  .mixer-strip.linkend { box-shadow:inset  3px 0 0 rgba(223,227,234,.55); }
+  .mixer-strip .linkbtn { top:5px; right:4px; width:18px; height:18px; }
+  .mixer-strip .mxname { color:var(--fg); font:700 10px/1 ui-monospace,monospace; white-space:nowrap; }
+  .mixer-strip.master .mxname { color:var(--accent); }
+  .mxval { height:13px; color:var(--dim); font:10px/1 ui-monospace,monospace; white-space:nowrap; }
+  .mixer-fader-row { display:flex; align-items:stretch; justify-content:center; gap:4px; height:166px; width:100%; }
+  .mixer-fader-well { position:relative; width:43px; height:166px; flex:0 0 43px; }
+  .mixer-fader-well::before { content:""; position:absolute; z-index:0; left:50%; top:4px; bottom:4px;
+                              width:2px; transform:translateX(-50%); border-radius:2px;
+                              background:#080a0d; box-shadow:0 0 0 1px #3b424d, 0 0 5px rgba(0,0,0,.8); }
+  /* Move the supplied SVG at its native aspect ratio. Its visible fader body
+     occupies the centre of the transparent viewBox; keeping the full canvas
+     intact preserves the bevels, horizontal highlights, and shadow from the
+     reference artwork. */
+  .mixer-fader-thumb { position:absolute; z-index:1; inset:0; pointer-events:none; }
+  .mixer-fader-art { position:absolute; left:50%; top:calc(4px + var(--fader-pos, 25px) - 38px);
+                     display:block; width:48px; height:82px; transform:translateX(-50%);
+                     object-fit:fill; opacity:1; pointer-events:none; user-select:none; }
+  .mixer-fader { position:absolute; inset:4px 0; width:43px; height:158px; margin:0;
+                 appearance:none; -webkit-appearance:none; border:0; outline:0; opacity:0;
+                 background:transparent; cursor:ns-resize; writing-mode:vertical-lr;
+                 direction:rtl; z-index:2; }
+  .mixer-fader:focus-visible { outline:0; }
+  .mixer-fader-well:focus-within .mixer-fader-art { filter:brightness(1.15) drop-shadow(0 0 2px rgba(74,158,255,.6)); }
+  .mixer-fader::-webkit-slider-runnable-track { width:100%; height:100%; background:transparent; border:0; }
+  .mixer-fader::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:43px; height:20px;
+                                       margin:0; border:0; background:transparent; box-shadow:none; }
+  .mixer-fader::-moz-range-track { width:100%; height:100%; background:transparent; border:0; }
+  .mixer-fader::-moz-range-thumb { width:43px; height:20px; border:0; border-radius:0;
+                                   background:transparent; box-shadow:none; }
+  .mixer-meter { position:relative; width:7px; height:166px; flex:0 0 7px; overflow:hidden;
+                 border:1px solid #303641; border-radius:2px; background:#0c0e12; }
+  .mixer-meter > i { position:absolute; left:0; right:0; bottom:0; height:100%;
+                     background:var(--meter); transition:height .08s linear; }
+  .mixer-meter > i.unavailable { height:0; }
+  .mixer-meter > i.peak { background:var(--warn); }
+  .mixer-control { width:100%; display:flex; flex-direction:column; gap:2px; }
+  .mixer-control label { display:flex; justify-content:space-between; align-items:baseline;
+                         color:var(--dim); font:9px/1 ui-monospace,monospace; }
+  .mixer-control output { color:var(--fg); font:9px/1 ui-monospace,monospace; }
+  .mixer-control input[type=range] { width:100%; height:12px; margin:0; accent-color:var(--accent); }
+  .mixer-buttons { display:flex; gap:3px; width:100%; margin-top:auto; }
+  .mixer-buttons button { flex:1; min-width:0; cursor:pointer; background:#0e1116; color:var(--dim);
+                          border:1px solid var(--line); border-radius:3px; padding:4px 0;
+                          font:700 10px/1 ui-monospace,monospace; }
+  .mixer-buttons button:hover { color:var(--fg); border-color:var(--accent); }
+  .mixer-buttons button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .mixer-buttons button.solo.on { background:var(--warn); border-color:var(--warn); color:#111; }
+  .mixer-note { margin:0; padding:0 12px 10px; }
   .hint { color:var(--dim); font-size:11px; margin:2px 0 0; }
 </style>
 </head>
@@ -377,12 +434,13 @@
     <label>Rate <select id="srate" title="device sample rate"></select></label>
     <label>Clock <select id="csrc" title="device clock source"></select></label>
   </div>
+  <button id="messagesbtn" type="button" title="system and communication messages" aria-expanded="false">Messages</button>
   <button id="gearbtn" type="button" title="output settings (Line Out / Reamp)" aria-label="settings"></button>
 </header>
-<div id="clockmsg" hidden>
-  <span></span>
-  <button type="button" data-clockmsg-x aria-label="dismiss">&times;</button>
-</div>
+<aside id="messagespanel" hidden aria-label="system messages">
+  <div class="messages-hd"><strong>System messages</strong><button type="button" data-messages-close aria-label="close">&times;</button></div>
+  <div id="messagesbody"></div>
+</aside>
 <main id="main" class="offline">
   <section>
     <div class="tabbar" role="tablist">
@@ -424,11 +482,11 @@
     </h2>
     <div class="secbody" id="routebody">
       <div class="tabbar" id="routetabs" role="tablist">
-        <button class="tabbtn active" data-rtab="matrix" role="tab">Routing Matrix</button>
-        <button class="tabbtn" data-rtab="mix1" role="tab">Mixer 1</button>
-        <button class="tabbtn" data-rtab="mix2" role="tab">Mixer 2</button>
-        <button class="tabbtn" data-rtab="mix3" role="tab">Mixer 3</button>
-        <button class="tabbtn" data-rtab="mix4" role="tab">Mixer 4</button>
+        <button class="tabbtn active" data-rtab="matrix" role="tab">Routing</button>
+        <button class="tabbtn" data-rtab="mix1" role="tab">Mix 1</button>
+        <button class="tabbtn" data-rtab="mix2" role="tab">Mix 2</button>
+        <button class="tabbtn" data-rtab="mix3" role="tab">Mix 3</button>
+        <button class="tabbtn" data-rtab="mix4" role="tab">Mix 4</button>
       </div>
       <div data-rpane="matrix">
         <div id="routing"></div>
@@ -438,14 +496,10 @@
            like the Launcher: no "unroute", only replace or mute. A write flashes green when the
            device confirms, red if it comes back different.</p>
       </div>
-      <div data-rpane="mix1" hidden><p class="hint">Per-mixer routing view — not wired up yet. Mixer inputs still route through the <b>Routing Matrix</b> tab (destinations <code>mix ch1…4</code>) and levels live in <b>Virtual mixer</b> below.</p></div>
-      <div data-rpane="mix2" hidden><p class="hint">Per-mixer routing view — not wired up yet.</p></div>
-      <div data-rpane="mix3" hidden><p class="hint">Per-mixer routing view — not wired up yet.</p></div>
-      <div data-rpane="mix4" hidden><p class="hint">Per-mixer routing view — not wired up yet.</p></div>
+      <div data-rpane="mixers" hidden>
+        <div id="mixer"></div>
+      </div>
     </div>
-  </section>
-  <section><h2>Virtual mixer</h2><div id="mixer"></div>
-    <p class="hint">Fader is shown as dB of attenuation. Strip 0 is the mix master (readback cat 0x04).</p>
   </section>
 </main>
 
@@ -495,8 +549,35 @@
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 let PROFILE = null, MODES = [], N_CH = 12, HIZ = new Set(), GAIN_RANGE = {}, N_PAIRS = 0;
-let ROUTING = null, MIXER = null, RB_VER = -1, ONLINE = false;
+let ROUTING = null, MIXER = null, MIXER_METERS = null, ACTIVE_MIX = 0;
+const MIX_PENDING = {}, MIX_PENDING_TTL = 5000;
+let MIX_SOLO_RESTORE = {};
+const MIX_LINKS = loadMixLinks();
+let RB_VER = -1, ONLINE = false;
 let EMU_CHANNELS = new Set();
+const MESSAGES = new Map();
+
+function renderMessages() {
+  const body = $('#messagesbody'), btn = $('#messagesbtn');
+  if (!body || !btn) return;
+  body.innerHTML = [...MESSAGES.values()].map(m =>
+    `<article class="message"><b>${m.title}</b><div>${m.body}</div></article>`).join('')
+    || '<p class="message">No messages.</p>';
+  btn.classList.toggle('has', MESSAGES.size > 0);
+}
+function reportMessage(key, title, body) {
+  MESSAGES.set(key, {title, body}); renderMessages();
+}
+function clearMessage(key) { if (MESSAGES.delete(key)) renderMessages(); }
+function setMessagesOpen(open) {
+  const panel = $('#messagespanel'), btn = $('#messagesbtn');
+  panel.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+}
+$('#messagesbtn').addEventListener('click', () => setMessagesOpen($('#messagespanel').hidden));
+$('[data-messages-close]').addEventListener('click', () => setMessagesOpen(false));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('#messagespanel').hidden) setMessagesOpen(false);
+});
 
 // ---- emuMic / mic modeling ------------------------------------------
 // Preamps 5-12 (EMU button is Mic-mode-gated); no device readback -> browser-side state (localStorage).
@@ -549,9 +630,10 @@ const LINK_ICON = `<svg class="lkico" viewBox="0 0 22 22" aria-hidden="true">
 async function post(path, body) {
   if (!ONLINE) return;
   try {
-    await fetch(path, {method:'POST', headers:{'content-type':'application/json'},
-                       body:JSON.stringify(body)});
-  } catch (_) { /* connection dropped -- the WS reconnect path will recover */ }
+    const r = await fetch(path, {method:'POST', headers:{'content-type':'application/json'},
+                                body:JSON.stringify(body)});
+    if (!r.ok) reportMessage('comm', 'Control command failed', `${path}: ${await r.text()}`);
+  } catch (_) { reportMessage('comm', 'Connection lost', `Unable to send ${path}.`); }
 }
 async function getJSON(path) { return (await fetch(path)).json(); }
 
@@ -1102,7 +1184,6 @@ function applySettings(s) {
 // and show the release-audio instructions (see webui/NEXT.md, Linux quirk).
 const CLOCK_STUCK_MS = 3500;
 const CLK = { rate: null, src: null };   // { want, t } while a write is in flight
-let CLOCK_MSG_DISMISSED = false;         // stays dismissed until the next change
 
 const srateLabel = hz => ((hz = +hz) % 1000 ? (hz / 1000).toFixed(1) : hz / 1000) + ' kHz';
 
@@ -1120,15 +1201,11 @@ function buildClockBar() {
   fill($('#srate'), sr, srateLabel, 'rate');
   fill($('#csrc'), cs, v => String(v).split(' (')[0], 'src');   // "Oven (internal…)" -> "Oven"
   bar.hidden = false;
-  $('[data-clockmsg-x]').addEventListener('click', () => {
-    $('#clockmsg').hidden = true;
-    CLOCK_MSG_DISMISSED = true;   // stays gone until the next Rate/Clock change
-  });
 }
 
 function sendClock(key, value) {
   CLK[key] = { want: value, t: Date.now() };
-  CLOCK_MSG_DISMISSED = false;
+  clearMessage('clock');
   (key === 'rate' ? $('#srate') : $('#csrc')).classList.remove('stuck');
   post(key === 'rate' ? '/api/sample-rate' : '/api/clock-source', { value });
 }
@@ -1143,17 +1220,15 @@ function applyClock(s) {
     else if (pend && Date.now() - pend.t > CLOCK_STUCK_MS) { el.classList.add('stuck'); stuck = true; }
     if (!CLK[key] && document.activeElement !== el) el.value = idx;
   }
-  const msg = $('#clockmsg');
-  if (stuck && msg.hidden && !CLOCK_MSG_DISMISSED) {
-    msg.querySelector('span').innerHTML =
-      '<b>That change didn’t take.</b> The Orion refuses sample-rate and clock-source ' +
+  if (stuck) {
+    reportMessage('clock', 'Clock change did not take',
+      'The Orion refuses sample-rate and clock-source ' +
       'writes while the host is streaming audio over USB, and refuses a rate change while ' +
       'the clock source is <b>USB</b>. On Linux, free the device first:<br>' +
       '<code>systemctl --user stop pipewire pipewire-pulse wireplumber pipewire.socket pipewire-pulse.socket</code><br>' +
       'set the clock to <b>Oven</b>, change the rate, then bring audio back:<br>' +
-      '<code>systemctl --user start pipewire pipewire-pulse wireplumber</code>';
-    msg.hidden = false;
-  }
+      '<code>systemctl --user start pipewire pipewire-pulse wireplumber</code>');
+  } else clearMessage('clock');
 }
 
 $('[data-emm-mic]').addEventListener('change', e => { EMU_MIC = e.target.value; saveEmuMic(); syncEmuModal(); });
@@ -1804,17 +1879,22 @@ function wireMinButtons() {
 }
 wireMinButtons();
 
-// ---- routing sub-tabs (Routing Matrix | Mixer 1..4) ---------------------
+// ---- routing sub-tabs (profile-sized Routing | Mix N) --------------------
 function initRouteTabs() {
   const bar = $('#routetabs'); if (!bar) return;
   const show = name => {
     bar.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.rtab === name));
-    $$('[data-rpane]').forEach(p => { p.hidden = p.dataset.rpane !== name; });
+    const mix = /^mix(\d+)$/.exec(name);
+    const paneName = mix ? 'mixers' : name;
+    $$('[data-rpane]').forEach(p => { p.hidden = p.dataset.rpane !== paneName; });
+    if (mix && MIXER && $('#mixer').children.length) selectMixer(+mix[1] - 1);
     try { localStorage.setItem('routeTab', name); } catch (_) {}
   };
   bar.addEventListener('click', e => { const b = e.target.closest('.tabbtn'); if (b) show(b.dataset.rtab); });
   let saved = null; try { saved = localStorage.getItem('routeTab'); } catch (_) {}
-  show(saved && bar.querySelector(`.tabbtn[data-rtab="${saved}"]`) ? saved : 'matrix');
+  const savedTab = saved && bar.querySelector(`.tabbtn[data-rtab="${saved}"]`);
+  const first = [...bar.querySelectorAll('.tabbtn')].find(b => !b.hidden);
+  show(savedTab && !savedTab.hidden ? saved : (first?.dataset.rtab || 'matrix'));
 }
 initRouteTabs();
 
@@ -2239,67 +2319,314 @@ function rgRoute(rows, isGroup, destNode) {
   else routeBatch(did, changes);
 }
 
-// ---- virtual mixer -------------------------------------------------
+// ---- compact virtual mixer ---------------------------------------------
+function mixerFaderLabel(att) {
+  att = Math.max(0, Math.round(+att || 0));
+  return att ? '−' + att + ' dB' : '0 dB';
+}
+function mixerSendLabel(value, max) {
+  const att = Math.max(0, Math.round(+value || 0));
+  return att >= (+max || 96) ? '−∞' : (att ? '−' + att : '0') + ' dB';
+}
+function mixerPanLabel(value) {
+  value = Math.round(+value || 0);
+  return value === 0 ? 'C' : value < 0 ? 'L' + Math.abs(value) : 'R' + value;
+}
+
+const mixerPendingKey = (mix, ch, field) => `${mix}:${ch}:${field}`;
+const mixLinkPair = ch => ch > 0 ? Math.floor((ch - 1) / 2) : -1;
+const mixLinkPartner = ch => ch > 0 ? (ch % 2 ? ch + 1 : ch - 1) : 0;
+const mixIsLinked = ch => !!MIX_LINKS[mixLinkPair(ch)];
+function loadMixLinks() {
+  try { return JSON.parse(localStorage.getItem('mixerLinks') || '{}') || {}; }
+  catch (_) { return {}; }
+}
+function saveMixLinks() {
+  try { localStorage.setItem('mixerLinks', JSON.stringify(MIX_LINKS)); } catch (_) {}
+}
+function markMixerPending(mix, ch, field, value) {
+  MIX_PENDING[mixerPendingKey(mix, ch, field)] = {value, ts: Date.now()};
+}
+function mixerPendingActive(mix, ch, field, actual) {
+  const key = mixerPendingKey(mix, ch, field), pending = MIX_PENDING[key];
+  if (!pending) return false;
+  if (actual === pending.value || Date.now() - pending.ts > MIX_PENDING_TTL) {
+    delete MIX_PENDING[key];
+    return false;
+  }
+  return true;
+}
+
+function applyMixerMeters(meters) {
+  MIXER_METERS = meters || null;
+  document.querySelectorAll('#mixer [data-mix-pane] .mixer-strip').forEach(strip => {
+    const pane = strip.closest('[data-mix-pane]');
+    const meter = strip.querySelector('[data-mix-meter]');
+    if (!pane || !meter) return;
+    const ch = +strip.dataset.ch;
+    const selected = meters && +meters.mix === +pane.dataset.mixPane && ch > 0;
+    const sample = selected && Array.isArray(meters.strips)
+      ? meters.strips.find(x => +x.ch === ch) : null;
+    const raw = Number.isFinite(sample?.raw) ? sample.raw : null;
+    const valid = raw != null && raw >= 0 && raw <= 96;
+    const silent = sample?.silence === true || raw === 96;
+    const pct = valid && !silent ? (96 - raw) / 96 * 100 : 0;
+    meter.classList.toggle('unavailable', !valid);
+    meter.classList.toggle('peak', valid && raw === 0);
+    meter.style.height = pct.toFixed(1) + '%';
+    meter.parentElement.title = !valid ? 'Meter unavailable'
+      : `Raw ${raw}${silent ? ' · silence' : ' · uncalibrated'}`;
+  });
+}
+
 function buildMixer() {
   const wrap = $('#mixer'); wrap.innerHTML = '';
-  for (let m = 0; m < MIXER.n_mixes; m++) {
-    const det = document.createElement('details'); det.className = 'panel'; det.dataset.mix = m;
-    det.innerHTML = `<summary>Mix ${m + 1} <span class="sub">readback cat 0x04 idx ${m}</span></summary>
-      <div data-rows></div>`;
-    det.addEventListener('toggle', () => { if (det.open) renderMix(det); });
-    wrap.appendChild(det);
+  if (!MIXER.available) return;
+  const nMix = Number(MIXER.n_mixes) || 0;
+  const panes = Array.from({length: nMix}, (_, m) =>
+    `<div class="mixer-pane" data-mix-pane="${m}" role="tabpanel" hidden>
+       <div class="mixer-pane-hd">
+         <span class="hint">Mix ${m + 1} meter bank · target 1 selector ${m}</span>
+       </div>
+       <div class="mixer-scroll"><div class="mixer-strips" data-strips></div></div>
+     </div>`).join('');
+  wrap.innerHTML = `<div class="mixer-shell">
+    <div class="mixer-hd">
+      <strong>Virtual mixer</strong>
+      <span class="hint">${MIXER.channels_per_mix} input strips + master</span>
+    </div>${panes}
+    <p class="hint mixer-note">Fader values are attenuation below unity. The thin green meter is the selected mixer-window raw meter bank; its master lane is not mapped yet.</p>
+  </div>`;
+  const activeRoute = $('#routetabs .tabbtn.active')?.dataset.rtab || '';
+  const routeMix = /^mix([1-4])$/.exec(activeRoute);
+  const initial = routeMix ? +routeMix[1] - 1 : 0;
+  selectMixer(initial, !!routeMix);
+}
+
+function refreshMixLinks() {
+  document.querySelectorAll('#mixer .mixer-strip').forEach(strip => {
+    const ch = +strip.dataset.ch, linked = mixIsLinked(ch);
+    const button = strip.querySelector('[data-mix-link]');
+    if (button) button.classList.toggle('on', linked);
+    strip.classList.toggle('linkstart', linked && ch % 2 === 1);
+    strip.classList.toggle('linkend', linked && ch > 0 && ch % 2 === 0);
+  });
+}
+
+function setMixLink(m, pair, on) {
+  if (pair < 0 || !!MIX_LINKS[pair] === !!on) return;
+  if (on) MIX_LINKS[pair] = true; else delete MIX_LINKS[pair];
+  saveMixLinks();
+  post('/api/mix-link', {pair, enabled: on});
+  if (on) {
+    const source = (MIXER.current || {})[String(m)]?.[pair * 2 + 1];
+    if (source) {
+      const partner = pair * 2 + 2;
+      for (const field of ['fader', 'pan', 'send', 'mute']) {
+        if (field === 'send' && !(MIXER.send_mixes || []).includes(m)) continue;
+        markMixerPending(m, partner, field, source[field]);
+        post('/api/mix', {mix: m, channel: partner, [field]: source[field]});
+      }
+    }
+  }
+  refreshMixLinks();
+}
+
+function postLinkedMix(m, ch, patch) {
+  const field = Object.keys(patch)[0], value = patch[field];
+  markMixerPending(m, ch, field, value);
+  post('/api/mix', {mix: m, channel: ch, ...patch});
+  if (!mixIsLinked(ch)) return;
+  const partner = mixLinkPartner(ch);
+  markMixerPending(m, partner, field, value);
+  post('/api/mix', {mix: m, channel: partner, ...patch});
+  const strip = document.querySelector(`[data-mix-pane="${m}"] .mixer-strip[data-ch="${partner}"]`);
+  if (strip && field === 'fader') {
+    const fader = strip.querySelector('[data-fader]');
+    fader.value = -value;
+    strip.querySelector('[data-fval]').textContent = mixerFaderLabel(value);
+    paintMixerFader(strip, fader.value);
   }
 }
 
-function renderMix(det) {
-  const m = +det.dataset.mix;
-  const slots = (MIXER.current || {})[String(m)] || [];
-  const [fLo, fHi] = MIXER.ranges.fader, [pLo, pHi] = MIXER.ranges.pan, [sLo, sHi] = MIXER.ranges.send;
-  const rows = det.querySelector('[data-rows]');
-  const n = Math.max(33, slots.length);
-  rows.innerHTML = Array.from({length: n}, (_, ch) => {
-    const s = slots[ch] || {fader: 0, pan: 0, send: 0, mute: false, solo: false};
-    return `<div class="mstrip" data-ch="${ch}">
-      <span class="nm">${ch === 0 ? 'master' : 'ch ' + ch}</span>
-      <input type="range" data-fader min="${-fHi}" max="${-fLo}" value="${-s.fader}">
-      <span class="mono" data-fval>${-s.fader} dB</span>
-      <input type="range" data-pan min="${pLo}" max="${pHi}" value="${s.pan}" title="pan">
-      <button data-mute class="${s.mute ? 'on' : ''}">M</button>
-      <button data-solo class="solo ${s.solo ? 'on' : ''}">S</button>
-    </div>`;
-  }).join('');
+function selectMixer(m, notify = true) {
+  if (!MIXER?.available) return;
+  const nMix = Number(MIXER.n_mixes) || 0;
+  if (!Number.isInteger(m) || m < 0 || m >= nMix) return;
+  ACTIVE_MIX = m;
+  document.querySelectorAll('[data-mix-pane]').forEach(pane => {
+    pane.hidden = +pane.dataset.mixPane !== m;
+  });
+  const pane = document.querySelector(`[data-mix-pane="${m}"]`);
+  if (pane) renderMix(pane, m);
+  applyMixerMeters(MIXER_METERS);
+  if (notify) post('/api/mixer-select', {mix: m});
+}
 
-  rows.querySelectorAll('.mstrip').forEach(strip => {
+function mixerSoloSnapshot(m) {
+  const slots = (MIXER.current || {})[String(m)] || [];
+  const n = (Number(MIXER.channels_per_mix) || 0) + 1;
+  return {
+    mutes: Array.from({length: n}, (_, ch) => !!slots[ch]?.mute),
+    solos: Array.from({length: n}, (_, ch) => !!slots[ch]?.solo),
+  };
+}
+function activeMixerSoloChannels(pane) {
+  return new Set([...pane.querySelectorAll('[data-solo].on')]
+    .map(btn => +btn.closest('.mixer-strip').dataset.ch));
+}
+function paintMixSolo(pane, active, restore) {
+  const soloedChannels = new Set(active);
+  const soloMode = soloedChannels.size > 0;
+  pane.querySelectorAll('.mixer-strip').forEach(strip => {
     const ch = +strip.dataset.ch;
-    const fader = strip.querySelector('[data-fader]'), fval = strip.querySelector('[data-fval]');
-    fader.addEventListener('input', () => fval.textContent = fader.value + ' dB');
-    fader.addEventListener('change', () => post('/api/mix', {mix: m, channel: ch, fader: -(+fader.value)}));
-    strip.querySelector('[data-pan]').addEventListener('change', e =>
-      post('/api/mix', {mix: m, channel: ch, pan: +e.target.value}));
-    strip.querySelector('[data-mute]').addEventListener('click', e =>
-      post('/api/mix', {mix: m, channel: ch, mute: !e.target.classList.contains('on')}));
-    strip.querySelector('[data-solo]').addEventListener('click', e =>
-      post('/api/mix', {mix: m, channel: ch, solo: !e.target.classList.contains('on')}));
+    const mute = strip.querySelector('[data-mute]');
+    const solo = strip.querySelector('[data-solo]');
+    const muted = soloMode ? !soloedChannels.has(ch) : !!restore?.mutes?.[ch];
+    const soloed = soloMode ? soloedChannels.has(ch) : !!restore?.solos?.[ch];
+    mute.classList.toggle('on', muted);
+    solo.classList.toggle('on', soloed);
   });
 }
 
-function refreshMixer() {
-  document.querySelectorAll('#mixer details[open]').forEach(det => {
-    const m = +det.dataset.mix;
-    const slots = (MIXER.current || {})[String(m)] || [];
-    det.querySelectorAll('.mstrip').forEach(strip => {
-      const ch = +strip.dataset.ch, s = slots[ch]; if (!s) return;
-      const fader = strip.querySelector('[data-fader]');
-      if (document.activeElement !== fader) {
-        fader.value = -s.fader;
-        strip.querySelector('[data-fval]').textContent = -s.fader + ' dB';
-      }
-      const pan = strip.querySelector('[data-pan]');
-      if (document.activeElement !== pan) pan.value = s.pan;
-      strip.querySelector('[data-mute]').classList.toggle('on', s.mute);
-      strip.querySelector('[data-solo]').classList.toggle('on', s.solo);
+function paintMixerFader(strip, value) {
+  const fader = strip.querySelector('[data-fader]');
+  const thumb = strip.querySelector('.mixer-fader-thumb');
+  if (!fader || !thumb) return;
+  const lo = +fader.min, hi = +fader.max, span = fader.clientHeight || 158;
+  const fraction = hi === lo ? 0 : (hi - (+value || 0)) / (hi - lo);
+  const handle = 50;
+  const pos = handle / 2 + Math.max(0, Math.min(1, fraction)) * (span - handle);
+  thumb.style.setProperty('--fader-pos', pos.toFixed(1) + 'px');
+}
+
+function renderMix(pane, m) {
+  const slots = (MIXER.current || {})[String(m)] || [];
+  const [fLo, fHi] = MIXER.ranges.fader, [pLo, pHi] = MIXER.ranges.pan, [sLo, sHi] = MIXER.ranges.send;
+  const rows = pane.querySelector('[data-strips]');
+  const hasSend = MIXER.has_send !== false && (MIXER.send_mixes || []).includes(m);
+  const sendMaster = MIXER.send_master === true;
+  const n = Math.max((Number(MIXER.channels_per_mix) || 0) + 1, slots.length);
+  rows.innerHTML = Array.from({length: n}, (_, ch) => {
+    const s = slots[ch] || {fader: 0, pan: 0, send: 0, mute: false, solo: false};
+    const fader = Number(s.fader) || 0, pan = Number(s.pan) || 0, send = Number(s.send) || 0;
+    const pair = mixLinkPair(ch), linkStart = ch > 0 && ch % 2 === 1;
+    return `<div class="mixer-strip${ch === 0 ? ' master' : ''}" data-ch="${ch}">
+      <span class="mxname">${ch === 0 ? 'MASTER' : 'CH ' + String(ch).padStart(2, '0')}</span>
+      ${linkStart ? `<button class="linkbtn" data-mix-link title="link CH${ch}+CH${ch + 1}">${LINK_ICON}</button>` : ''}
+      <span class="mxval" data-fval>${mixerFaderLabel(fader)}</span>
+      <div class="mixer-fader-row">
+        <div class="mixer-fader-well">
+          <span class="mixer-fader-thumb" aria-hidden="true">
+            <img class="mixer-fader-art" src="/webui/assets/fader-shadow.svg" alt="" draggable="false">
+          </span>
+          <input class="mixer-fader" type="range" data-fader min="${-fHi}" max="${-fLo}" value="${-fader}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} fader">
+        </div>
+        <div class="mixer-meter" title="Meter unavailable"><i data-mix-meter class="unavailable"></i></div>
+      </div>
+      <div class="mixer-control">
+        <label><span>PAN</span><output data-pval>${mixerPanLabel(pan)}</output></label>
+        <input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} pan">
+      </div>
+      <div class="mixer-control"${hasSend && (ch > 0 || sendMaster) ? '' : ' hidden'}>
+        <label><span>SEND</span><output data-sval>${mixerSendLabel(send, sHi)}</output></label>
+        <input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} AuraVerb send">
+      </div>
+      <div class="mixer-buttons">
+        <button type="button" data-mute class="${s.mute ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} mute">M</button>
+        <button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} solo">S</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  rows.querySelectorAll('.mixer-strip').forEach(strip => {
+    const ch = +strip.dataset.ch;
+    const fader = strip.querySelector('[data-fader]'), fval = strip.querySelector('[data-fval]');
+    paintMixerFader(strip, fader.value);
+    fader.addEventListener('input', () => {
+      fval.textContent = mixerFaderLabel(-(+fader.value));
+      paintMixerFader(strip, fader.value);
     });
+    fader.addEventListener('change', () => {
+      const value = -(+fader.value);
+      postLinkedMix(m, ch, {fader: value});
+    });
+    const pan = strip.querySelector('[data-pan]'), pval = strip.querySelector('[data-pval]');
+    pan.addEventListener('input', e => pval.textContent = mixerPanLabel(e.target.value));
+    pan.addEventListener('change', e => {
+      const value = +e.target.value;
+      postLinkedMix(m, ch, {pan: value});
+    });
+    const send = strip.querySelector('[data-send]'), sval = strip.querySelector('[data-sval]');
+    if (send) {
+      send.addEventListener('input', e => {
+        sval.textContent = mixerSendLabel(-(+e.target.value), sHi);
+      });
+      send.addEventListener('change', e => {
+        const value = -(+e.target.value);
+        postLinkedMix(m, ch, {send: value});
+      });
+    }
+    strip.querySelector('[data-mute]').addEventListener('click', e => {
+      const on = !e.currentTarget.classList.contains('on');
+      e.currentTarget.classList.toggle('on', on);
+      postLinkedMix(m, ch, {mute: on});
+    });
+    strip.querySelector('[data-solo]').addEventListener('click', e => {
+      const on = !e.currentTarget.classList.contains('on');
+      const active = activeMixerSoloChannels(pane);
+      if (on) {
+        if (!MIX_SOLO_RESTORE[m]) MIX_SOLO_RESTORE[m] = mixerSoloSnapshot(m);
+        active.add(ch);
+        paintMixSolo(pane, active);
+      } else {
+        const restore = MIX_SOLO_RESTORE[m];
+        active.delete(ch);
+        if (active.size) {
+          paintMixSolo(pane, active);
+        } else {
+          paintMixSolo(pane, active, restore);
+          delete MIX_SOLO_RESTORE[m];
+        }
+      }
+      post('/api/mix-solo', {mix: m, channel: ch, on});
+    });
+    const link = strip.querySelector('[data-mix-link]');
+    if (link) link.addEventListener('click', () =>
+      setMixLink(m, mixLinkPair(ch), !mixIsLinked(ch)));
   });
+  refreshMixLinks();
+  applyMixerMeters(MIXER_METERS);
+}
+
+function refreshMixer() {
+  document.querySelectorAll('#mixer [data-mix-pane] .mixer-strip').forEach(strip => {
+    const pane = strip.closest('[data-mix-pane]');
+    const m = +pane.dataset.mixPane;
+    const slots = (MIXER.current || {})[String(m)] || [];
+    const ch = +strip.dataset.ch, s = slots[ch]; if (!s) return;
+    const fader = strip.querySelector('[data-fader]');
+    if (!mixerPendingActive(m, ch, 'fader', s.fader) && document.activeElement !== fader) {
+      fader.value = -s.fader;
+      strip.querySelector('[data-fval]').textContent = mixerFaderLabel(s.fader);
+    }
+    paintMixerFader(strip, fader.value);
+    const pan = strip.querySelector('[data-pan]');
+    if (!mixerPendingActive(m, ch, 'pan', s.pan) && document.activeElement !== pan) {
+      pan.value = s.pan;
+      strip.querySelector('[data-pval]').textContent = mixerPanLabel(s.pan);
+    }
+    const send = strip.querySelector('[data-send]');
+    if (send && !mixerPendingActive(m, ch, 'send', s.send) && document.activeElement !== send) {
+      send.value = -s.send;
+      send.parentElement.querySelector('[data-sval]').textContent = mixerSendLabel(s.send, MIXER.ranges.send[1]);
+    }
+    if (!mixerPendingActive(m, ch, 'mute', s.mute)) {
+      strip.querySelector('[data-mute]').classList.toggle('on', s.mute);
+    }
+    strip.querySelector('[data-solo]').classList.toggle('on', s.solo);
+  });
+  applyMixerMeters(MIXER_METERS);
 }
 
 async function reloadReadback() {
@@ -2317,10 +2644,16 @@ function applyState(s) {
   st.className = ONLINE ? 'online' : 'offline';
   st.textContent = ONLINE ? 'online' : 'device offline';
   $('#main').classList.toggle('offline', !ONLINE);
-  if (!ONLINE) { applyMeters([]); return; }
+  if (!ONLINE) {
+    applyMeters([]); applyMixerMeters(null);
+    reportMessage('connection', 'Device connection', 'The device is offline.');
+    return;
+  }
+  if (!wasOnline) clearMessage('connection');
 
   applyChannels(s.channels);
   applyMeters(s.input_meters || s.meters_db);
+  applyMixerMeters(s.mixer_meters);
   if (METER_DEBUG) applyMeterDebug(s);
   applyBuses(s.buses);
   applyDig('adat', s.adat);
@@ -2345,8 +2678,26 @@ $('#bright').addEventListener('change', e => post('/api/brightness', {value: +e.
 function markOffline(text) {
   ONLINE = false;
   applyMeters([]);
+  applyMixerMeters(null);
+  reportMessage('connection', 'Device connection', text);
   const st = $('#status'); st.className = 'offline'; st.textContent = text;
   $('#main').classList.add('offline');
+}
+
+function applyProfileCapabilities() {
+  const cap = PROFILE.webui || {}, routing = cap.routing === true, mixer = cap.mixer === true;
+  const digital = DIG.adat.n || DIG.spdif.n;
+  $('[data-tab="adat"]').hidden = !digital;
+  if (!digital && $('[data-pane="adat"]').previousElementSibling) $('[data-tab="inputs"]').classList.add('active');
+  const section = $('#routesec');
+  section.hidden = !routing && !mixer;
+  const matrixTab = $('#routetabs [data-rtab="matrix"]');
+  matrixTab.hidden = !routing;
+  $('[data-rpane="matrix"]').hidden = !routing;
+  $$('#routetabs [data-rtab^="mix"]').forEach(btn => {
+    const n = Number(btn.dataset.rtab.slice(3));
+    btn.hidden = !mixer || n > Number(cap.mixes || 0);
+  });
 }
 
 async function boot() {
@@ -2378,6 +2729,7 @@ async function boot() {
   DIG.spdif.pairs = PROFILE.spdif?.link_pairs?.count || 0;
   DIG.spdif.range = PROFILE.params?.spdif_gain?.range || [-6, 12];
 
+  applyProfileCapabilities();
   document.documentElement.style.setProperty('--meter-grad', meterGradient());
   buildChannels(N_CH);
   buildDig('adat');

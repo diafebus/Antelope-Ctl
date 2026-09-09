@@ -15,6 +15,13 @@
     "notes": "Confirmed from raw pcapng (2026-08): the vendor control protocol is entirely HID interrupt on interface 3, endpoint 0x01 OUT / 0x82 IN, device address 2 (usb.dst 1.2.x). Endpoints 0x05 OUT / 0x84 IN are the UAC2 isochronous audio stream (24-ch / 24-bit in the class-compliant descriptor) -- unrelated to control. Only 16 USB control transfers in the whole connect sequence: standard descriptor GETs + SET_CONFIGURATION/SET_INTERFACE, NO string-descriptor fetches in any capture on file. The UAC2 audio-control descriptor is a stub (1 clock source, 4 terminals all nrChannels=1, no Feature Units), so it carries no usable channel topology or names.",
     "hidraw_write_length_unverified": "The sibling Antelope Discrete 8 Pro (peer PR, profile discrete_8_pro_sc.json) has a HID report descriptor with NO Report ID item, so on Linux hidraw a write there must be 321 bytes (leading 0x00 report-number byte + 320-byte payload), NOT 320. This CLI's transport.py currently writes exactly 320 bytes for Orion with no prefix, and the confirmed params suggest that works here -- but it has not been checked against Orion's actual descriptor. Verify with: cat /sys/class/hidraw/hidrawN/device/report_descriptor and look for a Report ID item (0x85 ...). If Orion's descriptor also lacks one, transport.py needs the leading 0x00 for Orion too. Discrete 8 Pro's full descriptor, for comparison: 06 a0 ff 09 01 a1 01 09 02 a1 00 06 a1 ff 09 03 09 04 15 80 25 7f 35 00 45 ff 75 08 96 40 01 81 02 09 05 09 06 15 80 25 7f 35 00 45 ff 75 08 96 40 01 91 02 c0 c0 (no 0x85)."
   },
+  "mixer": {
+    "mixes": 4,
+    "channels_per_mix": 32,
+    "readback_category": "0x04",
+    "readback_status": "confirmed",
+    "notes": "Four virtual mixers with 32 input strips plus a master strip. The bounded cat 0x04 readback is confirmed for indices 0..3."
+  },
   "frame": {
     "command": {
       "magic_offset": 0,
@@ -185,7 +192,7 @@
       "pan_center": 32,
       "mute_bit": "0x40",
       "solo_bit": "0x80",
-      "notes": "Opcode 0x17 with param_id [16]=0xd4 -- the VIRTUAL MIXER (the Mix 1-4 windows, a SEPARATE UI from the routing matrix: mixing happens here, then Mix N's L/R appear as sources in the matrix, banks 0x06-0x09). NOTE opcode 0x17 is SHARED: param_id 0xe5 on the same opcode is mic modeling (frame.micmodeling_command) -- always check [16]. One frame per (mix, channel) strip, carrying that strip's WHOLE state every time. CONFIRMED from macos-mix1-send-pan-fader-mute-solo-link (2026-08, native macOS): [16]=0xd4 [17]=0x05 constant; [18]=mix number 0-3 (0 = Mix 1 .. 3 = Mix 4) -- CONFIRMED 2026-08-31 via the cat-0x04 readback, which returns an independent record for each of the four indices (the original capture had only ever shown mix 0); [19]=channel **0-32**: 1-32 = the input strips (each mix has 32 -- the user's solo click re-sent all 32, a handy channel-count probe) and **0 = the MIX MASTER strip** (CONFIRMED 2026-09-01 from captures/new/mix1-masterfaderplay.pcapng: sweeping the Mix 1 master fader emits 68 frames, all `d4 05 00 00 <fader> 20 60` -- channel 0, pan/send held constant. The Launcher writes channel 0 itself, so it is a normal target); [20]=FADER, raw = attenuation in -dB, 0 = 0dB/unity .. 90 = -90dB (matches the UI's 0..-90 range); [21]=PAN + FLAGS -- low 6 bits (pan_mask) = pan, pan_center 0x20, so 0x02 = full-left (-30), 0x20 = center, 0x3e = full-right (+30) i.e. raw = 32 + degrees; bit 0x40 = MUTE; bit 0x80 = SOLO; [22]=SEND level, 0-96 (0x60 = 0dB, 0 = -inf; same 0-96 scale as bus_level). No target byte past 22. READBACK: frame.readback category 0x04, index = mix number 0..3 -- FULLY DECODED + hardware round-trip verified 2026-08-31. The record is 33 three-byte slots in this frame's own field order (fader, pan|flags, send); slot N is exactly the strip written as `channel` N -- including slot 0 = channel 0 = the mix master -- so the readback and the write frame share a layout the way routing does, with no special case at either end. That round trip also confirmed [18] really is the mix number (all four mixes return their own record) and that [22] is stored send state, not a meter. protocol.parse_mixer_record; CLI `mix-status`. Also category 0x1b = the SURROUND GLOBAL readback, not a mixer table (corrected 2026-09-04 -- see frame.readback.categories.0x1b); mixer BUS levels are in the 0x73 state report's bus_block (offsets 28-45), not in any readback category. CLI: `mix-set <mix> <ch|master> [--fader dB] [--pan] [--send] [--mute] [--solo]`, which read-modify-writes the strip via the cat-0x04 readback (this frame carries the WHOLE strip, so a partial write would reset the untouched fields) and verifies afterwards. Direct builder: build_mix_command(profile, mix, channel, fader, pan_deg, send, mute, solo)."
+      "notes": "Opcode 0x17 with param_id [16]=0xd4 -- the VIRTUAL MIXER (the Mix 1-4 windows, a SEPARATE UI from the routing matrix: mixing happens here, then Mix N's L/R appear as sources in the matrix, banks 0x06-0x09). NOTE opcode 0x17 is SHARED: param_id 0xe5 on the same opcode is mic modeling (frame.micmodeling_command) -- always check [16]. One frame per (mix, channel) strip, carrying that strip's WHOLE state every time. CONFIRMED from macos-mix1-send-pan-fader-mute-solo-link (2026-08, native macOS): [16]=0xd4 [17]=0x05 constant; [18]=mix number 0-3 (0 = Mix 1 .. 3 = Mix 4) -- CONFIRMED 2026-08-31 via the cat-0x04 readback, which returns an independent record for each of the four indices (the original capture had only ever shown mix 0); [19]=channel **0-32**: 1-32 = the input strips (each mix has 32 -- the user's solo click re-sent all 32, a handy channel-count probe) and **0 = the MIX MASTER strip** (CONFIRMED 2026-09-01 from captures/new/mix1-masterfaderplay.pcapng: sweeping the Mix 1 master fader emits 68 frames, all `d4 05 00 00 <fader> 20 60` -- channel 0, pan/send held constant. The Launcher writes channel 0 itself, so it is a normal target); [20]=FADER, raw = attenuation in -dB, 0 = 0dB/unity .. 90 = -90dB (matches the UI's 0..-90 range); [21]=PAN + FLAGS -- low 6 bits (pan_mask) = pan, pan_center 0x20, so 0x02 = full-left (-30), 0x20 = center, 0x3e = full-right (+30) i.e. raw = 32 + degrees; bit 0x40 = MUTE; bit 0x80 = SOLO; [22]=SEND level: only Mix 1 input strips use it as the AuraVerb send, inverted 0-96 (0 = 0dB, 0x60 = -inf; corrected by auraverb-meters.pcapng, 2026-09-09). No target byte past 22. READBACK: frame.readback category 0x04, index = mix number 0..3 -- FULLY DECODED + hardware round-trip verified 2026-08-31. The record is 33 three-byte slots in this frame's own field order (fader, pan|flags, send); slot N is exactly the strip written as `channel` N -- including slot 0 = channel 0 = the mix master -- so the readback and the write frame share a layout the way routing does, with no special case at either end. That round trip also confirmed [18] really is the mix number (all four mixes return their own record) and that [22] is stored send state, not a meter. protocol.parse_mixer_record; CLI `mix-status`. Also category 0x1b = the SURROUND GLOBAL readback, not a mixer table (corrected 2026-09-04 -- see frame.readback.categories.0x1b); mixer BUS levels are in the 0x73 state report's bus_block (offsets 28-45), not in any readback category. CLI: `mix-set <mix> <ch|master> [--fader dB] [--pan] [--send] [--mute] [--solo]`, which read-modify-writes the strip via the cat-0x04 readback (this frame carries the WHOLE strip, so a partial write would reset the untouched fields) and verifies afterwards. Direct builder: build_mix_command(profile, mix, channel, fader, pan_deg, send, mute, solo)."
     },
     "auraverb_command": {
       "magic_offset": 0,
@@ -382,7 +389,7 @@
         "state_byte_offset": 122,
         "values": {"0": "Mix 1", "1": "Mix 2", "2": "Mix 3", "3": "Mix 4"},
         "evidence": "mixer-source-selection-mix2-mix3-mix4-mix1.pcapng, analyzed 2026-09-09: OUT frames 1331/3047/4745/6263 select 1/2/3/0; first matching 0x73 frames 1367/3077/4759/6277. Full-report @121 stays 18; @122 follows selection.",
-        "notes": "User observes shared meter bytes across mixer windows. Capture confirms selector only: 0x73 @125-220 is silent and every free-running 0x75 report is identical. Selected strip/master lane ownership remains unverified. @122 is distinct from @121, the selector used by existing conditional strip mappings. Separate Meters-window source/destination multiplexing is user-observed; its command/value map is not decoded here. Metadata only; no automatic writes or new runtime lane mappings."
+        "notes": "LIVE-TESTED 2026-09-09: target 1 selects the mixer-window strip bank. With Mix N active and target 1 = N, strip 1..32 responds at full-report 0x73 @157..188 (offset = 156 + strip number); changing target 1 to another mix removes that bank's response. The selector is echoed at @122. This bank is independent of the Meters-window target-0 bank at @125..156."
       },
       "meters_window_selection": {
         "status": "observed_command_and_readback",
@@ -421,8 +428,8 @@
           "24": "Mix 4",
           "25": "Surround In"
         },
-        "evidence": "meterstab-select-preamp-emumic-compplay-adatin-spdifin-mix1lr-mix2lr-mix3lr-mix4lr-surroundout-lineout-hp1-hp2-mona-monb-reamp-adatout-spdifout-afxin-mix1-mix2-mix3-mix4-surroundin.pcapng, analyzed 2026-09-09: 26 OUT frames use SET_PARAM(0x49, target=0, value=0..25), and the matching 0x73 state report echoes each value at full-report offset 121. The capture filename names 24 positions; values 19 and 20 are retained as unnamed rather than guessed. Existing active-signal evidence independently identifies selector value 22 as Mix 2 for the gated strip lanes below.",
-        "notes": "This is the separate Meters window's source/destination selector. It multiplexes shared virtual-mixer meter lanes; it does not change audio routing. The capture is silent in the shared 0x73 meter region (mostly raw 0x60), so it confirms the selector and ordering but does not establish additional lane ownership. Physical preamp meters remain 0x73 @221..232 and are selector-independent in the confirmed captures. @121 must not be confused with mixer_window_selection at @122."
+        "evidence": "meterstab-select-preamp-emumic-compplay-adatin-spdifin-mix1lr-mix2lr-mix3lr-mix4lr-surroundout-lineout-hp1-hp2-mona-monb-reamp-adatout-spdifout-afxin-mix1-mix2-mix3-mix4-surroundin.pcapng, analyzed 2026-09-09: 26 OUT frames use SET_PARAM(0x49, target=0, value=0..25), and the matching 0x73 state report echoes each value at full-report offset 121. The capture filename names 24 positions; values 19 and 20 are retained as unnamed rather than guessed. Controlled live route test completed 2026-09-09.",
+        "notes": "This is the separate Meters window's source/destination selector. LIVE-TESTED 2026-09-09: values 21..24 select a shared 32-strip bank at full-report 0x73 @125..156 (strip N = @124 + N), with the selected Mix value echoed at @121. Physical Preamp 1 remains at @221 independently. Selector values 9 and 25 also produced the same pair of free-running 0x75 lanes (@34/@50) when the signal was routed through the surround destination; selector 18 produced 0x75 @32 for AFX In. Values 10..17 produced no stable transition in either full 0x73 or 0x75 reports under a unity-bus route test. Values 19/20 remain unnamed and untested."
       },
       "physical_meter_base_offset": 221,
       "physical_meter_stride": 1,
@@ -433,116 +440,60 @@
       "physical_meter_evidence": "Sequential preamp 1-12 sine sweep maps full-report 0x73 offsets 221-232 (payload 0xcd-0xd8) one byte per physical input; clipping sweep for preamps 1-4 reaches raw 0. Selector values 15 and 18 demonstrate that this physical bank is selector-independent.",
       "meter_mappings": [
         {
-          "target": "mixer_strip", "target_index": 1, "lane": 20,
-          "payload_offset": "0x80", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 20 is positively observed at full-report 0x73 @144 only after selector @121 changed to 22; inverted one-byte lane, with 96 at rest and 0 under the captured oscillator route."
+          "target": "meters_window_mixer_strip",
+          "selector": {"param": "meters_window_selection", "target": 0, "state_offset": 121, "values": [21, 22, 23, 24]},
+          "strip_index_range": [1, 32],
+          "payload_offset_base": 125,
+          "payload_offset_formula": "full-report offset = 124 + strip_index",
+          "raw_range": [0, 96],
+          "status": "confirmed",
+          "evidence": "Controlled live test 2026-09-09 routed Preamp 1 into each Mix 1-4 strip one at a time, compared with the same strip muted, and changed a stable one-byte 0x73 lane for all 32 strips. The selected Mix value 21..24 was echoed at @121."
         },
         {
-          "target": "mixer_strip", "target_index": 1, "lane": 21,
-          "payload_offset": "0x81", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 21 independently changed only full-report 0x73 @145 under selector @121=22, then returned to 96 after mute."
+          "target": "mixer_window_strip",
+          "selector": {"param": "mixer_window_selection", "target": 1, "state_offset": 122, "values": [0, 1, 2, 3]},
+          "strip_index_range": [1, 32],
+          "payload_offset_base": 157,
+          "payload_offset_formula": "full-report offset = 156 + strip_index",
+          "raw_range": [0, 96],
+          "status": "confirmed",
+          "evidence": "Controlled live cross-check 2026-09-09 held one Mix active and varied target 1. Only the matching target 1 value exposed that Mix's strip lanes at @157..188; the target-0 Meters-window bank remained independently active at @125..156."
         },
         {
-          "target": "mixer_strip", "target_index": 1, "lane": 22,
-          "payload_offset": "0x82", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 22 independently changed only full-report 0x73 @146 under selector @121=22, then returned to 96 after mute."
+          "target": "auraverb_return_candidates",
+          "payload_offsets": [235, 236, 237, 238],
+          "raw_range": [0, 96],
+          "status": "observed_send_correlated",
+          "evidence": "auraverb-meters.pcapng (USBPcap, 2026-09-09): three Mix-1 channel-1/2 AuraVerb-send sweeps drove these four 0x73 lanes together (send-vs-lane correlation +0.835..+0.969; raw 96 is silent). They remained active while the mixer-window selector switched target 1 from Mix 1 to Mix 2 and Mix 3, so they are not the selected @157..188 mixer strip bank. Exact lane ownership/stage is not yet isolated; not wired into the WebUI."
         },
         {
-          "target": "mixer_strip", "target_index": 1, "lane": 23,
-          "payload_offset": "0x83", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 23 independently changed only full-report 0x73 @147 under selector @121=22, then returned to 96 after mute."
+          "target": "surround_meter_path",
+          "selector_values": {"9": "Surround Out", "25": "Surround In"},
+          "report": "0x75",
+          "payload_offsets": [34, 50],
+          "raw_range": [0, 96],
+          "status": "observed_selector_path",
+          "evidence": "Live test 2026-09-09 routed Preamp 1 to the surround destination and compared active versus muted. Both selector 9 and selector 25 changed @34/@50; the test does not separate Surround In from Surround Out stage ownership."
         },
         {
-          "target": "mixer_strip", "target_index": 1, "lane": 24,
-          "payload_offset": "0x84", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 24 independently changed only full-report 0x73 @148 under selector @121=22, then returned to 96 after mute."
+          "target": "afx_in",
+          "selector_value": 18,
+          "report": "0x75",
+          "payload_offset": 32,
+          "raw_range": [0, 96],
+          "status": "observed_selector_path",
+          "evidence": "Live test 2026-09-09 routed Preamp 1 to AFX In and compared active versus muted; @32 changed. No plugin parameter traffic was used."
         },
         {
-          "target": "mixer_strip", "target_index": 1, "lane": 25,
-          "payload_offset": "0x85", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 25 independently changed only full-report 0x73 @149 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "mixer_strip", "target_index": 1, "lane": 26,
-          "payload_offset": "0x86", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 26 independently changed only full-report 0x73 @150 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "mixer_strip", "target_index": 1, "lane": 27,
-          "payload_offset": "0x87", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 27 independently changed only full-report 0x73 @151 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "mixer_strip", "target_index": 1, "lane": 28,
-          "payload_offset": "0x88", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 28 independently changed only full-report 0x73 @152 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "mixer_strip", "target_index": 1, "lane": 29,
-          "payload_offset": "0x89", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 29 independently changed only full-report 0x73 @153 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "mixer_strip", "target_index": 1, "lane": 30,
-          "payload_offset": "0x8a", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 30 independently changed only full-report 0x73 @154 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "mixer_strip", "target_index": 1, "lane": 31,
-          "payload_offset": "0x8b", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 31 independently changed only full-report 0x73 @155 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "mixer_strip", "target_index": 1, "lane": 32,
-          "payload_offset": "0x8c", "raw_range": [0, 96], "status": "confirmed",
-          "byte_equals": { "payload_offset": "0x69", "value": 22 },
-          "evidence": "Mix 2 strip 32 independently changed only full-report 0x73 @156 under selector @121=22, then returned to 96 after mute."
-        },
-        {
-          "target": "physical_output", "target_index": 0, "lane": 0,
-          "payload_offset": "0x8d", "raw_range": [0, 96], "status": "observed",
-          "evidence": "User-approved packet-order hypothesis assigns active candidate full-report 0x73 @157 to profile output 0 (monitor_a). This is a provisional feed; physical post-fader ownership and meter stage unknown. One mono candidate only; no L/R inference."
-        },
-        {
-          "target": "physical_output", "target_index": 1, "lane": 0,
-          "payload_offset": "0x8e", "raw_range": [0, 96], "status": "observed",
-          "evidence": "User-approved packet-order hypothesis assigns active candidate full-report 0x73 @158 to profile output 1 (headphone_1). This is a provisional feed; physical post-fader ownership and meter stage unknown. One mono candidate only; no L/R inference."
-        },
-        {
-          "target": "physical_output", "target_index": 2, "lane": 0,
-          "payload_offset": "0x8f", "raw_range": [0, 96], "status": "observed",
-          "evidence": "User-approved packet-order hypothesis assigns active candidate full-report 0x73 @159 to profile output 2 (headphone_2). This is a provisional feed; physical post-fader ownership and meter stage unknown. One mono candidate only; no L/R inference."
-        },
-        {
-          "target": "physical_output", "target_index": 3, "lane": 0,
-          "payload_offset": "0x90", "raw_range": [0, 96], "status": "observed",
-          "evidence": "User-approved packet-order hypothesis assigns active candidate full-report 0x73 @160 to profile output 3 (line_out). This is a provisional feed; physical post-fader ownership and meter stage unknown. One mono candidate only; no L/R inference."
-        },
-        {
-          "target": "physical_output", "target_index": 4, "lane": 0,
-          "payload_offset": "0xa1", "raw_range": [0, 96], "status": "observed",
-          "evidence": "User-approved packet-order hypothesis assigns playback-coupled candidate full-report 0x73 @177 to profile output 4 (reamp). The observed @177/@178 pair was playback-coupled; splitting it across outputs 4/5 is an ordering assumption, not proof of distinct physical outputs. Provisional feed; physical post-fader ownership and meter stage unknown; no L/R inference."
-        },
-        {
-          "target": "physical_output", "target_index": 5, "lane": 0,
-          "payload_offset": "0xa2", "raw_range": [0, 96], "status": "observed",
-          "evidence": "User-approved packet-order hypothesis assigns playback-coupled candidate full-report 0x73 @178 to profile output 5 (monitor_b). The observed @177/@178 pair was playback-coupled; splitting it across outputs 4/5 is an ordering assumption, not proof of distinct physical outputs. Provisional feed; physical post-fader ownership and meter stage unknown; no L/R inference."
+          "target": "physical_outputs",
+          "selector_values": {"10": "Line Out", "11": "HP1", "12": "HP2", "13": "Monitor A", "14": "Monitor B", "15": "Reamp", "16": "ADAT Out", "17": "S/PDIF Out"},
+          "report_scan": "0x73 and 0x75 full report data bytes 16..319",
+          "status": "no_transition_observed",
+          "evidence": "Live test 2026-09-09 routed Preamp 1 to each destination separately, muted the other channels, temporarily set the associated output bus to 96, and compared against muted. No stable meter transition appeared in either report type. This rules out a fixed HID lane in the tested conditions, but does not rule out a WebUI/Launcher meter calculated from the isochronous audio stream."
         }
       ],
       "channel_meter_scale": "inverted raw 0..96: 0x60 (96) at rest/silence, falls toward 0x00 at top-of-scale saturation. No calibrated transfer curve is claimed for this physical bank.",
-      "channel_meter_notes": "CONFIRMED physical preamps 1-12: full-report 0x73 @221-232 (payload 0xcd-0xd8), one byte per input, selector-independent across observed selector values 15 and 18. CONFIRMED bounded selected bank: only Mix 2 strips 20-32 are mapped, at full-report @144-156 (payload 0x80-0x8c), and only while the Meters-window selector full-report @121 (payload 0x69) equals 22 (the selector enumeration identifies value 22 as Mix 2). Mix 2 strips 1-19 and every Mix 1/3/4 strip remain unknown; @205 is not a strip lane. Inverted raw range 0..96: 96 is rest/silence and values fall toward raw 0 at top-of-scale saturation; no separate clip flag or newly calibrated transfer curve is claimed. The older @157-168 region conditionally mirrors @221-232 when selector @121 is 0 but diverges in other states, so it must not drive physical meters. Separately, the user-approved provisional output hypotheses at @157/@158/@159/@160/@177/@178 remain one mono candidate each with unresolved ownership and no L/R geometry. Free-running 0x75 requires byte 1 == 0x1f; byte 1 == 0x00 readback responses are excluded.",
+      "channel_meter_notes": "CONFIRMED physical preamps 1-12: full-report 0x73 @221-232 (payload 0xcd-0xd8), one byte per input, selector-independent across observed selector values 15 and 18. LIVE-TESTED 2026-09-09: physical Preamp 1 measured raw 18 (and reached raw 0 at louder moments) at @221 while the user injected a tone; the other 11 inputs had no test signal and remain untested. CONFIRMED all 4 Meters-window Mix selectors: values 21..24 expose strip N at @124+N = @125..156. CONFIRMED all 4 mixer-window target-1 selections: matching target 1 exposes strip N at @156+N = @157..188; this is a separate bank. Free-running 0x75 live paths observed: selector 9/25 route test changed @34/@50 (surround path, input-vs-output stage unresolved), and selector 18 changed @32 (AFX In). Direct Line Out, HP1, HP2, Monitor A, Monitor B, Reamp, ADAT Out, and S/PDIF Out route tests produced no stable transition anywhere in 0x73/0x75 data bytes 16..319, even with associated buses temporarily at level 96. This is no HID-lane evidence under test conditions, not a claim that the Launcher has no visual meter; host/isochronous audio metering remains possible. Inverted raw range 0..96: 96 is rest/silence and values fall toward raw 0 at top-of-scale saturation; no separate clip flag or new calibration is claimed.",
       "status_bits": {
         "input_mode": {
           "mask": "0x03",
@@ -1573,10 +1524,12 @@
     "mix_send": {
       "status": "confirmed",
       "frame": "mix_command (opcode 0x17) -- send_offset (22)",
-      "per": "(mix 0-3, channel 1-32)",
+      "per": "Mix 1 only, input channels 1-32 (not the master)",
+      "mix_indices": [0],
+      "include_master": false,
       "range": [0, 96],
-      "encoding": "0-96, same scale as bus_level: 96 (0x60) = 0dB / unity, 0 = -inf. This is the channel's send amount INTO this mix.",
-      "evidence": "same capture: the 'send button' drag moved byte 22 downward from ~0x5d; the solo re-send burst wrote 0x60 for channels at their default send."
+      "encoding": "Inverted attenuation scale: 0 (0x00) = 0dB / unity and 96 (0x60) = -inf. This is the channel's AuraVerb send amount, not an input to Mix 2-4.",
+      "evidence": "The original macOS capture established byte 22 as the send field. Live Launcher/WebUI comparison on 2026-09-09 corrected its direction and scope: only Mix 1 input strips expose AuraVerb send; it is absent from the master and Mix 2-4."
     },
     "mix_mute": {
       "status": "confirmed",
@@ -1606,7 +1559,7 @@
     "mix_channel_link": {
       "status": "confirmed",
       "frame": "link_command (opcode 0x14 / param 0xa2) with space = 0x03 (see frame.link_command.space_values)",
-      "per": "mix pair (pair_index = channel // 2, same formula as the other link spaces)",
+      "per": "mix pair (pair_index = (input_channel - 1) // 2: channels 1+2 = pair 0), same formula as the other link spaces after their zero-based channel conversion",
       "type": "per-pair bool",
       "notes": "Software-mirrored: while a mix pair is linked the Launcher re-sends BOTH strips' mix_command frames on every change; the device does not propagate. Space 0x03 is a 4th link domain (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer).",
       "evidence": "macos-mix1-send-pan-fader-mute-solo-link (2026-08): link on mix ch1+ch2 -> SET_LINK space=0x03 pair_index=0x00 enabled=0x01; then linked fader moves produced paired ch1+ch2 mix_command frames ~ms apart."
@@ -1636,6 +1589,10 @@
     {
       "offset": "221-232",
       "notes": "CONFIRMED physical preamps 1-12, full-report @221-232 / payload 0xcd-0xd8, count 12, stride 1, width 1. Sequential preamp sweeps isolate every lane; clipping preamps 1-4 reaches raw 0. Raw range is inverted 0..96, with 96 rest/silence and 0 top-of-scale saturation. Selector values 15 and 18 preserve this bank. State 0 can mirror these bytes at @125-136 and @157-168, but those conditional copies are not independent physical owners."
+    },
+    {
+      "offset": "235-238",
+      "notes": "OBSERVED 2026-09-09 in captures/new/auraverb-meters.pcapng (USBPcap): four inverted 0..96 meter-shaped lanes that respond to the simultaneous Mix-1 CH1/CH2 AuraVerb-send sweeps. Across the three ramps, send-to-lane correlation is +0.969/@236, +0.967/@235, +0.843/@237 and +0.835/@238; raw 96 is silent, confirming mix-command send byte 22 is inverted (0 = 0dB, 96 = -inf). The lanes continue changing while target-1 mixer window selection is Mix 2 or Mix 3, proving they are independent of the selected mixer-strip bank @157..188. Treat as AuraVerb return candidates only: the capture does not separately label the four lanes or prove exact input/return stage ownership, so no runtime mapping ships yet."
     },
     {
       "offset": "177-178",
