@@ -365,6 +365,7 @@
   .mixer-pane[hidden] { display:none; }
   .mixer-pane-hd { display:flex; align-items:center; gap:8px; padding:8px 10px 0; }
   .mixer-pane-hd .hint { margin:0; }
+  .mixer-pane-hd .auraverb-open { margin-left:auto; }
   .mixer-scroll { overflow-x:auto; overflow-y:hidden; padding:10px 10px 12px; }
   .mixer-strips { display:grid; grid-auto-flow:column; grid-auto-columns:88px; gap:4px;
                  align-items:stretch; width:max-content; min-width:100%; }
@@ -378,6 +379,9 @@
   .mixer-strip .mxname { width:100%; box-sizing:border-box; padding:5px 2px; text-align:center; color:#41ceb7;
                           border:1px solid #159680; box-shadow:inset 0 0 0 1px #063f37; font:700 11px/1 ui-monospace,monospace; white-space:nowrap; }
   .mixer-strip.master .mxname { color:var(--accent); }
+  .mixer-strip .mxsource { width:100%; min-width:0; padding:3px 2px; color:#c8f2ec; background:#050608;
+                           border:1px solid #159680; border-radius:2px; font:600 9px/1.1 ui-monospace,monospace; }
+  .mixer-strip .mxsource:disabled { opacity:.82; cursor:not-allowed; }
   .mxval { width:62px; box-sizing:border-box; padding:4px 2px; text-align:center; color:#e0e3e7; background:#050608;
            border-radius:3px; font:700 11px/1 ui-monospace,monospace; white-space:nowrap; }
   .mixer-fader-row { display:flex; align-items:stretch; justify-content:center; gap:4px; height:166px; width:100%; }
@@ -427,6 +431,48 @@
   .mixer-buttons button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   .mixer-buttons button.solo.on { background:var(--warn); border-color:var(--warn); color:#111; }
   .mixer-note { margin:0; padding:0 12px 10px; }
+
+  /* ---- AuraVerb (Orion-only, floating panel) -------------------------- */
+  #auraverbpanel { position:fixed; z-index:60; top:76px; left:50%; width:min(1040px,calc(100vw - 24px));
+                   transform:translateX(-50%); background:#11151b; color:var(--fg); border:1px solid #27303d;
+                   border-radius:8px; overflow:hidden; box-shadow:0 20px 70px #000b; }
+  #auraverbpanel[hidden] { display:none; }
+  .av-hd { display:flex; align-items:center; gap:12px; padding:8px 14px; min-height:40px;
+           background:linear-gradient(180deg,#1c232e,#0a0d12); border-bottom:1px solid #075a8d; }
+  .av-logo { color:#ef2323; font:800 18px/1 system-ui,sans-serif; letter-spacing:-.04em; text-shadow:0 0 8px #f00a; }
+  .av-logo span { color:#dfe4eb; font-weight:500; }
+  .av-sub { color:#22b9f7; font:600 10px/1 ui-monospace,monospace; letter-spacing:.12em; }
+  .av-hd .modal-x { margin-left:auto; background:none; border:0; color:var(--dim); font-size:21px; line-height:1; cursor:pointer; }
+  .av-body { padding:16px 14px 12px; background:linear-gradient(180deg,#0b0e13,#171c24 62%,#0a0d12); }
+  .av-controls { display:grid; grid-template-columns:repeat(8,minmax(66px,1fr)); gap:8px; align-items:start; }
+  .av-control { min-width:0; text-align:center; }
+  .av-value { display:block; min-height:18px; color:#dfe5ec; font:600 13px/1 ui-monospace,monospace; }
+  .av-knob { position:relative; width:76px; height:76px; margin:4px auto 7px; border-radius:50%;
+             background:conic-gradient(from 225deg,#0aaaf2 0 var(--av-angle,0deg),#202832 0 270deg,transparent 0);
+             box-shadow:0 0 0 1px #020406,0 0 12px #000,0 0 8px #009fe633; }
+  .av-knob::before { content:""; position:absolute; inset:5px; border-radius:50%;
+                     background:radial-gradient(circle at 33% 25%,#636a72,#242a31 48%,#0a0d11 72%);
+                     box-shadow:inset 1px 1px 3px #cdd4dc99,inset -4px -5px 8px #000; }
+  .av-knob i { position:absolute; z-index:1; left:50%; top:11px; width:3px; height:22px; border-radius:2px;
+               background:#e7f6ff; transform-origin:50% 27px; transform:translateX(-50%) rotate(-135deg);
+               box-shadow:0 0 5px #fff; pointer-events:none; }
+  .av-knob input { position:absolute; inset:0; z-index:2; width:100%; height:100%; margin:0; opacity:0; cursor:ns-resize; }
+  .av-label { display:block; min-height:24px; color:#b8c0cb; font:700 10px/1.15 ui-monospace,monospace; text-transform:uppercase; }
+  .av-center { display:flex; align-items:center; justify-content:center; gap:12px; margin:4px auto 0; color:#21c5ff;
+               font:700 11px/1 ui-monospace,monospace; text-transform:uppercase; }
+  .av-center .av-screen { min-width:112px; padding:7px 8px; color:#20c7fa; background:#071018; border:1px solid #075a8d;
+                          font-size:12px; letter-spacing:.08em; }
+  .av-toggle { display:inline-flex; align-items:center; gap:6px; color:var(--dim); font:700 11px/1 ui-monospace,monospace; }
+  .av-toggle button { width:45px; border:1px solid #39434f; border-radius:12px; padding:3px 5px; cursor:pointer;
+                      color:var(--dim); background:#090c10; font:700 10px/1 ui-monospace,monospace; }
+  .av-toggle button.on { color:#111; background:#e7edf4; border-color:#fff; }
+  .av-foot { display:flex; align-items:center; justify-content:center; gap:26px; padding:8px 12px; color:var(--dim);
+             border-top:1px solid #202832; font:600 10px/1 ui-monospace,monospace; }
+  .av-foot b { color:#32d48d; } .av-foot b:last-child { color:#f15a5a; }
+  .av-note { margin:8px 0 0; color:var(--dim); font-size:10px; text-align:center; }
+  @media (max-width:760px) {
+    .av-controls { grid-template-columns:repeat(4,minmax(66px,1fr)); row-gap:14px; }
+  }
   .hint { color:var(--dim); font-size:11px; margin:2px 0 0; }
 </style>
 </head>
@@ -549,12 +595,15 @@
     DC-coupling. Oscillator, pan law, latency mode and surround EQ aren't wired yet.</p>
 </div>
 
+<div id="auraverbpanel" hidden></div>
+
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 let PROFILE = null, MODES = [], N_CH = 12, HIZ = new Set(), GAIN_RANGE = {}, N_PAIRS = 0;
 let ROUTING = null, MIXER = null, MIXER_METERS = null, ACTIVE_MIX = 0;
+let UI_FEATURES = {}, AURAVERB = null, MIXER_SOURCES = {};
 const MIX_PENDING = {}, MIX_PENDING_TTL = 5000;
 let MIX_SOLO_RESTORE = {};
 const MIX_LINKS = loadMixLinks();
@@ -2331,6 +2380,118 @@ function rgRoute(rows, isGroup, destNode) {
 }
 
 // ---- compact virtual mixer ---------------------------------------------
+function loadMixerSources() {
+  const key = 'mixerSources:' + (UI_FEATURES.profile || 'default');
+  try { MIXER_SOURCES = JSON.parse(localStorage.getItem(key) || '{}') || {}; }
+  catch (_) { MIXER_SOURCES = {}; }
+}
+function saveMixerSources() {
+  const key = 'mixerSources:' + (UI_FEATURES.profile || 'default');
+  try { localStorage.setItem(key, JSON.stringify(MIXER_SOURCES)); } catch (_) {}
+}
+function mixerSourceFeature(mix) {
+  const spec = UI_FEATURES?.mixer_sources;
+  return spec?.enabled && (spec.mixes || []).includes(mix) ? spec : null;
+}
+function mixerSourceOptions(spec, mix, ch) {
+  const selected = MIXER_SOURCES[`${mix}:${ch}`] || '';
+  const options = (spec.options || []).map(option =>
+    `<option value="${option.key}"${option.key === selected ? ' selected' : ''}>${option.label}</option>`).join('');
+  return `<option value="">INPUT SOURCE</option>${options}`;
+}
+
+const AV_PARAM_META = [
+  ['color', 'COLOR'],
+  ['pre_delay', 'PRE-DELAY'],
+  ['early_reflection_gain', 'EARLY REF GAIN'],
+  ['late_reflection_delay', 'LATE REF DELAY'],
+  ['richness', 'RICHNESS'],
+  ['reverb_time', 'REVERB TIME'],
+  ['room_size', 'ROOM SIZE'],
+  ['reverb_level', 'OUTPUT LEVEL'],
+];
+const avCommand = () => PROFILE?.frame?.auraverb_command || {};
+function avDefaultParams() { return avCommand().defaults || {}; }
+function avCurrent() {
+  const mix = Number(UI_FEATURES?.auraverb?.mix || 0);
+  return AURAVERB?.current?.[mix] || null;
+}
+function paintAuraKnob(input) {
+  if (!input) return;
+  const lo = +input.min, hi = +input.max, value = +input.value;
+  const fraction = hi === lo ? 0 : Math.max(0, Math.min(1, (value - lo) / (hi - lo)));
+  const knob = input.closest('.av-knob');
+  knob?.style.setProperty('--av-angle', (fraction * 270).toFixed(1) + 'deg');
+  knob?.querySelector('i')?.style.setProperty(
+    'transform', `translateX(-50%) rotate(${(-135 + fraction * 270).toFixed(1)}deg)`);
+}
+function refreshAuraVerb() {
+  const panel = $('#auraverbpanel');
+  if (!panel || !UI_FEATURES?.auraverb?.enabled) return;
+  const state = avCurrent(), params = state?.params || avDefaultParams();
+  panel.querySelectorAll('[data-av-param]').forEach(input => {
+    const key = input.dataset.avParam;
+    const value = Number(params[key] ?? 0);
+    if (document.activeElement !== input) input.value = value;
+    panel.querySelector(`[data-av-value="${key}"]`).textContent = value;
+    paintAuraKnob(input);
+  });
+  const enabled = state?.enabled === true;
+  const toggle = panel.querySelector('[data-av-enable]');
+  if (toggle) {
+    toggle.textContent = enabled ? 'ON' : 'OFF';
+    toggle.classList.toggle('on', enabled);
+  }
+  const status = panel.querySelector('[data-av-status]');
+  if (status) status.textContent = state ? (enabled ? 'FX ON' : 'FX OFF') : 'WAITING FOR READBACK';
+}
+function initAuraVerbPanel() {
+  const panel = $('#auraverbpanel');
+  if (!panel || !UI_FEATURES?.auraverb?.enabled) { if (panel) panel.hidden = true; return; }
+  if (!panel.children.length) {
+    const [lo, hi] = AURAVERB?.range || avCommand().param_range || [0, 100];
+    panel.innerHTML = `<div class="av-hd"><span class="av-logo">Aura<span>Verb</span></span>
+      <span class="av-sub">MIX 1 REVERB</span><button class="modal-x" data-av-close aria-label="close">&times;</button></div>
+      <div class="av-body"><div class="av-controls">${AV_PARAM_META.map(([key, label]) =>
+        `<div class="av-control"><span class="av-value" data-av-value="${key}">–</span>
+          <div class="av-knob"><i></i><input type="range" data-av-param="${key}" min="${lo}" max="${hi}" value="0" aria-label="AuraVerb ${label.toLowerCase()}"></div>
+          <span class="av-label">${label}</span></div>`).join('')}</div>
+        <div class="av-center"><span data-av-status>WAITING FOR READBACK</span><span class="av-screen">ROOM_SIZE</span>
+          <span class="av-toggle">FX <button type="button" data-av-enable>OFF</button></span></div>
+        <p class="av-note">AuraVerb is the bundled Mix 1 effect. Each change sends the complete read-modify-write state.</p>
+      </div><div class="av-foot"><span>IN <b>Custom</b></span><span>OUT</span><span><b>S</b> · <b> L</b></span></div>`;
+    panel.querySelector('[data-av-close]').addEventListener('click', () => { panel.hidden = true; });
+    panel.querySelectorAll('[data-av-param]').forEach(input => {
+      input.addEventListener('input', () => {
+        panel.querySelector(`[data-av-value="${input.dataset.avParam}"]`).textContent = input.value;
+        paintAuraKnob(input);
+      });
+      input.addEventListener('change', () => {
+        const value = +input.value, key = input.dataset.avParam;
+        const current = avCurrent();
+        if (current) current.params[key] = value;
+        post('/api/auraverb', {mix: 0, param: key, value});
+      });
+    });
+    panel.querySelector('[data-av-enable]').addEventListener('click', e => {
+      const on = !e.currentTarget.classList.contains('on');
+      const current = avCurrent();
+      if (current) current.enabled = on;
+      refreshAuraVerb();
+      post('/api/auraverb', {mix: 0, enabled: on});
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && panel && !panel.hidden) panel.hidden = true;
+    });
+  }
+  refreshAuraVerb();
+}
+function openAuraVerb() {
+  initAuraVerbPanel();
+  const panel = $('#auraverbpanel');
+  if (panel && UI_FEATURES?.auraverb?.enabled) { panel.hidden = false; refreshAuraVerb(); }
+}
+
 function mixerFaderLabel(att) {
   att = Math.max(0, Math.round(+att || 0));
   return att ? '−' + att + ' dB' : '0 dB';
@@ -2407,10 +2568,13 @@ function buildMixer() {
   if (!MIXER.available) return;
   const nMix = Number(MIXER.n_mixes) || 0;
   const selector = PROFILE?.frame?.state_report?.mixer_window_selection;
+  const hasAuraVerb = UI_FEATURES?.auraverb?.enabled && UI_FEATURES.auraverb.mix === 0;
+  const sourceFeature = UI_FEATURES?.mixer_sources?.enabled ? UI_FEATURES.mixer_sources : null;
   const panes = Array.from({length: nMix}, (_, m) =>
     `<div class="mixer-pane" data-mix-pane="${m}" role="tabpanel" hidden>
        <div class="mixer-pane-hd">
          <span class="hint">Mix ${m + 1}${selector ? ` meter bank · selector ${m}` : ''}</span>
+         ${m === 0 && hasAuraVerb ? '<button type="button" class="secbtn auraverb-open" data-auraverb-open>AuraVerb</button>' : ''}
        </div>
        <div class="mixer-scroll"><div class="mixer-strips" data-strips></div></div>
      </div>`).join('');
@@ -2420,10 +2584,12 @@ function buildMixer() {
       <strong>Virtual mixer</strong>
       <span class="hint">${MIXER.channels_per_mix} input strips${hasMaster ? ' + master' : ''}</span>
     </div>${panes}
-    <p class="hint mixer-note">Fader values are attenuation below unity. ${selector
-      ? 'The thin green meter follows the selected mixer-window bank.'
+    <p class="hint mixer-note">Fader values are attenuation below unity. ${sourceFeature
+      ? sourceFeature.note
+      : selector ? 'The thin green meter follows the selected mixer-window bank.'
       : 'Meter mapping is not declared for this profile yet.'}</p>
   </div>`;
+  wrap.querySelector('[data-auraverb-open]')?.addEventListener('click', openAuraVerb);
   const activeRoute = $('#routetabs .tabbtn.active')?.dataset.rtab || '';
   const routeMix = /^mix([1-4])$/.exec(activeRoute);
   const initial = routeMix ? +routeMix[1] - 1 : 0;
@@ -2550,6 +2716,7 @@ function renderMix(pane, m) {
   const hasMaster = mixerHasMaster();
   const rows = pane.querySelector('[data-strips]');
   const hasSend = MIXER.has_send !== false && (MIXER.send_mixes || []).includes(m);
+  const sourceFeature = mixerSourceFeature(m);
   const n = Math.max((Number(MIXER.channels_per_mix) || 0) + (hasMaster ? 1 : 0), slots.length);
   rows.innerHTML = Array.from({length: n}, (_, ch) => {
     const s = slots[ch] || {fader: 0, pan: 0, send: 0, mute: false, solo: false};
@@ -2559,6 +2726,7 @@ function renderMix(pane, m) {
     const label = isMaster ? 'MASTER' : 'CH ' + String(hasMaster ? ch : ch + 1).padStart(2, '0');
     const linkLabel = `link CH${hasMaster ? ch : ch + 1}+CH${hasMaster ? ch + 1 : ch + 2}`;
     return `<div class="mixer-strip${isMaster ? ' master' : ''}" data-ch="${ch}">
+      ${sourceFeature && !isMaster ? `<select class="mxsource" data-mix-source ${sourceFeature.writable ? '' : 'disabled'} title="${sourceFeature.note}">${mixerSourceOptions(sourceFeature, m, ch)}</select>` : ''}
       <span class="mxname">${label}</span>
       ${linkStart ? `<button class="linkbtn" data-mix-link title="${linkLabel}">${LINK_ICON}</button>` : ''}
       <span class="mxval" data-fval>${mixerFaderLabel(fader)}</span>
@@ -2590,6 +2758,19 @@ function renderMix(pane, m) {
 
   rows.querySelectorAll('.mixer-strip').forEach(strip => {
     const ch = +strip.dataset.ch;
+    const source = strip.querySelector('[data-mix-source]');
+    if (source) source.addEventListener('change', e => {
+      const key = e.target.value;
+      if (key) {
+        MIXER_SOURCES[`${m}:${ch}`] = key;
+        saveMixerSources();
+      }
+      if (sourceFeature.writable) {
+        post('/api/mixer-source', {mix: m, channel: ch, source: key});
+      } else {
+        reportMessage('zen-routing', 'Zen Go source selectors', sourceFeature.note);
+      }
+    });
     const fader = strip.querySelector('[data-fader]'), fval = strip.querySelector('[data-fval]');
     paintMixerFader(strip, fader.value);
     fader.addEventListener('input', () => {
@@ -2690,7 +2871,9 @@ function refreshMixer() {
 }
 
 async function reloadReadback() {
-  [ROUTING, MIXER] = await Promise.all([getJSON('/api/routing'), getJSON('/api/mixer')]);
+  [ROUTING, MIXER, AURAVERB] = await Promise.all([
+    getJSON('/api/routing'), getJSON('/api/mixer'), getJSON('/api/auraverb')]);
+  initAuraVerbPanel();
   const rh = routingHome();
   if (!rh || !rh.children.length || (!RG_POPPED && !rh.querySelector('#rmx'))) buildRouting(); else refreshRouting();
   if (!$('#mixer').children.length) buildMixer(); else refreshMixer();
@@ -2774,6 +2957,8 @@ async function boot() {
     return setTimeout(boot, 1500);
   }
   $('#dev').textContent = PROFILE.device?.name || '';   // which profile the daemon picked
+  UI_FEATURES = PROFILE.webui?.features || {};
+  loadMixerSources();
   const m = PROFILE.params?.input_mode?.values || PROFILE.channels?.modes || {};
   MODES = Object.values(m);
   GAIN_RANGE = PROFILE.params?.gain?.per_mode_range

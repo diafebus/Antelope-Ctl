@@ -13,12 +13,12 @@ Two kinds of state:
              parsed every loop and streamed at ~25 Hz over SSE (channels,
              buses, brightness, meters). The 0x75 bank is retained only for
              lower-rate diagnostics.
-  * SLOW  -- the routing matrix (readback cat 0x03) and the virtual mixer
-             (readback cat 0x04), refreshed incrementally on connect and on
-             a slow timer. Writes use and update that serialized cache,
-             querying first if it is not populated yet. The snapshot carries
-             a monotonic `rb_ver`; the browser refetches /api/routing +
-             /api/mixer when it bumps.
+  * SLOW  -- routing (readback cat 0x03), virtual mixer (cat 0x04), and
+             Orion AuraVerb state (cat 0x0a), refreshed incrementally on
+             connect and on a slow timer. Writes use and update their
+             serialized caches, querying first if not populated yet. The
+             snapshot carries a monotonic `rb_ver`; the browser refetches
+             the slow APIs when it bumps.
 
 ⚠ HARDWARE RULE (see ../antelope-ctl/CLAUDE.md "STANDING HARDWARE RULE"):
 never query a readback index past a category's record count -- it BusFaults
@@ -42,6 +42,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antelope import protocol as proto
 from antelope.transport import list_connected_hid, open_transport
+from webui.device_ui import features_for
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -95,12 +96,14 @@ def resolve_profile():
 
 PROFILE_PATH, _profile_why = resolve_profile()
 PROFILE = proto.load_profile(PROFILE_PATH)
+UI_FEATURES = features_for(PROFILE_PATH, PROFILE)
 print(f"[antelope-ctl] profile: {os.path.basename(PROFILE_PATH)} "
       f"-- {PROFILE.get('device', {}).get('name', '?')} ({_profile_why})",
       file=sys.stderr, flush=True)
 
 ROUTING_CAT = proto.ROUTING_READBACK_CATEGORY   # 0x03
 MIXER_CAT = proto.MIXER_READBACK_CATEGORY       # 0x04
+AURAVERB_CAT = proto.AURAVERB_READBACK_CATEGORY # 0x0a
 READBACK_REFRESH_S = 45.0   # slow background poll, one record per fast-state cycle
 
 # The free-running meter report and a readback RESPONSE are BOTH magic 0x75.
@@ -165,6 +168,10 @@ class Device:
         self.rb_ver = 0
         self.routing = {}                  # dest_id(int) -> [(bank, idx), ...]
         self.mixer = {}                    # mix(int)     -> [slot dict, ...]
+        self.auraverb = {}                 # readback index -> list of mix dicts
+        self.auraverb_available = bool(
+            profile["frame"].get("auraverb_command")
+            and proto.readback_category_count(profile, AURAVERB_CAT))
         self.solo_state = {}               # mix -> {restore: flags, active: channels}
         self._lock = threading.Lock()
         self._t = None
@@ -204,6 +211,17 @@ class Device:
                 for m, slots in self.mixer.items()
             }
 
+    def auraverb_json(self):
+        with self._lock:
+            records = self.auraverb.get(0)
+            if records is None:
+                return None
+            return [{
+                "params": dict(record.get("params", {})),
+                "enabled": record.get("enabled"),
+                "wet": record.get("wet"),
+            } for record in records]
+
     def _publish(self, snap):
         with self._lock:
             snap["rb_ver"] = self.rb_ver
@@ -224,6 +242,13 @@ class Device:
             if self.mixer.get(mix) == slots:
                 return
             self.mixer[mix] = slots
+            self.rb_ver += 1
+
+    def _cache_auraverb(self, records):
+        with self._lock:
+            if self.auraverb.get(0) == records:
+                return
+            self.auraverb[0] = records
             self.rb_ver += 1
 
     def _routing_record_for_write(self, transport, dest):
@@ -260,6 +285,25 @@ class Device:
         if data is None:
             raise RuntimeError(f"no mixer readback for mix {mix} -- not writing blind")
         return proto.parse_mixer_record(
+            self.profile, proto.readback_body(self.profile, data))
+
+    def _auraverb_record_for_write(self, transport):
+        """Return the full AuraVerb readback, refusing a blind write."""
+        with self._lock:
+            cached = self.auraverb.get(0)
+            if cached is not None:
+                return [{**record, "params": dict(record.get("params", {}))}
+                        for record in cached]
+        if not self.auraverb_available:
+            raise RuntimeError("AuraVerb readback is not safely mapped for this profile")
+        req = proto.build_readback_query(self.profile, AURAVERB_CAT, 0)
+        data = transport.query(
+            req,
+            lambda x: proto.is_readback_response(self.profile, x, AURAVERB_CAT, 0),
+            timeout=1.5)
+        if data is None:
+            raise RuntimeError("no AuraVerb readback -- not writing blind")
+        return proto.parse_auraverb_record(
             self.profile, proto.readback_body(self.profile, data))
 
     def run(self):
@@ -386,7 +430,7 @@ class Device:
                     with self._lock:
                         self.rb_ver += 1
 
-    # -- readback (routing + mixer) -----------------------------------------
+    # -- readback (routing + mixer + AuraVerb) ------------------------------
 
     def _readback_plan(self):
         routes = [(ROUTING_CAT, d) for d in self.route_dests] \
@@ -394,10 +438,11 @@ class Device:
         mixes = [(MIXER_CAT, m) for m in self.mixer_indices
                  if 0 <= m < self.n_mixes] \
             if self.mixer_available else []
-        return routes + mixes
+        auraverb = [(AURAVERB_CAT, 0)] if self.auraverb_available else []
+        return routes + mixes + auraverb
 
     def _refresh_readback_one(self, transport, category, index):
-        """Read one bounded routing or mixer record; return whether it changed."""
+        """Read one bounded slow-state record; return whether it changed."""
         try:
             req = proto.build_readback_query(self.profile, category, index)
         except proto.ConstraintError:
@@ -413,9 +458,14 @@ class Device:
             if category == ROUTING_CAT:
                 _dest, value = proto.parse_routing_record(self.profile, body)
                 cache = self.routing
-            else:
+            elif category == MIXER_CAT:
                 value = proto.parse_mixer_record(self.profile, body)
                 cache = self.mixer
+            elif category == AURAVERB_CAT:
+                value = proto.parse_auraverb_record(self.profile, body)
+                cache = self.auraverb
+            else:
+                return False
         except ValueError:
             return False
         with self._lock:
@@ -684,6 +734,13 @@ class MixSolo(BaseModel):
     on: bool
 
 
+class AuraVerbChange(BaseModel):
+    mix: int = 0
+    param: str | None = None
+    value: int | None = None
+    enabled: bool | None = None
+
+
 class MixerLink(BaseModel):
     """A virtual-mixer stereo pair (0 = channels 1+2)."""
     pair: int
@@ -706,6 +763,7 @@ def api_profile():
         "mixer": DEV.mixer_available,
         "mixes": DEV.n_mixes if DEV.mixer_available else 0,
         "mix_channels": DEV.mix_channels if DEV.mixer_available else 0,
+        "features": UI_FEATURES,
     }}
 
 
@@ -1146,6 +1204,69 @@ def api_mix_solo(s: MixSolo):
 
     DEV.submit(do)
     return {"ok": True, "mix": s.mix, "channel": s.channel, "on": s.on}
+
+
+@app.get("/api/auraverb")
+def api_auraverb():
+    command = PROFILE["frame"].get("auraverb_command", {})
+    param_names = list(command.get("param_offsets", {}))
+    lo, hi = command.get("param_range", [0, 100])
+    return {
+        "available": bool(UI_FEATURES.get("auraverb", {}).get("enabled")
+                           and DEV.auraverb_available),
+        "mix": UI_FEATURES.get("auraverb", {}).get("mix", 0),
+        "params": param_names,
+        "range": [lo, hi],
+        "current": DEV.auraverb_json(),
+    }
+
+
+@app.post("/api/auraverb")
+def api_auraverb_change(change: AuraVerbChange):
+    spec = UI_FEATURES.get("auraverb", {})
+    command = PROFILE["frame"].get("auraverb_command", {})
+    if not spec.get("enabled") or not DEV.auraverb_available:
+        return _bad("AuraVerb is not safely mapped for this profile")
+    if change.mix != int(spec.get("mix", 0)):
+        return _bad("only the profile-confirmed AuraVerb mix is available")
+    if (change.param is None) != (change.value is None):
+        return _bad("param and value must be supplied together")
+    if change.param is None and change.enabled is None:
+        return _bad("provide an AuraVerb parameter or enabled state")
+    names = command.get("param_offsets", {})
+    if change.param is not None and change.param not in names:
+        return _bad(f"unknown AuraVerb parameter {change.param!r}")
+    lo, hi = command.get("param_range", [0, 100])
+    if change.value is not None and not lo <= change.value <= hi:
+        return _bad(f"AuraVerb value {change.value} outside {lo}..{hi}")
+
+    def do(t):
+        records = DEV._auraverb_record_for_write(t)
+        mix = int(spec.get("mix", 0))
+        if mix >= len(records):
+            raise RuntimeError(f"AuraVerb readback has no Mix {mix + 1} record")
+        current = records[mix]
+        params = dict(current.get("params", {}))
+        if set(params) != set(names):
+            raise RuntimeError("AuraVerb readback is incomplete -- not writing blind")
+        enabled = current.get("enabled")
+        if enabled is None:
+            raise RuntimeError("AuraVerb enabled state is unknown -- not writing blind")
+        if change.param is not None:
+            params[change.param] = change.value
+        if change.enabled is not None:
+            enabled = bool(change.enabled)
+        packet = proto.build_auraverb_command(
+            PROFILE, params, enabled, mix=mix)
+        t.write(packet)
+        records[mix] = {**current, "params": params, "enabled": enabled}
+        DEV._cache_auraverb(records)
+
+    DEV.submit(do)
+    return {"ok": True, "mix": change.mix,
+            "param": change.param, "value": change.value,
+            "enabled": change.enabled}
+
 
 @app.get("/api/mixer")
 def api_mixer():

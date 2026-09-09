@@ -10,13 +10,14 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
   - **fast** -- the free-running `0x73` state and meters, over SSE at up to
     ~25 Hz (channels, buses, brightness, meters). The raw `0x75` diagnostic
     bank is sampled separately at a lower rate.
-  - **slow** -- the routing matrix (readback cat `0x03`) and virtual mixer
-    (cat `0x04`), refreshed one record per meter cycle on connect and every
-    45 s. Route/mixer writes update the serialized cache directly. Queries use
-    Orion's bounded category counts or a profile's explicit confirmed layout,
-    so the BusFault hazard is never hit.
-    The snapshot carries an `rb_ver` counter; the browser refetches
-    `/api/routing` + `/api/mixer` when it changes.
+  - **slow** -- the routing matrix (readback cat `0x03`), virtual mixer
+    (cat `0x04`), and Orion AuraVerb state (cat `0x0a`), refreshed one record
+    per meter cycle on connect and every 45 s. Route/mixer/AuraVerb writes
+    update their serialized caches directly. Queries use Orion's bounded
+    category counts or a profile's explicit confirmed layout, so the BusFault
+    hazard is never hit.
+    The snapshot carries an `rb_ver` counter; the browser refetches the slow
+    APIs when it changes.
 
   Commands are queued as callables run one per meter cycle on the device
   thread, so control bursts cannot monopolize the live meter path.
@@ -32,6 +33,9 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
     selects its matching mixer meter bank; multiple Solo buttons may be
     stacked and the original mute/solo state is restored when the last Solo
     is released;
+  - device-specific panels are selected by the presentation registry in
+    `webui/device_ui.py`: Zen Go shows its input-source selectors, while Orion
+    Mix 1 exposes the closed-by-default AuraVerb panel;
   - reconnect UX -- the UI dims and goes non-interactive while the device
     is offline, and EventSource reconnects automatically.
 
@@ -41,6 +45,11 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
   Zen Go renders its two capture-confirmed mixer layouts while routing remains
   hidden until its own readback map is confirmed. The mixer fader artwork is
   served from `/webui/assets/fader-shadow.svg`.
+
+  The Zen Go source selectors are intentionally read-only for now. Its route
+  command rewrites a whole group and the safe routing readback is still
+  unconfirmed, so the WebUI will not guess the other strip assignments. See
+  `webui/DEVICE_UI.md` for the presentation-layer feature split.
 
 ## What it deliberately does NOT do
 
