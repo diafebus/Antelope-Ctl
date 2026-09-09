@@ -365,11 +365,11 @@
   .mixer-pane[hidden] { display:none; }
   .mixer-pane-hd { display:flex; align-items:center; gap:8px; padding:8px 10px 0; }
   .mixer-pane-hd .hint { margin:0; }
-  .mixer-pane-hd .auraverb-open { margin-left:auto; }
+  .mixer-hd .auraverb-open { margin-left:auto; white-space:nowrap; }
   .mixer-scroll { overflow-x:auto; overflow-y:hidden; padding:10px 10px 12px; }
   .mixer-strips { display:grid; grid-auto-flow:column; grid-auto-columns:88px; gap:4px;
                  align-items:stretch; width:max-content; min-width:100%; }
-  .mixer-strip { position:relative; width:88px; min-height:405px; box-sizing:border-box; padding:6px 7px 7px; display:flex;
+  .mixer-strip { position:relative; width:88px; height:100%; min-height:405px; box-sizing:border-box; padding:6px 7px 7px; display:flex;
                 flex-direction:column; align-items:center; gap:5px; background:linear-gradient(180deg,#30343b,#20242a);
                 border:1px solid #111419; border-radius:2px; }
   .mixer-strip.master { border-color:#586170; background:linear-gradient(180deg,#363b44,#242830); }
@@ -384,8 +384,8 @@
   .mixer-strip .mxsource:disabled { opacity:.82; cursor:not-allowed; }
   .mxval { width:62px; box-sizing:border-box; padding:4px 2px; text-align:center; color:#e0e3e7; background:#050608;
            border-radius:3px; font:700 11px/1 ui-monospace,monospace; white-space:nowrap; }
-  .mixer-fader-row { display:flex; align-items:stretch; justify-content:center; gap:4px; height:166px; width:100%; }
-  .mixer-fader-well { position:relative; width:43px; height:166px; flex:0 0 43px; }
+  .mixer-fader-row { display:flex; align-items:stretch; justify-content:center; gap:4px; width:100%; min-height:166px; flex:1 1 auto; }
+  .mixer-fader-well { position:relative; width:43px; height:100%; min-height:166px; flex:0 0 43px; }
   .mixer-fader-well::before { content:""; position:absolute; z-index:0; left:50%; top:4px; bottom:4px;
                               width:2px; transform:translateX(-50%); border-radius:2px;
                               background:#080a0d; box-shadow:0 0 0 1px #3b424d, 0 0 5px rgba(0,0,0,.8); }
@@ -397,7 +397,7 @@
   .mixer-fader-art { position:absolute; left:50%; top:calc(4px + var(--fader-pos, 25px) - 38px);
                      display:block; width:48px; height:82px; transform:translateX(-50%);
                      object-fit:fill; opacity:1; pointer-events:none; user-select:none; }
-  .mixer-fader { position:absolute; inset:4px 0; width:43px; height:158px; margin:0;
+  .mixer-fader { position:absolute; inset:4px 0; width:43px; height:auto; margin:0;
                  appearance:none; -webkit-appearance:none; border:0; outline:0; opacity:0;
                  background:transparent; cursor:ns-resize; writing-mode:vertical-lr;
                  direction:rtl; z-index:2; }
@@ -409,7 +409,7 @@
   .mixer-fader::-moz-range-track { width:100%; height:100%; background:transparent; border:0; }
   .mixer-fader::-moz-range-thumb { width:43px; height:20px; border:0; border-radius:0;
                                    background:transparent; box-shadow:none; }
-  .mixer-meter { position:relative; width:7px; height:166px; flex:0 0 7px; overflow:hidden;
+  .mixer-meter { position:relative; width:7px; height:100%; min-height:166px; flex:0 0 7px; overflow:hidden;
                  border:1px solid #303641; border-radius:2px; background:#0c0e12; }
   .mixer-meter > i { position:absolute; left:0; right:0; bottom:0; height:100%;
                      background:var(--meter); transition:height .08s linear; }
@@ -423,7 +423,7 @@
   .mixer-knob i { position:absolute; z-index:1; left:50%; top:6px; width:2px; height:12px; border-radius:2px; background:#d5d9de; transform-origin:50% 12px; transform:translateX(-50%) rotate(-135deg); box-shadow:0 0 2px #fff; pointer-events:none; }
   .mixer-knob input[type=range] { position:absolute; inset:0; z-index:2; width:100%; height:100%; margin:0; opacity:0; cursor:ew-resize; }
   .mixer-knob-label { color:#c3c8ce; font:700 10px/1 ui-monospace,monospace; }
-  .mixer-buttons { display:flex; gap:3px; width:100%; }
+  .mixer-buttons { display:flex; gap:3px; width:100%; margin-top:auto; }
   .mixer-buttons button { flex:1; min-width:0; cursor:pointer; background:#0e1116; color:var(--dim);
                           border:1px solid var(--line); border-radius:3px; padding:4px 0;
                           font:700 10px/1 ui-monospace,monospace; }
@@ -2570,11 +2570,13 @@ function buildMixer() {
   const selector = PROFILE?.frame?.state_report?.mixer_window_selection;
   const hasAuraVerb = UI_FEATURES?.auraverb?.enabled && UI_FEATURES.auraverb.mix === 0;
   const sourceFeature = UI_FEATURES?.mixer_sources?.enabled ? UI_FEATURES.mixer_sources : null;
+  const auraVerbButton = hasAuraVerb
+    ? '<button type="button" class="secbtn auraverb-open" data-auraverb-open title="Open AuraVerb controls for Mix 1">AuraVerb · Mix 1</button>'
+    : '';
   const panes = Array.from({length: nMix}, (_, m) =>
     `<div class="mixer-pane" data-mix-pane="${m}" role="tabpanel" hidden>
        <div class="mixer-pane-hd">
          <span class="hint">Mix ${m + 1}${selector ? ` meter bank · selector ${m}` : ''}</span>
-         ${m === 0 && hasAuraVerb ? '<button type="button" class="secbtn auraverb-open" data-auraverb-open>AuraVerb</button>' : ''}
        </div>
        <div class="mixer-scroll"><div class="mixer-strips" data-strips></div></div>
      </div>`).join('');
@@ -2583,6 +2585,7 @@ function buildMixer() {
     <div class="mixer-hd">
       <strong>Virtual mixer</strong>
       <span class="hint">${MIXER.channels_per_mix} input strips${hasMaster ? ' + master' : ''}</span>
+      ${auraVerbButton}
     </div>${panes}
     <p class="hint mixer-note">Fader values are attenuation below unity. ${sourceFeature
       ? sourceFeature.note
