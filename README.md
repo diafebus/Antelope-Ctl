@@ -964,10 +964,12 @@ dBFS calibration and separate clip indication remain unknown; the old
 observed by the user. The Mix 2 → 3 → 4 → 1 capture confirms selection via
 `SET_PARAM(0x49, target 1, value 1/2/3/0)` and readback at `0x73 [122]`.
 It is silent in the shared banks, so it does not establish individual
-strip/master offsets. The separate **Meters window** also switches shared
-meters by source/destination selection (user observation); its selector
-map remains to be captured/decoded. See PROTOCOL.md §9 for frame evidence
-and the distinction between selectors `[121]` and `[122]`.
+strip/master offsets. The separate **Meters window** switches shared meters
+by source/destination selection. Its selector is now captured:
+`SET_PARAM(0x49, target 0, value 0..25)`, echoed at `0x73 [121]`. The
+capture filename supplies the ordering; two positions (values 19 and 20)
+are unnamed there. See PROTOCOL.md §9 and the profile for the full map.
+This is distinct from the mixer-window selector at `[122]`.
 
 ### Historical meter interpretation (superseded for physical inputs)
 

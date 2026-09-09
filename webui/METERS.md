@@ -27,8 +27,11 @@ window, not the mixer with fader/send/pan/link/solo/mute controls.
 `0x13 / param 0x49 / target 1 / value 1,2,3,0`, echoed by full-report
 `0x73 [122]`. `[121]` stays 18. Full timestamps and frame numbers are in
 PROTOCOL.md §9. The shared banks are silent, so exact switched lane
-ownership is not established here. Meters-window selector encoding is
-still unknown. Consumers must associate shared samples with selector
+ownership is not established here. The Meters-window selector is now decoded
+from `meterstab-select-preamp-emumic-compplay-adatin-spdifin-mix1lr-mix2lr-mix3lr-mix4lr-surroundout-lineout-hp1-hp2-mona-monb-reamp-adatout-spdifout-afxin-mix1-mix2-mix3-mix4-surroundin.pcapng`:
+`SET_PARAM(0x49, target=0, value=0..25)`, echoed at `0x73[121]`. The filename
+has two unnamed positions, values 19 and 20; the profile preserves them as
+unknown rather than guessing. Consumers must associate shared samples with selector
 state and invalidate stale values on switching, rather than show one
 lane as several simultaneously measured buses. This is a documentation
 finding; runtime selector handling is not implemented by this change.

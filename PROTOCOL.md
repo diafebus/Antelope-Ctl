@@ -959,6 +959,20 @@ behaviour itself if it wants Launcher-equivalent results.
 
 ## 9. Meters
 
+### Top-level tab changes — not present in the first capture
+
+`tab-selection-adat-spdif-monitorhp-surround.pcapng` contains only the
+continuous device-to-host `0x73`/`0x75` reports. It contains no `0x70`
+host-to-device command frames, and neither selector byte `0x73[121]` nor
+`0x73[122]` changes. The few changing `0x73` bytes are meter activity in the
+physical-input area, chiefly `0x73[221..232]`.
+
+Therefore selecting the top-level ADAT, S/PDIF, Monitors/Headphones, or
+Surround tab is not registered as a control-protocol tab change in this
+capture. Because the OUT endpoint is absent, this is not a definitive proof
+that the Launcher never sends a tab-open command; it is the complete evidence
+available in this file. The capture does not show an audio-routing change.
+
 ### Mixer-window selection — captured 2026-09-09
 
 Meters can be **multiplexed by the selected window/source**. A shared lane
@@ -992,10 +1006,27 @@ live observation establishes that the mixer windows reuse meter bytes;
 an active-signal switch capture is still needed for byte-level ownership.
 
 The user also reports a **separate Meters window**: selecting a source or
-destination switches what shared meter bytes display. Record this as a
-distinct UI observation; its selector command, value map, bank boundaries,
-and interaction with the mixer-window selector remain unverified by this
-capture. Meter selection is not evidence of an audio-routing change.
+destination switches what shared meter bytes display. The second new capture
+now confirms its selector command and state byte. Each selection sends
+`SET_PARAM` (`0x13`), with param `[16]=0x49`, target `[17]=0`, and the
+zero-based selection value at `[18]`; the selected value is echoed in the
+state report at full-report **`0x73[121]`**. The capture contains values
+`0..25` in order. Its filename provides the labels for values `0..18` and
+`21..25`; values `19` and `20` are observed but unnamed in the filename. The
+profile records the complete value range without guessing those two names.
+
+In filename order the known values are: Preamp, emuMic, Computer Playback,
+ADAT In, S/PDIF In, Mix 1 L/R, Mix 2 L/R, Mix 3 L/R, Mix 4 L/R, Surround
+Out, Line Out, HP1, HP2, Monitor A, Monitor B, Reamp, ADAT Out, S/PDIF Out,
+AFX In, [unnamed], [unnamed], Mix 1, Mix 2, Mix 3, Mix 4, Surround In.
+Meter selection is not evidence of an audio-routing change.
+
+The shared virtual-meter region is silent in this capture (normally raw
+`0x60`), so it confirms the selector and its ordering but does not identify
+new lane boundaries or per-source meter offsets. Existing active-signal
+evidence still identifies `@121=22` as the Mix 2 selection for the gated
+Mix 2 strip lanes at full-report `0x73[144..156]`. Keep physical inputs at
+`[221..232]` and do not treat the selector itself as a meter lane.
 
 Decoder implication: tag shared samples with observed selector state;
 invalidate stale samples on changes and leave unselected sources unknown.
@@ -1671,7 +1702,7 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
-| Shared meter banks / selectors | Physical inputs use `0x73 [221..232]`. Shared lane ownership remains unresolved; user observes window/source multiplexing. Mix selection is `0x49 / target 1 / value 0..3`, echoed at `[122]`; do not conflate it with `[121]`. Active-signal switching and the separate Meters-window selector remain to decode (§9). |
+| Shared meter banks / selectors | Physical inputs use `0x73 [221..232]`. Mixer-window selection is `0x49 / target 1 / value 0..3`, echoed at `[122]`. Meters-window selection is `0x49 / target 0 / value 0..25`, echoed at `[121]`; values 19/20 are unnamed in the capture filename. Shared lane ownership beyond the gated Mix 2 block remains unresolved. |
 | Channel-link readback bit | none found; may not exist |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |
