@@ -36,6 +36,8 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
   - device-specific panels are selected by the presentation registry in
     `webui/device_ui.py`: Zen Go shows its input-source selectors, while Orion
     Mix 1 exposes the closed-by-default AuraVerb panel;
+  - rotary controls use relative vertical drags with a 240 px full-scale
+    travel for finer adjustment; the wheel remains a one-step adjustment;
   - reconnect UX -- the UI dims and goes non-interactive while the device
     is offline, and EventSource reconnects automatically.
 

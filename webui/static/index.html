@@ -365,7 +365,9 @@
   .mixer-pane[hidden] { display:none; }
   .mixer-pane-hd { display:flex; align-items:center; gap:8px; padding:8px 10px 0; }
   .mixer-pane-hd .hint { margin:0; }
-  .mixer-hd .auraverb-open { margin-left:auto; white-space:nowrap; }
+  .mixer-hd .auraverb-open { margin-left:auto; white-space:nowrap; color:#f27676; border-color:#713636;
+                              background:#1a1114; }
+  .mixer-hd .auraverb-open:hover { color:#fff; border-color:#f27676; background:#2a171b; }
   .mixer-scroll { overflow-x:auto; overflow-y:hidden; padding:10px 10px 12px; }
   .mixer-strips { display:grid; grid-auto-flow:column; grid-auto-columns:88px; gap:4px;
                  align-items:stretch; width:max-content; min-width:100%; }
@@ -418,10 +420,11 @@
   .mixer-knob-control { width:100%; display:flex; flex-direction:column; align-items:center; gap:3px; }
   .mixer-readout { min-width:57px; box-sizing:border-box; padding:4px 3px; text-align:center; color:#e0e3e7;
                    background:#050608; border-radius:3px; font:700 11px/1 ui-monospace,monospace; }
-  .mixer-knob { position:relative; width:34px; height:34px; border-radius:50%; background:radial-gradient(circle at 35% 29%,#646970,#3b4047 48%,#111419 51%,#080a0d 66%,#434850 69%,#12151a 74%); box-shadow:0 1px 3px #000, inset 0 0 0 2px #080a0d; }
+  .mixer-knob { position:relative; width:34px; height:34px; border-radius:50%; touch-action:none; user-select:none;
+                background:radial-gradient(circle at 35% 29%,#646970,#3b4047 48%,#111419 51%,#080a0d 66%,#434850 69%,#12151a 74%); box-shadow:0 1px 3px #000, inset 0 0 0 2px #080a0d; }
   .mixer-knob::before { content:""; position:absolute; inset:5px; border-radius:50%; background:linear-gradient(135deg,#535860,#272c33); box-shadow:inset 1px 1px 2px #858a91, inset -2px -2px 4px #12151a; }
   .mixer-knob i { position:absolute; z-index:1; left:50%; top:6px; width:2px; height:12px; border-radius:2px; background:#d5d9de; transform-origin:50% 12px; transform:translateX(-50%) rotate(-135deg); box-shadow:0 0 2px #fff; pointer-events:none; }
-  .mixer-knob input[type=range] { position:absolute; inset:0; z-index:2; width:100%; height:100%; margin:0; opacity:0; cursor:ew-resize; }
+  .mixer-knob input[type=range] { position:absolute; inset:0; z-index:2; width:100%; height:100%; margin:0; opacity:0; cursor:ns-resize; touch-action:none; }
   .mixer-knob-label { color:#c3c8ce; font:700 10px/1 ui-monospace,monospace; }
   .mixer-buttons { display:flex; gap:3px; width:100%; margin-top:auto; }
   .mixer-buttons button { flex:1; min-width:0; cursor:pointer; background:#0e1116; color:var(--dim);
@@ -456,7 +459,7 @@
   .av-knob i { position:absolute; z-index:1; left:50%; top:11px; width:3px; height:22px; border-radius:2px;
                background:#e7f6ff; transform-origin:50% 27px; transform:translateX(-50%) rotate(-135deg);
                box-shadow:0 0 5px #fff; pointer-events:none; }
-  .av-knob input { position:absolute; inset:0; z-index:2; width:100%; height:100%; margin:0; opacity:0; cursor:ns-resize; }
+  .av-knob input { position:absolute; inset:0; z-index:2; width:100%; height:100%; margin:0; opacity:0; cursor:ns-resize; touch-action:none; }
   .av-label { display:block; min-height:24px; color:#b8c0cb; font:700 10px/1.15 ui-monospace,monospace; text-transform:uppercase; }
   .av-center { display:flex; align-items:center; justify-content:center; gap:12px; margin:4px auto 0; color:#21c5ff;
                font:700 11px/1 ui-monospace,monospace; text-transform:uppercase; }
@@ -697,6 +700,9 @@ async function getJSON(path) { return (await fetch(path)).json(); }
 // which lines the pointer up with the level ring's own opening.
 const KNOB_C = '54.840942 52.983658';
 const KNOB_A0 = -135, KNOB_SWEEP = 270;
+// Rotary controls use a deliberately longer drag distance than their visual
+// size. This keeps a small mouse movement from making a large parameter jump.
+const KNOB_DRAG_PIXELS = 240;
 // Level ring round the knob, straight from assets/PreampUI-KNOB-level.svg (a
 // 270° band, r 14.5..15.5, gap at the bottom) -- its raw `d` shifted so its
 // centre sits on the knob centre.
@@ -883,7 +889,7 @@ function wireDigKnob(el, kind, ch) {
     const dy = startY - e.clientY;
     if (!moved && Math.abs(dy) < 3) return;   // ignore click jitter -- a plain
     moved = true;                             // click/dbl-click must not nudge it
-    live = startGain + dy * ((hi - lo) / 160);
+    live = startGain + dy * ((hi - lo) / KNOB_DRAG_PIXELS);
     applyLive(); queueSend();
   });
   const stop = () => {
@@ -1426,7 +1432,7 @@ function wireKnob(el, ch) {
   knob.addEventListener('pointermove', e => {
     if (!dragging) return;
     const [lo, hi] = modeRange(currentMode(el));
-    live = startGain + (startY - e.clientY) * ((hi - lo) / 160);   // full range ≈ 160px
+    live = startGain + (startY - e.clientY) * ((hi - lo) / KNOB_DRAG_PIXELS);   // full range ≈ 240px
     applyLive(); queueSend();
   });
   const stop = () => {
@@ -1647,7 +1653,7 @@ function wireMonKnob(el, bus) {
   });
   knob.addEventListener('pointermove', e => {
     if (!dragging) return;
-    live = startAtt + (e.clientY - startY) * (96 / 160);   // drag down = quieter
+    live = startAtt + (e.clientY - startY) * (96 / KNOB_DRAG_PIXELS);   // drag down = quieter
     applyLive(); queueSend();
   });
   const stop = () => {
@@ -2462,6 +2468,7 @@ function initAuraVerbPanel() {
       </div><div class="av-foot"><span>IN <b>Custom</b></span><span>OUT</span><span><b>S</b> · <b> L</b></span></div>`;
     panel.querySelector('[data-av-close]').addEventListener('click', () => { panel.hidden = true; });
     panel.querySelectorAll('[data-av-param]').forEach(input => {
+      wirePrecisionRange(input);
       input.addEventListener('input', () => {
         panel.querySelector(`[data-av-value="${input.dataset.avParam}"]`).textContent = input.value;
         paintAuraKnob(input);
@@ -2713,6 +2720,55 @@ function paintMixerKnob(input) {
   if (pointer) pointer.style.transform = `translateX(-50%) rotate(${(-135 + fraction * 270).toFixed(1)}deg)`;
 }
 
+// Native range controls map a click directly to the pointer position. The
+// mixer and AuraVerb controls are rotary, so use the same relative drag model
+// as the physical knobs: vertical movement changes the value gradually and a
+// plain click does not jump it to a new position.
+function wirePrecisionRange(input) {
+  if (!input || input.dataset.precisionWired) return;
+  input.dataset.precisionWired = '1';
+  const lo = +input.min, hi = +input.max;
+  const step = Number(input.step) > 0 ? Number(input.step) : 1;
+  let dragging = false, moved = false, startY = 0, startValue = 0, pid = null;
+  const clamp = value => {
+    const snapped = lo + Math.round((value - lo) / step) * step;
+    return Math.max(lo, Math.min(hi, snapped));
+  };
+  const emit = type => input.dispatchEvent(new Event(type, {bubbles: true}));
+  const finish = commit => {
+    if (!dragging) return;
+    const wasMoved = moved;
+    dragging = false;
+    if (pid != null) {
+      try { if (input.hasPointerCapture?.(pid)) input.releasePointerCapture(pid); } catch (_) {}
+      pid = null;
+    }
+    if (commit && wasMoved) emit('change');
+  };
+  input.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    try { input.focus({preventScroll: true}); } catch (_) { input.focus(); }
+    dragging = true; moved = false; startY = e.clientY; startValue = +input.value;
+    pid = e.pointerId; input.setPointerCapture(pid);
+  });
+  input.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dy = startY - e.clientY;
+    if (!moved && Math.abs(dy) < 2) return;
+    moved = true;
+    input.value = clamp(startValue + dy * ((hi - lo) / KNOB_DRAG_PIXELS));
+    emit('input');
+  });
+  input.addEventListener('pointerup', () => finish(true));
+  input.addEventListener('pointercancel', () => finish(true));
+  input.addEventListener('lostpointercapture', () => finish(true));
+  input.addEventListener('wheel', e => {
+    e.preventDefault();
+    input.value = clamp(+input.value - Math.sign(e.deltaY) * step);
+    emit('input'); emit('change');
+  }, {passive: false});
+}
+
 function renderMix(pane, m) {
   const slots = (MIXER.current || {})[String(m)] || [];
   const [fLo, fHi] = MIXER.ranges.fader, [pLo, pHi] = MIXER.ranges.pan, [sLo, sHi] = MIXER.ranges.send;
@@ -2786,6 +2842,7 @@ function renderMix(pane, m) {
     });
     const pan = strip.querySelector('[data-pan]'), pval = strip.querySelector('[data-pval]');
     if (pan) {
+      wirePrecisionRange(pan);
       paintMixerKnob(pan);
       pan.addEventListener('input', e => { pval.textContent = mixerPanLabel(e.target.value); paintMixerKnob(pan); });
       pan.addEventListener('change', e => {
@@ -2796,6 +2853,7 @@ function renderMix(pane, m) {
     }
     const send = strip.querySelector('[data-send]'), sval = strip.querySelector('[data-sval]');
     if (send) {
+      wirePrecisionRange(send);
       paintMixerKnob(send);
       send.addEventListener('input', e => {
         sval.textContent = mixerSendLabel(-(+e.target.value), sHi);
@@ -2960,7 +3018,14 @@ async function boot() {
     return setTimeout(boot, 1500);
   }
   $('#dev').textContent = PROFILE.device?.name || '';   // which profile the daemon picked
-  UI_FEATURES = PROFILE.webui?.features || {};
+  const profileFeatures = PROFILE.webui?.features;
+  UI_FEATURES = profileFeatures ? {...profileFeatures} : {};
+  // Older daemons did not include the presentation registry in /api/profile.
+  // The profile's explicit AuraVerb command is a safe compatibility fallback;
+  // current daemons still take the normal device_ui.py path above.
+  if (!profileFeatures && PROFILE.frame?.auraverb_command) {
+    UI_FEATURES.auraverb = {enabled: true, mix: 0, label: 'AuraVerb'};
+  }
   loadMixerSources();
   const m = PROFILE.params?.input_mode?.values || PROFILE.channels?.modes || {};
   MODES = Object.values(m);
