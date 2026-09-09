@@ -5,14 +5,20 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
 
 ## What it is
 
+The application-facing name for the bundled reverb is **Gazelle Reverb**.
+**AuraVerb** is retained here only when referring to the device's protocol
+evidence; profile/API identifiers such as `auraverb` are kept unchanged for
+compatibility.
+
 - **`server.py`** -- a small FastAPI daemon. One background thread owns the
   HID device. It pushes two kinds of state to the browser:
   - **fast** -- the free-running `0x73` state and meters, over SSE at up to
     ~25 Hz (channels, buses, brightness, meters). The raw `0x75` diagnostic
     bank is sampled separately at a lower rate.
   - **slow** -- the routing matrix (readback cat `0x03`), virtual mixer
-    (cat `0x04`), and profile-confirmed AuraVerb state, refreshed one record
-    per meter cycle on connect and every 45 s. Route/mixer/AuraVerb writes
+    (cat `0x04`), and profile-confirmed Gazelle Reverb state, refreshed one
+    record per meter cycle on connect and every 45 s. Route/mixer/Gazelle
+    Reverb writes
     update their serialized caches directly. Queries use the active profile's
     bounded category counts or explicit confirmed layouts, so the BusFault
     hazard is never hit.
@@ -28,15 +34,15 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
   - a **Routing** panel with `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4` tabs;
     each Mix tab contains a compact horizontal board of vertical strips with
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
-    input strips additionally expose the AuraVerb send; Mix 2-4 and all
+    input strips additionally expose the Gazelle Reverb send; Mix 2-4 and all
     master strips deliberately do not. Selecting a Mix tab automatically
     selects its matching mixer meter bank; multiple Solo buttons may be
     stacked and the original mute/solo state is restored when the last Solo
     is released;
   - device-specific panels are selected by the presentation registry in
     `webui/device_ui.py`: Zen Go shows its input-source selectors, while any
-    profile with a complete confirmed AuraVerb contract exposes the
-    closed-by-default panel;
+    profile with a complete confirmed Gazelle Reverb (AuraVerb protocol)
+    contract exposes the closed-by-default panel;
   - rotary controls use relative vertical drags with a 240 px full-scale
     travel for finer adjustment; the wheel remains a one-step adjustment;
   - reconnect UX -- the UI dims and goes non-interactive while the device

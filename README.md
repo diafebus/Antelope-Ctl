@@ -22,17 +22,25 @@ used; the device firmware is not touched.
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the AFX / Synergy Core plugin boundary — what this repo does and doesn't touch, and why (the plugin *parameter* layer is off-repo pending an IP-lawyer review) |
 
+### Naming
+
+The UI and application-facing software call the bundled Mix 1 reverb
+**Gazelle Reverb**. **AuraVerb** remains the hardware/protocol name used in
+captures, reverse-engineering findings, and wire-level identifiers. The
+existing CLI subcommand, profile key, and API path (`auraverb`) remain as
+compatibility identifiers.
+
 **Roughly what's decoded** (2026-09): preamp gain/mode/phantom/phase +
 link, ADAT & S/PDIF I/O, output buses (monitor/HP/line/reamp) with
 dim/mute/mono, the full **routing matrix** (15 dests, 12 source banks, read
 + write, self-verifying), the **virtual mixer** (4 mixes, read + write),
-**AuraVerb** (read/write, hw-verified), **mic modeling / emuMic** (frame
+**Gazelle Reverb** (read/write, hw-verified), **mic modeling / emuMic** (frame
 decoded), **sample rate / clock source / pan law / DC-coupling /
 oscillator / screen brightness / output trim** (all `SET_GLOBAL`), talkback,
 and the **surround monitoring tab** (per-speaker 16-band EQ + global +
 2.1 bass management; Room Correction turned out to *be* the per-speaker
-EQ). In-band **readback** (`0x74`/`0x75`) covers routing, mixer, AuraVerb,
-device identity, preamp/channel state, and **both surround frames**
+EQ). In-band **readback** (`0x74`/`0x75`) covers routing, mixer, the bundled
+reverb, device identity, preamp/channel state, and **both surround frames**
 (categories `0x1a` per-speaker EQ / `0x1b` global — structure decoded
 2026-09-04, not yet wired into the CLI). There is **no built-in
 per-input-channel EQ** on this device: input EQ is an AFX plugin, which is
@@ -75,8 +83,9 @@ this software interoperates with.
 - **The licensed AFX plugin chain is out of scope.** Those plugins
   involve per-user licensing and online activation; this project does not
   touch, emulate, or circumvent any licensing or authentication
-  mechanism. Device-*bundled* effects that carry no per-plugin activation
-  (e.g. AuraVerb) are treated as ordinary device controls.
+ mechanism. Device-*bundled* effects that carry no per-plugin activation
+  (e.g. Gazelle Reverb, the device feature identified as AuraVerb in
+  protocol research) are treated as ordinary device controls.
 - Use at your own risk. Sending control frames to hardware can put it in
   unexpected states; see "hazards" in the profile JSON. No warranty.
 
@@ -464,12 +473,13 @@ mics + model packs activate against an Antelope account), so it lives in
 `profiles/mic_models.json` as one account's snapshot -- a client should
 let the user pick by name. Not in the CLI yet.
 
-**AuraVerb** (the bundled reverb on the Mix 1 window) has its own frame
--- opcode `0x1d` / param `0xda`. Fully decoded (2026-08-31): byte 28 =
+**Gazelle Reverb** (the bundled reverb on the Mix 1 window; called AuraVerb
+in the hardware/protocol findings) has its own frame -- opcode `0x1d` /
+param `0xda`. Fully decoded (2026-08-31): byte 28 =
 on/off, plus 8 DSP controls, each a plain 0-100 byte -- Room Size (@19),
 Color (@20), Pre-Delay (@21, 0-100 → 0-32 ms), Early Reflection Gain
 (@23), Late Reflection Delay (@24), Richness (@25), Reverb Time (@26),
-Reverb Level (@27). AuraVerb is bundled with the device (no per-plugin
+Reverb Level (@27). Gazelle Reverb is bundled with the device (no per-plugin
 activation), so it's in scope. **Decoded + hardware round-trip verified
 2026-09-03**: it reads back via the `0x74`/`0x75` query protocol as
 category `0x0a` (one record, a block per mix), so the CLI now live-reads
@@ -477,8 +487,8 @@ the device and does a verified read-modify-write; the local cache is only
 an offline fallback:
 
 ```
-antelope-ctl ... auraverb                          # live device state (all 4 mixes)
-antelope-ctl ... auraverb --on                      # enable
+antelope-ctl ... auraverb                          # live Gazelle Reverb state (all 4 mixes)
+antelope-ctl ... auraverb --on                      # enable Gazelle Reverb
 antelope-ctl ... auraverb --reverb-time 55 --color 40 --room-size 70
 antelope-ctl ... auraverb --off --defaults          # reset params, disable
 ```

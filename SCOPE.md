@@ -9,6 +9,11 @@ This document is **project policy**, agreed by all contributors. It is not
 legal advice. Where it says "get a lawyer's review first", that is a hard
 gate, not a suggestion.
 
+**Naming convention:** application-facing UI and software use **Gazelle
+Reverb**. **AuraVerb** is retained for the device's original feature name in
+protocol findings, captures, and other research evidence. Internal
+wire-compatible identifiers are not renamed casually.
+
 ---
 
 ## 1. What is in scope
@@ -23,9 +28,10 @@ gate, not a suggestion.
 - **Mic modelling / emuMic** device-side DSP control (enable / model id /
   polar pattern / capsule swap). The *model catalogue* is account-bound
   and lives in a separate data file, not in the device profile.
-- **AuraVerb** -- the one bundled effect (ships with the device, **no
-  per-plugin activation**). Decoding and exposing its parameters is in
-  scope; it was the deliberate safe pilot for effect-frame shape.
+- **Gazelle Reverb** -- the one bundled effect (called AuraVerb in the
+  hardware/protocol evidence; ships with the device, **no per-plugin
+  activation**). Decoding and exposing its parameters is in scope; it was
+  the deliberate safe pilot for effect-frame shape.
 
 ## 2. Reverse-engineering sources -- what is allowed
 
@@ -84,8 +90,9 @@ plugin chain is an **edge we approach carefully, not a target**.
 **This policy is about licensed, per-user-activated plugin content -- not
 about the device's DSP/FX unit in general.** A feature that ships with the
 hardware/firmware and needs no separate online activation is not a bucket
-D/E/F concern just because it happens to run on the same DSP: **AuraVerb**
-(§1, the bundled reverb) and the **surround per-speaker EQ / Room
+D/E/F concern just because it happens to run on the same DSP: **Gazelle
+Reverb** (AuraVerb in the protocol evidence; §1, the bundled reverb) and the
+**surround per-speaker EQ / Room
 Correction** (part of the surround-monitoring feature, §1) are both fully
 in scope and already decoded. The buckets exist to wall off *Antelope's
 purchasable, activation-gated plugin catalogue* (AFX plugins, Cosmos

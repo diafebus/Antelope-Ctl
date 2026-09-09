@@ -14,7 +14,7 @@ Two kinds of state:
              buses, brightness, meters). The 0x75 bank is retained only for
              lower-rate diagnostics.
   * SLOW  -- routing (readback cat 0x03), virtual mixer (cat 0x04), and
-             profile-confirmed AuraVerb state, refreshed incrementally on
+             profile-confirmed Gazelle Reverb state, refreshed incrementally on
              connect and on a slow timer. Writes use and update their
              serialized caches, querying first if not populated yet. The
              snapshot carries a monotonic `rb_ver`; the browser refetches
@@ -291,14 +291,14 @@ class Device:
             self.profile, proto.readback_body(self.profile, data))
 
     def _auraverb_record_for_write(self, transport):
-        """Return the full AuraVerb readback, refusing a blind write."""
+        """Return the full Gazelle Reverb readback, refusing a blind write."""
         with self._lock:
             cached = self.auraverb.get(self.auraverb_index)
             if cached is not None:
                 return [{**record, "params": dict(record.get("params", {}))}
                         for record in cached]
         if not self.auraverb_available:
-            raise RuntimeError("AuraVerb readback is not safely mapped for this profile")
+            raise RuntimeError("Gazelle Reverb readback is not safely mapped for this profile")
         req = proto.build_readback_query(
             self.profile, self.auraverb_category, self.auraverb_index)
         data = transport.query(
@@ -307,7 +307,7 @@ class Device:
                 self.profile, x, self.auraverb_category, self.auraverb_index),
             timeout=1.5)
         if data is None:
-            raise RuntimeError("no AuraVerb readback -- not writing blind")
+            raise RuntimeError("no Gazelle Reverb readback -- not writing blind")
         return proto.parse_auraverb_record(
             self.profile, proto.readback_body(self.profile, data))
 
@@ -435,7 +435,7 @@ class Device:
                     with self._lock:
                         self.rb_ver += 1
 
-    # -- readback (routing + mixer + AuraVerb) ------------------------------
+    # -- readback (routing + mixer + Gazelle Reverb) ------------------------
 
     def _readback_plan(self):
         routes = [(ROUTING_CAT, d) for d in self.route_dests] \
@@ -730,7 +730,7 @@ class MixStrip(BaseModel):
     channel: int              # profile-defined slot (Orion master is slot 0)
     fader: int | None = None  # profile-defined dB attenuation (sign ignored)
     pan: int | None = None    # profile-defined panorama range
-    send: int | None = None   # profile-defined AuraVerb-send range
+    send: int | None = None   # profile-defined Gazelle Reverb send range
     mute: bool | None = None
     solo: bool | None = None
 
@@ -1232,32 +1232,32 @@ def api_auraverb_change(change: AuraVerbChange):
     spec = UI_FEATURES.get("auraverb", {})
     command = PROFILE["frame"].get("auraverb_command", {})
     if not spec.get("enabled") or not DEV.auraverb_available:
-        return _bad("AuraVerb is not safely mapped for this profile")
+        return _bad("Gazelle Reverb is not safely mapped for this profile")
     if change.mix != int(spec.get("mix", 0)):
-        return _bad("only the profile-confirmed AuraVerb mix is available")
+        return _bad("only the profile-confirmed Gazelle Reverb mix is available")
     if (change.param is None) != (change.value is None):
         return _bad("param and value must be supplied together")
     if change.param is None and change.enabled is None:
-        return _bad("provide an AuraVerb parameter or enabled state")
+        return _bad("provide a Gazelle Reverb parameter or enabled state")
     names = command.get("param_offsets", {})
     if change.param is not None and change.param not in names:
-        return _bad(f"unknown AuraVerb parameter {change.param!r}")
+        return _bad(f"unknown Gazelle Reverb parameter {change.param!r}")
     lo, hi = command.get("param_range", [0, 100])
     if change.value is not None and not lo <= change.value <= hi:
-        return _bad(f"AuraVerb value {change.value} outside {lo}..{hi}")
+        return _bad(f"Gazelle Reverb value {change.value} outside {lo}..{hi}")
 
     def do(t):
         records = DEV._auraverb_record_for_write(t)
         mix = int(spec.get("mix", 0))
         if mix >= len(records):
-            raise RuntimeError(f"AuraVerb readback has no Mix {mix + 1} record")
+            raise RuntimeError(f"Gazelle Reverb readback has no Mix {mix + 1} record")
         current = records[mix]
         params = dict(current.get("params", {}))
         if set(params) != set(names):
-            raise RuntimeError("AuraVerb readback is incomplete -- not writing blind")
+            raise RuntimeError("Gazelle Reverb readback is incomplete -- not writing blind")
         enabled = current.get("enabled")
         if enabled is None:
-            raise RuntimeError("AuraVerb enabled state is unknown -- not writing blind")
+            raise RuntimeError("Gazelle Reverb enabled state is unknown -- not writing blind")
         if change.param is not None:
             params[change.param] = change.value
         if change.enabled is not None:
@@ -1325,7 +1325,7 @@ def api_mix(s: MixStrip):
         and (not DEV.mixer_has_master or s.channel != 0
              or bool(send_spec.get("include_master", False)))
     if s.send is not None and not send_allowed:
-        return _bad("this mixer strip has no AuraVerb send")
+        return _bad("this mixer strip has no Gazelle Reverb send")
 
     def do(t, m=s.mix, ch=s.channel):
         slots = DEV._mixer_record_for_write(t, m)

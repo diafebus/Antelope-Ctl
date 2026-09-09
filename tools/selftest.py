@@ -239,15 +239,15 @@ def t_mixer(dev):
 
 
 def t_auraverb(dev):
-    """AuraVerb readback (cat 0x0a) parses, values in range, builder matches."""
+    """Gazelle Reverb readback (cat 0x0a) parses, values in range, builder matches."""
     target = proto.auraverb_readback_target(dev.p)
     if target is None:
-        return record(SKIP, 'auraverb readback',
-                      'no confirmed AuraVerb command/readback contract in profile')
+        return record(SKIP, 'Gazelle Reverb readback',
+                      'no confirmed Gazelle Reverb command/readback contract in profile')
     cat, index = target
     body = dev.read(cat, index)
     if body is None:
-        return record(SKIP, 'auraverb readback', 'no response to cat 0x0a on this device')
+        return record(SKIP, 'Gazelle Reverb readback', 'no response to cat 0x0a on this device')
     mixes = proto.parse_auraverb_record(dev.p, body)
     bad = []
     for m, mx in enumerate(mixes):
@@ -256,7 +256,7 @@ def t_auraverb(dev):
                 bad.append(f'mix {m + 1} {k}={v}')
         if mx['wet'] not in (None, 100):
             bad.append(f'mix {m + 1} wet={mx["wet"]}')
-    check(f'auraverb readback: {len(mixes)} mixes, params in range', not bad,
+    check(f'Gazelle Reverb readback: {len(mixes)} mixes, params in range', not bad,
           '; '.join(bad[:3]))
     # builder round-trip: build Mix 1's frame from the readback, compare bytes
     m1 = mixes[0]
@@ -266,7 +266,7 @@ def t_auraverb(dev):
     e = proto._as_int(f['enabled_offset'])
     ref = m1['raw'][:9] + bytes([1 if m1['enabled'] else 0])
     got = bytes(pkt[a:a + 9]) + bytes([pkt[e]])
-    check('auraverb builder round-trip (build == what device reports)',
+    check('Gazelle Reverb builder round-trip (build == what device reports)',
           got == ref, f'{got.hex()} != {ref.hex()}')
 
 
@@ -369,15 +369,15 @@ def t_write_mixer(dev, mix):
 def t_write_auraverb(dev):
     """Nudge Mix 1's reverb-level, verify via readback cat 0x0a, restore.
     Keeps the enabled bit and every other param as read, so a disabled
-    AuraVerb stays disabled and inaudible throughout."""
+    Gazelle Reverb stays disabled and inaudible throughout."""
     target = proto.auraverb_readback_target(dev.p)
     if target is None:
-        return record(SKIP, 'WRITE auraverb',
-                      'no confirmed AuraVerb command/readback contract in profile')
+        return record(SKIP, 'WRITE Gazelle Reverb',
+                      'no confirmed Gazelle Reverb command/readback contract in profile')
     cat, index = target
     body = dev.read(cat, index)
     if body is None:
-        return record(SKIP, 'WRITE auraverb', 'no cat 0x0a readback on this device')
+        return record(SKIP, 'WRITE Gazelle Reverb', 'no cat 0x0a readback on this device')
     mx = proto.parse_auraverb_record(dev.p, body)[0]
     en = bool(mx['enabled'])
     orig = dict(mx['params'])
@@ -385,17 +385,17 @@ def t_write_auraverb(dev):
     try:
         dev.write(proto.build_auraverb_command(dev.p, probe, en, mix=0))
         got = proto.parse_auraverb_record(dev.p, dev.read(cat, index))[0]
-        check('WRITE auraverb: Mix 1 reverb-level changes',
+        check('WRITE Gazelle Reverb: Mix 1 reverb-level changes',
               got['params']['reverb_level'] == probe['reverb_level'],
               f"read back {got['params']['reverb_level']}")
-        check('WRITE auraverb: other params + enabled preserved',
+        check('WRITE Gazelle Reverb: other params + enabled preserved',
               got['enabled'] == en and all(
                   got['params'][k] == orig[k] for k in orig if k != 'reverb_level'))
     finally:
         dev.write(proto.build_auraverb_command(dev.p, orig, en, mix=0))
         back = dev.read(cat, index)
         ok = back is not None and proto.parse_auraverb_record(dev.p, back)[0]['raw'] == mx['raw']
-        record(PASS if ok else FAIL, 'WRITE auraverb: restored original',
+        record(PASS if ok else FAIL, 'WRITE Gazelle Reverb: restored original',
                '' if ok else 'RESTORE FAILED -- check `auraverb` by hand!')
 
 
@@ -503,7 +503,7 @@ def main():
     t_routing_builder(dev)
     print('\nvirtual mixer (readback cat 0x04)')
     t_mixer(dev)
-    print('\nAuraVerb (readback cat 0x0a)')
+    print('\nGazelle Reverb (readback cat 0x0a)')
     t_auraverb(dev)
     print('\nchannel state (readback cat 0x05 / 0x06)')
     t_channel_state(dev)

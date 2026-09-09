@@ -1,5 +1,9 @@
 # Orion meter evidence: current correction and historical review
 
+The application-facing UI calls the bundled reverb **Gazelle Reverb**. This
+meter note uses **AuraVerb** when referring to the device/protocol evidence
+and capture filenames.
+
 ## 2026-09-09: preamp display regression fixed
 
 The physical source remains `0x73 @221..232`; server samples still expose

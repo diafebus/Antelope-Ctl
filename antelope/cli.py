@@ -1487,7 +1487,7 @@ def cmd_readback(args, profile):
                                  for f, k in _AURAVERB_FLAGS.items())
                 print(f'  Mix {m + 1}: {en}   {vals}')
         except ValueError as e:
-            print(f'  (not decodable as an auraverb record: {e})')
+            print(f'  (not decodable as a Gazelle Reverb record: {e})')
     if cat == proto.PREAMP_GAIN_READBACK_CATEGORY:
         gains = proto.parse_preamp_gain_record(profile, body)
         print('  preamp gain (dB), per channel:  ' +
@@ -1804,9 +1804,10 @@ def cmd_pan_law(args, profile):
             pass
 
 
-# ---- subcommand: AuraVerb (opcode 0x1d) ----
+# ---- subcommand: Gazelle Reverb (AuraVerb protocol, opcode 0x1d) ----
 #
-# AuraVerb is the device-BUNDLED Synergy Core reverb on the Mix 1 window
+# Gazelle Reverb is the device-BUNDLED Synergy Core reverb on the Mix 1 window;
+# AuraVerb is the hardware/protocol name retained by the wire implementation.
 # (no per-plugin activation, so in scope). All 8 DSP controls + on/off are
 # decoded (frame.auraverb_command). There IS a device readback -- frame.readback
 # category 0x0a, decoded 2026-09-03 -- so this command now READS the live state
@@ -1841,7 +1842,7 @@ def _save_auraverb_state(profile, params, enabled):
     try:
         with open(path, 'w') as f:
             json.dump({'params': params, 'enabled': bool(enabled),
-                       'source': 'cli-issued AuraVerb commands only, not a device readback'}, f)
+                       'source': 'CLI-issued Gazelle Reverb commands only, not a device readback'}, f)
     except OSError:
         pass
 
@@ -1860,7 +1861,7 @@ _AURAVERB_FLAGS = {
 
 
 def _read_auraverb_live(profile, transport, timeout=1.0):
-    """Live-read AuraVerb for all mixes via its profile-confirmed readback.
+    """Live-read Gazelle Reverb for all mixes via its profile-confirmed readback.
     Returns proto.parse_auraverb_record()'s list, or None if unreachable."""
     target = proto.auraverb_readback_target(profile)
     if target is None:
@@ -1882,10 +1883,10 @@ def _read_auraverb_live(profile, transport, timeout=1.0):
 
 
 def cmd_auraverb(args, profile):
-    """Show or set the AuraVerb reverb (Mix 1). Reads live device state via
+    """Show or set Gazelle Reverb (Mix 1). Reads live device state via
     frame.readback cat 0x0a; changes are a read-modify-write and verified.
 
-      auraverb                         show live AuraVerb state (all 4 mixes)
+      auraverb                         show live Gazelle Reverb state (all 4 mixes)
       auraverb --on                    enable (keeps current params)
       auraverb --off                   disable
       auraverb --reverb-time 55 --color 40 --room-size 70
@@ -1908,7 +1909,7 @@ def cmd_auraverb(args, profile):
         if live:
             target = proto.auraverb_readback_target(profile)
             cat_label = f'{target[0]:#04x}' if target is not None else 'unknown'
-            print(f'AuraVerb -- live device readback (frame.readback cat {cat_label}):')
+            print(f'Gazelle Reverb -- live device readback (frame.readback cat {cat_label}):')
             for m, mx in enumerate(live):
                 en = {True: 'ON', False: 'off', None: '?'}[mx['enabled']]
                 if m == 0:
@@ -1919,7 +1920,7 @@ def cmd_auraverb(args, profile):
                     vals = ' '.join(f'{mx["params"].get(k)}' for k in _AURAVERB_FLAGS.values())
                     print(f'  Mix {m + 1}: {en:<3}  [{vals}]')
             return
-        print('AuraVerb (Mix 1) -- device unreachable, showing CLI cache (may be stale):')
+        print('Gazelle Reverb (Mix 1) -- device unreachable, showing CLI cache (may be stale):')
         base = cached_params or defaults
         en = {True: 'on', False: 'off', None: 'unknown'}[cached_enabled]
         print(f'  enabled: {en}')
@@ -1939,7 +1940,7 @@ def cmd_auraverb(args, profile):
     lo, hi = profile['frame']['auraverb_command'].get('param_range', [0, 100])
     for k, v in params.items():
         if not args.force and not (lo <= int(v) <= hi):
-            sys.exit(f'AuraVerb {k.replace("_", "-")} = {v} outside {lo}..{hi}. Use --force.')
+            sys.exit(f'Gazelle Reverb {k.replace("_", "-")} = {v} outside {lo}..{hi}. Use --force.')
 
     if args.on and args.off:
         sys.exit('pass only one of --on / --off')
@@ -1952,14 +1953,14 @@ def cmd_auraverb(args, profile):
     elif cached_enabled is not None:
         enabled = bool(cached_enabled)
     else:
-        sys.exit("AuraVerb on/off is unknown (no device read, nothing cached) -- the frame "
+        sys.exit("Gazelle Reverb on/off is unknown (no device read, nothing cached) -- the frame "
                  "always carries it, so pass --on or --off with your change this first time.")
 
     try:
         pkt = proto.build_auraverb_command(profile, params, enabled)
     except (ValueError, KeyError) as e:
         sys.exit(str(e))
-    print(f'AuraVerb (Mix 1) -> {"ON" if enabled else "off"}')
+    print(f'Gazelle Reverb (Mix 1) -> {"ON" if enabled else "off"}')
     for flag, k in _AURAVERB_FLAGS.items():
         tag = '  <-- changed' if k in overrides else ''
         print(f'  {flag.replace("_", "-"):<24} {params[k]}{tag}')
@@ -2344,7 +2345,7 @@ def main():
                          help='raw frame.readback query: `readback <category> [index]` '
                               '(no args lists the known categories)')
     sp.add_argument('category', nargs='?', default=None,
-                    help='category id, e.g. 0x03 (routing), 0x04 (mixer), 0x0a (auraverb)')
+                    help='category id, e.g. 0x03 (routing), 0x04 (mixer), 0x0a (Gazelle Reverb)')
     sp.add_argument('index', nargs='?', type=lambda x: int(x, 0), default=0)
     sp.add_argument('--force', action='store_true',
                     help='skip the index bounds check. DANGEROUS: an index past a '
@@ -2434,10 +2435,10 @@ def main():
     sp.set_defaults(func=cmd_pan_law)
 
     sp = sub.add_parser('auraverb',
-                         help='show/set the AuraVerb reverb (Mix 1); live device read via '
+                         help='show/set Gazelle Reverb (Mix 1); live device read via '
                               'frame.readback cat 0x0a, changes are read-modify-write + verified')
-    sp.add_argument('--on', action='store_true', help='enable AuraVerb')
-    sp.add_argument('--off', action='store_true', help='disable AuraVerb')
+    sp.add_argument('--on', action='store_true', help='enable Gazelle Reverb')
+    sp.add_argument('--off', action='store_true', help='disable Gazelle Reverb')
     sp.add_argument('--defaults', action='store_true',
                     help='reset all 8 params to the device power-on defaults')
     for _flag in _AURAVERB_FLAGS:

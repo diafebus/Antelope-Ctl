@@ -78,7 +78,7 @@ def features_for(profile_path, profile):
         features["auraverb"] = {
             "enabled": True,
             "mix": proto._as_int(contract.get("target", 0)),
-            "label": "AuraVerb",
+            "label": "Gazelle Reverb",
         }
     else:
         features.pop("auraverb", None)

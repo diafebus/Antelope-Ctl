@@ -310,25 +310,25 @@ AURAVERB_PARAMS = (
 
 
 def auraverb_defaults(profile: dict) -> dict:
-    """The device power-on values for the 8 AuraVerb params (from the profile,
+    """The device power-on values for the 8 Gazelle Reverb params (from the profile,
     originally the frozen frame in macos-auraverb-on-off)."""
     f = profile['frame'].get('auraverb_command')
     if not f:
-        raise KeyError('this profile has no frame.auraverb_command -- AuraVerb not available')
+        raise KeyError('this profile has no frame.auraverb_command -- Gazelle Reverb not available')
     return dict(f.get('defaults', {}))
 
 
 def build_auraverb_command(profile: dict, params: dict, enabled: bool = True,
                            mix: int = 0) -> bytes:
     """Build a SET_AURAVERB frame (profile['frame']['auraverb_command'], opcode
-    0x1d) -- the whole AuraVerb state for one mix's reverb. `params` must
+    0x1d) -- the whole Gazelle Reverb state for one mix's reverb. `params` must
     carry all 8 DSP controls (keys = frame.auraverb_command.param_offsets,
     values 0-100); the caller fills any it isn't changing from cache/defaults,
     since the frame has no partial update and no device readback. `enabled`
     is the on/off bit. `mix` is the mix index (only 0 / Mix 1 is confirmed)."""
     f = profile['frame'].get('auraverb_command')
     if not f:
-        raise KeyError('this profile has no frame.auraverb_command -- AuraVerb not available')
+        raise KeyError('this profile has no frame.auraverb_command -- Gazelle Reverb not available')
     check_opcode(profile, _as_int(f['opcode']))
     offs = f['param_offsets']
     lo, hi = f.get('param_range', [0, 100])
@@ -348,7 +348,7 @@ def build_auraverb_command(profile: dict, params: dict, enabled: bool = True,
     for name, off in offs.items():
         v = int(params[name])
         if not (lo <= v <= hi):
-            raise ValueError(f'AuraVerb {name} = {v} outside {lo}..{hi}')
+            raise ValueError(f'Gazelle Reverb {name} = {v} outside {lo}..{hi}')
         pkt[_as_int(off)] = v & 0xFF
     pkt[_as_int(f['enabled_offset'])] = 1 if enabled else 0
     return bytes(pkt)
@@ -844,9 +844,9 @@ AURAVERB_READBACK_CATEGORY = 0x0a
 
 
 def auraverb_readback_target(profile: dict):
-    """Return the profile-confirmed AuraVerb readback ``(category, index)``.
+    """Return the profile-confirmed Gazelle Reverb readback ``(category, index)``.
 
-    AuraVerb command bytes are device-specific even within this protocol
+    Gazelle Reverb command bytes are device-specific even within this protocol
     family. A profile must declare both the command and a confirmed readback
     contract before a client may use the effect.
     """
@@ -868,7 +868,7 @@ def auraverb_readback_target(profile: dict):
 
 
 def auraverb_readback_available(profile: dict) -> bool:
-    """Whether AuraVerb has a bounded, profile-confirmed readback target."""
+    """Whether Gazelle Reverb has a bounded, profile-confirmed readback target."""
     target = auraverb_readback_target(profile)
     if target is None:
         return False
@@ -888,7 +888,7 @@ def auraverb_readback_available(profile: dict) -> bool:
 
 
 def parse_auraverb_record(profile: dict, body: bytes):
-    """Decode a category-0x0a record -- the AuraVerb reverb state for all four
+    """Decode a category-0x0a record -- the Gazelle Reverb state for all four
     mixes.
 
     DECODED + HARDWARE-CONFIRMED 2026-09-03 by differential readback: set one
@@ -946,7 +946,7 @@ def parse_auraverb_record(profile: dict, body: bytes):
     min_block_size = int(contract.get(
         'readback_min_block_size', max(rel.values(), default=-1) + 1))
     if block_offset < 0 or stride <= 0 or mix_count <= 0 or min_block_size <= 0:
-        raise ValueError('invalid profile AuraVerb readback layout')
+        raise ValueError('invalid profile Gazelle Reverb readback layout')
     out = []
     for m in range(mix_count):
         start = block_offset + m * stride

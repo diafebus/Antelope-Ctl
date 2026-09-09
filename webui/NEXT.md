@@ -304,19 +304,21 @@ Making the UI is what surfaced this -- routing showed 8 emumic sources.
 The shared code + protocol docs are now at canonical `42ba3f5`. New since
 the last sync, relevant to the UI:
 
-- **AuraVerb protocol support is decoded, but the WebUI panel is not finished.**
+- **Gazelle Reverb WebUI integration is still open; the underlying AuraVerb
+  protocol support is decoded.**
   `antelope-ctl auraverb` reads the device (all 4 mixes) and does a verified
   read-modify-write; `protocol.parse_auraverb_record(profile, body)` decodes
-  the cat `0x0a` readback. The current Mix 1 panel is only a presentation
-  shell: its controls still need a live end-to-end test and repair so that
+  the cat `0x0a` readback. The current Mix 1 Gazelle Reverb panel is only a
+  presentation shell: its controls still need a live end-to-end test and
+  repair so that
   parameter changes and FX on/off reach the active daemon, update the device,
   and can be heard. A browser `404 {"detail":"Not Found"}` means the page is
   being served by an older/different daemon or checkout; after that is ruled
   out, inspect the POST queue, optimistic state, readback refresh, and the
   actual hardware command. The recent captures confirm Orion on/off at byte
   `@28` (`01`/`00`) and the parameter offsets, but do not by themselves prove
-  that the WebUI path is working. AuraVerb is intentionally not exposed for
-  Zen Go until its profile has a confirmed command and readback contract.
+  that the WebUI path is working. Gazelle Reverb is intentionally not exposed
+  for Zen Go until its profile has a confirmed command and readback contract.
 - readback cat `0x05` = preamp gain (1 byte/ch, dB), `0x06` = channel
   status `(phase<<6)|(phantom<<4)|(mode&3)` -- both mirror the `0x73`
   report, decoded + selftest-cross-checked.
@@ -398,8 +400,8 @@ The superseded plan listed these TODOs:
    (emuMic-range correction is
    CLOSED -- `0xe5` on preamp 5/6 captured 2026-09-03, `[18]=0x00/0x01`;
    listen test done -- `emumic5`==`emumic6` mono for a mono emulation,
-   model select audibly correct.) AuraVerb remains an open WebUI integration
-   task; see the protocol-support note above.
+   model select audibly correct.) Gazelle Reverb remains an open WebUI
+   integration task; see the protocol-support note above.
 5. **Hide undeclared sections** -- an empty `<section>` still renders its
    header. Pairs with finishing the non-Orion stub profiles.
 6. **`--host` + token** for LAN access; localhost-only now.

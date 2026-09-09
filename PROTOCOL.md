@@ -8,6 +8,12 @@ wins and this file is stale. For what the profile JSON's keys *mean*, see
 `docs/profile-schema.md`. Sibling devices are in §14
 (`profiles/zen_go_sc.json`, `profiles/discrete_8_pro_sc.json`).
 
+**Naming:** this wire reference uses **AuraVerb** for the device feature and
+its captured protocol behavior. The independent UI and application-facing
+software present that feature as **Gazelle Reverb**. Exact identifiers such
+as `frame.auraverb_command`, `parse_auraverb_record`, and category `0x0a`
+remain unchanged because they describe the hardware protocol.
+
 All offsets are **byte offsets into the 320-byte HID report**, 0-indexed.
 "2026-08" on a claim means it was confirmed by capture in that session;
 see `README.md` and the profile's `evidence` fields for which capture.

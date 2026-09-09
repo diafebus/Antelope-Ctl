@@ -29,7 +29,7 @@ All control payloads are 320 bytes. Requests use endpoint `0x01` OUT; responses 
 | Surround speaker EQ | `0x1a` | 0 through 15 |
 | Routing | `0x03` | 0 through 14 |
 | Mixers | `0x04` | 0 through 3, each followed by marker `0x0b:3` |
-| AuraVerb | `0x0a` | 0 |
+| Gazelle Reverb (`0x0a`, AuraVerb protocol) | `0x0a` | 0 |
 | Table | `0x15` | 0 |
 | Phase marker | `0x0b` | 0 |
 | State record | `0x16` | 0 |
