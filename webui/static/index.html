@@ -441,7 +441,8 @@
                    border-radius:8px; overflow:hidden; box-shadow:0 20px 70px #000b; }
   #auraverbpanel[hidden] { display:none; }
   .av-hd { display:flex; align-items:center; gap:12px; padding:8px 14px; min-height:40px;
-           background:linear-gradient(180deg,#1c232e,#0a0d12); border-bottom:1px solid #075a8d; }
+           background:linear-gradient(180deg,#1c232e,#0a0d12); border-bottom:1px solid #075a8d;
+           cursor:move; user-select:none; touch-action:none; }
   .av-logo { color:#ef2323; font:800 18px/1 system-ui,sans-serif; letter-spacing:-.04em; text-shadow:0 0 8px #f00a; }
   .av-logo span { color:#dfe4eb; font-weight:500; }
   .av-sub { color:#22b9f7; font:600 10px/1 ui-monospace,monospace; letter-spacing:.12em; }
@@ -606,7 +607,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 let PROFILE = null, MODES = [], N_CH = 12, HIZ = new Set(), GAIN_RANGE = {}, N_PAIRS = 0;
 let ROUTING = null, MIXER = null, MIXER_METERS = null, ACTIVE_MIX = 0;
-let UI_FEATURES = {}, AURAVERB = null, MIXER_SOURCES = {};
+let UI_FEATURES = {}, AURAVERB = null, MIXER_SOURCES = {}, AURAVERB_LOCAL = null;
 const MIX_PENDING = {}, MIX_PENDING_TTL = 5000;
 let MIX_SOLO_RESTORE = {};
 const MIX_LINKS = loadMixLinks();
@@ -2418,9 +2419,32 @@ const AV_PARAM_META = [
 ];
 const avCommand = () => PROFILE?.frame?.auraverb_command || {};
 function avDefaultParams() { return avCommand().defaults || {}; }
-function avCurrent() {
+function avRemote() {
   const mix = Number(UI_FEATURES?.auraverb?.mix || 0);
   return AURAVERB?.current?.[mix] || null;
+}
+function avCurrent() {
+  const remote = avRemote(), local = AURAVERB_LOCAL;
+  if (!remote && !local) return null;
+  return {
+    ...(remote || {}),
+    params: {...avDefaultParams(), ...(remote?.params || {}), ...(local?.params || {})},
+    enabled: local?.enabled ?? remote?.enabled ?? false,
+  };
+}
+function avRemember(patch) {
+  const local = AURAVERB_LOCAL || (AURAVERB_LOCAL = {params:{}, enabled:null});
+  if (patch.params) Object.assign(local.params, patch.params);
+  if ('enabled' in patch) local.enabled = patch.enabled;
+}
+function avForgetAcknowledged() {
+  const remote = avRemote(), local = AURAVERB_LOCAL;
+  if (!remote || !local) return;
+  Object.entries(local.params).forEach(([key, value]) => {
+    if (remote.params?.[key] === value) delete local.params[key];
+  });
+  if (local.enabled != null && remote.enabled === local.enabled) local.enabled = null;
+  if (!Object.keys(local.params).length && local.enabled == null) AURAVERB_LOCAL = null;
 }
 function paintAuraKnob(input) {
   if (!input) return;
@@ -2434,6 +2458,7 @@ function paintAuraKnob(input) {
 function refreshAuraVerb() {
   const panel = $('#auraverbpanel');
   if (!panel || !UI_FEATURES?.auraverb?.enabled) return;
+  avForgetAcknowledged();
   const state = avCurrent(), params = state?.params || avDefaultParams();
   panel.querySelectorAll('[data-av-param]').forEach(input => {
     const key = input.dataset.avParam;
@@ -2466,6 +2491,31 @@ function initAuraVerbPanel() {
           <span class="av-toggle">FX <button type="button" data-av-enable>OFF</button></span></div>
         <p class="av-note">AuraVerb is the bundled Mix 1 effect. Each change sends the complete read-modify-write state.</p>
       </div><div class="av-foot"><span>IN <b>Custom</b></span><span>OUT</span><span><b>S</b> · <b> L</b></span></div>`;
+    const hd = panel.querySelector('.av-hd');
+    let dragging = false, dx = 0, dy = 0, pid = null;
+    hd.addEventListener('pointerdown', e => {
+      if (e.target.closest('.modal-x')) return;
+      const r = panel.getBoundingClientRect();
+      dragging = true; dx = e.clientX - r.left; dy = e.clientY - r.top; pid = e.pointerId;
+      panel.style.transform = 'none'; panel.style.right = 'auto';
+      panel.style.left = r.left + 'px'; panel.style.top = r.top + 'px';
+      hd.setPointerCapture(pid);
+    });
+    hd.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const maxX = Math.max(4, innerWidth - panel.offsetWidth - 4);
+      const maxY = Math.max(4, innerHeight - panel.offsetHeight - 4);
+      panel.style.left = Math.max(4, Math.min(maxX, e.clientX - dx)) + 'px';
+      panel.style.top = Math.max(4, Math.min(maxY, e.clientY - dy)) + 'px';
+    });
+    const stop = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (pid != null) { try { hd.releasePointerCapture(pid); } catch (_) {} pid = null; }
+    };
+    hd.addEventListener('pointerup', stop);
+    hd.addEventListener('pointercancel', stop);
+    hd.addEventListener('lostpointercapture', stop);
     panel.querySelector('[data-av-close]').addEventListener('click', () => { panel.hidden = true; });
     panel.querySelectorAll('[data-av-param]').forEach(input => {
       wirePrecisionRange(input);
@@ -2475,15 +2525,13 @@ function initAuraVerbPanel() {
       });
       input.addEventListener('change', () => {
         const value = +input.value, key = input.dataset.avParam;
-        const current = avCurrent();
-        if (current) current.params[key] = value;
+        avRemember({params: {[key]: value}});
         post('/api/auraverb', {mix: 0, param: key, value});
       });
     });
     panel.querySelector('[data-av-enable]').addEventListener('click', e => {
-      const on = !e.currentTarget.classList.contains('on');
-      const current = avCurrent();
-      if (current) current.enabled = on;
+      const on = !(avCurrent()?.enabled === true);
+      avRemember({enabled: on});
       refreshAuraVerb();
       post('/api/auraverb', {mix: 0, enabled: on});
     });
@@ -2664,6 +2712,12 @@ function selectMixer(m, notify = true) {
   const nMix = Number(MIXER.n_mixes) || 0;
   if (!Number.isInteger(m) || m < 0 || m >= nMix) return;
   ACTIVE_MIX = m;
+  const auraButton = document.querySelector('[data-auraverb-open]');
+  if (auraButton) auraButton.hidden = m !== 0;
+  if (m !== 0) {
+    const panel = $('#auraverbpanel');
+    if (panel) panel.hidden = true;
+  }
   document.querySelectorAll('[data-mix-pane]').forEach(pane => {
     pane.hidden = +pane.dataset.mixPane !== m;
   });
