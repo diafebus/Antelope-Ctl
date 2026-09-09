@@ -2678,10 +2678,39 @@ function setMixLink(m, pair, on) {
         if (field === 'send' && !(MIXER.send_mixes || []).includes(m)) continue;
         markMixerPending(m, partner, field, source[field]);
         post('/api/mix', {mix: m, channel: partner, [field]: source[field]});
+        if (field === 'fader' || field === 'send')
+          paintMixerField(m, partner, field, source[field]);
       }
     }
   }
   refreshMixLinks();
+}
+
+function paintMixerField(m, ch, field, value) {
+  const strip = document.querySelector(
+    `[data-mix-pane="${m}"] .mixer-strip[data-ch="${ch}"]`);
+  if (!strip) return;
+  if (field === 'fader') {
+    const input = strip.querySelector('[data-fader]');
+    if (!input) return;
+    input.value = -value;
+    strip.querySelector('[data-fval]').textContent = mixerFaderLabel(value);
+    paintMixerFader(strip, input.value);
+  } else if (field === 'send') {
+    const input = strip.querySelector('[data-send]');
+    if (!input) return;
+    input.value = -value;
+    strip.querySelector('[data-sval]').textContent = mixerSendLabel(
+      value, MIXER?.ranges?.send?.[1] ?? 96);
+    paintMixerKnob(input);
+  }
+}
+
+function mirrorLinkedMixField(m, ch, field, value) {
+  if (!mixIsLinked(ch) || (field !== 'fader' && field !== 'send')) return;
+  const partner = mixLinkPartner(ch);
+  markMixerPending(m, partner, field, value);
+  paintMixerField(m, partner, field, value);
 }
 
 function postLinkedMix(m, ch, patch) {
@@ -2692,13 +2721,7 @@ function postLinkedMix(m, ch, patch) {
   const partner = mixLinkPartner(ch);
   markMixerPending(m, partner, field, value);
   post('/api/mix', {mix: m, channel: partner, ...patch});
-  const strip = document.querySelector(`[data-mix-pane="${m}"] .mixer-strip[data-ch="${partner}"]`);
-  if (strip && field === 'fader') {
-    const fader = strip.querySelector('[data-fader]');
-    fader.value = -value;
-    strip.querySelector('[data-fval]').textContent = mixerFaderLabel(value);
-    paintMixerFader(strip, fader.value);
-  }
+  if (field === 'fader' || field === 'send') paintMixerField(m, partner, field, value);
 }
 
 function postLinkedSolo(m, ch, on) {
@@ -2887,8 +2910,11 @@ function renderMix(pane, m) {
     const fader = strip.querySelector('[data-fader]'), fval = strip.querySelector('[data-fval]');
     paintMixerFader(strip, fader.value);
     fader.addEventListener('input', () => {
-      fval.textContent = mixerFaderLabel(-(+fader.value));
+      const value = -(+fader.value);
+      markMixerPending(m, ch, 'fader', value);
+      fval.textContent = mixerFaderLabel(value);
       paintMixerFader(strip, fader.value);
+      mirrorLinkedMixField(m, ch, 'fader', value);
     });
     fader.addEventListener('change', () => {
       const value = -(+fader.value);
@@ -2910,8 +2936,11 @@ function renderMix(pane, m) {
       wirePrecisionRange(send);
       paintMixerKnob(send);
       send.addEventListener('input', e => {
-        sval.textContent = mixerSendLabel(-(+e.target.value), sHi);
+        const value = -(+e.target.value);
+        markMixerPending(m, ch, 'send', value);
+        sval.textContent = mixerSendLabel(value, sHi);
         paintMixerKnob(send);
+        mirrorLinkedMixField(m, ch, 'send', value);
       });
       send.addEventListener('change', e => {
         const value = -(+e.target.value);
