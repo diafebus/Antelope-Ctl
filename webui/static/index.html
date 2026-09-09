@@ -1331,9 +1331,8 @@ function applyChannels(channels) {
   });
 }
 
-// ?meterdebug=1 -- watch the raw 0x75 bytes so the real per-input offsets can
-// be pinned down (the contiguous "base + channel" map is not confirmed for
-// every channel -- see webui/METERS.md).
+// ?meterdebug=1 -- inspect both streams. Physical inputs use 0x73 @221..232;
+// 0x75 ownership is still unresolved (see webui/METERS.md).
 const METER_DEBUG = new URLSearchParams(location.search).has('meterdebug');
 const MDBG_SEEN = {};        // "tag@off" -> Set of values seen, to flag movers
 function mdbgGroup(hostId, tag, raw) {
@@ -1376,31 +1375,56 @@ function meterGradient() {
   return `linear-gradient(0deg, ${g} ${p12}%, ${y} ${p12}%, ${y} ${p6}%, `
        + `${o} ${p6}%, ${o} ${p2}%, ${r} ${p2}%)`;
 }
-const CLIP_HOLD_MS = 1500;   // clip LED latches this long after the last 0-dB sample
+const CLIP_HOLD_MS = 1500;   // hold after confirmed clip or raw top-of-scale
 const CLIP_TIMER = {};
+function meterPresentation(sample, spec) {
+  const legacyDb = typeof sample === 'number' && Number.isFinite(sample) ? sample : null;
+  const db = legacyDb ?? (Number.isFinite(sample?.db) ? sample.db : null);
+  const raw = Number.isFinite(sample?.raw) ? sample.raw : null;
+  const validRaw = raw != null && raw >= 0 && raw <= 96;
+  // Presentation approximation only: restore the earlier -raw visual response
+  // for the confirmed Orion physical bank. Never write this estimate into the
+  // protocol's db/clip fields or borrow calibration from the 0x75 report.
+  const estimated = db == null && validRaw
+    && spec?.physical_meter_base_offset === 221
+    && spec?.physical_meter_direction === 'inverted'
+    && spec?.physical_meter_raw_range?.[0] === 0
+    && spec?.physical_meter_raw_range?.[1] === 96;
+  const known = db != null || validRaw;
+  const silent = sample?.silence === true;
+  const pct = silent ? 0 : db != null ? dbToPct(db)
+    : estimated ? dbToPct(-raw) : validRaw ? (96 - raw) / 96 * 100 : 0;
+  return {
+    pct, known, estimated, rawOnly: db == null && validRaw && !estimated,
+    peak: known && !silent && (sample?.clip === true || legacyDb != null && legacyDb >= 0
+      || estimated && sample?.clip == null && raw === 0),
+    title: estimated ? `Raw ${raw}; approximate level/color scale (uncalibrated)`
+      : db != null ? `${db.toFixed(1)} dBFS` : validRaw ? `Raw ${raw}` : 'Meter unavailable',
+  };
+}
 function applyMeters(meters) {
-  (meters || []).forEach((sample, ch) => {
-    const bar = document.querySelector(`.pre[data-ch="${ch}"] [data-meter]`); if (!bar) return;
-    const legacyDb = typeof sample === 'number' ? sample : null;
-    const db = legacyDb ?? sample?.db ?? null;
-    const raw = typeof sample === 'object' ? sample?.raw : null;
-    const rawOnly = db == null && raw != null;
-    const pct = rawOnly
-      ? Math.max(0, Math.min(100, (96 - raw) / 96 * 100))
-      : (db == null ? 0 : dbToPct(db));
-    // Raw-only samples show activity without claiming dB zones or clip state.
-    bar.classList.toggle('raw', rawOnly);
-    bar.style.clipPath = `inset(${(100 - pct).toFixed(1)}% 0 0 0)`;
-    const clipped = legacyDb != null ? legacyDb >= 0 : sample?.clip === true;
-    if (clipped) {
-      const led = document.querySelector(`.pre[data-ch="${ch}"] [data-clip]`);
-      if (led) {
-        led.classList.add('on');
-        clearTimeout(CLIP_TIMER[ch]);
-        CLIP_TIMER[ch] = setTimeout(() => led.classList.remove('on'), CLIP_HOLD_MS);
-      }
+  // Visit every strip so truncated/missing samples cannot leave stale peaks.
+  for (let ch = 0; ch < N_CH; ch++) {
+    const sample = meters?.[ch];
+    const bar = document.querySelector(`.pre[data-ch="${ch}"] [data-meter]`); if (!bar) continue;
+    const view = meterPresentation(sample, PROFILE?.frame?.state_report);
+    bar.classList.toggle('raw', view.rawOnly);
+    bar.style.clipPath = `inset(${(100 - view.pct).toFixed(1)}% 0 0 0)`;
+    bar.parentElement.title = view.title;
+    const led = document.querySelector(`.pre[data-ch="${ch}"] [data-clip]`);
+    if (!led) continue;
+    led.title = view.estimated
+      ? 'Peak: raw top-of-scale (clip unverified) — click to clear'
+      : 'Clip — click to clear';
+    if (!view.known) {
+      clearTimeout(CLIP_TIMER[ch]);
+      led.classList.remove('on');
+    } else if (view.peak) {
+      led.classList.add('on');
+      clearTimeout(CLIP_TIMER[ch]);
+      CLIP_TIMER[ch] = setTimeout(() => led.classList.remove('on'), CLIP_HOLD_MS);
     }
-  });
+  }
 }
 
 // ---- buses -----------------------------------------------------------
@@ -2293,7 +2317,7 @@ function applyState(s) {
   st.className = ONLINE ? 'online' : 'offline';
   st.textContent = ONLINE ? 'online' : 'device offline';
   $('#main').classList.toggle('offline', !ONLINE);
-  if (!ONLINE) return;
+  if (!ONLINE) { applyMeters([]); return; }
 
   applyChannels(s.channels);
   applyMeters(s.input_meters || s.meters_db);
@@ -2320,6 +2344,7 @@ $('#bright').addEventListener('change', e => post('/api/brightness', {value: +e.
 // ---- boot + live feed (SSE) ---------------------------------------
 function markOffline(text) {
   ONLINE = false;
+  applyMeters([]);
   const st = $('#status'); st.className = 'offline'; st.textContent = text;
   $('#main').classList.add('offline');
 }

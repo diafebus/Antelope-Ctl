@@ -1,5 +1,21 @@
 # Orion meter evidence: current correction and historical review
 
+## 2026-09-09: preamp display regression fixed
+
+The physical source remains `0x73 @221..232`; server samples still expose
+`db: null` and `clip: null` without calibration. The WebUI now restores the
+previous visual response as a **presentation approximation**: use `-raw`
+on the existing -60..0, gamma-2 display scale, with the same fixed color
+zones. Hover text identifies the scale as uncalibrated. Raw 96 is empty;
+raw 0 lights a 1.5-second peak indicator, explicitly titled top-of-scale
+(clip unverified). This does not establish a calibrated dBFS curve or an
+independent hardware clip flag. Missing samples/disconnection clear stale
+bars and peak holds. Other raw-only profiles retain their raw display.
+
+Offline regression checks: `node tools/test_webui_meters.cjs` and
+`python3 -m unittest tools.test_meter_sources`. A live Launcher comparison
+is still needed to validate the physical bank's scale and thresholds.
+
 ## 2026-09-09: window selection and shared meter banks
 
 User observation: Mix 1–4 windows reuse meter bytes, changing their source
