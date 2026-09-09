@@ -366,18 +366,20 @@
   .mixer-pane-hd { display:flex; align-items:center; gap:8px; padding:8px 10px 0; }
   .mixer-pane-hd .hint { margin:0; }
   .mixer-scroll { overflow-x:auto; overflow-y:hidden; padding:10px 10px 12px; }
-  .mixer-strips { display:grid; grid-auto-flow:column; grid-auto-columns:68px; gap:5px;
+  .mixer-strips { display:grid; grid-auto-flow:column; grid-auto-columns:88px; gap:4px;
                  align-items:stretch; width:max-content; min-width:100%; }
-  .mixer-strip { position:relative; width:68px; min-height:330px; padding:7px 5px 6px; display:flex;
-                flex-direction:column; align-items:center; gap:5px; background:linear-gradient(180deg,#242831,#191c22);
-                border:1px solid var(--line); border-radius:6px; }
-  .mixer-strip.master { border-color:#586170; background:linear-gradient(180deg,#2b303a,#1b1e25); }
+  .mixer-strip { position:relative; width:88px; min-height:405px; box-sizing:border-box; padding:6px 7px 7px; display:flex;
+                flex-direction:column; align-items:center; gap:5px; background:linear-gradient(180deg,#30343b,#20242a);
+                border:1px solid #111419; border-radius:2px; }
+  .mixer-strip.master { border-color:#586170; background:linear-gradient(180deg,#363b44,#242830); }
   .mixer-strip.linkstart { box-shadow:inset -3px 0 0 rgba(223,227,234,.55); }
   .mixer-strip.linkend { box-shadow:inset  3px 0 0 rgba(223,227,234,.55); }
   .mixer-strip .linkbtn { top:5px; right:4px; width:20px; height:19px; }
-  .mixer-strip .mxname { color:var(--fg); font:700 10px/1 ui-monospace,monospace; white-space:nowrap; }
+  .mixer-strip .mxname { width:100%; box-sizing:border-box; padding:5px 2px; text-align:center; color:#41ceb7;
+                          border:1px solid #159680; box-shadow:inset 0 0 0 1px #063f37; font:700 11px/1 ui-monospace,monospace; white-space:nowrap; }
   .mixer-strip.master .mxname { color:var(--accent); }
-  .mxval { height:13px; color:var(--dim); font:10px/1 ui-monospace,monospace; white-space:nowrap; }
+  .mxval { width:62px; box-sizing:border-box; padding:4px 2px; text-align:center; color:#e0e3e7; background:#050608;
+           border-radius:3px; font:700 11px/1 ui-monospace,monospace; white-space:nowrap; }
   .mixer-fader-row { display:flex; align-items:stretch; justify-content:center; gap:4px; height:166px; width:100%; }
   .mixer-fader-well { position:relative; width:43px; height:166px; flex:0 0 43px; }
   .mixer-fader-well::before { content:""; position:absolute; z-index:0; left:50%; top:4px; bottom:4px;
@@ -409,12 +411,14 @@
                      background:var(--meter); transition:height .08s linear; }
   .mixer-meter > i.unavailable { height:0; }
   .mixer-meter > i.peak { background:var(--warn); }
-  .mixer-control { width:100%; display:flex; flex-direction:column; gap:2px; }
-  .mixer-control.after-fader { margin-top:9px; }
-  .mixer-control label { display:flex; justify-content:space-between; align-items:baseline;
-                         color:var(--dim); font:9px/1 ui-monospace,monospace; }
-  .mixer-control output { color:var(--fg); font:9px/1 ui-monospace,monospace; }
-  .mixer-control input[type=range] { width:100%; height:12px; margin:0; accent-color:var(--accent); }
+  .mixer-knob-control { width:100%; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .mixer-readout { min-width:57px; box-sizing:border-box; padding:4px 3px; text-align:center; color:#e0e3e7;
+                   background:#050608; border-radius:3px; font:700 11px/1 ui-monospace,monospace; }
+  .mixer-knob { position:relative; width:48px; height:48px; border-radius:50%; background:radial-gradient(circle at 35% 29%,#646970,#3b4047 48%,#111419 51%,#080a0d 66%,#434850 69%,#12151a 74%); box-shadow:0 1px 3px #000, inset 0 0 0 2px #080a0d; }
+  .mixer-knob::before { content:""; position:absolute; inset:7px; border-radius:50%; background:linear-gradient(135deg,#535860,#272c33); box-shadow:inset 1px 1px 2px #858a91, inset -2px -2px 4px #12151a; }
+  .mixer-knob i { position:absolute; z-index:1; left:50%; top:8px; width:3px; height:16px; border-radius:2px; background:#d5d9de; transform-origin:50% 16px; transform:translateX(-50%) rotate(-135deg); box-shadow:0 0 2px #fff; pointer-events:none; }
+  .mixer-knob input[type=range] { position:absolute; inset:0; z-index:2; width:100%; height:100%; margin:0; opacity:0; cursor:ew-resize; }
+  .mixer-knob-label { color:#c3c8ce; font:700 10px/1 ui-monospace,monospace; }
   .mixer-buttons { display:flex; gap:3px; width:100%; }
   .mixer-buttons button { flex:1; min-width:0; cursor:pointer; background:#0e1116; color:var(--dim);
                           border:1px solid var(--line); border-radius:3px; padding:4px 0;
@@ -2508,6 +2512,14 @@ function paintMixerFader(strip, value) {
   thumb.style.setProperty('--fader-pos', pos.toFixed(1) + 'px');
 }
 
+function paintMixerKnob(input) {
+  if (!input) return;
+  const lo = +input.min, hi = +input.max, value = +input.value;
+  const fraction = hi === lo ? 0 : Math.max(0, Math.min(1, (value - lo) / (hi - lo)));
+  const pointer = input.closest('.mixer-knob')?.querySelector('i');
+  if (pointer) pointer.style.transform = `translateX(-50%) rotate(${(-135 + fraction * 270).toFixed(1)}deg)`;
+}
+
 function renderMix(pane, m) {
   const slots = (MIXER.current || {})[String(m)] || [];
   const [fLo, fHi] = MIXER.ranges.fader, [pLo, pHi] = MIXER.ranges.pan, [sLo, sHi] = MIXER.ranges.send;
@@ -2522,6 +2534,16 @@ function renderMix(pane, m) {
       <span class="mxname">${ch === 0 ? 'MASTER' : 'CH ' + String(ch).padStart(2, '0')}</span>
       ${linkStart ? `<button class="linkbtn" data-mix-link title="link CH${ch}+CH${ch + 1}">${LINK_ICON}</button>` : ''}
       <span class="mxval" data-fval>${mixerFaderLabel(fader)}</span>
+      ${hasSend && ch > 0 ? `<div class="mixer-knob-control">
+        <output data-sval class="mixer-readout">${mixerSendLabel(send, sHi)}</output>
+        <div class="mixer-knob"><i></i><input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} AuraVerb send"></div>
+        <label class="mixer-knob-label">SEND</label>
+      </div>` : ''}
+      ${ch > 0 ? `<div class="mixer-knob-control">
+        <output data-pval class="mixer-readout">${mixerPanLabel(pan)}</output>
+        <div class="mixer-knob"><i></i><input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="channel ${ch} pan"></div>
+        <label class="mixer-knob-label">PAN</label>
+      </div>` : ''}
       <div class="mixer-fader-row">
         <div class="mixer-fader-well">
           <span class="mixer-fader-thumb" aria-hidden="true">
@@ -2535,14 +2557,6 @@ function renderMix(pane, m) {
         <button type="button" data-mute class="${s.mute ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} mute">M</button>
         ${ch > 0 ? `<button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="channel ${ch} solo">S</button>` : ''}
       </div>
-      ${ch > 0 ? `<div class="mixer-control after-fader">
-        <label><span>PAN</span><output data-pval>${mixerPanLabel(pan)}</output></label>
-        <input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="channel ${ch} pan">
-      </div>` : ''}
-      ${hasSend && ch > 0 ? `<div class="mixer-control">
-        <label><span>SEND</span><output data-sval>${mixerSendLabel(send, sHi)}</output></label>
-        <input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} AuraVerb send">
-      </div>` : ''}
     </div>`;
   }).join('');
 
@@ -2560,7 +2574,8 @@ function renderMix(pane, m) {
     });
     const pan = strip.querySelector('[data-pan]'), pval = strip.querySelector('[data-pval]');
     if (pan) {
-      pan.addEventListener('input', e => pval.textContent = mixerPanLabel(e.target.value));
+      paintMixerKnob(pan);
+      pan.addEventListener('input', e => { pval.textContent = mixerPanLabel(e.target.value); paintMixerKnob(pan); });
       pan.addEventListener('change', e => {
         const value = +e.target.value;
         markMixerPending(m, ch, 'pan', value);
@@ -2569,8 +2584,10 @@ function renderMix(pane, m) {
     }
     const send = strip.querySelector('[data-send]'), sval = strip.querySelector('[data-sval]');
     if (send) {
+      paintMixerKnob(send);
       send.addEventListener('input', e => {
         sval.textContent = mixerSendLabel(-(+e.target.value), sHi);
+        paintMixerKnob(send);
       });
       send.addEventListener('change', e => {
         const value = -(+e.target.value);
@@ -2628,11 +2645,13 @@ function refreshMixer() {
     if (pan && !mixerPendingActive(m, ch, 'pan', s.pan) && document.activeElement !== pan) {
       pan.value = s.pan;
       strip.querySelector('[data-pval]').textContent = mixerPanLabel(s.pan);
+      paintMixerKnob(pan);
     }
     const send = strip.querySelector('[data-send]');
     if (send && !mixerPendingActive(m, ch, 'send', s.send) && document.activeElement !== send) {
       send.value = -s.send;
       send.parentElement.querySelector('[data-sval]').textContent = mixerSendLabel(s.send, MIXER.ranges.send[1]);
+      paintMixerKnob(send);
     }
     if (!mixerPendingActive(m, ch, 'mute', s.mute)) {
       strip.querySelector('[data-mute]').classList.toggle('on', s.mute);
