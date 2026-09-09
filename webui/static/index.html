@@ -470,9 +470,6 @@
   .av-toggle button { width:45px; border:1px solid #39434f; border-radius:12px; padding:3px 5px; cursor:pointer;
                       color:var(--dim); background:#090c10; font:700 10px/1 ui-monospace,monospace; }
   .av-toggle button.on { color:#111; background:#e7edf4; border-color:#fff; }
-  .av-foot { display:flex; align-items:center; justify-content:center; gap:26px; padding:8px 12px; color:var(--dim);
-             border-top:1px solid #202832; font:600 10px/1 ui-monospace,monospace; }
-  .av-foot b { color:#32d48d; } .av-foot b:last-child { color:#f15a5a; }
   .av-note { margin:8px 0 0; color:var(--dim); font-size:10px; text-align:center; }
   @media (max-width:760px) {
     .av-controls { grid-template-columns:repeat(4,minmax(66px,1fr)); row-gap:14px; }
@@ -2500,7 +2497,7 @@ function initAuraVerbPanel() {
         <div class="av-center"><span data-av-status>WAITING FOR READBACK</span><span class="av-screen">ROOM_SIZE</span>
           <span class="av-toggle">FX <button type="button" data-av-enable>OFF</button></span></div>
         <p class="av-note">AuraVerb is the bundled Mix 1 effect. Each change sends the complete read-modify-write state.</p>
-      </div><div class="av-foot"><span>IN <b>Custom</b></span><span>OUT</span><span><b>S</b> · <b> L</b></span></div>`;
+      </div>`;
     const hd = panel.querySelector('.av-hd');
     let dragging = false, dx = 0, dy = 0, pid = null;
     hd.addEventListener('pointerdown', e => {
