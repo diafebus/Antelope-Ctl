@@ -954,7 +954,22 @@ were recorded with **deliberately different LineOut routing** -- preamp
   the Windows TSV layout -- use **`tools/scan_macos_capture.py`** for
   these (see `CAPTURING.md`).
 
-### Still unconfirmed
+### Current meter status (2026-09-09)
+
+Physical-input raw meters use `0x73` full-report bytes **221–232**. Their
+dBFS calibration and separate clip indication remain unknown; the old
+`0x75` curve below does not apply to this bank.
+
+**Mixer windows share meter lanes according to the selected mix**, as
+observed by the user. The Mix 2 → 3 → 4 → 1 capture confirms selection via
+`SET_PARAM(0x49, target 1, value 1/2/3/0)` and readback at `0x73 [122]`.
+It is silent in the shared banks, so it does not establish individual
+strip/master offsets. The separate **Meters window** also switches shared
+meters by source/destination selection (user observation); its selector
+map remains to be captured/decoded. See PROTOCOL.md §9 for frame evidence
+and the distinction between selectors `[121]` and `[122]`.
+
+### Historical meter interpretation (superseded for physical inputs)
 
 The meter report (magic `0x75`) originally had one *candidate* offset:
 `frame.meter_report.channel_meter_base_offset = 32`, one byte per channel

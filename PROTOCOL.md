@@ -118,11 +118,13 @@ response** carrying live state (routing, mixer, AuraVerb, EQ, ...). See
 §4a. The earlier "there is no hidden fourth report type" was right about
 *passive* traffic and wrong about *solicited* traffic.
 
-**Connect handshake (cross-platform confirmed).** The Launcher's entire
-host→device init traffic is a single frame:
+**Command observed during startup (cross-platform confirmed).** Alongside
+the readback query walk (§4a), the Launcher sends
 `SET_PARAM(param 0x49, channel 1, value 0)` -- seen in the Windows
-`AntelopeINIT.tsv` and in all four macOS INIT captures. The device answers
-with the `0x74` enumeration burst + normal `0x73`/`0x75` polling. A
+`AntelopeINIT.tsv` and in all four macOS INIT captures. The 2026-09-09
+switch capture identifies this encoding as selecting Mix 1 (§9), not
+proof of a required handshake. `0x74` frames are host queries, not device
+answers to that selection. A
 just-connected Launcher may also send a short `SET_PARAM(gain 0x50)` step
 sequence on the first channels -- in `on2` that was the user nudging the
 gain sliders to force the (buggy) Launcher to flush state, not a device
@@ -957,6 +959,51 @@ behaviour itself if it wants Launcher-equivalent results.
 
 ## 9. Meters
 
+### Mixer-window selection — captured 2026-09-09
+
+Meters can be **multiplexed by the selected window/source**. A shared lane
+must be interpreted with its selector state, not assigned a permanent bus
+solely because it responds while that bus's window is open.
+
+In `mixer-source-selection-mix2-mix3-mix4-mix1.pcapng`, the user opened
+Mix 2, Mix 3, Mix 4, then Mix 1 (the mixer window with fader, send, pan,
+link, solo and mute). Each switch sends `SET_PARAM`, opcode `0x13`,
+param `[16]=0x49`, target `[17]=1`, zero-based mix index `[18]=0..3`.
+The selected mix reads back at full-report **`0x73 [122]`** (payload `0x6a`).
+
+| Selected window | OUT frame / time (s) | Value | First matching `0x73` frame / time (s) |
+|---|---|---|---|
+| Mix 2 | 1331 / 2.635770 | 1 | 1367 / 2.707066 |
+| Mix 3 | 3047 / 6.064271 | 2 | 3077 / 6.123037 |
+| Mix 4 | 4745 / 9.498507 | 3 | 4759 / 9.522949 |
+| Mix 1 | 6263 / 12.528379 | 0 | 6277 / 12.554931 |
+
+Initial `[122]=0`; **`[121]=18` throughout**. Do not confuse this mix-index
+selector with the separate `[121]` selector used by existing conditional
+strip mappings. No evidence here links `[121]=18` to a named source.
+
+Evidence limits: 4 command reports, 2035 state reports, 2035 free-running
+`0x75` reports (`[1]=0x1f`), no readback traffic. All `0x75` reports are
+identical; `0x73 [125..220]` stays at raw 96. Only `[122]` and physical
+lanes `[222,225,226,227,231]` vary. This establishes selection and readback,
+but silence prevents identifying which shared lanes carry the selected
+mix's strips/master, their stereo arrangement, or calibration. The user's
+live observation establishes that the mixer windows reuse meter bytes;
+an active-signal switch capture is still needed for byte-level ownership.
+
+The user also reports a **separate Meters window**: selecting a source or
+destination switches what shared meter bytes display. Record this as a
+distinct UI observation; its selector command, value map, bank boundaries,
+and interaction with the mixer-window selector remain unverified by this
+capture. Meter selection is not evidence of an audio-routing change.
+
+Decoder implication: tag shared samples with observed selector state;
+invalidate stale samples on changes and leave unselected sources unknown.
+Do not extrapolate the existing `[121]=22` Mix 2 strip mappings to other
+mixes without signal evidence. Keep physical inputs at `[221..232]`.
+The startup `0x49 / target 1 / value 0` has the same encoding as selecting
+Mix 1; this does not establish that sending it is required for startup.
+
 ### Historical six-capture interpretation (superseded for physical inputs)
 
 Capture names, report/payload offset limits, and the bounded correlation
@@ -1624,7 +1671,7 @@ goes `0x60`→`0x00`. Full decode deferred to `antelope-ctl-afx`.
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
-| Offsets 157-160 / 169-172 / 221-224 | **provisional, six-capture bounded review** -- current runtime retains full-report 157..160 as one mono candidate lane per Mix 1..4 label; fixed ownership is low confidence, with no physical/stereo mapping. Only 158↔222, 159↔223, 160↔224 are exact throughout; first-lane copies are not universal. The true routing-independent preamp meter remains unresolved -- likely in the isochronous audio stream (endpoint `0x84`), not HID. |
+| Shared meter banks / selectors | Physical inputs use `0x73 [221..232]`. Shared lane ownership remains unresolved; user observes window/source multiplexing. Mix selection is `0x49 / target 1 / value 0..3`, echoed at `[122]`; do not conflate it with `[121]`. Active-signal switching and the separate Meters-window selector remain to decode (§9). |
 | Channel-link readback bit | none found; may not exist |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. `0x19`=64 is probably the USB/TB channel stream |

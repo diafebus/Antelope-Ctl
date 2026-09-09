@@ -1,5 +1,22 @@
 # Orion meter evidence: current correction and historical review
 
+## 2026-09-09: window selection and shared meter banks
+
+User observation: Mix 1–4 windows reuse meter bytes, changing their source
+when the active mixer window changes. The separate Meters window likewise
+switches shared bytes by source/destination selection; it is a distinct
+window, not the mixer with fader/send/pan/link/solo/mute controls.
+
+`mixer-source-selection-mix2-mix3-mix4-mix1.pcapng` confirms mixer selection:
+`0x13 / param 0x49 / target 1 / value 1,2,3,0`, echoed by full-report
+`0x73 [122]`. `[121]` stays 18. Full timestamps and frame numbers are in
+PROTOCOL.md §9. The shared banks are silent, so exact switched lane
+ownership is not established here. Meters-window selector encoding is
+still unknown. Consumers must associate shared samples with selector
+state and invalidate stale values on switching, rather than show one
+lane as several simultaneously measured buses. This is a documentation
+finding; runtime selector handling is not implemented by this change.
+
 ## Scope and filter
 
 This note gives the current meter contract and preserves the earlier

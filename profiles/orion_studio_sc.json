@@ -372,6 +372,18 @@
       "adat_gain_base_offset": 75,
       "spdif_gain_base_offset": 91,
       "channel_meter_base_offset": 221,
+      "mixer_window_selection": {
+        "status": "observed_command_and_readback",
+        "opcode": "0x13",
+        "param_id": "0x49",
+        "target_offset": 17,
+        "target": 1,
+        "value_offset": 18,
+        "state_byte_offset": 122,
+        "values": {"0": "Mix 1", "1": "Mix 2", "2": "Mix 3", "3": "Mix 4"},
+        "evidence": "mixer-source-selection-mix2-mix3-mix4-mix1.pcapng, analyzed 2026-09-09: OUT frames 1331/3047/4745/6263 select 1/2/3/0; first matching 0x73 frames 1367/3077/4759/6277. Full-report @121 stays 18; @122 follows selection.",
+        "notes": "User observes shared meter bytes across mixer windows. Capture confirms selector only: 0x73 @125-220 is silent and every free-running 0x75 report is identical. Selected strip/master lane ownership remains unverified. @122 is distinct from @121, the selector used by existing conditional strip mappings. Separate Meters-window source/destination multiplexing is user-observed; its command/value map is not decoded here. Metadata only; no automatic writes or new runtime lane mappings."
+      },
       "physical_meter_base_offset": 221,
       "physical_meter_stride": 1,
       "physical_meter_count": 12,
@@ -681,7 +693,7 @@
         "value": 0,
         "after_query": {"category": "0x0b", "index": 2},
         "evidence": "Windows frame 15784 at 7.713707 s; macos-antelopeINIT-poweron frame 12467 at 22.537315 s. Same opcode and payload in all five INIT captures.",
-        "notes": "Observed startup command only; semantics and necessity are unverified. This is not a readback query and is not included in startup_queries. No automatic command execution is added by this profile. Do not treat capture-specific gain restoration writes as startup defaults."
+        "notes": "Same encoding as Mix 1 window selection, confirmed by mixer-source-selection-mix2-mix3-mix4-mix1.pcapng (2026-09-09); see state_report.mixer_window_selection. Necessity at startup remains unverified. This is not a readback query and is not included in startup_queries. No automatic command execution is added by this profile. Do not treat capture-specific gain restoration writes as startup defaults."
       }
     },
     "readback": {
