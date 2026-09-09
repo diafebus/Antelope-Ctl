@@ -1284,18 +1284,31 @@ def bus_name(profile: dict, bus_id: int) -> str:
 
 def parse_bus_state(profile: dict, data: bytes, bus_id: int) -> dict:
     """Read one bus's level + dim/mute/mono flags from the state report,
-    using state_report.bus_block. Mirrors parse_state()'s shape/approach
-    for per-channel data."""
-    bb = profile['frame']['state_report']['bus_block']
-    base = _as_int(bb['base_offset']) + _as_int(bb['bytes_per_bus']) * bus_id
-    level_off = base + _as_int(bb['level_byte_offset'])
-    status_off = base + _as_int(bb['status_byte_offset'])
-    if status_off >= len(data):
+    using the profile's bus-block layout. Mirrors parse_state()'s
+    shape/approach for per-channel data. Older profiles may provide the
+    equivalent flat bus_block_offset/bus_block_stride fields; accept those
+    too so a device thread cannot die on a schema-only difference."""
+    sr = profile['frame']['state_report']
+    bb = sr.get('bus_block')
+    if bb is not None:
+        base = _as_int(bb['base_offset']) + _as_int(bb['bytes_per_bus']) * bus_id
+        level_off = base + _as_int(bb['level_byte_offset'])
+        status_off = base + _as_int(bb['status_byte_offset'])
+        status_bits = bb.get('status_bits', {})
+    else:
+        stride = sr.get('bus_block_stride')
+        offset = sr.get('bus_block_offset')
+        if stride is None or offset is None:
+            raise ValueError('this profile has no state_report bus block')
+        base = _as_int(offset) + _as_int(stride) * bus_id
+        level_off, status_off = base, base + 1
+        status_bits = sr.get('bus_status_bits', {})
+    if level_off >= len(data) or status_off >= len(data):
         raise ValueError(f'state report too short for bus {bus_id}')
 
     status_byte = data[status_off]
     result = {'bus': bus_id, 'level': data[level_off]}
-    for bit_name, bit_def in bb['status_bits'].items():
+    for bit_name, bit_def in status_bits.items():
         mask = _as_int(bit_def['mask'])
         shift = bit_def['shift']
         result[bit_name] = (status_byte & mask) >> shift
