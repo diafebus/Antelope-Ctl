@@ -663,7 +663,12 @@ const RING_BAND_SHIFT = 'translate(8.021578 -5.326478)';
 // Real length (15 * 270° in rad), not pathLength -- some renderers ignore that.
 const RING_D = 'M 44.234 63.591 A 15 15 0 1 1 65.448 63.591';
 const RING_LEN = 70.69;
-function modeRange(mode) { return GAIN_RANGE[mode] || GAIN_RANGE.mic || [-6, 75]; }
+function modeRange(mode) {
+  const key = String(mode || '').toLowerCase();
+  const range = GAIN_RANGE[mode] || GAIN_RANGE[key];
+  return Array.isArray(range) && range.length === 2
+    ? range.map(Number) : [-6, 75];
+}
 
 function buildChannels(n) {
   const wrap = $('#channels'); wrap.innerHTML = '';
@@ -674,7 +679,7 @@ function buildChannels(n) {
       <div class="top">
         <span class="chid">CH${ch + 1}</span>
         <select class="mode" data-mode>${MODES.map(m =>
-          `<option value="${m}"${m === 'hiz' && !HIZ.has(ch) ? ' disabled' : ''}>${m.toUpperCase()}</option>`).join('')}</select>
+        `<option value="${m}"${String(m).toLowerCase() === 'hiz' && !HIZ.has(ch) ? ' disabled' : ''}>${m.toUpperCase()}</option>`).join('')}</select>
       </div>
       ${ch % 2 === 0 && pairOf(ch) < N_PAIRS
         ? `<button class="linkbtn" data-link title="link CH${ch + 1}+CH${ch + 2}">${LINK_ICON}</button>`
@@ -1406,7 +1411,8 @@ function applyChannels(channels) {
 
     const p48 = el.querySelector('[data-tog="phantom"]');
     p48.classList.toggle('on', c.phantom);
-    p48.disabled = c.mode !== 'mic';            // Launcher only exposes 48V in mic mode
+    p48.disabled = String(c.mode).toLowerCase() !== 'mic';
+                                                  // Launcher only exposes 48V in mic mode
     el.querySelector('[data-tog="phase_invert"]').classList.toggle('on', c.phase_invert);
   });
 }
@@ -1527,7 +1533,7 @@ const busIsMon = b => /^monitor/i.test(b.name || '');
 // Line Out + Reamp live in the settings panel (the gear), matching where the
 // Launcher keeps them -- not on the main bus strip.
 const busIsSettings = b => /^(line_out|line out|reamp)/i.test(b.name || '');
-const busIsHp  = b => /^headphone/i.test(b.name || '');
+const busIsHp  = b => /^(headphone|hp)/i.test(b.name || '');
 const busRotary = b => busIsMon(b) ? 'mon' : busIsHp(b) ? 'hp' : null;
 let VK_N = 0;
 function monKnobSVG() {
@@ -2339,9 +2345,20 @@ function mixerPanLabel(value) {
 }
 
 const mixerPendingKey = (mix, ch, field) => `${mix}:${ch}:${field}`;
-const mixLinkPair = ch => ch > 0 ? Math.floor((ch - 1) / 2) : -1;
-const mixLinkPartner = ch => ch > 0 ? (ch % 2 ? ch + 1 : ch - 1) : 0;
-const mixIsLinked = ch => !!MIX_LINKS[mixLinkPair(ch)];
+const mixerHasMaster = () => MIXER?.has_master !== false;
+const mixerInputStart = () => mixerHasMaster() ? 1 : 0;
+const mixLinkPair = ch => {
+  const input = ch - mixerInputStart();
+  return input >= 0 ? Math.floor(input / 2) : -1;
+};
+const mixLinkPartner = ch => {
+  const input = ch - mixerInputStart();
+  return input >= 0 ? mixerInputStart() + (input ^ 1) : -1;
+};
+const mixIsLinked = ch => {
+  const pair = mixLinkPair(ch);
+  return pair >= 0 && !!MIX_LINKS[pair];
+};
 function loadMixLinks() {
   try { return JSON.parse(localStorage.getItem('mixerLinks') || '{}') || {}; }
   catch (_) { return {}; }
@@ -2369,7 +2386,8 @@ function applyMixerMeters(meters) {
     const meter = strip.querySelector('[data-mix-meter]');
     if (!pane || !meter) return;
     const ch = +strip.dataset.ch;
-    const selected = meters && +meters.mix === +pane.dataset.mixPane && ch > 0;
+    const selected = meters && +meters.mix === +pane.dataset.mixPane
+      && (!mixerHasMaster() || ch > 0);
     const sample = selected && Array.isArray(meters.strips)
       ? meters.strips.find(x => +x.ch === ch) : null;
     const raw = Number.isFinite(sample?.raw) ? sample.raw : null;
@@ -2388,19 +2406,23 @@ function buildMixer() {
   const wrap = $('#mixer'); wrap.innerHTML = '';
   if (!MIXER.available) return;
   const nMix = Number(MIXER.n_mixes) || 0;
+  const selector = PROFILE?.frame?.state_report?.mixer_window_selection;
   const panes = Array.from({length: nMix}, (_, m) =>
     `<div class="mixer-pane" data-mix-pane="${m}" role="tabpanel" hidden>
        <div class="mixer-pane-hd">
-         <span class="hint">Mix ${m + 1} meter bank · target 1 selector ${m}</span>
+         <span class="hint">Mix ${m + 1}${selector ? ` meter bank · selector ${m}` : ''}</span>
        </div>
        <div class="mixer-scroll"><div class="mixer-strips" data-strips></div></div>
      </div>`).join('');
+  const hasMaster = mixerHasMaster();
   wrap.innerHTML = `<div class="mixer-shell">
     <div class="mixer-hd">
       <strong>Virtual mixer</strong>
-      <span class="hint">${MIXER.channels_per_mix} input strips + master</span>
+      <span class="hint">${MIXER.channels_per_mix} input strips${hasMaster ? ' + master' : ''}</span>
     </div>${panes}
-    <p class="hint mixer-note">Fader values are attenuation below unity. The thin green meter is the selected mixer-window raw meter bank; its master lane is not mapped yet.</p>
+    <p class="hint mixer-note">Fader values are attenuation below unity. ${selector
+      ? 'The thin green meter follows the selected mixer-window bank.'
+      : 'Meter mapping is not declared for this profile yet.'}</p>
   </div>`;
   const activeRoute = $('#routetabs .tabbtn.active')?.dataset.rtab || '';
   const routeMix = /^mix([1-4])$/.exec(activeRoute);
@@ -2413,8 +2435,8 @@ function refreshMixLinks() {
     const ch = +strip.dataset.ch, linked = mixIsLinked(ch);
     const button = strip.querySelector('[data-mix-link]');
     if (button) button.classList.toggle('on', linked);
-    strip.classList.toggle('linkstart', linked && ch % 2 === 1);
-    strip.classList.toggle('linkend', linked && ch > 0 && ch % 2 === 0);
+    strip.classList.toggle('linkstart', linked && mixLinkPartner(ch) > ch);
+    strip.classList.toggle('linkend', linked && mixLinkPartner(ch) < ch);
   });
 }
 
@@ -2424,10 +2446,11 @@ function setMixLink(m, pair, on) {
   saveMixLinks();
   post('/api/mix-link', {pair, enabled: on});
   if (on) {
-    const source = (MIXER.current || {})[String(m)]?.[pair * 2 + 1];
+    const sourceCh = mixerInputStart() + pair * 2;
+    const source = (MIXER.current || {})[String(m)]?.[sourceCh];
     if (source) {
-      const partner = pair * 2 + 2;
-      for (const field of ['fader', 'send', 'mute']) {
+      const partner = sourceCh + 1;
+      for (const field of ['fader', 'send', 'mute', 'solo']) {
         if (field === 'send' && !(MIXER.send_mixes || []).includes(m)) continue;
         markMixerPending(m, partner, field, source[field]);
         post('/api/mix', {mix: m, channel: partner, [field]: source[field]});
@@ -2471,12 +2494,13 @@ function selectMixer(m, notify = true) {
   const pane = document.querySelector(`[data-mix-pane="${m}"]`);
   if (pane) renderMix(pane, m);
   applyMixerMeters(MIXER_METERS);
-  if (notify) post('/api/mixer-select', {mix: m});
+  if (notify && PROFILE?.frame?.state_report?.mixer_window_selection)
+    post('/api/mixer-select', {mix: m});
 }
 
 function mixerSoloSnapshot(m) {
   const slots = (MIXER.current || {})[String(m)] || [];
-  const n = (Number(MIXER.channels_per_mix) || 0) + 1;
+  const n = (Number(MIXER.channels_per_mix) || 0) + (mixerHasMaster() ? 1 : 0);
   return {
     mutes: Array.from({length: n}, (_, ch) => !!slots[ch]?.mute),
     solos: Array.from({length: n}, (_, ch) => !!slots[ch]?.solo),
@@ -2523,23 +2547,27 @@ function paintMixerKnob(input) {
 function renderMix(pane, m) {
   const slots = (MIXER.current || {})[String(m)] || [];
   const [fLo, fHi] = MIXER.ranges.fader, [pLo, pHi] = MIXER.ranges.pan, [sLo, sHi] = MIXER.ranges.send;
+  const hasMaster = mixerHasMaster();
   const rows = pane.querySelector('[data-strips]');
   const hasSend = MIXER.has_send !== false && (MIXER.send_mixes || []).includes(m);
-  const n = Math.max((Number(MIXER.channels_per_mix) || 0) + 1, slots.length);
+  const n = Math.max((Number(MIXER.channels_per_mix) || 0) + (hasMaster ? 1 : 0), slots.length);
   rows.innerHTML = Array.from({length: n}, (_, ch) => {
     const s = slots[ch] || {fader: 0, pan: 0, send: 0, mute: false, solo: false};
     const fader = Number(s.fader) || 0, pan = Number(s.pan) || 0, send = Number(s.send) || 0;
-    const pair = mixLinkPair(ch), linkStart = ch > 0 && ch % 2 === 1;
-    return `<div class="mixer-strip${ch === 0 ? ' master' : ''}" data-ch="${ch}">
-      <span class="mxname">${ch === 0 ? 'MASTER' : 'CH ' + String(ch).padStart(2, '0')}</span>
-      ${linkStart ? `<button class="linkbtn" data-mix-link title="link CH${ch}+CH${ch + 1}">${LINK_ICON}</button>` : ''}
+    const isMaster = hasMaster && ch === 0;
+    const linkStart = mixLinkPair(ch) >= 0 && mixLinkPartner(ch) > ch;
+    const label = isMaster ? 'MASTER' : 'CH ' + String(hasMaster ? ch : ch + 1).padStart(2, '0');
+    const linkLabel = `link CH${hasMaster ? ch : ch + 1}+CH${hasMaster ? ch + 1 : ch + 2}`;
+    return `<div class="mixer-strip${isMaster ? ' master' : ''}" data-ch="${ch}">
+      <span class="mxname">${label}</span>
+      ${linkStart ? `<button class="linkbtn" data-mix-link title="${linkLabel}">${LINK_ICON}</button>` : ''}
       <span class="mxval" data-fval>${mixerFaderLabel(fader)}</span>
-      ${hasSend && ch > 0 ? `<div class="mixer-knob-control">
+      ${hasSend && !isMaster ? `<div class="mixer-knob-control">
         <output data-sval class="mixer-readout">${mixerSendLabel(send, sHi)}</output>
         <div class="mixer-knob"><i></i><input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} AuraVerb send"></div>
         <label class="mixer-knob-label">SEND</label>
       </div>` : ''}
-      ${ch > 0 ? `<div class="mixer-knob-control">
+      ${!isMaster ? `<div class="mixer-knob-control">
         <output data-pval class="mixer-readout">${mixerPanLabel(pan)}</output>
         <div class="mixer-knob"><i></i><input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="channel ${ch} pan"></div>
         <label class="mixer-knob-label">PAN</label>
@@ -2549,13 +2577,13 @@ function renderMix(pane, m) {
           <span class="mixer-fader-thumb" aria-hidden="true">
             <img class="mixer-fader-art" src="/webui/assets/fader-shadow.svg" alt="" draggable="false">
           </span>
-          <input class="mixer-fader" type="range" data-fader min="${-fHi}" max="${-fLo}" value="${-fader}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} fader">
+          <input class="mixer-fader" type="range" data-fader min="${-fHi}" max="${-fLo}" value="${-fader}" aria-label="${isMaster ? 'master' : 'channel ' + ch} fader">
         </div>
-        ${ch > 0 ? '<div class="mixer-meter" title="Meter unavailable"><i data-mix-meter class="unavailable"></i></div>' : ''}
+        ${!isMaster ? '<div class="mixer-meter" title="Meter unavailable"><i data-mix-meter class="unavailable"></i></div>' : ''}
       </div>
       <div class="mixer-buttons">
-        <button type="button" data-mute class="${s.mute ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} mute">M</button>
-        ${ch > 0 ? `<button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="channel ${ch} solo">S</button>` : ''}
+        <button type="button" data-mute class="${s.mute ? 'on' : ''}" aria-label="${isMaster ? 'master' : 'channel ' + ch} mute">M</button>
+        ${!isMaster ? `<button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="channel ${ch} solo">S</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2730,6 +2758,12 @@ function applyProfileCapabilities() {
     const n = Number(btn.dataset.rtab.slice(3));
     btn.hidden = !mixer || n > Number(cap.mixes || 0);
   });
+  const active = $('#routetabs .tabbtn.active');
+  if (active?.hidden) {
+    const first = [...$('#routetabs').querySelectorAll('.tabbtn')]
+      .find(btn => !btn.hidden);
+    if (first) first.click();
+  }
 }
 
 async function boot() {
@@ -2740,9 +2774,10 @@ async function boot() {
     return setTimeout(boot, 1500);
   }
   $('#dev').textContent = PROFILE.device?.name || '';   // which profile the daemon picked
-  const m = PROFILE.channels?.modes || PROFILE.params?.input_mode?.values || {};
+  const m = PROFILE.params?.input_mode?.values || PROFILE.channels?.modes || {};
   MODES = Object.values(m);
-  GAIN_RANGE = PROFILE.params?.gain?.per_mode_range || {};
+  GAIN_RANGE = PROFILE.params?.gain?.per_mode_range
+    || PROFILE.params?.gain?.range_by_mode || {};
   HIZ = new Set(PROFILE.channels?.hiz_channels || []);
   N_CH = (PROFILE.channels?.count) || (PROFILE.channels?.count_confirmed) ||
          ((PROFILE.constraints?.channel_bounds?.max ?? 11) + 1);

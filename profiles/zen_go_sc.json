@@ -74,7 +74,7 @@
       "mute_bit": "0x40",
       "solo_bit": "0x80",
       "status": "confirmed",
-      "notes": "The virtual mixer. NOTE this is opcode 0x16 (Orion's mixer is 0x17) and the sub-cmd byte @17 is 0x04 (Orion 0x05); there is NO per-strip send byte (Orion has one at @22) -- the Zen Go mixer strip is just fader + pan + mute + solo. [18]=mix number (0 = Mix 1, 1 = Mix 2; the Zen Go has 2 mixes), [19]=channel (0-15, 16 input strips per mix), [20]=fader raw = dB attenuation 0 (unity) .. 90 (-90 dB), [21]=pan (low 6 bits, 0x20 = centre, ~0x02 = full L, ~0x3e = full R) + mute bit 0x40 + solo bit 0x80. Whole strip state every frame. No 0x73 STATE-REPORT readback -- fader/pan/mute/solo writes produce no state_report change (that part is tested and still true). But do NOT read that as 'write-only': this device speaks the in-band 0x74/0x75 readback (frame.readback), and on the Orion the mixer turned out to be fully readable there as category 0x04 after years of being documented as write-only. Whether the Zen Go exposes its mixer the same way is UNTESTED -- its Launcher never asked during the connect capture, but the Orion's doesn't either and the category answers anyway. Test it: query cat 0x04 index 0. Until then, cache client-side.",
+      "notes": "The virtual mixer. NOTE this is opcode 0x16 (Orion's mixer is 0x17) and the sub-cmd byte @17 is 0x04 (Orion 0x05); there is NO per-strip send byte. The Zen Go mixer strip is fader + pan + mute + solo: [18]=mix number (0 = Mix 1, 1 = Mix 2), [19]=channel (0-15), [20]=fader raw = dB attenuation 0 (unity) .. 90 (-90 dB), [21]=pan (low 6 bits, 0x20 = centre, ~0x02 = full L, ~0x3e = full R) + mute bit 0x40 + solo bit 0x80. Whole strip state every frame. No 0x73 STATE-REPORT readback -- fader/pan/mute/solo writes produce no state_report change. The in-band 0x74/0x75 cat-0x04 layout for mix indices 0 and 1 is capture-confirmed and decoded by the profile-driven parser; live round-trip still needs hardware verification.",
       "evidence": "mixer/capture_mixer_09_fader_unlinked...: d4 04 00 01 <fader> 20 sweeping fader. capture_mixer_07_pan...: [21] swept around 0x20. capture_mixer_11_mute: [21] = 0x60 (0x20|0x40) vs 0x20. capture_mixer_13_solo: [21] = 0xa0 (0x20|0x80). capture_08_mixer_volume_faders_on_2_mixes: [18] = 0 and 1, [19] up to 10."
     },
 
@@ -306,8 +306,8 @@
         }
       ],
       "category_counts_note": "Deliberately empty -- see .hazard. Fill this in ONLY from the device's own connect enumeration, never by probing and never by copying the Orion's counts (different device, different record arrays).",
-      "cli": "Works with the shared code: protocol.build_readback_query / is_readback_response / readback_body; CLI `readback <cat> [idx]`. parse_routing_record (cat 0x03) and parse_mixer_record (cat 0x04) are Orion decoders -- the Zen Go has NOT been shown to use those category numbers, so do not assume they apply.",
-      "still_unknown": "Whether the Zen Go exposes routing (Orion cat 0x03) or mixer (Orion cat 0x04) state via readback at all. Its Launcher never asked for them in this capture, but the Orion's Launcher only asks on connect too and the categories still answer. Testable on hardware: query cat 0x03 / 0x04 at index 0 and see whether a non-empty body comes back."
+      "cli": "Works with the shared code: protocol.build_readback_query / is_readback_response / readback_body; CLI `readback <cat> [idx]`. Routing cat 0x03 remains unconfirmed. parse_mixer_record uses the capture-confirmed Zen Go mixer_state layout for cat 0x04 indices 0 and 1.",
+      "still_unknown": "Whether the Zen Go exposes routing (Orion cat 0x03) state via readback. The mixer category 0x04 layout for indices 0 and 1 is capture-confirmed and now supported by the profile-driven decoder; live control round-trip still needs hardware verification."
     }
   },
 
@@ -339,14 +339,15 @@
     "mixes": 2,
     "names": ["MIX 1 / Monitor-HP1", "MIX 2 / HP2"],
     "channels_per_mix": 16,
+    "has_master": false,
     "fader": { "param": "mix_command byte 20", "range": [0, 90], "min": 0, "max": 90, "direction": "attenuation", "unity": 0, "encoding": "raw = dB attenuation below unity: 0 = 0 dB, 90 = -90 dB" },
     "pan": { "param": "mix_command byte 21 low 6 bits", "center": 32, "range_deg": [-30, 30] },
     "mute_bit": "0x40 of mix_command byte 21",
     "solo_bit": "0x80 of mix_command byte 21",
     "link": "SET_LINK space 3, pair_index = channel // 2 (software-mirrored, like Orion)",
-    "readback": "None in the 0x73 STATE REPORT -- fader/pan/mute/solo writes produce no state_report change (tested). NOT the same as 'no readback exists': see frame.readback, the in-band 0x74/0x75 protocol this device confirmedly speaks. Whether the mixer is exposed there (Orion: category 0x04) is untested. Cache client-side until someone checks.",
-    "status": "confirmed",
-    "notes": "2 mixes ('Mix 1' / 'Mix 2'), 16 input strips each. Each strip = fader + pan + mute + solo (no send). See frame.mix_command. What each strip's input is comes from the 'channel assignments' routing (frame.routing_command)."
+    "readback": "No fader/pan/mute/solo changes appear in the 0x73 STATE REPORT. The in-band 0x74/0x75 category 0x04 layout for Mix 1 and Mix 2 is capture-confirmed (16 two-byte fader + pan/flags slots per mix); live round-trip on this profile remains to be checked.",
+    "status": "confirmed; readback layout capture-confirmed",
+    "notes": "2 mixes ('Mix 1' / 'Mix 2'), 16 input strips each and no separate master strip. Each strip = fader + pan + mute + solo (no send). See frame.mix_command. What each strip's input is comes from the 'channel assignments' routing (frame.routing_command)."
   },
 
   "params": {

@@ -23,10 +23,9 @@ Two kinds of state:
 ⚠ HARDWARE RULE (see ../antelope-ctl/CLAUDE.md "STANDING HARDWARE RULE"):
 never query a readback index past a category's record count -- it BusFaults
 the Orion (physical power cycle). Every query here goes through
-protocol.build_readback_query, which enforces protocol.check_readback_index
-against frame.readback.category_counts. The routing/mixer indices we use
-(dest groups 0..14 for cat 0x03, mixes 0..3 for cat 0x04) are all inside
-those bounds.
+protocol.build_readback_query. Orion uses its enumerated category counts;
+profiles without those counts can only use explicitly capture-confirmed
+feature layouts, such as the Zen Go mixer records.
 
 Run:  pip install -r requirements.txt  &&  python3 server.py
 Then: http://127.0.0.1:8714
@@ -144,10 +143,17 @@ class Device:
         self.n_mixes = int(mixer.get("mixes")
                            or proto.readback_category_count(profile, MIXER_CAT) or 0)
         self.mix_channels = int(mixer.get("channels_per_mix", 0))
+        self.mixer_has_master = bool(mixer.get("has_master", True))
+        layout_indices = proto.readback_layout_indices(
+            profile, MIXER_CAT, kind="mixer_state")
+        category_count = proto.readback_category_count(profile, MIXER_CAT)
+        self.mixer_indices = layout_indices or (
+            list(range(category_count)) if category_count is not None else [])
         self.routing_readback = bool(
             proto.readback_category_count(profile, ROUTING_CAT))
         self.mixer_readback = bool(
-            proto.readback_category_count(profile, MIXER_CAT))
+            self.n_mixes and all(m in self.mixer_indices
+                                 for m in range(self.n_mixes)))
         self.routing_available = bool(self.route_dests and self.routing_readback)
         self.mixer_available = bool(
             self.n_mixes and self.mix_channels and self.mixer_readback
@@ -243,6 +249,9 @@ class Device:
             cached = self.mixer.get(mix)
             if cached is not None:
                 return [dict(slot) for slot in cached]
+        if mix not in self.mixer_indices:
+            raise RuntimeError(
+                f"mixer readback index {mix} is not declared safe for this profile")
         req = proto.build_readback_query(self.profile, MIXER_CAT, mix)
         data = transport.query(
             req,
@@ -382,7 +391,8 @@ class Device:
     def _readback_plan(self):
         routes = [(ROUTING_CAT, d) for d in self.route_dests] \
             if self.routing_available else []
-        mixes = [(MIXER_CAT, m) for m in range(self.n_mixes)] \
+        mixes = [(MIXER_CAT, m) for m in self.mixer_indices
+                 if 0 <= m < self.n_mixes] \
             if self.mixer_available else []
         return routes + mixes
 
@@ -638,7 +648,7 @@ class Scalar(BaseModel):
     value: int
 
 class MixerSelect(BaseModel):
-    mix: int                  # 0-based Mix 1..4, target 1 of param 0x49
+    mix: int                  # 0-based mix index; profile may have no selector
 
 class Bus(BaseModel):
     bus: int
@@ -661,10 +671,10 @@ class RouteBatch(BaseModel):
 
 class MixStrip(BaseModel):
     mix: int                  # 0-based
-    channel: int              # 0 = mix master, 1..32 = input strips
-    fader: int | None = None  # dB of attenuation, 0..90 (sign ignored)
-    pan: int | None = None    # -30..+30
-    send: int | None = None   # 0..96
+    channel: int              # profile-defined slot (Orion master is slot 0)
+    fader: int | None = None  # profile-defined dB attenuation (sign ignored)
+    pan: int | None = None    # profile-defined panorama range
+    send: int | None = None   # profile-defined AuraVerb-send range
     mute: bool | None = None
     solo: bool | None = None
 
@@ -1027,6 +1037,11 @@ def api_mixer_select(s: MixerSelect):
     if not 0 <= s.mix < DEV.n_mixes:
         return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
     selector = PROFILE["frame"].get("state_report", {}).get("mixer_window_selection", {})
+    if not selector:
+        # Some devices expose each mix's controls without the Orion's
+        # selector-gated meter bank.  The tab still changes locally; there is
+        # simply no selector command to send for that profile.
+        return {"ok": True, "mix": s.mix, "selected": False}
     try:
         param_id = selector["param_id"]
         param_id = int(param_id, 0) if isinstance(param_id, str) else int(param_id)
@@ -1069,21 +1084,30 @@ def api_mix_solo(s: MixSolo):
         return _bad("mixer readback is not safely mapped for this profile")
     if not 0 <= s.mix < DEV.n_mixes:
         return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
-    if not 1 <= s.channel <= DEV.mix_channels:
-        return _bad(f"channel {s.channel} out of range 1..{DEV.mix_channels}; master has no Solo")
+    first_channel = 1 if DEV.mixer_has_master else 0
+    last_channel = DEV.mix_channels if DEV.mixer_has_master else DEV.mix_channels - 1
+    if not first_channel <= s.channel <= last_channel:
+        if DEV.mixer_has_master:
+            return _bad(
+                f"channel {s.channel} out of range {first_channel}..{last_channel}; "
+                "master has no Solo")
+        return _bad(
+            f"channel {s.channel} out of range {first_channel}..{last_channel}")
 
     def do(t, m=s.mix, ch=s.channel, on=s.on):
         slots = DEV._mixer_record_for_write(t, m)
-        if len(slots) < DEV.mix_channels + 1:
+        n_slots = DEV.mix_channels + int(DEV.mixer_has_master)
+        if len(slots) < n_slots:
             raise RuntimeError(
-                f"mixer {m} returned {len(slots)} slots; expected {DEV.mix_channels + 1}")
+                f"mixer {m} returned {len(slots)} slots; expected {n_slots}")
 
         def solo_update(active):
-            # Master is deliberately outside Solo: its strip has only fader
-            # and mute, and muting it would silence every soloed input.
-            return [(bool(slot["mute"]), bool(slot["solo"])) if idx == 0
+            # A mix master is deliberately outside Solo: its strip has only
+            # fader and mute, and muting it would silence every soloed input.
+            return [(bool(slot["mute"]), bool(slot["solo"]))
+                    if DEV.mixer_has_master and idx == 0
                     else (idx not in active, idx in active)
-                    for idx, slot in enumerate(slots[:DEV.mix_channels + 1])]
+                    for idx, slot in enumerate(slots[:n_slots])]
 
         if on:
             group = DEV.solo_state.get(m)
@@ -1091,7 +1115,7 @@ def api_mix_solo(s: MixSolo):
                 group = {
                     "restore": [
                         (bool(slot["mute"]), bool(slot["solo"]))
-                        for slot in slots[:DEV.mix_channels + 1]
+                        for slot in slots[:n_slots]
                     ],
                     "active": set(),
                 }
@@ -1102,7 +1126,7 @@ def api_mix_solo(s: MixSolo):
         else:
             group = DEV.solo_state.get(m)
             if group is None:
-                updated = [(False, False) for _ in range(DEV.mix_channels + 1)]
+                updated = [(False, False) for _ in range(n_slots)]
             else:
                 group["active"].discard(ch)
                 active = group["active"]
@@ -1112,7 +1136,7 @@ def api_mix_solo(s: MixSolo):
                     updated = group["restore"]
                     DEV.solo_state.pop(m, None)
 
-        for idx, slot in enumerate(slots[:DEV.mix_channels + 1]):
+        for idx, slot in enumerate(slots[:n_slots]):
             mute, solo = updated[idx]
             t.write(proto.build_mix_command(
                 PROFILE, m, idx, slot["fader"], slot["pan"], slot["send"],
@@ -1126,18 +1150,25 @@ def api_mix_solo(s: MixSolo):
 @app.get("/api/mixer")
 def api_mixer():
     p = PROFILE.get("params", {})
+    mixer = PROFILE.get("mixer", {})
     send = p.get("mix_send", {})
+    fader = p.get("mix_fader", {}).get("range",
+                                        mixer.get("fader", {}).get("range", [0, 90]))
+    pan = p.get("mix_pan", {}).get("range",
+                                    mixer.get("pan", {}).get("range_deg", [-30, 30]))
+    send_range = send.get("range", [0, 96])
     return {
         "available": DEV.mixer_available,
         "n_mixes": DEV.n_mixes,
         "channels_per_mix": DEV.mix_channels,
+        "has_master": DEV.mixer_has_master,
         "has_send": proto.mix_has_send(PROFILE),
         "send_mixes": [int(m) for m in send.get("mix_indices", [])],
         "send_master": bool(send.get("include_master", False)),
         "ranges": {
-            "fader": p.get("mix_fader", {}).get("range", [0, 90]),
-            "pan": p.get("mix_pan", {}).get("range", [-30, 30]),
-            "send": p.get("mix_send", {}).get("range", [0, 96]),
+            "fader": fader,
+            "pan": pan,
+            "send": send_range,
         },
         "current": DEV.mixer_json(),
     }
@@ -1149,13 +1180,23 @@ def api_mix(s: MixStrip):
         return _bad("mixer readback is not safely mapped for this profile")
     if not 0 <= s.mix < DEV.n_mixes:
         return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
-    if not 0 <= s.channel <= DEV.mix_channels:
-        return _bad(f"channel {s.channel} out of range 0..{DEV.mix_channels} (0 = master)")
+    first_channel = 0
+    last_channel = DEV.mix_channels if DEV.mixer_has_master else DEV.mix_channels - 1
+    if not first_channel <= s.channel <= last_channel:
+        label = "0 = master" if DEV.mixer_has_master else "no master strip"
+        return _bad(f"channel {s.channel} out of range {first_channel}..{last_channel} ({label})")
     has_send = proto.mix_has_send(PROFILE)
+    mixer = PROFILE.get("mixer", {})
+    f_lo, f_hi = PROFILE.get("params", {}).get("mix_fader", {}).get(
+        "range", mixer.get("fader", {}).get("range", [0, 90]))
+    p_lo, p_hi = PROFILE.get("params", {}).get("mix_pan", {}).get(
+        "range", mixer.get("pan", {}).get("range_deg", [-30, 30]))
     send_spec = PROFILE.get("params", {}).get("mix_send", {})
+    s_lo, s_hi = send_spec.get("range", [0, 96])
     send_mixes = {int(m) for m in send_spec.get("mix_indices", [])}
     send_allowed = has_send and s.mix in send_mixes \
-        and (s.channel != 0 or bool(send_spec.get("include_master", False)))
+        and (not DEV.mixer_has_master or s.channel != 0
+             or bool(send_spec.get("include_master", False)))
     if s.send is not None and not send_allowed:
         return _bad("this mixer strip has no AuraVerb send")
 
@@ -1165,9 +1206,9 @@ def api_mix(s: MixStrip):
             raise RuntimeError(
                 f"mixer {m} returned {len(slots)} slots; channel {ch} is unavailable")
         cur = slots[ch]
-        fader = cur["fader"] if s.fader is None else max(0, min(90, abs(s.fader)))
-        pan = cur["pan"] if s.pan is None else max(-30, min(30, s.pan))
-        send = cur["send"] if s.send is None else max(0, min(96, s.send))
+        fader = cur["fader"] if s.fader is None else max(f_lo, min(f_hi, abs(s.fader)))
+        pan = cur["pan"] if s.pan is None else max(p_lo, min(p_hi, s.pan))
+        send = cur["send"] if s.send is None else max(s_lo, min(s_hi, s.send))
         mute = cur["mute"] if s.mute is None else bool(s.mute)
         solo = cur["solo"] if s.solo is None else bool(s.solo)
         t.write(proto.build_mix_command(PROFILE, m, ch, fader, pan,

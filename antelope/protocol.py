@@ -260,13 +260,12 @@ def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
                       pan_deg: int, send: int, mute: bool = False,
                       solo: bool = False) -> bytes:
     """Build a SET_MIX frame (profile['frame']['mix_command'], opcode 0x17) --
-    one virtual-mixer strip's whole state. `mix` 0-3, `channel` **0-32** --
-    1-32 are the input strips and **0 is the mix master** (the Launcher writes
-    channel 0 itself; see parse_mixer_record for the evidence),
-    `fader` 0-90 (dB attenuation), `pan_deg` -30..+30, `send` 0-96. The frame
-    carries every field every time (no partial update) -- read the current
-    strip back first with parse_mixer_record if you only mean to change one
-    field."""
+    one virtual-mixer strip's whole state. Legal mix/channel ranges and whether
+    channel 0 is a master come from the selected profile's `mixer` block;
+    `fader` is dB attenuation, `pan_deg` is in the profile's pan range, and
+    `send` is ignored when the profile has no `send_offset`. The frame carries
+    every field every time (no partial update) -- read the current strip back
+    first with parse_mixer_record if you only mean to change one field."""
     if 'mix_command' not in profile['frame']:
         raise KeyError('this profile has no frame.mix_command -- SET_MIX not available')
     f = profile['frame']['mix_command']
@@ -631,6 +630,33 @@ def readback_category_count(profile: dict, category: int):
     return None
 
 
+def readback_layout_indices(profile: dict, category: int, kind: str = None):
+    """Return explicitly capture-confirmed readback indices for a layout.
+
+    Some profiles have a confirmed record layout but no complete connect-time
+    category count.  Those indices are safe to use for the feature that owns
+    the layout, without pretending that the whole category has been bounded.
+    The result is deliberately limited to layouts marked ``confirmed`` or
+    ``capture-confirmed``.
+    """
+    layouts = profile.get('frame', {}).get('readback', {}).get('layouts', [])
+    out = set()
+    for layout in layouts:
+        try:
+            if _as_int(layout.get('category')) != category:
+                continue
+            if kind is not None and layout.get('kind') != kind:
+                continue
+            if str(layout.get('status', '')).lower() not in {
+                    'confirmed', 'capture-confirmed'}:
+                continue
+            if layout.get('index') is not None:
+                out.add(_as_int(layout['index']))
+        except (TypeError, ValueError):
+            continue
+    return sorted(out)
+
+
 def check_readback_index(profile: dict, category: int, index: int) -> None:
     """HAZARD GUARD -- see frame.readback.hazard.
 
@@ -650,6 +676,12 @@ def check_readback_index(profile: dict, category: int, index: int) -> None:
             f'(index 0..{n - 1}); index {index} reads past the end of the '
             f"firmware's array and can crash the device with a BusFault "
             f'(needs a power cycle). Use force=True only if you accept that.')
+    layout_indices = readback_layout_indices(profile, category)
+    if layout_indices and index not in layout_indices:
+        raise ConstraintError(
+            f'readback category {category:#04x} is only mapped at indices '
+            f'{layout_indices} in this profile; index {index} is not a '
+            'confirmed feature record')
 
 
 def build_readback_query(profile: dict, category: int, index: int = 0,
@@ -713,15 +745,19 @@ def parse_routing_record(profile: dict, body: bytes):
 
 def parse_mixer_record(profile: dict, body: bytes):
     """Decode one category-0x04 record -- the whole state of one virtual mix.
-    The readback index IS the mix number (0..3 = Mix 1..4).
+    The readback index is the mix number. A profile may select a device-specific
+    layout from `frame.readback.layouts`; otherwise use the Orion-compatible
+    flat 3-byte layout below.
 
-    The record is a flat array of 3-byte slots, SAME field order as the
-    frame.mix_command write frame (fader@20, pan|flags@21, send@22):
+    The fallback Orion record is a flat array of 3-byte slots, SAME field
+    order as the frame.mix_command write frame (fader@20, pan|flags@21,
+    send@22):
 
         <fader> <pan|mute|solo> <send>
 
-    Slot index maps 1:1 onto the write frame's `channel` field, with no
-    special case: **slot N == frame.mix_command channel N, for N = 0..32.**
+    For that Orion layout, slot index maps 1:1 onto the write frame's
+    `channel` field, with no special case: **slot N == frame.mix_command
+    channel N, for N = 0..32.**
 
       slot 0      = the MIX MASTER strip
       slots 1..32 = the 32 input strips
@@ -736,16 +772,56 @@ def parse_mixer_record(profile: dict, body: bytes):
         slot 0 then read back as -90 dB. So the Launcher itself writes
         channel 0 -- it is a normal address, not out of range.
 
-    Returns all 33 slots; list index == slot number == channel number.
-    Each entry is a dict: fader (0-90 dB of attenuation), pan (-30..+30),
-    send (0-96), mute, solo, raw (the 3 bytes)."""
-    if not body:
-        raise ValueError('empty mixer record')
+    The returned list index is the slot/channel number. Each entry is a dict:
+    fader, pan, send, mute, solo, raw. Device-specific layouts may return a
+    different slot count and raw width (Zen Go returns 16 two-byte slots)."""
     f = profile['frame'].get('mix_command', {})
     pan_center = _as_int(f.get('pan_center', 32))
     pan_mask = _as_int(f.get('pan_mask', 0x3f))
     mute_bit = _as_int(f.get('mute_bit', 0x40))
     solo_bit = _as_int(f.get('solo_bit', 0x80))
+
+    # Zen Go stores the same fader + pan/flags state in two-byte slots, with
+    # a two-byte record header.  Keep this selected by the profile layout so
+    # the Orion's established 3-byte decoder below remains untouched.
+    layout = next((x for x in profile.get('frame', {}).get('readback', {})
+                   .get('layouts', [])
+                   if x.get('kind') == 'mixer_state'
+                   and str(x.get('status', '')).lower() in {
+                       'confirmed', 'capture-confirmed'}), None)
+    if layout is not None:
+        if not body:
+            raise ValueError('empty mixer record')
+        try:
+            count = _as_int(layout['record_count'])
+            stride = _as_int(layout['record_stride'])
+            level_off = _as_int(layout['level_offset'])
+            state_off = _as_int(layout['state_offset'])
+        except (KeyError, TypeError, ValueError) as e:
+            raise ValueError('invalid profile mixer_state layout') from e
+        if count <= 0 or stride <= 0 or min(level_off, state_off) < 0:
+            raise ValueError('invalid profile mixer_state layout')
+        need = max(level_off, state_off) + (count - 1) * stride + 1
+        if len(body) < need:
+            raise ValueError(
+                f'mixer record is too short for {count} slots '
+                f'(need {need}, got {len(body)})')
+        slots = []
+        for i in range(count):
+            fader = body[level_off + i * stride]
+            flags = body[state_off + i * stride]
+            slots.append({
+                'fader': fader,
+                'pan': (flags & pan_mask) - pan_center,
+                'send': 0,
+                'mute': bool(flags & mute_bit),
+                'solo': bool(flags & solo_bit),
+                'raw': bytes((fader, flags)),
+            })
+        return slots
+
+    if not body:
+        raise ValueError('empty mixer record')
     # the record is exactly 3 * n_slots bytes; the wire frame is zero-padded to
     # the report size and an all-zero slot is not a legal strip (pan 0 would be
     # -32, outside the +-30 range), so trailing zeros are padding, not data.
@@ -1241,8 +1317,14 @@ def mode_value(profile: dict, name: str) -> int:
 
 
 def gain_range(profile: dict, mode_name_str: str):
-    ranges = profile['params']['gain'].get('per_mode_range', {})
-    lo, hi = ranges.get(mode_name_str, (-128, 127))
+    gain = profile['params']['gain']
+    ranges = gain.get('per_mode_range') or gain.get('range_by_mode', {})
+    value = ranges.get(mode_name_str)
+    if value is None:
+        value = ranges.get(str(mode_name_str).lower())
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        value = gain.get('runtime_range', (-128, 127))
+    lo, hi = value
     return lo, hi
 
 

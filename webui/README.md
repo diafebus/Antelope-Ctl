@@ -12,9 +12,9 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
     bank is sampled separately at a lower rate.
   - **slow** -- the routing matrix (readback cat `0x03`) and virtual mixer
     (cat `0x04`), refreshed one record per meter cycle on connect and every
-    45 s. Route/mixer writes update the serialized cache directly. Every
-    query is bounds-checked by
-    `protocol.check_readback_index`, so the BusFault hazard is never hit.
+    45 s. Route/mixer writes update the serialized cache directly. Queries use
+    Orion's bounded category counts or a profile's explicit confirmed layout,
+    so the BusFault hazard is never hit.
     The snapshot carries an `rb_ver` counter; the browser refetches
     `/api/routing` + `/api/mixer` when it changes.
 
@@ -38,15 +38,16 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
   Channel count, modes, gain limits, Hi-Z channels, digital inputs and mixer
   ranges come from the active profile. The daemon autodetects the connected
   VID/PID and exposes only capabilities with safe, profile-declared readback.
-  For example, Zen Go renders its verified input/output controls but hides
-  routing and mixer panels until their safe readback maps are confirmed. The
-  mixer fader artwork is served from `/webui/assets/fader-shadow.svg`.
+  Zen Go renders its two capture-confirmed mixer layouts while routing remains
+  hidden until its own readback map is confirmed. The mixer fader artwork is
+  served from `/webui/assets/fader-shadow.svg`.
 
 ## What it deliberately does NOT do
 
-- **No unbounded readback.** Routing/mixer indices are always inside
-  `frame.readback.category_counts`; the incremental sweep never probes beyond
-  the declared record counts.
+- **No unbounded readback.** Orion routing/mixer indices are inside
+  `frame.readback.category_counts`; profiles without a complete count may use
+  only an explicitly capture-confirmed feature layout. The incremental sweep
+  never invents additional indices.
 - No auth (binds to `127.0.0.1` only).
 - No packaging. It is a sketch.
 
