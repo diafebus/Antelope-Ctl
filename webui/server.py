@@ -1063,14 +1063,21 @@ def api_mix_solo(s: MixSolo):
         return _bad("mixer readback is not safely mapped for this profile")
     if not 0 <= s.mix < DEV.n_mixes:
         return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
-    if not 0 <= s.channel <= DEV.mix_channels:
-        return _bad(f"channel {s.channel} out of range 0..{DEV.mix_channels} (0 = master)")
+    if not 1 <= s.channel <= DEV.mix_channels:
+        return _bad(f"channel {s.channel} out of range 1..{DEV.mix_channels}; master has no Solo")
 
     def do(t, m=s.mix, ch=s.channel, on=s.on):
         slots = DEV._mixer_record_for_write(t, m)
         if len(slots) < DEV.mix_channels + 1:
             raise RuntimeError(
                 f"mixer {m} returned {len(slots)} slots; expected {DEV.mix_channels + 1}")
+
+        def solo_update(active):
+            # Master is deliberately outside Solo: its strip has only fader
+            # and mute, and muting it would silence every soloed input.
+            return [(bool(slot["mute"]), bool(slot["solo"])) if idx == 0
+                    else (idx not in active, idx in active)
+                    for idx, slot in enumerate(slots[:DEV.mix_channels + 1])]
 
         if on:
             group = DEV.solo_state.get(m)
@@ -1085,8 +1092,7 @@ def api_mix_solo(s: MixSolo):
                 DEV.solo_state[m] = group
             group["active"].add(ch)
             active = group["active"]
-            updated = [(idx not in active, idx in active)
-                       for idx in range(DEV.mix_channels + 1)]
+            updated = solo_update(active)
         else:
             group = DEV.solo_state.get(m)
             if group is None:
@@ -1095,8 +1101,7 @@ def api_mix_solo(s: MixSolo):
                 group["active"].discard(ch)
                 active = group["active"]
                 if active:
-                    updated = [(idx not in active, idx in active)
-                               for idx in range(DEV.mix_channels + 1)]
+                    updated = solo_update(active)
                 else:
                     updated = group["restore"]
                     DEV.solo_state.pop(m, None)

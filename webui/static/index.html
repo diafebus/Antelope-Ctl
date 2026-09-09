@@ -2482,6 +2482,7 @@ function paintMixSolo(pane, active, restore) {
     const ch = +strip.dataset.ch;
     const mute = strip.querySelector('[data-mute]');
     const solo = strip.querySelector('[data-solo]');
+    if (!solo) return;                       // master is fader + mute only
     const muted = soloMode ? !soloedChannels.has(ch) : !!restore?.mutes?.[ch];
     const soloed = soloMode ? soloedChannels.has(ch) : !!restore?.solos?.[ch];
     mute.classList.toggle('on', muted);
@@ -2505,7 +2506,6 @@ function renderMix(pane, m) {
   const [fLo, fHi] = MIXER.ranges.fader, [pLo, pHi] = MIXER.ranges.pan, [sLo, sHi] = MIXER.ranges.send;
   const rows = pane.querySelector('[data-strips]');
   const hasSend = MIXER.has_send !== false && (MIXER.send_mixes || []).includes(m);
-  const sendMaster = MIXER.send_master === true;
   const n = Math.max((Number(MIXER.channels_per_mix) || 0) + 1, slots.length);
   rows.innerHTML = Array.from({length: n}, (_, ch) => {
     const s = slots[ch] || {fader: 0, pan: 0, send: 0, mute: false, solo: false};
@@ -2522,19 +2522,19 @@ function renderMix(pane, m) {
           </span>
           <input class="mixer-fader" type="range" data-fader min="${-fHi}" max="${-fLo}" value="${-fader}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} fader">
         </div>
-        <div class="mixer-meter" title="Meter unavailable"><i data-mix-meter class="unavailable"></i></div>
+        ${ch > 0 ? '<div class="mixer-meter" title="Meter unavailable"><i data-mix-meter class="unavailable"></i></div>' : ''}
       </div>
-      <div class="mixer-control">
+      ${ch > 0 ? `<div class="mixer-control">
         <label><span>PAN</span><output data-pval>${mixerPanLabel(pan)}</output></label>
         <input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} pan">
-      </div>
-      <div class="mixer-control"${hasSend && (ch > 0 || sendMaster) ? '' : ' hidden'}>
+      </div>` : ''}
+      ${hasSend && ch > 0 ? `<div class="mixer-control">
         <label><span>SEND</span><output data-sval>${mixerSendLabel(send, sHi)}</output></label>
         <input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} AuraVerb send">
-      </div>
+      </div>` : ''}
       <div class="mixer-buttons">
         <button type="button" data-mute class="${s.mute ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} mute">M</button>
-        <button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} solo">S</button>
+        ${ch > 0 ? `<button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="channel ${ch} solo">S</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2552,11 +2552,10 @@ function renderMix(pane, m) {
       postLinkedMix(m, ch, {fader: value});
     });
     const pan = strip.querySelector('[data-pan]'), pval = strip.querySelector('[data-pval]');
-    pan.addEventListener('input', e => pval.textContent = mixerPanLabel(e.target.value));
-    pan.addEventListener('change', e => {
-      const value = +e.target.value;
-      postLinkedMix(m, ch, {pan: value});
-    });
+    if (pan) {
+      pan.addEventListener('input', e => pval.textContent = mixerPanLabel(e.target.value));
+      pan.addEventListener('change', e => postLinkedMix(m, ch, {pan: +e.target.value}));
+    }
     const send = strip.querySelector('[data-send]'), sval = strip.querySelector('[data-sval]');
     if (send) {
       send.addEventListener('input', e => {
@@ -2572,7 +2571,8 @@ function renderMix(pane, m) {
       e.currentTarget.classList.toggle('on', on);
       postLinkedMix(m, ch, {mute: on});
     });
-    strip.querySelector('[data-solo]').addEventListener('click', e => {
+    const solo = strip.querySelector('[data-solo]');
+    if (solo) solo.addEventListener('click', e => {
       const on = !e.currentTarget.classList.contains('on');
       const active = activeMixerSoloChannels(pane);
       if (on) {
@@ -2612,7 +2612,7 @@ function refreshMixer() {
     }
     paintMixerFader(strip, fader.value);
     const pan = strip.querySelector('[data-pan]');
-    if (!mixerPendingActive(m, ch, 'pan', s.pan) && document.activeElement !== pan) {
+    if (pan && !mixerPendingActive(m, ch, 'pan', s.pan) && document.activeElement !== pan) {
       pan.value = s.pan;
       strip.querySelector('[data-pval]').textContent = mixerPanLabel(s.pan);
     }
@@ -2624,7 +2624,7 @@ function refreshMixer() {
     if (!mixerPendingActive(m, ch, 'mute', s.mute)) {
       strip.querySelector('[data-mute]').classList.toggle('on', s.mute);
     }
-    strip.querySelector('[data-solo]').classList.toggle('on', s.solo);
+    strip.querySelector('[data-solo]')?.classList.toggle('on', s.solo);
   });
   applyMixerMeters(MIXER_METERS);
 }
