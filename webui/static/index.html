@@ -435,7 +435,7 @@
   .mixer-buttons button.solo.on { background:var(--warn); border-color:var(--warn); color:#111; }
   .mixer-note { margin:0; padding:0 12px 10px; }
 
-  /* ---- AuraVerb (Orion-only, floating panel) -------------------------- */
+  /* ---- GazelleVerb (Orion-only, floating panel) ------------------------- */
   #auraverbpanel { position:fixed; z-index:60; top:76px; left:50%; width:min(1040px,calc(100vw - 24px));
                    transform:translateX(-50%); background:#11151b; color:var(--fg); border:1px solid #27303d;
                    border-radius:8px; overflow:hidden; box-shadow:0 20px 70px #000b; }
@@ -690,7 +690,7 @@ async function post(path, body) {
     if (!r.ok) {
       const detail = await r.text();
       if (r.status === 404 && path === '/api/auraverb') {
-        reportMessage('comm', 'AuraVerb API unavailable',
+        reportMessage('comm', `${AV_DISPLAY_NAME} API unavailable`,
           'The running daemon is older than this WebUI. Stop the old server, '
           + 'restart <code>python3 server.py</code> from the current webui directory, '
           + 'then hard-refresh the page. ' + detail);
@@ -2424,6 +2424,7 @@ const AV_PARAM_META = [
   ['room_size', 'ROOM SIZE'],
   ['reverb_level', 'OUTPUT LEVEL'],
 ];
+const AV_DISPLAY_NAME = 'GazelleVerb';
 const avCommand = () => PROFILE?.frame?.auraverb_command || {};
 function avDefaultParams() { return avCommand().defaults || {}; }
 function avRemote() {
@@ -2492,11 +2493,11 @@ function initAuraVerbPanel() {
       <span class="av-sub">MIX 1 REVERB</span><button class="modal-x" data-av-close aria-label="close">&times;</button></div>
       <div class="av-body"><div class="av-controls">${AV_PARAM_META.map(([key, label]) =>
         `<div class="av-control"><span class="av-value" data-av-value="${key}">–</span>
-          <div class="av-knob"><i></i><input type="range" data-av-param="${key}" min="${lo}" max="${hi}" value="0" aria-label="AuraVerb ${label.toLowerCase()}"></div>
+          <div class="av-knob"><i></i><input type="range" data-av-param="${key}" min="${lo}" max="${hi}" value="0" aria-label="${AV_DISPLAY_NAME} ${label.toLowerCase()}"></div>
           <span class="av-label">${label}</span></div>`).join('')}</div>
         <div class="av-center"><span data-av-status>WAITING FOR READBACK</span><span class="av-screen">ROOM_SIZE</span>
           <span class="av-toggle">FX <button type="button" data-av-enable>OFF</button></span></div>
-        <p class="av-note">AuraVerb is the bundled Mix 1 effect. Each change sends the complete read-modify-write state.</p>
+        <p class="av-note">${AV_DISPLAY_NAME} is the bundled Mix 1 effect. Each change sends the complete read-modify-write state.</p>
       </div>`;
     const hd = panel.querySelector('.av-hd');
     let dragging = false, dx = 0, dy = 0, pid = null;
@@ -2633,7 +2634,7 @@ function buildMixer() {
   const hasAuraVerb = UI_FEATURES?.auraverb?.enabled && UI_FEATURES.auraverb.mix === 0;
   const sourceFeature = UI_FEATURES?.mixer_sources?.enabled ? UI_FEATURES.mixer_sources : null;
   const auraVerbButton = hasAuraVerb
-    ? '<button type="button" class="secbtn auraverb-open" data-auraverb-open title="Open AuraVerb controls for Mix 1">AuraVerb · Mix 1</button>'
+    ? `<button type="button" class="secbtn auraverb-open" data-auraverb-open title="Open ${AV_DISPLAY_NAME} controls for Mix 1">${AV_DISPLAY_NAME} · Mix 1</button>`
     : '';
   const panes = Array.from({length: nMix}, (_, m) =>
     `<div class="mixer-pane" data-mix-pane="${m}" role="tabpanel" hidden>
@@ -2875,7 +2876,7 @@ function renderMix(pane, m) {
       <span class="mxval" data-fval>${mixerFaderLabel(fader)}</span>
       ${hasSend && !isMaster ? `<div class="mixer-knob-control">
         <output data-sval class="mixer-readout">${mixerSendLabel(send, sHi)}</output>
-        <div class="mixer-knob"><i></i><input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} AuraVerb send"></div>
+        <div class="mixer-knob"><i></i><input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} ${AV_DISPLAY_NAME} send"></div>
         <label class="mixer-knob-label">SEND</label>
       </div>` : ''}
       ${!isMaster ? `<div class="mixer-knob-control">
@@ -3114,7 +3115,7 @@ async function boot() {
   // The profile's explicit AuraVerb command is a safe compatibility fallback;
   // current daemons still take the normal device_ui.py path above.
   if (!profileFeatures && PROFILE.frame?.auraverb_command) {
-    UI_FEATURES.auraverb = {enabled: true, mix: 0, label: 'AuraVerb'};
+    UI_FEATURES.auraverb = {enabled: true, mix: 0, label: AV_DISPLAY_NAME};
   }
   loadMixerSources();
   const m = PROFILE.params?.input_mode?.values || PROFILE.channels?.modes || {};
