@@ -342,10 +342,16 @@ class Device:
             if meter:
                 # 0x75 @32/@48 and @33/@49 are route-correlated lane pairs.
                 # Their fixed ownership is unresolved; retain raw debug only.
-                base = int(self.profile["frame"]["meter_report"]
-                           ["channel_meter_base_offset"])
-                snap["meters_raw"] = {"base": base,
-                                      "bytes": list(meter[base:base + 32])}
+                base = self.profile["frame"]["meter_report"].get(
+                    "channel_meter_base_offset")
+                # Some profiles identify a meter report without having a
+                # confirmed channel offset yet (Zen Go). Keep the report
+                # available to future mapping work, but never crash the
+                # device thread by treating an unknown offset as Orion's.
+                if base is not None:
+                    base = int(base)
+                    snap["meters_raw"] = {"base": base,
+                                          "bytes": list(meter[base:base + 32])}
             # keep last values if this cycle only got one of the two frames
             with self._lock:
                 for k in ("channels", "buses", "adat", "spdif", "trim", "brightness",
