@@ -435,7 +435,7 @@
   .mixer-buttons button.solo.on { background:var(--warn); border-color:var(--warn); color:#111; }
   .mixer-note { margin:0; padding:0 12px 10px; }
 
-  /* ---- GazelleVerb (Orion-only, floating panel) ------------------------- */
+  /* ---- Gazelle Reverb (Orion-only, floating panel) ----------------------- */
   #auraverbpanel { position:fixed; z-index:60; top:76px; left:50%; width:min(1040px,calc(100vw - 24px));
                    transform:translateX(-50%); background:#11151b; color:var(--fg); border:1px solid #27303d;
                    border-radius:8px; overflow:hidden; box-shadow:0 20px 70px #000b; }
@@ -2424,7 +2424,7 @@ const AV_PARAM_META = [
   ['room_size', 'ROOM SIZE'],
   ['reverb_level', 'OUTPUT LEVEL'],
 ];
-const AV_DISPLAY_NAME = 'GazelleVerb';
+const AV_DISPLAY_NAME = 'Gazelle Reverb';
 const avCommand = () => PROFILE?.frame?.auraverb_command || {};
 function avDefaultParams() { return avCommand().defaults || {}; }
 function avRemote() {
@@ -2489,7 +2489,7 @@ function initAuraVerbPanel() {
   if (!panel || !UI_FEATURES?.auraverb?.enabled) { if (panel) panel.hidden = true; return; }
   if (!panel.children.length) {
     const [lo, hi] = AURAVERB?.range || avCommand().param_range || [0, 100];
-    panel.innerHTML = `<div class="av-hd"><span class="av-logo">Gazelle<span>Verb</span></span>
+    panel.innerHTML = `<div class="av-hd"><span class="av-logo">Gazelle <span>Reverb</span></span>
       <span class="av-sub">MIX 1 REVERB</span><button class="modal-x" data-av-close aria-label="close">&times;</button></div>
       <div class="av-body"><div class="av-controls">${AV_PARAM_META.map(([key, label]) =>
         `<div class="av-control"><span class="av-value" data-av-value="${key}">–</span>
