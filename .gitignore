@@ -20,6 +20,7 @@ __pycache__/
 
 # Session/working docs -- local only, not part of the public project
 CLAUDE.md
+CLAUDE.archive.md
 KERNEL.md
 SUMMARY.md
 
