@@ -358,7 +358,7 @@ python3 -m antelope.cli ... readback                         # list the readback
 See `PROTOCOL.md` §4a + §7 and `frame.readback` / `frame.routing_command`
 in the profile.
 
-### Virtual mixer -- Mix 1-4 (decoded; reading is in the CLI, writing is not)
+### Virtual mixer -- Mix 1-4 (decoded; CLI and WebUI controls)
 
 The **Mix windows** are a separate UI from the routing matrix -- mixing
 happens there, and each mix's L/R then shows up as a *source* in the
@@ -371,7 +371,8 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 - soloing a channel makes the Launcher re-send all 32 strips (that's how
   we know each mix has 32 inputs).
 - **mix channel link** = `SET_LINK` with a new `space` byte `0x03`
-  (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer); software-mirrored.
+  (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer); software-mirrored and scoped
+  independently per mix. A link in Mix 1 never mirrors a Mix 2-4 pair.
 - not in the passive `0x73` stream, but mixer state **is** readable via
   the `0x74`/`0x75` query protocol -- **category `0x04`, index = mix
   number 0-3**, fully decoded and hardware round-trip verified 2026-08-31.

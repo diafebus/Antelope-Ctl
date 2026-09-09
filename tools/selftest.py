@@ -410,7 +410,7 @@ def t_write_routing(dev, destname):
         return record(FAIL, 'WRITE routing', f'could not read dest {dest}')
     _, orig = proto.parse_routing_record(dev.p, body)
     ch = len(orig) - 1                       # last channel of the group
-    mute = tuple(proto.ROUTE_MUTE)
+    mute = tuple(proto.route_mute_source(dev.p))
     probe = mute if tuple(orig[ch]) != mute else (0, 0)
     new = list(orig)
     new[ch] = probe

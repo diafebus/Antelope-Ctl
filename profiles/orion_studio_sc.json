@@ -1559,9 +1559,9 @@
     "mix_channel_link": {
       "status": "confirmed",
       "frame": "link_command (opcode 0x14 / param 0xa2) with space = 0x03 (see frame.link_command.space_values)",
-      "per": "mix pair (pair_index = (input_channel - 1) // 2: channels 1+2 = pair 0), same formula as the other link spaces after their zero-based channel conversion",
-      "type": "per-pair bool",
-      "notes": "Software-mirrored: while a mix pair is linked the Launcher re-sends BOTH strips' mix_command frames on every change; the device does not propagate. Space 0x03 is a 4th link domain (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer).",
+      "per": "mixer surface + pair (pair_index = (input_channel - 1) // 2: channels 1+2 = pair 0), same formula as the other link spaces after their zero-based channel conversion",
+      "type": "per-(mix,pair) bool",
+      "notes": "Software-mirrored: while a mix pair is linked the Launcher re-sends BOTH strips' mix_command frames on every change; the device does not propagate. Link state is independent for Mix 1-4. Space 0x03 is a 4th link domain (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer). The selected mixer surface is tracked separately by the mix selector.",
       "evidence": "macos-mix1-send-pan-fader-mute-solo-link (2026-08): link on mix ch1+ch2 -> SET_LINK space=0x03 pair_index=0x00 enabled=0x01; then linked fader moves produced paired ch1+ch2 mix_command frames ~ms apart."
     }
   },

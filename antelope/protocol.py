@@ -229,6 +229,24 @@ def build_link_command(profile: dict, pair_index: int, enabled: bool, space: int
     return bytes(pkt)
 
 
+def mixer_link_pair_index(profile: dict, mix: int, pair_index: int) -> int:
+    """Translate a logical mixer pair to the wire selector used by a profile.
+
+    Most profiles have historically used the logical pair directly.  Some
+    devices reserve a selector range for each mixer surface, however, so the
+    profile may declare a ``mixer.link_pair_index.mix_stride``.  Keeping this
+    translation in the profile prevents a Mix 2 link from accidentally
+    addressing Mix 1's pair when the wire protocol has no separate mix byte.
+    """
+    spec = profile.get('mixer', {}).get('link_pair_index', {}) or {}
+    if not isinstance(spec, dict) or spec.get('mix_stride') is None:
+        return pair_index
+    stride = _as_int(spec['mix_stride'])
+    if not isinstance(stride, int) or stride < 0:
+        raise ConstraintError('mixer.link_pair_index.mix_stride must be a non-negative integer')
+    return mix * stride + pair_index
+
+
 def build_global_command(profile: dict, param, value: int) -> bytes:
     """Build a SET_GLOBAL frame (profile['frame']['global_command'], opcode
     0x12) for a device-global param that has no per-channel/per-bus target.
@@ -454,6 +472,100 @@ ROUTE_SOURCE_ALIASES = {
 ROUTE_MUTE = (0x0b, 0)
 
 
+def _route_kind_from_name(name):
+    """Best-effort canonical name for legacy profile source semantics.
+
+    New profiles should provide ``source_semantics.*.key``.  The fallback is
+    kept so the existing Orion profile, whose semantics predate that field,
+    continues to work while source-bank mapping moves out of this module.
+    """
+    text = str(name or '').strip().lower()
+    if text.startswith('preamp'):
+        return 'preamp'
+    if text.startswith('emumic') or 'modeled' in text or 'modelled' in text:
+        return 'emumic'
+    if text.startswith('computer playback') or text.startswith('compplay'):
+        return 'compplay'
+    if text.startswith('adat'):
+        return 'adat'
+    if text.startswith('s/pdif') or text.startswith('spdif'):
+        return 'spdif'
+    if text.startswith('afx'):
+        return 'afx'
+    if text.startswith('mix '):
+        suffix = text[4:].split()[0] if text[4:] else ''
+        if suffix in {'1', '2', '3', '4'}:
+            return f'mix{suffix}'
+    if text.startswith('surround'):
+        return 'surround'
+    if text.startswith('oscillator') or text.startswith('osc'):
+        return 'osc'
+    if text == 'mute' or text.startswith('mute '):
+        return 'mute'
+    return None
+
+
+def _route_catalog(profile):
+    """Return ``(numbered, stereo, mute)`` routing source definitions.
+
+    Source-bank numbers are device-specific.  Prefer the profile's
+    ``frame.routing_command.source_semantics`` when present; the Orion
+    constants remain a compatibility fallback for older profiles that do not
+    declare that machine-readable section yet.
+    """
+    rc = (profile or {}).get('frame', {}).get('routing_command', {}) or {}
+    semantics = rc.get('source_semantics')
+    if not isinstance(semantics, dict):
+        return (dict(ROUTE_SOURCE_SPECS), dict(ROUTE_STEREO_SOURCE_BANKS),
+                tuple(rc.get('mute_source', ROUTE_MUTE)))
+
+    numbered, stereo = {}, {}
+    mute = tuple(rc.get('mute_source', ROUTE_MUTE))
+    for bank_key, definition in semantics.items():
+        if not isinstance(definition, dict):
+            continue
+        try:
+            bank = _as_int(bank_key)
+        except (TypeError, ValueError):
+            continue
+        kind = str(definition.get('kind', '')).strip().lower()
+        key = definition.get('key') or _route_kind_from_name(definition.get('name'))
+        if not key:
+            continue
+        if kind == 'mute':
+            if 'mute_source' not in rc:
+                mute = (bank, _as_int(definition.get('index', 0)))
+            continue
+        if kind == 'stereo':
+            stereo[str(key).lower()] = bank
+            continue
+        if kind != 'numbered':
+            continue
+        fallback = ROUTE_SOURCE_SPECS.get(str(key).lower())
+        count = definition.get('writable_index_count',
+                               definition.get('count'))
+        if count is None and fallback is not None:
+            count = fallback[2]
+        if count is None:
+            continue
+        first = definition.get('first_index', 0)
+        base = definition.get(
+            'display_index_base', fallback[4] if fallback is not None else 1)
+        label = definition.get(
+            'label', definition.get('name',
+                                    fallback[3] if fallback is not None else key))
+        try:
+            numbered[str(key).lower()] = (
+                bank, _as_int(first), int(count), str(label), int(base))
+        except (TypeError, ValueError):
+            continue
+
+    if not numbered and not stereo and 'mute_source' not in rc:
+        return (dict(ROUTE_SOURCE_SPECS), dict(ROUTE_STEREO_SOURCE_BANKS),
+                tuple(ROUTE_MUTE))
+    return numbered, stereo, mute
+
+
 def _lr_index(number):
     return {'l': 0, 'r': 1, '1': 0, '2': 1}.get(str(number).strip().lower())
 
@@ -465,16 +577,17 @@ def resolve_route_source(profile: dict, kind: str, number):
     ('spdif'|'mix1'..'mix4') with number 'L'/'R'/1/2, or 'mute'. Raises
     ValueError on a bad spec."""
     kind = kind.lower()
+    specs, stereo_banks, mute = _route_catalog(profile)
     if kind == 'mute':
-        return ROUTE_MUTE
-    if kind in ROUTE_STEREO_SOURCE_BANKS:
+        return mute
+    if kind in stereo_banks:
         idx = _lr_index(number)
         if idx is None:
             raise ValueError(f"{kind} source needs L or R")
-        return ROUTE_STEREO_SOURCE_BANKS[kind], idx
+        return stereo_banks[kind], idx
     canon = ROUTE_SOURCE_ALIASES.get(kind, kind)
-    if canon in ROUTE_SOURCE_SPECS:
-        bank, first, count, label, base = ROUTE_SOURCE_SPECS[canon]
+    if canon in specs:
+        bank, first, count, label, base = specs[canon]
         n = int(number)
         if not (base <= n <= base + count - 1):
             raise ValueError(f"{canon} number {n} out of range "
@@ -488,15 +601,41 @@ def resolve_route_source(profile: dict, kind: str, number):
 def route_source_label(profile: dict, bank: int, index: int) -> str:
     """Reverse of resolve_route_source: (bank, index) -> a human label like
     'compplay 5' / 'mix2 R' / 'MUTE', for showing a decoded/cached route."""
-    if (bank, index) == ROUTE_MUTE:
+    specs, stereo_banks, mute = _route_catalog(profile)
+    if (bank, index) == mute:
         return 'MUTE'
-    for name, b in ROUTE_STEREO_SOURCE_BANKS.items():
+    for name, b in stereo_banks.items():
         if b == bank:
             return f"{name} {'L' if index == 0 else 'R'}"
-    for name, (b, first, count, _label, base) in ROUTE_SOURCE_SPECS.items():
+    for name, (b, first, count, _label, base) in specs.items():
         if b == bank and first <= index <= first + count - 1:
             return f'{name} {index - first + base}'
     return f'bank 0x{bank:02x} idx {index}'
+
+
+def route_mute_source(profile: dict):
+    """Return the profile-specific pseudo-source used to mute a route slot."""
+    return _route_catalog(profile)[2]
+
+
+def route_source_options(profile: dict):
+    """Return the profile's machine-readable routing source groups.
+
+    Each item has the fields consumed by the CLI/WebUI routing matrix:
+    ``kind``, ``label``, ``count``, ``base``, and ``stereo``.  Device-specific
+    bank/index mappings stay in the selected profile.
+    """
+    specs, stereo_banks, _mute = _route_catalog(profile)
+    out = []
+    for name, (_bank, _first, count, label, base) in specs.items():
+        out.append({'kind': name, 'label': label, 'count': count,
+                    'base': base, 'stereo': False})
+    for name in stereo_banks:
+        out.append({'kind': name, 'label': name, 'count': 2,
+                    'base': None, 'stereo': True})
+    out.append({'kind': 'mute', 'label': 'MUTE', 'count': 0,
+                'base': None, 'stereo': False})
+    return out
 
 
 def resolve_route_dest(profile: dict, name):
@@ -655,6 +794,28 @@ def readback_layout_indices(profile: dict, category: int, kind: str = None):
         except (TypeError, ValueError):
             continue
     return sorted(out)
+
+
+def readback_indices_available(profile: dict, category: int, indices) -> bool:
+    """Whether a feature has an evidence-bounded set of readback indices.
+
+    A complete ``category_counts`` entry is preferred.  For devices whose
+    connect walk is sparse, explicitly capture-confirmed ``layouts`` are the
+    safe alternative.  An unknown category is never considered available just
+    because the firmware happened to answer a probe.
+    """
+    wanted = []
+    try:
+        wanted = [int(index) for index in indices]
+    except (TypeError, ValueError):
+        return False
+    if not wanted or any(index < 0 for index in wanted):
+        return False
+    count = readback_category_count(profile, category)
+    if count is not None:
+        return all(index < count for index in wanted)
+    confirmed = set(readback_layout_indices(profile, category))
+    return bool(confirmed) and all(index in confirmed for index in wanted)
 
 
 def check_readback_index(profile: dict, category: int, index: int) -> None:
@@ -1447,6 +1608,7 @@ def parse_bus_state(profile: dict, data: bytes, bus_id: int) -> dict:
         level_off = base + _as_int(bb['level_byte_offset'])
         status_off = base + _as_int(bb['status_byte_offset'])
         status_bits = bb.get('status_bits', {})
+        status_values = bb.get('status_values', {})
     else:
         stride = sr.get('bus_block_stride')
         offset = sr.get('bus_block_offset')
@@ -1455,15 +1617,24 @@ def parse_bus_state(profile: dict, data: bytes, bus_id: int) -> dict:
         base = _as_int(offset) + _as_int(stride) * bus_id
         level_off, status_off = base, base + 1
         status_bits = sr.get('bus_status_bits', {})
+        status_values = sr.get('bus_status_values', {})
     if level_off >= len(data) or status_off >= len(data):
         raise ValueError(f'state report too short for bus {bus_id}')
 
     status_byte = data[status_off]
     result = {'bus': bus_id, 'level': data[level_off]}
-    for bit_name, bit_def in status_bits.items():
-        mask = _as_int(bit_def['mask'])
-        shift = bit_def['shift']
-        result[bit_name] = (status_byte & mask) >> shift
+    if status_values:
+        # Zen Go encodes the output mode as one enum byte (0=normal,
+        # 1=mute, 2=dim), rather than the independent Orion bit flags.
+        for state_name, expected in status_values.items():
+            if str(state_name).lower() in {'normal', 'none', 'off'}:
+                continue
+            result[state_name] = int(status_byte == _as_int(expected))
+    else:
+        for bit_name, bit_def in status_bits.items():
+            mask = _as_int(bit_def['mask'])
+            shift = bit_def['shift']
+            result[bit_name] = (status_byte & mask) >> shift
     return result
 
 

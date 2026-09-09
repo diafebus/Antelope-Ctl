@@ -151,8 +151,11 @@ class Device:
         category_count = proto.readback_category_count(profile, MIXER_CAT)
         self.mixer_indices = layout_indices or (
             list(range(category_count)) if category_count is not None else [])
-        self.routing_readback = bool(
-            proto.readback_category_count(profile, ROUTING_CAT))
+        input_routing = mixer.get("input_routing", {}) or {}
+        self.mixer_source_destinations = [
+            int(dest) for dest in input_routing.get("destinations", [])]
+        self.routing_readback = proto.readback_indices_available(
+            profile, ROUTING_CAT, self.route_dests)
         self.mixer_readback = bool(
             self.n_mixes and all(m in self.mixer_indices
                                  for m in range(self.n_mixes)))
@@ -160,6 +163,15 @@ class Device:
         self.mixer_available = bool(
             self.n_mixes and self.mix_channels and self.mixer_readback
             and profile["frame"].get("mix_command"))
+        self.mixer_source_available = bool(
+            self.mixer_available
+            and self.routing_available
+            and self.mixer_source_destinations
+            and all(dest in self.route_dests
+                    and proto.route_dest_channels(profile, dest) >= self.mix_channels
+                    for dest in self.mixer_source_destinations)
+            and proto.readback_indices_available(
+                profile, ROUTING_CAT, self.mixer_source_destinations))
 
         self.cmds = queue.Queue()          # callables: fn(transport) -> None
         self.snapshot = {"online": False}  # last known state, read by the web side
@@ -270,6 +282,26 @@ class Device:
         _dest, pairs = proto.parse_routing_record(
             self.profile, proto.readback_body(self.profile, data))
         return list(pairs)
+
+    def _set_mixer_source(self, transport, channel, target):
+        """Change one global mixer-input slot across Zen Go's four mirrors.
+
+        The device's 6/7/8/9 records are four serialized views of the same
+        32-slot input map.  Read every group before writing any group so a
+        missing readback never leaves the map partially changed.
+        """
+        records = []
+        for dest in self.mixer_source_destinations:
+            pairs = self._routing_record_for_write(transport, dest)
+            if channel >= len(pairs):
+                raise RuntimeError(
+                    f"routing destination {dest} has no mixer slot {channel}")
+            pairs[channel] = target
+            records.append((dest, pairs))
+        for dest, pairs in records:
+            transport.write(proto.build_route_command(
+                self.profile, dest, pairs))
+            self._cache_routing(dest, pairs)
 
     def _mixer_record_for_write(self, transport, mix):
         """Copy the serialized cache, querying once only if it is not ready."""
@@ -706,6 +738,11 @@ class Scalar(BaseModel):
 class MixerSelect(BaseModel):
     mix: int                  # 0-based mix index; profile may have no selector
 
+class MixerSource(BaseModel):
+    mix: int                  # 0-based mixer tab containing the selector
+    channel: int              # 0-based mixer input strip
+    source: str               # profile-provided source option key
+
 class Bus(BaseModel):
     bus: int
     level: int
@@ -748,9 +785,10 @@ class AuraVerbChange(BaseModel):
 
 
 class MixerLink(BaseModel):
-    """A virtual-mixer stereo pair (0 = channels 1+2)."""
+    """A virtual-mixer stereo pair scoped to one mix."""
     pair: int
     enabled: bool
+    mix: int = 0
 
 
 def _bad(msg):
@@ -895,13 +933,19 @@ def api_output_trim(t: Trim):
 
 @app.post("/api/bus-toggle")
 def api_bus_toggle(t: BusToggle):
-    """bus_dim / bus_mute / bus_mono (SET_PARAM 0x68 / 0x48 / 0x69), bus id at
+    """bus_dim / bus_mute / bus_mono (SET_PARAM 0x66/0x48/0x69 on Zen Go;
+    Orion uses 0x68 for dim), bus id at
     the channel offset. Confirmed for monitor buses; bus_mute also confirmed on
     the line output (bus 3). dim/mono may not apply to line/reamp."""
     pname = {"dim": "bus_dim", "mute": "bus_mute", "mono": "bus_mono"}.get(t.param)
     if pname is None:
         return _bad("bad param -- dim|mute|mono")
-    DEV.submit(lambda tr: tr.write(proto.build_command(PROFILE, pname, t.bus, 1 if t.on else 0)))
+    try:
+        proto.check_target(PROFILE, t.bus, "bus")
+        packet = proto.build_command(PROFILE, pname, t.bus, 1 if t.on else 0)
+    except (KeyError, ValueError, proto.ConstraintError) as e:
+        return _bad(str(e))
+    DEV.submit(lambda tr, packet=packet: tr.write(packet))
     return {"ok": True}
 
 
@@ -1012,15 +1056,7 @@ def api_routing():
          "channels": int(v), "stereo": k in stereo}
         for k, v in sorted(dc.items(), key=lambda x: int(x[0]))
     ]
-    sources = []
-    for name, (_bank, _first, count, label, base) in proto.ROUTE_SOURCE_SPECS.items():
-        sources.append({"kind": name, "label": label, "count": count,
-                        "base": base, "stereo": False})
-    for name in proto.ROUTE_STEREO_SOURCE_BANKS:
-        sources.append({"kind": name, "label": name, "count": 2,
-                        "base": None, "stereo": True})
-    sources.append({"kind": "mute", "label": "MUTE", "count": 0,
-                    "base": None, "stereo": False})
+    sources = proto.route_source_options(PROFILE)
     return {"dests": dests, "sources": sources, "current": DEV.routing_json()}
 
 
@@ -1035,7 +1071,7 @@ def api_route(r: Route):
     if not 0 <= r.channel < nch:
         return _bad(f"channel {r.channel} out of range 0..{nch - 1} for dest {r.dest}")
     try:
-        tgt = proto.ROUTE_MUTE if r.kind == "mute" \
+        tgt = proto.route_mute_source(PROFILE) if r.kind == "mute" \
             else proto.resolve_route_source(PROFILE, r.kind, r.number)
     except ValueError as e:
         return _bad(str(e))
@@ -1069,7 +1105,7 @@ def api_route_batch(b: RouteBatch):
         if not 0 <= c.channel < nch:
             return _bad(f"channel {c.channel} out of range 0..{nch - 1} for dest {b.dest}")
         try:
-            tgt = proto.ROUTE_MUTE if c.kind == "mute" \
+            tgt = proto.route_mute_source(PROFILE) if c.kind == "mute" \
                 else proto.resolve_route_source(PROFILE, c.kind, c.number)
         except ValueError as e:                                  # noqa: BLE001
             return _bad(str(e))
@@ -1087,6 +1123,34 @@ def api_route_batch(b: RouteBatch):
 
 
 # -- virtual mixer -------------------------------------------------------
+
+@app.post("/api/mixer-source")
+def api_mixer_source(s: MixerSource):
+    """Update one slot in the Zen Go's shared mixer input map.
+
+    The browser sends an option key from the profile-derived feature list;
+    the server resolves that key back to a bank/index pair and refuses any
+    source that is not declared by the active profile.
+    """
+    if not DEV.mixer_source_available:
+        return _bad("mixer input routing is not safely mapped for this profile")
+    if not 0 <= s.mix < DEV.n_mixes:
+        return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
+    if not 0 <= s.channel < DEV.mix_channels:
+        return _bad(f"mixer channel {s.channel} out of range 0..{DEV.mix_channels - 1}")
+    feature = UI_FEATURES.get("mixer_sources", {})
+    option = next((item for item in feature.get("options", [])
+                   if item.get("key") == s.source), None)
+    if option is None:
+        return _bad(f"unknown mixer source option {s.source!r}")
+    try:
+        target = (proto._as_int(option["bank"]),
+                  proto._as_int(option["index"]))
+    except (KeyError, TypeError, ValueError) as e:
+        return _bad(f"invalid mixer source option: {e}")
+    DEV.submit(lambda t: DEV._set_mixer_source(t, s.channel, target))
+    return {"ok": True, "mix": s.mix, "channel": s.channel,
+            "source": s.source}
 
 @app.post("/api/mixer-select")
 def api_mixer_select(s: MixerSelect):
@@ -1119,22 +1183,26 @@ def api_mixer_select(s: MixerSelect):
 
 @app.post("/api/mix-link")
 def api_mix_link(link: MixerLink):
-    """Toggle one of the virtual-mixer's 16 stereo links (SET_LINK space 3).
+    """Toggle one virtual-mixer pair (SET_LINK space 3).
 
     The hardware does not report these flags back, and linked value mirroring
     is Launcher-side behavior, so the browser owns that companion state.
     """
     if not DEV.mixer_available:
         return _bad("mixer readback is not safely mapped for this profile")
+    if not 0 <= link.mix < DEV.n_mixes:
+        return _bad(f"mix {link.mix} out of range 0..{DEV.n_mixes - 1}")
     pairs = DEV.mix_channels // 2
     if not 0 <= link.pair < pairs:
         return _bad(f"pair {link.pair} out of range 0..{pairs - 1}")
     try:
-        pkt = proto.build_link_command(PROFILE, link.pair, link.enabled, space=3)
+        wire_pair = proto.mixer_link_pair_index(PROFILE, link.mix, link.pair)
+        pkt = proto.build_link_command(PROFILE, wire_pair, link.enabled, space=3)
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
     DEV.submit(lambda t: t.write(pkt))
-    return {"ok": True, "pair": link.pair, "enabled": link.enabled}
+    return {"ok": True, "mix": link.mix, "pair": link.pair,
+            "wire_pair": wire_pair, "enabled": link.enabled}
 
 @app.post("/api/mix-solo")
 def api_mix_solo(s: MixSolo):

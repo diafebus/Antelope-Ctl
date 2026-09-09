@@ -2407,8 +2407,22 @@ function mixerSourceFeature(mix) {
   const spec = UI_FEATURES?.mixer_sources;
   return spec?.enabled && (spec.mixes || []).includes(mix) ? spec : null;
 }
+function mixerSourceKey(spec, mix, ch) {
+  let sawRoute = false;
+  for (const dest of (spec.routing_destinations || [])) {
+    const route = ROUTING?.current?.[String(dest)]?.[ch];
+    if (!route) continue;
+    sawRoute = true;
+    const option = (spec.options || []).find(o =>
+      Number(o.bank) === Number(route.bank) && Number(o.index) === Number(route.idx));
+    if (option) return option.key;
+  }
+  // A route record that exists but contains an unknown/unconfirmed source
+  // must not be replaced with a stale browser-local selection.
+  return sawRoute ? '' : (MIXER_SOURCES[`${mix}:${ch}`] || '');
+}
 function mixerSourceOptions(spec, mix, ch) {
-  const selected = MIXER_SOURCES[`${mix}:${ch}`] || '';
+  const selected = mixerSourceKey(spec, mix, ch);
   const options = (spec.options || []).map(option =>
     `<option value="${option.key}"${option.key === selected ? ' selected' : ''}>${option.label}</option>`).join('');
   return `<option value="">INPUT SOURCE</option>${options}`;
@@ -2579,12 +2593,26 @@ const mixLinkPartner = ch => {
   const input = ch - mixerInputStart();
   return input >= 0 ? mixerInputStart() + (input ^ 1) : -1;
 };
-const mixIsLinked = ch => {
+const mixLinkKey = (mix, pair) => `${mix}:${pair}`;
+const mixIsLinked = (mix, ch) => {
   const pair = mixLinkPair(ch);
-  return pair >= 0 && !!MIX_LINKS[pair];
+  return pair >= 0 && !!MIX_LINKS[mixLinkKey(mix, pair)];
 };
 function loadMixLinks() {
-  try { return JSON.parse(localStorage.getItem('mixerLinks') || '{}') || {}; }
+  try {
+    const saved = JSON.parse(localStorage.getItem('mixerLinks') || '{}');
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return {};
+    const links = {};
+    for (const [key, enabled] of Object.entries(saved)) {
+      if (!enabled) continue;
+      if (/^\d+:\d+$/.test(key)) links[key] = true;
+      // Older builds stored only the pair, which made one link appear in
+      // every mix. Keep those links in Mix 1 during the format migration,
+      // rather than reviving the cross-mix behaviour.
+      else if (/^\d+$/.test(key)) links[mixLinkKey(0, +key)] = true;
+    }
+    return links;
+  }
   catch (_) { return {}; }
 }
 function saveMixLinks() {
@@ -2664,7 +2692,9 @@ function buildMixer() {
 
 function refreshMixLinks() {
   document.querySelectorAll('#mixer .mixer-strip').forEach(strip => {
-    const ch = +strip.dataset.ch, linked = mixIsLinked(ch);
+    const pane = strip.closest('[data-mix-pane]');
+    const m = pane ? +pane.dataset.mixPane : 0;
+    const ch = +strip.dataset.ch, linked = mixIsLinked(m, ch);
     const button = strip.querySelector('[data-mix-link]');
     if (button) button.classList.toggle('on', linked);
     strip.classList.toggle('linkstart', linked && mixLinkPartner(ch) > ch);
@@ -2673,10 +2703,11 @@ function refreshMixLinks() {
 }
 
 function setMixLink(m, pair, on) {
-  if (pair < 0 || !!MIX_LINKS[pair] === !!on) return;
-  if (on) MIX_LINKS[pair] = true; else delete MIX_LINKS[pair];
+  const key = mixLinkKey(m, pair);
+  if (pair < 0 || !!MIX_LINKS[key] === !!on) return;
+  if (on) MIX_LINKS[key] = true; else delete MIX_LINKS[key];
   saveMixLinks();
-  post('/api/mix-link', {pair, enabled: on});
+  post('/api/mix-link', {mix: m, pair, enabled: on});
   if (on) {
     const sourceCh = mixerInputStart() + pair * 2;
     const source = (MIXER.current || {})[String(m)]?.[sourceCh];
@@ -2715,7 +2746,7 @@ function paintMixerField(m, ch, field, value) {
 }
 
 function mirrorLinkedMixField(m, ch, field, value) {
-  if (!mixIsLinked(ch) || (field !== 'fader' && field !== 'send')) return;
+  if (!mixIsLinked(m, ch) || (field !== 'fader' && field !== 'send')) return;
   const partner = mixLinkPartner(ch);
   markMixerPending(m, partner, field, value);
   paintMixerField(m, partner, field, value);
@@ -2725,7 +2756,7 @@ function postLinkedMix(m, ch, patch) {
   const field = Object.keys(patch)[0], value = patch[field];
   markMixerPending(m, ch, field, value);
   post('/api/mix', {mix: m, channel: ch, ...patch});
-  if (!mixIsLinked(ch)) return;
+  if (!mixIsLinked(m, ch)) return;
   const partner = mixLinkPartner(ch);
   markMixerPending(m, partner, field, value);
   post('/api/mix', {mix: m, channel: partner, ...patch});
@@ -2734,7 +2765,7 @@ function postLinkedMix(m, ch, patch) {
 
 function postLinkedSolo(m, ch, on) {
   post('/api/mix-solo', {mix: m, channel: ch, on});
-  if (mixIsLinked(ch))
+  if (mixIsLinked(m, ch))
     post('/api/mix-solo', {mix: m, channel: mixLinkPartner(ch), on});
 }
 
@@ -2910,7 +2941,7 @@ function renderMix(pane, m) {
         saveMixerSources();
       }
       if (sourceFeature.writable) {
-        post('/api/mixer-source', {mix: m, channel: ch, source: key});
+        if (key) post('/api/mixer-source', {mix: m, channel: ch, source: key});
       } else {
         reportMessage('zen-routing', 'Zen Go source selectors', sourceFeature.note);
       }
@@ -2967,12 +2998,12 @@ function renderMix(pane, m) {
       if (on) {
         if (!MIX_SOLO_RESTORE[m]) MIX_SOLO_RESTORE[m] = mixerSoloSnapshot(m);
         active.add(ch);
-        if (mixIsLinked(ch)) active.add(mixLinkPartner(ch));
+        if (mixIsLinked(m, ch)) active.add(mixLinkPartner(ch));
         paintMixSolo(pane, active);
       } else {
         const restore = MIX_SOLO_RESTORE[m];
         active.delete(ch);
-        if (mixIsLinked(ch)) active.delete(mixLinkPartner(ch));
+        if (mixIsLinked(m, ch)) active.delete(mixLinkPartner(ch));
         if (active.size) {
           paintMixSolo(pane, active);
         } else {
@@ -2984,7 +3015,7 @@ function renderMix(pane, m) {
     });
     const link = strip.querySelector('[data-mix-link]');
     if (link) link.addEventListener('click', () =>
-      setMixLink(m, mixLinkPair(ch), !mixIsLinked(ch)));
+      setMixLink(m, mixLinkPair(ch), !mixIsLinked(m, ch)));
   });
   refreshMixLinks();
   applyMixerMeters(MIXER_METERS);
@@ -3013,6 +3044,11 @@ function refreshMixer() {
       send.value = -s.send;
       send.parentElement.querySelector('[data-sval]').textContent = mixerSendLabel(s.send, MIXER.ranges.send[1]);
       paintMixerKnob(send);
+    }
+    const source = strip.querySelector('[data-mix-source]');
+    const sourceFeature = mixerSourceFeature(m);
+    if (source && sourceFeature && document.activeElement !== source) {
+      source.value = mixerSourceKey(sourceFeature, m, ch);
     }
     if (!mixerPendingActive(m, ch, 'mute', s.mute)) {
       strip.querySelector('[data-mute]').classList.toggle('on', s.mute);

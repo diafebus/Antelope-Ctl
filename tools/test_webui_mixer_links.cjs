@@ -33,7 +33,7 @@ const context = vm.createContext({
   MIXER_METERS: null,
   MIX_PENDING: {},
   MIX_PENDING_TTL: 5000,
-  MIX_LINKS: {0: true},
+  MIX_LINKS: {'0:0': true},
   document: {
     querySelector: selector => {
       const match = selector.match(/data-ch="(\d+)"/);
@@ -64,4 +64,24 @@ assert.equal(JSON.stringify(posted.map(x => x.body)), JSON.stringify([
   {mix: 0, channel: 1, send: 44},
   {mix: 0, channel: 2, send: 44},
 ]));
+
+// A link in Mix 1 must not make the same pair linked in another mix.
+const beforeOtherMix = posted.length;
+context.mirrorLinkedMixField(1, 1, 'fader', 55);
+assert.equal(posted.length, beforeOtherMix);
+context.postLinkedMix(1, 1, {send: 44});
+context.postLinkedMix(1, 1, {mute: true});
+context.postLinkedSolo(1, 1, true);
+assert.equal(JSON.stringify(posted.slice(beforeOtherMix).map(x => x.body)), JSON.stringify([
+  {mix: 1, channel: 1, send: 44},
+  {mix: 1, channel: 1, mute: true},
+  {mix: 1, channel: 1, on: true},
+]));
+
+// The API request also carries the mix so the backend can address the
+// corresponding hardware link domain.
+context.setMixLink(1, 0, true);
+assert.equal(JSON.stringify(posted.at(-1).body), JSON.stringify({mix: 1, pair: 0, enabled: true}));
+assert.equal(context.MIX_LINKS['0:0'], true);
+assert.equal(context.MIX_LINKS['1:0'], true);
 console.log('WebUI linked mixer checks passed (live fader/Send mirror and paired posts).');

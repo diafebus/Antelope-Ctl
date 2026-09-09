@@ -9,9 +9,10 @@ layout differs between products.
 Current entries:
 
 - `zen_go_sc`: shows the Zen Go mixer input-source selectors above its 16
-  strips. The selectors are read-only until the Zen Go routing readback is
-  captured and bounded; the routing command rewrites a whole group, so the UI
-  must not guess the other 15 sources.
+  strips. The current profile marks routing readback indices 6-9 as
+  capture-confirmed, so the selectors are writable. Because the routing
+  command rewrites a whole group, the server reads all four mirrored records,
+  changes one slot, and writes the complete records back.
 - Gazelle Reverb is not a device-name registry entry. The button and panel
   are derived automatically from a profile's complete, confirmed
   `frame.auraverb_command` plus bounded readback contract, and are closed by

@@ -1166,7 +1166,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | none found |
 | adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | none found (gain bytes track together; preamp-link behaviour, CLI mirrors gain) |
 | spdif_channel_link | `0xa2` | `0x14` | **space=1** @17, pair_index @18 (0) | enabled @19 | none found (L/R gain bytes track together; CLI mirrors gain) |
-| mix_channel_link | `0xa2` | `0x14` | **space=3** @17, pair_index @18 | enabled @19 | none found (software-mirrored, §12) |
+| mix_channel_link | `0xa2` | `0x14` | **space=3** @17, logical `(mix,pair)`; pair selector @18 is profile/surface-specific | enabled @19 | none found (software-mirrored, §12) |
 | mix_fader / mix_pan / mix_send / mix_mute / mix_solo | `0xd4` | `0x17` | `mix` @18, `channel` @19 (1-32) | fader @20 (0-90 dB), pan @21 bits 0-5 (0x20=centre), mute @21 bit 6, solo @21 bit 7, send @22 (0-96) | none (§12) |
 | talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
 | talkback_source | `0x27` | `0x12` | - | 0-12 @17 -- `0` = INT (built-in talkback mic behind the physical TB button), `1-12` = preamps 1-12 (user-confirmed) | offset 73 bits 0-1 (low bits only) |
@@ -1505,7 +1505,11 @@ the Launcher re-send a `mix_command` for **all 32 channels** of that mix
 (a handy channel-count probe -- that's how we know it's 32).
 
 **Mix channel link** = `SET_LINK` with a **new `space` byte `0x03`**
-(0 = physical/ADAT, 1 = S/PDIF, 3 = mixer). `pair_index = channel // 2`.
+(0 = physical/ADAT, 1 = S/PDIF, 3 = mixer). The logical link identity is
+`(mix, pair_index)`, with `pair_index = channel // 2` within that mix; it is
+not one global pair shared by every mixer surface. `SET_LINK` has no separate
+mix byte, so a profile may declare a per-mix wire-selector stride when the
+device reserves distinct selector ranges.
 Software-mirrored like every other link: while linked, the Launcher
 re-sends both strips' `mix_command` frames on each change; the device does
 not propagate.
@@ -1829,9 +1833,10 @@ routing). **Divergences from Orion:**
 | meter report magic | `0x75` | **`0x83`** |
 | in-band readback (§4a) | `0x74` req / `0x75`@1=`0x00` resp | **same, byte-identical** (re-checked 2026-09-01) |
 | ~~"connect name report"~~ | — | ~~`0x75` = ASCII name/serial/fw~~ **corrected: that IS a readback response, category `0x01`** -- the same category that carries name+serial on the Orion. It only looked device-specific because the Orion's `0x75` responses were being filtered as meter noise. |
-| readback connect walk | 113 records / 10 categories | **3 queries only** -- cat `0x00`, `0x01`, `0x11`, all index 0. So **no record counts are known for the Zen Go** → no safe index bounds → **do not sweep** (§4a hazard) |
+| readback connect walk | 113 records / 10 categories | **3 queries only** -- cat `0x00`, `0x01`, `0x11`, all index 0. Complete category counts are still unknown; only the explicitly capture-confirmed feature layouts (routing `0x03` indices 3, 5, 6-9 and mixer `0x04` indices 0-1) are safe to use (§4a hazard) |
 | mixer frame | opcode `0x17`, subcmd `0x05`, has a **send** byte @22 | opcode **`0x16`**, subcmd **`0x04`**, **no send** byte |
 | mixes / strips | 4 mixes × 32 | 2 mixes × 16 |
+| mixer link selector | logical pair in the selected mix (Mix 1 wire mapping captured) | **Mix 1 pair `0..7`; Mix 2 pair `0..7` uses wire selectors `0x10..0x17`** |
 | preamps | 12 | 2 (A1 = ch0, A2 = ch1) |
 | gain array offset | `0x73` @49 | `0x73` **@40** |
 | status array offset | `0x73` @61 | `0x73` **@42** |

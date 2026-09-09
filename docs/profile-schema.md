@@ -141,6 +141,12 @@ function (unless `force`). If your device shares an opcode for two
 purposes (Zen Go's `0x17` is mixer *and* mic-modeling), the `param_id`
 at @16 is the real discriminator — give each its own `frame.*` block.
 
+Mixer link state is keyed by `(mix, pair)`, not by the pair number alone.
+Profiles whose `SET_LINK` mixer selectors reserve a range per surface may
+declare `mixer.link_pair_index.mix_stride`; `protocol.mixer_link_pair_index`
+then translates the logical pair into the wire selector. For example, Zen Go
+uses a stride of 16, so logical pair 0 is wire pair 0 on Mix 1 and 16 on Mix 2.
+
 ### Incoming report maps (device → host)
 
 - **`state_report`** (`magic 0x73` in this family) — the poll readback.
