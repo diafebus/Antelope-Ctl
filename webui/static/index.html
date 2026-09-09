@@ -2422,7 +2422,7 @@ function setMixLink(m, pair, on) {
     const source = (MIXER.current || {})[String(m)]?.[pair * 2 + 1];
     if (source) {
       const partner = pair * 2 + 2;
-      for (const field of ['fader', 'pan', 'send', 'mute']) {
+      for (const field of ['fader', 'send', 'mute']) {
         if (field === 'send' && !(MIXER.send_mixes || []).includes(m)) continue;
         markMixerPending(m, partner, field, source[field]);
         post('/api/mix', {mix: m, channel: partner, [field]: source[field]});
@@ -2447,6 +2447,12 @@ function postLinkedMix(m, ch, patch) {
     strip.querySelector('[data-fval]').textContent = mixerFaderLabel(value);
     paintMixerFader(strip, fader.value);
   }
+}
+
+function postLinkedSolo(m, ch, on) {
+  post('/api/mix-solo', {mix: m, channel: ch, on});
+  if (mixIsLinked(ch))
+    post('/api/mix-solo', {mix: m, channel: mixLinkPartner(ch), on});
 }
 
 function selectMixer(m, notify = true) {
@@ -2515,6 +2521,14 @@ function renderMix(pane, m) {
       <span class="mxname">${ch === 0 ? 'MASTER' : 'CH ' + String(ch).padStart(2, '0')}</span>
       ${linkStart ? `<button class="linkbtn" data-mix-link title="link CH${ch}+CH${ch + 1}">${LINK_ICON}</button>` : ''}
       <span class="mxval" data-fval>${mixerFaderLabel(fader)}</span>
+      ${hasSend && ch > 0 ? `<div class="mixer-control">
+        <label><span>SEND</span><output data-sval>${mixerSendLabel(send, sHi)}</output></label>
+        <input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="channel ${ch} AuraVerb send">
+      </div>` : ''}
+      ${ch > 0 ? `<div class="mixer-control">
+        <label><span>PAN</span><output data-pval>${mixerPanLabel(pan)}</output></label>
+        <input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="channel ${ch} pan">
+      </div>` : ''}
       <div class="mixer-fader-row">
         <div class="mixer-fader-well">
           <span class="mixer-fader-thumb" aria-hidden="true">
@@ -2524,14 +2538,6 @@ function renderMix(pane, m) {
         </div>
         ${ch > 0 ? '<div class="mixer-meter" title="Meter unavailable"><i data-mix-meter class="unavailable"></i></div>' : ''}
       </div>
-      ${ch > 0 ? `<div class="mixer-control">
-        <label><span>PAN</span><output data-pval>${mixerPanLabel(pan)}</output></label>
-        <input type="range" data-pan min="${pLo}" max="${pHi}" value="${pan}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} pan">
-      </div>` : ''}
-      ${hasSend && ch > 0 ? `<div class="mixer-control">
-        <label><span>SEND</span><output data-sval>${mixerSendLabel(send, sHi)}</output></label>
-        <input type="range" data-send min="${-sHi}" max="${-sLo}" value="${-send}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} AuraVerb send">
-      </div>` : ''}
       <div class="mixer-buttons">
         <button type="button" data-mute class="${s.mute ? 'on' : ''}" aria-label="${ch === 0 ? 'master' : 'channel ' + ch} mute">M</button>
         ${ch > 0 ? `<button type="button" data-solo class="solo ${s.solo ? 'on' : ''}" aria-label="channel ${ch} solo">S</button>` : ''}
@@ -2554,7 +2560,11 @@ function renderMix(pane, m) {
     const pan = strip.querySelector('[data-pan]'), pval = strip.querySelector('[data-pval]');
     if (pan) {
       pan.addEventListener('input', e => pval.textContent = mixerPanLabel(e.target.value));
-      pan.addEventListener('change', e => postLinkedMix(m, ch, {pan: +e.target.value}));
+      pan.addEventListener('change', e => {
+        const value = +e.target.value;
+        markMixerPending(m, ch, 'pan', value);
+        post('/api/mix', {mix: m, channel: ch, pan: value});
+      });
     }
     const send = strip.querySelector('[data-send]'), sval = strip.querySelector('[data-sval]');
     if (send) {
@@ -2578,10 +2588,12 @@ function renderMix(pane, m) {
       if (on) {
         if (!MIX_SOLO_RESTORE[m]) MIX_SOLO_RESTORE[m] = mixerSoloSnapshot(m);
         active.add(ch);
+        if (mixIsLinked(ch)) active.add(mixLinkPartner(ch));
         paintMixSolo(pane, active);
       } else {
         const restore = MIX_SOLO_RESTORE[m];
         active.delete(ch);
+        if (mixIsLinked(ch)) active.delete(mixLinkPartner(ch));
         if (active.size) {
           paintMixSolo(pane, active);
         } else {
@@ -2589,7 +2601,7 @@ function renderMix(pane, m) {
           delete MIX_SOLO_RESTORE[m];
         }
       }
-      post('/api/mix-solo', {mix: m, channel: ch, on});
+      postLinkedSolo(m, ch, on);
     });
     const link = strip.querySelector('[data-mix-link]');
     if (link) link.addEventListener('click', () =>
