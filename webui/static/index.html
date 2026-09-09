@@ -690,7 +690,17 @@ async function post(path, body) {
   try {
     const r = await fetch(path, {method:'POST', headers:{'content-type':'application/json'},
                                 body:JSON.stringify(body)});
-    if (!r.ok) reportMessage('comm', 'Control command failed', `${path}: ${await r.text()}`);
+    if (!r.ok) {
+      const detail = await r.text();
+      if (r.status === 404 && path === '/api/auraverb') {
+        reportMessage('comm', 'AuraVerb API unavailable',
+          'The running daemon is older than this WebUI. Stop the old server, '
+          + 'restart <code>python3 server.py</code> from the current webui directory, '
+          + 'then hard-refresh the page. ' + detail);
+      } else {
+        reportMessage('comm', 'Control command failed', `${path}: ${detail}`);
+      }
+    }
   } catch (_) { reportMessage('comm', 'Connection lost', `Unable to send ${path}.`); }
 }
 async function getJSON(path) { return (await fetch(path)).json(); }

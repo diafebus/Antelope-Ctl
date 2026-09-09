@@ -8,6 +8,8 @@ added without changing another device's layout.
 from copy import deepcopy
 from pathlib import Path
 
+from antelope import protocol as proto
+
 
 def _zen_source_options():
     """Build the source labels shown by the Zen Go mixer selectors.
@@ -50,13 +52,6 @@ _FEATURES = {
             "note": "Zen Go source routing is displayed read-only until its safe routing readback is confirmed.",
         },
     },
-    "orion_studio_sc": {
-        "auraverb": {
-            "enabled": True,
-            "mix": 0,
-            "label": "AuraVerb",
-        },
-    },
 }
 
 
@@ -77,8 +72,16 @@ def features_for(profile_path, profile):
     key = _profile_key(profile_path, profile)
     features = deepcopy(_FEATURES.get(key, {}))
     frame = profile.get("frame", {})
-    if "auraverb" in features and not frame.get("auraverb_command"):
-        features.pop("auraverb")
+    if proto.auraverb_readback_available(profile):
+        command = frame.get("auraverb_command", {})
+        contract = command.get("contract", {})
+        features["auraverb"] = {
+            "enabled": True,
+            "mix": proto._as_int(contract.get("target", 0)),
+            "label": "AuraVerb",
+        }
+    else:
+        features.pop("auraverb", None)
     if "mixer_sources" in features and not frame.get("routing_command"):
         features.pop("mixer_sources")
     return {"profile": key, **features}

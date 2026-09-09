@@ -639,7 +639,7 @@ def readback_layout_indices(profile: dict, category: int, kind: str = None):
     The result is deliberately limited to layouts marked ``confirmed`` or
     ``capture-confirmed``.
     """
-    layouts = profile.get('frame', {}).get('readback', {}).get('layouts', [])
+    layouts = profile.get('frame', {}).get('readback', {}).get('layouts') or []
     out = set()
     for layout in layouts:
         try:
@@ -843,6 +843,50 @@ def parse_mixer_record(profile: dict, body: bytes):
 AURAVERB_READBACK_CATEGORY = 0x0a
 
 
+def auraverb_readback_target(profile: dict):
+    """Return the profile-confirmed AuraVerb readback ``(category, index)``.
+
+    AuraVerb command bytes are device-specific even within this protocol
+    family. A profile must declare both the command and a confirmed readback
+    contract before a client may use the effect.
+    """
+    frame = profile.get('frame', {})
+    command = frame.get('auraverb_command')
+    contract = command.get('contract', {}) if isinstance(command, dict) else {}
+    if not isinstance(command, dict) or not isinstance(contract, dict):
+        return None
+    if str(contract.get('status', '')).lower() not in {
+            'confirmed', 'capture-confirmed'}:
+        return None
+    if not command.get('param_offsets') or 'enabled_offset' not in command:
+        return None
+    try:
+        return (_as_int(contract['readback_category']),
+                _as_int(contract.get('readback_index', 0)))
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def auraverb_readback_available(profile: dict) -> bool:
+    """Whether AuraVerb has a bounded, profile-confirmed readback target."""
+    target = auraverb_readback_target(profile)
+    if target is None:
+        return False
+    category, index = target
+    count = readback_category_count(profile, category)
+    if count is not None:
+        return 0 <= index < count
+    contract = profile['frame']['auraverb_command'].get('contract', {})
+    declared = contract.get('readback_record_count')
+    if declared is not None:
+        try:
+            return 0 <= index < int(declared)
+        except (TypeError, ValueError):
+            return False
+    return index in readback_layout_indices(
+        profile, category, kind='auraverb_state')
+
+
 def parse_auraverb_record(profile: dict, body: bytes):
     """Decode a category-0x0a record -- the AuraVerb reverb state for all four
     mixes.
@@ -867,21 +911,47 @@ def parse_auraverb_record(profile: dict, body: bytes):
     Returns a list of up to 4 dicts: {params: {the 8 keys -> 0-100},
     enabled: bool|None, wet: int|None, raw: bytes}."""
     f = profile['frame'].get('auraverb_command', {})
+    contract = f.get('contract', {})
     offs = f.get('param_offsets', {})
     if not offs:
         raise ValueError('profile has no frame.auraverb_command.param_offsets')
     if not body:
         raise ValueError('empty auraverb record')
-    zero = min(_as_int(v) for v in offs.values())
-    rel = {k: _as_int(v) - zero for k, v in offs.items()}
-    wet_rel = _as_int(f.get('mix_wet_offset', 22)) - zero
-    en_rel = _as_int(f.get('enabled_offset', 28)) - zero
-    payload = body[1:]  # drop the leading header byte
-    stride = 11
+    fields = {
+        field.get('name'): field.get('readback_offset')
+        for field in contract.get('fields', []) or []
+        if isinstance(field, dict) and field.get('name') in offs
+        and field.get('readback_offset') is not None
+    }
+    if fields:
+        rel = {k: _as_int(v) for k, v in fields.items()}
+        command_zero = min(_as_int(v) for v in offs.values())
+        wet_rel = _as_int(contract.get(
+            'wet_readback_offset', f.get('mix_wet_offset', 22)))
+        en_rel = _as_int(contract.get(
+            'enabled_readback_offset', f.get('enabled_offset', 28)))
+        if 'wet_readback_offset' not in contract:
+            wet_rel -= command_zero
+        if 'enabled_readback_offset' not in contract:
+            en_rel -= command_zero
+    else:
+        zero = min(_as_int(v) for v in offs.values())
+        rel = {k: _as_int(v) - zero for k, v in offs.items()}
+        wet_rel = _as_int(f.get('mix_wet_offset', 22)) - zero
+        en_rel = _as_int(f.get('enabled_offset', 28)) - zero
+    block_offset = _as_int(contract.get('readback_block_offset', 1))
+    stride = _as_int(contract.get('readback_block_size', 11))
+    mix_count = int(contract.get(
+        'readback_mix_count', profile.get('mixer', {}).get('mixes', 4)))
+    min_block_size = int(contract.get(
+        'readback_min_block_size', max(rel.values(), default=-1) + 1))
+    if block_offset < 0 or stride <= 0 or mix_count <= 0 or min_block_size <= 0:
+        raise ValueError('invalid profile AuraVerb readback layout')
     out = []
-    for m in range(4):
-        blk = payload[m * stride:m * stride + stride]
-        if len(blk) < 9:
+    for m in range(mix_count):
+        start = block_offset + m * stride
+        blk = body[start:start + stride]
+        if len(blk) < min_block_size:
             break
         out.append({
             'params': {k: blk[r] for k, r in rel.items() if r < len(blk)},

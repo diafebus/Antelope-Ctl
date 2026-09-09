@@ -1478,7 +1478,8 @@ def cmd_readback(args, profile):
                       f"send {s['send']}/96{flags}")
         except ValueError as e:
             print(f'  (not decodable as a mixer record: {e})')
-    if cat == proto.AURAVERB_READBACK_CATEGORY:
+    av_target = proto.auraverb_readback_target(profile)
+    if av_target is not None and cat == av_target[0]:
         try:
             for m, mx in enumerate(proto.parse_auraverb_record(profile, body)):
                 en = {True: 'ON', False: 'off', None: '?'}[mx['enabled']]
@@ -1859,15 +1860,19 @@ _AURAVERB_FLAGS = {
 
 
 def _read_auraverb_live(profile, transport, timeout=1.0):
-    """Live-read AuraVerb for all four mixes via frame.readback cat 0x0a.
+    """Live-read AuraVerb for all mixes via its profile-confirmed readback.
     Returns proto.parse_auraverb_record()'s list, or None if unreachable."""
-    cat = proto.AURAVERB_READBACK_CATEGORY
+    target = proto.auraverb_readback_target(profile)
+    if target is None:
+        return None
+    cat, index = target
     try:
-        req = proto.build_readback_query(profile, cat, 0)
+        req = proto.build_readback_query(profile, cat, index)
     except (KeyError, proto.ConstraintError):
         return None
     data = transport.query(
-        req, lambda d: proto.is_readback_response(profile, d, cat, 0), timeout=timeout)
+        req, lambda d: proto.is_readback_response(profile, d, cat, index),
+        timeout=timeout)
     if data is None:
         return None
     try:
@@ -1901,7 +1906,9 @@ def cmd_auraverb(args, profile):
 
     if not want_set:
         if live:
-            print('AuraVerb -- live device readback (frame.readback cat 0x0a):')
+            target = proto.auraverb_readback_target(profile)
+            cat_label = f'{target[0]:#04x}' if target is not None else 'unknown'
+            print(f'AuraVerb -- live device readback (frame.readback cat {cat_label}):')
             for m, mx in enumerate(live):
                 en = {True: 'ON', False: 'off', None: '?'}[mx['enabled']]
                 if m == 0:

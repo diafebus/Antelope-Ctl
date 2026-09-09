@@ -240,10 +240,12 @@ def t_mixer(dev):
 
 def t_auraverb(dev):
     """AuraVerb readback (cat 0x0a) parses, values in range, builder matches."""
-    cat = proto.AURAVERB_READBACK_CATEGORY
-    if 'auraverb_command' not in dev.p.get('frame', {}):
-        return record(SKIP, 'auraverb readback', 'no frame.auraverb_command in profile')
-    body = dev.read(cat, 0)
+    target = proto.auraverb_readback_target(dev.p)
+    if target is None:
+        return record(SKIP, 'auraverb readback',
+                      'no confirmed AuraVerb command/readback contract in profile')
+    cat, index = target
+    body = dev.read(cat, index)
     if body is None:
         return record(SKIP, 'auraverb readback', 'no response to cat 0x0a on this device')
     mixes = proto.parse_auraverb_record(dev.p, body)
@@ -368,10 +370,12 @@ def t_write_auraverb(dev):
     """Nudge Mix 1's reverb-level, verify via readback cat 0x0a, restore.
     Keeps the enabled bit and every other param as read, so a disabled
     AuraVerb stays disabled and inaudible throughout."""
-    cat = proto.AURAVERB_READBACK_CATEGORY
-    if 'auraverb_command' not in dev.p.get('frame', {}):
-        return record(SKIP, 'WRITE auraverb', 'no frame.auraverb_command in profile')
-    body = dev.read(cat, 0)
+    target = proto.auraverb_readback_target(dev.p)
+    if target is None:
+        return record(SKIP, 'WRITE auraverb',
+                      'no confirmed AuraVerb command/readback contract in profile')
+    cat, index = target
+    body = dev.read(cat, index)
     if body is None:
         return record(SKIP, 'WRITE auraverb', 'no cat 0x0a readback on this device')
     mx = proto.parse_auraverb_record(dev.p, body)[0]
@@ -380,7 +384,7 @@ def t_write_auraverb(dev):
     probe = dict(orig, reverb_level=(33 if orig['reverb_level'] != 33 else 44))
     try:
         dev.write(proto.build_auraverb_command(dev.p, probe, en, mix=0))
-        got = proto.parse_auraverb_record(dev.p, dev.read(cat, 0))[0]
+        got = proto.parse_auraverb_record(dev.p, dev.read(cat, index))[0]
         check('WRITE auraverb: Mix 1 reverb-level changes',
               got['params']['reverb_level'] == probe['reverb_level'],
               f"read back {got['params']['reverb_level']}")
@@ -389,7 +393,7 @@ def t_write_auraverb(dev):
                   got['params'][k] == orig[k] for k in orig if k != 'reverb_level'))
     finally:
         dev.write(proto.build_auraverb_command(dev.p, orig, en, mix=0))
-        back = dev.read(cat, 0)
+        back = dev.read(cat, index)
         ok = back is not None and proto.parse_auraverb_record(dev.p, back)[0]['raw'] == mx['raw']
         record(PASS if ok else FAIL, 'WRITE auraverb: restored original',
                '' if ok else 'RESTORE FAILED -- check `auraverb` by hand!')

@@ -11,10 +11,10 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
     ~25 Hz (channels, buses, brightness, meters). The raw `0x75` diagnostic
     bank is sampled separately at a lower rate.
   - **slow** -- the routing matrix (readback cat `0x03`), virtual mixer
-    (cat `0x04`), and Orion AuraVerb state (cat `0x0a`), refreshed one record
+    (cat `0x04`), and profile-confirmed AuraVerb state, refreshed one record
     per meter cycle on connect and every 45 s. Route/mixer/AuraVerb writes
-    update their serialized caches directly. Queries use Orion's bounded
-    category counts or a profile's explicit confirmed layout, so the BusFault
+    update their serialized caches directly. Queries use the active profile's
+    bounded category counts or explicit confirmed layouts, so the BusFault
     hazard is never hit.
     The snapshot carries an `rb_ver` counter; the browser refetches the slow
     APIs when it changes.
@@ -34,8 +34,9 @@ A throwaway prototype of the "local daemon + thin browser UI" architecture
     stacked and the original mute/solo state is restored when the last Solo
     is released;
   - device-specific panels are selected by the presentation registry in
-    `webui/device_ui.py`: Zen Go shows its input-source selectors, while Orion
-    Mix 1 exposes the closed-by-default AuraVerb panel;
+    `webui/device_ui.py`: Zen Go shows its input-source selectors, while any
+    profile with a complete confirmed AuraVerb contract exposes the
+    closed-by-default panel;
   - rotary controls use relative vertical drags with a 240 px full-scale
     travel for finer adjustment; the wheel remains a one-step adjustment;
   - reconnect UX -- the UI dims and goes non-interactive while the device

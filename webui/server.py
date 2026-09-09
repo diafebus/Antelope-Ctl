@@ -14,7 +14,7 @@ Two kinds of state:
              buses, brightness, meters). The 0x75 bank is retained only for
              lower-rate diagnostics.
   * SLOW  -- routing (readback cat 0x03), virtual mixer (cat 0x04), and
-             Orion AuraVerb state (cat 0x0a), refreshed incrementally on
+             profile-confirmed AuraVerb state, refreshed incrementally on
              connect and on a slow timer. Writes use and update their
              serialized caches, querying first if not populated yet. The
              snapshot carries a monotonic `rb_ver`; the browser refetches
@@ -103,7 +103,6 @@ print(f"[antelope-ctl] profile: {os.path.basename(PROFILE_PATH)} "
 
 ROUTING_CAT = proto.ROUTING_READBACK_CATEGORY   # 0x03
 MIXER_CAT = proto.MIXER_READBACK_CATEGORY       # 0x04
-AURAVERB_CAT = proto.AURAVERB_READBACK_CATEGORY # 0x0a
 READBACK_REFRESH_S = 45.0   # slow background poll, one record per fast-state cycle
 
 # The free-running meter report and a readback RESPONSE are BOTH magic 0x75.
@@ -169,9 +168,13 @@ class Device:
         self.routing = {}                  # dest_id(int) -> [(bank, idx), ...]
         self.mixer = {}                    # mix(int)     -> [slot dict, ...]
         self.auraverb = {}                 # readback index -> list of mix dicts
-        self.auraverb_available = bool(
-            profile["frame"].get("auraverb_command")
-            and proto.readback_category_count(profile, AURAVERB_CAT))
+        auraverb_target = proto.auraverb_readback_target(profile)
+        self.auraverb_category = (auraverb_target[0]
+                                  if auraverb_target is not None
+                                  else proto.AURAVERB_READBACK_CATEGORY)
+        self.auraverb_index = (auraverb_target[1]
+                               if auraverb_target is not None else 0)
+        self.auraverb_available = proto.auraverb_readback_available(profile)
         self.solo_state = {}               # mix -> {restore: flags, active: channels}
         self._lock = threading.Lock()
         self._t = None
@@ -213,7 +216,7 @@ class Device:
 
     def auraverb_json(self):
         with self._lock:
-            records = self.auraverb.get(0)
+            records = self.auraverb.get(self.auraverb_index)
             if records is None:
                 return None
             return [{
@@ -246,9 +249,9 @@ class Device:
 
     def _cache_auraverb(self, records):
         with self._lock:
-            if self.auraverb.get(0) == records:
+            if self.auraverb.get(self.auraverb_index) == records:
                 return
-            self.auraverb[0] = records
+            self.auraverb[self.auraverb_index] = records
             self.rb_ver += 1
 
     def _routing_record_for_write(self, transport, dest):
@@ -290,16 +293,18 @@ class Device:
     def _auraverb_record_for_write(self, transport):
         """Return the full AuraVerb readback, refusing a blind write."""
         with self._lock:
-            cached = self.auraverb.get(0)
+            cached = self.auraverb.get(self.auraverb_index)
             if cached is not None:
                 return [{**record, "params": dict(record.get("params", {}))}
                         for record in cached]
         if not self.auraverb_available:
             raise RuntimeError("AuraVerb readback is not safely mapped for this profile")
-        req = proto.build_readback_query(self.profile, AURAVERB_CAT, 0)
+        req = proto.build_readback_query(
+            self.profile, self.auraverb_category, self.auraverb_index)
         data = transport.query(
             req,
-            lambda x: proto.is_readback_response(self.profile, x, AURAVERB_CAT, 0),
+            lambda x: proto.is_readback_response(
+                self.profile, x, self.auraverb_category, self.auraverb_index),
             timeout=1.5)
         if data is None:
             raise RuntimeError("no AuraVerb readback -- not writing blind")
@@ -438,7 +443,8 @@ class Device:
         mixes = [(MIXER_CAT, m) for m in self.mixer_indices
                  if 0 <= m < self.n_mixes] \
             if self.mixer_available else []
-        auraverb = [(AURAVERB_CAT, 0)] if self.auraverb_available else []
+        auraverb = [(self.auraverb_category, self.auraverb_index)] \
+            if self.auraverb_available else []
         return routes + mixes + auraverb
 
     def _refresh_readback_one(self, transport, category, index):
@@ -461,7 +467,7 @@ class Device:
             elif category == MIXER_CAT:
                 value = proto.parse_mixer_record(self.profile, body)
                 cache = self.mixer
-            elif category == AURAVERB_CAT:
+            elif category == self.auraverb_category:
                 value = proto.parse_auraverb_record(self.profile, body)
                 cache = self.auraverb
             else:

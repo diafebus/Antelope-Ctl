@@ -501,6 +501,7 @@
     "param 0x49 set to 12/15 during mixer use -- active-mix / solo-mask / surface selector?",
     "Mic modeling frame (enable/model/pattern) -- capture the emuMic panel; likely opcode 0x1a or 0x1c (param 0xd5).",
     "DSP/FX: opcodes 0x1a / 0x1c (0xd5) and 0x23 (0xd7) in capture_07_dsp.",
+    "AuraVerb: no confirmed command frame or readback layout is present. The observed/safe-query 0x0a entries are not enough to copy Orion's 0x1d/0xda mapping; keep the WebUI capability disabled until Zen Go bytes are decoded.",
     "Meter report 0x83 byte-to-channel map (metering/ch1..ch16 captures).",
     "Full state_report byte map -- offsets ~90 / 122 / 126 / 127 move on link / 0x49 writes.",
     "Does the in-band readback (frame.readback) carry ROUTING and MIXER state on this device? On the Orion these are categories 0x03 and 0x04 and both are fully decoded, after being wrongly documented as write-only for months. The Zen Go Launcher only queries categories 0x00/0x01/0x11 on connect, but the Orion Launcher is equally sparse and its other categories answer regardless. CHEAP TEST, needs the hardware: `readback 0x03 0` and `readback 0x04 0` -- a non-empty body means it is there. Do NOT sweep indices while doing it (see frame.readback.hazard)."
