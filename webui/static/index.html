@@ -2489,7 +2489,7 @@ function initAuraVerbPanel() {
   if (!panel || !UI_FEATURES?.auraverb?.enabled) { if (panel) panel.hidden = true; return; }
   if (!panel.children.length) {
     const [lo, hi] = AURAVERB?.range || avCommand().param_range || [0, 100];
-    panel.innerHTML = `<div class="av-hd"><span class="av-logo">Aura<span>Verb</span></span>
+    panel.innerHTML = `<div class="av-hd"><span class="av-logo">Gazelle<span>Verb</span></span>
       <span class="av-sub">MIX 1 REVERB</span><button class="modal-x" data-av-close aria-label="close">&times;</button></div>
       <div class="av-body"><div class="av-controls">${AV_PARAM_META.map(([key, label]) =>
         `<div class="av-control"><span class="av-value" data-av-value="${key}">–</span>
