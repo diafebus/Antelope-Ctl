@@ -38,6 +38,28 @@ The `23e5-a221.conf` drop-in selects the profile from the generic USB-Audio
 configuration. It avoids matching the device's topology-dependent long card
 name and does not change the generic configuration for other USB cards.
 
+## Uninstall / rollback
+
+If the profile causes a problem, remove only the files installed above. Do
+not remove the generic `USB-Audio.conf` or any other distribution-provided
+UCM2 file:
+
+The command below is appropriate when these files were added by this profile.
+If an earlier local installation already owned any of the paths, restore those
+backups instead of deleting the corresponding file.
+
+```sh
+sudo rm -f \
+  /usr/share/alsa/ucm2/USB-Audio/conf.d/23e5-a221.conf \
+  /usr/share/alsa/ucm2/USB-Audio/Antelope/OrionStudio-III.conf \
+  /usr/share/alsa/ucm2/USB-Audio/Antelope/OrionStudio-III-HiFi.conf
+```
+
+The now-empty `Antelope` directory may be removed manually if desired; it is
+safe to leave it in place. Reconnect the Orion or restart the audio session
+afterward so PipeWire or another audio service reloads the stock UCM2
+configuration.
+
 ## Check the loaded profile
 
 After reconnecting the device or restarting the audio session, inspect the
