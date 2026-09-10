@@ -20,6 +20,7 @@ used; the device firmware is not touched.
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
+| **`ucm2/`** | installable ALSA UCM2 profile for the Orion's 24-channel USB audio streams; HID controls remain in `antelope-ctl`/WebUI |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the AFX / Synergy Core plugin boundary — what this repo does and doesn't touch, and why (the plugin *parameter* layer is off-repo pending an IP-lawyer review) |
 
 ### Naming
@@ -130,6 +131,7 @@ profiles/zen_go_sc.json        <- sibling device (Zen Go Synergy Core), first-pa
 profiles/discrete_4_sc.json      <- sibling device, STUB (status: UNCONFIRMED -- transport never captured)
 profiles/discrete_4_pro_sc.json  <- sibling device, STUB (status: UNCONFIRMED -- transport never captured)
 profiles/mic_models.json       <- account-bound mic-modelling ("emuMic") model catalogue
+ucm2/                           <- ALSA UCM2 stream profile and install instructions
 antelope/transport.py          <- generic HID open/read/write (no device-specific code)
 antelope/protocol.py           <- generic frame build/parse, driven entirely by the profile
 antelope/cli.py                <- generic CLI, driven entirely by the profile
