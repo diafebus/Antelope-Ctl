@@ -2630,6 +2630,14 @@ function mixerPendingActive(mix, ch, field, actual) {
   }
   return true;
 }
+function commitMixerPan(m, ch, pan, pval, value) {
+  value = +value;
+  pan.value = value;
+  pval.textContent = mixerPanLabel(value);
+  paintMixerKnob(pan);
+  markMixerPending(m, ch, 'pan', value);
+  post('/api/mix', {mix: m, channel: ch, pan: value});
+}
 
 function applyMixerMeters(meters) {
   MIXER_METERS = meters || null;
@@ -2965,9 +2973,11 @@ function renderMix(pane, m) {
       paintMixerKnob(pan);
       pan.addEventListener('input', e => { pval.textContent = mixerPanLabel(e.target.value); paintMixerKnob(pan); });
       pan.addEventListener('change', e => {
-        const value = +e.target.value;
-        markMixerPending(m, ch, 'pan', value);
-        post('/api/mix', {mix: m, channel: ch, pan: value});
+        commitMixerPan(m, ch, pan, pval, e.target.value);
+      });
+      pan.addEventListener('dblclick', e => {
+        e.preventDefault();
+        commitMixerPan(m, ch, pan, pval, 0);
       });
     }
     const send = strip.querySelector('[data-send]'), sval = strip.querySelector('[data-sval]');

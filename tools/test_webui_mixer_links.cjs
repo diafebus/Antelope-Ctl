@@ -44,6 +44,7 @@ const context = vm.createContext({
   post: (path, body) => posted.push({path, body}),
   mixerFaderLabel: value => value ? `−${value} dB` : '0 dB',
   mixerSendLabel: (value, max) => value >= max ? '−∞' : `−${value} dB`,
+  mixerPanLabel: value => value === 0 ? 'C' : value < 0 ? `L${-value}` : `R${value}`,
   paintMixerFader: () => {},
   paintMixerKnob: () => {},
 });
@@ -77,6 +78,15 @@ assert.equal(JSON.stringify(posted.slice(beforeOtherMix).map(x => x.body)), JSON
   {mix: 1, channel: 1, mute: true},
   {mix: 1, channel: 1, on: true},
 ]));
+
+// Pan commits share the same mix/channel scope and can be centered directly.
+const pan = {value: -17};
+const panReadout = {textContent: ''};
+context.commitMixerPan(1, 3, pan, panReadout, 0);
+assert.equal(pan.value, 0);
+assert.equal(panReadout.textContent, 'C');
+assert.equal(context.MIX_PENDING['1:3:pan'].value, 0);
+assert.equal(JSON.stringify(posted.at(-1).body), JSON.stringify({mix: 1, channel: 3, pan: 0}));
 
 // The API request also carries the mix so the backend can address the
 // corresponding hardware link domain.
