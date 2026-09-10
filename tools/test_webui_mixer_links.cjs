@@ -80,6 +80,7 @@ assert.equal(JSON.stringify(posted.slice(beforeOtherMix).map(x => x.body)), JSON
 ]));
 
 // Pan commits share the same mix/channel scope and can be centered directly.
+assert.match(html, /pan\.addEventListener\('dblclick', e => \{\s*e\.preventDefault\(\);\s*commitMixerPan\(m, ch, pan, pval, 0\);\s*\}\);/s);
 const pan = {value: -17};
 const panReadout = {textContent: ''};
 context.commitMixerPan(1, 3, pan, panReadout, 0);
