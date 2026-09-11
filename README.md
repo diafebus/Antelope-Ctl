@@ -40,13 +40,17 @@ oscillator / screen brightness / output trim** (all `SET_GLOBAL`), talkback,
 and the **surround monitoring tab** (per-speaker 16-band EQ + global +
 2.1 bass management; Room Correction turned out to *be* the per-speaker
 EQ). In-band **readback** (`0x74`/`0x75`) covers routing, mixer, the bundled
-reverb, device identity, preamp/channel state, and **both surround frames**
-(categories `0x1a` per-speaker EQ / `0x1b` global — structure decoded
-2026-09-04, not yet wired into the CLI). There is **no built-in
+reverb, device identity, preamp/channel state, **both surround frames**
+(categories `0x1a` per-speaker EQ / `0x1b` global), and the newly structured
+Orion nested records: category `0x0b` link tables, `0x15` AFX instance counts,
+`0x16` mic-emulation state, and `0x19` AFX strip order. The CLI and WebUI
+display those profile-declared records. There is **no built-in
 per-input-channel EQ** on this device: input EQ is an AFX plugin, which is
 out of scope (`SCOPE.md`). Not decoded: surround formats past 2.1 (need the
-MRC licence), readback categories `0x07` / `0x0c` / `0x15` / `0x16`, and
-the `0x74` channel-group names. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
+MRC licence), the `0x07` category, the outer query bounds for `0x0c`, and
+the `0x74` channel-group names. Category `0x0b` link transitions still need
+a controlled capture; its returned bytes are not yet treated as verified
+control state. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
 (`SCOPE.md`); plugin *parameters* stay off-repo. The AFX-tab channel
@@ -316,6 +320,9 @@ python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
 python3 -m antelope.cli ... matrix-status                    # LIVE read of the whole matrix from the device
 python3 -m antelope.cli ... mix-status 1                     # LIVE read of virtual Mix 1 (cat 0x04)
 python3 -m antelope.cli ... readback 0x03 0                  # raw: routing record for dest 0 (line out)
+python3 -m antelope.cli ... readback 0x0b 0                  # structured preamp-link table
+python3 -m antelope.cli ... readback 0x16 0                  # structured mic-emulation state
+python3 -m antelope.cli ... readback 0x19 0                  # structured AFX strip order
 python3 -m antelope.cli ... readback                         # list the readback categories
 ```
 
@@ -455,7 +462,10 @@ switch, and a **polar pattern** -- with model `0` a free 0-100 morph
 that model's pattern list (fixed / 3-way / 9-detent), preset to the
 model's default on select. Enabling also auto-turns on 48 V phantom and
 links the preamp pair; disabling reverses all of it (phantom off, gain
-re-sync, unlink). No readback category exists for the modeling state.
+re-sync, unlink). Current state is available as eight records from readback
+category `0x16` (`target`, model, swap, pattern). The write path still has no
+verified write/readback round-trip, so the WebUI controls remain optimistic
+while the readback diagnostics show the device response.
 
 The modeled signal appears as routing source bank `0x01` (`emumicN`,
 N = preamp 5-12). **Preamps 5-12 confirmed on the wire 2026-09-03** (a
@@ -527,12 +537,15 @@ level: at 96, `0x04` means "at max", not necessarily muted.
 ## Adding a new param (e.g. routing)
 
 Same discipline as Phase 1/2 -- capture, correlate against a real user action,
-confirm, only then trust it. Nothing is inferred from byte patterns alone.
+confirm, only then trust it. The AntelopeAudio folder can provide a useful
+schema and shared-family hypothesis, but it does not establish another
+device's category bounds, field semantics, or transition behavior. Nothing is
+promoted from a sibling device on byte patterns alone.
 
 1. **Capture** a full, untruncated report -- see `CAPTURING.md` for the
-   step-by-step (tshark, not Wireshark's plain-text export, which truncates
-   past ~110 bytes and hides anything past the first ~90 bytes of a
-   320-byte report).
+   step-by-step (tshark, usbmon, USBPcap, or Wireshark are all suitable raw
+   capture paths; Wireshark's plain-text export truncates past ~110 bytes and
+   hides anything past the first ~90 bytes of a 320-byte report).
 2. In the official Launcher, change **only** the one thing you're
    investigating (e.g. routing), and note the state report just
    before and just after.
@@ -653,11 +666,13 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   mode independently per channel (gain resets to fit the new mode's
   range) -> re-link. This matches user reports and is expected device
   behavior, not a CLI bug.
-  Still **no dedicated link-enabled bit found in the state report** --
-  everything observed changing on link is explained as a side effect of
-  the gain/status sync above, not a standalone flag. `bus-status` and
-  `status` both print a note about this rather than silently omitting it.
-  If you find the actual readback bit, that's a great follow-up capture.
+  Still **no dedicated link-enabled bit appears in the state report** --
+  everything observed changing there is explained as a side effect of the
+  gain/status sync above, not a standalone flag. The extracted Orion panel
+  schema and manager-server log do identify readback category `0x0b` as five
+  nested link tables (preamp, ADAT, S/PDIF, mixer, AFX). Their returned bytes
+  are now exposed by `readback 0x0b <index>` and the WebUI, but an isolated
+  link-on/link-off capture has not yet correlated the bytes with transitions.
 
   **Re-verified independently (2026-08) against the raw
   `all_reports_ch-link-gain-ph-inv-test.tsv`**: every report in that capture
@@ -674,8 +689,8 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   in lockstep, for the whole sweep -- this is what `set-link`'s new
   before/after check (below) leans on.
 
-  **`set-link` now does an indirect confirmation.** Since there's no direct
-  readback, `set-link ... on` snapshots gain/phantom/phase_invert for both
+  **`set-link` still does an indirect confirmation.** Since the `0x0b` link
+  bytes are not transition-confirmed yet, `set-link ... on` snapshots gain/phantom/phase_invert for both
   channels in the pair before and after sending the command. If they
   disagreed before and agree after, that's real (if indirect) evidence the
   link engaged, grounded in the confirmed mirroring behavior above -- not a
@@ -691,17 +706,13 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   ```
   This is a small local cache
   (`~/.cache/antelope-ctl/link_state_<vid>_<pid>.json`) of the last
-  `set-link` command *this CLI* has sent for each pair. **There is no
-  device-side link readback** -- closed 2026-09-03 by a dedicated
-  whole-report diff on the live device (toggle a pair link with the raw
-  `0x14` frame, read the entire `0x73` report before/after plus readback
-  categories `0x0c` / `0x15` / `0x06`: zero stable bytes moved anywhere).
-  The device stores link state (its front panel shows it) but exposes it
-  nowhere over USB HID, so a client must track it client-side, as this
-  CLI and the Launcher both do. The cache goes stale if link state changes
-  some other way (the Launcher, another instance, a power cycle) --
-  `status` prints a note to that effect whenever it has anything cached.
-  Treat the markers as "what I last told the device".
+  `set-link` command *this CLI* has sent for each pair. The newly mapped
+  `0x0b` table is not yet a verified control-state source: the earlier whole-
+  report diff did not query category `0x0b`, and the manager log mostly shows
+  zero-valued responses. The cache therefore remains the safe fallback and
+  can go stale if link state changes some other way (the Launcher, another
+  instance, or a power cycle). Treat the markers as "what I last told the
+  device" until the transition capture is done.
 
   **Channel link is real, but the syncing you see isn't the device doing
   it (confirmed 2026-08, real hardware).** Using an earlier version of this
@@ -860,8 +871,10 @@ See `params.output_trim` and `state_report.output_trim_block`.
   `0x4b` target 3 (ruled out) but its own `SET_GLOBAL` param `0x24`, value
   `0`=-6 dB `1`=-3 dB `2`=-4.5 dB `3`=0 dB (Launcher button order). No
   device readback. CLI `pan-law [--set N]`.
-- **Readback category `0x16`**, once guessed to hold trim/pan-law, tracks
-  neither -- still undecoded.
+- **Readback category `0x16`** is the mic-emulation state table: one outer
+  record containing eight `{target, emu_model, ch_swap, pattern}` records.
+  It is unrelated to trim and pan law; the CLI/WebUI expose it as a
+  read-only structured response.
 
 ### Clock source -- DECODED 2026-09-03
 

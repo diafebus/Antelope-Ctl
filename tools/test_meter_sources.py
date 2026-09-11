@@ -4,6 +4,7 @@ import importlib
 import json
 from pathlib import Path
 import sys
+import threading
 import types
 import unittest
 from unittest import mock
@@ -23,18 +24,27 @@ def load_server_without_web_or_hid_boundaries():
 
         post = get
 
+        def mount(self, *args, **kwargs):
+            return None
+
     fastapi = types.ModuleType('fastapi')
     fastapi.FastAPI = FakeFastAPI
     responses = types.ModuleType('fastapi.responses')
     responses.FileResponse = object
     responses.JSONResponse = object
     responses.StreamingResponse = object
+    staticfiles = types.ModuleType('fastapi.staticfiles')
+    class FakeStaticFiles:
+        def __init__(self, *args, **kwargs):
+            pass
+    staticfiles.StaticFiles = FakeStaticFiles
     pydantic = types.ModuleType('pydantic')
     pydantic.BaseModel = object
     uvicorn = types.ModuleType('uvicorn')
     with mock.patch.dict(sys.modules, {
         'fastapi': fastapi,
         'fastapi.responses': responses,
+        'fastapi.staticfiles': staticfiles,
         'pydantic': pydantic,
         'uvicorn': uvicorn,
     }), mock.patch.object(transport, 'list_connected_hid', return_value=set()):
@@ -91,6 +101,27 @@ class MeterSourceTests(unittest.TestCase):
         device.profile = self.profile
         device.n_ch = 12
         self.assertEqual(len(device._parse_meters(report)), 11)
+
+    def test_webui_structured_readbacks_only_schedule_safe_outer_indices(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.profile
+        device.structured = {
+            (0x0b, 0): [{'record_index': 0, 'raw': b'\x01', 'linked': 1}],
+            (0x16, 0): [{'record_index': 0, 'raw': b'\x00\x02\x00\x04',
+                         'target': 0, 'emu_model': 2, 'ch_swap': 0,
+                         'pattern': 4}],
+        }
+        device._lock = threading.Lock()
+        payload = device.structured_readbacks_json()
+        by_name = {layout['name']: layout for layout in payload['layouts']}
+        self.assertEqual(by_name['preamps']['current']['0'][0]['linked'], 1)
+        self.assertEqual(by_name['preamps']['current']['0'][0]['raw'], '01')
+        self.assertFalse(by_name['available']['safe'])
+        self.assertTrue(by_name['available']['capture_required'])
+        targets = set(self.server._structured_readback_targets(self.profile))
+        self.assertIn((0x0b, 0), targets)
+        self.assertIn((0x19, 63), targets)
+        self.assertNotIn((0x0c, 0), targets)
 
     def test_meter_report_source_keeps_existing_curve_and_clip_behavior(self):
         profile = copy.deepcopy(self.profile)

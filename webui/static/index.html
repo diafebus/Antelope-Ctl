@@ -39,6 +39,26 @@
   .message:last-child { border-bottom:0; } .message b { color:var(--warn); }
   .message code { display:inline-block; margin:2px 0; background:#0e1116; color:var(--fg); padding:2px 5px;
                   border-radius:3px; font:11px ui-monospace,monospace; white-space:pre-wrap; word-break:break-all; }
+  /* ---- profile-driven protocol readbacks ---------------------------- */
+  #readbacks { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:10px; }
+  .rbcard { min-width:0; background:var(--panel2); border:1px solid var(--line); border-radius:7px; padding:10px; }
+  .rbcard h3 { display:flex; align-items:baseline; gap:7px; margin:0 0 5px; color:var(--fg); font-size:12px; }
+  .rbcat { color:var(--dim); font:10px ui-monospace,monospace; }
+  .rbmeta { margin:0 0 8px; color:var(--dim); font:10px/1.4 ui-monospace,monospace; }
+  .rbmeta .rbsafe { color:var(--meter); } .rbmeta .rbcapture { color:var(--warn); }
+  .rbnote { margin:7px 0 0; color:var(--dim); font-size:10px; line-height:1.4; }
+  .rbvalues { display:flex; flex-wrap:wrap; gap:4px; }
+  .rbbit { display:inline-flex; align-items:center; gap:4px; padding:3px 5px; border:1px solid var(--line);
+           border-radius:4px; background:#0e1116; color:var(--dim); font:10px ui-monospace,monospace; }
+  .rbbit.on { color:var(--meter); border-color:#287f5a; }
+  .rbtable { width:100%; border-collapse:collapse; font:10px ui-monospace,monospace; }
+  .rbtable th, .rbtable td { padding:3px 4px; border-bottom:1px solid #252a33; text-align:left; }
+  .rbtable th { color:var(--dim); font-weight:400; } .rbtable td { color:var(--fg); }
+  .rbtable td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .rbstrips { max-height:180px; overflow:auto; border:1px solid #252a33; border-radius:4px; }
+  .rbstrip { display:flex; gap:7px; padding:3px 5px; border-bottom:1px solid #252a33; font:10px ui-monospace,monospace; }
+  .rbstrip:last-child { border-bottom:0; } .rbstrip > b { flex:0 0 48px; color:var(--dim); font-weight:400; }
+  .rbempty { color:var(--dim); }
   main { padding:16px; display:flex; flex-direction:column; gap:22px; max-width:1200px; }
   main.offline { opacity:.45; pointer-events:none; filter:grayscale(.4); }
   h2 { font-size:13px; margin:0 0 8px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
@@ -553,6 +573,20 @@
       </div>
     </div>
   </section>
+  <section id="readbacksec" hidden>
+    <h2 class="sechd">Protocol readback
+      <span class="secbtns">
+        <button type="button" class="secbtn secmin" data-min="readbackbody" title="collapse this section" aria-expanded="true">–</button>
+      </span>
+    </h2>
+    <div class="secbody" id="readbackbody">
+      <p class="hint">Profile-declared nested records from the device's read-only
+        <code>0x74/0x75</code> protocol. Safe outer indices are refreshed in the
+        background; schema-only layouts stay marked capture-required. Link bytes
+        are shown as observations until an isolated transition capture confirms their polarity.</p>
+      <div id="readbacks"></div>
+    </div>
+  </section>
 </main>
 
 <div id="emumodal" hidden>
@@ -603,7 +637,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 let PROFILE = null, MODES = [], N_CH = 12, HIZ = new Set(), GAIN_RANGE = {}, N_PAIRS = 0;
-let ROUTING = null, MIXER = null, MIXER_METERS = null, ACTIVE_MIX = 0;
+let ROUTING = null, MIXER = null, STRUCTURED = null, MIXER_METERS = null, ACTIVE_MIX = 0;
 let UI_FEATURES = {}, AURAVERB = null, MIXER_SOURCES = {}, AURAVERB_LOCAL = null;
 const MIX_PENDING = {}, MIX_PENDING_TTL = 5000;
 let MIX_SOLO_RESTORE = {};
@@ -635,7 +669,9 @@ document.addEventListener('keydown', e => {
 });
 
 // ---- emuMic / mic modeling ------------------------------------------
-// Preamps 5-12 (EMU button is Mic-mode-gated); no device readback -> browser-side state (localStorage).
+// Preamps 5-12 (EMU button is Mic-mode-gated). The controls remain
+// browser-side for now because the write path has no verified round-trip;
+// the profile-driven protocol readback panel separately shows category 0x16.
 // v1: on/off + the model-0 polar-pattern morph (0 omni / 50 card / 100 fig-8).
 // Model picker is a follow-up (the available list is account-bound, not on
 // the device -- see profiles/mic_models.json).
@@ -652,9 +688,10 @@ function saveEmu() {
 }
 
 // ---- preamp-pair link -------------------------------------------------
-// The device has NO link-status readback, so this is browser-side only: it
-// won't reflect a link toggled from the hardware or the Launcher. Persisted
-// per-viewer in localStorage. pair N = channels 2N & 2N+1.
+// Persisted per-viewer fallback. Category 0x0b now exposes link-table bytes,
+// but their on/off transition and polarity still need a controlled capture,
+// so this UI does not silently replace the last-commanded state with them.
+// pair N = channels 2N & 2N+1.
 const LINKS = loadLinks();
 const pairOf    = ch => ch >> 1;
 const partnerOf = ch => ch ^ 1;
@@ -802,8 +839,9 @@ function buildChannels(n) {
 // Both address spaces are gain + link only -- no mode / 48V / Ø, and the HID
 // protocol carries no ADAT/S-PDIF meters. Same knob art as the preamp; range
 // from the profile (params.adat_gain / spdif_gain, -6..+12 dB on the Orion).
-// No device link readback, so link state is browser-side (localStorage) and
-// mirrored across the pair, exactly like the preamp link. Endpoints:
+// Link transitions are not yet correlated to the profile's 0x0b readback, so
+// link state remains browser-side (localStorage) and mirrored across the pair.
+// Endpoints:
 // POST /api/adat-gain /api/spdif-gain /api/adat-link /api/spdif-link.
 const DIG = {
   adat:  {api: 'adat',  grid: 'adatgrid',  label: n => 'ADAT ' + (n + 1),
@@ -1157,7 +1195,7 @@ function syncEmuModal() {
     : !ok
       ? `${MIC_LABEL(EMU_MIC)}: emuMic isn’t verified against the device yet — controls disabled. Only the Edge Duo is supported so far.`
       : (micRequiresPair() ? 'Edge Duo uses both preamps of the pair (linked). ' : '')
-        + 'This model list was captured on one Edge Duo account — other mics have their own emulations. Declared, not detected (no device readback).';
+        + 'This model list was captured on one Edge Duo account — other mics have their own emulations. Declared, not entitlement-detected; current device state is shown in Protocol readback (cat 0x16).';
 }
 $('[data-emm-close]').addEventListener('click', closeEmuModal);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && EMM.ch != null) closeEmuModal(); });
@@ -3068,9 +3106,115 @@ function refreshMixer() {
   applyMixerMeters(MIXER_METERS);
 }
 
+// ---- profile-driven nested protocol readbacks -----------------------
+const RB_ESC = {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'};
+const rbEscape = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => RB_ESC[c]);
+const rbHex = value => '0x' + Number(value || 0).toString(16).padStart(2, '0');
+const rbNum = value => Number.isFinite(Number(value)) ? String(Number(value)) : '–';
+
+function rbCurrentEntries(layout) {
+  return Object.entries(layout.current || {}).sort((a, b) => Number(a[0]) - Number(b[0]));
+}
+
+function rbLayoutBound(layout) {
+  if (layout.index != null) return `index ${layout.index}`;
+  if (Array.isArray(layout.index_range)) return `indices ${layout.index_range[0]}–${layout.index_range[1]}`;
+  return 'outer index unknown';
+}
+
+function rbLinkBody(layout, entries) {
+  const bits = entries.flatMap(([outer, records]) => records.map(record => {
+    const on = Number(record.linked) !== 0;
+    const title = `${layout.name} entry ${record.record_index}: raw ${record.raw || '–'}`;
+    return `<span class="rbbit${on ? ' on' : ''}" title="${rbEscape(title)}">`
+      + `${rbEscape(outer)}:${record.record_index} ${on ? 'ON' : 'OFF'}</span>`;
+  }));
+  if (!bits.length) return '<p class="rbempty">Waiting for the first device response.</p>';
+  return `<div class="rbvalues">${bits.join('')}</div>`
+    + '<p class="rbnote">ON means the returned byte is non-zero; polarity and transition correlation remain provisional.</p>';
+}
+
+function rbMicBody(entries) {
+  const rows = entries.flatMap(([, records]) => records).map(record => {
+    const model = emuModelName(Number(record.emu_model));
+    return `<tr><td>${rbNum(record.record_index)}</td><td>${rbNum(record.target)}</td>`
+      + `<td>${rbEscape(model)} <span class="rbcat">(${rbNum(record.emu_model)})</span></td>`
+      + `<td>${Number(record.ch_swap) ? 'ON' : 'OFF'}</td><td>${rbNum(record.pattern)}</td>`
+      + `<td>${rbEscape(record.raw || '–')}</td></tr>`;
+  });
+  if (!rows.length) return '<p class="rbempty">Waiting for the first device response.</p>';
+  return `<table class="rbtable"><thead><tr><th>tap</th><th>target</th><th>model</th><th>swap</th><th>pattern</th><th>raw</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function rbAfxInstanceBody(layout, entries) {
+  const records = entries.flatMap(([, values]) => values);
+  if (!records.length) return '<p class="rbempty">Waiting for the first device response.</p>';
+  const active = records.filter(record => Number(record.inst_count) !== 0);
+  const table = active.length
+    ? `<table class="rbtable"><thead><tr><th>type</th><th>instances</th><th>raw</th></tr></thead><tbody>${active.map(record =>
+        `<tr><td>${rbNum(record.type_id)}</td><td class="num">${rbNum(record.inst_count)}</td><td>${rbEscape(record.raw || '–')}</td></tr>`).join('')}</tbody></table>`
+    : '<p class="rbempty">All returned instance counts are zero.</p>';
+  return `<p class="rbnote">${records.length} records; ${active.length} non-zero</p>${table}`;
+}
+
+function rbAfxStripBody(entries) {
+  const populated = entries.flatMap(([outer, records]) => {
+    const slots = records.filter(record => Number(record.type) !== 0 || Number(record.inst) !== 0);
+    return slots.length ? [{outer, slots}] : [];
+  });
+  if (!entries.length) return '<p class="rbempty">Waiting for the first device response.</p>';
+  if (!populated.length) return `<p class="rbempty">No populated slots in the ${entries.length} cached strip response${entries.length === 1 ? '' : 's'}.</p>`;
+  return `<div class="rbstrips">${populated.map(({outer, slots}) =>
+    `<div class="rbstrip"><b>strip ${rbEscape(outer)}</b><span>${slots.map(record =>
+      `slot ${record.record_index}: type ${rbNum(record.type)} / inst ${rbNum(record.inst)} `
+      + `<span class="rbcat">(${rbEscape(record.raw || '–')})</span>`).join(' · ')}</span></div>`).join('')}</div>`;
+}
+
+function rbGenericBody(entries, layout) {
+  const rows = entries.flatMap(([outer, records]) => records.map(record =>
+    `<tr><td>${rbEscape(outer)}:${rbNum(record.record_index)}</td><td>${rbEscape(record.raw || '–')}</td>`
+    + `<td>${Object.entries(record).filter(([key]) => key !== 'record_index' && key !== 'raw')
+      .map(([key, value]) => `${rbEscape(key)}=${rbEscape(value)}`).join(' ')}</td></tr>`));
+  if (!rows.length) return '<p class="rbempty">Waiting for the first device response.</p>';
+  return `<table class="rbtable"><thead><tr><th>outer:record</th><th>raw</th><th>fields</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function rbLayoutBody(layout) {
+  if (!layout.safe) {
+    return `<p class="rbempty">The response shape is documented, but the outer query ${rbEscape(rbLayoutBound(layout))} is still capture-required. No probe was sent.</p>`;
+  }
+  const entries = rbCurrentEntries(layout);
+  switch (layout.kind) {
+    case 'link_table': return rbLinkBody(layout, entries);
+    case 'mic_emulations': return rbMicBody(entries);
+    case 'afx_instance_counts': return rbAfxInstanceBody(layout, entries);
+    case 'afx_strip_order': return rbAfxStripBody(entries);
+    default: return rbGenericBody(entries, layout);
+  }
+}
+
+function renderStructuredReadbacks() {
+  const section = $('#readbacksec'), box = $('#readbacks');
+  const layouts = STRUCTURED?.layouts || [];
+  if (!section || !box) return;
+  section.hidden = !layouts.length;
+  if (!layouts.length) { box.innerHTML = ''; return; }
+  box.innerHTML = layouts.map(layout => {
+    const category = rbHex(layout.category);
+    const status = layout.safe
+      ? `<span class="rbsafe">safe outer query</span>`
+      : `<span class="rbcapture">capture required</span>`;
+    return `<article class="rbcard"><h3>${rbEscape(layout.name)} <span class="rbcat">${category}</span></h3>`
+      + `<p class="rbmeta">${rbEscape(rbLayoutBound(layout))} · ${status} · ${rbEscape(layout.status || 'status unknown')}</p>`
+      + rbLayoutBody(layout) + '</article>';
+  }).join('');
+}
+
 async function reloadReadback() {
-  [ROUTING, MIXER, AURAVERB] = await Promise.all([
-    getJSON('/api/routing'), getJSON('/api/mixer'), getJSON('/api/auraverb')]);
+  [ROUTING, MIXER, AURAVERB, STRUCTURED] = await Promise.all([
+    getJSON('/api/routing'), getJSON('/api/mixer'), getJSON('/api/auraverb'),
+    getJSON('/api/readbacks')]);
+  renderStructuredReadbacks();
   initAuraVerbPanel();
   const rh = routingHome();
   if (!rh || !rh.children.length || (!RG_POPPED && !rh.querySelector('#rmx'))) buildRouting(); else refreshRouting();

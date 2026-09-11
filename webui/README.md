@@ -16,12 +16,14 @@ compatibility.
     ~25 Hz (channels, buses, brightness, meters). The raw `0x75` diagnostic
     bank is sampled separately at a lower rate.
   - **slow** -- the routing matrix (readback cat `0x03`), virtual mixer
-    (cat `0x04`), and profile-confirmed Gazelle Reverb state, refreshed one
-    record per meter cycle on connect and every 45 s. Route/mixer/Gazelle
-    Reverb writes
-    update their serialized caches directly. Queries use the active profile's
-    bounded category counts or explicit confirmed layouts, so the BusFault
-    hazard is never hit.
+    (cat `0x04`), profile-confirmed Gazelle Reverb state, and any
+    profile-declared nested readback records, refreshed one record per meter
+    cycle on connect and every 45 s. Route/mixer/Gazelle Reverb writes update
+    their serialized caches directly. `/api/readbacks` exposes the structured
+    records to the diagnostics panel. Queries use the active profile's bounded
+    category counts or explicit capture-confirmed layouts, so the BusFault
+    hazard is never hit; schema-only layouts are displayed as capture-required
+    and are never probed.
     The snapshot carries an `rb_ver` counter; the browser refetches the slow
     APIs when it changes.
 
@@ -39,6 +41,10 @@ compatibility.
     selects its matching mixer meter bank; multiple Solo buttons may be
     stacked and the original mute/solo state is restored when the last Solo
     is released;
+  - a **Protocol readback** diagnostics section renders profile-declared link
+    tables, mic-emulation state, AFX instance counts, and AFX strip order. It
+    keeps link values explicitly observational until a controlled transition
+    capture confirms their semantics;
   - device-specific panels are selected by the presentation registry in
     `webui/device_ui.py`: Zen Go shows its input-source selectors, while any
     profile with a complete confirmed Gazelle Reverb (AuraVerb protocol)

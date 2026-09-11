@@ -322,18 +322,25 @@ the last sync, relevant to the UI:
 - readback cat `0x05` = preamp gain (1 byte/ch, dB), `0x06` = channel
   status `(phase<<6)|(phantom<<4)|(mode&3)` -- both mirror the `0x73`
   report, decoded + selftest-cross-checked.
-- **channel link: there is NO device readback** (proven). Any link
-  indicator in the UI is client-tracked, same as the CLI/Launcher.
+- **channel link:** the state report still has no dedicated bit, but the
+  extracted Orion schema/log maps readback category `0x0b` to five nested link
+  tables. The WebUI exposes those returned bytes in Protocol readback, while
+  the link indicator remains client-tracked until an isolated transition
+  capture confirms byte polarity and update behavior.
 - **emuMic preamps 5/6 captured on the wire** (`0xe5 [18]=0x00/0x01`) via
   usbmon while THIS webUI drove EMU on preamp 5/6 -- the capture method is
   now documented in `CAPTURING.md` (webUI + usbmon, no VM needed).
-- output_trim re-confirmed (dBu scale); pan law is NOT `0x4b` target 3 and
-  cat `0x16` tracks neither -- still needs a capture.
+- output_trim re-confirmed (dBu scale); pan law is NOT `0x4b` target 3. The
+  extracted readback schema maps cat `0x16` to eight mic-emulation state
+  records; the WebUI displays them, but the mic-modeling write path still
+  needs a write/readback round-trip.
 
 ## Canonical commits (pushed) -- recent
 - `42ba3f5` README: fold in the 2026-09-03 findings
 - `e1f2dd9` mic modeling: emuMic on preamps 5/6 captured on the wire
-- `3c2de46` channel link: no device-side readback (whole-report diff)
+- `3c2de46` channel link: no state-report readback bit (whole-report diff;
+  superseded as a whole-category conclusion by the 2026-09-11 `0x0b`
+  schema finding)
 - `244bd8d` auraverb: decode readback cat 0x0a + hw round-trip
 - `3d21dce` readback: decode cat 0x05 (preamp gain) + 0x06 (channel status)
 - `27bb70a` mic modeling: EMU is preamps 5-12, not 7-12 (Mic-mode-gated)

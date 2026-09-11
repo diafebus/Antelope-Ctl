@@ -34,7 +34,7 @@ class OrionStartupTests(unittest.TestCase):
             self.assertEqual(frame[12:16], index.to_bytes(4, 'little'))
             self.assertEqual(frame[16:], bytes(304))
 
-    def test_unobserved_phase_indices_are_rejected(self):
+    def test_unobserved_link_table_indices_are_rejected(self):
         for index in (5, 6, 7):
             with self.subTest(index=index):
                 with self.assertRaises(protocol.ConstraintError):

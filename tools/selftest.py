@@ -27,9 +27,10 @@ SAFETY
 
 WHAT IT CANNOT CHECK
   Reported as SKIP, not PASS, so the summary never overstates coverage:
-  mic modeling (no readback found), channel link (host-side by design --
-  the device does not propagate it), sample rate (writing it drops audio,
-  so it is not round-tripped here).
+  mic-modeling WRITE round trips (the current state is readable, but this
+  self-test does not change DSP configuration), channel-link transition
+  correlation (category 0x0b is decoded, but its on/off transition still
+  needs a controlled capture), and sample rate (writing it drops audio).
 """
 import argparse
 import os
@@ -270,6 +271,65 @@ def t_auraverb(dev):
           got == ref, f'{got.hex()} != {ref.hex()}')
 
 
+def t_structured_readbacks(dev):
+    """Read a small safe sample of profile-declared nested readback arrays.
+
+    The outer query index is always checked against category_counts. Layouts
+    whose body shape comes only from the extracted panel schema (currently the
+    0x0c available/max tables) are reported as SKIP because their outer query
+    bounds still need a device capture.
+    """
+    layouts = dev.p.get('frame', {}).get('readback', {}).get(
+        'record_layouts', []) or []
+    if not layouts:
+        return record(SKIP, 'structured readbacks',
+                      'profile has no frame.readback.record_layouts')
+
+    failures = []
+    checked = 0
+    for layout in layouts:
+        name = layout.get('name', layout.get('kind', 'record'))
+        status = str(layout.get('status', '')).lower()
+        if status.startswith('schema-confirmed'):
+            record(SKIP, f'{name} layout',
+                   'nested body is known, but the outer query index is still '
+                   'capture-required')
+            continue
+        try:
+            cat = proto._as_int(layout['category'])
+            if layout.get('index') is not None:
+                indices = [proto._as_int(layout['index'])]
+            else:
+                lo, hi = layout['index_range']
+                indices = [proto._as_int(lo), proto._as_int(hi)]
+            expected = proto._as_int(layout['record_count'])
+        except (KeyError, TypeError, ValueError):
+            failures.append(f'{name}: invalid profile layout')
+            continue
+        for index in dict.fromkeys(indices):
+            if proto.readback_category_count(dev.p, cat) is None:
+                record(SKIP, f'{name} cat {cat:#04x} index {index}',
+                       'no evidence-grade outer bound')
+                continue
+            body = dev.read(cat, index)
+            checked += 1
+            if body is None:
+                failures.append(f'{name} cat {cat:#04x} index {index}: no response')
+                continue
+            try:
+                records = proto.parse_readback_records(dev.p, body, cat, index,
+                                                        kind=layout.get('kind'))
+            except ValueError as e:
+                failures.append(f'{name} cat {cat:#04x} index {index}: {e}')
+                continue
+            if len(records) != expected:
+                failures.append(f'{name} cat {cat:#04x} index {index}: '
+                                f'{len(records)} records, expected {expected}')
+    if checked == 0 and not failures:
+        return
+    check('structured readback layouts', not failures, '; '.join(failures[:3]))
+
+
 def t_channel_state(dev):
     """cat 0x05 (preamp gain) + 0x06 (channel status) must agree with the
     pushed 0x73 state report -- two independent device reports of the same
@@ -460,8 +520,12 @@ def t_write_brightness(dev):
 
 def t_unverifiable():
     for name, why in (
-            ('mic modeling / emuMic', 'no readback found; only the phantom bit moves'),
-            ('channel link', 'no link readback exists (proven 2026-09-03) -- state is client-tracked'),
+            ('mic modeling / emuMic write',
+             'current state is readable at cat 0x16, but this test does not '
+             'change DSP configuration'),
+            ('channel-link transition',
+             'cat 0x0b is decoded, but on/off correlation still needs a '
+             'controlled hardware capture'),
             ('sample rate', 'writing it drops audio, so it is not round-tripped here')):
         record(SKIP, f'{name}: cannot self-verify', why)
 
@@ -505,6 +569,8 @@ def main():
     t_mixer(dev)
     print('\nGazelle Reverb (readback cat 0x0a)')
     t_auraverb(dev)
+    print('\nstructured nested readbacks (cats 0x0b / 0x15 / 0x16 / 0x19)')
+    t_structured_readbacks(dev)
     print('\nchannel state (readback cat 0x05 / 0x06)')
     t_channel_state(dev)
     print('\npushed state report (0x73)')

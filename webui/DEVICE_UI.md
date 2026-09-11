@@ -6,6 +6,13 @@ layouts, ranges, and safety limits. Product-specific presentation belongs in
 decides which panel is visible and supplies labels for controls whose visual
 layout differs between products.
 
+The shared Protocol readback section is profile-driven and does not belong in
+this registry. A profile may add `frame.readback.record_layouts` for nested
+arrays such as link tables, mic-emulation state, or AFX slots. Only entries
+whose outer index is capture-confirmed are polled; schema-only entries are
+shown as capture-required. This keeps the presentation reusable without
+copying a device's category numbers into the browser.
+
 Current entries:
 
 - `zen_go_sc`: shows the Zen Go mixer input-source selectors above its 16

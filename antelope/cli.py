@@ -15,9 +15,11 @@ Per-input-channel controls (physical inputs 1-12, addressed 0-11):
                                                                             # indirect confirmation, and
                                                                             # caches the result so
                                                                             # `status` can show it --
-                                                                            # see cmd_set_link's docstring,
-                                                                            # there is still no real
-                                                                            # device-side link readback)
+                                                                            # see cmd_set_link's docstring;
+                                                                            # category 0x0b is available for
+                                                                            # structured link readback, but
+                                                                            # on/off transition correlation is
+                                                                            # still capture-pending)
 
 ADAT input controls (16 ADAT channels, addressed 0-15 -- a separate space
 from the physical inputs; gain + link only, no mode/phantom/phase):
@@ -49,7 +51,8 @@ Address an output channel 1-based; `L`/`R` = 1/2 for the stereo dests
 wire frame carries the WHOLE destination every time, so a per-channel
 change resends the others from this CLI's cache. Like the Antelope
 Launcher there is no "un-route" -- replace a source or set it to `mute`.
-No device readback yet, so verify in the Launcher:
+The device exposes routing through readback category 0x03, so
+`matrix-status` can verify the live matrix directly:
 
     antelope-ctl ... route hp1 all preamp3 preamp4     # set every channel (seeds the cache)
     antelope-ctl ... route hp1 R preamp7               # change one channel, keep the rest
@@ -286,13 +289,14 @@ def cmd_status(args, profile):
         print(f'note: only channels {confirmed} are explicitly verified for this device.')
     if link_state:
         print("note: the '-.'/\"-'\" markers above reflect the last `set-link` command THIS CLI has "
-              "sent (cached locally) -- the device has no known link-status readback (see "
-              "params.channel_link.notes), so these markers can go stale if link state changes "
-              "outside this CLI (Launcher app, another CLI instance, etc).")
+              "sent (cached locally). The profile maps readback category 0x0b link tables, "
+              "but their on/off transitions are not capture-confirmed yet (see "
+              "params.channel_link.notes), so these markers remain the control fallback and "
+              "can go stale if link state changes outside this CLI.")
     else:
-        print("note: channel-link state has no known device readback yet -- see 'set-link' and the "
-              "profile's params.channel_link.notes -- so it isn't shown here until you use "
-              "`set-link` at least once from this CLI (which caches its own commanded state).")
+        print("note: channel-link state is not transition-confirmed yet -- readback category "
+              "0x0b is available with `readback 0x0b <index>`, but this status view uses the "
+              "local cache until a controlled capture correlates its bytes.")
 
 
 def _partner_channel(profile, ch):
@@ -433,16 +437,17 @@ def cmd_set_invert(args, profile):
 # report (see profile params.channel_link.notes -- re-verified independently
 # against the raw ch-link-gain-ph-inv-test.tsv capture: the state report is
 # byte-for-byte identical immediately before/after all 4 link/unlink commands
-# in that session). So "is this pair linked" can't be read back from the
-# device at all -- only from a live side effect (gain/phantom/phase mirroring
-# while linked), which needs an actual value change to be visible, or from
-# remembering what this CLI itself last sent.
+# in that session). The extracted Orion schema does define candidate link
+# tables at readback category 0x0b, but their transition behavior has not been
+# captured yet. Until then, link state is inferred from live side effects
+# (gain/phantom/phase mirroring) or from remembering what this CLI sent.
 #
 # What follows is the latter: a small on-disk cache of "what did *this CLI*
 # last tell the device", used only to paint an indicator in `status`. It is
-# NOT a substitute for a real readback, can drift from truth (the official
-# Launcher, or another instance of this CLI, can change link state without
-# this cache knowing), and is labeled as such everywhere it's shown.
+# NOT a substitute for transition-confirmed device readback, can drift from
+# truth (the official Launcher, or another instance of this CLI, can change
+# link state without this cache knowing), and is labeled as such everywhere
+# it's shown.
 
 def _link_state_path(profile, kind=''):
     """Where to cache CLI-issued link state for this device (by vid/pid).
@@ -479,8 +484,9 @@ def _load_link_state(profile, kind=''):
 
 def _is_pair_linked(profile, link_state, ch):
     """True if THIS CLI's cache (see _load_link_state) thinks ch's pair is
-    linked. Not a device fact -- there is no device-side readback (see the
-    big comment above this section) -- just the last `set-link`/`mark-link`
+    linked. Not yet a transition-confirmed device fact -- the profile's
+    category-0x0b table is still a candidate (see the big comment above this
+    section) -- just the last `set-link`/`mark-link`
     this CLI has issued for that pair. Works for both physical and ADAT
     channels (pair_index = ch // 2 in both spaces); pass the matching
     link_state from _load_link_state(profile, kind)."""
@@ -579,11 +585,11 @@ def cmd_set_link(args, profile):
     the linked partner for as long as this CLI's cache says the pair is
     linked -- see those commands and _is_pair_linked.
 
-    Since there's still no device-side link-STATUS readback (see the module
-    note above), this also snapshots gain/phantom/phase_invert for both
-    channels before/after to report whether the pair's fields agree
-    afterward, and caches the commanded state locally so `status` can show
-    an indicator -- clearly marked as CLI-tracked, not device-confirmed.
+    Category 0x0b now has profile-declared link tables, but a controlled
+    link-on/link-off capture has not yet correlated their values with the
+    physical link flag. This command therefore keeps the existing gain/
+    phantom/phase snapshot and local cache behavior; `status` must continue to
+    label its link indicator as CLI-tracked until that capture is done.
     """
     pair = proto.pair_index_for_channel(args.channel)
     max_pair = profile['channels'].get('link_pairs', {}).get('count', 0) - 1
@@ -724,8 +730,9 @@ def cmd_adat_status(args, profile):
         print(f"{ch:>4}  {g:>4}dB{glyph}{tail}")
     if link_state:
         print("note: the '-.'/\"-'\" markers reflect the last `set-adat-link` command THIS CLI has "
-              "sent (cached locally) -- there is no device-side ADAT link readback, so they can go "
-              "stale if link state changes outside this CLI.")
+              "sent (cached locally). The profile maps ADAT link bytes in readback category "
+              "0x0b, but their transitions are not capture-confirmed yet, so the cache remains "
+              "the safe fallback and can go stale outside this CLI.")
 
 
 def cmd_set_adat_gain(args, profile):
@@ -951,11 +958,10 @@ def cmd_mark_spdif_link(args, profile):
 # in. The frame model is decoded (frame.routing_command.frame_model): after
 # byte 18 it's an array of (source_bank, source_index) pairs, one per output
 # channel of the destination group -- so the WHOLE group is sent every time,
-# and to change one channel we must resend the others. There is NO device
-# readback yet (frame.routing_command has none; see params.routing.readback),
-# so `matrix-status` shows only a local cache of what THIS CLI last sent,
-# and `keep` for a channel reads from that cache. Like the Launcher there is
-# no un-route: replace a source or set it to mute.
+# and to change one channel we must resend the others. Readback category 0x03
+# carries the whole live matrix, so `matrix-status` reads the device first and
+# falls back to the local cache only when it cannot reach it. Like the Launcher
+# there is no un-route: replace a source or set it to mute.
 
 def _matrix_state_path(profile):
     return _link_state_path(profile, 'matrix')
@@ -1407,6 +1413,49 @@ def cmd_mix_set(args, profile):
               'host-side behaviours the Launcher does too)')
 
 
+def _print_structured_readback(profile, body, category, index):
+    """Print any profile-declared nested records after the raw readback."""
+    layout = proto.readback_record_layout(profile, category, index)
+    if layout is None:
+        return
+    try:
+        kind = layout.get('kind')
+        if kind == 'link_table':
+            records = proto.parse_link_table(profile, body, category, index)
+            print(f"  {layout.get('name', 'link')} link table ({len(records)} entries):")
+            for record in records:
+                value = int(record['linked'])
+                state = 'linked' if value else 'unlinked'
+                print(f"    {record['record_index']:<3} {state} (raw {value:#04x})")
+        elif kind == 'mic_emulations':
+            records = proto.parse_mic_emulations(profile, body, category, index)
+            print(f"  mic-emulation state ({len(records)} entries):")
+            for record in records:
+                print(f"    target {record['target']:<2}  model {record['emu_model']:<3}  "
+                      f"swap {record['ch_swap']}  pattern {record['pattern']}")
+        elif kind == 'afx_strip_order':
+            records = proto.parse_afx_strip_order(profile, body, category, index)
+            print(f"  AFX strip {index} order ({len(records)} slots):")
+            for record in records:
+                if record['type'] == 0 and record['inst'] == 0:
+                    value = 'empty'
+                else:
+                    value = f"type {record['type']:#04x}, instance {record['inst']:#04x}"
+                print(f"    slot {record['record_index']:<2} {value}")
+        elif kind == 'afx_instance_counts':
+            records = proto.parse_afx_instance_table(profile, body, category, index)
+            nonzero = [r for r in records if r['inst_count']]
+            print(f"  {layout.get('name', 'AFX instance')} table: "
+                  f"{len(records)} types, {len(nonzero)} non-zero counts")
+            if nonzero:
+                print('    ' + '  '.join(
+                    f"{r['type_id']:#04x}={r['inst_count']}" for r in nonzero))
+        else:
+            return
+    except (KeyError, TypeError, ValueError) as e:
+        print(f'  (profile-declared structured readback could not be decoded: {e})')
+
+
 def cmd_readback(args, profile):
     """Raw frame.readback query: `readback <category> [index]`. No args ->
     list the known categories."""
@@ -1471,7 +1520,7 @@ def cmd_readback(args, profile):
         try:
             slots = proto.parse_mixer_record(profile, body)
             print(f'  mix {idx + 1}, {len(slots)} slots '
-                  f'(slot 0 = unidentified extra; slot N = mix_command channel N):')
+                  f'(slot 0 = mix master; slot N = mix_command channel N):')
             for i, s in enumerate(slots):
                 flags = ''.join(f for f, on in ((' MUTE', s['mute']), (' SOLO', s['solo'])) if on)
                 print(f"    slot {i:<3} fader -{s['fader']} dB  pan {s['pan']:+d}  "
@@ -1525,6 +1574,7 @@ def cmd_readback(args, profile):
                       f"order LP={ch['lp_order']} HP={ch['hp_order']}")
         except ValueError as e:
             print(f'  (not decodable as a surround global record: {e})')
+    _print_structured_readback(profile, body, cat, idx)
 
 
 def _resolve_route_dest_cli(profile, name):

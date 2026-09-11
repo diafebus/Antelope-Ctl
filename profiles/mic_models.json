@@ -27,7 +27,7 @@
   },
 
   "account_binding": {
-    "note": "Antelope Edge / Verge modelling mics and the model/emulation packs are activated online against an Antelope account. A model the user does not own will not load. A client should therefore let the user declare which mic(s) + packs they have (or, better, read the entitlement list if that ever proves reachable -- it is NOT reachable from the HID interface, which has no readback at all) and only offer those models.",
+    "note": "Antelope Edge / Verge modelling mics and the model/emulation packs are activated online against an Antelope account. A model the user does not own will not load. A client should therefore let the user declare which mic(s) + packs they have (or, better, read the entitlement list if that ever proves reachable -- the entitlement list is NOT reachable from the HID interface; the device's current mic-emulation state is a separate readback at category 0x16) and only offer those models.",
     "do_not": "do not ship the licensed emulation model list scraped from Antelope's software, and never touch activation/entitlement traffic -- same policy as the AFX plugin chain (see CLAUDE.md 'AFX / Synergy Core plugins -- plan of attack', buckets E/F)."
   },
 

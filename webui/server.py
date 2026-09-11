@@ -13,12 +13,13 @@ Two kinds of state:
              parsed every loop and streamed at ~25 Hz over SSE (channels,
              buses, brightness, meters). The 0x75 bank is retained only for
              lower-rate diagnostics.
-  * SLOW  -- routing (readback cat 0x03), virtual mixer (cat 0x04), and
-             profile-confirmed Gazelle Reverb state, refreshed incrementally on
-             connect and on a slow timer. Writes use and update their
-             serialized caches, querying first if not populated yet. The
-             snapshot carries a monotonic `rb_ver`; the browser refetches
-             the slow APIs when it bumps.
+  * SLOW  -- routing (readback cat 0x03), virtual mixer (cat 0x04),
+             profile-confirmed Gazelle Reverb state, and profile-declared
+             nested readback records, refreshed incrementally on connect and
+             on a slow timer. Writes use and update their serialized caches,
+             querying first if not populated yet. The snapshot carries a
+             monotonic `rb_ver`; the browser refetches the slow APIs when it
+             bumps.
 
 ⚠ HARDWARE RULE (see ../antelope-ctl/CLAUDE.md "STANDING HARDWARE RULE"):
 never query a readback index past a category's record count -- it BusFaults
@@ -105,6 +106,64 @@ ROUTING_CAT = proto.ROUTING_READBACK_CATEGORY   # 0x03
 MIXER_CAT = proto.MIXER_READBACK_CATEGORY       # 0x04
 READBACK_REFRESH_S = 45.0   # slow background poll, one record per fast-state cycle
 
+STRUCTURED_READBACK_SAFE_STATUSES = frozenset({
+    "confirmed", "capture-confirmed",
+})
+
+
+def _record_layout_indices(layout):
+    """Return the explicitly declared outer indices for one nested layout."""
+    try:
+        if layout.get("index") is not None:
+            return [proto._as_int(layout["index"])]
+        lo, hi = layout["index_range"]
+        lo, hi = proto._as_int(lo), proto._as_int(hi)
+        return list(range(lo, hi + 1)) if lo <= hi else []
+    except (KeyError, TypeError, ValueError):
+        return []
+
+
+def _structured_readback_targets(profile):
+    """Yield safe ``(category, index)`` targets from record_layouts.
+
+    A nested body schema is not enough to authorize an outer query.  Only the
+    profile statuses that carry capture-confirmed outer-index evidence are
+    scheduled by the daemon; schema-only entries remain visible through the
+    metadata API with ``capture_required`` set.
+    """
+    layouts = profile.get("frame", {}).get("readback", {}).get(
+        "record_layouts", []) or []
+    if isinstance(layouts, dict):
+        layouts = list(layouts.values())
+    seen = set()
+    for layout in layouts:
+        if not isinstance(layout, dict):
+            continue
+        if str(layout.get("status", "")).strip().lower() not in \
+                STRUCTURED_READBACK_SAFE_STATUSES:
+            continue
+        try:
+            category = proto._as_int(layout["category"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        kind = layout.get("kind")
+        for index in _record_layout_indices(layout):
+            target = (category, index)
+            if target in seen:
+                continue
+            try:
+                # Keep the safety guard in the final scheduling path too. This
+                # also handles profiles that declare a malformed range or an
+                # index outside their category_counts.
+                proto.check_readback_index(profile, category, index)
+                if proto.readback_record_layout(profile, category, index,
+                                                kind=kind) is None:
+                    continue
+            except (KeyError, proto.ConstraintError, TypeError, ValueError):
+                continue
+            seen.add(target)
+            yield target
+
 # The free-running meter report and a readback RESPONSE are BOTH magic 0x75.
 # They differ only at byte 1: meter = 0x1f, readback response = 0x00 (see
 # frame.readback.discriminator_note). transport.read_one() matches byte 0
@@ -180,6 +239,7 @@ class Device:
         self.routing = {}                  # dest_id(int) -> [(bank, idx), ...]
         self.mixer = {}                    # mix(int)     -> [slot dict, ...]
         self.auraverb = {}                 # readback index -> list of mix dicts
+        self.structured = {}               # (category, index) -> parsed records
         auraverb_target = proto.auraverb_readback_target(profile)
         self.auraverb_category = (auraverb_target[0]
                                   if auraverb_target is not None
@@ -236,6 +296,66 @@ class Device:
                 "enabled": record.get("enabled"),
                 "wet": record.get("wet"),
             } for record in records]
+
+    def structured_readbacks_json(self):
+        """Serialize profile-declared nested readbacks for the WebUI.
+
+        ``raw`` bytes are represented as hex so this endpoint stays ordinary
+        JSON.  Unsafe schema-only layouts are included as metadata, but their
+        ``current`` map is deliberately empty because the daemon never probes
+        their unbounded outer indices.
+        """
+        layouts = self.profile.get("frame", {}).get("readback", {}).get(
+            "record_layouts", []) or []
+        if isinstance(layouts, dict):
+            layouts = list(layouts.values())
+        with self._lock:
+            cached = dict(self.structured)
+        out = []
+        for layout in layouts:
+            if not isinstance(layout, dict):
+                continue
+            try:
+                category = proto._as_int(layout["category"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            indices = _record_layout_indices(layout)
+            status = str(layout.get("status", ""))
+            safe = status.strip().lower() in STRUCTURED_READBACK_SAFE_STATUSES
+            current = {}
+            if safe:
+                for index in indices:
+                    records = cached.get((category, index))
+                    if records is None:
+                        continue
+                    current[str(index)] = [
+                        {key: (value.hex() if isinstance(value, bytes) else value)
+                         for key, value in record.items()}
+                        for record in records
+                    ]
+            item = {
+                "kind": layout.get("kind"),
+                "name": layout.get("name", layout.get("kind", "readback")),
+                "category": category,
+                "status": status,
+                "safe": safe,
+                "capture_required": not safe,
+                "indices": indices,
+                "record_count": layout.get("record_count"),
+                "record_stride": layout.get("record_stride"),
+                "fields": layout.get("fields", []),
+                "current": current,
+            }
+            if layout.get("index") is not None:
+                item["index"] = proto._as_int(layout["index"])
+            elif layout.get("index_range") is not None:
+                item["index_range"] = list(layout["index_range"])
+            out.append(item)
+        return {
+            "available": bool(out),
+            "refresh_seconds": READBACK_REFRESH_S,
+            "layouts": out,
+        }
 
     def _publish(self, snap):
         with self._lock:
@@ -467,7 +587,7 @@ class Device:
                     with self._lock:
                         self.rb_ver += 1
 
-    # -- readback (routing + mixer + Gazelle Reverb) ------------------------
+    # -- readback (routing + mixer + structured state) ----------------------
 
     def _readback_plan(self):
         routes = [(ROUTING_CAT, d) for d in self.route_dests] \
@@ -477,7 +597,8 @@ class Device:
             if self.mixer_available else []
         auraverb = [(self.auraverb_category, self.auraverb_index)] \
             if self.auraverb_available else []
-        return routes + mixes + auraverb
+        structured = list(_structured_readback_targets(self.profile))
+        return routes + mixes + auraverb + structured
 
     def _refresh_readback_one(self, transport, category, index):
         """Read one bounded slow-state record; return whether it changed."""
@@ -493,23 +614,33 @@ class Device:
             return False
         try:
             body = proto.readback_body(self.profile, data)
-            if category == ROUTING_CAT:
+            layout = proto.readback_record_layout(self.profile, category, index)
+            if layout is not None:
+                value = proto.parse_readback_records(
+                    self.profile, body, category, index,
+                    kind=layout.get("kind"))
+                cache = self.structured
+                cache_key = (category, index)
+            elif category == ROUTING_CAT:
                 _dest, value = proto.parse_routing_record(self.profile, body)
                 cache = self.routing
+                cache_key = index
             elif category == MIXER_CAT:
                 value = proto.parse_mixer_record(self.profile, body)
                 cache = self.mixer
+                cache_key = index
             elif category == self.auraverb_category:
                 value = proto.parse_auraverb_record(self.profile, body)
                 cache = self.auraverb
+                cache_key = index
             else:
                 return False
-        except ValueError:
+        except (TypeError, ValueError):
             return False
         with self._lock:
-            if cache.get(index) == value:
+            if cache.get(cache_key) == value:
                 return False
-            cache[index] = value
+            cache[cache_key] = value
             return True
 
     def _read_meter(self, transport, timeout=0.03):
@@ -831,6 +962,17 @@ def api_state():
     return {"version": ver, **snap}
 
 
+@app.get("/api/readbacks")
+def api_readbacks():
+    """Profile-driven nested readback state for the diagnostics panel.
+
+    This is intentionally read-only.  The device thread polls only layouts
+    with capture-confirmed outer indices; schema-only layouts are returned so
+    the UI can explain why a new capture is still required.
+    """
+    return DEV.structured_readbacks_json()
+
+
 @app.post("/api/gain")
 def api_gain(g: Gain):
     proto.check_target(PROFILE, g.channel, "input")
@@ -851,9 +993,10 @@ def api_toggle(t: Toggle):
 @app.post("/api/link")
 def api_link(l: Link):
     """Engage/disengage a preamp-pair link (SET_LINK, frame.link_command).
-    There is NO device-side link-status readback, so the browser tracks link
-    state itself and the mode/gain sync a Launcher would send is done there
-    too -- this endpoint only puts the raw link frame on the wire."""
+    The profile may expose a 0x0b link-table readback, but transition/polarity
+    correlation is still capture-pending for Orion. The browser therefore
+    keeps its last-commanded state as the control fallback; this endpoint only
+    puts the raw link frame on the wire."""
     npairs = int(PROFILE["channels"].get("link_pairs", {}).get("count", 0))
     if not (0 <= l.pair < npairs):
         return _bad(f"pair {l.pair} out of range 0..{npairs - 1}")
@@ -891,11 +1034,13 @@ def api_spdif_gain(g: DigGain):
 
 
 def _dig_link(space_name, space_byte, npairs, l: "DigLink"):
-    """SET_LINK for the ADAT (space 0) / S-PDIF (space 1) domains. No device
-    readback -- the browser tracks link state, like the preamp link. NOTE the
-    ADAT link frame is byte-identical to the physical one (both space 0), so a
-    space-0 SET_LINK for pair N may also move physical pair N -- see
-    params.adat_channel_link.notes."""
+    """SET_LINK for the ADAT (space 0) / S-PDIF (space 1) domains. No link
+    transition has been correlated yet -- the browser tracks link state, like
+    the preamp link. The extracted Orion schema maps these spaces into the
+    category-0x0b link tables, but a controlled on/off capture is still
+    required. NOTE the ADAT link frame is byte-identical to the physical one
+    (both space 0), so a space-0 SET_LINK for pair N may also move physical
+    pair N -- see params.adat_channel_link.notes."""
     if not (0 <= l.pair < npairs):
         return _bad(f"{space_name} pair {l.pair} out of range 0..{npairs - 1}")
     try:
@@ -960,9 +1105,11 @@ def api_dc_coupling(t: GlobalToggle):
 @app.post("/api/emumic")
 def api_emumic(e: EmuMic):
     """emuMic / mic-modeling DSP toggle (SET_MIC_MODELING, 0x17/0xe5).
-    Preamps 5-12 (the EMU button is Mic-mode-gated). No device readback --
-    the browser tracks state. This
-    endpoint does NOT do the Launcher's side effects (auto 48V, pair link)."""
+    Preamps 5-12 (the EMU button is Mic-mode-gated). Current state is exposed
+    by the profile-declared category-0x16 nested readback; the write path has
+    not yet been verified by a write/readback round-trip, so the controls keep
+    their local optimistic state. This endpoint does NOT do the Launcher's
+    side effects (auto 48V, pair link)."""
     fr = PROFILE["frame"].get("micmodeling_command")
     if not fr:
         return _bad("this device has no mic modeling")

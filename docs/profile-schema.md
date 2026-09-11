@@ -120,9 +120,9 @@ frame carries a fixed one). Then frame-specific offsets:
 | `auraverb_command` | profile-defined Gazelle Reverb setter (AuraVerb protocol) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant`, confirmed `contract{readback_category, readback_index, fields[]}` | `build_auraverb_command(profile, params, enabled)`; the WebUI/CLI use the contract's bounded readback target and `parse_auraverb_record` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
 | — (no `frame.*` block) | SET_SURROUND `0xab`/`0xeb` (global) + SET_SURROUND_SPEAKER `0x87`/`0xea` (per-speaker ×16) | documented byte-for-byte in `params.surround_monitor.field_map` / `params.surround_speaker.field_map` | **no builder** — launcher-only observed opcodes; see `constraints.observed_opcodes_launcher_only`. A client reads the offsets from the `field_map` and builds the frame itself |
-| `afx_slot` | *(AFX plugin-chain slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cats `0x0c`/`0x15`, partial) | **no builder — observation only.** `0x23` is in `constraints.forbidden_opcodes` (placing a plugin = bucket E, `SCOPE.md`); plugin parameters (`0x1c`/`0xd5`) are frozen. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
+| `afx_slot` | *(AFX plugin-chain slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` is in `constraints.forbidden_opcodes` (placing a plugin = bucket E, `SCOPE.md`); plugin parameters (`0x1c`/`0xd5`) are frozen. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}` | `build_route_command(profile, dest, channels)` |
-| `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`); driven by `transport.HidTransport.query` |
+| `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, optional nested `record_layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`) / `parse_readback_records` and its profile-specific wrappers; driven by `transport.HidTransport.query` |
 
 > **`frame.readback.category_counts` is safety-critical, not documentation.**
 > `{"<cat hex>": <record count>}` — how many records each readback category
@@ -135,6 +135,44 @@ frame carries a fixed one). Then frame-specific offsets:
 > a sweeping tool must not walk it. When you add a new device profile, fill
 > this in from that device's own connect enumeration before querying
 > anything, and leave it empty rather than guessing.
+
+### Nested readback records
+
+Some outer `(category, index)` replies contain an array of smaller records.
+Declare those in the optional `frame.readback.record_layouts` list:
+
+```json
+{
+  "kind": "link_table",
+  "category": "0x0b",
+  "index": 0,
+  "name": "preamps",
+  "record_count": 6,
+  "record_stride": 1,
+  "fields": [{"name": "linked", "offset": 0, "type": "u8"}],
+  "status": "capture-confirmed",
+  "evidence": "capture or extracted report schema + response log"
+}
+```
+
+Use `index` for one outer query, or `index_range: [lo, hi]` when the same
+inner layout applies to several outer records. `record_count` is the number
+of nested records in one response; it is **not** the outer query bound. The
+outer bound comes from `category_counts` or an explicitly
+`capture-confirmed` `index`/`index_range` in a record layout. A schema-only
+layout does not authorize its outer query, because a body shape does not prove
+that the device safely exposes that index.
+
+Supported field types are `bool`, `u8`/`i8`, `u16`/`i16`, `u32`/`i32`, and
+fixed-width `bytes`/`raw` (with `width`). `protocol.parse_readback_records()`
+does the generic decoding; the named wrappers currently used by the Orion
+profile are `parse_link_table`, `parse_afx_instance_table`,
+`parse_mic_emulations`, and `parse_afx_strip_order`. These parsers only decode
+a response already received; they do not probe, expand, or authorize query
+indices. `readback_record_layout_indices()` returns only safe layout indices
+by default, and `build_readback_query()` applies the same guard. A layout
+derived from an application schema still needs a device capture before its
+outer index can be used.
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two

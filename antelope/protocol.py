@@ -341,8 +341,8 @@ def build_auraverb_command(profile: dict, params: dict, enabled: bool = True,
     """Build a SET_AURAVERB frame (profile['frame']['auraverb_command'], opcode
     0x1d) -- the whole Gazelle Reverb state for one mix's reverb. `params` must
     carry all 8 DSP controls (keys = frame.auraverb_command.param_offsets,
-    values 0-100); the caller fills any it isn't changing from cache/defaults,
-    since the frame has no partial update and no device readback. `enabled`
+    values 0-100); the caller fills any it isn't changing from cache/readback,
+    since the frame has no partial update. `enabled`
     is the on/off bit. `mix` is the mix index (only 0 / Mix 1 is confirmed)."""
     f = profile['frame'].get('auraverb_command')
     if not f:
@@ -830,6 +830,10 @@ def check_readback_index(profile: dict, category: int, index: int) -> None:
     body, and the fatal one answers with NOTHING at all -- the device normally
     answers every (category, index), just with an empty body when it has no
     record. Raises ConstraintError; callers pass force=True at their own risk."""
+    if index < 0:
+        raise ConstraintError(
+            f'readback category {category:#04x} index {index} is negative; '
+            'use a non-negative outer query index')
     n = readback_category_count(profile, category)
     if n is not None and index >= n:
         raise ConstraintError(
@@ -843,6 +847,14 @@ def check_readback_index(profile: dict, category: int, index: int) -> None:
             f'readback category {category:#04x} is only mapped at indices '
             f'{layout_indices} in this profile; index {index} is not a '
             'confirmed feature record')
+    declared_record_indices = readback_record_layout_indices(
+        profile, category, safe_only=False)
+    record_layout_indices = readback_record_layout_indices(profile, category)
+    if declared_record_indices and index not in record_layout_indices:
+        raise ConstraintError(
+            f'readback category {category:#04x} nested records are only mapped '
+            f'at capture-confirmed outer indices {record_layout_indices} in '
+            f'this profile; index {index} is not a safe feature record')
 
 
 def build_readback_query(profile: dict, category: int, index: int = 0,
@@ -884,6 +896,222 @@ def readback_body(profile: dict, data: bytes):
     (bank 0, idx 0) = preamp 1, or in mute = (0x0b, 0))."""
     r = profile['frame']['readback']
     return data[_as_int(r['data_offset']):]
+
+
+def readback_record_layout(profile: dict, category: int, index: int = 0,
+                           kind: str = None):
+    """Return the profile-declared nested-record layout for ``(category,index)``.
+
+    ``frame.readback.category_counts`` bounds the *outer* query index.  Some
+    responses then contain their own array of fixed-size records: for example,
+    category 0x0b index 0 is a six-entry link table and category 0x19 has eight
+    AFX slots inside each of its 64 outer records.  Those inner layouts live in
+    ``frame.readback.record_layouts`` and are deliberately separate from the
+    safety-critical outer bounds.
+
+    A layout may select one exact outer index with ``index`` or a range with
+    ``index_range``.  Returning the profile object is intentional: callers may
+    use its human-facing ``name`` and ``status`` when presenting a decoded
+    record, while the parser below only consumes the machine-readable fields.
+    """
+    layouts = profile.get('frame', {}).get('readback', {}).get(
+        'record_layouts', []) or []
+    if isinstance(layouts, dict):
+        layouts = list(layouts.values())
+    try:
+        category = int(category)
+        index = int(index)
+    except (TypeError, ValueError):
+        return None
+    for layout in layouts:
+        if not isinstance(layout, dict):
+            continue
+        try:
+            if _as_int(layout.get('category')) != category:
+                continue
+        except (TypeError, ValueError):
+            continue
+        if kind is not None and layout.get('kind') != kind:
+            continue
+        try:
+            if layout.get('index') is not None:
+                if _as_int(layout['index']) != index:
+                    continue
+            elif layout.get('index_range') is not None:
+                lo, hi = layout['index_range']
+                if not (_as_int(lo) <= index <= _as_int(hi)):
+                    continue
+        except (TypeError, ValueError):
+            continue
+        return layout
+    return None
+
+
+def readback_record_layout_indices(profile: dict, category: int,
+                                   kind: str = None,
+                                   safe_only: bool = True):
+    """Return outer query indices selected by nested-record layouts.
+
+    An exact ``index`` contributes one value and an ``index_range`` contributes
+    every value in the inclusive range.  With ``safe_only`` (the default),
+    only layouts whose status is exactly ``confirmed`` or
+    ``capture-confirmed`` are returned.  A schema can therefore describe a
+    response body without silently authorizing an unbounded outer query.
+    """
+    layouts = profile.get('frame', {}).get('readback', {}).get(
+        'record_layouts', []) or []
+    if isinstance(layouts, dict):
+        layouts = list(layouts.values())
+    try:
+        category = int(category)
+    except (TypeError, ValueError):
+        return []
+    safe_statuses = {'confirmed', 'capture-confirmed'}
+    out = set()
+    for layout in layouts:
+        if not isinstance(layout, dict):
+            continue
+        try:
+            if _as_int(layout.get('category')) != category:
+                continue
+        except (TypeError, ValueError):
+            continue
+        if kind is not None and layout.get('kind') != kind:
+            continue
+        if safe_only and str(layout.get('status', '')).strip().lower() not in safe_statuses:
+            continue
+        try:
+            if layout.get('index') is not None:
+                out.add(_as_int(layout['index']))
+            elif layout.get('index_range') is not None:
+                lo, hi = layout['index_range']
+                lo, hi = _as_int(lo), _as_int(hi)
+                if lo <= hi:
+                    out.update(range(lo, hi + 1))
+        except (TypeError, ValueError):
+            continue
+    return sorted(index for index in out if index >= 0)
+
+
+def _readback_field_width(field: dict) -> int:
+    """Return the encoded width of one ``record_layouts.fields`` entry."""
+    typ = str(field.get('type', 'u8')).lower().replace('-', '').replace('_', '')
+    widths = {
+        'bool': 1, 'byte': 1, 'ubyte': 1, 'u8': 1, 'uint8': 1,
+        'sbyte': 1, 'i8': 1, 'int8': 1,
+        'u16': 2, 'uint16': 2, 'i16': 2, 'int16': 2,
+        'u32': 4, 'uint32': 4, 'i32': 4, 'int32': 4,
+        'raw': None, 'bytes': None,
+    }
+    if typ not in widths:
+        raise ValueError(f'unsupported readback field type {field.get("type")!r}')
+    if widths[typ] is not None:
+        return widths[typ]
+    try:
+        width = int(field['width'])
+    except (KeyError, TypeError, ValueError) as e:
+        raise ValueError('raw readback fields need a positive width') from e
+    if width <= 0:
+        raise ValueError('raw readback field width must be positive')
+    return width
+
+
+def _decode_readback_field(raw: bytes, field: dict):
+    """Decode one typed nested-record field from its profile slice."""
+    typ = str(field.get('type', 'u8')).lower().replace('-', '').replace('_', '')
+    if typ in {'raw', 'bytes'}:
+        return bytes(raw)
+    if typ == 'bool':
+        return bool(raw[0])
+    signed = typ in {'sbyte', 'i8', 'int8', 'i16', 'int16', 'i32', 'int32'}
+    endian = str(field.get('endian', 'little')).lower()
+    if endian not in {'little', 'big'}:
+        raise ValueError(f'unsupported readback field endian {endian!r}')
+    return int.from_bytes(raw, byteorder=endian, signed=signed)
+
+
+def parse_readback_records(profile: dict, body: bytes, category: int,
+                           index: int = 0, kind: str = None):
+    """Decode a profile-declared array of fixed-size records.
+
+    The outer ``(category,index)`` query must already have been bounds-checked
+    by :func:`build_readback_query`.  This function only interprets the reply
+    body; it never probes, expands, or authorizes an outer query index.
+
+    Each returned dict contains ``record_index``, the per-record ``raw`` bytes,
+    and the named fields from the profile.  Supported field types are the
+    profile-friendly ``bool``, ``u8``/``i8``, ``u16``/``i16``,
+    ``u32``/``i32``, and fixed-width ``bytes``/``raw``.
+    """
+    layout = readback_record_layout(profile, category, index, kind=kind)
+    if layout is None:
+        suffix = f' kind {kind!r}' if kind else ''
+        raise ValueError(
+            f'no profile readback record layout for category {category:#04x} '
+            f'index {index}{suffix}')
+    if body is None:
+        raise ValueError('empty readback record body')
+    try:
+        count = _as_int(layout['record_count'])
+        stride = _as_int(layout['record_stride'])
+    except (KeyError, TypeError, ValueError) as e:
+        raise ValueError('invalid profile readback record layout') from e
+    if count <= 0 or stride <= 0:
+        raise ValueError('readback record count and stride must be positive')
+    fields = layout.get('fields', []) or []
+    prepared = []
+    for field in fields:
+        if not isinstance(field, dict) or not field.get('name'):
+            raise ValueError('readback record fields need a name and object value')
+        try:
+            offset = _as_int(field.get('offset', 0))
+            width = _readback_field_width(field)
+        except (TypeError, ValueError) as e:
+            raise ValueError('invalid profile readback record field') from e
+        if offset < 0 or offset + width > stride:
+            raise ValueError(
+                f'readback field {field.get("name")!r} exceeds record stride')
+        prepared.append((field, offset, width))
+    need = count * stride
+    if len(body) < need:
+        raise ValueError(
+            f'readback record body is too short for {count} records '
+            f'of {stride} bytes (need {need}, got {len(body)})')
+    out = []
+    for record_index in range(count):
+        start = record_index * stride
+        raw = bytes(body[start:start + stride])
+        record = {'record_index': record_index, 'raw': raw}
+        for field, offset, width in prepared:
+            record[field['name']] = _decode_readback_field(
+                raw[offset:offset + width], field)
+        out.append(record)
+    return out
+
+
+def parse_link_table(profile: dict, body: bytes, category: int, index: int):
+    """Decode one profile-declared link table (the Orion category 0x0b)."""
+    return parse_readback_records(profile, body, category, index,
+                                  kind='link_table')
+
+
+def parse_mic_emulations(profile: dict, body: bytes, category: int, index: int):
+    """Decode one profile-declared mic-emulation state record."""
+    return parse_readback_records(profile, body, category, index,
+                                  kind='mic_emulations')
+
+
+def parse_afx_strip_order(profile: dict, body: bytes, category: int, index: int):
+    """Decode the eight AFX slots carried by one indexed strip record."""
+    return parse_readback_records(profile, body, category, index,
+                                  kind='afx_strip_order')
+
+
+def parse_afx_instance_table(profile: dict, body: bytes, category: int,
+                             index: int):
+    """Decode an available/max/remaining AFX instance-count table."""
+    return parse_readback_records(profile, body, category, index,
+                                  kind='afx_instance_counts')
 
 
 def parse_routing_record(profile: dict, body: bytes):
