@@ -587,10 +587,10 @@
   <section id="readbacksec" hidden>
     <h2 class="sechd">Protocol readback
       <span class="secbtns">
-        <button type="button" class="secbtn secmin" data-min="readbackbody" title="collapse this section" aria-expanded="true">–</button>
+        <button type="button" class="secbtn secmin" data-min="readbackbody" title="expand this section" aria-expanded="false">+</button>
       </span>
     </h2>
-    <div class="secbody" id="readbackbody">
+    <div class="secbody min" id="readbackbody">
       <p class="hint">Profile-declared nested records from the device's read-only
         <code>0x74/0x75</code> protocol. Safe outer indices are refreshed in the
         background; schema-only layouts stay marked capture-required. Link bytes
@@ -2094,7 +2094,10 @@ function wireMinButtons() {
       try { localStorage.setItem(key, min ? '1' : '0'); } catch (_) {}
     };
     btn.addEventListener('click', () => set(!body.classList.contains('min')));
-    try { if (localStorage.getItem(key) === '1') set(true); } catch (_) {}
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved === '1' || saved === '0') set(saved === '1');
+    } catch (_) {}
   });
 }
 wireMinButtons();

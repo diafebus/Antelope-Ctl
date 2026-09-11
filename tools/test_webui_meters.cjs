@@ -7,6 +7,10 @@ const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
 const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
+const readbackSection = html.slice(html.indexOf('<section id="readbacksec"'), html.indexOf('</section>', html.indexOf('<section id="readbacksec"')) + '</section>'.length);
+assert.match(readbackSection, /data-min="readbackbody"[^>]*title="expand this section"[^>]*aria-expanded="false">\+<\/button>/);
+assert.match(readbackSection, /class="secbody min" id="readbackbody"/);
+assert.match(html, /const saved = localStorage\.getItem\(key\);[\s\S]*saved === '1' \|\| saved === '0'/);
 const source = html.slice(html.indexOf('const METER_FLOOR'), html.indexOf('// ---- buses'));
 const classes = () => {
   const values = new Set();
