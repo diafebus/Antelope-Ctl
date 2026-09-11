@@ -16,10 +16,13 @@ copying a device's category numbers into the browser.
 Current entries:
 
 - `zen_go_sc`: shows the Zen Go mixer input-source selectors above its 16
-  strips. The current profile marks routing readback indices 6-9 as
-  capture-confirmed, so the selectors are writable. Because the routing
-  command rewrites a whole group, the server reads all four mirrored records,
-  changes one slot, and writes the complete records back.
+  strips and presents routing indices 6-9 as one logical 16-channel mixer
+  input map. Those four capture-confirmed records are mirrored hardware views;
+  a write reads all four, changes one slot, and writes each complete record
+  back. The unrelated 8-channel/4-channel records (indices 3 and 5) are kept
+  out of the WebUI destination list. A source bank that the profile cannot
+  decode is shown as `DEVICE SOURCE 0xNN / N (UNMAPPED)` rather than being
+  relabeled as a preamp or playback source.
 - Gazelle Reverb is not a device-name registry entry. The button and panel
   are derived automatically from a profile's complete, confirmed
   `frame.auraverb_command` plus bounded readback contract, and are closed by

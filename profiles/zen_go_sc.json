@@ -205,9 +205,10 @@
         "channel_index": "strip_number - 1",
         "raw_range": [0, 96],
         "silence_raw": 96,
+        "noise_floor_raw": 84,
         "direction": "inverted",
         "status": "capture-confirmed",
-        "notes": "Shared dynamic mixer-strip lanes confirmed by isolated ch1..ch16 captures. These lanes are indexed by mixer strip, not owned by physical inputs or physical outputs; no exact dB calibration is claimed.",
+        "notes": "Shared dynamic mixer-strip lanes confirmed by isolated ch1..ch16 captures. These lanes are indexed by mixer strip, not owned by physical inputs or physical outputs; no exact dB calibration is claimed. A raw value of 84 or higher is the observed idle/noise floor for the first lane and is presented as silence to avoid a persistent false stub in the UI; lower quiet-signal behavior remains uncalibrated.",
         "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: payload 0x8e..0x9d maps CHN to lane N-1; idle raw 0x60 is the no-signal end of the inverted scale."
       },
       "candidate_preamp_meters": [
@@ -215,6 +216,9 @@
           "input_index": 0,
           "offset": "0xce",
           "offset_basis": "snapshot_payload",
+          "raw_range": [0, 96],
+          "silence_raw": 96,
+          "direction": "inverted",
           "status": "observed",
           "confidence": "provisional",
           "caveat": "mixed-signal candidate",
@@ -225,6 +229,9 @@
           "input_index": 1,
           "offset": "0xcf",
           "offset_basis": "snapshot_payload",
+          "raw_range": [0, 96],
+          "silence_raw": 96,
+          "direction": "inverted",
           "status": "observed",
           "confidence": "provisional",
           "caveat": "mixed-signal candidate",
@@ -233,12 +240,12 @@
         }
       ],
       "meter_mappings": [
-        {"target": "physical_output", "target_index": 0, "lane": 0, "payload_offset": "0xda", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xea to Monitor left; output meter feed and stage are unknown."},
-        {"target": "physical_output", "target_index": 0, "lane": 1, "payload_offset": "0xdb", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xeb to Monitor right; this lane is read independently and the output meter feed and stage are unknown."},
-        {"target": "physical_output", "target_index": 1, "lane": 0, "payload_offset": "0xdc", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xec to HP1 left; output meter feed and stage are unknown."},
-        {"target": "physical_output", "target_index": 1, "lane": 1, "payload_offset": "0xdd", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xed to HP1 right; this lane is read independently and the output meter feed and stage are unknown."},
-        {"target": "physical_output", "target_index": 2, "lane": 0, "payload_offset": "0xde", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xee to HP2 left; output meter feed and stage are unknown."},
-        {"target": "physical_output", "target_index": 2, "lane": 1, "payload_offset": "0xdf", "raw_range": [0, 96], "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xef to HP2 right; this lane is read independently and the output meter feed and stage are unknown."}
+        {"target": "physical_output", "target_index": 0, "lane": 0, "payload_offset": "0xda", "raw_range": [0, 96], "silence_raw": 96, "direction": "inverted", "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xea to Monitor left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 0, "lane": 1, "payload_offset": "0xdb", "raw_range": [0, 96], "silence_raw": 96, "direction": "inverted", "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xeb to Monitor right; this lane is read independently and the output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 1, "lane": 0, "payload_offset": "0xdc", "raw_range": [0, 96], "silence_raw": 96, "direction": "inverted", "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xec to HP1 left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 1, "lane": 1, "payload_offset": "0xdd", "raw_range": [0, 96], "silence_raw": 96, "direction": "inverted", "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xed to HP1 right; this lane is read independently and the output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 2, "lane": 0, "payload_offset": "0xde", "raw_range": [0, 96], "silence_raw": 96, "direction": "inverted", "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xee to HP2 left; output meter feed and stage are unknown."},
+        {"target": "physical_output", "target_index": 2, "lane": 1, "payload_offset": "0xdf", "raw_range": [0, 96], "silence_raw": 96, "direction": "inverted", "status": "observed", "evidence": "User-approved provisional assignment of full-report byte 0xef to HP2 right; this lane is read independently and the output meter feed and stage are unknown."}
       ],
       "magic_offset": 0, "magic": "0x73",
       "sample_rate_byte_offset": 18,

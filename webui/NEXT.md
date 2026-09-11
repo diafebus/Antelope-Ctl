@@ -105,8 +105,10 @@ from the profile.
 - Run: `cd webui && .venv/bin/python server.py` -> http://127.0.0.1:8714
   (one HID owner -- stop the CLI/selftest first). `.venv` is gitignored.
   No auto-reload -- restart after editing `server.py`; `index.html` is read
-  from disk per request. **Stopping it:** SIGTERM can hang (HID reader thread
-  doesn't join); `fuser -k 8714/tcp`, or `kill` then `kill -9`.
+  from disk per request. **Stopping it:** press Ctrl+C in the server terminal;
+  the WebUI now closes the active HID transport and joins its worker before
+  exiting. If an externally managed process ignores normal termination, use
+  the existing port/process tools rather than starting a second HID owner.
 
 ### UI layout (index.html)
 

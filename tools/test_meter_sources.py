@@ -156,6 +156,123 @@ class MeterSourceTests(unittest.TestCase):
         report[122] = 0x0c              # HP2 surface, Mix 2
         self.assertEqual(device._parse_mixer_meters(report)['mix'], 1)
 
+    def test_zen_go_preamp_candidates_are_exposed_as_raw_only_input_meters(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.zen_profile
+        device.n_ch = 2
+        report = bytearray(320)
+        report[0xce + 0x10] = 12
+        report[0xcf + 0x10] = 96
+
+        samples = device._parse_meters(report)
+        self.assertEqual(len(samples), 2)
+        self.assertEqual(samples[0], {
+            'raw': 12, 'db': None, 'clip': None, 'silence': False,
+        })
+        self.assertEqual(samples[1], {
+            'raw': 96, 'db': None, 'clip': None, 'silence': True,
+        })
+
+    def test_zen_go_mixer_idle_floor_suppresses_first_strip_stub(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.zen_profile
+        report = bytearray(320)
+        report[122] = 0x0f
+        report[158] = 84       # captured idle/noise floor
+        report[159] = 83       # just below the declared floor
+
+        meters = device._parse_mixer_meters(report)
+        self.assertEqual(meters['noise_floor_raw'], 84)
+        self.assertTrue(meters['strips'][0]['silence'])
+        self.assertFalse(meters['strips'][1]['silence'])
+
+    def test_zen_go_provisional_output_lanes_are_profile_driven(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.zen_profile
+        report = bytearray(320)
+        report[234:240] = bytes((20, 96, 30, 40, 50, 96))
+
+        meters = device._parse_output_meters(report)
+        self.assertTrue(meters['provisional'])
+        self.assertEqual(meters['raw_range'], [0, 96])
+        self.assertEqual([item['bus'] for item in meters['outputs']], [0, 1, 2])
+        self.assertEqual(meters['outputs'][0]['name'], 'Monitor')
+        self.assertEqual(meters['outputs'][0]['lanes'][0]['raw'], 20)
+        self.assertTrue(meters['outputs'][0]['lanes'][1]['silence'])
+        self.assertEqual(meters['outputs'][2]['lanes'][0]['raw'], 50)
+
+    def test_zen_go_routing_is_one_logical_sixteen_strip_destination(self):
+        path = Path(__file__).resolve().parents[1] / 'profiles/zen_go_sc.json'
+        features = self.server.features_for(str(path), self.zen_profile)
+        routing = features['routing']
+        self.assertTrue(routing['writable'])
+        self.assertEqual(len(routing['destinations']), 1)
+        self.assertEqual(routing['destinations'][0]['id'], 6)
+        self.assertEqual(routing['destinations'][0]['channels'], 16)
+        self.assertEqual(routing['destinations'][0]['write_destinations'],
+                         [6, 7, 8, 9])
+
+    def test_zen_go_routing_api_hides_mirrored_and_unrelated_records(self):
+        path = Path(__file__).resolve().parents[1] / 'profiles/zen_go_sc.json'
+        features = self.server.features_for(str(path), self.zen_profile)
+        fake_device = mock.Mock()
+        fake_device.routing_json.return_value = {
+            str(dest): [] for dest in (3, 5, 6, 7, 8, 9)
+        }
+        with mock.patch.object(self.server, 'PROFILE', self.zen_profile), \
+                mock.patch.object(self.server, 'UI_FEATURES', features), \
+                mock.patch.object(self.server, 'DEV', fake_device):
+            payload = self.server.api_routing()
+        self.assertEqual([item['id'] for item in payload['dests']], [6])
+        self.assertEqual(set(payload['current']), {'6'})
+
+    def test_zen_go_logical_route_writes_all_four_mirrors(self):
+        class FakeTransport:
+            def __init__(self):
+                self.writes = []
+
+            def write(self, packet):
+                self.writes.append(packet)
+
+        path = Path(__file__).resolve().parents[1] / 'profiles/zen_go_sc.json'
+        features = self.server.features_for(str(path), self.zen_profile)
+        device = self.server.Device(self.zen_profile)
+        for dest in (6, 7, 8, 9):
+            device.routing[dest] = [(0x03, index) for index in range(32)]
+        transport_obj = FakeTransport()
+        with mock.patch.object(self.server, 'UI_FEATURES', features):
+            device._set_routing_source(transport_obj, 6, 0, (0x00, 0))
+
+        self.assertEqual([packet[18] for packet in transport_obj.writes],
+                         [6, 7, 8, 9])
+        self.assertEqual([packet[19:21] for packet in transport_obj.writes],
+                         [bytes((0x00, 0))] * 4)
+
+    def test_device_stop_closes_transport_and_wakes_worker(self):
+        class FakeTransport:
+            def __init__(self):
+                self.closed = False
+
+            def close(self):
+                self.closed = True
+
+        device = self.server.Device(self.zen_profile)
+        transport_obj = FakeTransport()
+        device._transport = transport_obj
+        worker_done = threading.Event()
+
+        def worker():
+            device.cmds.get(timeout=1.0)
+            worker_done.set()
+
+        device._t = threading.Thread(target=worker)
+        device._t.start()
+        device.stop(timeout=1.0)
+        self.assertTrue(device._stop.is_set())
+        self.assertTrue(transport_obj.closed)
+        self.assertTrue(worker_done.is_set())
+        self.assertFalse(device._t.is_alive())
+
     def test_zen_go_surface_selector_uses_profile_command(self):
         packet, value, target = self.server._mixer_surface_packet(self.zen_profile, 1)
         self.assertEqual((value, target), (0x0c, 0))

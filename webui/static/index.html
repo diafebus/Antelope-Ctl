@@ -254,6 +254,16 @@
   .vval { width:auto; text-align:center; }
   .vbtns { display:flex; gap:4px; width:100%; }
   .vbtns .btn { padding:5px 2px; font-size:10px; }
+  .output-meter { display:flex; align-items:flex-end; justify-content:center; gap:2px;
+                  width:22px; height:42px; padding:2px; box-sizing:border-box;
+                  border:1px solid #303641; border-radius:2px; background:#0c0e12; }
+  .output-meter > i { position:relative; display:block; width:6px; height:100%; min-height:0;
+                      border-radius:1px; background:var(--meter); transition:height .08s linear; }
+  .output-meter > i.unavailable { height:0 !important; }
+  .output-meter > i.peak { background:var(--warn); }
+  .output-meter > i.raw { background:var(--meter); }
+  .output-meter-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .output-meter-label { color:var(--dim); font:8px/1 ui-monospace,monospace; }
 
   /* ---- routing + mixer panels ---- */
   /* ---- routing matrix (per-destination grid) ---- */
@@ -342,6 +352,7 @@
   .rgc.fam-pre{--c:#43c96a} .rgc.fam-emu{--c:#93e0b4} .rgc.fam-play{--c:#4a9eff} .rgc.fam-adat{--c:#e05561}
   .rgc.fam-afx{--c:#b07cff} .rgc.fam-sur{--c:#38c6c0} .rgc.fam-osc{--c:#8b93a3}
   .rgc.fam-spdif{--c:#5ad0e6} .rgc.fam-mix{--c:#f5911e} .rgc.fam-mute{--c:#6b7280}
+  .rgc.fam-unknown{--c:#a07b45}
   .rglbl.fam-pre{color:#43c96a} .rglbl.fam-emu{color:#93e0b4} .rglbl.fam-play{color:#4a9eff} .rglbl.fam-adat{color:#e05561}
   .rglbl.fam-afx{color:#b07cff} .rglbl.fam-sur{color:#38c6c0} .rglbl.fam-osc{color:#8b93a3}
   .rglbl.fam-spdif{color:#5ad0e6} .rglbl.fam-mix{color:#f5911e}
@@ -534,7 +545,7 @@
        muted and watch which offset moves — that's the real map. See webui/METERS.md.</p>
     <h3 class="mdbgh">0x75 meter frame (from offset 32)</h3>
     <div id="mdbg"></div>
-    <h3 class="mdbgh">0x73 state report, embedded block (offset 150–235)</h3>
+    <h3 class="mdbgh">0x73 state report, embedded block (offset 150–239)</h3>
     <div id="mdbg73"></div>
   </section>
   <section id="busessec">
@@ -1615,6 +1626,63 @@ function applyMeters(meters) {
   }
 }
 
+// Zen Go exposes six provisional output lanes in the same 0x73 state report.
+// Keep the mapping profile-driven and visibly raw-only; this is not a claim
+// that the device's exact post-fader/output stage has been decoded.
+function outputMeterMappings() {
+  return (PROFILE?.frame?.state_report?.meter_mappings || [])
+    .filter(m => m?.target === 'physical_output');
+}
+function outputMeterMapping(bus, lane) {
+  return outputMeterMappings().find(m => Number(m.target_index) === Number(bus)
+    && Number(m.lane) === Number(lane));
+}
+function outputMeterSupported(bus) {
+  return outputMeterMappings().some(m => Number(m.target_index) === Number(bus));
+}
+function outputMeterHTML(bus) {
+  if (!outputMeterSupported(bus)) return '';
+  return `<div class="output-meter-wrap"><div class="output-meter" data-output-meter="${bus}" title="Output meter unavailable — provisional raw lane mapping">`
+    + `<i data-output-meter-lane="0" class="unavailable"></i>`
+    + `<i data-output-meter-lane="1" class="unavailable"></i></div>`
+    + `<span class="output-meter-label">L&nbsp; R</span></div>`;
+}
+function applyOutputMeters(meters) {
+  const defaultRange = Array.isArray(meters?.raw_range) && meters.raw_range.length === 2
+    ? meters.raw_range.map(Number) : [0, 96];
+  const outputs = Array.isArray(meters?.outputs) ? meters.outputs : [];
+  document.querySelectorAll('[data-output-meter]').forEach(host => {
+    const bus = Number(host.dataset.outputMeter);
+    const output = outputs.find(item => Number(item.bus) === bus);
+    const lanes = output?.lanes || [];
+    host.querySelectorAll('[data-output-meter-lane]').forEach(el => {
+      const lane = Number(el.dataset.outputMeterLane), sample = lanes[lane];
+      const mapping = outputMeterMapping(bus, lane);
+      const range = Array.isArray(mapping?.raw_range) && mapping.raw_range.length === 2
+        ? mapping.raw_range.map(Number) : defaultRange;
+      const rawLo = range[0], rawHi = range[1];
+      const direction = String(mapping?.direction || 'inverted').toLowerCase();
+      const silenceRaw = Number.isFinite(Number(mapping?.silence_raw))
+        ? Number(mapping.silence_raw) : rawHi;
+      const raw = Number.isFinite(sample?.raw) ? Number(sample.raw) : null;
+      const valid = raw != null && raw >= Math.min(rawLo, rawHi) && raw <= Math.max(rawLo, rawHi);
+      const silent = sample?.silence === true || raw === silenceRaw;
+      const pct = valid && !silent && rawHi > rawLo ? (direction === 'inverted'
+        ? (rawHi - raw) / (rawHi - rawLo) * 100
+        : (raw - rawLo) / (rawHi - rawLo) * 100) : 0;
+      el.classList.toggle('unavailable', !valid);
+      el.classList.toggle('peak', valid && raw === rawLo);
+      el.classList.toggle('raw', valid);
+      el.style.height = pct.toFixed(1) + '%';
+      el.title = !valid ? 'Output meter unavailable'
+        : `Raw ${raw}${silent ? ' · silence' : ' · provisional / uncalibrated'}`;
+    });
+    host.title = output
+      ? `${output.name || 'Output'} meter — provisional raw lane mapping`
+      : 'Output meter unavailable — provisional raw lane mapping';
+  });
+}
+
 // ---- buses -----------------------------------------------------------
 // bus_level is ATTENUATION: 0 = 0 dB (loudest), 96 = -96 dB (silent). The
 // slider runs the natural way round (right = louder), so slider = 96 - level.
@@ -1732,11 +1800,13 @@ function buildBuses(buses) {
   buses.forEach(b => {
     const el = document.createElement('div');
     const rot = busRotary(b), toSettings = busIsSettings(b);
+    const outputMeter = outputMeterHTML(b.bus);
     el.className = 'strip' + (rot ? ' mon' : '');
     el.dataset.bus = b.bus;
     const title = (b.name || ('BUS ' + b.bus)).replace(/_/g, ' ').toUpperCase();
     if (rot) {
-      el.innerHTML = `<h3>${title}</h3>` + vknobHTML(rot === 'hp' ? hpKnobSVG() : monKnobSVG());
+      el.innerHTML = `<h3>${title}</h3>${outputMeter}`
+        + vknobHTML(rot === 'hp' ? hpKnobSVG() : monKnobSVG());
       paintMonKnob(el, b.level);
       wireMonKnob(el, b.bus);
     } else {
@@ -1744,6 +1814,7 @@ function buildBuses(buses) {
       const canMute = /^(line_out|line out)/i.test(b.name || '');
       el.innerHTML = `
       <h3>${title}</h3>
+      ${outputMeter}
       <div class="row">
         <input type="range" data-lvl min="0" max="96" value="${96 - b.level}">
         <span class="val" data-lvlval>${dbLabel(b.level)}</span>
@@ -1828,9 +1899,31 @@ function buildSrcGroups() {
 }
 
 // "preamp 3" -> "preamp:3"  ·  "spdif L" -> "spdif:L"  ·  "MUTE" -> "mute:"
+// Unknown profile banks stay visible as raw keys instead of becoming a blank
+// cell.  That is important on Zen Go: bank 0x03 is seen in the default map,
+// but is not decoded well enough to relabel it as a preamp or playback source.
+function rawRouteParts(label) {
+  const m = String(label || '').match(/^bank\s+(0x[0-9a-f]+)\s+idx\s+(\d+)$/i);
+  return m ? {bank: m[1].toLowerCase(), idx: +m[2]} : null;
+}
+function rawSourceKey(route) {
+  const bank = Number(route?.bank), idx = Number(route?.idx);
+  return Number.isFinite(bank) && Number.isFinite(idx)
+    ? `raw:${bank.toString(16).padStart(2, '0')}:${idx}` : '';
+}
+function rawKeyParts(key) {
+  const m = String(key || '').match(/^raw:([0-9a-f]+):(\d+)$/i);
+  return m ? {bank: m[1].toUpperCase().padStart(2, '0'), idx: +m[2]} : null;
+}
+function rawSourceLabel(key) {
+  const p = rawKeyParts(key);
+  return p ? `DEVICE SOURCE 0x${p.bank} / ${p.idx + 1} (UNMAPPED)` : 'UNMAPPED SOURCE';
+}
 function labelToKey(label) {
   if (!label) return '';
   if (label === 'MUTE') return 'mute:';
+  const raw = rawRouteParts(label);
+  if (raw) return `raw:${raw.bank}:${raw.idx}`;
   const m = label.match(/^(\S+)\s+(\S+)$/);
   return m ? `${m[1]}:${m[2]}` : '';
 }
@@ -1838,18 +1931,32 @@ const SHORT_FAM = { preamp: 'Pre', emumic: 'Emu', compplay: 'CP', adat: 'AD', af
                     surround: 'Sur', osc: 'Osc', spdif: 'SP', mix1: 'M1', mix2: 'M2', mix3: 'M3', mix4: 'M4' };
 function shortLabel(label) {
   if (!label || label === 'MUTE') return '—';
+  const raw = rawRouteParts(label);
+  if (raw) return `U${raw.bank.slice(2).toUpperCase()}/${raw.idx + 1}`;
   const m = label.match(/^(\S+)\s+(\S+)$/);
   return m ? `${SHORT_FAM[m[1]] || m[1]} ${m[2]}` : label;
 }
 // a want-key ("preamp:3", "mute:") -> short cell text / family, for optimistic paint
-function keyShort(key) { if (key === 'mute:') return '✕'; const [k, n] = key.split(':'); return `${SHORT_FAM[k] || k} ${n}`; }
-function keyFam(key) { return key === 'mute:' ? 'mute' : (SRC_FAM[key.split(':')[0]] || 'mute'); }
+function keyShort(key) {
+  if (key === 'mute:') return '✕';
+  if (key.startsWith('raw:')) return rawSourceLabel(key).replace('DEVICE SOURCE ', 'U');
+  const [k, n] = key.split(':'); return `${SHORT_FAM[k] || k} ${n}`;
+}
+function keyFam(key) {
+  if (key === 'mute:') return 'mute';
+  return key.startsWith('raw:') ? 'unknown' : (SRC_FAM[key.split(':')[0]] || 'unknown');
+}
+function labelFam(label) { return label ? keyFam(labelToKey(label)) : 'none'; }
 // tight grid-cell tag: 1-letter family + number ("P12", "C32", "SL"), colour carries the rest
 const GRID_TAG = { preamp: 'P', emumic: 'E', compplay: 'C', adat: 'A', afx: 'F',
                    surround: 'R', osc: 'O', spdif: 'S', mix1: 'm1', mix2: 'm2', mix3: 'm3', mix4: 'm4' };
 function cellTag(key) {
   if (!key) return '·';
   if (key === 'mute:') return '✕';
+  if (key.startsWith('raw:')) {
+    const p = rawKeyParts(key);
+    return p ? `U${p.bank}/${p.idx + 1}` : '?';
+  }
   const [k, n] = key.split(':');
   return (GRID_TAG[k] || (k[0] || '?').toUpperCase()) + n;
 }
@@ -2036,7 +2143,7 @@ function renderMatrix() {
     <table class="rmx"><thead><tr><th class="cnr">source ↓</th>${
     Array.from({ length: N }, (_, ch) => {
       const lab = cur[ch] ? cur[ch].label : '';
-      const fam = lab ? (SRC_FAM[labelToKey(lab).split(':')[0]] || 'mute') : '';
+      const fam = labelFam(lab);
       return `<th data-ch="${ch}"><span class="cn">${colName(ch)}</span><span class="cs fam-${fam}">${lab ? shortLabel(lab) : ''}</span></th>`;
     }).join('')}</tr></thead><tbody>`;
 
@@ -2154,7 +2261,7 @@ function refreshRouting() {
   // column captions
   box.querySelectorAll('thead th[data-ch]').forEach(th => {
     const lab = cur[+th.dataset.ch] ? cur[+th.dataset.ch].label : '';
-    const fam = lab ? (SRC_FAM[labelToKey(lab).split(':')[0]] || 'mute') : '';
+    const fam = labelFam(lab);
     const cs = th.querySelector('.cs');
     cs.textContent = lab ? shortLabel(lab) : '';
     cs.className = 'cs fam-' + fam;
@@ -2205,7 +2312,7 @@ function renderGrid() {
       <div class="rglbl" data-node="dg:${d.id}" tabindex="0" title="${nm} (${N} ch)">${nm}</div>
       <div class="rgcells">${Array.from({ length: N }, (_, ch) => {
         const c = cur[ch], lab = c ? c.label : '';
-        const fam = lab ? (SRC_FAM[labelToKey(lab).split(':')[0]] || 'mute') : 'none';
+        const fam = labelFam(lab);
         const cn = (d.stereo && ch < 2) ? (ch ? 'R' : 'L') : ch + 1;
         const pend = ROUTE_PENDING[d.id + ':' + ch] ? ' rgpending' : '';
         return `<div class="rgc rgto fam-${fam}${pend}" data-node="d:${d.id}:${ch}" tabindex="0" title="${nm} ${cn}  ◄  ${lab || '(none)'}">${lab ? cellTag(labelToKey(lab)) : '·'}</div>`;
@@ -2455,16 +2562,22 @@ function mixerSourceKey(spec, mix, ch) {
     const option = (spec.options || []).find(o =>
       Number(o.bank) === Number(route.bank) && Number(o.index) === Number(route.idx));
     if (option) return option.key;
+    const raw = rawSourceKey(route);
+    if (raw) return raw;
   }
   // A route record that exists but contains an unknown/unconfirmed source
-  // must not be replaced with a stale browser-local selection.
+  // must not be replaced with a stale browser-local selection.  It is returned
+  // as a disabled option so the current hardware value is visible instead of
+  // looking like an unassigned input.
   return sawRoute ? '' : (MIXER_SOURCES[`${mix}:${ch}`] || '');
 }
 function mixerSourceOptions(spec, mix, ch) {
   const selected = mixerSourceKey(spec, mix, ch);
+  const unknown = selected.startsWith('raw:')
+    ? `<option value="${selected}" selected disabled>${rawSourceLabel(selected)}</option>` : '';
   const options = (spec.options || []).map(option =>
     `<option value="${option.key}"${option.key === selected ? ' selected' : ''}>${option.label}</option>`).join('');
-  return `<option value="">INPUT SOURCE</option>${options}`;
+  return `<option value="">INPUT SOURCE</option>${unknown}${options}`;
 }
 
 const AV_PARAM_META = [
@@ -2754,6 +2867,8 @@ function applyMixerMeters(meters) {
   const rawLo = rawRange[0], rawHi = rawRange[1];
   const silenceRaw = Number.isFinite(Number(meters?.silence_raw))
     ? Number(meters.silence_raw) : rawHi;
+  const noiseFloorRaw = Number.isFinite(Number(meters?.noise_floor_raw))
+    ? Number(meters.noise_floor_raw) : null;
   document.querySelectorAll('#mixer [data-mix-pane] .mixer-strip').forEach(strip => {
     const pane = strip.closest('[data-mix-pane]');
     const meter = strip.querySelector('[data-mix-meter]');
@@ -2767,7 +2882,8 @@ function applyMixerMeters(meters) {
     const valid = raw != null && Number.isFinite(raw)
       && Number.isFinite(rawLo) && Number.isFinite(rawHi)
       && raw >= Math.min(rawLo, rawHi) && raw <= Math.max(rawLo, rawHi);
-    const silent = sample?.silence === true || raw === silenceRaw;
+    const silent = sample?.silence === true || raw === silenceRaw
+      || (noiseFloorRaw != null && raw >= noiseFloorRaw);
     const span = rawHi - rawLo;
     const pct = valid && !silent && span > 0
       ? (rawHi - raw) / span * 100 : 0;
@@ -2775,7 +2891,7 @@ function applyMixerMeters(meters) {
     meter.classList.toggle('peak', valid && raw === rawLo);
     meter.style.height = pct.toFixed(1) + '%';
     meter.parentElement.title = !valid ? 'Meter unavailable'
-      : `Raw ${raw}${silent ? ' · silence' : ' · uncalibrated'}`;
+      : `Raw ${raw}${silent ? ' · silence/noise floor' : ' · uncalibrated'}`;
   });
 }
 
@@ -3064,6 +3180,12 @@ function renderMix(pane, m) {
     const source = strip.querySelector('[data-mix-source]');
     if (source) source.addEventListener('change', e => {
       const key = e.target.value;
+      if (key.startsWith('raw:')) {
+        reportMessage('zen-routing', 'Zen Go source selectors',
+          `${rawSourceLabel(key)} is present in the device map but is not a selectable source in the profile.`);
+        source.value = mixerSourceKey(sourceFeature, m, ch);
+        return;
+      }
       if (key) {
         MIXER_SOURCES[`${m}:${ch}`] = key;
         saveMixerSources();
@@ -3320,7 +3442,7 @@ function applyState(s) {
   st.textContent = ONLINE ? 'online' : 'device offline';
   $('#main').classList.toggle('offline', !ONLINE);
   if (!ONLINE) {
-    applyMeters([]); applyMixerMeters(null);
+    applyMeters([]); applyMixerMeters(null); applyOutputMeters(null);
     reportMessage('connection', 'Device connection', 'The device is offline.');
     return;
   }
@@ -3331,6 +3453,7 @@ function applyState(s) {
   applyMixerMeters(s.mixer_meters);
   if (METER_DEBUG) applyMeterDebug(s);
   applyBuses(s.buses);
+  applyOutputMeters(s.output_meters);
   applyDig('adat', s.adat);
   applyDig('spdif', s.spdif);
   applySettings(s);
@@ -3354,6 +3477,7 @@ function markOffline(text) {
   ONLINE = false;
   applyMeters([]);
   applyMixerMeters(null);
+  applyOutputMeters(null);
   reportMessage('connection', 'Device connection', text);
   const st = $('#status'); st.className = 'offline'; st.textContent = text;
   $('#main').classList.add('offline');

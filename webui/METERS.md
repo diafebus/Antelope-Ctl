@@ -32,6 +32,20 @@ assumptions. Raw 0..96 is inverted for display, with 96 treated as silence.
 This confirms the lane encoding and surface gating, not independent physical
 ownership or a calibrated dBFS curve.
 
+The Zen Go profile also exposes two observed, provisional preamp-related lanes
+at payload `0xce/0xcf` as `input_meters` for preamps 1/2. They are explicitly
+marked mixed-signal candidates: raw values are shown, but no dB or clip
+calibration is claimed. The same state report contains six observed output
+lanes (`Monitor`, `HP1`, and `HP2`, L/R); the WebUI now displays them as
+provisional raw meters, with the unknown feed/stage called out in the hover
+text. These output lanes should not be treated as a completed output-meter
+calibration.
+
+The captured first mixer lane idles at raw `84` on this inverted scale. The
+profile declares that value as a presentation noise floor, so raw `84` and
+above are rendered as silence to avoid a persistent false stub. This is a UI
+noise-floor rule, not a new hardware dBFS threshold.
+
 ## 2026-09-09: window selection and shared meter banks
 
 User observation: Mix 1–4 windows reuse meter bytes, changing their source

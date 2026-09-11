@@ -52,6 +52,21 @@ def _zen_source_options(profile):
 
 _FEATURES = {
     "zen_go_sc": {
+        "routing": {
+            "enabled": True,
+            "destinations": [
+                {
+                    "id": 6,
+                    "name": "mixer_input_assignments",
+                    "channels": 16,
+                    "write_destinations": [6, 7, 8, 9],
+                    "note": (
+                        "The four Zen Go routing records are mirrored views of "
+                        "one 16-strip mixer input map."
+                    ),
+                },
+            ],
+        },
         "mixer_sources": {
             "enabled": True,
             "mixes": [0, 1],
@@ -82,6 +97,39 @@ def features_for(profile_path, profile):
     key = _profile_key(profile_path, profile)
     features = deepcopy(_FEATURES.get(key, {}))
     frame = profile.get("frame", {})
+    if key == "zen_go_sc" and "routing" in features:
+        feature = features["routing"]
+        routing = frame.get("routing_command", {})
+        destination_channels = routing.get("destination_channels", {})
+        visible = []
+        for item in feature.get("destinations", []):
+            try:
+                dest = int(item["id"])
+                channels = int(item["channels"])
+                writes = [int(value) for value in item.get(
+                    "write_destinations", [dest])]
+            except (KeyError, TypeError, ValueError):
+                continue
+            if str(dest) not in destination_channels or channels <= 0:
+                continue
+            if channels > int(destination_channels[str(dest)]):
+                continue
+            if any(str(value) not in destination_channels for value in writes):
+                continue
+            visible.append({**item, "id": dest, "channels": channels,
+                            "write_destinations": writes})
+        feature["destinations"] = visible
+        feature["writable"] = bool(
+            visible
+            and all(proto.readback_indices_available(
+                profile, proto.ROUTING_READBACK_CATEGORY,
+                item["write_destinations"])
+                    for item in visible))
+        if not feature["writable"]:
+            feature["note"] = (
+                "Zen Go mixer input assignments are displayed read-only until "
+                "their safe routing readback is confirmed."
+            )
     if key == "zen_go_sc" and "mixer_sources" in features:
         feature = features["mixer_sources"]
         feature["options"] = _zen_source_options(profile)

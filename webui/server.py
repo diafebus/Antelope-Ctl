@@ -231,6 +231,63 @@ def _structured_readback_targets(profile):
 METER_DISCRIMINATOR_OFFSET = 1
 METER_DISCRIMINATOR = 0x1F
 
+
+def _routing_ui_spec(dest):
+    """Return the presentation spec for a logical routing destination."""
+    feature = UI_FEATURES.get("routing", {})
+    if not isinstance(feature, dict) or not feature.get("enabled"):
+        return None
+    for item in feature.get("destinations", []) or []:
+        try:
+            if proto._as_int(item.get("id")) == int(dest):
+                return item
+        except (AttributeError, TypeError, ValueError):
+            continue
+    return None
+
+
+def _routing_ui_destinations():
+    """Return logical destinations, or None when the shared raw view applies."""
+    feature = UI_FEATURES.get("routing", {})
+    if not isinstance(feature, dict) or not feature.get("enabled"):
+        return None
+    return list(feature.get("destinations", []) or [])
+
+
+def _routing_channel_count(profile, dest):
+    """Channel count for a UI destination, falling back to the wire map."""
+    item = _routing_ui_spec(dest)
+    if item is not None:
+        return int(item["channels"])
+    return proto.route_dest_channels(profile, dest)
+
+
+def _routing_write_destinations(dest):
+    """Physical records that implement one logical UI destination."""
+    item = _routing_ui_spec(dest)
+    if item is None:
+        return [int(dest)]
+    return [int(value) for value in item.get("write_destinations", [dest])]
+
+
+def _state_report_offset(profile, state_spec, mapping, key, default_basis):
+    """Resolve a profile offset into the full state-report coordinate space."""
+    offset = proto._as_int(mapping[key])
+    basis = str(mapping.get("offset_basis", default_basis)).strip().lower()
+    if basis in {"payload", "snapshot_payload", "snapshot-payload"}:
+        offset += proto._as_int(state_spec.get("snapshot_payload_offset", 0))
+    return offset
+
+
+def _meter_is_silent(raw, silence_raw, noise_floor_raw=None,
+                    direction="inverted"):
+    """Apply an explicitly profile-declared raw idle floor."""
+    if silence_raw is not None and raw == silence_raw:
+        return True
+    return (noise_floor_raw is not None
+            and direction == "inverted"
+            and raw >= noise_floor_raw)
+
 # ---------------------------------------------------------------- device thread
 
 class Device:
@@ -309,10 +366,41 @@ class Device:
         self.solo_state = {}               # mix -> {restore: flags, active: channels}
         self._lock = threading.Lock()
         self._t = None
+        self._stop = threading.Event()
+        self._transport = None
 
     def start(self):
+        if self._t is not None and self._t.is_alive():
+            return
+        self._stop.clear()
         self._t = threading.Thread(target=self.run, daemon=True)
         self._t.start()
+
+    def _drop_transport(self, transport):
+        """Close a platform transport and forget it, if it is still current."""
+        if transport is not None:
+            close = getattr(transport, "close", None)
+            if close is not None:
+                try:
+                    close()
+                except Exception:                           # noqa: BLE001
+                    pass
+        with self._lock:
+            if self._transport is transport:
+                self._transport = None
+
+    def stop(self, timeout=2.0):
+        """Stop the HID worker so Ctrl+C can terminate the whole WebUI cleanly."""
+        self._stop.set()
+        with self._lock:
+            transport = self._transport
+        self._drop_transport(transport)
+        # Wake a worker that is between fast-state reads.  None is an internal
+        # sentinel and is never submitted by an HTTP handler.
+        self.cmds.put(None)
+        worker = self._t
+        if worker is not None and worker is not threading.current_thread():
+            worker.join(timeout=max(0.0, float(timeout)))
 
     def submit(self, fn):
         """Queue fn(transport). At most one queued function runs per fast
@@ -469,18 +557,39 @@ class Device:
         32-slot input map.  Read every group before writing any group so a
         missing readback never leaves the map partially changed.
         """
+        self._set_routing_changes(
+            transport, self.mixer_source_destinations, [(channel, target)])
+
+    def _set_routing_changes(self, transport, destinations, changes):
+        """Read, modify, and write one or more mirrored routing records."""
+        destinations = [int(dest) for dest in destinations]
+        if not destinations:
+            raise RuntimeError("routing destination group is empty")
+        if any(dest not in self.route_dests for dest in destinations):
+            raise RuntimeError("routing destination is not safely mapped")
         records = []
-        for dest in self.mixer_source_destinations:
+        for dest in destinations:
             pairs = self._routing_record_for_write(transport, dest)
-            if channel >= len(pairs):
-                raise RuntimeError(
-                    f"routing destination {dest} has no mixer slot {channel}")
-            pairs[channel] = target
+            for channel, target in changes:
+                if channel < 0 or channel >= len(pairs):
+                    raise RuntimeError(
+                        f"routing destination {dest} has no slot {channel}")
+                pairs[channel] = target
             records.append((dest, pairs))
         for dest, pairs in records:
             transport.write(proto.build_route_command(
                 self.profile, dest, pairs))
             self._cache_routing(dest, pairs)
+
+    def _set_routing_source(self, transport, dest, channel, target):
+        """Write a logical routing destination, including its mirrors."""
+        self._set_routing_changes(
+            transport, _routing_write_destinations(dest), [(channel, target)])
+
+    def _set_routing_batch(self, transport, dest, changes):
+        """Write a logical routing destination in one mirrored batch."""
+        self._set_routing_changes(
+            transport, _routing_write_destinations(dest), changes)
 
     def _mixer_record_for_write(self, transport, mix):
         """Copy the serialized cache, querying once only if it is not ready."""
@@ -527,14 +636,21 @@ class Device:
         readback_plan = []
         readback_changed = False
         last_debug_meter = 0.0
-        while True:
+        while not self._stop.is_set():
             if transport is None:
                 try:
                     transport = open_transport(self.vid, self.pid, self.report_size)
                 except SystemExit:
                     self._publish({"online": False})
-                    time.sleep(2.0)
+                    if self._stop.wait(2.0):
+                        break
                     continue
+                if self._stop.is_set():
+                    self._drop_transport(transport)
+                    transport = None
+                    break
+                with self._lock:
+                    self._transport = transport
                 last_readback = time.time()
                 readback_plan = self._readback_plan()
                 readback_changed = False
@@ -543,9 +659,12 @@ class Device:
             # to freeze meters for the duration of every pending HID write.
             try:
                 fn = self.cmds.get_nowait()
+                if fn is None:
+                    break
                 try:
                     fn(transport)
                 except OSError:
+                    self._drop_transport(transport)
                     transport = None
                 except Exception as e:                           # noqa: BLE001
                     print(f"[cmd] {e!r}", file=sys.stderr)
@@ -574,6 +693,7 @@ class Device:
                     meter = self._read_meter(transport, timeout=0.01)
                     last_debug_meter = monotonic_now
             except OSError:
+                self._drop_transport(transport)
                 transport = None
                 self._publish({"online": False})
                 continue
@@ -606,9 +726,12 @@ class Device:
                 mixer_meters = self._parse_mixer_meters(state)
                 if mixer_meters is not None:
                     snap["mixer_meters"] = mixer_meters
+                output_meters = self._parse_output_meters(state)
+                if output_meters is not None:
+                    snap["output_meters"] = output_meters
                 # Raw slice covering the profile's mixer/preamp meter region
                 # for ?meterdebug=1; it remains diagnostic only.
-                snap["state_raw"] = {"base": 150, "bytes": list(state[150:236])}
+                snap["state_raw"] = {"base": 150, "bytes": list(state[150:240])}
             if meter:
                 # 0x75 @32/@48 and @33/@49 are route-correlated lane pairs.
                 # Their fixed ownership is unresolved; retain raw debug only.
@@ -626,7 +749,8 @@ class Device:
             with self._lock:
                 for k in ("channels", "buses", "adat", "spdif", "trim", "brightness",
                           "sample_rate_idx", "clock_source_idx", "input_meters",
-                          "mixer_meters", "state_raw", "meters_raw"):
+                          "mixer_meters", "output_meters", "state_raw",
+                          "meters_raw"):
                     if k not in snap and k in self.snapshot:
                         snap[k] = self.snapshot[k]
             self._publish(snap)
@@ -640,12 +764,15 @@ class Device:
                     readback_changed = self._refresh_readback_one(
                         transport, category, index) or readback_changed
                 except OSError:
+                    self._drop_transport(transport)
                     transport = None
                     self._publish({"online": False})
                     continue
                 if not readback_plan and readback_changed:
                     with self._lock:
                         self.rb_ver += 1
+        self._drop_transport(transport)
+        self._publish({"online": False})
 
     # -- readback (routing + mixer + structured state) ----------------------
 
@@ -793,21 +920,58 @@ class Device:
         return out
 
     def _parse_meters(self, state):
-        """Return source-aware samples from the configured 0x73 meter bank."""
+        """Return source-aware samples from the configured 0x73 meter bank.
+
+        A normal profile uses ``channel_meter_base_offset``.  Zen Go has no
+        decoded contiguous physical-input bank yet, but its profile records
+        two observed candidate lanes at payload 0xce/0xcf.  Expose those as
+        raw-only meters instead of silently returning an empty array.
+        """
         source = "state_report"
         spec = self.profile["frame"][source]
         base = spec.get("channel_meter_base_offset")
+        candidates = None
         if base is None:
-            return []
-        base = int(base)
-        raw_range = spec.get("physical_meter_raw_range")
-        silence_raw = (int(raw_range[1])
-                       if spec.get("physical_meter_direction") == "inverted"
-                       and isinstance(raw_range, list) and len(raw_range) == 2
-                       else None)
+            candidates = {
+                int(item["input_index"]): item
+                for item in spec.get("candidate_preamp_meters", []) or []
+                if isinstance(item, dict) and item.get("input_index") is not None
+            }
+            if not candidates:
+                return []
         out = []
         for ch in range(self.n_ch):
-            off = base + ch
+            mapping = None
+            if base is not None:
+                off = proto._as_int(base) + ch
+                raw_range = spec.get("physical_meter_raw_range")
+                direction = spec.get("physical_meter_direction")
+                silence_raw = (proto._as_int(raw_range[1])
+                               if direction == "inverted"
+                               and isinstance(raw_range, list) and len(raw_range) == 2
+                               else None)
+                noise_floor_raw = None
+            else:
+                mapping = candidates.get(ch)
+                if mapping is None:
+                    break
+                try:
+                    offset_key = ("offset" if mapping.get("offset") is not None
+                                  else "payload_offset")
+                    off = _state_report_offset(
+                        self.profile, spec, mapping, offset_key,
+                        "snapshot_payload")
+                    raw_range = mapping.get("raw_range", [0, 96])
+                    raw_lo, raw_hi = (proto._as_int(raw_range[0]),
+                                      proto._as_int(raw_range[1]))
+                    direction = mapping.get("direction", "inverted")
+                    silence_raw = proto._as_int(
+                        mapping.get("silence_raw", raw_hi))
+                    noise_floor_raw = (proto._as_int(mapping["noise_floor_raw"])
+                                       if mapping.get("noise_floor_raw") is not None
+                                       else None)
+                except (KeyError, TypeError, ValueError, IndexError):
+                    break
             if off >= len(state):
                 break
             raw = state[off]
@@ -817,7 +981,10 @@ class Device:
                 "raw": raw,
                 "db": round(db, 1) if db is not None else None,
                 "clip": led["clip"] if led is not None else None,
-                "silence": raw == silence_raw if silence_raw is not None else None,
+                "silence": _meter_is_silent(
+                    raw, silence_raw, noise_floor_raw, direction)
+                    if silence_raw is not None or noise_floor_raw is not None
+                    else None,
             })
         return out
 
@@ -842,6 +1009,10 @@ class Device:
                 raw_lo, raw_hi = (proto._as_int(raw_range[0]),
                                   proto._as_int(raw_range[1]))
                 silence_raw = proto._as_int(mapping.get("silence_raw", raw_hi))
+                noise_floor_raw = (proto._as_int(mapping["noise_floor_raw"])
+                                   if mapping.get("noise_floor_raw") is not None
+                                   else None)
+                direction = mapping.get("direction", "inverted")
             except (KeyError, TypeError, ValueError, IndexError):
                 return None
             if selector_off < 0 or selector_off >= len(state) or len(strip_range) != 2:
@@ -851,7 +1022,8 @@ class Device:
             if allowed and selected not in allowed:
                 return {"mix": selected, "strips": [],
                         "raw_range": [raw_lo, raw_hi],
-                        "silence_raw": silence_raw}
+                        "silence_raw": silence_raw,
+                        "noise_floor_raw": noise_floor_raw}
             first, last = proto._as_int(strip_range[0]), proto._as_int(strip_range[1])
             strips = []
             for ch in range(first, last + 1):
@@ -860,10 +1032,12 @@ class Device:
                     break
                 raw = state[off]
                 strips.append({"ch": ch, "raw": raw,
-                               "silence": raw == silence_raw})
+                               "silence": _meter_is_silent(
+                                   raw, silence_raw, noise_floor_raw, direction)})
             return {"mix": selected, "strips": strips,
                     "raw_range": [raw_lo, raw_hi],
-                    "silence_raw": silence_raw}
+                    "silence_raw": silence_raw,
+                    "noise_floor_raw": noise_floor_raw}
 
         # Zen Go: the selected front-panel surface gates the 16 shared
         # mixer-strip lanes at the profile's full-report base offset.
@@ -885,6 +1059,10 @@ class Device:
             raw_lo, raw_hi = (proto._as_int(raw_range[0]),
                               proto._as_int(raw_range[1]))
             silence_raw = proto._as_int(mapping.get("silence_raw", raw_hi))
+            noise_floor_raw = (proto._as_int(mapping["noise_floor_raw"])
+                               if mapping.get("noise_floor_raw") is not None
+                               else None)
+            direction = mapping.get("direction", "inverted")
         except (KeyError, TypeError, ValueError, IndexError):
             return None
         if selector_off < 0 or selector_off >= len(state) or count <= 0 or stride <= 0:
@@ -894,7 +1072,8 @@ class Device:
         if mix is None:
             return {"mix": -1, "selector": selected, "strips": [],
                     "raw_range": [raw_lo, raw_hi],
-                    "silence_raw": silence_raw}
+                    "silence_raw": silence_raw,
+                    "noise_floor_raw": noise_floor_raw}
         strips = []
         for channel in range(count):
             off = base + channel * stride
@@ -902,10 +1081,74 @@ class Device:
                 break
             raw = state[off]
             strips.append({"ch": channel, "raw": raw,
-                           "silence": raw == silence_raw})
+                           "silence": _meter_is_silent(
+                               raw, silence_raw, noise_floor_raw, direction)})
         return {"mix": mix, "selector": selected, "strips": strips,
                 "raw_range": [raw_lo, raw_hi],
-                "silence_raw": silence_raw}
+                "silence_raw": silence_raw,
+                "noise_floor_raw": noise_floor_raw}
+
+    def _parse_output_meters(self, state):
+        """Parse profile-declared physical-output lanes from the 0x73 state.
+
+        Zen Go's six lanes are observed/provisional rather than calibrated,
+        but they are useful in the WebUI and are kept explicitly tagged as
+        such.  Profiles without these mappings simply return no output meter
+        payload.
+        """
+        spec = self.profile["frame"].get("state_report", {})
+        mappings = [item for item in spec.get("meter_mappings", []) or []
+                    if isinstance(item, dict)
+                    and item.get("target") == "physical_output"]
+        if not mappings:
+            return None
+        outputs = {}
+        ranges = []
+        for mapping in mappings:
+            try:
+                target = proto._as_int(mapping["target_index"])
+                lane = proto._as_int(mapping["lane"])
+                offset = _state_report_offset(
+                    self.profile, spec, mapping, "payload_offset",
+                    "snapshot_payload")
+                raw_range = mapping.get("raw_range", [0, 96])
+                raw_lo, raw_hi = (proto._as_int(raw_range[0]),
+                                  proto._as_int(raw_range[1]))
+                silence_raw = proto._as_int(
+                    mapping.get("silence_raw", raw_hi))
+                noise_floor_raw = (proto._as_int(mapping["noise_floor_raw"])
+                                   if mapping.get("noise_floor_raw") is not None
+                                   else None)
+            except (KeyError, TypeError, ValueError, IndexError):
+                continue
+            if offset < 0 or offset >= len(state) or lane < 0:
+                continue
+            raw = state[offset]
+            output = outputs.setdefault(target, {
+                "bus": target,
+                "name": proto.bus_name(self.profile, target),
+                "status": mapping.get("status", ""),
+                "lanes": [],
+            })
+            while len(output["lanes"]) <= lane:
+                output["lanes"].append(None)
+            output["lanes"][lane] = {
+                "lane": lane,
+                "raw": raw,
+                "silence": _meter_is_silent(
+                    raw, silence_raw, noise_floor_raw,
+                    mapping.get("direction", "inverted")),
+            }
+            ranges.append((raw_lo, raw_hi))
+        if not outputs:
+            return None
+        raw_range = list(ranges[0]) if ranges else [0, 96]
+        return {
+            "outputs": [outputs[key] for key in sorted(outputs)],
+            "raw_range": raw_range,
+            "silence_raw": raw_range[1],
+            "provisional": True,
+        }
 
 
 try:
@@ -1311,13 +1554,27 @@ def api_routing():
     dc = rc.get("destination_channels", {})
     addr = rc.get("addressable_destinations", {})
     stereo = set(rc.get("stereo_destinations", []))
-    dests = [
-        {"id": int(k), "name": addr.get(k, f"dest{k}"),
-         "channels": int(v), "stereo": k in stereo}
-        for k, v in sorted(dc.items(), key=lambda x: int(x[0]))
-    ]
+    logical = _routing_ui_destinations()
+    current = DEV.routing_json()
+    if logical is None:
+        dests = [
+            {"id": int(k), "name": addr.get(k, f"dest{k}"),
+             "channels": int(v), "stereo": k in stereo}
+            for k, v in sorted(dc.items(), key=lambda x: int(x[0]))
+        ]
+    else:
+        dests = [{
+            "id": int(item["id"]),
+            "name": item.get("name", f"dest{item['id']}"),
+            "channels": int(item["channels"]),
+            "stereo": bool(item.get("stereo", False)),
+            "note": item.get("note", ""),
+        } for item in logical]
+        visible = {str(item["id"]) for item in logical}
+        current = {key: value for key, value in current.items()
+                   if key in visible}
     sources = proto.route_source_options(PROFILE)
-    return {"dests": dests, "sources": sources, "current": DEV.routing_json()}
+    return {"dests": dests, "sources": sources, "current": current}
 
 
 @app.post("/api/route")
@@ -1325,9 +1582,10 @@ def api_route(r: Route):
     if not DEV.routing_available:
         return _bad("routing readback is not safely mapped for this profile")
     dc = PROFILE["frame"].get("routing_command", {}).get("destination_channels", {})
-    if str(r.dest) not in dc:
+    try:
+        nch = _routing_channel_count(PROFILE, r.dest)
+    except (KeyError, TypeError, ValueError):
         return _bad(f"unknown routing destination {r.dest}")
-    nch = int(dc[str(r.dest)])
     if not 0 <= r.channel < nch:
         return _bad(f"channel {r.channel} out of range 0..{nch - 1} for dest {r.dest}")
     try:
@@ -1337,10 +1595,7 @@ def api_route(r: Route):
         return _bad(str(e))
 
     def do(t, dest=r.dest, ch=r.channel, tgt=tgt):
-        pairs = DEV._routing_record_for_write(t, dest)
-        pairs[ch] = tgt
-        t.write(proto.build_route_command(PROFILE, dest, pairs))
-        DEV._cache_routing(dest, pairs)
+        DEV._set_routing_source(t, dest, ch, tgt)
 
     DEV.submit(do)
     return {"ok": True}
@@ -1355,9 +1610,10 @@ def api_route_batch(b: RouteBatch):
     if not DEV.routing_available:
         return _bad("routing readback is not safely mapped for this profile")
     dc = PROFILE["frame"].get("routing_command", {}).get("destination_channels", {})
-    if str(b.dest) not in dc:
+    try:
+        nch = _routing_channel_count(PROFILE, b.dest)
+    except (KeyError, TypeError, ValueError):
         return _bad(f"unknown routing destination {b.dest}")
-    nch = int(dc[str(b.dest)])
     if not b.changes:
         return _bad("no changes")
     resolved = []
@@ -1372,11 +1628,7 @@ def api_route_batch(b: RouteBatch):
         resolved.append((c.channel, tgt))
 
     def do(t, dest=b.dest, changes=resolved):
-        pairs = DEV._routing_record_for_write(t, dest)
-        for ch, tgt in changes:
-            pairs[ch] = tgt
-        t.write(proto.build_route_command(PROFILE, dest, pairs))
-        DEV._cache_routing(dest, pairs)
+        DEV._set_routing_batch(t, dest, changes)
 
     DEV.submit(do)
     return {"ok": True, "n": len(resolved)}
@@ -1710,4 +1962,11 @@ async def stream():
 
 if __name__ == "__main__":
     DEV.start()
-    uvicorn.run(app, host="127.0.0.1", port=8714, log_level="warning")
+    try:
+        uvicorn.run(app, host="127.0.0.1", port=8714, log_level="warning")
+    except KeyboardInterrupt:
+        # Uvicorn normally handles SIGINT itself; keep this for versions that
+        # let the interrupt escape so the HID worker is still joined below.
+        pass
+    finally:
+        DEV.stop()

@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
+const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
 const source = html.slice(html.indexOf('const METER_FLOOR'), html.indexOf('// ---- buses'));
 const classes = () => {
   const values = new Set();
@@ -64,6 +65,12 @@ context.applyMeters([]);
 assert.equal(leds[0].classList.contains('on'), false);
 assert.equal(bars[11].style.clipPath, 'inset(100.0% 0 0 0)');
 assert.equal(timers.size, 0);
+context.PROFILE = zenProfile;
+assert.equal(context.outputMeterMappings().length, 6);
+assert.equal(context.outputMeterSupported(0), true);
+assert.equal(context.outputMeterSupported(3), false);
+assert.equal(context.outputMeterMapping(1, 1).payload_offset, '0xdd');
+assert.match(context.outputMeterHTML(2), /data-output-meter-lane="1"/);
 // Syntax-check every inline script, including code outside the tested functions.
 for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
   new vm.Script(match[1]);

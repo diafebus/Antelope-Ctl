@@ -238,6 +238,16 @@ device-specific evidence, not a family-wide assumption.
     with `full_report_base_offset` (or `payload_base_offset`), `count`,
     `stride`, `raw_range`, and `silence_raw`; the WebUI combines it with
     `mixer.surface_selection` and never treats the lanes as physical ownership
+  - `candidate_preamp_meters` — optional provisional per-input mappings when
+    a device has observed preamp-related lanes but no confirmed contiguous
+    physical-input bank. Each entry supplies an `input_index`, `offset` (or
+    `payload_offset`), `raw_range`, `silence_raw`, and `direction`; consumers
+    must preserve its provisional/mixed-signal caveat.
+  - `meter_mappings` — optional additional profile mappings. The WebUI
+    currently recognizes `target: "physical_output"` as stereo output lanes
+    and exposes them as provisional raw meters; `target_index` and `lane`
+    identify the logical bus and channel, while `payload_offset` is relative
+    to `snapshot_payload_offset` unless the profile says otherwise.
 
 For runtime-exposed Orion settings, `params.<name>.runtime_readback` is the
 canonical machine-readable declaration. It names the full-report coordinate
