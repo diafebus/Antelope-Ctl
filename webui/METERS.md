@@ -20,6 +20,18 @@ Offline regression checks: `node tools/test_webui_meters.cjs` and
 `python3 -m unittest tools.test_meter_sources`. A live Launcher comparison
 is still needed to validate the physical bank's scale and thresholds.
 
+## Zen Go profile-driven mixer lanes
+
+Zen Go's confirmed `0x73` state report exposes a shared 16-lane mixer-strip
+bank at full-report offsets **158..173** (payload `0x8e..0x9d`). The active
+surface is selected with `SET_PARAM 0x49`, target 0: `0x0f` for Monitor/HP1
+(Mix 1) and `0x0c` for HP2 (Mix 2), echoed at full-report offset **122**.
+The WebUI reads these values from `state_report.mixer_strip_meters` and
+`mixer.surface_selection`; it does not reuse Orion's target-1/window-offset
+assumptions. Raw 0..96 is inverted for display, with 96 treated as silence.
+This confirms the lane encoding and surface gating, not independent physical
+ownership or a calibrated dBFS curve.
+
 ## 2026-09-09: window selection and shared meter banks
 
 User observation: Mix 1–4 windows reuse meter bytes, changing their source
@@ -38,7 +50,8 @@ has two unnamed positions, values 19 and 20; the profile preserves them as
 unknown rather than guessing. Consumers must associate shared samples with
 selector state and invalidate stale values on switching, rather than show one
 lane as several simultaneously measured buses. The webUI now selects the
-matching mixer-window bank whenever the corresponding Mix tab becomes active.
+matching mixer surface/window bank whenever the corresponding Mix tab becomes
+active.
 
 The corrected `captures/new/auraverb-meters.pcapng` is a USBPcap capture.
 It shows three paired Mix 1 CH1/CH2 AuraVerb-send sweeps and identifies four

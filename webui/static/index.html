@@ -583,7 +583,9 @@
       <p class="hint">Profile-declared nested records from the device's read-only
         <code>0x74/0x75</code> protocol. Safe outer indices are refreshed in the
         background; schema-only layouts stay marked capture-required. Link bytes
-        are shown as observations until an isolated transition capture confirms their polarity.</p>
+        remain observational unless the active profile marks their mapping
+        capture-confirmed; a complete confirmed mixer bitmap may seed its pair
+        buttons.</p>
       <div id="readbacks"></div>
     </div>
   </section>
@@ -688,9 +690,8 @@ function saveEmu() {
 }
 
 // ---- preamp-pair link -------------------------------------------------
-// Persisted per-viewer fallback. Category 0x0b now exposes link-table bytes,
-// but their on/off transition and polarity still need a controlled capture,
-// so this UI does not silently replace the last-commanded state with them.
+// Persisted per-viewer fallback for the physical preamp link domain. Zen Go's
+// mapped q0b/03 table is a mixer-link bitmap, not this preamp state.
 // pair N = channels 2N & 2N+1.
 const LINKS = loadLinks();
 const pairOf    = ch => ch >> 1;
@@ -2656,6 +2657,75 @@ function loadMixLinks() {
 function saveMixLinks() {
   try { localStorage.setItem('mixerLinks', JSON.stringify(MIX_LINKS)); } catch (_) {}
 }
+
+// Profiles may promote a complete nested link-table response into the
+// browser's mixer-pair state. Until that response arrives, localStorage keeps
+// the UI useful across reconnects and for profiles without a link map.
+function mixerLinkReadbackSpec() {
+  const spec = PROFILE?.mixer?.link_readback;
+  if (!spec || !['confirmed', 'capture-confirmed'].includes(
+      String(spec.status || '').trim().toLowerCase())) return null;
+  return spec;
+}
+function mixerSurfaceSelectionSpec() {
+  const spec = PROFILE?.mixer?.surface_selection;
+  if (!spec || !['confirmed', 'capture-confirmed'].includes(
+      String(spec.status || '').trim().toLowerCase())) return null;
+  return spec;
+}
+function recordLinked(record) {
+  return record?.linked === true || Number(record?.linked) !== 0;
+}
+function syncMixerLinksFromReadback(structured) {
+  const spec = mixerLinkReadbackSpec();
+  if (!spec || !Array.isArray(structured?.layouts)) return false;
+  const category = Number(spec.category), index = Number(spec.index);
+  const layout = structured.layouts.find(item =>
+    item && Number(item.category) === category && Number(item.index) === index
+      && item.safe === true);
+  const records = layout?.current?.[String(index)];
+  const expectedCount = Number(spec.record_count);
+  if (!Array.isArray(records) || !Number.isInteger(expectedCount)
+      || expectedCount <= 0 || records.length < expectedCount) return false;
+
+  const ranges = spec.selector_ranges;
+  if (!ranges || typeof ranges !== 'object' || Array.isArray(ranges)) return false;
+  const expectedSelectors = [];
+  const selectorToPair = new Map();
+  for (const [mixKey, bounds] of Object.entries(ranges)) {
+    const mix = Number(mixKey);
+    if (!Number.isInteger(mix) || !Array.isArray(bounds) || bounds.length !== 2) return false;
+    const lo = Number(bounds[0]), hi = Number(bounds[1]);
+    if (!Number.isInteger(lo) || !Number.isInteger(hi) || hi < lo
+        || lo < 0 || hi >= expectedCount) return false;
+    for (let selector = lo; selector <= hi; selector++) {
+      expectedSelectors.push(selector);
+      selectorToPair.set(selector, [mix, selector - lo]);
+    }
+  }
+  if (!expectedSelectors.length) return false;
+
+  const bySelector = new Map();
+  for (const record of records) {
+    const selector = Number(record?.record_index);
+    if (Number.isInteger(selector)) bySelector.set(selector, record);
+  }
+  // Require every returned slot, including reserved bytes, before changing
+  // local state. A partial response must not clear valid cached links.
+  for (let selector = 0; selector < expectedCount; selector++) {
+    if (!bySelector.has(selector)) return false;
+  }
+
+  let changed = false;
+  for (const selector of expectedSelectors) {
+    const [mix, pair] = selectorToPair.get(selector);
+    const key = mixLinkKey(mix, pair), on = recordLinked(bySelector.get(selector));
+    if (!!MIX_LINKS[key] !== on) changed = true;
+    if (on) MIX_LINKS[key] = true; else delete MIX_LINKS[key];
+  }
+  if (changed) { saveMixLinks(); refreshMixLinks(); }
+  return changed;
+}
 function markMixerPending(mix, ch, field, value) {
   MIX_PENDING[mixerPendingKey(mix, ch, field)] = {value, ts: Date.now()};
 }
@@ -2679,6 +2749,11 @@ function commitMixerPan(m, ch, pan, pval, value) {
 
 function applyMixerMeters(meters) {
   MIXER_METERS = meters || null;
+  const rawRange = Array.isArray(meters?.raw_range) && meters.raw_range.length === 2
+    ? meters.raw_range.map(Number) : [0, 96];
+  const rawLo = rawRange[0], rawHi = rawRange[1];
+  const silenceRaw = Number.isFinite(Number(meters?.silence_raw))
+    ? Number(meters.silence_raw) : rawHi;
   document.querySelectorAll('#mixer [data-mix-pane] .mixer-strip').forEach(strip => {
     const pane = strip.closest('[data-mix-pane]');
     const meter = strip.querySelector('[data-mix-meter]');
@@ -2689,11 +2764,15 @@ function applyMixerMeters(meters) {
     const sample = selected && Array.isArray(meters.strips)
       ? meters.strips.find(x => +x.ch === ch) : null;
     const raw = Number.isFinite(sample?.raw) ? sample.raw : null;
-    const valid = raw != null && raw >= 0 && raw <= 96;
-    const silent = sample?.silence === true || raw === 96;
-    const pct = valid && !silent ? (96 - raw) / 96 * 100 : 0;
+    const valid = raw != null && Number.isFinite(raw)
+      && Number.isFinite(rawLo) && Number.isFinite(rawHi)
+      && raw >= Math.min(rawLo, rawHi) && raw <= Math.max(rawLo, rawHi);
+    const silent = sample?.silence === true || raw === silenceRaw;
+    const span = rawHi - rawLo;
+    const pct = valid && !silent && span > 0
+      ? (rawHi - raw) / span * 100 : 0;
     meter.classList.toggle('unavailable', !valid);
-    meter.classList.toggle('peak', valid && raw === 0);
+    meter.classList.toggle('peak', valid && raw === rawLo);
     meter.style.height = pct.toFixed(1) + '%';
     meter.parentElement.title = !valid ? 'Meter unavailable'
       : `Raw ${raw}${silent ? ' · silence' : ' · uncalibrated'}`;
@@ -2705,6 +2784,8 @@ function buildMixer() {
   if (!MIXER.available) return;
   const nMix = Number(MIXER.n_mixes) || 0;
   const selector = PROFILE?.frame?.state_report?.mixer_window_selection;
+  const surfaceSelection = mixerSurfaceSelectionSpec();
+  const hasSurfaceSelection = !!surfaceSelection;
   const hasAuraVerb = UI_FEATURES?.auraverb?.enabled && UI_FEATURES.auraverb.mix === 0;
   const sourceFeature = UI_FEATURES?.mixer_sources?.enabled ? UI_FEATURES.mixer_sources : null;
   const auraVerbButton = hasAuraVerb
@@ -2713,7 +2794,7 @@ function buildMixer() {
   const panes = Array.from({length: nMix}, (_, m) =>
     `<div class="mixer-pane" data-mix-pane="${m}" role="tabpanel" hidden>
        <div class="mixer-pane-hd">
-         <span class="hint">Mix ${m + 1}${selector ? ` meter bank · selector ${m}` : ''}</span>
+         <span class="hint">Mix ${m + 1}${selector || surfaceSelection ? ` meter bank · selector ${m}` : ''}</span>
        </div>
        <div class="mixer-scroll"><div class="mixer-strips" data-strips></div></div>
      </div>`).join('');
@@ -2726,14 +2807,14 @@ function buildMixer() {
     </div>${panes}
     <p class="hint mixer-note">Fader values are attenuation below unity. ${sourceFeature
       ? sourceFeature.note
-      : selector ? 'The thin green meter follows the selected mixer-window bank.'
+      : selector || surfaceSelection ? 'The thin green meter follows the selected mixer surface.'
       : 'Meter mapping is not declared for this profile yet.'}</p>
   </div>`;
   wrap.querySelector('[data-auraverb-open]')?.addEventListener('click', openAuraVerb);
   const activeRoute = $('#routetabs .tabbtn.active')?.dataset.rtab || '';
   const routeMix = /^mix([1-4])$/.exec(activeRoute);
   const initial = routeMix ? +routeMix[1] - 1 : 0;
-  selectMixer(initial, !!routeMix);
+  selectMixer(initial, !!routeMix || hasSurfaceSelection);
 }
 
 function refreshMixLinks() {
@@ -2832,7 +2913,8 @@ function selectMixer(m, notify = true) {
   const pane = document.querySelector(`[data-mix-pane="${m}"]`);
   if (pane) renderMix(pane, m);
   applyMixerMeters(MIXER_METERS);
-  if (notify && PROFILE?.frame?.state_report?.mixer_window_selection)
+  if (notify && (PROFILE?.frame?.state_report?.mixer_window_selection
+                 || mixerSurfaceSelectionSpec()))
     post('/api/mixer-select', {mix: m});
 }
 
@@ -3130,8 +3212,15 @@ function rbLinkBody(layout, entries) {
       + `${rbEscape(outer)}:${record.record_index} ${on ? 'ON' : 'OFF'}</span>`;
   }));
   if (!bits.length) return '<p class="rbempty">Waiting for the first device response.</p>';
+  const linkSpec = mixerLinkReadbackSpec();
+  const authoritative = linkSpec && layout.safe
+    && Number(layout.category) === Number(linkSpec.category)
+    && Number(layout.index) === Number(linkSpec.index);
+  const note = authoritative
+    ? 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.'
+    : 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
   return `<div class="rbvalues">${bits.join('')}</div>`
-    + '<p class="rbnote">ON means the returned byte is non-zero; polarity and transition correlation remain provisional.</p>';
+    + `<p class="rbnote">${note}</p>`;
 }
 
 function rbMicBody(entries) {
@@ -3214,6 +3303,7 @@ async function reloadReadback() {
   [ROUTING, MIXER, AURAVERB, STRUCTURED] = await Promise.all([
     getJSON('/api/routing'), getJSON('/api/mixer'), getJSON('/api/auraverb'),
     getJSON('/api/readbacks')]);
+  syncMixerLinksFromReadback(STRUCTURED);
   renderStructuredReadbacks();
   initAuraVerbPanel();
   const rh = routingHome();

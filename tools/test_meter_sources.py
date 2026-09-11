@@ -56,6 +56,8 @@ class MeterSourceTests(unittest.TestCase):
     def setUpClass(cls):
         path = Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json'
         cls.profile = json.loads(path.read_text())
+        zen_path = Path(__file__).resolve().parents[1] / 'profiles/zen_go_sc.json'
+        cls.zen_profile = json.loads(zen_path.read_text())
         cls.server = load_server_without_web_or_hid_boundaries()
 
     def test_orion_state_bank_preserves_raw_endpoints_without_meter_report_calibration(self):
@@ -132,6 +134,35 @@ class MeterSourceTests(unittest.TestCase):
         self.assertEqual(protocol.raw_to_db(profile, 96, source), -60.0)
         self.assertIn('CLIP', cli._meter_bar(0, profile, source_frame=source))
         self.assertNotIn('CLIP', cli._meter_bar(96, profile, source_frame=source))
+
+    def test_zen_go_surface_selected_mixer_strip_meters(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.zen_profile
+        report = bytearray(320)
+        report[122] = 0x0f              # Monitor / HP1 surface, Mix 1
+        report[158] = 0
+        report[159] = 24
+        report[173] = 96
+
+        meters = device._parse_mixer_meters(report)
+        self.assertEqual(meters['mix'], 0)
+        self.assertEqual(meters['selector'], 0x0f)
+        self.assertEqual(meters['raw_range'], [0, 96])
+        self.assertEqual(len(meters['strips']), 16)
+        self.assertEqual(meters['strips'][0], {'ch': 0, 'raw': 0, 'silence': False})
+        self.assertEqual(meters['strips'][1], {'ch': 1, 'raw': 24, 'silence': False})
+        self.assertEqual(meters['strips'][-1], {'ch': 15, 'raw': 96, 'silence': True})
+
+        report[122] = 0x0c              # HP2 surface, Mix 2
+        self.assertEqual(device._parse_mixer_meters(report)['mix'], 1)
+
+    def test_zen_go_surface_selector_uses_profile_command(self):
+        packet, value, target = self.server._mixer_surface_packet(self.zen_profile, 1)
+        self.assertEqual((value, target), (0x0c, 0))
+        self.assertEqual(packet[0], 0x70)
+        self.assertEqual(packet[4], 0x13)
+        self.assertEqual(packet[16:19], bytes((0x49, 0, 0x0c)))
+        self.assertIsNone(self.server._mixer_surface_packet(self.zen_profile, 2))
 
 
 if __name__ == '__main__':

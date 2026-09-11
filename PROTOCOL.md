@@ -1848,10 +1848,10 @@ routing). **Divergences from Orion:**
 | meter report magic | `0x75` | **`0x83`** |
 | in-band readback (§4a) | `0x74` req / `0x75`@1=`0x00` resp | **same, byte-identical** (re-checked 2026-09-01) |
 | ~~"connect name report"~~ | — | ~~`0x75` = ASCII name/serial/fw~~ **corrected: that IS a readback response, category `0x01`** -- the same category that carries name+serial on the Orion. It only looked device-specific because the Orion's `0x75` responses were being filtered as meter noise. |
-| readback connect walk | 113 records / 10 categories | **3 queries only** -- cat `0x00`, `0x01`, `0x11`, all index 0. Complete category counts are still unknown; only the explicitly capture-confirmed feature layouts (routing `0x03` indices 3, 5, 6-9 and mixer `0x04` indices 0-1) are safe to use (§4a hazard) |
+| readback connect walk | 113 records / 10 categories | **3 queries only** -- cat `0x00`, `0x01`, `0x11`, all index 0. Complete category counts are still unknown; only the explicitly capture-confirmed feature layouts (routing `0x03` indices 3, 5, 6-9, mixer `0x04` indices 0-1, and mixer-link bitmap `0x0b` index 3) are safe to use (§4a hazard) |
 | mixer frame | opcode `0x17`, subcmd `0x05`, has a **send** byte @22 | opcode **`0x16`**, subcmd **`0x04`**, **no send** byte |
 | mixes / strips | 4 mixes × 32 | 2 mixes × 16 |
-| mixer link selector | logical pair in the selected mix (Mix 1 wire mapping captured) | **Mix 1 pair `0..7`; Mix 2 pair `0..7` uses wire selectors `0x10..0x17`** |
+| mixer link selector | logical pair in the selected mix (Mix 1 wire mapping captured) | **Mix 1 pair `0..7`; Mix 2 pair `0..7` uses wire selectors `0x10..0x17`**; complete state is returned by q0b/03 |
 | preamps | 12 | 2 (A1 = ch0, A2 = ch1) |
 | gain array offset | `0x73` @49 | `0x73` **@40** |
 | status array offset | `0x73` @61 | `0x73` **@42** |
@@ -1873,7 +1873,19 @@ in lockstep -- the mixer's *global* strip-input assignment (per-mix
 level/pan/mute stays independent); **5** is a separate 4-slot map (strips
 1-4 only); **3** an 8-slot map mirroring the first 8 of 6-9.
 
-Still open: source bank `0x03`; the exact role of dest groups 3 and 5;
-the DSP/mic-modelling frames; the meter byte-map; the two output-volume
-paths; `param 0x66` (bus dim/mono?); `param 0x49` (set to 12/15 during
-mixer use). See `open_questions` in the profile.
+The current profile-driven WebUI contract also uses the capture-confirmed
+parts of this map: routing destinations 6-9 are read-modify-written in
+lockstep; q04 indices 0/1 provide the two 16-strip mixer states; and
+`SET_PARAM(0x49, target 0, value 0x0f/0x0c)` selects the Monitor/HP1 or HP2
+surface. The selected surface gates the shared `0x73` mixer-strip lanes at
+full-report offsets **158..173** (payload `0x8e..0x9d`), with raw 96 as
+silence. q0b/03 returns a capture-confirmed 24-byte selector bitmap;
+selectors 0..7 map to Mix 1 pairs 0..7 and 16..23 map to Mix 2 pairs 0..7.
+The UI waits for the complete bitmap before seeding its cached link buttons.
+
+Still open: source bank `0x03`; the exact role of dest groups 3 and 5; the
+DSP/mic-modelling frames; physical-input meter ownership and calibration; the
+two output-volume paths; `param 0x66` (bus dim/mono?); the complete Zen Go
+readback category bounds; and the q03 body-variant discriminator. Live
+round-trip of the capture-confirmed Zen Go maps still needs hardware testing.
+See `open_questions` in the profile.

@@ -38,13 +38,13 @@ compatibility.
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
     input strips additionally expose the Gazelle Reverb send; Mix 2-4 and all
     master strips deliberately do not. Selecting a Mix tab automatically
-    selects its matching mixer meter bank; multiple Solo buttons may be
+    selects its matching mixer surface/meter bank; multiple Solo buttons may be
     stacked and the original mute/solo state is restored when the last Solo
     is released;
   - a **Protocol readback** diagnostics section renders profile-declared link
     tables, mic-emulation state, AFX instance counts, and AFX strip order. It
-    keeps link values explicitly observational until a controlled transition
-    capture confirms their semantics;
+    seeds mixer-pair link state from a complete profile-confirmed bitmap when
+    one is available, while keeping other link values observational;
   - device-specific panels are selected by the presentation registry in
     `webui/device_ui.py`: Zen Go shows its input-source selectors, while any
     profile with a complete confirmed Gazelle Reverb (AuraVerb protocol)
@@ -57,13 +57,15 @@ compatibility.
   Channel count, modes, gain limits, Hi-Z channels, digital inputs and mixer
   ranges come from the active profile. The daemon autodetects the connected
   VID/PID and exposes only capabilities with safe, profile-declared readback.
-  Zen Go renders its two capture-confirmed mixer layouts while routing remains
-  hidden until its own readback map is confirmed. The mixer fader artwork is
-  served from `/webui/assets/fader-shadow.svg`.
+  Zen Go renders its two capture-confirmed mixer layouts and profile-bounded
+  routing/source controls. Its 16 strip meters use the profile's
+  surface-gated `0x73` lanes, and its complete q0b/03 link bitmap can seed the
+  visible mixer-pair state. The mixer fader artwork is served from
+  `/webui/assets/fader-shadow.svg`.
 
-  The Zen Go source selectors are intentionally read-only for now. Its route
-  command rewrites a whole group and the safe routing readback is still
-  unconfirmed, so the WebUI will not guess the other strip assignments. See
+  The Zen Go source selectors are writable because the profile marks routing
+  indices 6-9 as capture-confirmed; each change reads all four mirrored
+  records, updates one slot, and writes the complete groups back. See
   `webui/DEVICE_UI.md` for the presentation-layer feature split.
 
 ## What it deliberately does NOT do

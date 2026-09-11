@@ -27,9 +27,10 @@ evidence.
   strings. Be consistent within a file.
 - **Byte offsets are 0-indexed into the 320-byte HID report**, both
   directions.
-- **`status`** on any block: `"confirmed"` / `"observed"` (seen in a
-  capture, not decoded) / `"unconfirmed"` / free text. Anything not
-  `confirmed` must not be relied on by a normal CLI command.
+- **`status`** on any block: `"confirmed"` / `"capture-confirmed"` /
+  `"observed"` (seen in a capture, not decoded) / `"unconfirmed"` / free
+  text. Normal automation may rely on `confirmed` and
+  `capture-confirmed`; other statuses are descriptive only.
 - **`evidence`** / **`notes`**: free text. `evidence` names the capture
   and what it showed; `notes` is everything else. Keep the capture name
   in `evidence` so a claim can be re-checked.
@@ -50,7 +51,7 @@ evidence.
 | `params` | yes | catalogue of settable parameters |
 | `buses` | if the device has output buses | output-bus address space + names |
 | `adat`, `spdif` | if present on the device | extra input address spaces |
-| `mixer` | if decoded | virtual-mixer summary (human-facing; the frame is in `frame.mix_command`). `has_master` defaults to true; set false for devices whose channel space starts at 0 with no master strip. |
+| `mixer` | if decoded | virtual-mixer summary (human-facing; the frame is in `frame.mix_command`), plus optional profile-driven surface/link metadata. `has_master` defaults to true; set false for devices whose channel space starts at 0 with no master strip. |
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
@@ -185,6 +186,33 @@ declare `mixer.link_pair_index.mix_stride`; `protocol.mixer_link_pair_index`
 then translates the logical pair into the wire selector. For example, Zen Go
 uses a stride of 16, so logical pair 0 is wire pair 0 on Mix 1 and 16 on Mix 2.
 
+The shared WebUI can use two optional mixer metadata blocks when their status
+is `confirmed` or `capture-confirmed`:
+
+```json
+"mixer": {
+  "surface_selection": {
+    "status": "capture-confirmed",
+    "param": "param_0x49",
+    "target": 0,
+    "value_by_mix": {"0": "0x0f", "1": "0x0c"},
+    "state_byte_offset": 122
+  },
+  "link_readback": {
+    "status": "capture-confirmed",
+    "category": "0x0b", "index": 3,
+    "record_count": 24,
+    "selector_ranges": {"0": [0, 7], "1": [16, 23]}
+  }
+}
+```
+
+`surface_selection` lets the WebUI select the profile's logical mixer
+surface before displaying selector-gated meters. `link_readback` identifies a
+complete nested bitmap that may replace cached `(mix, pair)` link state; the
+WebUI waits for every declared record before doing so. These blocks describe
+device-specific evidence, not a family-wide assumption.
+
 ### Incoming report maps (device → host)
 
 - **`state_report`** (`magic 0x73` in this family) — the poll readback.
@@ -204,6 +232,12 @@ uses a stride of 16, so logical pair 0 is wire pair 0 on Mix 1 and 16 on Mix 2.
     Complements the 0-6 `sample_rate_byte_offset` enum
   - `bus_block_offset` + `bus_block_stride` — bus state array
     (`28 + 3N` on Orion, `28 + 2N` on Zen Go)
+  - `snapshot_payload_offset` — optional base added to payload-relative
+    offsets when the report includes a fixed header (Zen Go: `0x10`)
+  - `mixer_strip_meters` — optional profile-confirmed shared mixer meter map
+    with `full_report_base_offset` (or `payload_base_offset`), `count`,
+    `stride`, `raw_range`, and `silence_raw`; the WebUI combines it with
+    `mixer.surface_selection` and never treats the lanes as physical ownership
 
 For runtime-exposed Orion settings, `params.<name>.runtime_readback` is the
 canonical machine-readable declaration. It names the full-report coordinate

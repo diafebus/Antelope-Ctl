@@ -30,7 +30,10 @@ Zen Go currently has no `frame.auraverb_command` or confirmed AuraVerb
 readback layout. Its profile's `0x0a` entries are only observed query attempts,
 not a decoded state record, so Gazelle Reverb stays hidden there until the Zen
 Go profile is filled from device evidence. Orion's `0x1d/0xda` mapping is not
-safe to reuse for Zen Go.
+safe to reuse for Zen Go. The shared WebUI does use Zen Go's independently
+confirmed surface selector, 16-lane mixer meter bank, and q0b/03 mixer-link
+bitmap; it only replaces cached link state after receiving the complete 24-byte
+response.
 
 Adding a device-specific panel should add a registry entry and a capability
 check, without changing the shared Orion mixer markup or copying protocol

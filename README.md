@@ -18,6 +18,7 @@ used; the device firmware is not touched.
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
+| **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the AFX / Synergy Core plugin boundary — what this repo does and doesn't touch, and why (the plugin *parameter* layer is off-repo pending an IP-lawyer review) |
@@ -130,7 +131,7 @@ request you agree to license your contribution that way.
 ```
 profiles/orion_studio_sc.json   <- single source of truth for the Orion Studio Synergy Core protocol
 profiles/discrete_8_pro_sc.json  <- sibling device (peer-contributed)
-profiles/zen_go_sc.json        <- sibling device (Zen Go Synergy Core), first-pass profile
+profiles/zen_go_sc.json        <- sibling device (Zen Go Synergy Core), profile-driven first pass
 profiles/discrete_4_sc.json      <- sibling device, STUB (status: UNCONFIRMED -- transport never captured)
 profiles/discrete_4_pro_sc.json  <- sibling device, STUB (status: UNCONFIRMED -- transport never captured)
 profiles/mic_models.json       <- account-bound mic-modelling ("emuMic") model catalogue
@@ -625,12 +626,20 @@ mostly is -- see `"frame"` in the JSON).
 |---|---|---|---|
 | `orion_studio_sc.json` | Orion Studio Synergy Core | `0xa221` | reference; most complete |
 | `discrete_8_pro_sc.json` | Discrete 8 Pro | `0xa2b5` | peer-contributed |
-| `zen_go_sc.json` | Zen Go Synergy Core | `0xa015` | first pass (2026-08-31) from USBPcap captures -- preamps / buses / sample rate / clock / mixer / routing-shape decoded; DSP, mic-modelling, full routing map, and the meter byte-map still open (see `open_questions` in the file) |
+| `zen_go_sc.json` | Zen Go Synergy Core | `0xa015` | first pass from USBPcap/TUI evidence -- preamps / buses / sample rate / clock, two mixer layouts, q03 mixer-input mirrors, q0b/03 mixer links, and selector-gated mixer-strip lanes are mapped; DSP, mic-modelling, complete category bounds, physical meter ownership/calibration, and some routing roles remain open (see `open_questions` in the file) |
 
 The family shares `magic 0x70` command / opcode @4 / param_id @16 /
 320-byte reports / HID interface 3 (EP `0x01` OUT, `0x82` IN) and most
 param IDs. It does **not** share report magics, the mixer frame shape, or
 source-bank numbers -- verify each against a capture, don't inherit.
+
+The shared WebUI consumes those profile differences without copying Zen Go
+values into the Orion path. For Zen Go, the profile-confirmed source controls
+use the four mirrored routing records (destinations 6-9), the two mixer
+readback layouts expose 16 strips with no master/send, `0x49` selects the
+Monitor/HP1 or HP2 surface for the shared 16-lane meter bank, and a complete
+q0b/03 bitmap can seed the visible mixer-pair links. These mappings remain
+device-specific evidence; they are not defaults for other Antelope products.
 
 ## What's still unconfirmed
 

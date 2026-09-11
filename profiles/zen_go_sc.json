@@ -1,5 +1,5 @@
 {
-  "_comment": "Antelope Zen Go Synergy Core -- reverse-engineered from USBPcap captures (Windows, VM) in sidejob/zen_go_synergy_core-filtered/ (2026-08-31). SAME HID vendor protocol family as Orion Studio III (profiles/orion_studio_sc.json) and Discrete 8 Pro: magic 0x70 command, opcode @4, param_id @16, 320-byte reports on the same endpoints. Param IDs are largely shared with Orion; report magics and some frame shapes DIFFER (meter is 0x83 not 0x75; the mixer frame is opcode 0x16 / subcmd 0x04 with no send byte). Everything here is from observed traffic on hardware the capture owner controls. Fields carry status + evidence; anything marked 'observed' is not yet decoded.",
+  "_comment": "Antelope Zen Go Synergy Core -- reverse-engineered from USBPcap captures (Windows, VM) in sidejob/zen_go_synergy_core-filtered/ (2026-08-31), cross-checked against the zen-go-tui protocol audit and fixtures. SAME HID vendor protocol family as Orion Studio III (profiles/orion_studio_sc.json) and Discrete 8 Pro: magic 0x70 command, opcode @4, param_id @16, 320-byte reports on the same endpoints. Param IDs are largely shared with Orion; report magics and some frame shapes DIFFER (meter is 0x83 not 0x75; the mixer frame is opcode 0x16 / subcmd 0x04 with no send byte). Everything here is from observed traffic on hardware the capture owner controls. Fields carry status + evidence; anything marked 'observed' is not yet decoded. The official Antelope schema is intentionally not overlaid where it conflicts with this capture-derived Zen Go dialect.",
 
   "device": {
     "name": "Antelope Zen Go Synergy Core",
@@ -55,8 +55,8 @@
       "pair_index_offset": 18,
       "enabled_offset": 19,
       "space_values": { "0": "physical preamp", "3": "mixer strip pair" },
-      "status": "confirmed (frame shape); space semantics partial",
-      "notes": "Same shape as Orion: 0xa2 @16, space @17, pair_index @18, enabled @19. Space 3 (mixer) uses a logical pair index within each 16-channel mix, but reserves 16 wire selectors per mix: Mix 1 pair 0 is wire pair 0 and Mix 2 pair 0 is wire pair 16. The isolated mixer-link captures show Mix 1 pairs 0-7 and Mix 2 pairs 16-23. Space 0 (physical preamp link) is assumed by analogy with Orion; not isolated here.",
+      "status": "capture-confirmed for mixer space 3; physical-preamp space partial",
+      "notes": "Same shape as Orion: 0xa2 @16, space @17, pair_index @18, enabled @19. Space 3 (mixer) uses a logical pair index within each 16-channel mix, but reserves 16 wire selectors per mix: Mix 1 pair 0 is wire pair 0 and Mix 2 pair 0 is wire pair 16. The isolated mixer-link captures show Mix 1 selectors 0-7 and Mix 2 selectors 16-23. The durable a2 03 write is the link state setter; a2 04 companion writes were seen only for the first two pairs (wire banks 0 and 1). Space 0 (physical preamp link) is assumed by analogy with Orion; not isolated here.",
       "evidence": "capture_dsp / mixer_links/*: op 0x14 param 0xa2 [17]=3, [18] cycling pair indices, [19]=1. mixer_links/mix1_ch1_ch2_linked.pcapng also flips state_report offset 127."
     },
 
@@ -149,22 +149,87 @@
     },
 
     "state_report": {
+      "snapshot_payload_offset": "0x10",
+      "offset_convention": {
+        "scalar_offsets": "full_report",
+        "payload_offsets": "snapshot_payload_relative",
+        "notes": "Scalar state offsets below index the full 320-byte 0x73 frame. candidate_preamp_meters.offset and meter_mappings.payload_offset index the 0x73 snapshot payload after the 0x10-byte frame header. The two coordinate systems describe the same bytes; do not subtract 0x10 from the existing scalar offsets."
+      },
+      "output_state": {
+        "payload_base_offset": "0x0c",
+        "full_report_base_offset": 28,
+        "bytes_per_output": 2,
+        "volume_byte_offset": 0,
+        "mode_byte_offset": 1,
+        "targets": {
+          "0": { "name": "Monitor", "verified": true },
+          "1": { "name": "HP1", "verified": true },
+          "2": { "name": "HP2", "verified": true }
+        },
+        "mode_values": { "normal": 0, "mute": 1, "dim": 2 },
+        "mode_encoding": "exclusive observed enum; no capture combines mute and dim",
+        "mode_update_horizon_snapshots": 8,
+        "status": "capture-confirmed",
+        "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: the isolated output controls identify payload 0x0c/0x0e/0x10 as Monitor/HP1/HP2 levels and payload 0x0d/0x0f/0x11 as their mode bytes."
+      },
+      "preamp_cluster": {
+        "payload_base_offset": "0x18",
+        "full_report_base_offset": 40,
+        "fields": {
+          "input_0_gain": { "payload_offset": "0x18", "full_report_offset": 40 },
+          "input_1_gain": { "payload_offset": "0x19", "full_report_offset": 41 },
+          "input_0_status": { "payload_offset": "0x1a", "full_report_offset": 42 },
+          "input_1_status": { "payload_offset": "0x1b", "full_report_offset": 43 }
+        },
+        "status_bits": {
+          "input_mode": { "mask": "0x03", "shift": 0 },
+          "phantom": { "mask": "0x10", "shift": 4 },
+          "phase_invert": { "mask": "0x40", "shift": 6 }
+        },
+        "status": "capture-confirmed",
+        "notes": "The active gain byte follows the selected input mode. Settled mode-switch captures preserve separate stored gains per input and mode; a flat gain field is therefore an active-mode view, not the complete stored-gain matrix.",
+        "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md and preamp-protocol.md: the four-byte cluster is isolated at payload 0x18..0x1b, with mode/phantom/phase flags in the status bytes."
+      },
+      "surface_selector": {
+        "payload_offset": "0x6a",
+        "full_report_offset": 122,
+        "values": { "0x0f": "Monitor/HP1", "0x0c": "HP2" },
+        "status": "capture-confirmed",
+        "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: SET_PARAM 0x49 writes 0x0f/0x0c select the front-panel mixer surface, and snapshot payload 0x6a follows the selection."
+      },
+      "mixer_strip_meters": {
+        "payload_base_offset": "0x8e",
+        "full_report_base_offset": 158,
+        "count": 16,
+        "stride": 1,
+        "channel_index": "strip_number - 1",
+        "raw_range": [0, 96],
+        "silence_raw": 96,
+        "direction": "inverted",
+        "status": "capture-confirmed",
+        "notes": "Shared dynamic mixer-strip lanes confirmed by isolated ch1..ch16 captures. These lanes are indexed by mixer strip, not owned by physical inputs or physical outputs; no exact dB calibration is claimed.",
+        "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: payload 0x8e..0x9d maps CHN to lane N-1; idle raw 0x60 is the no-signal end of the inverted scale."
+      },
       "candidate_preamp_meters": [
         {
           "input_index": 0,
           "offset": "0xce",
+          "offset_basis": "snapshot_payload",
           "status": "observed",
           "confidence": "provisional",
           "caveat": "mixed-signal candidate",
-          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]]
+          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]],
+          "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: candidate preamp lanes at payload 0xce/0xcf are accepted only as mixed-signal provisional fields."
         },
         {
           "input_index": 1,
           "offset": "0xcf",
+          "offset_basis": "snapshot_payload",
           "status": "observed",
           "confidence": "provisional",
           "caveat": "mixed-signal candidate",
-          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]]
+          "raw_value_ranges": [["0x01", "0x49"], ["0x52", "0x52"]],
+          "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: candidate preamp lanes at payload 0xce/0xcf are accepted only as mixed-signal provisional fields."
         }
       ],
       "meter_mappings": [
@@ -187,15 +252,15 @@
         "bytes_per_bus": 2,
         "level_byte_offset": 0,
         "status_byte_offset": 1,
-        "status_bits": {
-          "mute": { "mask": "0x04", "shift": 2 },
-          "dim": { "mask": "0x08", "shift": 3 }
-        },
+        "status_bits": {},
+        "status_bits_note": "No independent mute/dim masks are claimed for this capture dialect; status_values is authoritative and the enum values are exclusive in the isolated captures.",
         "status_values": {
           "normal": 0,
           "mute": 1,
           "dim": 2
         },
+        "status_encoding": "exclusive observed enum; do not combine codes",
+        "mode_update_horizon_snapshots": 8,
         "notes": "Zen Go uses the same two-byte-per-bus state layout as its legacy flat fields above. The status byte is an enum, not independent Orion-style bit flags: 0 = normal, 1 = mute, 2 = dim. Mono has no confirmed state-report value yet."
       },
       "status_bits": {
@@ -203,8 +268,8 @@
         "phantom": { "mask": "0x10", "shift": 4 },
         "phase_invert": { "mask": "0x40", "shift": 6 }
       },
-      "status": "confirmed for gain / mode / phantom / sample_rate / clock / bus; other offsets unmapped",
-      "notes": "Continuous state report, ~4 ms. Header: [4-5] = 0x0140 (report size). Confirmed readback fields: [18] = sample-rate index (0-6, tracks the SET value ~immediately); [19] = clock-source index (0-2); [40] + channel = preamp gain (2 channels, A1 @40, A2 @41), same 'raw = dB-ish' scale as Orion, mode-dependent range (mic 0-65, line small, Hi-Z ~0-45); [42] + channel = preamp status byte (input_mode bits 0-1, phantom bit 0x10, phase bit 0x40 -- masks carried from Orion, phantom + mode confirmed here, phase not isolated); [28] + 2*bus = bus block (byte 0 = level 0-96, byte 1 = output mode enum: 0 normal, 1 mute, 2 dim). [17]/[19] also show a ~3 s connect blip like Orion (17: 0x08->0x00) -- but [19] is ALSO the clock source, so only the [17] change is pure noise. Offsets ~90/122/126/127 move on mixer-link / param-0x49 writes (undecoded). Offsets ~150-260 = free-running meter jitter (resting ~0x60). [21-24] carry a sample-rate-derived clock word (moves with rate, like Orion @21-23)."
+      "status": "confirmed for gain / mode / phantom / phase / sample_rate / clock / bus; other offsets unmapped",
+      "notes": "Continuous state report, ~4 ms. Header: [4-5] = 0x0140 (report size). Confirmed readback fields: [18] = sample-rate index (0-6, tracks the SET value ~immediately); [19] = clock-source index (0-2); [40] + channel = active-mode preamp gain (2 channels, A1 @40, A2 @41), same 'raw = dB-ish' scale as Orion, mode-dependent range (mic 0-65, line small, Hi-Z ~0-45); [42] + channel = preamp status byte (input_mode bits 0-1, phantom bit 0x10, phase bit 0x40); [28] + 2*bus = bus block (byte 0 = level 0-96, byte 1 = exclusive output mode enum: 0 normal, 1 mute, 2 dim). Payload 0x0c/0x18/0x6a/0x8e are documented above with their full-report equivalents. [17]/[19] also show a ~3 s connect blip like Orion (17: 0x08->0x00) -- but [19] is ALSO the clock source, so only the [17] change is pure noise. Offsets ~90/126/127 move on mixer-link writes or other mixer state; offset 122 is the confirmed 0x49 surface selector. The 16 mixer-strip meter lanes at payload 0x8e..0x9d are dynamic and rest near 0x60 when idle; the 0xce/0xcf preamp lanes remain provisional mixed-signal candidates. [21-24] carry a sample-rate-derived clock word (moves with rate, like Orion @21-23)."
     },
 
     "meter_report": {
@@ -232,10 +297,14 @@
       "categories": {
         "0x00": "device id / firmware -- 2 bytes, observed `01 5a`. Orion's 0x00 is an ASCII firmware string ('4.41'); the Zen Go's is binary and NOT yet decoded (0x5a = 90; do not assume a version until confirmed).",
         "0x01": "device name + serial + firmware revision -- 48 bytes, ASCII 'Zen Go Synergy C...' then the unit SERIAL then the fw rev. CONTAINS THE DEVICE SERIAL: never paste a raw dump of this category into the repo, an issue, or a capture that gets committed.",
-        "0x11": "1 byte, observed `02`. Orion's 0x11 is 'S/PDIF + a capability bitmask'; the Zen Go has S/PDIF, so `02` is plausibly a channel/capability count -- UNCONFIRMED, do not rely on it."
+        "0x03": "routing / mixer-input assignment readback. This profile's capture-confirmed routing layouts cover indices 3, 5, and 6-9; body variants are documented in capture_dialect_variants below.",
+        "0x04": "mixer surface state. Indices 0 and 1 each return 16 two-byte strip records (fader level plus pan/mute/solo flags) in the capture dialect used by the profile.",
+        "0x0b": "mixer-link selector state. The capture-confirmed index 3 response is a 24-byte bitmap: byte N is nonzero when wire selector N is linked; selectors 0-7 belong to Mix 1 and 16-23 to Mix 2.",
+        "0x11": "1 byte, observed `02`. Orion's 0x11 is 'S/PDIF + a capability bitmask'; the Zen Go has S/PDIF, so `02` is plausibly a channel/capability count -- UNCONFIRMED, do not rely on it.",
+        "0x18": "observed dual-surface mixer records at index 0. Only the solo field is declared by the profile; the remaining bytes and exact role are not decoded."
       },
       "observed_walk": "The Zen Go Launcher's connect walk is TINY compared to the Orion's: only 3 queries, categories 0x00 / 0x01 / 0x11, each at index 0 (identical in capture_01_enumeration.pcapng and capture_01_enumeration_diff_filter.pcapng). The Orion walks 113 records across 10 categories. So this capture gives us NO record counts for any category.",
-      "hazard": "!! COMPLETE CATEGORY COUNTS ARE NOT KNOWN FOR THIS DEVICE. !! On the Orion, an out-of-range readback index crashes the firmware outright (Cortex-M BusFault, physical power cycle required -- see orion_studio_sc.json frame.readback.hazard). The Zen Go is the same protocol family and must be assumed to share the flaw. Its connect walk queries only index 0 of three categories, so `category_counts` remains EMPTY. The WebUI may use only the explicitly capture-confirmed feature layouts (routing cat 0x03 indices 3, 5, 6-9; mixer cat 0x04 indices 0-1); all other indices remain blocked until bounded by device evidence.",
+      "hazard": "!! COMPLETE CATEGORY COUNTS ARE NOT KNOWN FOR THIS DEVICE. !! On the Orion, an out-of-range readback index crashes the firmware outright (Cortex-M BusFault, physical power cycle required -- see orion_studio_sc.json frame.readback.hazard). The Zen Go is the same protocol family and must be assumed to share the flaw. Its connect walk queries only index 0 of three categories, so `category_counts` remains EMPTY. The WebUI may use only the explicitly capture-confirmed feature layouts (routing cat 0x03 indices 3, 5, 6-9; mixer cat 0x04 indices 0-1; link bitmap cat 0x0b index 3); all other indices remain blocked until bounded by device evidence.",
       "identity": {
         "_comment": "LAYOUT ONLY -- the serial VALUE is never stored in this repo. It is read from the hardware on request (CLI `identity --serial`). Same record shape on the Orion Studio III and the Zen Go Synergy Core, so it is probably family-wide.",
         "category": "0x01",
@@ -373,6 +442,17 @@
           "status": "capture-confirmed"
         },
         {
+          "category": "0x0b",
+          "index": 3,
+          "kind": "link_table",
+          "body_size": 24,
+          "record_count": 24,
+          "record_stride": 1,
+          "value_offset": 0,
+          "status": "capture-confirmed",
+          "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: isolated mixer-link captures query 0x0b/0x03 and return one byte per selector; a nonzero byte means linked."
+        },
+        {
           "category": "0x18",
           "index": 0,
           "kind": "observed_mixer_records",
@@ -386,9 +466,28 @@
           "status": "observed"
         }
       ],
-      "category_counts_note": "Deliberately empty -- see .hazard. Fill this in ONLY from the device's own connect enumeration, never by probing and never by copying the Orion's counts (different device, different record arrays). The routing feature uses only the explicit capture-confirmed layouts above; it does not treat the six observed routing records as a complete category bound.",
-      "cli": "Works with the shared code: protocol.build_readback_query / is_readback_response / readback_body; CLI `readback <cat> [idx]`. Routing cat 0x03 indices 3, 5, and 6-9 are capture-confirmed and safely mapped. parse_routing_record uses the profile destination channel counts; parse_mixer_record uses the capture-confirmed Zen Go mixer_state layout for cat 0x04 indices 0 and 1.",
-      "still_unknown": "The exact roles of routing destinations 3 and 5, and the complete Zen Go category-0x03 record count, remain unknown. Destinations 6-9 are confirmed as one logical 32-slot mixer input map and are written in lockstep. The mixer category 0x04 layout for indices 0 and 1 is capture-confirmed; live control round-trip still needs hardware verification."
+      "record_layouts": [
+        {
+          "kind": "link_table",
+          "category": "0x0b",
+          "index": 3,
+          "name": "Zen Go mixer selector links",
+          "record_count": 24,
+          "record_stride": 1,
+          "fields": [{ "name": "linked", "offset": 0, "type": "bool" }],
+          "status": "capture-confirmed",
+          "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md: q0b/03 is a 24-byte selector bitmap; byte N is asserted/nonzero when selector N is linked."
+        }
+      ],
+      "capture_dialect_variants": {
+        "zen_go_assignment_readback": {
+          "status": "capture-confirmed",
+          "notes": "The TUI audit also records q03 assignment replies with body[0] as a sub-id: q03/05 is a 9-byte body containing four pairs, while q03/06..09 are 33-byte bodies containing an eight-byte early-bank prefix followed by twelve pairs. This is an alternate capture-dialect shape, not a replacement for this profile's 17/65-byte routing layouts. Do not merge the variants without a response discriminator or fixture; the shared parser currently uses the capture-confirmed routing layouts above."
+        }
+      },
+      "category_counts_note": "Deliberately empty -- see .hazard. Fill this in ONLY from the device's own connect enumeration, never by probing and never by copying the Orion's counts (different device, different record arrays). The routing feature uses only the explicit capture-confirmed layouts above; it does not treat the six observed routing records as a complete category bound. The q0b/03 link bitmap is a bounded feature layout, not proof of the category's complete record count.",
+      "cli": "Works with the shared code: protocol.build_readback_query / is_readback_response / readback_body; CLI `readback <cat> [idx]`. Routing cat 0x03 indices 3, 5, and 6-9 are capture-confirmed and safely mapped. parse_routing_record uses the profile destination channel counts; parse_mixer_record uses the capture-confirmed Zen Go mixer_state layout for cat 0x04 indices 0 and 1; the generic record decoder exposes the q0b/03 mixer link bitmap.",
+      "still_unknown": "The exact roles of routing destinations 3 and 5, the complete Zen Go category-0x03 record count, and the discriminator needed to select the alternate q03 assignment body variant remain unknown. Destinations 6-9 are confirmed as one logical 32-slot mixer input map and are written in lockstep. The mixer category 0x04 layouts for indices 0 and 1 and the q0b/03 link bitmap are capture-confirmed; live control round-trip still needs hardware verification."
     }
   },
 
@@ -399,7 +498,7 @@
     "modes": { "0": "mic", "1": "line", "2": "hiz" },
     "hiz_channels": [0, 1],
     "status": "confirmed",
-    "notes": "2 combo preamps. input_mode via param 0x4f (0 mic / 1 line / 2 hiz). Gain range is mode-dependent (param 0x50): mic 0-65, line a narrow range around raw 0x13, Hi-Z ~0-45 -- exact bounds not swept to the rail. Phantom = 0x51, phase_invert = 0x52. Readback: gain @40+ch, status @42+ch.",
+    "notes": "2 combo preamps. input_mode via param 0x4f (0 mic / 1 line / 2 hiz). Gain range is mode-dependent (param 0x50): mic 0-65, line approximately -6..20, Hi-Z ~0-45 -- exact rails were not always swept. Captures show separate stored gains per input/mode; readback gain @40+ch is the active mode's value. Phantom = 0x51, phase_invert = 0x52. Readback status @42+ch.",
     "link_pairs": { "count": 1, "formula": "pair_index = channel_index // 2", "confirmed_pair_indices": [] }
   },
 
@@ -411,7 +510,7 @@
       "1": { "name": "HP1", "verified": true },
       "2": { "name": "HP2", "verified": true }
     },
-    "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = output mode enum (0 normal, 1 mute, 2 dim).",
+    "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = exclusive output mode enum (0 normal, 1 mute, 2 dim). Isolated captures did not establish a combined mute+dim encoding.",
     "status": "confirmed",
     "evidence": "capture_11_output_controls_once_change_at_a_time.pcapng: isolated Monitor / HP1 / HP2 controls emitted op 0x13 param 0x47 (level 0-96) / 0x48 (mute 0/1) / 0x66 (0/1) with target ids 0/1/2; state_report offsets 28-33 tracked."
   },
@@ -421,6 +520,15 @@
     "names": ["MIX 1 / Monitor-HP1", "MIX 2 / HP2"],
     "channels_per_mix": 16,
     "has_master": false,
+    "surface_selection": {
+      "status": "capture-confirmed",
+      "param": "param_0x49",
+      "target": 0,
+      "value_by_mix": { "0": "0x0f", "1": "0x0c" },
+      "state_byte_offset": 122,
+      "notes": "The front-panel surface selector is shared by the mixer tabs: Monitor/HP1 uses 0x0f and HP2 uses 0x0c. This is a UI selection command, not a routing or mixer-strip write.",
+      "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md surface-selection captures."
+    },
     "fader": { "param": "mix_command byte 20", "range": [0, 90], "min": 0, "max": 90, "direction": "attenuation", "unity": 0, "encoding": "raw = dB attenuation below unity: 0 = 0 dB, 90 = -90 dB" },
     "pan": { "param": "mix_command byte 21 low 6 bits", "center": 32, "range_deg": [-30, 30] },
     "mute_bit": "0x40 of mix_command byte 21",
@@ -429,8 +537,20 @@
     "link_pair_index": {
       "mix_stride": 16,
       "status": "capture-confirmed",
-      "notes": "The logical pair index is channel // 2 within each 16-channel mix. The wire selector reserves 16 values per mix: Mix 1 pair 0 is 0, Mix 2 pair 0 is 16.",
+      "wire_selector_ranges": { "mix_0": [0, 7], "mix_1": [16, 23] },
+      "companion_command_banks": { "wire_bank_0": "pair 0", "wire_bank_1": "pair 1" },
+      "notes": "The logical pair index is channel // 2 within each 16-channel mix. The wire selector reserves 16 values per mix: Mix 1 pair 0 is 0, Mix 2 pair 0 is 16. Isolated captures cover all eight pairs per mix (selectors 0-7 and 16-23). The companion a2 04 write appears only for the first two pairs and is not needed to describe the durable a2 03 link state.",
       "evidence": "mixer_links/mix1_ch1_ch2_linked.pcapng and mix1_ch11_ch12_linked.pcapng emit pair 0 and 5; the matching Mix 2 captures emit pair 16 and 21."
+    },
+    "link_readback": {
+      "status": "capture-confirmed",
+      "category": "0x0b",
+      "index": 3,
+      "record_count": 24,
+      "selector_ranges": { "0": [0, 7], "1": [16, 23] },
+      "pair_formula": "pair = wire_selector - (mix * 16)",
+      "notes": "A complete q0b/03 response is required before replacing local link state. Bytes 0-7 map to Mix 1 pairs 0-7; bytes 16-23 map to Mix 2 pairs 0-7; bytes 8-15 are not used by the two visible Zen Go mixer surfaces.",
+      "evidence": "zen-go-tui/docs/protocol/zengosc-capture-audit.md isolated mixer-link bitmap captures."
     },
     "input_routing": {
       "destinations": [6, 7, 8, 9],
@@ -438,7 +558,7 @@
       "status": "capture-confirmed",
       "notes": "The four 32-slot destination records are one logical mixer input map. Slots 0-15 correspond to the 16 mixer strips and slots 16-31 are reserved MUTE; the Launcher writes destinations 6, 7, 8, and 9 identically in lockstep."
     },
-    "readback": "No fader/pan/mute/solo changes appear in the 0x73 STATE REPORT. The in-band 0x74/0x75 category 0x04 layout for Mix 1 and Mix 2 is capture-confirmed (16 two-byte fader + pan/flags slots per mix); live round-trip on this profile remains to be checked.",
+    "readback": "No fader/pan/mute/solo changes appear in the 0x73 STATE REPORT. The in-band 0x74/0x75 category 0x04 layout for Mix 1 and Mix 2 is capture-confirmed (16 two-byte fader + pan/flags slots per mix), and q0b/03 is a capture-confirmed 24-byte mixer-link selector bitmap. Live round-trip on this profile remains to be checked.",
     "status": "confirmed; readback layout capture-confirmed",
     "notes": "2 mixes ('Mix 1' / 'Mix 2'), 16 input strips each and no separate master strip. Each strip = fader + pan + mute + solo (no send). See frame.mix_command. What each strip's input is comes from the 'channel assignments' routing (frame.routing_command)."
   },
@@ -448,8 +568,9 @@
       "id": "0x50", "status": "confirmed", "type": "int",
       "frame": "command (opcode 0x13) -- channel @17, value @18",
       "readback": "state_report.gain_base_offset (40) + channel_index",
-      "range_by_mode": { "mic": [0, 65], "line": "narrow, ~around raw 0x13", "hiz": [0, 45] },
-      "notes": "Mode-dependent range, same idea as Orion. The captured sweeps did not always reach the rail, so bounds are approximate.",
+      "range_by_mode": { "mic": [0, 65], "line": [-6, 20], "hiz": [0, 45] },
+      "state_model": "per_input_per_mode",
+      "notes": "Mode-dependent range, same idea as Orion. The line sweep is approximately raw -6..20 and the Hi-Z sweep is approximately 0..45; captures did not always reach the rail. Mode-switch captures show separate stored gains per input/mode, while state_report.gain_base_offset exposes only the active mode's gain.",
       "evidence": "preamps/capture_preamp_a1_gain_mic / _a2_gain_mic / _a1_gain_line / _a1_gain_hiz .pcapng"
     },
     "input_mode": {
@@ -469,8 +590,8 @@
     "phase_invert": {
       "id": "0x52", "status": "confirmed", "type": "bool",
       "frame": "command (opcode 0x13) -- channel @17, value @18 (0/1)",
-      "readback": "state_report.status byte (offset 42 + channel), bit 0x40 (mask carried from Orion, not isolated here)",
-      "evidence": "preamps/capture_preamp_a1_phase.pcapng: 52 00 01 / 52 00 00 toggled."
+      "readback": "state_report.status byte (offset 42 + channel), bit 0x40",
+      "evidence": "preamps/capture_preamp_a1_phase.pcapng: 52 00 01 / 52 00 00 toggled; zen-go-tui/docs/protocol/zengosc-capture-audit.md confirms the 0x40 phase bit in the 0x18..0x1b preamp cluster."
     },
     "bus_level": {
       "id": "0x47", "status": "confirmed", "type": "int", "range": [0, 96],
@@ -500,9 +621,13 @@
       "evidence": "Param id 0x69 is confirmed for bus_mono on the Orion and carried as a candidate on the Discrete 8 Pro; Zen Go still needs a mono-only capture for confirmation."
     },
     "param_0x49": {
-      "id": "0x49", "status": "observed", "type": "int",
-      "notes": "op 0x13 param 0x49, [17]=0, [18] set to 12 then 15 in the mixer captures; state_report offset 122 tracks it. On Orion, 0x49 was the lone connect-handshake frame (SET_PARAM(0x49, ch1, 0)). Here it is deliberately set to non-zero values during mixer use -- possibly an 'active mix' / solo-mask / surface selector. Not decoded.",
-      "evidence": "capture_08_mixer_volume_faders_on_2_mixes.pcapng, capture_11."
+      "id": "0x49", "status": "capture-confirmed", "type": "enum",
+      "frame": "command (opcode 0x13) -- target @17 = 0, selector @18",
+      "applies_to": "front-panel mixer surface",
+      "values": { "12": "HP2", "15": "Monitor/HP1" },
+      "readback": "state_report.surface_selector (payload 0x6a / full-report offset 122)",
+      "notes": "The Zen Go uses 0x49 to select the front-panel mixer surface: 0x0f selects Monitor/HP1 and 0x0c selects HP2. This is a UI surface selector, not a mixer-strip setting or a solo mask. Do not confuse it with Orion's connect-handshake use of the same family parameter id.",
+      "evidence": "capture_08_mixer_volume_faders_on_2_mixes.pcapng, capture_11, and zen-go-tui/docs/protocol/zengosc-capture-audit.md surface-selection captures."
     },
     "sample_rate": {
       "id": "0x03", "status": "confirmed", "type": "enum",
@@ -556,9 +681,9 @@
       "frame": "link_command (opcode 0x14 / 0xa2) space 3, logical pair_index = channel // 2; wire pair_index = mix * 16 + logical pair_index",
       "per": "mixer surface + pair",
       "type": "per-(mix,pair) bool",
-      "readback": "no dedicated readback bit found; state_report offset ~127 moved on one link capture -- unverified",
-      "notes": "Software-mirrored like every other link in this family: while linked the Launcher re-sends both strips.",
-      "evidence": "mixer_links/mix1_ch1_ch2_linked.pcapng etc."
+      "readback": "frame.readback category 0x0b index 3: 24 one-byte selector flags; selector N is linked when its byte is nonzero (Mix 1 selectors 0-7, Mix 2 selectors 16-23)",
+      "notes": "The durable a2 03 setter and q0b/03 bitmap are capture-confirmed. Software is mirrored like every other link in this family: while linked the Launcher re-sends both strips. The state_report byte near offset 127 is incidental/secondary state and is not the authoritative link readback.",
+      "evidence": "mixer_links/mix1_ch1_ch2_linked.pcapng etc.; zen-go-tui/docs/protocol/zengosc-capture-audit.md isolated selector bitmap captures."
     },
     "mic_modeling": {
       "status": "observed -- appears as routing source bank 0x0a ('emumic') and in the DSP capture; frame not decoded",
@@ -590,21 +715,21 @@
     "bus_ids": [0, 1, 2],
     "input_mode_allowed_values": [0, 1, 2],
     "gain_bounds": { "mic": [0, 65], "line": [-6, 20], "hiz": [0, 45] },
-    "gain_bounds_note": "line/hiz bounds carried from Orion / approximate -- the Zen Go captures didn't sweep to the rail. mic 0-65 is from the a1/a2 mic-gain sweeps.",
+    "gain_bounds_note": "All Zen Go bounds are conservative/approximate because the captures did not always sweep to the rail; line -6..20 is the observed signed range, Hi-Z is approximately 0..45, and mic 0..65 comes from the A1/A2 mic-gain sweeps.",
     "min_write_interval_ms": 250,
     "value_from_user_input": "never send a raw value straight from user input; clamp to the documented range"
   },
 
   "open_questions": [
     "HID report descriptor -- dump from Linux hidraw (tools/hid_probe.py). Feature report? (Orion/Discrete have none -> no readback for routing/mixer.)",
-    "Routing: slot index = strip-1 and source banks 0x00-0x0a are decoded (2026-08-31). Left: what is source bank 0x03 (4 ch, only seen as strips 1-4's default -- playback 1-4? loopback? mix return?); and what exactly are destination groups 3 (8 slots) and 5 (4 slots, strips 1-4 only) as opposed to 6/7/8/9 (the shared 32-slot strip-input map).",
+    "Routing: slot index = strip-1 and source banks 0x00-0x0a are decoded (2026-08-31). Left: what is source bank 0x03 (4 ch, only seen as strips 1-4's default -- playback 1-4? loopback? mix return?); and what exactly are destination groups 3 (8 slots) and 5 (4 slots, strips 1-4 only) as opposed to 6/7/8/9 (the shared 32-slot strip-input map). The TUI also captured a sub-ID-prefixed q03 assignment body variant (9 bytes at index 5; 33 bytes at indices 6-9), which still needs a response discriminator before it can be merged with the profile's 17/65-byte routing layouts.",
     "The two output-volume paths: opcode 0x16/0xd4 (d4 04 01 03 ...) vs buses 0/1/2 (0x47/0x48/0x66). Which drives the physical Monitor out and which the Headphone out?",
-    "param 0x49 set to 12/15 during mixer use -- active-mix / solo-mask / surface selector?",
+    "Output mode encoding: isolated captures show normal=0, mute=1, dim=2; capture a combined mute+dim action if the UI supports it to determine whether the byte is ever compositional.",
     "Mic modeling frame (enable/model/pattern) -- capture the emuMic panel; likely opcode 0x1a or 0x1c (param 0xd5).",
     "DSP/FX: opcodes 0x1a / 0x1c (0xd5) and 0x23 (0xd7) in capture_07_dsp.",
     "AuraVerb: no confirmed command frame or readback layout is present. The observed/safe-query 0x0a entries are not enough to copy Orion's 0x1d/0xda mapping; keep the WebUI capability disabled until Zen Go bytes are decoded.",
-    "Meter report 0x83 byte-to-channel map (metering/ch1..ch16 captures).",
-    "Full state_report byte map -- offsets ~90 / 122 / 126 / 127 move on link / 0x49 writes.",
-    "Does the in-band readback (frame.readback) carry ROUTING and MIXER state on this device? On the Orion these are categories 0x03 and 0x04 and both are fully decoded, after being wrongly documented as write-only for months. The Zen Go Launcher only queries categories 0x00/0x01/0x11 on connect, but the Orion Launcher is equally sparse and its other categories answer regardless. CHEAP TEST, needs the hardware: `readback 0x03 0` and `readback 0x04 0` -- a non-empty body means it is there. Do NOT sweep indices while doing it (see frame.readback.hazard)."
+    "Meter report 0x83 byte-to-channel map (metering/ch1..ch16 captures). The 0x73 payload 0x8e..0x9d lanes are now strip-indexed, but true physical-input meter ownership and the provisional 0xce/0xcf preamp candidates remain unresolved.",
+    "Full state_report byte map -- offsets ~90 / 126 / 127 move on link / other mixer writes; offset 122 is now identified as the 0x49 surface selector.",
+    "The complete category-0x03 count and exact destination roles remain unknown. Readback presence/layout for the capture-confirmed q03/q04/q0b feature targets is established, but live query/control round-trip and the q03 body-variant discriminator still need hardware testing. Do NOT sweep indices (see frame.readback.hazard)."
   ]
 }

@@ -32,9 +32,11 @@ the halted endpoint. That crash took ~10 slow queries. Rate was never the
 trigger -- the out-of-range index was. Pacing is still polite, but it is not
 the safety mechanism; the index bound is.
 
-So by default this tool now sweeps ONLY indices the device itself declared, via
+So by default this tool sweeps only indices the device itself declared, via
 frame.readback.category_counts (derived from the 0x74 connect enumeration).
-`--unsafe` lifts that, and is how you break the hardware.
+For a category with no declared count it makes at most the single index-0
+probe; it never walks higher indices until a bound is added. `--unsafe` lifts
+that, and is how you break the hardware.
 
 Notes learned from the first run:
   * the device answers every IN-RANGE (cat, idx) -- one it has no record for
@@ -73,15 +75,18 @@ def log(*a):
     _LOG.flush()
 
 
-def q_frame(rsize, cat, idx):
-    f = bytearray(rsize)
-    f[0], f[4], f[8], f[12] = 0x74, 0x10, cat, idx
-    return bytes(f)
+def q_frame(profile, cat, idx, force=False):
+    """Build this device's readback request from its profile.
+
+    Do not hard-code the Orion request layout here: a shared HID transport
+    family does not prove a shared readback frame.
+    """
+    return proto.build_readback_query(profile, cat, idx, force=force)
 
 
 class Link:
-    def __init__(self, node, rsize):
-        self.node, self.rsize = node, rsize
+    def __init__(self, node, rsize, profile):
+        self.node, self.rsize, self.profile = node, rsize, profile
         self.fd = os.open(node, os.O_RDWR)
 
     def _reopen(self):
@@ -92,12 +97,12 @@ class Link:
         time.sleep(0.3)
         self.fd = os.open(self.node, os.O_RDWR)
 
-    def query(self, cat, idx, window=0.15):
+    def query(self, cat, idx, window=0.15, force=False):
         while select.select([self.fd], [], [], 0)[0]:
             os.read(self.fd, self.rsize)
         for attempt in range(3):
             try:
-                os.write(self.fd, q_frame(self.rsize, cat, idx))
+                os.write(self.fd, q_frame(self.profile, cat, idx, force=force))
                 break
             except (TimeoutError, OSError):
                 self._reopen()
@@ -140,13 +145,17 @@ def main():
     args = ap.parse_args()
 
     profile = proto.load_profile(args.profile)
+    if not profile.get('frame', {}).get('readback'):
+        raise SystemExit(
+            'profile has no frame.readback; refusing to send a hard-coded or '
+            'guessed readback request to this device')
     dev = profile["device"]
     vid = int(dev["vid"], 16) if isinstance(dev["vid"], str) else dev["vid"]
     pid = int(dev["pid"], 16) if isinstance(dev["pid"], str) else dev["pid"]
     rsize = profile["transport"]["report_size"]
     node = find_hidraw(vid, pid)
     log(f"node {node}  report_size {rsize}")
-    link = Link(node, rsize)
+    link = Link(node, rsize, profile)
 
     cats = [args.cat] if args.cat is not None else list(range(0, args.max_cat + 1))
 
@@ -156,7 +165,12 @@ def main():
         nq[0] += 1
         if nq[0] % args.rest_every == 0:
             time.sleep(args.rest)
-        r = link.query(c, i)
+        # An unknown category count is deliberately limited to index 0 above.
+        # Force is used only for that one bounded-by-policy probe, because the
+        # normal guard cannot certify an index when the device has not yet
+        # supplied a count. --unsafe remains an explicit user override.
+        r = link.query(c, i, force=args.unsafe or (
+            proto.readback_category_count(profile, c) is None))
         time.sleep(args.pace)
         return r
 
@@ -169,8 +183,18 @@ def main():
         # 0x74 connect enumeration. cat 0x04 idx 5 crashed the unit (see docstring).
         declared = proto.readback_category_count(profile, cat)
         hi = args.max_idx
-        if declared is not None and not args.unsafe:
-            hi = min(hi, declared - 1)
+        if not args.unsafe:
+            if declared is not None:
+                hi = min(hi, declared - 1)
+            else:
+                # An unbounded category is not safe to sweep.  Index 0 is
+                # the only exploratory query allowed before this device's
+                # own connect enumeration or a capture-confirmed layout gives
+                # us an outer bound.  Keep this conservative even when a
+                # profile contains an older, non-machine-enforced hint such
+                # as safe_queries.
+                hi = 0
+                log(f"  cat {cat:#04x}: category count unknown; querying index 0 only")
         if hi < 0:
             continue
         idx0 = paced_query(cat, 0)

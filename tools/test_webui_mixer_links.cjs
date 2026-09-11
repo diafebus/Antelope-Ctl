@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
 const source = html.slice(
   html.indexOf('const mixerPendingKey'),
-  html.indexOf('function selectMixer'));
+  html.indexOf('function mixerSoloSnapshot'));
 
 const makeInput = value => {
   let current = String(value);
@@ -34,6 +34,14 @@ const context = vm.createContext({
   MIX_PENDING: {},
   MIX_PENDING_TTL: 5000,
   MIX_LINKS: {'0:0': true},
+  PROFILE: {
+    mixer: {
+      link_readback: {
+        status: 'capture-confirmed', category: 0x0b, index: 3,
+        record_count: 24, selector_ranges: {'0': [0, 7], '1': [16, 23]},
+      },
+    },
+  },
   document: {
     querySelector: selector => {
       const match = selector.match(/data-ch="(\d+)"/);
@@ -95,4 +103,26 @@ context.setMixLink(1, 0, true);
 assert.equal(JSON.stringify(posted.at(-1).body), JSON.stringify({mix: 1, pair: 0, enabled: true}));
 assert.equal(context.MIX_LINKS['0:0'], true);
 assert.equal(context.MIX_LINKS['1:0'], true);
+
+// A complete Zen Go q0b/03 response seeds only the visible pair ranges;
+// reserved selectors are still required for completeness but do not create
+// UI pairs.
+const linkedRecords = Array.from({length: 24}, (_, record_index) => ({
+  record_index, linked: record_index === 1 || record_index === 17,
+}));
+assert.equal(context.syncMixerLinksFromReadback({layouts: [{
+  category: 0x0b, index: 3, safe: true, current: {'3': linkedRecords},
+}]}), true);
+assert.equal(context.MIX_LINKS['0:0'], undefined);
+assert.equal(context.MIX_LINKS['1:0'], undefined);
+assert.equal(context.MIX_LINKS['0:1'], true);
+assert.equal(context.MIX_LINKS['1:1'], true);
+
+// Partial responses must leave the cached state untouched.
+const partial = linkedRecords.slice(0, 23);
+partial[0] = {record_index: 0, linked: false};
+assert.equal(context.syncMixerLinksFromReadback({layouts: [{
+  category: 0x0b, index: 3, safe: true, current: {'3': partial},
+}]}), false);
+assert.equal(context.MIX_LINKS['0:0'], undefined);
 console.log('WebUI linked mixer checks passed (live fader/Send mirror and paired posts).');

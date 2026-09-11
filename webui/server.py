@@ -123,6 +123,65 @@ def _record_layout_indices(layout):
         return []
 
 
+def _confirmed_profile_block(block):
+    """Whether a profile metadata block is safe to drive automatically."""
+    return isinstance(block, dict) and str(block.get("status", "")).strip().lower() in \
+        STRUCTURED_READBACK_SAFE_STATUSES
+
+
+def _mixer_surface_spec(profile):
+    """Return a confirmed profile-defined mixer-surface selector, if any."""
+    spec = (profile.get("mixer", {}) or {}).get("surface_selection")
+    if not _confirmed_profile_block(spec):
+        return None
+    values = spec.get("value_by_mix")
+    return spec if isinstance(values, dict) else None
+
+
+def _mixer_surface_value(profile, mix):
+    """Resolve a logical mixer index to its profile-defined selector value."""
+    spec = _mixer_surface_spec(profile)
+    if spec is None:
+        return None
+    values = spec.get("value_by_mix", {})
+    raw = values.get(str(mix), values.get(mix))
+    if raw is None:
+        return None
+    try:
+        return proto._as_int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _mixer_surface_for_value(profile, value):
+    """Resolve a state-report selector value to its logical mixer index."""
+    spec = _mixer_surface_spec(profile)
+    if spec is None:
+        return None
+    for mix, raw in spec.get("value_by_mix", {}).items():
+        try:
+            if proto._as_int(raw) == value:
+                return proto._as_int(mix)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _mixer_surface_packet(profile, mix):
+    """Build a confirmed profile-defined mixer surface selection command."""
+    spec = _mixer_surface_spec(profile)
+    value = _mixer_surface_value(profile, mix)
+    if spec is None or value is None:
+        return None
+    target = proto._as_int(spec.get("target", 0))
+    param = spec.get("param")
+    if isinstance(param, str) and param in profile.get("params", {}):
+        packet = proto.build_command(profile, param, target, value)
+    else:
+        packet = proto.build_raw_command(profile, proto._as_int(param), target, value)
+    return packet, value, target
+
+
 def _structured_readback_targets(profile):
     """Yield safe ``(category, index)`` targets from record_layouts.
 
@@ -541,13 +600,14 @@ class Device:
                         self.profile, state, "clock_source_byte_offset")
                 except Exception:
                     pass
-                # Confirmed physical preamp bank: full-report 0x73 @221..232.
+                # Profile-declared physical/preamp meter bank (when available).
                 snap["input_meters"] = self._parse_meters(state)
-                # Selected mixer-window bank: full-report 0x73 @157..188.
+                # Profile-declared selected mixer surface/meter bank.
                 mixer_meters = self._parse_mixer_meters(state)
                 if mixer_meters is not None:
                     snap["mixer_meters"] = mixer_meters
-                # raw slice of the same region for ?meterdebug=1.
+                # Raw slice covering the profile's mixer/preamp meter region
+                # for ?meterdebug=1; it remains diagnostic only.
                 snap["state_raw"] = {"base": 150, "bytes": list(state[150:236])}
             if meter:
                 # 0x75 @32/@48 and @33/@49 are route-correlated lane pairs.
@@ -762,37 +822,90 @@ class Device:
         return out
 
     def _parse_mixer_meters(self, state):
-        """Return the selector-gated virtual-mixer strip bank.
+        """Return the profile-declared virtual-mixer strip meter bank.
 
-        The Orion's mixer-window selector is SET_PARAM(0x49, target=1,
-        mix=0..3), echoed at state-report byte 122. The corresponding
-        strips 1..32 are raw 0x73 lanes @157..188. Slot 0 is the mixer
-        master, for which no meter lane is currently mapped.
+        Orion profiles use ``mixer_window_selection`` plus a
+        ``meter_mappings`` entry. Zen Go uses the TUI-confirmed
+        ``mixer_strip_meters`` lanes and its profile-defined surface selector.
+        Both paths return the same browser-facing shape.
         """
         spec = self.profile["frame"].get("state_report", {})
         selection = spec.get("mixer_window_selection", {})
         mapping = next((m for m in spec.get("meter_mappings", [])
                         if m.get("target") == "mixer_window_strip"), None)
-        if not selection or not mapping:
+        if selection and mapping:
+            try:
+                selector_off = proto._as_int(selection.get("state_byte_offset", 122))
+                base = proto._as_int(mapping.get("payload_offset_base", 157))
+                strip_range = mapping.get("strip_index_range", [1, 32])
+                raw_range = mapping.get("raw_range", [0, 96])
+                raw_lo, raw_hi = (proto._as_int(raw_range[0]),
+                                  proto._as_int(raw_range[1]))
+                silence_raw = proto._as_int(mapping.get("silence_raw", raw_hi))
+            except (KeyError, TypeError, ValueError, IndexError):
+                return None
+            if selector_off < 0 or selector_off >= len(state) or len(strip_range) != 2:
+                return None
+            selected = state[selector_off]
+            allowed = {proto._as_int(v) for v in selection.get("values", [])}
+            if allowed and selected not in allowed:
+                return {"mix": selected, "strips": [],
+                        "raw_range": [raw_lo, raw_hi],
+                        "silence_raw": silence_raw}
+            first, last = proto._as_int(strip_range[0]), proto._as_int(strip_range[1])
+            strips = []
+            for ch in range(first, last + 1):
+                off = base + (ch - first)
+                if off < 0 or off >= len(state):
+                    break
+                raw = state[off]
+                strips.append({"ch": ch, "raw": raw,
+                               "silence": raw == silence_raw})
+            return {"mix": selected, "strips": strips,
+                    "raw_range": [raw_lo, raw_hi],
+                    "silence_raw": silence_raw}
+
+        # Zen Go: the selected front-panel surface gates the 16 shared
+        # mixer-strip lanes at the profile's full-report base offset.
+        mapping = spec.get("mixer_strip_meters")
+        surface = _mixer_surface_spec(self.profile)
+        if not isinstance(mapping, dict) or surface is None:
             return None
-        selector_off = int(selection.get("state_byte_offset", 122))
-        base = int(mapping.get("payload_offset_base", 157))
-        strip_range = mapping.get("strip_index_range", [1, 32])
-        if selector_off >= len(state) or len(strip_range) != 2:
+        try:
+            selector_off = proto._as_int(surface.get("state_byte_offset", 122))
+            base = mapping.get("full_report_base_offset")
+            if base is None:
+                base = (proto._as_int(mapping["payload_base_offset"])
+                        + proto._as_int(spec.get("snapshot_payload_offset", 16)))
+            else:
+                base = proto._as_int(base)
+            count = proto._as_int(mapping.get("count", 0))
+            stride = proto._as_int(mapping.get("stride", 1))
+            raw_range = mapping.get("raw_range", [0, 96])
+            raw_lo, raw_hi = (proto._as_int(raw_range[0]),
+                              proto._as_int(raw_range[1]))
+            silence_raw = proto._as_int(mapping.get("silence_raw", raw_hi))
+        except (KeyError, TypeError, ValueError, IndexError):
+            return None
+        if selector_off < 0 or selector_off >= len(state) or count <= 0 or stride <= 0:
             return None
         selected = state[selector_off]
-        allowed = {int(v) for v in selection.get("values", [])}
-        if allowed and selected not in allowed:
-            return {"mix": selected, "strips": []}
-        first, last = int(strip_range[0]), int(strip_range[1])
+        mix = _mixer_surface_for_value(self.profile, selected)
+        if mix is None:
+            return {"mix": -1, "selector": selected, "strips": [],
+                    "raw_range": [raw_lo, raw_hi],
+                    "silence_raw": silence_raw}
         strips = []
-        for ch in range(first, last + 1):
-            off = base + (ch - first)
-            if off >= len(state):
+        for channel in range(count):
+            off = base + channel * stride
+            if off < 0 or off >= len(state):
                 break
             raw = state[off]
-            strips.append({"ch": ch, "raw": raw, "silence": raw == 96})
-        return {"mix": selected, "strips": strips}
+            strips.append({"ch": channel, "raw": raw,
+                           "silence": raw == silence_raw})
+        return {"mix": mix, "selector": selected, "strips": strips,
+                "raw_range": [raw_lo, raw_hi],
+                "silence_raw": silence_raw}
 
 
 try:
@@ -1301,16 +1414,26 @@ def api_mixer_source(s: MixerSource):
 
 @app.post("/api/mixer-select")
 def api_mixer_select(s: MixerSelect):
-    """Select the mixer-window meter bank (SET_PARAM 0x49, target 1).
+    """Select a profile-defined mixer surface or meter bank.
 
-    This is a UI selection, not a routing change. The selector command is
-    described under frame.state_report because the same param id has target 0
-    for the Meters-window source picker.
+    This is a UI selection, not a routing change. Orion profiles use the
+    legacy ``frame.state_report.mixer_window_selection`` selector; profiles
+    such as Zen Go can instead declare a confirmed ``mixer.surface_selection``
+    command with a per-mix value map.
     """
     if not DEV.mixer_available:
         return _bad("mixer readback is not safely mapped for this profile")
     if not 0 <= s.mix < DEV.n_mixes:
         return _bad(f"mix {s.mix} out of range 0..{DEV.n_mixes - 1}")
+    try:
+        surface_packet = _mixer_surface_packet(PROFILE, s.mix)
+    except (KeyError, TypeError, ValueError, proto.ConstraintError) as e:
+        return _bad(str(e))
+    if surface_packet is not None:
+        pkt, value, target = surface_packet
+        DEV.submit(lambda t: t.write(pkt))
+        return {"ok": True, "mix": s.mix, "selected": True,
+                "selector": value, "target": target}
     selector = PROFILE["frame"].get("state_report", {}).get("mixer_window_selection", {})
     if not selector:
         # Some devices expose each mix's controls without the Orion's
@@ -1332,8 +1455,9 @@ def api_mixer_select(s: MixerSelect):
 def api_mix_link(link: MixerLink):
     """Toggle one virtual-mixer pair (SET_LINK space 3).
 
-    The hardware does not report these flags back, and linked value mirroring
-    is Launcher-side behavior, so the browser owns that companion state.
+    Linked value mirroring is Launcher-side behavior, so the browser owns
+    that companion state. Profiles may additionally declare a complete,
+    capture-confirmed link bitmap for reconnect-time state seeding.
     """
     if not DEV.mixer_available:
         return _bad("mixer readback is not safely mapped for this profile")
