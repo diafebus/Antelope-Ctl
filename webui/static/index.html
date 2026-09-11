@@ -587,10 +587,10 @@
   <section id="readbacksec" hidden>
     <h2 class="sechd">Protocol readback
       <span class="secbtns">
-        <button type="button" class="secbtn secmin" data-min="readbackbody" title="collapse this section" aria-expanded="true">–</button>
+        <button type="button" class="secbtn secmin" data-min="readbackbody" title="expand this section" aria-expanded="false">+</button>
       </span>
     </h2>
-    <div class="secbody" id="readbackbody">
+    <div class="secbody min" id="readbackbody">
       <p class="hint">Profile-declared nested records from the device's read-only
         <code>0x74/0x75</code> protocol. Safe outer indices are refreshed in the
         background; schema-only layouts stay marked capture-required. Link bytes
@@ -2094,7 +2094,10 @@ function wireMinButtons() {
       try { localStorage.setItem(key, min ? '1' : '0'); } catch (_) {}
     };
     btn.addEventListener('click', () => set(!body.classList.contains('min')));
-    try { if (localStorage.getItem(key) === '1') set(true); } catch (_) {}
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved === '1' || saved === '0') set(saved === '1');
+    } catch (_) {}
   });
 }
 wireMinButtons();
@@ -2867,8 +2870,13 @@ function applyMixerMeters(meters) {
   const rawLo = rawRange[0], rawHi = rawRange[1];
   const silenceRaw = Number.isFinite(Number(meters?.silence_raw))
     ? Number(meters.silence_raw) : rawHi;
-  const noiseFloorRaw = Number.isFinite(Number(meters?.noise_floor_raw))
-    ? Number(meters.noise_floor_raw) : null;
+  // JSON null means that this profile has no declared noise floor.  Do not
+  // pass it through Number(): Number(null) is 0, which would mark every
+  // non-negative meter sample as silence and flatten all virtual-mixer bars.
+  const noiseFloorValue = meters?.noise_floor_raw;
+  const noiseFloorRaw = noiseFloorValue != null
+    && Number.isFinite(Number(noiseFloorValue))
+    ? Number(noiseFloorValue) : null;
   document.querySelectorAll('#mixer [data-mix-pane] .mixer-strip').forEach(strip => {
     const pane = strip.closest('[data-mix-pane]');
     const meter = strip.querySelector('[data-mix-meter]');
@@ -2930,7 +2938,11 @@ function buildMixer() {
   const activeRoute = $('#routetabs .tabbtn.active')?.dataset.rtab || '';
   const routeMix = /^mix([1-4])$/.exec(activeRoute);
   const initial = routeMix ? +routeMix[1] - 1 : 0;
-  selectMixer(initial, !!routeMix || hasSurfaceSelection);
+  // Orion's legacy mixer-window selector is just as important as Zen Go's
+  // confirmed surface selector.  On a fresh load the Routing tab is normally
+  // active, so without this write the device may still expose Mix 2/3/4's
+  // shared meter bank while the UI is displaying Mix 1.
+  selectMixer(initial, !!routeMix || !!selector || hasSurfaceSelection);
 }
 
 function refreshMixLinks() {
