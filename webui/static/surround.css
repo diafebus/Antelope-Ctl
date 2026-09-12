@@ -66,7 +66,7 @@
 .surround-eq-line { fill:none; stroke:#e37c88; stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round; }
 .surround-eq-points circle { fill:#f3a0a8; stroke:#1a1d24; stroke-width:2; }
 .surround-eq-graph-note { display:block; padding:0 8px 7px; color:var(--dim); font:9px ui-monospace,monospace; }
-.surround-eq-grid { display:grid; grid-template-columns:repeat(8,minmax(76px,1fr)); gap:6px; }
+.surround-eq-grid { display:grid; grid-template-columns:repeat(16,minmax(76px,1fr)); gap:6px; min-width:1240px; }
 .surround-band { min-width:0; display:flex; flex-direction:column; align-items:stretch; gap:5px; padding:7px; background:#101217; border:1px solid #252a33; border-radius:5px; }
 .surround-band > strong { color:var(--fg); font:700 9px/1 ui-monospace,monospace; text-align:center; }
 .surround-eq-knob { min-width:0; }
@@ -85,5 +85,5 @@
   .surround-controls, .surround-speaker-controls { grid-template-columns:1fr; }
   .surround-masks { grid-template-columns:1fr; }
   .surround-table { min-width:470px; }
-  .surround-eq-grid { grid-template-columns:repeat(4,minmax(82px,1fr)); }
+  .surround-eq-grid { grid-template-columns:repeat(16,minmax(76px,1fr)); }
 }

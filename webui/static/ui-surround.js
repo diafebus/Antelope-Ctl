@@ -262,7 +262,7 @@ function surroundEqModeSelect(mode, index) {
 
 function surroundEqBand(band, index) {
   return '<article class="surround-band">'
-    + '<strong>BAND ' + (index + 1) + '</strong>'
+    + '<strong>' + (index + 1) + '</strong>'
     + surroundEqKnob('F', band.freq_hz, 20, 20000, 1, ' Hz', 0, true)
     + surroundEqKnob('G', band.gain_db, -24, 12, 0.01, ' dB', 2)
     + surroundEqKnob('Q', band.q, 0.1, 18, 0.01, '', 2)
