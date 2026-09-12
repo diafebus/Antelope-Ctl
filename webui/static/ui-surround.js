@@ -159,6 +159,35 @@ function surroundGraphPath(points) {
   return path;
 }
 
+function surroundEqSigma(q) {
+  const number = Number(q);
+  const safeQ = Number.isFinite(number) && number > 0 ? number : 0.71;
+  return Math.max(0.04, Math.min(2.5, 0.75 / safeQ));
+}
+
+function surroundEqResponseAt(bands, frequency) {
+  const logFrequency = Math.log2(frequency);
+  return bands.reduce((total, band) => {
+    const distance = (logFrequency - Math.log2(band.frequency))
+      / surroundEqSigma(band.q);
+    return total + band.gain * Math.exp(-0.5 * distance * distance);
+  }, 0);
+}
+
+function surroundEqCurvePoints(bands, sampleCount = 256) {
+  if (!bands.length) return [];
+  const start = bands[0].frequency;
+  const end = bands[bands.length - 1].frequency;
+  if (!(end > start)) {
+    return [{frequency: start, gain: surroundEqResponseAt(bands, start)}];
+  }
+  return Array.from({length: sampleCount}, (_, index) => {
+    const fraction = index / (sampleCount - 1);
+    const frequency = start * Math.pow(end / start, fraction);
+    return {frequency, gain: surroundEqResponseAt(bands, frequency)};
+  });
+}
+
 function surroundEqGraph(speaker) {
   const width = 960;
   const height = 250;
@@ -178,16 +207,19 @@ function surroundEqGraph(speaker) {
   const yFor = gain => top + (
     (maxGain - Math.max(minGain, Math.min(maxGain, gain)))
     / (maxGain - minGain)) * plotHeight;
-  const points = (speaker?.bands || []).map((band, index) => ({
+  const bands = (speaker?.bands || []).map((band, index) => ({
     index,
     frequency: Number(band.freq_hz),
     gain: Number(band.gain_db),
+    q: Number(band.q),
   })).filter(point => Number.isFinite(point.frequency) && Number.isFinite(point.gain))
     .sort((a, b) => a.frequency - b.frequency || a.index - b.index)
-    .map(point => ({ ...point, x: xFor(point.frequency), y: yFor(point.gain) }));
-  if (!points.length) {
+  if (!bands.length) {
     return '<div class="surround-eq-graph surround-empty">Waiting for the speaker EQ readback.</div>';
   }
+  const points = bands.map(point => ({
+    ...point, x: xFor(point.frequency), y: yFor(point.gain),
+  }));
 
   const frequencyTicks = [[20, '20'], [50, '50'], [100, '100'], [200, '200'],
     [500, '500'], [1000, '1k'], [2000, '2k'], [5000, '5k'],
@@ -207,13 +239,17 @@ function surroundEqGraph(speaker) {
       + '<text x="' + (left - 7) + '" y="' + (y + 3)
       + '" text-anchor="end">' + value + '</text>';
   }).join('');
-  const line = surroundGraphPath(points);
-  const area = line + ' L ' + points[points.length - 1].x + ' ' + (top + plotHeight)
-    + ' L ' + points[0].x + ' ' + (top + plotHeight) + ' Z';
+  const curve = surroundEqCurvePoints(bands).map(point => ({
+    ...point, x: xFor(point.frequency), y: yFor(point.gain),
+  }));
+  const line = surroundGraphPath(curve);
+  const area = line + ' L ' + curve[curve.length - 1].x + ' ' + (top + plotHeight)
+    + ' L ' + curve[0].x + ' ' + (top + plotHeight) + ' Z';
   const markers = points.map(point => '<circle cx="' + point.x + '" cy="' + point.y + '" r="4">'
     + '<title>Band ' + (point.index + 1) + ': '
     + surroundNumber(point.frequency, 0) + ' Hz, '
-    + surroundNumber(point.gain, 2) + ' dB</title></circle>').join('');
+    + surroundNumber(point.gain, 2) + ' dB, Q '
+    + surroundNumber(point.q, 2) + '</title></circle>').join('');
   return '<div class="surround-eq-graph">'
     + '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img"'
     + ' aria-label="Speaker EQ gain map from 20 Hz to 20 kHz">'
@@ -222,7 +258,7 @@ function surroundEqGraph(speaker) {
     + '<path class="surround-eq-line" d="' + line + '" />'
     + '<g class="surround-eq-points">' + markers + '</g>'
     + '</svg>'
-    + '<span class="surround-eq-graph-note">gain map from readback · not a calculated transfer function</span>'
+    + '<span class="surround-eq-graph-note">Q-shaped gain estimate from readback · bounded to the configured band span</span>'
     + '</div>';
 }
 

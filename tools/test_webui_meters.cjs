@@ -27,6 +27,8 @@ assert.match(js, /function buildSurround\(\)/);
 assert.match(js, /const SURROUND_FORMAT_OPTIONS = \[/);
 assert.match(js, /function surroundEqGraph\(\w+\)/);
 assert.match(js, /function surroundEqGrid\(speaker(?:, writable = false)?\)/);
+assert.match(js, /function surroundEqSigma\(q\)/);
+assert.match(js, /Math\.log2\(band\.frequency\)/);
 assert.match(js, /16-band EQ · single view/);
 assert.match(js, /class="mixer-knob surround-knob"/);
 assert.doesNotMatch(js, /surroundEqTable/);
@@ -149,6 +151,18 @@ assert.match(surroundHTML, /<strong>1<\/strong>/);
 assert.doesNotMatch(surroundHTML, /<strong>BAND /);
 assert.match(surroundHTML, /<span>F<\/span><span>G<\/span><span>Q<\/span>/);
 assert.equal((surroundHTML.match(/class="mixer-knob-label"/g) || []).length, 0);
+assert.ok(surroundContext.surroundEqSigma(10) < surroundContext.surroundEqSigma(0.5));
+const graphBands = [
+  {freq_hz: 100, q: 10, gain_db: 6, mode: 2},
+  {freq_hz: 5000, q: 0.5, gain_db: -3, mode: 2},
+];
+const curve = surroundContext.surroundEqCurvePoints(graphBands.map((band, index) => ({
+  index, frequency: band.freq_hz, q: band.q, gain: band.gain_db,
+})));
+assert.equal(curve[0].frequency, 100);
+assert.equal(curve[curve.length - 1].frequency, 5000);
+assert.match(surroundContext.surroundEqGraph({bands: graphBands}),
+  /Q-shaped gain estimate from readback/);
 const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
   ...surroundData, write: {enabled: false, eq: {enabled: true}},
 });
