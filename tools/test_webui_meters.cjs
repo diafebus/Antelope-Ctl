@@ -21,6 +21,12 @@ assert.match(readbackSection, /class="secbody min" id="readbackbody"/);
 assert.match(js, /const saved = localStorage\.getItem\(key\);[\s\S]*saved === '1' \|\| saved === '0'/);
 assert.match(js, /selectMixer\(initial, !!routeMix \|\| !!selector \|\| hasSurfaceSelection\)/);
 assert.match(js, /function buildSurround\(\)/);
+assert.match(js, /const SURROUND_FORMAT_OPTIONS = \[/);
+assert.match(js, /function surroundEqGraph\(\w+\)/);
+assert.match(js, /function surroundEqGrid\(\w+\)/);
+assert.match(js, /16-band EQ · single view/);
+assert.match(js, /class="mixer-knob surround-knob"/);
+assert.doesNotMatch(js, /surroundEqTable/);
 const source = js.slice(js.indexOf('const METER_FLOOR'), js.indexOf('// ---- buses'));
 const mixerSource = js.slice(js.indexOf('function applyMixerMeters'), js.indexOf('function buildMixer'));
 const classes = () => {
@@ -113,4 +119,33 @@ assert.equal(context.outputMeterMapping(1, 1).payload_offset, '0xdd');
 assert.match(context.outputMeterHTML(2), /data-output-meter-lane="1"/);
 // Syntax-check every browser-loaded file, including code outside the tested functions.
 new vm.Script(js);
+const surroundContext = vm.createContext({$: () => null});
+vm.runInContext(fs.readFileSync(path.join(root, 'webui/static/ui-surround.js'), 'utf8'),
+  surroundContext);
+const surroundBands = Array.from({length: 16}, (_, index) => ({
+  freq_hz: 30 + index * 100,
+  q: 0.71,
+  gain_db: index - 8,
+  mode: index === 0 ? 0 : 2,
+}));
+const surroundData = {
+  speaker_count: 16,
+  speakers: Array.from({length: 16}, (_, index) => ({
+    index, label: 'Speaker ' + (index + 1), active: index < 2,
+    readback: true, bands: surroundBands,
+  })),
+  global: {format: '2.0', flags_a_raw: 2, flags_b_raw: 159},
+  write: {enabled: false},
+};
+const surroundHTML = surroundContext.surroundSpeakerHTML(surroundData);
+assert.equal((surroundHTML.match(/class="surround-band"/g) || []).length, 16);
+assert.equal((surroundHTML.match(/class="mixer-knob surround-knob"/g) || []).length, 48);
+assert.equal((surroundHTML.match(/class="surround-eq-mode"/g) || []).length, 16);
+assert.match(surroundHTML, /16-band EQ · single view/);
+const globalHTML = surroundContext.surroundGlobalHTML(surroundData);
+assert.match(globalHTML, /value="2\.0" selected/);
+assert.match(globalHTML, /value="9\.1\.6" disabled/);
+assert.equal((globalHTML.match(/data-surround-bass-open/g) || []).length, 1);
+assert.match(globalHTML, /data-surround-bass-modal/);
+assert.match(globalHTML, /Bass Management/);
 console.log('WebUI meter rendering checks passed (12 channels, scale, colors, peak hold, missing data).');

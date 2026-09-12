@@ -4,7 +4,7 @@
 .surround-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-bottom:1px solid var(--line); }
 .surround-header strong { font-size:12px; }
 .surround-meta { color:var(--dim); font:10px/1.35 ui-monospace,monospace; }
-.surround-grid { display:grid; grid-template-columns:minmax(280px,.8fr) minmax(440px,1.2fr); gap:10px; padding:10px; }
+.surround-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; padding:10px; }
 .surround-card { min-width:0; background:#15181e; border:1px solid var(--line); border-radius:7px; overflow:hidden; }
 .surround-card-hd { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border-bottom:1px solid var(--line); }
 .surround-card h3 { margin:0; font-size:12px; }
@@ -20,6 +20,8 @@
 .surround-control input:disabled, .surround-control select:disabled, .surround-control button:disabled { opacity:.45; }
 .surround-readout { grid-column:2; min-width:58px; color:var(--fg); text-align:right; font:11px ui-monospace,monospace; }
 .surround-readonly { color:var(--dim); font:9px ui-monospace,monospace; white-space:nowrap; }
+.surround-format-control { grid-template-columns:minmax(0,1fr) minmax(120px,180px) auto; }
+.surround-format-control select { grid-column:2; }
 .surround-note { margin:0; padding:0 10px 10px; color:var(--dim); font-size:10px; line-height:1.4; }
 .surround-masks { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; padding:0 10px 10px; }
 .surround-mask { min-width:0; border:1px solid #252a33; border-radius:5px; padding:6px; }
@@ -32,6 +34,18 @@
 .surround-mask-bit.on { color:var(--warn); border-color:#66520d; }
 .surround-bass { padding:0 10px 10px; }
 .surround-bass h4, .surround-subhd { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+.surround-bass-launch { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 10px 10px; padding:8px; background:#101217; border:1px solid #252a33; border-radius:5px; }
+.surround-bass-launch h4 { margin:0; }
+.surround-bass-launch .surround-meta { display:block; margin-top:3px; }
+.surround-bass-modal { position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; padding:12px; background:rgba(0,0,0,.62); }
+.surround-bass-modal[hidden] { display:none; }
+.surround-bass-dialog { width:min(760px,calc(100vw - 24px)); max-height:calc(100vh - 24px); overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:0 20px 70px rgba(0,0,0,.6); }
+.surround-bass-modal-hd { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; background:var(--panel2); border-bottom:1px solid var(--line); }
+.surround-bass-modal-hd strong { font-size:12px; }
+.surround-bass-modal-hd .modal-x { background:none; border:0; color:var(--dim); font-size:20px; line-height:1; cursor:pointer; padding:0 4px; }
+.surround-bass-modal-bd { padding:12px; }
+.surround-bass-modal-bd .surround-table { margin-top:8px; }
+.surround-bass-modal-bd .surround-note { padding:10px 0 0; }
 .surround-table { width:100%; border-collapse:collapse; font:10px ui-monospace,monospace; }
 .surround-table th, .surround-table td { padding:4px; border-bottom:1px solid #252a33; text-align:left; white-space:nowrap; }
 .surround-table th { color:var(--dim); font-weight:400; }
@@ -43,10 +57,26 @@
 .surround-disabled { opacity:.72; }
 .surround-disabled input[type=range] { opacity:.4; }
 .surround-disabled input[type=checkbox] { justify-self:end; accent-color:var(--accent); }
-.surround-eq { padding:10px; overflow:auto; }
-.surround-eq-table input { width:100%; min-width:60px; box-sizing:border-box; background:#0e1116; color:var(--fg); border:1px solid #252a33; border-radius:3px; padding:3px; font:10px ui-monospace,monospace; }
-.surround-eq-table input:disabled { opacity:.8; }
-.surround-eq-table code { color:var(--dim); }
+.surround-eq { min-width:0; padding:10px; overflow:auto; }
+.surround-eq-graph { position:relative; margin:0 0 10px; border:1px solid #252a33; border-radius:5px; background:#101217; overflow:hidden; }
+.surround-eq-graph svg { display:block; width:100%; height:auto; min-height:180px; }
+.surround-eq-gridlines line { stroke:#2b3039; stroke-width:1; }
+.surround-eq-gridlines text { fill:var(--dim); font:10px ui-monospace,monospace; }
+.surround-eq-area { fill:rgba(207,86,99,.25); }
+.surround-eq-line { fill:none; stroke:#e37c88; stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round; }
+.surround-eq-points circle { fill:#f3a0a8; stroke:#1a1d24; stroke-width:2; }
+.surround-eq-graph-note { display:block; padding:0 8px 7px; color:var(--dim); font:9px ui-monospace,monospace; }
+.surround-eq-grid { display:grid; grid-template-columns:repeat(8,minmax(76px,1fr)); gap:6px; }
+.surround-band { min-width:0; display:flex; flex-direction:column; align-items:stretch; gap:5px; padding:7px; background:#101217; border:1px solid #252a33; border-radius:5px; }
+.surround-band > strong { color:var(--fg); font:700 9px/1 ui-monospace,monospace; text-align:center; }
+.surround-eq-knob { min-width:0; }
+.surround-eq-knob .mixer-readout { width:100%; min-width:0; box-sizing:border-box; padding:3px 1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9px; }
+.surround-eq-knob .mixer-knob { width:42px; height:42px; margin:0 auto; opacity:.86; }
+.surround-eq-knob .mixer-knob input:disabled { cursor:default; }
+.surround-eq-knob .mixer-knob-label { font-size:8px; }
+.surround-eq-mode { display:flex; align-items:center; gap:5px; color:var(--dim); font:8px ui-monospace,monospace; }
+.surround-eq-mode select { min-width:0; flex:1; background:#0e1116; color:var(--fg); border:1px solid #252a33; border-radius:3px; padding:3px; font:9px ui-monospace,monospace; }
+.surround-eq-mode select:disabled { opacity:.72; }
 .surround-empty { margin:0; padding:12px; color:var(--dim); font-size:11px; }
 @media (max-width:900px) {
   .surround-grid { grid-template-columns:1fr; }
@@ -55,4 +85,5 @@
   .surround-controls, .surround-speaker-controls { grid-template-columns:1fr; }
   .surround-masks { grid-template-columns:1fr; }
   .surround-table { min-width:470px; }
+  .surround-eq-grid { grid-template-columns:repeat(4,minmax(82px,1fr)); }
 }
