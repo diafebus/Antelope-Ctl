@@ -55,6 +55,31 @@ class SurroundCommandTests(unittest.TestCase):
 
         self.assertEqual(len(parsed["bass_mgmt_channels"]), 15)
 
+    def test_speaker_builder_requires_explicit_experimental_opt_in(self):
+        with self.assertRaises(protocol.ConstraintError):
+            protocol.build_surround_speaker_eq_command(
+                self.profile, bytes(304), speaker=0, band=0,
+                changes={"gain_raw": 100})
+
+    def test_speaker_builder_changes_only_one_band_field(self):
+        body = bytearray((index * 3) & 0xFF for index in range(304))
+        original = bytearray(body[:116])
+        band_offset = 4 + 2 * 7 + 4
+        expected = bytearray(original)
+        expected[band_offset:band_offset + 2] = (-100).to_bytes(
+            2, "little", signed=True)
+
+        packet = protocol.build_surround_speaker_eq_command(
+            self.profile, body, speaker=1, band=2,
+            changes={"gain_raw": -100}, allow_experimental=True)
+
+        self.assertEqual(len(packet), 320)
+        self.assertEqual(packet[0], 0x70)
+        self.assertEqual(packet[4], 0x87)
+        self.assertEqual(packet[16:19], bytes((0xEA, 0x75, 1)))
+        self.assertEqual(packet[19:135], bytes(expected))
+        self.assertEqual(packet[135:], bytes(185))
+
 
 if __name__ == "__main__":
     unittest.main()

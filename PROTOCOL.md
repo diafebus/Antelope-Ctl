@@ -49,9 +49,12 @@ real discriminator (§14).
 Ten command opcodes are known. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
 `0x53`). The WebUI also emits the profile-guarded `0xab` global surround
-read-modify-write. The other three are **observed only, never sent** —
-`0x87` (per-speaker surround), `0x23` (AFX slot assign), and `0x1c` (AFX
-plugin parameters; the latter two are in `constraints.forbidden_opcodes`).
+read-modify-write. The other three are **not emitted by normal CLI/WebUI
+paths** — `0x87` (per-speaker surround), `0x23` (AFX slot assign), and `0x1c`
+(AFX plugin parameters; the latter two are in `constraints.forbidden_opcodes`).
+The dedicated `tools/surround_eq_selftest.py` may emit one explicitly selected
+`0x87` probe after the user acknowledges its experimental status; it always
+reads and restores a complete speaker record.
 
 **`0x1a` is not one of these ten.** It has never been observed as a write
 opcode on this device at all — it is not the surround EQ's write opcode
@@ -73,7 +76,7 @@ single most important thing to get right.
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim -- §11 | surround tab global; WebUI's verified 2.0 delay/level path uses a fresh read-modify-write |
-| `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | surround tab per-speaker strip (×16) |
+| `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; explicit one-field probe in `tools/surround_eq_selftest.py` |
 | `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
 | `0x1c` | *(AFX plugin parameters)* | `0xd5` | frame-identified only (§12a) -- payload never decoded on purpose | **observed only, never emitted** -- `0x1c` is in `forbidden_opcodes` (a licensed plugin's parameter set = bucket D) |
 
@@ -1273,8 +1276,9 @@ too. See `params.screen_brightness`.
 
 The Surround tab has a **global** whole-state frame and a **per-speaker**
 one. The global frame has a profile-driven builder for the verified 2.0
-delay/level read-modify-write path. The per-speaker frame remains read-only;
-its candidate head and EQ mode writes need isolated captures.
+delay/level read-modify-write path. The per-speaker frame remains read-only in
+normal runtime paths; the dedicated self-test now has a narrowly scoped,
+explicitly experimental one-field probe/restore path.
 
 **Readback — BOTH frames read back.** This corrects the earlier "no `0x73`
 / `0x74` readback for any surround param", which held only until the
@@ -1289,9 +1293,11 @@ Both are parsed by the reference tools. The WebUI validates the exact bounded
 readback targets, exposes the global decoded state and the per-speaker EQ bands,
 and leaves the candidate head read-only. Response bytes 16–19 are an opaque
 candidate head: positional alignment is known, but isolated level/delay/invert
-changes have not proven that it refreshes dynamically. Todo 45 blocks any
-whole-record `0x87` RMW until that test. Mode bytes remain raw because
-shelf/pass labels are unproven. No `0x87` action is authorized.
+changes have not proven that it refreshes dynamically. The experimental tool
+copies this head and the complete 116-byte record, changes one selected EQ
+field, verifies category `0x1a`, and restores the original record. It must not
+be used for broad sweeps. Mode bytes remain raw because shelf/pass labels are
+unproven; no normal `0x87` action is authorized.
 
 **Category `0x1b` alignment proof** — `body[N]` == the `0xab` frame's byte
 `[18+N]`, from one live read against a known 2.0 state:
@@ -1763,7 +1769,7 @@ parameter writes remain observation-only/forbidden under `SCOPE.md`.
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
-| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The TUI's finite `0x1a` decoder is read-only, begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, keeps modes raw, and labels only captured 2.0 L/R plus 2.1 L/R/LFE ownership. Todo 45 blocks `0x87` RMW; no higher-format or centre mapping is inferred. |
+| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder is read-only in normal paths, begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, keeps modes raw, and labels only captured 2.0 L/R plus 2.1 L/R/LFE ownership. `tools/surround_eq_selftest.py` can explicitly probe one frequency/Q/gain/raw-mode field and restore the complete record; no broad sweep or higher-format/centre mapping is inferred. |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Readback category `0x19` now maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding (slot-index vs instance id, 2 data points); bypass polarity; whether the `0x19` type/instance values fully match the Launcher’s plugin catalogue. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |

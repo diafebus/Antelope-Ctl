@@ -421,6 +421,118 @@ def build_surround_global_command(profile: dict, readback_body: bytes,
     return bytes(pkt)
 
 
+def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
+                                      speaker: int, band: int,
+                                      changes: dict = None,
+                                      allow_experimental: bool = False) -> bytes:
+    """Build one explicitly experimental per-speaker EQ state frame.
+
+    The 0x87/0xea frame is a complete speaker-strip state packet.  The
+    readback exposes the 116-byte strip body, so this helper copies that body
+    into the frame and changes at most one EQ field.  The candidate head holds
+    delay/level/invert bytes whose dynamic pairing is not yet confirmed; the
+    caller must therefore opt into this helper explicitly with
+    ``allow_experimental=True``.  Normal clients must continue treating the
+    per-speaker frame as read-only.
+    """
+    contract = profile.get('runtime_contracts', {}).get(
+        'surround_speaker_eq')
+    if not contract:
+        raise KeyError('profile has no runtime_contracts.surround_speaker_eq')
+    write = contract.get('write_contract', {}) or {}
+    status = str(write.get('status', '')).strip().lower()
+    if not allow_experimental:
+        raise ConstraintError(
+            'surround per-speaker EQ writes are experimental; pass the explicit '
+            'allow_experimental flag from a dedicated test tool')
+    if status not in {'experimental', 'experimental-unverified',
+                      'confirmed', 'capture-confirmed'}:
+        raise ConstraintError(
+            'profile does not contain an authorized surround speaker write contract')
+
+    try:
+        opcode = _as_int(write['opcode'])
+        param_id = _as_int(write['param_id'])
+        subcmd = _as_int(write['subcmd'])
+        magic = _as_int(write['magic'])
+        magic_offset = _as_int(write['magic_offset'])
+        opcode_offset = _as_int(write['opcode_offset'])
+        param_id_offset = _as_int(write['param_id_offset'])
+        subcmd_offset = _as_int(write['subcmd_offset'])
+        speaker_offset = _as_int(write['speaker_offset'])
+        payload_offset = _as_int(write['payload_offset'])
+        band_data_offset = _as_int(write.get('band_data_offset',
+                                             contract['candidate_head_size']))
+        record_size = _as_int(contract['record_size'])
+        band_count = _as_int(contract['band_count'])
+        band_stride = _as_int(contract['band_stride'])
+    except (KeyError, TypeError, ValueError) as e:
+        raise ValueError('invalid surround speaker EQ write contract') from e
+
+    observed = _opcode_set(profile, 'observed_opcodes_launcher_only')
+    if opcode in _opcode_set(profile, 'forbidden_opcodes'):
+        raise ConstraintError(f'opcode {opcode:#04x} is forbidden by this profile')
+    if opcode not in observed:
+        raise ConstraintError(
+            f'opcode {opcode:#04x} is not explicitly marked launcher-only in '
+            'the profile; refusing an experimental write')
+    if not isinstance(readback_body, (bytes, bytearray)):
+        raise TypeError('surround speaker readback body must be bytes')
+    if record_size <= 0 or len(readback_body) < record_size:
+        raise ValueError(
+            f'surround speaker readback is too short (need {record_size}, '
+            f'got {len(readback_body)})')
+    if not 0 <= int(speaker) < _as_int(contract['record_count']):
+        raise ValueError(f'surround speaker index {speaker} is outside the profile')
+    if not 0 <= int(band) < band_count:
+        raise ValueError(f'surround EQ band {band} is outside 0..{band_count - 1}')
+    changes = dict(changes or {})
+    if len(changes) > 1:
+        raise ValueError('the experimental self-test changes one EQ field at a time')
+
+    size = _as_int(profile['transport']['report_size'])
+    if (payload_offset < 0 or payload_offset + record_size > size
+            or band_stride <= 0 or band_data_offset < 0):
+        raise ValueError('invalid surround speaker EQ frame bounds')
+    pkt = bytearray(size)
+    pkt[payload_offset:payload_offset + record_size] = readback_body[:record_size]
+    for offset, value in ((magic_offset, magic), (opcode_offset, opcode),
+                          (param_id_offset, param_id), (subcmd_offset, subcmd),
+                          (speaker_offset, int(speaker))):
+        if offset < 0 or offset >= size:
+            raise ValueError(f'surround speaker frame offset {offset} is invalid')
+        pkt[offset] = int(value) & 0xFF
+
+    fields = {
+        'frequency': ('frequency_offset', 'frequency_range', False, 2),
+        'q_raw': ('q_offset', 'q_raw_range', False, 2),
+        'gain_raw': ('gain_offset', 'gain_raw_range', True, 2),
+        'mode': ('mode_offset', 'mode_range', False, 1),
+    }
+    for name, value in changes.items():
+        if name not in fields:
+            raise ValueError(f'unsupported surround EQ field {name!r}')
+        offset_key, range_key, signed, width = fields[name]
+        try:
+            value = int(value)
+            field_offset = _as_int(contract[offset_key])
+            lo, hi = (_as_int(v) for v in contract.get(range_key, [0, 255]))
+        except (KeyError, TypeError, ValueError) as e:
+            raise ValueError(f'invalid surround EQ contract for {name}') from e
+        if not lo <= value <= hi:
+            raise ValueError(f'{name} value {value} outside {lo}..{hi}')
+        absolute = (payload_offset + band_data_offset + band * band_stride
+                    + field_offset)
+        if field_offset < 0 or absolute < 0 or absolute + width > size:
+            raise ValueError(f'surround EQ field {name} falls outside the frame')
+        try:
+            pkt[absolute:absolute + width] = value.to_bytes(
+                width, byteorder='little', signed=signed)
+        except OverflowError as e:
+            raise ValueError(f'invalid surround EQ encoding for {name}') from e
+    return bytes(pkt)
+
+
 def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
                       pan_deg: int, send: int, mute: bool = False,
                       solo: bool = False) -> bytes:

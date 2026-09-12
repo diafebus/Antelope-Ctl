@@ -1721,7 +1721,7 @@
       "id": "0xea",
       "status": "WRITE frame geometry decoded from Launcher captures; runtime support is read-only category-0x1a EQ only. Frequency/Q/gain units and bounds are captured; mode bytes remain raw because endpoint labels are unproven. The four readback head bytes align positionally with OUT delay and packed level/invert, but dynamic refresh is unverified.",
       "type": "NEW opcode 0x87 -- one frame per speaker carries that speaker's whole surround-monitor strip",
-      "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. No builder; launcher-only observed opcode.",
+      "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. No normal runtime builder; the dedicated self-test has an explicit experimental one-field probe/restore builder.",
       "readback": "frame.readback category 0x1a -- 16 records (one per speaker), 116 meaningful bytes. CORRECTION: bytes 0..3 are an opaque candidate head, not an EQ header and not absent; they positionally equal OUT delay plus packed level/invert but were captured only at defaults, so dynamic semantics are unverified. The 16 EQ bands begin at record byte 4 / response byte 20 in exact `<freq LE16><Q LE16 x100><gain LE16 signed><mode raw>` geometry. L/R carry the captured non-flat Room Correction curve. Runtime decoding is read-only and omits the candidate head.",
       "field_map": {
         "17": "0x75 -- constant subcmd",
@@ -1731,7 +1731,7 @@
         "23_onward": "SIXTEEN parametric EQ bands, FULLY DECODED 2026-09-03 (srrnd-EQ-Q-and-mode + srrnd-EQ-L/R-* + srrnd-EQ-L-gain). One `0x87` frame carries all 16; the Launcher shows them as 2 pages of 8. **7-byte stride, band N at [23 + 7*N] (N 0..15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** FREQ = literal Hz, 20 .. 20000 Hz per band (user). Q = LE16, value = Q x100, range 10 (Q 0.10) .. 1800 (Q 18.0), default 0x0047 = 71 = Q 0.71 (Butterworth) -- the byte I earlier called a `0x47` marker IS the Q low byte. GAIN = LE16 signed, 0.01 dB, -2400 (-24 dB) .. +1200 (+12 dB) (user). MODE byte: `0x02` = bell (bands 2-15, always). **Bands 1 and 16 are the end-band slots** (band 1 = low end, band 16 = high end), each with TWO user modes: SHELVING and BAND-PASS (Antelope's labels; a 'flat' line in the UI is just shelf/pass at 0 gain and is NOT a separate mode). **Observed mode-byte values** -- band 1: `0x00` (rest) toggling to `0x04` (srrnd-EQ-Q-and-mode, L); band 16: `0x00` (rest) toggling `0x01` <-> `0x03` (srrnd-LFE, on the LFE strip). So the encoding is NOT a clean bitfield -- band 1 uses {0x00, 0x04}, band 16 uses {0x01, 0x03} (plus 0x00 as the untouched default). Which of the two is 'shelving' vs 'band-pass' is not yet pinned -- ask the user, they toggled it. In BOTH modes gain works and Q sets the slope. On the CENTRE channel the end bands are bell (`0x02`) only. Default freqs per page 30/120/500/1400/3000/5500/9500/14000 Hz."
       },
       "open": "Todo 45 blocks every per-speaker write: dynamically prove category-0x1a candidate-head bytes after isolated delay/level/invert changes before any whole-record RMW. Exact endpoint mode-byte labels also remain unproven. Runtime must retain modes as raw read-only values, label only captured indices 0=L, 1=R, 2=LFE under known 2.0/2.1, and make no centre or higher-format guesses.",
-      "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. No write command in the CLI (0x87 stays launcher-only); the readback is wired -- `surround-eq`."
+      "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. No normal write command in the CLI (0x87 stays launcher-only for production paths); tools/surround_eq_selftest.py can explicitly probe one EQ field and restore the complete record. The readback is wired -- `surround-eq`."
     },
     "dc_coupling": {
       "id": "0x26",
@@ -1948,7 +1948,22 @@
       "gain_raw_range": [-2400, 1200],
       "mode_offset": 6,
       "read_only": true,
-      "evidence": "Four raw macOS init captures each contain all 16 complete category-0x1a reports. Representative capture macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frames 17676/17686/17696; full-report hashes index 0 1d24d575830495cc8ee035e4167c916c20aef8ffec02e6dba3d6608e4a555457, index 1 e64c226aa323787d2da3a40e43e173a8d3b7c6a02489b5fd60c08b59bdff5591, index 2 102b1b66a5e7abcd74c67f381a24a821dbb373d6bcc26272bdc6762afef848ef. Response bytes 16..19 are an opaque four-byte candidate head positionally aligned with speaker OUT delay and packed level/invert, but all readbacks captured only defaults, so dynamic semantics are unverified and omitted from the runtime view. EQ begins at response byte 20; 16 bands use the captured 7-byte little-endian geometry. Bytes 132..319 are captured zero padding. Read-only: no opcode-0x87 capability or action is authorized."
+      "write_contract": {
+        "status": "experimental-unverified",
+        "magic_offset": 0,
+        "magic": "0x70",
+        "opcode_offset": 4,
+        "opcode": "0x87",
+        "param_id_offset": 16,
+        "param_id": "0xea",
+        "subcmd_offset": 17,
+        "subcmd": "0x75",
+        "speaker_offset": 18,
+        "payload_offset": 19,
+        "band_data_offset": 4,
+        "notes": "The Launcher frame geometry is known, but the category-0x1a candidate head (body bytes 0..3) has not been dynamically paired with per-speaker delay/level/invert writes. The experimental self-test copies that head and the complete 116-byte record, changes one EQ field, verifies the EQ readback, and restores the original record. It must never be used for broad sweeps."
+      },
+      "evidence": "Four raw macOS init captures each contain all 16 complete category-0x1a reports. Representative capture macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frames 17676/17686/17696; full-report hashes index 0 1d24d575830495cc8ee035e4167c916c20aef8ffec02e6dba3d6608e4a555457, index 1 e64c226aa323787d2da3a40e43e173a8d3b7c6a02489b5fd60c08b59bdff5591, index 2 102b1b66a5e7abcd74c67f381a24a821dbb373d6bcc26272bdc6762afef848ef. Response bytes 16..19 are an opaque four-byte candidate head positionally aligned with speaker OUT delay and packed level/invert, but all readbacks captured only defaults, so dynamic semantics are unverified and omitted from the normal runtime view. EQ begins at response byte 20; 16 bands use the captured 7-byte little-endian geometry. Bytes 132..319 are captured zero padding. Normal runtime remains read-only; the dedicated self-test may emit the observed 0x87 only after explicit experimental confirmation."
     }
   },
   "constraints": {

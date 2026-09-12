@@ -144,6 +144,7 @@ tools/scan_capture.py          <- offline helper: auto-finds the transition acro
 tools/scan_macos_capture.py    <- same, for native-macOS (Darwin XHC) pcapng -- see CAPTURING.md
 tools/hid_probe.py             <- dump the HID report descriptor + probe for a readable Feature report
 tools/selftest.py              <- round-trip self-test against real hardware via the readback (read-only by default, --write for restore-guaranteed writes)
+tools/surround_eq_selftest.py  <- bounded Surround EQ readback and one-field experimental write/restore test
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
 captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
@@ -955,14 +956,36 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   category `0x1a`. The CLI decodes both readbacks, and the WebUI Surround tab
   polls both categories. Its verified 2.0 global delay/level path performs a
   fresh read-modify-write; per-speaker writes and other global controls remain
-  read-only. **Room Correction** turned out to be just the Launcher computing a
+  read-only. `tools/surround_eq_selftest.py` can read all 16 records or, with
+  explicit confirmation, probe one frequency, Q, gain, or raw mode byte in one
+  selected band and restore the complete record. The per-speaker write frame
+  remains experimental because its candidate delay/level/invert head has not
+  been dynamically paired with the readback. **Room Correction** turned out to be just the Launcher computing a
   curve host-side and writing it into that `0x87` per-speaker EQ -- no opcode,
   no toggle (`params.surround_speaker` *is* the RC interface). Only **2.0 / 2.1**
   could be captured, though --
   **the bigger formats (5.1 … 9.1.6) are NOT supported and NOT tested**;
   a clearly-marked best-effort deduction is in
   `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED`. See
-  `params.surround_monitor` + `params.surround_speaker`.
+`params.surround_monitor` + `params.surround_speaker`.
+
+For a targeted hardware probe, stop the WebUI first so it releases the HID
+device, then run the dedicated self-test. It reads all speakers by default:
+
+```
+python3 tools/surround_eq_selftest.py
+```
+
+Write mode requires one speaker, one band, one field, an explicit value, and
+an acknowledgement of the experimental `0x87` path. It verifies the readback
+and restores the complete record:
+
+```
+python3 tools/surround_eq_selftest.py --write --speaker 0 --band 3 --parameter gain --value -1.00 --confirm-experimental-write
+```
+
+Frequency and Q use Hz and the Q value shown by the UI; gain uses dB. Mode is
+accepted only as a raw byte because its end-band labels are not fully proven.
 
 ### Connect handshake & routing readback -- resolved (2026-08, native macOS)
 
