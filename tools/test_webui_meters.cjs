@@ -15,6 +15,7 @@ assert.match(html, /data-rtab="surround"/);
 assert.match(html, /data-rpane="surround"/);
 assert.match(surroundCss, /\.surround-eq-grid \{[^}]*repeat\(16,minmax\(0,1fr\)\)/);
 assert.match(surroundCss, /\.surround-eq-legend/);
+assert.match(surroundCss, /\.surround-eq-reset \{[^}]*flex:0 0 auto;[^}]*width:max-content/);
 const js = readWebUISource();
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
 const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
