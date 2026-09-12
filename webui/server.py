@@ -570,6 +570,13 @@ class Device:
                 "readback and preserve the rest of the speaker record."
             ),
         }
+        reset_preset = eq_contract.get("reset_preset")
+        if isinstance(reset_preset, dict):
+            eq_write["reset"] = {
+                "frequency_hz": list(reset_preset.get("frequency_hz", [])),
+                "q": reset_preset.get("q"),
+                "gain_db": reset_preset.get("gain_db"),
+            }
         try:
             record_size = int(eq_contract["record_size"])
             proto.build_surround_speaker_eq_command(
@@ -1546,6 +1553,10 @@ class SurroundEQChange(BaseModel):
     value: float
 
 
+class SurroundEQReset(BaseModel):
+    speaker: int               # 0-based currently displayed speaker
+
+
 class MixerLink(BaseModel):
     """A virtual-mixer stereo pair scoped to one mix."""
     pair: int
@@ -1625,6 +1636,28 @@ def _surround_eq_raw_value(profile, parameter, value):
             low, high = lo, hi
         raise ValueError(f"{label} outside {low:g}..{high:g}")
     return raw, field
+
+
+def _surround_eq_reset_values(profile):
+    """Return the profile-defined reset preset in raw wire units."""
+    contract = profile.get("runtime_contracts", {}).get(
+        "surround_speaker_eq", {}) or {}
+    preset = contract.get("reset_preset", {}) or {}
+    frequencies = preset.get("frequency_hz")
+    if not isinstance(frequencies, list):
+        raise ValueError("profile has no surround EQ reset frequency preset")
+    band_count = int(contract.get("band_count", 0))
+    if len(frequencies) != band_count:
+        raise ValueError(
+            f"surround EQ reset needs {band_count} frequencies, "
+            f"got {len(frequencies)}")
+    raw_frequencies = [
+        _surround_eq_raw_value(profile, "frequency", value)[0]
+        for value in frequencies
+    ]
+    q_raw = _surround_eq_raw_value(profile, "q", preset["q"])[0]
+    gain_raw = _surround_eq_raw_value(profile, "gain", preset["gain_db"])[0]
+    return raw_frequencies, q_raw, gain_raw
 
 
 @app.get("/")
@@ -1761,6 +1794,44 @@ def api_surround_eq(change: SurroundEQChange):
         "band": change.band,
         "parameter": parameter,
         "value": change.value,
+    }
+
+
+@app.post("/api/surround/eq/reset")
+def api_surround_eq_reset(change: SurroundEQReset):
+    """Queue a complete profile-defined EQ reset for one speaker."""
+    if not DEV.surround_available:
+        return _bad("surround state is not safely mapped for this profile")
+    eq_write = DEV.surround_json()["write"].get("eq", {})
+    if not eq_write.get("enabled"):
+        return _bad("surround EQ writes are not authorized for this profile")
+    if not 0 <= change.speaker < DEV.surround_speaker_count:
+        return _bad(
+            f"speaker {change.speaker} out of range "
+            f"0..{DEV.surround_speaker_count - 1}")
+    try:
+        frequencies, q_raw, gain_raw = _surround_eq_reset_values(PROFILE)
+    except (KeyError, TypeError, ValueError) as exc:
+        return _bad(str(exc))
+
+    def do(t):
+        body = DEV._surround_speaker_body_for_write(t, change.speaker)
+        packet = proto.build_surround_speaker_eq_reset_command(
+            PROFILE, body, change.speaker, frequencies, q_raw, gain_raw,
+            allow_experimental=True)
+        t.write(packet)
+        DEV._cache_surround_speaker_packet(change.speaker, packet)
+
+    DEV.submit(do)
+    reset = eq_write.get("reset", {})
+    return {
+        "ok": True,
+        "queued": True,
+        "experimental": True,
+        "speaker": change.speaker,
+        "frequency_hz": reset.get("frequency_hz", frequencies),
+        "q": reset.get("q", q_raw / 100),
+        "gain_db": reset.get("gain_db", gain_raw / 100),
     }
 
 

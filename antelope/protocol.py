@@ -534,6 +534,90 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
     return bytes(pkt)
 
 
+def build_surround_speaker_eq_reset_command(
+        profile: dict, readback_body: bytes, speaker: int,
+        frequencies: list, q_raw: int, gain_raw: int,
+        allow_experimental: bool = False) -> bytes:
+    """Build an experimental complete EQ reset for one speaker.
+
+    The opaque candidate head and every band mode are copied from the fresh
+    readback.  Only the requested frequency, Q, and gain values are replaced.
+    This is deliberately separate from the normal one-field builder so a
+    multi-field write cannot happen accidentally through the regular WebUI
+    control path.
+    """
+    contract = profile.get('runtime_contracts', {}).get(
+        'surround_speaker_eq')
+    if not contract:
+        raise KeyError('profile has no runtime_contracts.surround_speaker_eq')
+    write = contract.get('write_contract', {}) or {}
+    try:
+        band_count = _as_int(contract['band_count'])
+        band_stride = _as_int(contract['band_stride'])
+        payload_offset = _as_int(write['payload_offset'])
+        band_data_offset = _as_int(write.get(
+            'band_data_offset', contract['candidate_head_size']))
+    except (KeyError, TypeError, ValueError) as e:
+        raise ValueError('invalid surround speaker EQ reset contract') from e
+    if not isinstance(frequencies, (list, tuple)):
+        raise ValueError('surround EQ reset frequencies must be a list')
+    if len(frequencies) != band_count:
+        raise ValueError(
+            f'surround EQ reset needs {band_count} frequencies, '
+            f'got {len(frequencies)}')
+
+    def integer(value, label):
+        try:
+            raw = int(value)
+            if float(value) != raw:
+                raise ValueError
+        except (TypeError, ValueError, OverflowError) as e:
+            raise ValueError(f'{label} must be an integer') from e
+        return raw
+
+    frequency_values = [integer(value, 'frequency') for value in frequencies]
+    q_raw = integer(q_raw, 'q_raw')
+    gain_raw = integer(gain_raw, 'gain_raw')
+
+    # Let the established builder perform all safety, header, body-size, and
+    # opcode checks before this dedicated multi-field operation mutates the
+    # copied packet.
+    pkt = bytearray(build_surround_speaker_eq_command(
+        profile, readback_body, speaker, 0, {},
+        allow_experimental=allow_experimental))
+    fields = {
+        'frequency': ('frequency_offset', 'frequency_range', False, 2),
+        'q_raw': ('q_offset', 'q_raw_range', False, 2),
+        'gain_raw': ('gain_offset', 'gain_raw_range', True, 2),
+    }
+    for band, frequency in enumerate(frequency_values):
+        for name, value in (
+                ('frequency', frequency), ('q_raw', q_raw),
+                ('gain_raw', gain_raw)):
+            offset_key, range_key, signed, width = fields[name]
+            try:
+                field_offset = _as_int(contract[offset_key])
+                lo, hi = (_as_int(v) for v in contract.get(
+                    range_key, [0, 255]))
+            except (KeyError, TypeError, ValueError) as e:
+                raise ValueError(
+                    f'invalid surround EQ contract for {name}') from e
+            if not lo <= value <= hi:
+                raise ValueError(f'{name} value {value} outside {lo}..{hi}')
+            absolute = (payload_offset + band_data_offset
+                        + band * band_stride + field_offset)
+            if (field_offset < 0 or absolute < 0
+                    or absolute + width > len(pkt)):
+                raise ValueError(
+                    f'surround EQ field {name} falls outside the frame')
+            try:
+                pkt[absolute:absolute + width] = value.to_bytes(
+                    width, byteorder='little', signed=signed)
+            except OverflowError as e:
+                raise ValueError(f'invalid surround EQ encoding for {name}') from e
+    return bytes(pkt)
+
+
 def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
                       pan_deg: int, send: int, mute: bool = False,
                       solo: bool = False) -> bytes:

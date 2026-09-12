@@ -91,6 +91,15 @@ class MeterSourceTests(unittest.TestCase):
             'raw': 96, 'db': None, 'clip': None, 'silence': True,
         })
 
+    def test_surround_eq_reset_uses_the_profile_preset(self):
+        frequencies, q_raw, gain_raw = self.server._surround_eq_reset_values(
+            self.profile)
+        self.assertEqual(frequencies, [30, 45, 90, 160, 350, 650, 1100, 1700,
+                                       2500, 3500, 4750, 6250, 8250, 10750,
+                                       13000, 15000])
+        self.assertEqual(q_raw, 71)
+        self.assertEqual(gain_raw, 0)
+
     def test_orion_selected_mixer_strip_meters_follow_the_window_selector(self):
         device = self.server.Device.__new__(self.server.Device)
         device.profile = self.profile

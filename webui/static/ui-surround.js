@@ -174,10 +174,11 @@ function surroundEqResponseAt(bands, frequency) {
   }, 0);
 }
 
-function surroundEqCurvePoints(bands, sampleCount = 256) {
+function surroundEqCurvePoints(bands, minFrequency = 20,
+                               maxFrequency = 20000, sampleCount = 256) {
   if (!bands.length) return [];
-  const start = bands[0].frequency;
-  const end = bands[bands.length - 1].frequency;
+  const start = Number(minFrequency);
+  const end = Number(maxFrequency);
   if (!(end > start)) {
     return [{frequency: start, gain: surroundEqResponseAt(bands, start)}];
   }
@@ -239,7 +240,7 @@ function surroundEqGraph(speaker) {
       + '<text x="' + (left - 7) + '" y="' + (y + 3)
       + '" text-anchor="end">' + value + '</text>';
   }).join('');
-  const curve = surroundEqCurvePoints(bands).map(point => ({
+  const curve = surroundEqCurvePoints(bands, minFreq, maxFreq).map(point => ({
     ...point, x: xFor(point.frequency), y: yFor(point.gain),
   }));
   const line = surroundGraphPath(curve);
@@ -258,7 +259,7 @@ function surroundEqGraph(speaker) {
     + '<path class="surround-eq-line" d="' + line + '" />'
     + '<g class="surround-eq-points">' + markers + '</g>'
     + '</svg>'
-    + '<span class="surround-eq-graph-note">Q-shaped gain estimate from readback · bounded to the configured band span</span>'
+    + '<span class="surround-eq-graph-note">Q-shaped gain estimate from readback · full 20 Hz–20 kHz display span</span>'
     + '</div>';
 }
 
@@ -332,6 +333,10 @@ function surroundSpeakerHTML(data) {
   const count = data.speaker_count || data.speakers?.length || 16;
   const speaker = surroundSpeaker(SURROUND_SPEAKER, data);
   const eqWritable = data.write?.eq?.enabled === true && speaker.readback === true;
+  const resetPreset = data.write?.eq?.reset;
+  const eqResettable = eqWritable
+    && Array.isArray(resetPreset?.frequency_hz)
+    && resetPreset.frequency_hz.length === speaker.bands.length;
   const options = Array.from({length: count}, (_, index) => {
     const item = surroundSpeaker(index, data);
     return `<option value="${index}"${index === SURROUND_SPEAKER ? ' selected' : ''}>
@@ -346,6 +351,9 @@ function surroundSpeakerHTML(data) {
       <label>Speaker <select data-surround-speaker>${options}</select></label>
       <span class="surround-speaker-name">${surroundEscape(speaker.label)}</span>
       <span class="surround-meta">${speaker.readback ? `${speaker.bands.length} EQ bands` : 'waiting for readback'}</span>
+      <button class="btn surround-eq-reset" type="button" data-surround-eq-reset
+        data-surround-eq-speaker="${speaker.index}"${eqResettable ? '' : ' disabled'}
+        title="Reset this speaker's EQ to the profile preset">RESET</button>
     </div>
     <div class="surround-controls surround-speaker-controls">
       ${surroundCandidateControl('Speaker delay')}
@@ -358,7 +366,7 @@ function surroundSpeakerHTML(data) {
       ${surroundEqGraph(speaker)}
       ${surroundEqGrid(speaker, eqWritable)}</div>
     <p class="surround-note">${eqWritable
-      ? 'EQ changes write one frequency, gain, Q, or raw mode field at a time after a fresh readback; speaker delay, level and phase remain read-only.'
+      ? 'EQ changes write one frequency, gain, Q, or raw mode field at a time after a fresh readback. Reset changes only this speaker\'s frequencies, Q, and gains; speaker delay, level and phase remain read-only.'
       : 'The per-speaker 0x87 frame is decoded for EQ readback. Its delay, level and phase head bytes remain candidate mappings, so the browser controls stay read-only.'}</p>
   </section>`;
 }
@@ -388,6 +396,19 @@ function initSurroundEqControls(host) {
     if (!input.disabled && input.type === 'range'
         && typeof wirePrecisionRange === 'function') wirePrecisionRange(input);
     surroundEqPaint(input);
+  });
+}
+
+function requestSurroundEqReset(button) {
+  if (!button || button.disabled) return;
+  const speaker = Number(button.dataset.surroundEqSpeaker);
+  const name = button.closest('.surround-card')?.querySelector(
+    '.surround-speaker-name')?.textContent || `Speaker ${speaker + 1}`;
+  if (typeof window !== 'undefined' && typeof window.confirm === 'function'
+      && !window.confirm(`Reset the EQ for ${name}?`)) return;
+  button.disabled = true;
+  post('/api/surround/eq/reset', {speaker}).finally(() => {
+    if (button.isConnected) button.disabled = false;
   });
 }
 
@@ -444,6 +465,11 @@ function buildSurround() {
       if (open) modal.querySelector('[data-surround-bass-close]')?.focus();
     };
     host.addEventListener('click', event => {
+      const reset = event.target.closest?.('[data-surround-eq-reset]');
+      if (reset) {
+        requestSurroundEqReset(reset);
+        return;
+      }
       const open = event.target.closest?.('[data-surround-bass-open]');
       if (open) {
         setBassModal(host.querySelector('[data-surround-bass-modal]'), true);

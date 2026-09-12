@@ -80,6 +80,34 @@ class SurroundCommandTests(unittest.TestCase):
         self.assertEqual(packet[19:135], bytes(expected))
         self.assertEqual(packet[135:], bytes(185))
 
+    def test_speaker_reset_changes_eq_fields_and_preserves_modes(self):
+        body = bytearray((index * 3) & 0xFF for index in range(304))
+        body[:4] = bytes((0xA1, 0xB2, 0xC3, 0xD4))
+        frequencies = [30, 45, 90, 160, 350, 650, 1100, 1700,
+                       2500, 3500, 4750, 6250, 8250, 10750, 13000, 15000]
+
+        packet = protocol.build_surround_speaker_eq_reset_command(
+            self.profile, body, speaker=2, frequencies=frequencies,
+            q_raw=71, gain_raw=0, allow_experimental=True)
+
+        self.assertEqual(len(packet), 320)
+        self.assertEqual(packet[16:19], bytes((0xEA, 0x75, 2)))
+        self.assertEqual(packet[19:23], bytes(body[:4]))
+        for index, frequency in enumerate(frequencies):
+            offset = 19 + 4 + index * 7
+            self.assertEqual(
+                packet[offset:offset + 2], frequency.to_bytes(2, "little"))
+            self.assertEqual(packet[offset + 2:offset + 4],
+                             (71).to_bytes(2, "little"))
+            self.assertEqual(packet[offset + 4:offset + 6], bytes(2))
+            self.assertEqual(packet[offset + 6], body[4 + index * 7 + 6])
+
+    def test_speaker_reset_rejects_wrong_frequency_count(self):
+        with self.assertRaisesRegex(ValueError, 'needs 16 frequencies'):
+            protocol.build_surround_speaker_eq_reset_command(
+                self.profile, bytes(304), speaker=0, frequencies=[30],
+                q_raw=71, gain_raw=0, allow_experimental=True)
+
 
 if __name__ == "__main__":
     unittest.main()

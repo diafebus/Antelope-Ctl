@@ -20,10 +20,11 @@ compatibility.
     profile-declared nested readback records, refreshed one record per meter
     cycle on connect and every 45 s. Route/mixer/Gazelle Reverb writes update
     their serialized caches directly. The Surround tab exposes the bounded
-    `0x1b` global and `0x1a` speaker EQ records; only its verified 2.0 global
-    delay/level path writes, using a fresh complete-state read before each
-    command. `/api/readbacks` exposes the structured records to diagnostics and
-    `/api/surround` serves the decoded Surround surface. Queries use the active
+    `0x1b` global and `0x1a` speaker EQ records; the verified 2.0 global
+    delay/level path and bounded per-speaker EQ path write using fresh
+    complete-state reads. The EQ Reset action writes the profile preset for
+    only the displayed speaker. `/api/readbacks` exposes the structured records
+    to diagnostics and `/api/surround` serves the decoded Surround surface. Queries use the active
     profile's bounded category counts or explicit capture-confirmed layouts, so
     the BusFault hazard is never hit; schema-only layouts are displayed as
     capture-required and are never probed.

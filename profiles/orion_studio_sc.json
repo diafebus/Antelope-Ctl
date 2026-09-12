@@ -1947,6 +1947,13 @@
       "gain_offset": 4,
       "gain_raw_range": [-2400, 1200],
       "mode_offset": 6,
+      "reset_preset": {
+        "frequency_hz": [30, 45, 90, 160, 350, 650, 1100, 1700,
+                          2500, 3500, 4750, 6250, 8250, 10750, 13000, 15000],
+        "q": 0.71,
+        "gain_db": 0.0,
+        "notes": "Reset changes frequency, Q, and gain for one displayed speaker; existing mode bytes and the opaque candidate head are preserved."
+      },
       "read_only": false,
       "write_contract": {
         "status": "experimental-unverified",

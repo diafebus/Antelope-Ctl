@@ -49,12 +49,15 @@ real discriminator (§14).
 Ten command opcodes are known. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
 `0x53`). The WebUI also emits the profile-guarded `0xab` global surround
-read-modify-write. The other three are **not emitted by normal CLI/WebUI
-paths** — `0x87` (per-speaker surround), `0x23` (AFX slot assign), and `0x1c`
-(AFX plugin parameters; the latter two are in `constraints.forbidden_opcodes`).
-The dedicated `tools/surround_eq_selftest.py` may emit one explicitly selected
-`0x87` probe after the user acknowledges its experimental status; it always
-reads and restores a complete speaker record.
+read-modify-write. The WebUI also has an explicitly experimental `0x87`
+per-speaker EQ path: individual controls write one field, while Reset writes
+the profile-defined frequency/Q/gain preset for one speaker after a fresh
+readback. The remaining two are **not emitted by normal CLI/WebUI paths** —
+`0x23` (AFX slot assign) and `0x1c` (AFX plugin parameters; both are in
+`constraints.forbidden_opcodes`). The dedicated
+`tools/surround_eq_selftest.py` may emit one explicitly selected `0x87` probe
+after the user acknowledges its experimental status; it always reads and
+restores a complete speaker record.
 
 **`0x1a` is not one of these ten.** It has never been observed as a write
 opcode on this device at all — it is not the surround EQ's write opcode
@@ -76,7 +79,7 @@ single most important thing to get right.
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim -- §11 | surround tab global; WebUI's verified 2.0 delay/level path uses a fresh read-modify-write |
-| `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; explicit one-field probe in `tools/surround_eq_selftest.py` |
+| `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; explicit one-field/reset writes in WebUI and one-field probe in `tools/surround_eq_selftest.py` |
 | `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
 | `0x1c` | *(AFX plugin parameters)* | `0xd5` | frame-identified only (§12a) -- payload never decoded on purpose | **observed only, never emitted** -- `0x1c` is in `forbidden_opcodes` (a licensed plugin's parameter set = bucket D) |
 
@@ -1356,6 +1359,13 @@ changes. Per speaker:
 | 19-20 | **delay**, LE16, **0.1 ms/step** (UI 0.6–100.6 ms, user-confirmed) | |
 | 21-22 | **level**, LE16 (base `600` = 0 dB, 0.1 dB/step, **−60..+16 dB**, user-confirmed) | **`[22]` bit 7 = phase invert** (level tops at 760 = `0x02F8`, so bit 7 is free) |
 | 23… | **16 parametric EQ bands**, 7-byte stride — **fully decoded** (`srrnd-EQ-Q-and-mode`) | The frame carries all 16; the Launcher shows them as 2 pages of 8. **Band N at `23 + 7·N` (N 0-15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** Freq = literal Hz, 20–20000 Hz/band. **Q = LE16, value ×100** — `10`=0.1 … `1800`=18.0, default `0x0047`=71=Q 0.71 (the byte earlier mislabelled a `0x47` marker is the Q low byte). Gain = LE16 signed 0.01 dB, `−2400`…`+1200` = −24…+12 dB. **Mode byte:** `0x02` = bell (bands 2-15). **Bands 1 & 16 are the end slots** — two user modes each (shelving / band-pass; a "flat" UI line is just shelf/pass at 0 gain). Observed mode-byte values: band 1 `{0x00, 0x04}`, band 16 `{0x01, 0x03}` (both rest at `0x00` before first touch) — not a clean bitfield; which value is shelf vs band-pass not yet pinned. Gain + Q work in both modes (Q sets the slope). Centre channel: end bands are bell (`0x02`) only. **LFE** (`srrnd-LFE`) = speaker index 2 in 2.1, a normal `0x87` strip (same 16 bands, level, delay, invert). Ranges user-confirmed |
+
+The WebUI's **Reset** action is a dedicated experimental complete-record
+write for only the currently displayed speaker. It fresh-reads category
+`0x1a`, replaces all 16 frequencies with the profile preset
+`30, 45, 90, 160, 350, 650, 1100, 1700, 2500, 3500, 4750, 6250,
+8250, 10750, 13000, 15000`, sets every gain to `0 dB` and Q to `0.71`,
+and preserves the opaque candidate head and existing mode bytes.
 
 R speaker = index 1, byte-identical to L. `copy speaker` / `paste speaker`
 just re-send `0x87` frames. `params.surround_monitor` +

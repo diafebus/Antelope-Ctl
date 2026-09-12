@@ -29,6 +29,8 @@ assert.match(js, /function surroundEqGraph\(\w+\)/);
 assert.match(js, /function surroundEqGrid\(speaker(?:, writable = false)?\)/);
 assert.match(js, /function surroundEqSigma\(q\)/);
 assert.match(js, /Math\.log2\(band\.frequency\)/);
+assert.match(js, /function requestSurroundEqReset\(button\)/);
+assert.match(js, /\/api\/surround\/eq\/reset/);
 assert.match(js, /16-band EQ · single view/);
 assert.match(js, /class="mixer-knob surround-knob"/);
 assert.doesNotMatch(js, /surroundEqTable/);
@@ -159,16 +161,25 @@ const graphBands = [
 const curve = surroundContext.surroundEqCurvePoints(graphBands.map((band, index) => ({
   index, frequency: band.freq_hz, q: band.q, gain: band.gain_db,
 })));
-assert.equal(curve[0].frequency, 100);
-assert.equal(curve[curve.length - 1].frequency, 5000);
-assert.match(surroundContext.surroundEqGraph({bands: graphBands}),
-  /Q-shaped gain estimate from readback/);
+assert.equal(curve[0].frequency, 20);
+assert.equal(curve[curve.length - 1].frequency, 20000);
+const graphHTML = surroundContext.surroundEqGraph({bands: graphBands});
+assert.match(graphHTML, /Q-shaped gain estimate from readback/);
+assert.match(graphHTML, /surround-eq-area" d="M 42 /);
+assert.match(graphHTML, / L 948 [^ ]+ L 42 /);
 const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
-  ...surroundData, write: {enabled: false, eq: {enabled: true}},
+  ...surroundData, write: {enabled: false, eq: {enabled: true, reset: {
+    frequency_hz: [30, 45, 90, 160, 350, 650, 1100, 1700,
+      2500, 3500, 4750, 6250, 8250, 10750, 13000, 15000],
+    q: 0.71, gain_db: 0,
+  }}},
 });
 assert.match(writableSurroundHTML, /experimental write · one field at a time/);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 64);
 assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-input[^>]* disabled/);
+assert.equal((writableSurroundHTML.match(/data-surround-eq-reset/g) || []).length, 1);
+assert.match(writableSurroundHTML, /data-surround-eq-speaker="0"/);
+assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-reset[^>]* disabled/);
 const inputsSource = fs.readFileSync(path.join(root, 'webui/static/ui-inputs.js'), 'utf8');
 assert.match(inputsSource, /\.replace\(\/\^Preamp\\s\+\/i, 'CH'\)/);
 const globalHTML = surroundContext.surroundGlobalHTML(surroundData);
