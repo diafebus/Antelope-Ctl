@@ -952,11 +952,13 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   polarity, delay, a full 16-band parametric EQ per speaker). Decoded
   2026-09-03 from the `srrnd-*` captures. **Both read back** (found
   2026-09-04): global = readback category `0x1b`, per-speaker EQ =
-  category `0x1a`. Neither is wired into the CLI yet, and neither opcode
-  is ever *sent* — they are launcher-only observed. **Room Correction** turned out to
-  be just the Launcher computing a curve host-side and writing it into
-  that `0x87` per-speaker EQ -- no opcode, no toggle (`params.surround_speaker`
-  *is* the RC interface). Only **2.0 / 2.1** could be captured, though --
+  category `0x1a`. The CLI decodes both readbacks, and the WebUI Surround tab
+  polls both categories. Its verified 2.0 global delay/level path performs a
+  fresh read-modify-write; per-speaker writes and other global controls remain
+  read-only. **Room Correction** turned out to be just the Launcher computing a
+  curve host-side and writing it into that `0x87` per-speaker EQ -- no opcode,
+  no toggle (`params.surround_speaker` *is* the RC interface). Only **2.0 / 2.1**
+  could be captured, though --
   **the bigger formats (5.1 … 9.1.6) are NOT supported and NOT tested**;
   a clearly-marked best-effort deduction is in
   `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED`. See

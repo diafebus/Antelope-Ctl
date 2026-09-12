@@ -14,12 +14,12 @@ Two kinds of state:
              buses, brightness, meters). The 0x75 bank is retained only for
              lower-rate diagnostics.
   * SLOW  -- routing (readback cat 0x03), virtual mixer (cat 0x04),
-             profile-confirmed Gazelle Reverb state, and profile-declared
-             nested readback records, refreshed incrementally on connect and
-             on a slow timer. Writes use and update their serialized caches,
-             querying first if not populated yet. The snapshot carries a
-             monotonic `rb_ver`; the browser refetches the slow APIs when it
-             bumps.
+             profile-confirmed Gazelle Reverb and Surround state, and
+             profile-declared nested readback records, refreshed incrementally
+             on connect and on a slow timer. Writes use and update their
+             serialized caches, querying first if not populated yet. The
+             snapshot carries a monotonic `rb_ver`; the browser refetches the
+             slow APIs when it bumps.
 
 ⚠ HARDWARE RULE (see ../antelope-ctl/CLAUDE.md "STANDING HARDWARE RULE"):
 never query a readback index past a category's record count -- it BusFaults
@@ -34,6 +34,7 @@ Then: http://127.0.0.1:8714
 import asyncio
 import glob
 import json
+import math
 import os
 import queue
 import sys
@@ -104,6 +105,8 @@ print(f"[antelope-ctl] profile: {os.path.basename(PROFILE_PATH)} "
 
 ROUTING_CAT = proto.ROUTING_READBACK_CATEGORY   # 0x03
 MIXER_CAT = proto.MIXER_READBACK_CATEGORY       # 0x04
+SURROUND_EQ_CAT = proto.SURROUND_SPEAKER_EQ_READBACK_CATEGORY   # 0x1a
+SURROUND_GLOBAL_CAT = proto.SURROUND_GLOBAL_READBACK_CATEGORY   # 0x1b
 READBACK_REFRESH_S = 45.0   # slow background poll, one record per fast-state cycle
 
 STRUCTURED_READBACK_SAFE_STATUSES = frozenset({
@@ -180,6 +183,51 @@ def _mixer_surface_packet(profile, mix):
     else:
         packet = proto.build_raw_command(profile, proto._as_int(param), target, value)
     return packet, value, target
+
+
+def _surround_global_contract(profile):
+    """Return the safe surround-global contract, if the profile has one."""
+    frame = profile.get("frame", {}).get("surround_global_command", {})
+    contract = frame.get("contract", {}) if isinstance(frame, dict) else {}
+    status = str(contract.get("status", frame.get("runtime_status", ""))) \
+        .strip().lower()
+    if status not in STRUCTURED_READBACK_SAFE_STATUSES:
+        return None
+    try:
+        if not proto.readback_indices_available(profile, SURROUND_GLOBAL_CAT, [0]):
+            return None
+        count = proto.readback_category_count(profile, SURROUND_EQ_CAT)
+        if count is None or count <= 0:
+            return None
+        if not proto.readback_indices_available(
+                profile, SURROUND_EQ_CAT, range(count)):
+            return None
+    except (KeyError, TypeError, ValueError, proto.ConstraintError):
+        return None
+    return contract
+
+
+def _strip_surround_raw(value):
+    """Keep decoded surround state JSON-friendly and human-sized."""
+    if isinstance(value, dict):
+        return {
+            key: _strip_surround_raw(item)
+            for key, item in value.items()
+            if key not in {"raw", "header"}
+        }
+    if isinstance(value, list):
+        return [_strip_surround_raw(item) for item in value]
+    return value
+
+
+def _surround_speaker_label(index, global_state):
+    if index == 0:
+        return "L"
+    if index == 1:
+        return "R"
+    if index == 2 and global_state and global_state.get("lfe_present"):
+        return "LFE"
+    return f"Speaker {index + 1}"
 
 
 def _structured_readback_targets(profile):
@@ -351,6 +399,10 @@ class Device:
                     for dest in self.mixer_source_destinations)
             and proto.readback_indices_available(
                 profile, ROUTING_CAT, self.mixer_source_destinations))
+        self.surround_contract = _surround_global_contract(profile)
+        self.surround_speaker_count = (
+            proto.readback_category_count(profile, SURROUND_EQ_CAT) or 0)
+        self.surround_available = bool(self.surround_contract)
 
         self.cmds = queue.Queue()          # callables: fn(transport) -> None
         self.snapshot = {"online": False}  # last known state, read by the web side
@@ -360,6 +412,9 @@ class Device:
         self.mixer = {}                    # mix(int)     -> [slot dict, ...]
         self.auraverb = {}                 # readback index -> list of mix dicts
         self.structured = {}               # (category, index) -> parsed records
+        self.surround_global = None        # parsed category-0x1b record
+        self.surround_global_raw = None    # body used for safe global RMW
+        self.surround_speakers = {}        # speaker index -> parsed EQ record
         auraverb_target = proto.auraverb_readback_target(profile)
         self.auraverb_category = (auraverb_target[0]
                                   if auraverb_target is not None
@@ -455,6 +510,107 @@ class Device:
                 "enabled": record.get("enabled"),
                 "wet": record.get("wet"),
             } for record in records]
+
+    def surround_json(self):
+        """Return decoded surround state and the profile's write boundary."""
+        with self._lock:
+            global_state = self.surround_global
+            speakers = dict(self.surround_speakers)
+
+        global_view = _strip_surround_raw(global_state)
+        if global_view is not None:
+            global_view["format"] = "2.1" if global_state.get("lfe_present") else "2.0"
+
+        contract = self.surround_contract or {}
+        delay_range = list(contract.get("delay_range", []))
+        level_range = list(contract.get("level_range", []))
+        delay_step = float(contract.get("delay_step_ms", 0.1))
+        level_step = float(contract.get("level_step_db", 0.1))
+        level_zero = int(contract.get("level_zero_raw", 600))
+        write = {
+            "available": self.surround_available,
+            "enabled": False,
+            "fields": ["delay_ms", "level_db"],
+            "delay_step_ms": delay_step,
+            "level_step_db": level_step,
+            "delay_ms_range": [value * delay_step for value in delay_range],
+            "level_db_range": [
+                (value - level_zero) * level_step for value in level_range
+            ],
+            "readback_category": SURROUND_GLOBAL_CAT,
+            "note": (
+                "Only global delay and level are writable in the verified 2.0 "
+                "surround contract."
+            ),
+        }
+        if global_state is not None and self.surround_global_raw is not None:
+            try:
+                delay_raw = round(global_state["global_delay_ms"] / delay_step)
+                level_raw = round(global_state["level_db"] / level_step + level_zero)
+                proto.build_surround_global_command(
+                    self.profile, self.surround_global_raw,
+                    global_delay=delay_raw, global_level=level_raw)
+            except (KeyError, TypeError, ValueError, proto.ConstraintError):
+                pass
+            else:
+                write["enabled"] = True
+
+        active_count = None
+        if global_state is not None:
+            active_count = 3 if global_state.get("lfe_present") else 2
+        speaker_view = []
+        for index in range(self.surround_speaker_count):
+            record = speakers.get(index)
+            speaker_view.append({
+                "index": index,
+                "label": _surround_speaker_label(index, global_state),
+                "active": active_count is None or index < active_count,
+                "readback": record is not None,
+                "head_readback": False,
+                "bands": _strip_surround_raw(record or {}).get("bands", []),
+            })
+        return {
+            "available": self.surround_available,
+            "global": global_view,
+            "speakers": speaker_view,
+            "speaker_count": self.surround_speaker_count,
+            "active_speaker_count": active_count,
+            "write": write,
+        }
+
+    def _surround_global_body_for_write(self, transport):
+        """Read fresh global surround state before a complete-state write."""
+        if not self.surround_available:
+            raise RuntimeError("surround global state is not safely mapped")
+        req = proto.build_readback_query(self.profile, SURROUND_GLOBAL_CAT, 0)
+        data = transport.query(
+            req,
+            lambda x: proto.is_readback_response(
+                self.profile, x, SURROUND_GLOBAL_CAT, 0),
+            timeout=1.5)
+        if data is None:
+            raise RuntimeError("no surround global readback -- not writing blind")
+        body = proto.readback_body(self.profile, data)
+        parsed = proto.parse_surround_global_record(self.profile, body)
+        with self._lock:
+            self.surround_global = parsed
+            self.surround_global_raw = bytes(body)
+        return bytes(body)
+
+    def _cache_surround_global_packet(self, packet):
+        """Update the local surround cache after a queued global write."""
+        contract = self.surround_contract or {}
+        offset = int(contract.get("readback_payload_offset", 18))
+        size = int(contract.get("template_size", 151))
+        body = bytes(packet[offset:offset + size])
+        parsed = proto.parse_surround_global_record(self.profile, body)
+        with self._lock:
+            if self.surround_global == parsed:
+                self.surround_global_raw = body
+                return
+            self.surround_global = parsed
+            self.surround_global_raw = body
+            self.rb_ver += 1
 
     def structured_readbacks_json(self):
         """Serialize profile-declared nested readbacks for the WebUI.
@@ -786,7 +942,7 @@ class Device:
         self._drop_transport(transport)
         self._publish({"online": False})
 
-    # -- readback (routing + mixer + structured state) ----------------------
+    # -- readback (routing + mixer + surround + structured state) ------------
 
     def _readback_plan(self):
         routes = [(ROUTING_CAT, d) for d in self.route_dests] \
@@ -796,8 +952,12 @@ class Device:
             if self.mixer_available else []
         auraverb = [(self.auraverb_category, self.auraverb_index)] \
             if self.auraverb_available else []
+        surround = ([(SURROUND_GLOBAL_CAT, 0)]
+                    + [(SURROUND_EQ_CAT, index)
+                       for index in range(self.surround_speaker_count)]) \
+            if self.surround_available else []
         structured = list(_structured_readback_targets(self.profile))
-        return routes + mixes + auraverb + structured
+        return routes + mixes + auraverb + surround + structured
 
     def _refresh_readback_one(self, transport, category, index):
         """Read one bounded slow-state record; return whether it changed."""
@@ -813,6 +973,19 @@ class Device:
             return False
         try:
             body = proto.readback_body(self.profile, data)
+            if category == SURROUND_GLOBAL_CAT:
+                value = proto.parse_surround_global_record(self.profile, body)
+                with self._lock:
+                    changed = self.surround_global != value
+                    self.surround_global = value
+                    self.surround_global_raw = bytes(body)
+                    return changed
+            if category == SURROUND_EQ_CAT:
+                value = proto.parse_surround_speaker_eq_record(self.profile, body)
+                with self._lock:
+                    changed = self.surround_speakers.get(index) != value
+                    self.surround_speakers[index] = value
+                    return changed
             layout = proto.readback_record_layout(self.profile, category, index)
             if layout is not None:
                 value = proto.parse_readback_records(
@@ -1287,6 +1460,11 @@ class AuraVerbChange(BaseModel):
     enabled: bool | None = None
 
 
+class SurroundGlobalChange(BaseModel):
+    delay_ms: float | None = None
+    level_db: float | None = None
+
+
 class MixerLink(BaseModel):
     """A virtual-mixer stereo pair scoped to one mix."""
     pair: int
@@ -1296,6 +1474,26 @@ class MixerLink(BaseModel):
 
 def _bad(msg):
     return JSONResponse({"ok": False, "error": msg}, status_code=400)
+
+
+def _surround_raw_value(value, *, step, zero, bounds, label):
+    """Convert a display-unit surround value to its profile-defined raw step."""
+    try:
+        display = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{label} must be a finite number")
+    if not math.isfinite(display):
+        raise ValueError(f"{label} must be a finite number")
+    raw_float = display / step + zero
+    raw = int(round(raw_float))
+    if not math.isclose(raw_float, raw, abs_tol=1e-6):
+        raise ValueError(f"{label} must use {step:g}-unit steps")
+    lo, hi = (int(item) for item in bounds)
+    if not lo <= raw <= hi:
+        low = (lo - zero) * step
+        high = (hi - zero) * step
+        raise ValueError(f"{label} outside {low:g}..{high:g}")
+    return raw
 
 
 @app.get("/")
@@ -1308,6 +1506,7 @@ def api_profile():
     return {**PROFILE, "webui": {
         "routing": DEV.routing_available,
         "mixer": DEV.mixer_available,
+        "surround": DEV.surround_available,
         "mixes": DEV.n_mixes if DEV.mixer_available else 0,
         "mix_channels": DEV.mix_channels if DEV.mixer_available else 0,
         "features": UI_FEATURES,
@@ -1343,6 +1542,53 @@ def api_readbacks():
     the UI can explain why a new capture is still required.
     """
     return DEV.structured_readbacks_json()
+
+
+@app.get("/api/surround")
+def api_surround():
+    return DEV.surround_json()
+
+
+@app.post("/api/surround/global")
+def api_surround_global(change: SurroundGlobalChange):
+    if not DEV.surround_available:
+        return _bad("surround global state is not safely mapped for this profile")
+    if change.delay_ms is None and change.level_db is None:
+        return _bad("provide a surround delay or level")
+    if not DEV.surround_json()["write"]["enabled"]:
+        return _bad(
+            "surround global write requires a verified 2.0 readback")
+
+    contract = DEV.surround_contract or {}
+    try:
+        delay_step = float(contract.get("delay_step_ms", 0.1))
+        level_step = float(contract.get("level_step_db", 0.1))
+        level_zero = int(contract.get("level_zero_raw", 600))
+        delay_raw = (_surround_raw_value(
+            change.delay_ms, step=delay_step, zero=0,
+            bounds=contract["delay_range"], label="surround delay")
+                      if change.delay_ms is not None else None)
+        level_raw = (_surround_raw_value(
+            change.level_db, step=level_step, zero=level_zero,
+            bounds=contract["level_range"], label="surround level")
+                     if change.level_db is not None else None)
+    except (KeyError, TypeError, ValueError) as e:
+        return _bad(str(e))
+
+    def do(t):
+        body = DEV._surround_global_body_for_write(t)
+        packet = proto.build_surround_global_command(
+            PROFILE, body, global_delay=delay_raw, global_level=level_raw)
+        t.write(packet)
+        DEV._cache_surround_global_packet(packet)
+
+    DEV.submit(do)
+    return {
+        "ok": True,
+        "delay_ms": None if delay_raw is None else delay_raw * delay_step,
+        "level_db": None if level_raw is None
+        else (level_raw - level_zero) * level_step,
+    }
 
 
 @app.post("/api/gain")

@@ -11,6 +11,7 @@ const JS_FILES = [
   'ui-buses.js',
   'ui-routing.js',
   'ui-mixer.js',
+  'ui-surround.js',
   'ui-readback.js',
   'ui-boot.js',
 ];

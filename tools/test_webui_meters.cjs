@@ -9,6 +9,9 @@ const sourceFiles = [...html.matchAll(/<script src="\/webui\/static\/([^"]+)"><\
   .map(match => match[1]);
 assert.deepEqual(sourceFiles, JS_FILES);
 assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/app\.css">/);
+assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/surround\.css">/);
+assert.match(html, /data-rtab="surround"/);
+assert.match(html, /data-rpane="surround"/);
 const js = readWebUISource();
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
 const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
@@ -17,6 +20,7 @@ assert.match(readbackSection, /data-min="readbackbody"[^>]*title="expand this se
 assert.match(readbackSection, /class="secbody min" id="readbackbody"/);
 assert.match(js, /const saved = localStorage\.getItem\(key\);[\s\S]*saved === '1' \|\| saved === '0'/);
 assert.match(js, /selectMixer\(initial, !!routeMix \|\| !!selector \|\| hasSurfaceSelection\)/);
+assert.match(js, /function buildSurround\(\)/);
 const source = js.slice(js.indexOf('const METER_FLOOR'), js.indexOf('// ---- buses'));
 const mixerSource = js.slice(js.indexOf('function applyMixerMeters'), js.indexOf('function buildMixer'));
 const classes = () => {

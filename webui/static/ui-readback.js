@@ -115,6 +115,7 @@ async function reloadReadback() {
   [ROUTING, MIXER, AURAVERB, STRUCTURED] = await Promise.all([
     getJSON('/api/routing'), getJSON('/api/mixer'), getJSON('/api/auraverb'),
     getJSON('/api/readbacks')]);
+  reloadSurround().catch(() => {});
   syncMixerLinksFromReadback(STRUCTURED);
   renderStructuredReadbacks();
   initAuraVerbPanel();

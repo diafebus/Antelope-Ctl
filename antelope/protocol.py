@@ -316,6 +316,111 @@ def build_global_command(profile: dict, param, value: int) -> bytes:
     return bytes(pkt)
 
 
+def build_surround_global_command(profile: dict, readback_body: bytes,
+                                  global_delay: int = None,
+                                  global_level: int = None) -> bytes:
+    """Build a verified read-modify-write frame for the surround global state.
+
+    The Launcher frame is a complete 320-byte state packet, not a partial
+    command.  The profile therefore supplies the writable 2.0 contract and
+    the readback body is copied into the packet before changing only the
+    confirmed delay and level fields.  Formats and per-speaker masks remain
+    untouched.
+    """
+    frame = profile['frame'].get('surround_global_command')
+    if not frame:
+        raise KeyError('this profile has no frame.surround_global_command')
+    contract = frame.get('contract', {}) or {}
+    status = str(contract.get('status', frame.get('runtime_status', ''))).strip().lower()
+    if status not in {'confirmed', 'capture-confirmed'}:
+        raise ConstraintError(
+            'surround global writes require a capture-confirmed runtime contract')
+    if global_delay is None and global_level is None:
+        raise ValueError('surround global command needs a delay or level change')
+    if not isinstance(readback_body, (bytes, bytearray)):
+        raise TypeError('surround global readback body must be bytes')
+
+    payload_offset = _as_int(contract.get('readback_payload_offset', 18))
+    template_size = _as_int(contract.get('template_size', 151))
+    size = _as_int(profile['transport']['report_size'])
+    if template_size <= 0 or payload_offset < 0 or payload_offset + template_size > size:
+        raise ValueError('invalid surround global readback template bounds')
+    if len(readback_body) < template_size:
+        raise ValueError(
+            f'surround global readback is too short (need {template_size}, '
+            f'got {len(readback_body)})')
+
+    flags_a_offset = _as_int(contract.get('flags_a_offset', payload_offset)) - payload_offset
+    flags_b_offset = _as_int(contract.get('flags_b_offset', payload_offset + 1)) - payload_offset
+    if not (0 <= flags_a_offset < template_size and 0 <= flags_b_offset < template_size):
+        raise ValueError('invalid surround global format flag offsets')
+    flags_a = readback_body[flags_a_offset]
+    flags_b = readback_body[flags_b_offset]
+    flags_a_mask = _as_int(contract.get('flags_a_mask', 0xFF))
+    flags_b_mask = _as_int(contract.get('flags_b_mask', 0xFF))
+    writable_format = None
+    for fmt in contract.get('formats', []) or []:
+        if not fmt.get('writable'):
+            continue
+        try:
+            fmt_a = _as_int(fmt['flags_a'])
+            fmt_b = _as_int(fmt['flags_b'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if ((flags_a & flags_a_mask) == (fmt_a & flags_a_mask)
+                and (flags_b & flags_b_mask) == (fmt_b & flags_b_mask)):
+            writable_format = fmt
+            break
+    if writable_format is None:
+        raise ConstraintError(
+            f'surround format flags {flags_a:#04x}/{flags_b:#04x} are read-only '
+            'until a paired writable readback contract exists')
+
+    def bounded(value, key):
+        if value is None:
+            return None
+        value = _as_int(value)
+        try:
+            lo, hi = (_as_int(v) for v in contract[key])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError(f'surround global contract has no valid {key}')
+        if not lo <= value <= hi:
+            raise ValueError(f'{key} value {value} outside {lo}..{hi}')
+        return value
+
+    values = {
+        'global_delay': bounded(global_delay, 'delay_range'),
+        'global_level': bounded(global_level, 'level_range'),
+    }
+    pkt = bytearray(size)
+    pkt[payload_offset:payload_offset + template_size] = readback_body[:template_size]
+    for operation in frame.get('runtime_operations', []) or []:
+        kind = operation.get('op')
+        if kind == 'fixed_byte':
+            offset = _as_int(operation['offset'])
+            if not 0 <= offset < size:
+                raise ValueError(f'surround fixed byte offset {offset} is outside the report')
+            pkt[offset] = _as_int(operation['value']) & 0xFF
+            continue
+        if kind != 'scalar':
+            raise ValueError(f'unsupported surround runtime operation {kind!r}')
+        field = operation.get('field')
+        value = values.get(field)
+        if value is None:
+            continue
+        offset = _as_int(operation['offset'])
+        width = _as_int(operation.get('width', 1))
+        endian = str(operation.get('endian', 'little')).lower()
+        if width <= 0 or offset < 0 or offset + width > size:
+            raise ValueError(f'invalid surround scalar bounds for {field!r}')
+        try:
+            pkt[offset:offset + width] = value.to_bytes(
+                width, byteorder=endian, signed=False)
+        except (OverflowError, ValueError) as e:
+            raise ValueError(f'invalid surround scalar encoding for {field!r}') from e
+    return bytes(pkt)
+
+
 def build_mix_command(profile: dict, mix: int, channel: int, fader: int,
                       pan_deg: int, send: int, mute: bool = False,
                       solo: bool = False) -> bytes:
@@ -1587,6 +1692,14 @@ def parse_surround_global_record(profile: dict, body: bytes):
     (3 normally in use, the rest at the `[80][80][600][0]` factory default):
     lp_cutoff_hz/lp_bypass, hp_cutoff_hz/hp_bypass, fader_db/fader_mute,
     lp_order/hp_order, is_default, raw."""
+    contract = profile.get('frame', {}).get('surround_global_command', {}).get(
+        'contract', {}) or {}
+    try:
+        meaningful_size = _as_int(contract.get('template_size', len(body)))
+    except (TypeError, ValueError):
+        meaningful_size = len(body)
+    if meaningful_size > 0:
+        body = body[:meaningful_size]
     if len(body) < 13:
         raise ValueError('surround global record too short')
     flags_a = body[0]

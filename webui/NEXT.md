@@ -62,7 +62,7 @@ labelled -- it kills the user's audio for the duration).
 Thin **local FastAPI daemon** (`webui/server.py`) owns the one HID handle
 and sits between the hardware-tested Python core (`antelope/…`,
 `profiles/*.json` -- do NOT rewrite) and a **no-build-step browser UI**
-(`webui/static/index.html`, one big vanilla-JS `<script>`). The UI renders
+(`webui/static/index.html`, a small shell with ordered vanilla-JS modules). The UI renders
 from the profile.
 
 - `server.py`: one background thread owns the device.
@@ -75,11 +75,14 @@ from the profile.
     `raw`, `db`, `clip`, and `silence`. The current uncalibrated `0x73` source
     returns `null` for `db` and `clip`.
   - SLOW state: routing matrix (readback cat `0x03`) + virtual mixer (cat
-    `0x04`) re-read incrementally on connect and every 45 s, one record per
-    fast-state cycle. Route/mix commands use the serialized cache after its
-    initial verified readback and update it after a successful write.
+    `0x04`) + profile-confirmed Gazelle Reverb and Surround state re-read
+    incrementally on connect and every 45 s, one record per fast-state cycle.
+    Route/mix commands use the serialized cache after their initial verified
+    readback and update it after a successful write. Surround global writes
+    fetch a fresh complete state and change only verified 2.0 delay/level;
+    per-speaker head/EQ writes remain blocked.
     Snapshot carries a monotonic `rb_ver`; the browser refetches
-    `/api/routing` + `/api/mixer` when it bumps.
+    `/api/routing` + `/api/mixer` + `/api/surround` when it bumps.
   - Commands are queued as callables `fn(transport)` and run at most one per
     fast-state cycle, so control bursts do not starve meter updates.
 - **Profile auto-detect (done):** `server.resolve_profile()` -- `ANTELOPE_PROFILE`
@@ -102,7 +105,7 @@ from the profile.
   - `POST /api/route {dest,channel,kind,number}` -- one output channel
   - `POST /api/route-batch {dest,changes:[{channel,kind,number}]}` -- one
     read-modify-write of the whole destination record (group ops, 1:1 fills)
-- Run: `cd webui && .venv/bin/python server.py` -> http://127.0.0.1:8714
+  - Run: `cd webui && .venv/bin/python server.py` -> http://127.0.0.1:8714
   (one HID owner -- stop the CLI/selftest first). `.venv` is gitignored.
   No auto-reload -- restart after editing `server.py`; `index.html` is read
   from disk per request. **Stopping it:** press Ctrl+C in the server terminal;
@@ -399,18 +402,18 @@ The superseded plan listed these TODOs:
    layout and meter response against the Launcher with a live signal.
 3. **More settings, once decoded** -- panel notes what's not wired:
    oscillator (`0x0a` packed byte, fields unconfirmed), pan law (never
-   captured -- NOT `0x4b` target 3, ruled out live 2026-09-03), TB latency
-   mode (never captured), surround EQ pre/post (`0xeb`, toggle bits not
-   isolated -- cat `0x1b` may be its readback, untested). Need dedicated
-   captures before wiring (the webUI + usbmon method now works from Linux).
+   captured -- NOT `0x4b` target 3, ruled out live 2026-09-03), and TB
+   latency mode (never captured). Surround readback is now wired; only its
+   unverified format/mask/bass-management writes and per-speaker head/EQ
+   writes need dedicated captures before implementation.
 4. **Re-sweep emuMic pattern range** for models 1/12/16/18. ~~Confirm the
    `157 + ch` meter offset on channels 5-12~~ -- MOOT. See the superseded
    historical meter plan above. The current physical-input base is 221.
    (emuMic-range correction is
    CLOSED -- `0xe5` on preamp 5/6 captured 2026-09-03, `[18]=0x00/0x01`;
    listen test done -- `emumic5`==`emumic6` mono for a mono emulation,
-   model select audibly correct.) Gazelle Reverb remains an open WebUI
-   integration task; see the protocol-support note above.
+   model select audibly correct.) Gazelle Reverb's WebUI integration is
+   complete; see the protocol-support note above for the hardware caveat.
 5. **Hide undeclared sections** -- an empty `<section>` still renders its
    header. Pairs with finishing the non-Orion stub profiles.
 6. **`--host` + token** for LAN access; localhost-only now.

@@ -16,6 +16,7 @@
       "digital_inputs": "ADAT / S/PDIF",
       "outputs": "Output Buses",
       "routing": "Routing",
+      "surround": "Surround",
       "mixer": "Virtual Mixer",
       "settings": "Settings",
       "diagnostics": "Protocol Readback"
@@ -116,6 +117,25 @@
       "enabled": true,
       "mix": 0,
       "controls": ["auraverb"]
+    },
+    "surround": {
+      "kind": "surround_monitor",
+      "label": "Surround",
+      "enabled": true,
+      "global_readback_category": "0x1b",
+      "speaker_readback_category": "0x1a",
+      "speaker_count": 16,
+      "controls": ["surround_format", "surround_global_delay", "surround_level",
+                   "surround_eq_position", "surround_bass_management",
+                   "surround_bypass", "surround_mute", "surround_dim",
+                   "surround_speaker_delay", "surround_speaker_level",
+                   "surround_speaker_phase", "surround_speaker_eq"],
+      "writable_controls": ["surround_global_delay", "surround_level"],
+      "read_only_controls": ["surround_format", "surround_eq_position",
+                              "surround_bass_management", "surround_bypass",
+                              "surround_mute", "surround_dim",
+                              "surround_speaker_delay", "surround_speaker_level",
+                              "surround_speaker_phase", "surround_speaker_eq"]
     },
     "settings": {
       "kind": "device_settings",
@@ -451,6 +471,9 @@
         "delay_range": [6, 45],
         "level_offset": 22,
         "level_range": [0, 760],
+        "delay_step_ms": 0.1,
+        "level_zero_raw": 600,
+        "level_step_db": 0.1,
         "mask_offsets": [25, 27, 29],
         "evidence": "Writable 2.0 full OUT reports: macos-captures/macos-settings-srrndeq-post-pre.pcapng SHA-256 f809a52ebbade7cda3697202e4c10e05309d139ff810a95a304fdb0870f9190a frames 2383 at 3.388074 s (report SHA-256 e7c3435ee97cb73ec3c9d937d26852fcc0e232ee9184d1be4d459273ce2b2a3f) and 3808 at 7.060227 s (report SHA-256 d3f3e25e83f6df83dfb14ec28ac866d20a22ac05be75f4652253d38afbf51930). Paired 2.0 readback: macos-captures/macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frame 17664 at 26.573382 s, report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e. Meaningful body is command offsets 18..168; captured offsets 169..319 are fixed zero padding. User-supplied full 320-byte export new/srrnd-20-21.frames.txt SHA-256 3a2ad5b8710beda965bc1fe5ff07673371cd961897d4bc957baaa88d51deac8b lines 1 at 7.248712 s and 35 at 13.730188 s supports 2.1 read-only decoding, not writes. Delay 6..45 and level 0..760 are observed head bounds only."
       },
@@ -1939,7 +1962,7 @@
       "0x53",
       "0xab"
     ],
-    "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). 0x53 is hardware round-trip confirmed (2026-08-31): preamps->hp1/hp2 and a seeded 16-ch line_out routed from cli.py persisted correctly in the Windows Launcher. 0x17 (mixer) is still untested and not in a CLI command yet -- treat the mixer as experimental. 0x1d (SET_AURAVERB) added 2026-08-31 -- all 8 DSP params decoded (frame.auraverb_command); AuraVerb is device-bundled (no per-plugin activation) so it is in scope; not hardware round-trip tested yet.",
+    "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). 0x53 is hardware round-trip confirmed (2026-08-31): preamps->hp1/hp2 and a seeded 16-ch line_out routed from cli.py persisted correctly in the Windows Launcher. 0x17 (mixer) is still untested and not in a CLI command yet -- treat the mixer as experimental. 0x1d (SET_AURAVERB) added 2026-08-31 -- all 8 DSP params decoded (frame.auraverb_command); AuraVerb is device-bundled (no per-plugin activation) so it is in scope. 0xab (SET_SURROUND_GLOBAL) is allowed for the WebUI's capture-confirmed 2.0 delay/level read-modify-write; 0x87 remains launcher-only because its per-speaker head semantics are not dynamically verified.",
     "observed_opcodes_launcher_only": [
       "0x87"
     ],

@@ -16,14 +16,17 @@ compatibility.
     ~25 Hz (channels, buses, brightness, meters). The raw `0x75` diagnostic
     bank is sampled separately at a lower rate.
   - **slow** -- the routing matrix (readback cat `0x03`), virtual mixer
-    (cat `0x04`), profile-confirmed Gazelle Reverb state, and any
+    (cat `0x04`), profile-confirmed Gazelle Reverb and Surround state, and any
     profile-declared nested readback records, refreshed one record per meter
     cycle on connect and every 45 s. Route/mixer/Gazelle Reverb writes update
-    their serialized caches directly. `/api/readbacks` exposes the structured
-    records to the diagnostics panel. Queries use the active profile's bounded
-    category counts or explicit capture-confirmed layouts, so the BusFault
-    hazard is never hit; schema-only layouts are displayed as capture-required
-    and are never probed.
+    their serialized caches directly. The Surround tab exposes the bounded
+    `0x1b` global and `0x1a` speaker EQ records; only its verified 2.0 global
+    delay/level path writes, using a fresh complete-state read before each
+    command. `/api/readbacks` exposes the structured records to diagnostics and
+    `/api/surround` serves the decoded Surround surface. Queries use the active
+    profile's bounded category counts or explicit capture-confirmed layouts, so
+    the BusFault hazard is never hit; schema-only layouts are displayed as
+    capture-required and are never probed.
     The snapshot carries an `rb_ver` counter; the browser refetches the slow
     APIs when it changes.
 
@@ -36,13 +39,14 @@ compatibility.
   - `ui-inputs.js`, `ui-settings.js`, and `ui-preamp.js` -- input and device settings;
   - `ui-meters.js` and `ui-buses.js` -- meter and output-bus rendering;
   - `ui-routing.js` and `ui-mixer.js` -- routing and mixer surfaces;
+  - `ui-surround.js` -- profile-driven Surround monitor and EQ readback;
   - `ui-readback.js` and `ui-boot.js` -- diagnostics, state fan-out, and startup.
 
   The UI itself contains:
   - input strips styled after `ideas/PreampUI.svg` -- 270° gain knob
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
   - output buses, screen brightness;
-  - a **Routing** panel with `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4` tabs;
+  - a **Routing** panel with `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4 | Surround` tabs;
     each Mix tab contains a compact horizontal board of vertical strips with
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
     input strips additionally expose the Gazelle Reverb send; Mix 2-4 and all
@@ -50,6 +54,9 @@ compatibility.
     selects its matching mixer surface/meter bank; multiple Solo buttons may be
     stacked and the original mute/solo state is restored when the last Solo
     is released;
+  - a **Surround** panel renders global format, delay/level, masks,
+    bass-management blocks, speaker selection, and per-speaker 16-band EQ;
+    unverified controls remain visibly read-only;
   - a **Protocol readback** diagnostics section renders profile-declared link
     tables, mic-emulation state, AFX instance counts, and AFX strip order. It
     seeds mixer-pair link state from a complete profile-confirmed bitmap when

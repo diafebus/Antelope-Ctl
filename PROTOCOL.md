@@ -48,10 +48,10 @@ real discriminator (§14).
 
 Ten command opcodes are known. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
-`0x53`); the other four are **observed only, never sent** — `0xab` and
-`0x87` (surround, `constraints.observed_opcodes_launcher_only`), and
-`0x23` and `0x1c` (AFX slot assign / AFX plugin *parameters*, both
-confirmed frames — §12a — and both in `constraints.forbidden_opcodes`).
+`0x53`). The WebUI also emits the profile-guarded `0xab` global surround
+read-modify-write. The other three are **observed only, never sent** —
+`0x87` (per-speaker surround), `0x23` (AFX slot assign), and `0x1c` (AFX
+plugin parameters; the latter two are in `constraints.forbidden_opcodes`).
 
 **`0x1a` is not one of these ten.** It has never been observed as a write
 opcode on this device at all — it is not the surround EQ's write opcode
@@ -72,7 +72,7 @@ single most important thing to get right.
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
-| `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim -- §11 | surround tab global (level/dim/mute/delay/bypass/EQ/format) |
+| `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim -- §11 | surround tab global; WebUI's verified 2.0 delay/level path uses a fresh read-modify-write |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | surround tab per-speaker strip (×16) |
 | `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
 | `0x1c` | *(AFX plugin parameters)* | `0xd5` | frame-identified only (§12a) -- payload never decoded on purpose | **observed only, never emitted** -- `0x1c` is in `forbidden_opcodes` (a licensed plugin's parameter set = bucket D) |
@@ -1185,7 +1185,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
-| surround tab (global) | `0xeb` | `0xab` | - | `[18]` bit7 pre/post + format, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`) |
+| surround tab (global) | `0xeb` | `0xab` | - | `[18]` bit7 pre/post + format, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`); WebUI writes only verified 2.0 delay/level |
 | surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: 4 opaque candidate-head bytes + EQ; dynamic head semantics unverified) |
 | oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
@@ -1272,8 +1272,9 @@ too. See `params.screen_brightness`.
 ### Surround monitoring tab -- two frames
 
 The Surround tab has a **global** whole-state frame and a **per-speaker**
-one. Both opcodes are `constraints.observed_opcodes_launcher_only` -- no
-builder, never sent.
+one. The global frame has a profile-driven builder for the verified 2.0
+delay/level read-modify-write path. The per-speaker frame remains read-only;
+its candidate head and EQ mode writes need isolated captures.
 
 **Readback — BOTH frames read back.** This corrects the earlier "no `0x73`
 / `0x74` readback for any surround param", which held only until the
@@ -1284,13 +1285,13 @@ categories were actually read on 2026-09-04:
 | global `0xab`/`0xeb` | `0x74` category **`0x1b`** | 1 (idx 0) |
 | per-speaker `0x87`/`0xea` | `0x74` category **`0x1a`** | 16, one per speaker |
 
-Both are parsed by the reference tools. The TUI additionally validates the exact
-320-byte category-`0x1a` header/index/zero-tail contract and exposes only its EQ
-bands read-only. Response bytes 16–19 are an opaque candidate head: positional
-alignment is known, but isolated level/delay/invert changes have not proven that
-it refreshes dynamically. Todo 45 blocks any whole-record RMW until that test.
-Mode bytes remain raw because shelf/pass labels are unproven. No `0x87` action is
-authorized.
+Both are parsed by the reference tools. The WebUI validates the exact bounded
+readback targets, exposes the global decoded state and the per-speaker EQ bands,
+and leaves the candidate head read-only. Response bytes 16–19 are an opaque
+candidate head: positional alignment is known, but isolated level/delay/invert
+changes have not proven that it refreshes dynamically. Todo 45 blocks any
+whole-record `0x87` RMW until that test. Mode bytes remain raw because
+shelf/pass labels are unproven. No `0x87` action is authorized.
 
 **Category `0x1b` alignment proof** — `body[N]` == the `0xab` frame's byte
 `[18+N]`, from one live read against a known 2.0 state:

@@ -47,6 +47,7 @@ function applyProfileCapabilities() {
   const settings = featureEnabled('settings', true);
   const routing = cap.routing === true && featureEnabled('routing', true);
   const mixer = cap.mixer === true && featureEnabled('mixer', true);
+  const surround = cap.surround === true && featureEnabled('surround', false);
   $('[data-tab="inputs"]').hidden = !inputs;
   $('[data-pane="inputs"]').hidden = !inputs;
   $('[data-tab="adat"]').hidden = !digital;
@@ -55,7 +56,7 @@ function applyProfileCapabilities() {
   $('#busessec').hidden = !buses;
   $('#gearbtn').hidden = !settings;
   const section = $('#routesec');
-  section.hidden = !routing && !mixer;
+  section.hidden = !routing && !mixer && !surround;
   const matrixTab = $('#routetabs [data-rtab="matrix"]');
   matrixTab.hidden = !routing;
   $('[data-rpane="matrix"]').hidden = !routing;
@@ -63,6 +64,10 @@ function applyProfileCapabilities() {
     const n = Number(btn.dataset.rtab.slice(3));
     btn.hidden = !mixer || n > Number(cap.mixes || 0);
   });
+  const surroundTab = $('#routetabs [data-rtab="surround"]');
+  if (surroundTab) surroundTab.hidden = !surround;
+  const surroundPane = $('[data-rpane="surround"]');
+  if (surroundPane) surroundPane.hidden = !surround;
   const active = $('#routetabs .tabbtn.active');
   if (active?.hidden) {
     const first = [...$('#routetabs').querySelectorAll('.tabbtn')]
@@ -118,6 +123,8 @@ async function boot() {
   setSectionHeading('#readbacksec', profileLabel('sections', 'diagnostics', 'Protocol readback'));
   const matrixTab = $('#routetabs [data-rtab="matrix"]');
   if (matrixTab) matrixTab.textContent = featureLabel('routing', 'Routing');
+  const surroundTab = $('#routetabs [data-rtab="surround"]');
+  if (surroundTab) surroundTab.textContent = featureLabel('surround', 'Surround');
 
   applyProfileCapabilities();
   document.documentElement.style.setProperty('--meter-grad', meterGradient());
@@ -125,6 +132,7 @@ async function boot() {
   buildDig('adat');
   buildDig('spdif');
   initTabs();
+  if (surroundTab && !surroundTab.hidden) buildSurround();
   buildSettings();
   buildClockBar();
   connect();
