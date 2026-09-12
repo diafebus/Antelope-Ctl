@@ -205,20 +205,12 @@
       "evidence": "set on one bus only; that bus muted and the others did not"
     },
     "bus_dim": {
-      "id": "0x68",
+      "id": "0x66",
       "status": "unconfirmed",
       "type": "bool",
       "applies_to": "buses",
-      "notes": "Your Orion id, carried over as a candidate. Accepted by the device but no dim state appears on the front panel. Three readings remain open: wrong id here, no panel indicator for dim, or no dim on this model. Needs a capture.",
-      "evidence": "sent, silent, no observable change"
-    },
-    "bus_mono": {
-      "id": "0x69",
-      "status": "unconfirmed",
-      "type": "bool",
-      "applies_to": "buses",
-      "notes": "Your Orion id, carried over as a candidate. Accepted, but this front panel displays no mono/stereo state at all, so it is untestable by eye. Not evidence either way.",
-      "evidence": "sent, silent, nothing to observe"
+      "notes": "payload_id 38, two data bytes. 0x68 is set_reverb_return.",
+      "evidence": "vendor report_format, Discrete 8 Pro 1.1.6"
     },
     "channel_link": {
       "id": null,
