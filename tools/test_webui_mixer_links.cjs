@@ -1,14 +1,10 @@
 // Offline linked-mixer interaction checks: node tools/test_webui_mixer_links.cjs
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
 
-const root = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
-const source = html.slice(
-  html.indexOf('const mixerPendingKey'),
-  html.indexOf('function mixerSoloSnapshot'));
+const {readWebUISource} = require('./webui_sources.cjs');
+const js = readWebUISource();
+const source = js.slice(js.indexOf('const mixerPendingKey'), js.indexOf('function mixerSoloSnapshot'));
 
 const makeInput = value => {
   let current = String(value);
@@ -88,7 +84,7 @@ assert.equal(JSON.stringify(posted.slice(beforeOtherMix).map(x => x.body)), JSON
 ]));
 
 // Pan commits share the same mix/channel scope and can be centered directly.
-assert.match(html, /pan\.addEventListener\('dblclick', e => \{\s*e\.preventDefault\(\);\s*commitMixerPan\(m, ch, pan, pval, 0\);\s*\}\);/s);
+assert.match(js, /pan\.addEventListener\('dblclick', e => \{\s*e\.preventDefault\(\);\s*commitMixerPan\(m, ch, pan, pval, 0\);\s*\}\);/s);
 const pan = {value: -17};
 const panReadout = {textContent: ''};
 context.commitMixerPan(1, 3, pan, panReadout, 0);

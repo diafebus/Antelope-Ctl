@@ -3,17 +3,22 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const root = path.resolve(__dirname, '..');
+const {ROOT: root, JS_FILES, readWebUISource} = require('./webui_sources.cjs');
 const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
+const sourceFiles = [...html.matchAll(/<script src="\/webui\/static\/([^"]+)"><\/script>/g)]
+  .map(match => match[1]);
+assert.deepEqual(sourceFiles, JS_FILES);
+assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/app\.css">/);
+const js = readWebUISource();
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
 const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
 const readbackSection = html.slice(html.indexOf('<section id="readbacksec"'), html.indexOf('</section>', html.indexOf('<section id="readbacksec"')) + '</section>'.length);
 assert.match(readbackSection, /data-min="readbackbody"[^>]*title="expand this section"[^>]*aria-expanded="false">\+<\/button>/);
 assert.match(readbackSection, /class="secbody min" id="readbackbody"/);
-assert.match(html, /const saved = localStorage\.getItem\(key\);[\s\S]*saved === '1' \|\| saved === '0'/);
-assert.match(html, /selectMixer\(initial, !!routeMix \|\| !!selector \|\| hasSurfaceSelection\)/);
-const source = html.slice(html.indexOf('const METER_FLOOR'), html.indexOf('// ---- buses'));
-const mixerSource = html.slice(html.indexOf('function applyMixerMeters'), html.indexOf('function buildMixer'));
+assert.match(js, /const saved = localStorage\.getItem\(key\);[\s\S]*saved === '1' \|\| saved === '0'/);
+assert.match(js, /selectMixer\(initial, !!routeMix \|\| !!selector \|\| hasSurfaceSelection\)/);
+const source = js.slice(js.indexOf('const METER_FLOOR'), js.indexOf('// ---- buses'));
+const mixerSource = js.slice(js.indexOf('function applyMixerMeters'), js.indexOf('function buildMixer'));
 const classes = () => {
   const values = new Set();
   return { add: x => values.add(x), remove: x => values.delete(x),
@@ -102,8 +107,6 @@ assert.equal(context.outputMeterSupported(0), true);
 assert.equal(context.outputMeterSupported(3), false);
 assert.equal(context.outputMeterMapping(1, 1).payload_offset, '0xdd');
 assert.match(context.outputMeterHTML(2), /data-output-meter-lane="1"/);
-// Syntax-check every inline script, including code outside the tested functions.
-for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
-  new vm.Script(match[1]);
-}
+// Syntax-check every browser-loaded file, including code outside the tested functions.
+new vm.Script(js);
 console.log('WebUI meter rendering checks passed (12 channels, scale, colors, peak hold, missing data).');

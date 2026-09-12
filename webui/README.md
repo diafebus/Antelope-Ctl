@@ -29,7 +29,16 @@ compatibility.
 
   Commands are queued as callables run one per meter cycle on the device
   thread, so control bursts cannot monopolize the live meter path.
-- **`static/index.html`** -- one file, vanilla JS, no build step:
+- **`static/index.html`** -- the small HTML shell, with the browser code kept in
+  ordered vanilla-JS files and the styles in `static/app.css`; there is still no
+  build step:
+  - `ui-base.js` -- shared state, storage, API helpers, and control primitives;
+  - `ui-inputs.js`, `ui-settings.js`, and `ui-preamp.js` -- input and device settings;
+  - `ui-meters.js` and `ui-buses.js` -- meter and output-bus rendering;
+  - `ui-routing.js` and `ui-mixer.js` -- routing and mixer surfaces;
+  - `ui-readback.js` and `ui-boot.js` -- diagnostics, state fan-out, and startup.
+
+  The UI itself contains:
   - input strips styled after `ideas/PreampUI.svg` -- 270° gain knob
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
   - output buses, screen brightness;

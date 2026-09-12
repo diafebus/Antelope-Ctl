@@ -1187,6 +1187,8 @@ except (KeyError, ValueError, TypeError) as _e:
 app = FastAPI(title="antelope-ctl webui (draft)")
 app.mount("/webui/assets", StaticFiles(directory=os.path.join(HERE, "assets")),
           name="webui-assets")
+app.mount("/webui/static", StaticFiles(directory=os.path.join(HERE, "static")),
+          name="webui-static")
 
 
 class Gain(BaseModel):
