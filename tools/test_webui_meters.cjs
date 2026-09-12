@@ -26,9 +26,12 @@ assert.match(js, /selectMixer\(initial, !!routeMix \|\| !!selector \|\| hasSurfa
 assert.match(js, /function buildSurround\(\)/);
 assert.match(js, /const SURROUND_FORMAT_OPTIONS = \[/);
 assert.match(js, /function surroundEqGraph\(\w+\)/);
+assert.match(js, /const maxGain = 18;/);
 assert.match(js, /function surroundEqGrid\(speaker(?:, writable = false)?\)/);
 assert.match(js, /function surroundEqSigma\(q\)/);
 assert.match(js, /Math\.log2\(band\.frequency\)/);
+assert.match(js, /function surroundEqDefaultValue\(input/);
+assert.match(js, /input\.addEventListener\('dblclick'/);
 assert.match(js, /function requestSurroundEqReset\(button\)/);
 assert.match(js, /\/api\/surround\/eq\/reset/);
 assert.match(js, /16-band EQ · single view/);
@@ -167,12 +170,24 @@ const graphHTML = surroundContext.surroundEqGraph({bands: graphBands});
 assert.match(graphHTML, /Q-shaped gain estimate from readback/);
 assert.match(graphHTML, /surround-eq-area" d="M 42 /);
 assert.match(graphHTML, / L 948 [^ ]+ L 42 /);
+const resetPreset = {
+  frequency_hz: [30, 45, 90, 160, 350, 650, 1100, 1700,
+    2500, 3500, 4750, 6250, 8250, 10750, 13000, 15000],
+  q: 0.71, gain_db: 0,
+};
+const resetInput = (field, band) => ({
+  dataset: {surroundEqField: field, surroundEqBand: String(band)},
+});
+assert.equal(surroundContext.surroundEqDefaultValue(
+  resetInput('frequency', 5), resetPreset), 650);
+assert.equal(surroundContext.surroundEqDefaultValue(
+  resetInput('q', 5), resetPreset), 0.71);
+assert.equal(surroundContext.surroundEqDefaultValue(
+  resetInput('gain', 5), resetPreset), 0);
+assert.equal(surroundContext.surroundEqDefaultValue(
+  resetInput('mode', 5), resetPreset), null);
 const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
-  ...surroundData, write: {enabled: false, eq: {enabled: true, reset: {
-    frequency_hz: [30, 45, 90, 160, 350, 650, 1100, 1700,
-      2500, 3500, 4750, 6250, 8250, 10750, 13000, 15000],
-    q: 0.71, gain_db: 0,
-  }}},
+  ...surroundData, write: {enabled: false, eq: {enabled: true, reset: resetPreset}},
 });
 assert.match(writableSurroundHTML, /experimental write · one field at a time/);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 64);

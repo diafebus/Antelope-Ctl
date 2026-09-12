@@ -201,7 +201,7 @@ function surroundEqGraph(speaker) {
   const minFreq = 20;
   const maxFreq = 20000;
   const minGain = -24;
-  const maxGain = 12;
+  const maxGain = 18;
   const xFor = frequency => left + (
     Math.log10(Math.max(minFreq, Math.min(maxFreq, frequency)) / minFreq)
     / Math.log10(maxFreq / minFreq)) * plotWidth;
@@ -225,7 +225,7 @@ function surroundEqGraph(speaker) {
   const frequencyTicks = [[20, '20'], [50, '50'], [100, '100'], [200, '200'],
     [500, '500'], [1000, '1k'], [2000, '2k'], [5000, '5k'],
     [10000, '10k'], [20000, '20k']];
-  const gainTicks = [-24, -12, 0, 12];
+  const gainTicks = [-24, -12, 0, 12, 18];
   const verticals = frequencyTicks.map(([value, label]) => {
     const x = xFor(value);
     return '<line x1="' + x + '" y1="' + top + '" x2="' + x
@@ -391,11 +391,37 @@ function surroundEqPaint(input) {
     + surroundKnobAngle(value, +input.min, +input.max, field === 'frequency') + 'deg)';
 }
 
+function surroundEqDefaultValue(input, resetPreset = SURROUND?.write?.eq?.reset) {
+  const band = Number(input?.dataset?.surroundEqBand);
+  if (!resetPreset || !Number.isInteger(band) || band < 0) return null;
+  if (input.dataset.surroundEqField === 'frequency') {
+    const value = resetPreset.frequency_hz?.[band];
+    return Number.isFinite(Number(value)) ? Number(value) : null;
+  }
+  if (input.dataset.surroundEqField === 'q') {
+    return Number.isFinite(Number(resetPreset.q)) ? Number(resetPreset.q) : null;
+  }
+  if (input.dataset.surroundEqField === 'gain') {
+    return Number.isFinite(Number(resetPreset.gain_db))
+      ? Number(resetPreset.gain_db) : null;
+  }
+  return null;
+}
+
 function initSurroundEqControls(host) {
   host.querySelectorAll('[data-surround-eq-input]').forEach(input => {
     if (!input.disabled && input.type === 'range'
         && typeof wirePrecisionRange === 'function') wirePrecisionRange(input);
     surroundEqPaint(input);
+    if (input.disabled || input.type !== 'range') return;
+    input.addEventListener('dblclick', event => {
+      const value = surroundEqDefaultValue(input);
+      if (value == null) return;
+      event.preventDefault();
+      input.value = String(value);
+      surroundEqPaint(input);
+      input.dispatchEvent(new Event('change', {bubbles: true}));
+    });
   });
 }
 
