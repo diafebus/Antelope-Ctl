@@ -8,6 +8,74 @@
     "notes": "Composite USB device; control is entirely via the vendor HID interface (iface 3, MI_03), same interface number as Orion Studio III. The UAC2 audio interfaces are separate device nodes and are unaffected by anything in this profile. vid is now independently confirmed for this device, not inherited.",
     "evidence": "lsusb and dmesg on Linux, 2026-08; usb ids cross-checked against the Windows PnP database"
   },
+  "profile_schema": {
+    "id": "antelope-device-profile",
+    "version": 1
+  },
+  "labels": {
+    "sections": {
+      "inputs": "Inputs",
+      "digital_inputs": "Digital Inputs",
+      "outputs": "Output Buses",
+      "routing": "Routing",
+      "mixer": "Virtual Mixer",
+      "settings": "Settings",
+      "diagnostics": "Protocol Readback"
+    },
+    "spaces": {
+      "input": {"label": "Preamps", "item_format": "Preamp {index}"},
+      "bus": {"label": "Output", "item_format": "{label}"}
+    },
+    "params": {
+      "gain": "Gain",
+      "input_mode": "Input Mode",
+      "phantom": "48V Phantom",
+      "phase_invert": "Phase Invert",
+      "channel_link": "Input Link",
+      "bus_level": "Output Level",
+      "bus_mute": "Mute",
+      "bus_dim": "Dim",
+      "bus_mono": "Mono"
+    }
+  },
+  "features": {
+    "inputs": {
+      "kind": "channel_strips",
+      "label": "Inputs",
+      "enabled": false,
+      "space": "input",
+      "controls": ["gain", "input_mode", "phantom", "phase_invert", "channel_link"],
+      "status": "disabled -- state report offsets are not confirmed"
+    },
+    "buses": {
+      "kind": "output_buses",
+      "label": "Output Buses",
+      "enabled": false,
+      "controls": ["bus_level", "bus_mute", "bus_dim", "bus_mono"],
+      "status": "disabled -- output state mapping is not confirmed"
+    },
+    "routing": {
+      "kind": "routing_matrix",
+      "label": "Routing",
+      "enabled": false,
+      "controls": ["routing"],
+      "status": "disabled -- routing frame is not confirmed"
+    },
+    "mixer": {
+      "kind": "virtual_mixer",
+      "label": "Virtual Mixer",
+      "enabled": false,
+      "controls": [],
+      "status": "disabled -- mixer frame is not confirmed"
+    },
+    "settings": {
+      "kind": "device_settings",
+      "label": "Settings",
+      "enabled": false,
+      "controls": [],
+      "status": "disabled -- settings frames are not confirmed"
+    }
+  },
   "transport": {
     "type": "hid",
     "report_size": 320,
@@ -77,10 +145,10 @@
   "buses": {
     "addressing": "bus id written to frame.command.channel_offset, the same byte that carries a channel index for per-channel params",
     "known": {
-      "0": { "name": "monitor_1", "aliases": ["monitor", "mon1"], "verified": true },
-      "1": { "name": "headphone_1", "aliases": ["hp1"], "verified": true },
-      "2": { "name": "headphone_2", "aliases": ["hp2"], "verified": true },
-      "5": { "name": "monitor_2", "aliases": ["mon2", "reamp"], "verified": false }
+      "0": { "name": "monitor_1", "label": "Monitor 1", "aliases": ["monitor", "mon1"], "verified": true },
+      "1": { "name": "headphone_1", "label": "Headphone 1", "aliases": ["hp1"], "verified": true },
+      "2": { "name": "headphone_2", "label": "Headphone 2", "aliases": ["hp2"], "verified": true },
+      "5": { "name": "monitor_2", "label": "Monitor 2", "aliases": ["mon2", "reamp"], "verified": false }
     },
     "status": "confirmed",
     "notes": "The id scheme does match Orion Studio III's after all. Ids 0, 1 and 2 were each driven to a distinct level and read back. Id 5 was accepted the same way but Monitor 2 is not readable from the front panel, so it stays unverified.",

@@ -1061,8 +1061,7 @@ def _route_source_tuple(profile, token, dest, chan, cache):
 
 
 def _dest_word(profile, dest_id):
-    addr = profile['frame'].get('routing_command', {}).get('addressable_destinations', {})
-    return addr.get(str(dest_id), str(dest_id))
+    return proto.route_destination_label(profile, dest_id)
 
 
 def cmd_route(args, profile):
@@ -1149,11 +1148,7 @@ def cmd_route(args, profile):
 
 
 def _routing_dest_name(profile, dest_id):
-    rc = profile['frame'].get('routing_command', {})
-    names = dict(rc.get('addressable_destinations', {}))
-    for k, v in profile.get('params', {}).get('routing', {}).get('destinations', {}).items():
-        names.setdefault(str(k), v.split(' (')[0])
-    return names.get(str(dest_id), f'dest{dest_id}')
+    return proto.route_destination_label(profile, dest_id)
 
 
 def _read_routing_dest(transport, profile, dest_id, timeout=2.0):

@@ -1,9 +1,10 @@
-"""Presentation-only device UI features.
+"""Profile-declared launcher features.
 
-Protocol profiles remain the source of truth for wire layouts and safety
-constraints. This small registry describes panels that belong to a product's
-interface rather than to its protocol, so a device-specific panel can be
-added without changing another device's layout.
+Profiles own labels and feature declarations so another client (including a
+future Rust launcher) can use the same device vocabulary.  This module only
+derives runtime-safe presentation data, such as whether a declared feature's
+readback bounds are currently usable.  The small legacy registry remains as a
+compatibility fallback for third-party profiles that predate the manifest.
 """
 from copy import deepcopy
 from pathlib import Path
@@ -11,28 +12,22 @@ from pathlib import Path
 from antelope import protocol as proto
 
 
-def _zen_source_options(profile):
-    """Build Zen Go mixer-source options from the active profile.
+def _source_options(profile):
+    """Build mixer-source options from the active profile.
 
     The values in these options are the actual (source bank, source index)
-    tuples written by SET_ROUTE.  Keeping the mapping here profile-driven is
-    important: the Zen Go uses different bank numbers from the Orion.
+    tuples written by SET_ROUTE.  Both the mapping and the display label come
+    from the selected profile; no product-specific source-name table belongs
+    here.
     """
     options = []
 
-    labels = {
-        "preamp": "PREAMP",
-        "compplay": "COMPUTER PLAY",
-        "spdif": "S/PDIF",
-        "osc": "OSCILLATOR",
-        "emumic": "EMUMIC",
-    }
     for group in proto.route_source_options(profile):
         kind = group["kind"]
-        label = labels.get(kind, group.get("label", kind))
+        label = group.get("label", kind)
         if kind == "mute":
             bank, index = proto.resolve_route_source(profile, kind, None)
-            options.append({"key": "mute:0", "label": "MUTE",
+            options.append({"key": "mute:0", "label": label,
                             "bank": bank, "index": index})
         elif group.get("stereo"):
             for side in ("L", "R"):
@@ -50,7 +45,7 @@ def _zen_source_options(profile):
     return options
 
 
-_FEATURES = {
+_LEGACY_FEATURES = {
     "zen_go_sc": {
         "routing": {
             "enabled": True,
@@ -82,7 +77,7 @@ _FEATURES = {
 
 def _profile_key(profile_path, profile):
     stem = Path(profile_path).stem.lower()
-    if stem in _FEATURES:
+    if stem in _LEGACY_FEATURES:
         return stem
     name = str(profile.get("device", {}).get("name", "")).lower()
     if "zen go" in name:
@@ -93,19 +88,21 @@ def _profile_key(profile_path, profile):
 
 
 def features_for(profile_path, profile):
-    """Return a copy of presentation features for the active profile."""
+    """Return profile-declared features with safe runtime availability added."""
     key = _profile_key(profile_path, profile)
-    features = deepcopy(_FEATURES.get(key, {}))
+    declared = profile.get("features")
+    features = deepcopy(declared if isinstance(declared, dict)
+                        else _LEGACY_FEATURES.get(key, {}))
     frame = profile.get("frame", {})
-    if key == "zen_go_sc" and "routing" in features:
+    if "routing" in features and isinstance(features["routing"], dict):
         feature = features["routing"]
         routing = frame.get("routing_command", {})
         destination_channels = routing.get("destination_channels", {})
         visible = []
-        for item in feature.get("destinations", []):
+        for item in feature.get("destinations", []) or []:
             try:
                 dest = int(item["id"])
-                channels = int(item["channels"])
+                channels = int(item.get("channels", item.get("channel_count")))
                 writes = [int(value) for value in item.get(
                     "write_destinations", [dest])]
             except (KeyError, TypeError, ValueError):
@@ -119,44 +116,61 @@ def features_for(profile_path, profile):
             visible.append({**item, "id": dest, "channels": channels,
                             "write_destinations": writes})
         feature["destinations"] = visible
-        feature["writable"] = bool(
-            visible
-            and all(proto.readback_indices_available(
-                profile, proto.ROUTING_READBACK_CATEGORY,
-                item["write_destinations"])
-                    for item in visible))
-        if not feature["writable"]:
-            feature["note"] = (
-                "Zen Go mixer input assignments are displayed read-only until "
-                "their safe routing readback is confirmed."
-            )
-    if key == "zen_go_sc" and "mixer_sources" in features:
+        if feature.get("enabled", True) and visible:
+            feature["writable"] = all(
+                proto.readback_indices_available(
+                    profile, proto.ROUTING_READBACK_CATEGORY,
+                    item["write_destinations"])
+                for item in visible)
+        else:
+            feature["writable"] = False
+        if not feature["writable"] and visible:
+            feature.setdefault("note", (
+                "Routing assignments are displayed read-only until their "
+                "safe readback is confirmed."))
+    if "mixer_sources" in features and isinstance(features["mixer_sources"], dict):
         feature = features["mixer_sources"]
-        feature["options"] = _zen_source_options(profile)
+        feature["options"] = _source_options(profile)
         routing = frame.get("routing_command", {})
-        destinations = [int(d) for d in feature.get("routing_destinations", [])]
+        try:
+            destinations = [int(d) for d in feature.get(
+                "routing_destinations", []) or []]
+            channel_count = int(feature.get(
+                "channels", feature.get("channel_count")))
+        except (TypeError, ValueError):
+            destinations = []
+            channel_count = 0
         destination_channels = routing.get("destination_channels", {})
         feature["writable"] = bool(
-            destinations
+            feature.get("enabled", True)
+            and destinations
+            and channel_count > 0
             and proto.readback_indices_available(
                 profile, proto.ROUTING_READBACK_CATEGORY, destinations)
             and all(str(d) in destination_channels
-                    and int(destination_channels[str(d)]) >= feature["channels"]
+                    and int(destination_channels[str(d)]) >= channel_count
                     for d in destinations))
         if not feature["writable"]:
-            feature["note"] = (
-                "Zen Go source routing is displayed read-only until its "
-                "safe routing readback is confirmed.")
-    if proto.auraverb_readback_available(profile):
+            feature.setdefault("note", (
+                "Mixer source routing is displayed read-only until its safe "
+                "routing readback is confirmed."))
+    auraverb = features.get("auraverb")
+    if (proto.auraverb_readback_available(profile)
+            and (not isinstance(auraverb, dict)
+                 or auraverb.get("enabled", True))):
         command = frame.get("auraverb_command", {})
         contract = command.get("contract", {})
-        features["auraverb"] = {
+        feature = auraverb if isinstance(auraverb, dict) else {}
+        features["auraverb"] = feature
+        feature.update({
             "enabled": True,
+            "kind": feature.get("kind", "bundled_effect"),
             "mix": proto._as_int(contract.get("target", 0)),
-            "label": "Gazelle Reverb",
-        }
-    else:
-        features.pop("auraverb", None)
+            "label": feature.get("label", "Gazelle Reverb"),
+        })
+    elif isinstance(features.get("auraverb"), dict):
+        features["auraverb"]["enabled"] = False
     if "mixer_sources" in features and not frame.get("routing_command"):
-        features.pop("mixer_sources")
+        features["mixer_sources"]["enabled"] = False
+        features["mixer_sources"]["writable"] = False
     return {"profile": key, **features}

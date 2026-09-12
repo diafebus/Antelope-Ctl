@@ -6,6 +6,124 @@
     "bcdDevice": "7.00",
     "notes": "Composite USB device; control is entirely via the vendor HID interface (iface 3). UAC2 audio-control interface has no Feature Units. Model lineage (for disambiguation): this is the 2020 'Orion Studio Synergy Core' -- the third Orion Studio generation, after the 2015 Orion Studio and the 2017 Orion Studio Rev.2017. Not the same as the Orion 32 / Orion 32+ / Orion HD (the multichannel converters). The device reports its own name as 'OrionStudio_III' in readback category 0x01, hence the file's old name orion_studio_3.json (renamed to orion_studio_sc.json 2026-09-03, matching the *_sc.json Synergy Core family naming -- zen_go_sc, discrete_8_pro_sc, discrete_4_sc, discrete_4_pro_sc)."
   },
+  "profile_schema": {
+    "id": "antelope-device-profile",
+    "version": 1
+  },
+  "labels": {
+    "sections": {
+      "inputs": "Inputs",
+      "digital_inputs": "ADAT / S/PDIF",
+      "outputs": "Output Buses",
+      "routing": "Routing",
+      "mixer": "Virtual Mixer",
+      "settings": "Settings",
+      "diagnostics": "Protocol Readback"
+    },
+    "spaces": {
+      "input": {"label": "Preamps", "item_format": "Preamp {index}"},
+      "adat": {"label": "ADAT", "item_format": "ADAT {index}"},
+      "spdif": {"label": "S/PDIF", "item_format": "S/PDIF {side}"},
+      "bus": {"label": "Output", "item_format": "{label}"}
+    },
+    "params": {
+      "gain": "Gain",
+      "input_mode": "Input Mode",
+      "phantom": "48V Phantom",
+      "phase_invert": "Phase Invert",
+      "channel_link": "Input Link",
+      "adat_gain": "ADAT Gain",
+      "adat_channel_link": "ADAT Link",
+      "spdif_gain": "S/PDIF Gain",
+      "spdif_channel_link": "S/PDIF Link",
+      "bus_level": "Output Level",
+      "bus_mute": "Mute",
+      "bus_dim": "Dim",
+      "bus_mono": "Mono",
+      "mix_fader": "Fader",
+      "mix_pan": "Pan",
+      "mix_send": "Reverb Send",
+      "mix_mute": "Mute",
+      "mix_solo": "Solo",
+      "mix_channel_link": "Mixer Link",
+      "mic_modeling": "Mic Modeling",
+      "auraverb": "Gazelle Reverb",
+      "routing": "Routing",
+      "sample_rate": "Sample Rate",
+      "clock_source": "Clock Source",
+      "screen_brightness": "Screen Brightness",
+      "dc_coupling": "DC Coupling",
+      "output_trim": "Output Trim",
+      "master_volume": "Master Volume",
+      "meters_window_selection": "Meter Bank",
+      "talkback_button": "Talkback",
+      "talkback_source": "Talkback Source",
+      "talkback_gain": "Talkback Gain",
+      "talkback_dest_assign": "Talkback Destination",
+      "oscillator": "Oscillator",
+      "pan_law": "Pan Law",
+      "surround_monitor": "Surround Monitor",
+      "surround_speaker": "Surround Speaker",
+      "routing_batch_marker": "Routing Batch"
+    }
+  },
+  "features": {
+    "inputs": {
+      "kind": "channel_strips",
+      "label": "Inputs",
+      "enabled": true,
+      "space": "input",
+      "controls": ["gain", "input_mode", "phantom", "phase_invert", "channel_link"]
+    },
+    "digital_inputs": {
+      "kind": "digital_inputs",
+      "label": "ADAT / S/PDIF",
+      "enabled": true,
+      "spaces": ["adat", "spdif"],
+      "controls": ["adat_gain", "adat_channel_link", "spdif_gain", "spdif_channel_link"]
+    },
+    "buses": {
+      "kind": "output_buses",
+      "label": "Output Buses",
+      "enabled": true,
+      "controls": ["bus_level", "bus_mute", "bus_dim", "bus_mono"]
+    },
+    "routing": {
+      "kind": "routing_matrix",
+      "label": "Routing",
+      "enabled": true,
+      "source_groups": ["preamp", "emumic", "compplay", "adat", "spdif", "afx", "mix1", "mix2", "mix3", "mix4", "surround", "osc", "mute"],
+      "destination_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+      "controls": ["routing"]
+    },
+    "mixer": {
+      "kind": "virtual_mixer",
+      "label": "Virtual Mixer",
+      "enabled": true,
+      "mix_ids": [0, 1, 2, 3],
+      "controls": ["mix_fader", "mix_pan", "mix_send", "mix_mute", "mix_solo", "mix_channel_link"]
+    },
+    "mic_modeling": {
+      "kind": "mic_modeling",
+      "label": "Mic Modeling",
+      "enabled": true,
+      "space": "input",
+      "controls": ["mic_modeling"]
+    },
+    "auraverb": {
+      "kind": "bundled_effect",
+      "label": "Gazelle Reverb",
+      "enabled": true,
+      "mix": 0,
+      "controls": ["auraverb"]
+    },
+    "settings": {
+      "kind": "device_settings",
+      "label": "Settings",
+      "enabled": true,
+      "controls": ["sample_rate", "clock_source", "screen_brightness", "dc_coupling", "output_trim"]
+    }
+  },
   "transport": {
     "type": "hid",
     "report_size": 320,
@@ -84,6 +202,23 @@
         "13": "mix_ch4",
         "14": "surround_in"
       },
+      "destination_labels": {
+        "0": "Line Out",
+        "1": "Headphone 1",
+        "2": "Headphone 2",
+        "3": "Monitor A",
+        "4": "Monitor B",
+        "5": "Reamp",
+        "6": "Computer Record",
+        "7": "ADAT Out",
+        "8": "S/PDIF Out",
+        "9": "AFX In",
+        "10": "Mix 1 Input",
+        "11": "Mix 2 Input",
+        "12": "Mix 3 Input",
+        "13": "Mix 4 Input",
+        "14": "Surround In"
+      },
       "addressable_destinations_note": "ALL 15 destination groups are now writable (2026-09-01). The first six are physical outputs; 6-14 are internal or digital and were left unwired until their channel counts were confirmed off the cat-0x03 readback. Each was live-read before wiring and the counts matched destination_channels exactly: com_rec 32, adat_out 16, spdif_out 2, afx_in 32, mix_ch1-4 32 each, surround_in 16. NOTE mix_chN (10-13) is the input side of the VIRTUAL MIXER: its 32 channels are what each of mix N's 32 strips listens to, so `route mix1 5 preamp3` chooses strip 5's source and `mix-set 1 5 --fader ...` sets that same strip's level -- two halves of one signal path (frame.mix_command, readback cat 0x04).",
       "destination_channels": {
         "0": 16,
@@ -126,25 +261,27 @@
         "0x0c": "oscillator (idx 0-1 = oscillator 1 / oscillator 2 -- right-click -> insert oscillator on an output)"
       },
       "source_semantics": {
-        "0x00": {"kind": "numbered", "name": "Preamp", "display_index_base": 1},
-        "0x01": {"kind": "numbered", "name": "emuMic", "display_index_base": 5},
+        "0x00": {"key": "preamp", "kind": "numbered", "name": "Preamp", "label": "PREAMP", "display_index_base": 1},
+        "0x01": {"key": "emumic", "kind": "numbered", "name": "emuMic", "label": "EMUMIC", "display_index_base": 5},
         "0x02": {
+          "key": "compplay",
           "kind": "numbered",
           "name": "Computer Playback",
+          "label": "COMPUTER PLAY",
           "display_index_base": 1,
           "writable_index_count": 24,
           "evidence": "WebUI/protocol ROUTE_SOURCE_SPECS defines Computer Playback as a writable source; 24 channels are available on the verified Windows host. Native macOS writes 25-32 were acknowledged, but selecting that wider host-dependent capability is deferred until runtime has an active-host channel-capability signal."
         },
-        "0x03": {"kind": "numbered", "name": "ADAT In", "display_index_base": 1},
-        "0x04": {"kind": "stereo", "name": "S/PDIF In", "display_index_base": 0},
-        "0x05": {"kind": "numbered", "name": "AFX Out", "display_index_base": 1},
-        "0x06": {"kind": "stereo", "name": "Mix 1", "display_index_base": 0},
-        "0x07": {"kind": "stereo", "name": "Mix 2", "display_index_base": 0},
-        "0x08": {"kind": "stereo", "name": "Mix 3", "display_index_base": 0},
-        "0x09": {"kind": "stereo", "name": "Mix 4", "display_index_base": 0},
-        "0x0a": {"kind": "numbered", "name": "Surround Out", "display_index_base": 1},
-        "0x0b": {"kind": "mute", "name": "MUTE", "display_index_base": 0},
-        "0x0c": {"kind": "numbered", "name": "Oscillator", "display_index_base": 1}
+        "0x03": {"key": "adat", "kind": "numbered", "name": "ADAT In", "label": "ADAT IN", "display_index_base": 1},
+        "0x04": {"key": "spdif", "kind": "stereo", "name": "S/PDIF In", "label": "S/PDIF", "display_index_base": 0},
+        "0x05": {"key": "afx", "kind": "numbered", "name": "AFX Out", "label": "AFX OUT", "display_index_base": 1},
+        "0x06": {"key": "mix1", "kind": "stereo", "name": "Mix 1", "label": "MIX 1", "display_index_base": 0},
+        "0x07": {"key": "mix2", "kind": "stereo", "name": "Mix 2", "label": "MIX 2", "display_index_base": 0},
+        "0x08": {"key": "mix3", "kind": "stereo", "name": "Mix 3", "label": "MIX 3", "display_index_base": 0},
+        "0x09": {"key": "mix4", "kind": "stereo", "name": "Mix 4", "label": "MIX 4", "display_index_base": 0},
+        "0x0a": {"key": "surround", "kind": "numbered", "name": "Surround Out", "label": "SURROUND OUT", "display_index_base": 1},
+        "0x0b": {"key": "mute", "kind": "mute", "name": "MUTE", "label": "MUTE", "display_index_base": 0},
+        "0x0c": {"key": "osc", "kind": "numbered", "name": "Oscillator", "label": "OSCILLATOR", "display_index_base": 1}
       },
       "readback_source_banks": {
         "0x02": {
@@ -1086,6 +1223,7 @@
     "known": {
       "0": {
         "name": "monitor_a",
+        "label": "Monitor A",
         "aliases": [
           "mona",
           "mon_a",
@@ -1094,6 +1232,7 @@
       },
       "1": {
         "name": "headphone_1",
+        "label": "Headphone 1",
         "aliases": [
           "hp1",
           "headphones_1",
@@ -1102,6 +1241,7 @@
       },
       "2": {
         "name": "headphone_2",
+        "label": "Headphone 2",
         "aliases": [
           "hp2",
           "headphones_2",
@@ -1110,6 +1250,7 @@
       },
       "3": {
         "name": "line_out",
+        "label": "Line Out",
         "aliases": [
           "line",
           "lineout",
@@ -1119,6 +1260,7 @@
       },
       "4": {
         "name": "reamp",
+        "label": "Reamp",
         "aliases": [
           "reamp_out",
           "reamp out",
@@ -1128,6 +1270,7 @@
       },
       "5": {
         "name": "monitor_b",
+        "label": "Monitor B",
         "aliases": [
           "monb",
           "mon_b",

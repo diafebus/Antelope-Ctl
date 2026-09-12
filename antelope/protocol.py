@@ -26,6 +26,48 @@ def load_profile(path: str) -> dict:
     return profile
 
 
+def _display_label(value, fallback=''):
+    """Return a profile-owned display label from a string/object value.
+
+    Labels are deliberately a presentation concern.  Protocol names and
+    numeric ids remain the fallback so older profiles continue to work while
+    newer clients can consume ``label`` without knowing the device model.
+    """
+    if isinstance(value, dict):
+        value = value.get('label') or value.get('name')
+    if value is None:
+        return fallback
+    text = str(value).strip()
+    return text or fallback
+
+
+def profile_label(profile: dict, namespace: str, key: str, fallback=None):
+    """Look up a human-facing label in ``profile['labels'][namespace]``.
+
+    This helper intentionally has no family defaults.  A missing label falls
+    back to the caller's stable key or supplied fallback instead of borrowing
+    text from another device profile.
+    """
+    labels = profile.get('labels', {}) or {}
+    values = labels.get(namespace, {}) if isinstance(labels, dict) else {}
+    if not isinstance(values, dict):
+        return fallback if fallback is not None else str(key)
+    return _display_label(values.get(str(key)),
+                          fallback if fallback is not None else str(key))
+
+
+def param_label(profile: dict, param: str, fallback=None) -> str:
+    """Return the profile-owned label for a stable parameter key."""
+    return profile_label(profile, 'params', param,
+                         fallback if fallback is not None else param)
+
+
+def section_label(profile: dict, section: str, fallback=None) -> str:
+    """Return the profile-owned label for a launcher section."""
+    return profile_label(profile, 'sections', section,
+                         fallback if fallback is not None else section)
+
+
 def _as_int(v):
     """Profile values are stored as hex strings ('0x4f') or ints; normalize."""
     if isinstance(v, str):
@@ -566,6 +608,33 @@ def _route_catalog(profile):
     return numbered, stereo, mute
 
 
+def _route_semantics(profile):
+    """Return profile-declared routing source semantics, if any."""
+    return ((profile or {}).get('frame', {}).get('routing_command', {}) or {}
+            ).get('source_semantics', {})
+
+
+def _route_source_group_label(profile, key, fallback=None):
+    """Return the profile label for a stable routing source key."""
+    wanted = str(key).lower()
+    semantics = _route_semantics(profile)
+    if isinstance(semantics, dict):
+        for definition in semantics.values():
+            if not isinstance(definition, dict):
+                continue
+            candidate = definition.get('key') or _route_kind_from_name(
+                definition.get('name'))
+            if str(candidate or '').lower() == wanted:
+                return _display_label(
+                    definition.get('label') or definition.get('name'),
+                    fallback if fallback is not None else wanted)
+    label_block = (profile or {}).get('labels', {}) or {}
+    labels = label_block.get('sources', {}) if isinstance(label_block, dict) else {}
+    if isinstance(labels, dict) and wanted in labels:
+        return _display_label(labels[wanted], fallback if fallback is not None else wanted)
+    return fallback if fallback is not None else wanted
+
+
 def _lr_index(number):
     return {'l': 0, 'r': 1, '1': 0, '2': 1}.get(str(number).strip().lower())
 
@@ -603,14 +672,34 @@ def route_source_label(profile: dict, bank: int, index: int) -> str:
     'compplay 5' / 'mix2 R' / 'MUTE', for showing a decoded/cached route."""
     specs, stereo_banks, mute = _route_catalog(profile)
     if (bank, index) == mute:
-        return 'MUTE'
+        return _route_source_group_label(profile, 'mute', 'MUTE')
     for name, b in stereo_banks.items():
         if b == bank:
-            return f"{name} {'L' if index == 0 else 'R'}"
-    for name, (b, first, count, _label, base) in specs.items():
+            label = _route_source_group_label(profile, name, name)
+            return f"{label} {'L' if index == 0 else 'R'}"
+    for name, (b, first, count, label, base) in specs.items():
         if b == bank and first <= index <= first + count - 1:
-            return f'{name} {index - first + base}'
+            return f'{label} {index - first + base}'
     return f'bank 0x{bank:02x} idx {index}'
+
+
+def route_source_key(profile: dict, bank: int, index: int):
+    """Return the stable UI key for a decoded source, if it is known.
+
+    Clients should use this key for comparisons and use
+    :func:`route_source_label` only for display.  This keeps labels free to
+    contain spaces or be localized without making a launcher parse text.
+    """
+    specs, stereo_banks, mute = _route_catalog(profile)
+    if (bank, index) == mute:
+        return 'mute:'
+    for name, source_bank in stereo_banks.items():
+        if source_bank == bank and index in (0, 1):
+            return f'{name}:{"L" if index == 0 else "R"}'
+    for name, (source_bank, first, count, _label, base) in specs.items():
+        if source_bank == bank and first <= index <= first + count - 1:
+            return f'{name}:{index - first + base}'
+    return None
 
 
 def route_mute_source(profile: dict):
@@ -631,9 +720,11 @@ def route_source_options(profile: dict):
         out.append({'kind': name, 'label': label, 'count': count,
                     'base': base, 'stereo': False})
     for name in stereo_banks:
-        out.append({'kind': name, 'label': name, 'count': 2,
+        out.append({'kind': name, 'label': _route_source_group_label(
+            profile, name, name), 'count': 2,
                     'base': None, 'stereo': True})
-    out.append({'kind': 'mute', 'label': 'MUTE', 'count': 0,
+    out.append({'kind': 'mute', 'label': _route_source_group_label(
+        profile, 'mute', 'MUTE'), 'count': 0,
                 'base': None, 'stereo': False})
     return out
 
@@ -646,20 +737,53 @@ def resolve_route_dest(profile: dict, name):
     s = str(name).strip().lower()
     if s in addr:
         return int(s)
+    labels = f.get('destination_labels', {}) or {}
+    semantics = f.get('destination_semantics', {}) or {}
+    if not isinstance(labels, dict):
+        labels = {}
+    if not isinstance(semantics, dict):
+        semantics = {}
     # resolve against the buses 'known' names/aliases, then check it's addressable
     for id_str, dest_name in addr.items():
         info = profile.get('buses', {}).get('known', {})
-        names = [dest_name]
+        names = [dest_name, labels.get(str(id_str))]
+        dest_info = semantics.get(str(id_str), {})
+        if isinstance(dest_info, dict):
+            names += [dest_info.get('key'), dest_info.get('label'),
+                      dest_info.get('name')]
         for bid, binfo in info.items():
+            if not isinstance(binfo, dict):
+                continue
             if binfo.get('name') == dest_name:
-                names += [binfo.get('name')] + binfo.get('aliases', [])
+                names += [binfo.get('name'), binfo.get('label')]
+                names += binfo.get('aliases', [])
         if s in (n.lower() for n in names if n):
             return int(id_str)
-    choices = ', '.join(f"{i} ({n})" for i, n in addr.items())
+    choices = ', '.join(f"{i} ({route_destination_label(profile, i)})"
+                        for i in addr)
     raise ValueError(f"routing destination '{name}' not addressable by the CLI -- "
                      f"choose one of: {choices}. Other outputs (adat out, com rec, "
                      f"mix channels, surround in) use the same frame but their channel "
                      f"counts aren't captured yet.")
+
+
+def route_destination_label(profile: dict, dest_id: int) -> str:
+    """Return a profile-owned display label for a routing destination."""
+    rc = (profile or {}).get('frame', {}).get('routing_command', {}) or {}
+    key = str(dest_id)
+    labels = rc.get('destination_labels', {})
+    if isinstance(labels, dict) and key in labels:
+        return _display_label(labels[key], key)
+    semantics = rc.get('destination_semantics', {})
+    if isinstance(semantics, dict):
+        value = semantics.get(key)
+        if isinstance(value, dict):
+            return _display_label(value, key)
+        if value is not None:
+            return _display_label(value, key)
+    addr = rc.get('addressable_destinations', {})
+    value = addr.get(key, f'dest{dest_id}') if isinstance(addr, dict) else f'dest{dest_id}'
+    return _display_label(value, f'dest{dest_id}').replace('_', ' ')
 
 
 def route_dest_channels(profile: dict, dest_id: int) -> int:
@@ -1790,9 +1914,11 @@ def gain_range(profile: dict, mode_name_str: str):
 # ---- buses (monitor A/B, headphone 1/2) ----
 
 def resolve_bus_id(profile: dict, bus) -> int:
-    """Accept either a raw bus id ('0', 0) or a name/alias ('monitor_a', 'mona', ...)
-    and return the integer bus id. Raises KeyError with the list of known names/ids
-    if it can't be resolved, so the CLI can show the user something useful."""
+    """Accept a raw bus id or its stable name, display label, or alias.
+
+    Return the integer bus id. Raise KeyError with the list of known names/ids
+    if it cannot be resolved, so the CLI can show the user something useful.
+    """
     known = profile.get('buses', {}).get('known', {})
     bus_str = str(bus).strip().lower()
 
@@ -1807,12 +1933,28 @@ def resolve_bus_id(profile: dict, bus) -> int:
         pass
     # Try matching against name/aliases.
     for id_str, info in known.items():
-        names = [info.get('name', '')] + info.get('aliases', [])
+        if not isinstance(info, dict):
+            continue
+        names = [info.get('name', ''), info.get('label', '')] + info.get('aliases', [])
         if bus_str in (n.lower() for n in names):
             return int(id_str)
 
-    choices = ', '.join(f"{i} ({v.get('name')})" for i, v in known.items())
+    choices = ', '.join(f"{i} ({bus_name(profile, int(i))})"
+                        for i in known)
     raise KeyError(f'unknown bus "{bus}" -- known buses: {choices}')
+
+
+def bus_key(profile: dict, bus_id: int) -> str:
+    """Return the stable machine name for a known bus.
+
+    Keep this separate from :func:`bus_name`: API clients need both the
+    canonical key for logic and the profile-owned label for display.
+    """
+    known = profile.get('buses', {}).get('known', {})
+    info = known.get(str(bus_id))
+    if isinstance(info, dict) and info.get('name'):
+        return str(info['name'])
+    return f'bus{bus_id}'
 
 
 def bus_name(profile: dict, bus_id: int) -> str:
@@ -1820,7 +1962,7 @@ def bus_name(profile: dict, bus_id: int) -> str:
     buses not in profile['buses']['known'] (e.g. the unassigned ids 3/4)."""
     known = profile.get('buses', {}).get('known', {})
     info = known.get(str(bus_id))
-    return info['name'] if info else f'bus{bus_id}'
+    return _display_label(info, f'bus{bus_id}') if info else f'bus{bus_id}'
 
 
 def parse_bus_state(profile: dict, data: bytes, bus_id: int) -> dict:

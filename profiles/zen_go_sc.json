@@ -11,6 +11,102 @@
     "evidence": "capture_01_enumeration.pcapng: device descriptor frame -> idVendor 0x23e5, idProduct 0xa015, bcdDevice 0x0606; config descriptor (243 bytes) decoded. The connect-time 0x75 frame carrying ASCII 'Zen Go Synergy Core' + serial + fw rev is a readback RESPONSE for category 0x01 -- see frame.readback, not a Zen-Go-specific name report."
   },
 
+  "profile_schema": {
+    "id": "antelope-device-profile",
+    "version": 1
+  },
+  "labels": {
+    "sections": {
+      "inputs": "Inputs",
+      "digital_inputs": "Digital Inputs",
+      "outputs": "Output Buses",
+      "routing": "Routing",
+      "mixer": "Virtual Mixer",
+      "settings": "Settings",
+      "diagnostics": "Protocol Readback"
+    },
+    "spaces": {
+      "input": {"label": "Preamps", "item_format": "Preamp {index}"},
+      "bus": {"label": "Output", "item_format": "{label}"}
+    },
+    "params": {
+      "gain": "Gain",
+      "input_mode": "Input Mode",
+      "phantom": "48V Phantom",
+      "phase_invert": "Phase Invert",
+      "channel_link": "Input Link",
+      "bus_level": "Output Level",
+      "bus_mute": "Mute",
+      "bus_dim": "Dim",
+      "bus_mono": "Mono",
+      "mix_fader": "Fader",
+      "mix_pan": "Pan",
+      "mix_mute": "Mute",
+      "mix_solo": "Solo",
+      "mix_channel_link": "Mixer Link",
+      "mic_modeling": "Mic Modeling",
+      "param_0x49": "Mixer Surface Selection",
+      "sample_rate": "Sample Rate",
+      "clock_source": "Clock Source"
+    }
+  },
+  "features": {
+    "inputs": {
+      "kind": "channel_strips",
+      "label": "Inputs",
+      "enabled": true,
+      "space": "input",
+      "controls": ["gain", "input_mode", "phantom", "phase_invert"]
+    },
+    "buses": {
+      "kind": "output_buses",
+      "label": "Output Buses",
+      "enabled": true,
+      "controls": ["bus_level", "bus_mute", "bus_dim", "bus_mono"]
+    },
+    "routing": {
+      "kind": "routing_matrix",
+      "label": "Routing",
+      "enabled": true,
+      "destination_ids": [6],
+      "destinations": [
+        {
+          "id": 6,
+          "key": "mixer_input_assignments",
+          "name": "mixer_input_assignments",
+          "label": "Mixer Input Assignments",
+          "channels": 16,
+          "write_destinations": [6, 7, 8, 9],
+          "note": "The four Zen Go routing records are mirrored views of one 16-strip mixer input map."
+        }
+      ],
+      "controls": ["routing"]
+    },
+    "mixer": {
+      "kind": "virtual_mixer",
+      "label": "Virtual Mixer",
+      "enabled": true,
+      "mix_ids": [0, 1],
+      "controls": ["mix_fader", "mix_pan", "mix_mute", "mix_solo", "mix_channel_link"]
+    },
+    "mixer_sources": {
+      "kind": "mixer_source_assignment",
+      "label": "Mixer Inputs",
+      "enabled": true,
+      "mix_ids": [0, 1],
+      "channels": 16,
+      "routing_destinations": [6, 7, 8, 9],
+      "controls": ["routing"],
+      "note": "Zen Go source changes update the shared mixer input map."
+    },
+    "settings": {
+      "kind": "device_settings",
+      "label": "Settings",
+      "enabled": true,
+      "controls": ["sample_rate", "clock_source"]
+    }
+  },
+
   "transport": {
     "type": "hid",
     "report_size": 320,
@@ -113,12 +209,12 @@
         "0x0a": "emumic / mic-modeled preamp -- idx 0/1 (from 'changed ch1 to emu1' -> (0x0a,0))"
       },
       "source_semantics": {
-        "0x00": {"key": "preamp", "kind": "numbered", "name": "PREAMP", "display_index_base": 1, "count": 2},
-        "0x01": {"key": "compplay", "kind": "numbered", "name": "COMPUTER PLAY", "display_index_base": 1, "count": 8},
-        "0x02": {"key": "spdif", "kind": "stereo", "name": "S/PDIF", "count": 2},
-        "0x08": {"key": "mute", "kind": "mute", "name": "MUTE", "index": 0, "count": 1},
-        "0x09": {"key": "osc", "kind": "numbered", "name": "OSCILLATOR", "display_index_base": 1, "count": 2},
-        "0x0a": {"key": "emumic", "kind": "numbered", "name": "EMUMIC", "display_index_base": 1, "count": 2}
+        "0x00": {"key": "preamp", "kind": "numbered", "name": "PREAMP", "label": "PREAMP", "display_index_base": 1, "count": 2},
+        "0x01": {"key": "compplay", "kind": "numbered", "name": "COMPUTER PLAY", "label": "COMPUTER PLAY", "display_index_base": 1, "count": 8},
+        "0x02": {"key": "spdif", "kind": "stereo", "name": "S/PDIF", "label": "S/PDIF", "count": 2},
+        "0x08": {"key": "mute", "kind": "mute", "name": "MUTE", "label": "MUTE", "index": 0, "count": 1},
+        "0x09": {"key": "osc", "kind": "numbered", "name": "OSCILLATOR", "label": "OSCILLATOR", "display_index_base": 1, "count": 2},
+        "0x0a": {"key": "emumic", "kind": "numbered", "name": "EMUMIC", "label": "EMUMIC", "display_index_base": 1, "count": 2}
       },
       "mute_source": [8, 0],
       "addressable_destinations": {
@@ -136,6 +232,14 @@
         "7": 32,
         "8": 32,
         "9": 32
+      },
+      "destination_labels": {
+        "3": "Mixer Core",
+        "5": "Mixer Inputs 1-4",
+        "6": "Mixer Input Map 1",
+        "7": "Mixer Input Map 2",
+        "8": "Mixer Input Map 3",
+        "9": "Mixer Input Map 4"
       },
       "stereo_destinations": [],
       "evidence": "channel_assignments/*.pcapng and mixer/capture_mixer_03/04/18-30. Each single-strip capture (chN_<src>_oscillator1_<src>) changes exactly one slot and names the source; the index_map captures walk slots 4-15 through the oscillator; capture_mixer_03/04 cycle strip 11 through preamp / playback / emumic / spdif / osc / mute."
@@ -513,9 +617,9 @@
     "_comment": "Output buses, addressed in frame.command.channel_offset (@17) like a channel but the id means an output. Captured target ids 0/1/2 map to Monitor / HP1 / HP2.",
     "count": 3,
     "known": {
-      "0": { "name": "Monitor", "verified": true },
-      "1": { "name": "HP1", "verified": true },
-      "2": { "name": "HP2", "verified": true }
+      "0": { "name": "Monitor", "label": "Monitor", "verified": true },
+      "1": { "name": "HP1", "label": "Headphone 1", "verified": true },
+      "2": { "name": "HP2", "label": "Headphone 2", "verified": true }
     },
     "readback": "state_report.bus_block_offset (28) + 2*bus_id: byte 0 = level (0-96), byte 1 = exclusive output mode enum (0 normal, 1 mute, 2 dim). Isolated captures did not establish a combined mute+dim encoding.",
     "status": "confirmed",
@@ -683,7 +787,7 @@
       "frame": "mix_command byte 21 bit 0x80",
       "evidence": "mixer/capture_mixer_13_solo_single(...).pcapng"
     },
-    "mix_link": {
+    "mix_channel_link": {
       "status": "confirmed",
       "frame": "link_command (opcode 0x14 / 0xa2) space 3, logical pair_index = channel // 2; wire pair_index = mix * 16 + logical pair_index",
       "per": "mixer surface + pair",

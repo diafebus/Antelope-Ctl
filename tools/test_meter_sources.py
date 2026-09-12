@@ -91,6 +91,23 @@ class MeterSourceTests(unittest.TestCase):
             'raw': 96, 'db': None, 'clip': None, 'silence': True,
         })
 
+    def test_orion_selected_mixer_strip_meters_follow_the_window_selector(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.profile
+        report = bytearray(320)
+        report[122] = 2                 # Mix 3, target-1 selector
+        report[157] = 0                 # strip 1
+        report[188] = 96                # strip 32
+
+        meters = device._parse_mixer_meters(report)
+        self.assertEqual(meters['mix'], 2)
+        self.assertEqual(meters['raw_range'], [0, 96])
+        self.assertEqual(len(meters['strips']), 32)
+        self.assertEqual(meters['strips'][0],
+                         {'ch': 1, 'raw': 0, 'silence': False})
+        self.assertEqual(meters['strips'][-1],
+                         {'ch': 32, 'raw': 96, 'silence': True})
+
     def test_orion_state_bank_truncation_does_not_invent_channel_twelve(self):
         _, _, base = protocol.channel_meter_source_details(self.profile)
         report = bytearray(232)

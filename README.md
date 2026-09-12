@@ -18,6 +18,7 @@ used; the device firmware is not touched.
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
+| **`docs/profile-labeling.md`** | the cross-client labels and feature-manifest contract — how to add a device and keep shared parameter vocabulary consistent |
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
@@ -619,6 +620,11 @@ the new device follows the same general "vendor HID, N-byte reports,
 SET_PARAM(id, channel, value)" shape. If it doesn't, that's a sign the
 frame format itself needs to become part of the profile too (it already
 mostly is -- see `"frame"` in the JSON).
+
+Every device profile also carries a versioned `profile_schema`, `labels`, and
+`features` block. Read [`docs/profile-labeling.md`](docs/profile-labeling.md)
+when adding or porting a profile so a future launcher (including Rust) can
+reuse the same stable keys without copying device-specific wire facts.
 
 **Sibling profiles so far:**
 

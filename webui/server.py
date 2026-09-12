@@ -251,7 +251,11 @@ def _routing_ui_destinations():
     feature = UI_FEATURES.get("routing", {})
     if not isinstance(feature, dict) or not feature.get("enabled"):
         return None
-    return list(feature.get("destinations", []) or [])
+    # An absent/empty logical list means the feature wants the profile's raw
+    # addressable destination map.  A non-empty list is a logical view such as
+    # Zen Go's four mirrored records represented as one mixer-input map.
+    destinations = feature.get("destinations")
+    return list(destinations) if isinstance(destinations, list) and destinations else None
 
 
 def _routing_channel_count(profile, dest):
@@ -413,14 +417,22 @@ class Device:
 
     def routing_json(self):
         with self._lock:
-            return {
-                str(d): [
-                    {"bank": b, "idx": i,
-                     "label": proto.route_source_label(self.profile, b, i)}
-                    for b, i in pairs
-                ]
-                for d, pairs in self.routing.items()
-            }
+            out = {}
+            for dest, pairs in self.routing.items():
+                items = []
+                for bank, index in pairs:
+                    item = {
+                        "bank": bank,
+                        "idx": index,
+                        "label": proto.route_source_label(
+                            self.profile, bank, index),
+                    }
+                    key = proto.route_source_key(self.profile, bank, index)
+                    if key is not None:
+                        item["key"] = key
+                    items.append(item)
+                out[str(dest)] = items
+            return out
 
     def mixer_json(self):
         with self._lock:
@@ -867,7 +879,8 @@ class Device:
                 continue
             out.append({
                 "bus": bid,
-                "name": proto.bus_name(self.profile, bid),
+                "name": proto.bus_key(self.profile, bid),
+                "label": proto.bus_name(self.profile, bid),
                 "level": b["level"],
                 "dim": bool(b.get("dim")),
                 "mute": bool(b.get("mute")),
@@ -1126,7 +1139,8 @@ class Device:
             raw = state[offset]
             output = outputs.setdefault(target, {
                 "bus": target,
-                "name": proto.bus_name(self.profile, target),
+                "name": proto.bus_key(self.profile, target),
+                "label": proto.bus_name(self.profile, target),
                 "status": mapping.get("status", ""),
                 "lanes": [],
             })
@@ -1559,6 +1573,7 @@ def api_routing():
     if logical is None:
         dests = [
             {"id": int(k), "name": addr.get(k, f"dest{k}"),
+             "label": proto.route_destination_label(PROFILE, int(k)),
              "channels": int(v), "stereo": k in stereo}
             for k, v in sorted(dc.items(), key=lambda x: int(x[0]))
         ]
@@ -1566,6 +1581,8 @@ def api_routing():
         dests = [{
             "id": int(item["id"]),
             "name": item.get("name", f"dest{item['id']}"),
+            "label": item.get("label") or proto.route_destination_label(
+                PROFILE, int(item["id"])),
             "channels": int(item["channels"]),
             "stereo": bool(item.get("stereo", False)),
             "note": item.get("note", ""),

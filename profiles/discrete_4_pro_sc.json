@@ -8,6 +8,64 @@
     "notes": "vid, pid and bcdDevice all read from the device's own Windows PnP instance id on a machine with the unit attached: USB\\VID_23E5&PID_A2BF carries FriendlyName \"Discrete 4 Pro Synergy Core\", and HID\\VID_23E5&PID_A2BF&REV_0203&MI_03 is the vendor-defined HID interface. The vid is no longer an assumption carried over from Orion Studio III. The per-unit serial is deliberately not recorded.",
     "evidence": "Get-PnpDevice | Where-Object InstanceId -like '*VID_23E5*'"
   },
+  "profile_schema": {
+    "id": "antelope-device-profile",
+    "version": 1
+  },
+  "labels": {
+    "sections": {
+      "inputs": "Inputs",
+      "digital_inputs": "Digital Inputs",
+      "outputs": "Output Buses",
+      "routing": "Routing",
+      "mixer": "Virtual Mixer",
+      "settings": "Settings",
+      "diagnostics": "Protocol Readback"
+    },
+    "spaces": {
+      "input": {"label": "Preamps", "item_format": "Preamp {index}"},
+      "bus": {"label": "Output", "item_format": "{label}"}
+    },
+    "params": {}
+  },
+  "features": {
+    "inputs": {
+      "kind": "channel_strips",
+      "label": "Inputs",
+      "enabled": false,
+      "space": "input",
+      "controls": [],
+      "status": "disabled -- command and state mappings are not confirmed"
+    },
+    "buses": {
+      "kind": "output_buses",
+      "label": "Output Buses",
+      "enabled": false,
+      "controls": [],
+      "status": "disabled -- output mapping is not confirmed"
+    },
+    "routing": {
+      "kind": "routing_matrix",
+      "label": "Routing",
+      "enabled": false,
+      "controls": [],
+      "status": "disabled -- routing frame is not confirmed"
+    },
+    "mixer": {
+      "kind": "virtual_mixer",
+      "label": "Virtual Mixer",
+      "enabled": false,
+      "controls": [],
+      "status": "disabled -- mixer frame is not confirmed"
+    },
+    "settings": {
+      "kind": "device_settings",
+      "label": "Settings",
+      "enabled": false,
+      "controls": [],
+      "status": "disabled -- settings frames are not confirmed"
+    }
+  },
   "transport": {
     "type": "hid",
     "report_size": 320,

@@ -45,6 +45,9 @@ evidence.
 | key | required | purpose |
 |---|---|---|
 | `device` | yes | identity (VID/PID) — used to find the hidraw node |
+| `profile_schema` | yes for labeled profiles | format identifier/version for cross-client profile metadata |
+| `labels` | recommended | stable section, address-space, and parameter display labels |
+| `features` | recommended | launcher surfaces, controls, dimensions, labels, and enabled/readiness state |
 | `transport` | yes | HID report size + endpoints |
 | `frame` | yes | every wire frame shape + the incoming report maps |
 | `channels` | yes | the physical input channel space |
@@ -122,7 +125,7 @@ frame carries a fixed one). Then frame-specific offsets:
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
 | — (no `frame.*` block) | SET_SURROUND `0xab`/`0xeb` (global) + SET_SURROUND_SPEAKER `0x87`/`0xea` (per-speaker ×16) | documented byte-for-byte in `params.surround_monitor.field_map` / `params.surround_speaker.field_map` | **no builder** — launcher-only observed opcodes; see `constraints.observed_opcodes_launcher_only`. A client reads the offsets from the `field_map` and builds the frame itself |
 | `afx_slot` | *(AFX plugin-chain slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` is in `constraints.forbidden_opcodes` (placing a plugin = bucket E, `SCOPE.md`); plugin parameters (`0x1c`/`0xd5`) are frozen. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
-| `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}` | `build_route_command(profile, dest, channels)` |
+| `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, optional `destination_labels{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}`, `source_semantics{}` | `build_route_command(profile, dest, channels)` |
 | `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, optional nested `record_layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`) / `parse_readback_records` and its profile-specific wrappers; driven by `transport.HidTransport.query` |
 
 > **`frame.readback.category_counts` is safety-critical, not documentation.**
@@ -213,6 +216,20 @@ complete nested bitmap that may replace cached `(mix, pair)` link state; the
 WebUI waits for every declared record before doing so. These blocks describe
 device-specific evidence, not a family-wide assumption.
 
+### Labels and launcher features
+
+`profile_schema` identifies the cross-client metadata contract. The current
+value is `{"id": "antelope-device-profile", "version": 1}`. `labels` holds
+stable section, address-space, and parameter labels. `features` describes
+optional launcher surfaces, including their `kind`, `label`, `controls`,
+dimensions, and `enabled`/readiness state.
+
+Labels never determine a byte id, enum value, range, offset, or frame shape.
+Entity labels stay beside their protocol definitions (`buses.known`, routing
+`source_semantics`, and routing destinations); shared parameter labels belong
+in `labels.params`. See [`docs/profile-labeling.md`](profile-labeling.md) for
+the complete contract and new-device checklist.
+
 ### Incoming report maps (device → host)
 
 - **`state_report`** (`magic 0x73` in this family) — the poll readback.
@@ -299,15 +316,16 @@ Same idea, separate index spaces: `count`, `addressing`, `readback`,
 "buses": {
   "addressing": "bus id in frame.command.channel_offset (@17)",
   "known": {
-    "0": { "name": "monitor_a", "aliases": ["mona", "monitor a"] },
-    "1": { "name": "headphone_1", "aliases": ["hp1"] }
+    "0": { "name": "monitor_a", "label": "Monitor A", "aliases": ["mona", "monitor a"] },
+    "1": { "name": "headphone_1", "label": "Headphone 1", "aliases": ["hp1"] }
   },
   "readback": "state_report.bus_block_offset + stride*id"
 }
 ```
 
-`resolve_bus_id()` matches a user string against `name` + `aliases`.
-`bus-status` / `set-bus-*` use this.
+`name` is the stable machine key and `label` is display text. If `label` is
+omitted, clients fall back to `name`. `resolve_bus_id()` matches a user string
+against `name`, `label`, and `aliases`; `bus-status` / `set-bus-*` use this.
 
 ---
 

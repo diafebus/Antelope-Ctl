@@ -689,7 +689,7 @@ document.addEventListener('keydown', e => {
 // Model picker is a follow-up (the available list is account-bound, not on
 // the device -- see profiles/mic_models.json).
 const EMU = loadEmu();
-const hasEmu = ch => EMU_CHANNELS.has(ch);
+const hasEmu = ch => UI_FEATURES?.mic_modeling?.enabled !== false && EMU_CHANNELS.has(ch);
 const emuOn  = ch => !!(EMU[ch] && EMU[ch].on);
 const emuPat = ch => (EMU[ch] && EMU[ch].pattern != null) ? EMU[ch].pattern : 50;
 function loadEmu() {
@@ -786,15 +786,17 @@ function buildChannels(n) {
   const wrap = $('#channels'); wrap.innerHTML = '';
   for (let ch = 0; ch < n; ch++) {
     const el = document.createElement('div');
+    const channelLabel = profileSpaceLabel('input', {index: ch + 1}, `CH${ch + 1}`);
+    const nextChannelLabel = profileSpaceLabel('input', {index: ch + 2}, `CH${ch + 2}`);
     el.className = 'pre'; el.dataset.ch = ch;
     el.innerHTML = `
       <div class="top">
-        <span class="chid">CH${ch + 1}</span>
+        <span class="chid">${channelLabel}</span>
         <select class="mode" data-mode>${MODES.map(m =>
         `<option value="${m}"${String(m).toLowerCase() === 'hiz' && !HIZ.has(ch) ? ' disabled' : ''}>${m.toUpperCase()}</option>`).join('')}</select>
       </div>
       ${ch % 2 === 0 && pairOf(ch) < N_PAIRS
-        ? `<button class="linkbtn" data-link title="link CH${ch + 1}+CH${ch + 2}">${LINK_ICON}</button>`
+        ? `<button class="linkbtn" data-link title="link ${channelLabel}+${nextChannelLabel}">${LINK_ICON}</button>`
         : ''}
       <div class="body">
         <div class="knob" data-knob tabindex="0">
@@ -856,9 +858,9 @@ function buildChannels(n) {
 // Endpoints:
 // POST /api/adat-gain /api/spdif-gain /api/adat-link /api/spdif-link.
 const DIG = {
-  adat:  {api: 'adat',  grid: 'adatgrid',  label: n => 'ADAT ' + (n + 1),
+  adat:  {api: 'adat',  grid: 'adatgrid',  label: n => profileSpaceLabel('adat', {index: n + 1}, 'ADAT ' + (n + 1)),
           n: 0, pairs: 0, range: [-6, 12], links: {}},
-  spdif: {api: 'spdif', grid: 'spdifgrid', label: n => (n ? 'R' : 'L'),
+  spdif: {api: 'spdif', grid: 'spdifgrid', label: n => profileSpaceLabel('spdif', {side: n ? 'R' : 'L'}, n ? 'R' : 'L'),
           n: 0, pairs: 0, range: [-6, 12], links: {}},
 };
 const DIG_PENDING = {};                       // "adat:3" -> {val, ts}
@@ -1056,6 +1058,12 @@ function applyDig(kind, list) {
 function initTabs() {
   const bar = document.querySelector('.tabbar'); if (!bar) return;
   const show = name => {
+    let button = bar.querySelector(`.tabbtn[data-tab="${name}"]`);
+    if (!button || button.hidden) {
+      button = [...bar.querySelectorAll('.tabbtn')].find(b => !b.hidden);
+      if (!button) return;
+      name = button.dataset.tab;
+    }
     bar.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     document.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== name; });
     try { localStorage.setItem('inputsTab', name); } catch (_) {}
@@ -1065,7 +1073,7 @@ function initTabs() {
   });
   let saved = null;
   try { saved = localStorage.getItem('inputsTab'); } catch (_) {}
-  if (saved && bar.querySelector(`.tabbtn[data-tab="${saved}"]`)) show(saved);
+  show(saved || bar.querySelector('.tabbtn:not([hidden])')?.dataset.tab || 'inputs');
 }
 
 // ---- emuMic (in-UI settings panel) --------------------------------
@@ -1678,7 +1686,7 @@ function applyOutputMeters(meters) {
         : `Raw ${raw}${silent ? ' · silence' : ' · provisional / uncalibrated'}`;
     });
     host.title = output
-      ? `${output.name || 'Output'} meter — provisional raw lane mapping`
+      ? `${output.label || output.name || 'Output'} meter — provisional raw lane mapping`
       : 'Output meter unavailable — provisional raw lane mapping';
   });
 }
@@ -1803,7 +1811,7 @@ function buildBuses(buses) {
     const outputMeter = outputMeterHTML(b.bus);
     el.className = 'strip' + (rot ? ' mon' : '');
     el.dataset.bus = b.bus;
-    const title = (b.name || ('BUS ' + b.bus)).replace(/_/g, ' ').toUpperCase();
+    const title = (b.label || b.name || ('BUS ' + b.bus)).replace(/_/g, ' ').toUpperCase();
     if (rot) {
       el.innerHTML = `<h3>${title}</h3>${outputMeter}`
         + vknobHTML(rot === 'hp' ? hpKnobSVG() : monKnobSVG());
@@ -1876,16 +1884,20 @@ function buildSrcGroups() {
   const byKind = {};
   ROUTING.sources.forEach(s => { byKind[s.kind] = s; });
   const rowsFor = s => s.stereo
-    ? [{ key: `${s.kind}:L`, label: `${s.kind} L`, kind: s.kind, number: 'L' },
-       { key: `${s.kind}:R`, label: `${s.kind} R`, kind: s.kind, number: 'R' }]
+    ? [{ key: `${s.kind}:L`, label: `${s.label || s.kind} L`, kind: s.kind, number: 'L' },
+       { key: `${s.kind}:R`, label: `${s.label || s.kind} R`, kind: s.kind, number: 'R' }]
     : Array.from({ length: s.count }, (_, i) => {
         const n = s.base + i;
-        return { key: `${s.kind}:${n}`, label: `${s.kind} ${n}`, kind: s.kind, number: n };
+        return { key: `${s.kind}:${n}`, label: `${s.label || s.kind} ${n}`, kind: s.kind, number: n };
       });
   const g = [];
-  const add = (kind, name) => { if (byKind[kind]) g.push({ key: kind, name, fam: SRC_FAM[kind], rows: rowsFor(byKind[kind]) }); };
+  const add = (kind, fallback) => {
+    if (!byKind[kind]) return;
+    const name = byKind[kind].group_label || byKind[kind].label || fallback;
+    g.push({ key: kind, name, fam: SRC_FAM[kind] || 'unknown', rows: rowsFor(byKind[kind]) });
+  };
   add('preamp', 'Preamps');
-  add('emumic', 'EmuMic 5-12');
+  add('emumic', 'EmuMic');
   add('compplay', 'Playback');
   add('adat', 'ADAT in');
   add('afx', 'AFX out');
@@ -1893,7 +1905,19 @@ function buildSrcGroups() {
   add('osc', 'Oscillator');
   add('spdif', 'S/PDIF in');
   const mixes = ['mix1', 'mix2', 'mix3', 'mix4'].filter(k => byKind[k]).flatMap(k => rowsFor(byKind[k]));
-  if (mixes.length) g.push({ key: 'mixes', name: 'Mixes 1-4', fam: 'mix', rows: mixes });
+  if (mixes.length) {
+    const names = ['mix1', 'mix2', 'mix3', 'mix4'].filter(k => byKind[k])
+      .map(k => byKind[k].group_label || byKind[k].label || k);
+    g.push({ key: 'mixes', name: names.join(' / ') || 'Mixes 1-4', fam: 'mix', rows: mixes });
+  }
+  // Keep the familiar ordering above, but do not make a new profile edit this
+  // launcher just because it introduces another source-bank semantic.
+  const knownKinds = new Set([
+    'preamp', 'emumic', 'compplay', 'adat', 'afx', 'surround', 'osc', 'spdif',
+    'mix1', 'mix2', 'mix3', 'mix4', 'mute',
+  ]);
+  ROUTING.sources.filter(s => !knownKinds.has(s.kind))
+    .forEach(s => add(s.kind, s.label || s.kind));
   SRC_GROUPS = g;
   return g;
 }
@@ -1921,21 +1945,37 @@ function rawSourceLabel(key) {
 }
 function labelToKey(label) {
   if (!label) return '';
-  if (label === 'MUTE') return 'mute:';
-  const raw = rawRouteParts(label);
+  const text = String(label).trim();
+  if (text.toUpperCase() === 'MUTE') return 'mute:';
+  const raw = rawRouteParts(text);
   if (raw) return `raw:${raw.bank}:${raw.idx}`;
-  const m = label.match(/^(\S+)\s+(\S+)$/);
-  return m ? `${m[1]}:${m[2]}` : '';
+  // Prefer the profile's stable source key. Labels may contain spaces (for
+  // example "COMPUTER PLAY 1"), so parsing the display text is only a legacy
+  // fallback for older daemons/profiles.
+  for (const source of ROUTING?.sources || []) {
+    const prefix = String(source.label || source.kind || '').trim();
+    const lower = text.toLowerCase(), prefixLower = prefix.toLowerCase();
+    if (!prefix || !lower.startsWith(prefixLower + ' ')) continue;
+    const suffix = text.slice(prefix.length).trim();
+    if (source.stereo && /^[LR]$/i.test(suffix)) return `${source.kind}:${suffix.toUpperCase()}`;
+    if (!source.stereo && /^\d+$/.test(suffix)) return `${source.kind}:${suffix}`;
+  }
+  const m = text.match(/^(\S+)\s+(\S+)$/);
+  return m ? `${m[1].toLowerCase()}:${m[2]}` : '';
 }
 const SHORT_FAM = { preamp: 'Pre', emumic: 'Emu', compplay: 'CP', adat: 'AD', afx: 'FX',
                     surround: 'Sur', osc: 'Osc', spdif: 'SP', mix1: 'M1', mix2: 'M2', mix3: 'M3', mix4: 'M4' };
 function shortLabel(label) {
-  if (!label || label === 'MUTE') return '—';
+  if (!label || String(label).trim().toUpperCase() === 'MUTE') return '—';
   const raw = rawRouteParts(label);
   if (raw) return `U${raw.bank.slice(2).toUpperCase()}/${raw.idx + 1}`;
+  const stable = labelToKey(label);
+  if (stable && !stable.startsWith('raw:')) return keyShort(stable);
   const m = label.match(/^(\S+)\s+(\S+)$/);
-  return m ? `${SHORT_FAM[m[1]] || m[1]} ${m[2]}` : label;
+  const kind = m ? m[1].toLowerCase() : '';
+  return m ? `${SHORT_FAM[kind] || m[1]} ${m[2]}` : label;
 }
+function routeKey(route) { return route?.key || labelToKey(route?.label); }
 // a want-key ("preamp:3", "mute:") -> short cell text / family, for optimistic paint
 function keyShort(key) {
   if (key === 'mute:') return '✕';
@@ -1974,7 +2014,7 @@ let ROUTE_DEST = 0;
 const curFor = destId => ((ROUTING && ROUTING.current) || {})[String(destId)] || [];
 function grpCount(grp, cur) {
   const keys = new Set(grp.rows.map(r => r.key));
-  return cur.reduce((n, c) => n + (c && keys.has(labelToKey(c.label)) ? 1 : 0), 0);
+  return cur.reduce((n, c) => n + (c && keys.has(routeKey(c)) ? 1 : 0), 0);
 }
 
 // The routing UI (toolbar + matrix + grid) lives in #routing, which is either
@@ -2125,21 +2165,23 @@ function renderMatrix() {
   const d = ROUTING.dests.find(x => x.id === ROUTE_DEST);
   if (!d) return;
   const cur = curFor(d.id), N = d.channels;
+  const muteLabel = ROUTING.sources.find(s => s.kind === 'mute')?.label || 'MUTE';
   const colName = ch => (d.stereo && ch < 2) ? (ch ? 'R' : 'L') : ch + 1;
 
   const cellRow = row => `<tr data-src="${row.key}" class="fam-${SRC_FAM[row.kind] || 'mute'}">
-    <th class="k">${row.label === 'MUTE' ? 'MUTE' : shortLabel(row.label)}</th>${
+    <th class="k">${row.kind === 'mute' ? row.label : shortLabel(row.label)}</th>${
       Array.from({ length: N }, (_, ch) => {
-        const on = cur[ch] && labelToKey(cur[ch].label) === row.key;
+        const on = cur[ch] && routeKey(cur[ch]) === row.key;
         const p = ROUTE_PENDING[d.id + ':' + ch];
         return `<td class="c${on ? ' on' : ''}${p && p.want === row.key ? ' pending' : ''}" data-ch="${ch}"></td>`;
       }).join('')}</tr>`;
 
-  const destTitle = d.name.replace(/_/g, ' ').toUpperCase();
+  const destLabel = d.label || d.name || ('dest' + d.id);
+  const destTitle = destLabel.replace(/_/g, ' ').toUpperCase();
   let h = `<div class="rdtitle">
       <label class="rdsel">Destination
         <select id="rdest">${ROUTING.dests.map(x =>
-          `<option value="${x.id}"${x.id === ROUTE_DEST ? ' selected' : ''}>${x.name.replace(/_/g, ' ')} — ${x.channels} ch</option>`).join('')}</select>
+          `<option value="${x.id}"${x.id === ROUTE_DEST ? ' selected' : ''}>${(x.label || x.name || ('dest' + x.id)).replace(/_/g, ' ')} — ${x.channels} ch</option>`).join('')}</select>
       </label>
       <span class="rdmeta">outputs across the top · sources down the side · one per output</span>
     </div>
@@ -2150,7 +2192,7 @@ function renderMatrix() {
       return `<th data-ch="${ch}"><span class="cn">${colName(ch)}</span><span class="cs fam-${fam}">${lab ? shortLabel(lab) : ''}</span></th>`;
     }).join('')}</tr></thead><tbody>`;
 
-  h += cellRow({ key: 'mute:', label: 'MUTE', kind: 'mute', number: null });
+  h += cellRow({ key: 'mute:', label: muteLabel, kind: 'mute', number: null });
   SRC_GROUPS.forEach(grp => {
     const open = ROUTE_GRP_OPEN.has(grp.key);
     const n = grpCount(grp, cur);
@@ -2223,7 +2265,7 @@ function routeBatch(destId, changes) {
 
 function flashCell(ch, state, title) {
   const cur = curFor(ROUTE_DEST);
-  const onKey = cur[ch] ? labelToKey(cur[ch].label) : '';
+  const onKey = cur[ch] ? routeKey(cur[ch]) : '';
   const fbox = rq('#rmx'); if (!fbox) return;
   fbox.querySelectorAll(`td.c[data-ch="${ch}"]`).forEach(c => {
     c.classList.remove('pending');
@@ -2243,7 +2285,7 @@ function refreshRouting() {
     Object.keys(ROUTE_PENDING).forEach(key => {
       const [dd, ch] = key.split(':').map(Number);
       const p = ROUTE_PENDING[key], age = Date.now() - p.ts, fresh = RB_VER > p.ver;
-      const actual = (curFor(dd)[ch] || {}).label ? labelToKey(curFor(dd)[ch].label) : '';
+      const actual = curFor(dd)[ch] ? routeKey(curFor(dd)[ch]) : '';
       if (fresh && actual === p.want) { gridFlash('d:' + dd + ':' + ch, 'ok'); delete ROUTE_PENDING[key]; }
       else if (fresh) { gridFlash('d:' + dd + ':' + ch, 'differ', 'device: ' + ((curFor(dd)[ch] || {}).label || '—')); delete ROUTE_PENDING[key]; }
       else if (age > RT_TIMEOUT_MS) { gridFlash('d:' + dd + ':' + ch, 'timeout'); delete ROUTE_PENDING[key]; }
@@ -2258,7 +2300,7 @@ function refreshRouting() {
     const k = tr.dataset.src;
     tr.querySelectorAll('td.c').forEach(c => {
       const ch = +c.dataset.ch;
-      c.classList.toggle('on', !!cur[ch] && labelToKey(cur[ch].label) === k);
+      c.classList.toggle('on', !!cur[ch] && routeKey(cur[ch]) === k);
     });
   });
   // column captions
@@ -2282,7 +2324,7 @@ function refreshRouting() {
     if (dd !== ROUTE_DEST) { delete ROUTE_PENDING[key]; return; }
     const p = ROUTE_PENDING[key];
     const age = Date.now() - p.ts, fresh = RB_VER > p.ver;
-    const actual = cur[ch] ? labelToKey(cur[ch].label) : '';
+    const actual = cur[ch] ? routeKey(cur[ch]) : '';
     if (fresh && actual === p.want) { flashCell(ch, 'ok'); delete ROUTE_PENDING[key]; }
     else if (fresh) { flashCell(ch, 'differ', 'device: ' + (cur[ch] ? cur[ch].label : '—')); delete ROUTE_PENDING[key]; }
     else if (age > RT_TIMEOUT_MS) { flashCell(ch, 'timeout'); delete ROUTE_PENDING[key]; }
@@ -2303,6 +2345,7 @@ let RG_SIG = '';
 function renderGrid() {
   const box = rgHost(); if (!box) return;
   RG_SIG = JSON.stringify((ROUTING && ROUTING.current) || {});
+  const muteLabel = ROUTING.sources.find(s => s.kind === 'mute')?.label || 'MUTE';
 
   const fromRow = g => `<div class="rgrow">
     <div class="rglbl fam-${g.fam}" data-node="sg:${g.key}" tabindex="0" title="${g.name} — drag onto a destination row to map 1:1">${g.name}</div>
@@ -2310,7 +2353,8 @@ function renderGrid() {
       `<div class="rgc fam-${g.fam}" data-node="${r.key}" tabindex="0" title="${r.label}">${rgNum(r.key)}</div>`).join('')}</div></div>`;
 
   const toRow = d => {
-    const cur = curFor(d.id), N = d.channels, nm = d.name.replace(/_/g, ' ').toUpperCase();
+    const cur = curFor(d.id), N = d.channels;
+    const nm = (d.label || d.name || ('dest' + d.id)).replace(/_/g, ' ').toUpperCase();
     return `<div class="rgrow">
       <div class="rglbl" data-node="dg:${d.id}" tabindex="0" title="${nm} (${N} ch)">${nm}</div>
       <div class="rgcells">${Array.from({ length: N }, (_, ch) => {
@@ -2318,7 +2362,7 @@ function renderGrid() {
         const fam = labelFam(lab);
         const cn = (d.stereo && ch < 2) ? (ch ? 'R' : 'L') : ch + 1;
         const pend = ROUTE_PENDING[d.id + ':' + ch] ? ' rgpending' : '';
-        return `<div class="rgc rgto fam-${fam}${pend}" data-node="d:${d.id}:${ch}" tabindex="0" title="${nm} ${cn}  ◄  ${lab || '(none)'}">${lab ? cellTag(labelToKey(lab)) : '·'}</div>`;
+        return `<div class="rgc rgto fam-${fam}${pend}" data-node="d:${d.id}:${ch}" tabindex="0" title="${nm} ${cn}  ◄  ${lab || '(none)'}">${lab ? cellTag(routeKey(c)) : '·'}</div>`;
       }).join('')}</div></div>`;
   };
 
@@ -2327,7 +2371,7 @@ function renderGrid() {
     <div class="rgscroll">
       <div class="rgsec"><div class="rgsectitle">From — sources</div>
         ${SRC_GROUPS.map(fromRow).join('')}
-        <div class="rgrow"><div class="rglbl rgmute" data-node="mute:" tabindex="0" title="drop onto a destination to mute it">✕ MUTE</div><div class="rgcells"><div class="rgc rgto fam-mute" data-node="mute:" tabindex="0" title="Mute">✕</div></div></div>
+        <div class="rgrow"><div class="rglbl rgmute" data-node="mute:" tabindex="0" title="drop onto a destination to mute it">✕ ${muteLabel}</div><div class="rgcells"><div class="rgc rgto fam-mute" data-node="mute:" tabindex="0" title="${muteLabel}">✕</div></div></div>
       </div>
       <div class="rgsec"><div class="rgsectitle">To — destinations</div>
         ${ROUTING.dests.map(toRow).join('')}
@@ -2513,7 +2557,7 @@ function rgRoute(rows, isGroup, destNode) {
   if (destNode.startsWith('dg:')) did = +destNode.slice(3);
   else { const m = destNode.match(/^d:(\d+):(\d+)$/); if (!m) return; did = +m[1]; startCh = +m[2]; }
   const dest = ROUTING.dests.find(x => x.id === did); if (!dest) return;
-  const N = dest.channels, dnm = dest.name.replace(/_/g, ' ');
+  const N = dest.channels, dnm = (dest.label || dest.name || ('dest' + dest.id)).replace(/_/g, ' ');
   const ce = (key, ch) => isMute
     ? { channel: ch, kind: 'mute', number: null }
     : (r => r ? { channel: ch, kind: r.kind, number: r.number } : null)(srcRowByKey(key));
@@ -3495,11 +3539,49 @@ function markOffline(text) {
   $('#main').classList.add('offline');
 }
 
+function profileLabel(namespace, key, fallback) {
+  const value = PROFILE?.labels?.[namespace]?.[key];
+  if (value && typeof value === 'object') return value.label || value.name || fallback;
+  return value || fallback;
+}
+
+function profileSpaceLabel(space, values, fallback) {
+  const spec = PROFILE?.labels?.spaces?.[space];
+  const format = spec && typeof spec === 'object' ? spec.item_format : null;
+  if (!format) return fallback;
+  return format.replace(/\{(\w+)\}/g,
+    (_, key) => values[key] == null ? `{${key}}` : values[key]);
+}
+
+function featureLabel(key, fallback) {
+  const feature = PROFILE?.webui?.features?.[key] || PROFILE?.features?.[key];
+  return feature?.label || fallback;
+}
+
+function setSectionHeading(selector, label) {
+  const heading = document.querySelector(`${selector} .sechd`);
+  if (heading?.firstChild) heading.firstChild.nodeValue = `${label} `;
+}
+
 function applyProfileCapabilities() {
-  const cap = PROFILE.webui || {}, routing = cap.routing === true, mixer = cap.mixer === true;
-  const digital = DIG.adat.n || DIG.spdif.n;
+  const cap = PROFILE.webui || {};
+  const featureEnabled = (key, fallback) => {
+    const feature = UI_FEATURES?.[key];
+    return feature ? feature.enabled !== false : fallback;
+  };
+  const inputs = featureEnabled('inputs', true);
+  const digital = featureEnabled('digital_inputs', true) && (DIG.adat.n || DIG.spdif.n);
+  const buses = featureEnabled('buses', true);
+  const settings = featureEnabled('settings', true);
+  const routing = cap.routing === true && featureEnabled('routing', true);
+  const mixer = cap.mixer === true && featureEnabled('mixer', true);
+  $('[data-tab="inputs"]').hidden = !inputs;
+  $('[data-pane="inputs"]').hidden = !inputs;
   $('[data-tab="adat"]').hidden = !digital;
+  $('[data-pane="adat"]').hidden = !digital;
   if (!digital && $('[data-pane="adat"]').previousElementSibling) $('[data-tab="inputs"]').classList.add('active');
+  $('#busessec').hidden = !buses;
+  $('#gearbtn').hidden = !settings;
   const section = $('#routesec');
   section.hidden = !routing && !mixer;
   const matrixTab = $('#routetabs [data-rtab="matrix"]');
@@ -3524,7 +3606,7 @@ async function boot() {
     markOffline('daemon unreachable — retrying');
     return setTimeout(boot, 1500);
   }
-  $('#dev').textContent = PROFILE.device?.name || '';   // which profile the daemon picked
+  $('#dev').textContent = PROFILE.device?.label || PROFILE.device?.name || '';   // which profile the daemon picked
   const profileFeatures = PROFILE.webui?.features;
   UI_FEATURES = profileFeatures ? {...profileFeatures} : {};
   // Older daemons did not include the presentation registry in /api/profile.
@@ -3555,6 +3637,14 @@ async function boot() {
   DIG.spdif.n = PROFILE.spdif?.count || 0;
   DIG.spdif.pairs = PROFILE.spdif?.link_pairs?.count || 0;
   DIG.spdif.range = PROFILE.params?.spdif_gain?.range || [-6, 12];
+
+  $('[data-tab="inputs"]').textContent = profileLabel('sections', 'inputs', 'Inputs');
+  $('[data-tab="adat"]').textContent = profileLabel('sections', 'digital_inputs', 'ADAT / S/PDIF');
+  setSectionHeading('#busessec', featureLabel('buses', profileLabel('sections', 'outputs', 'Output buses')));
+  setSectionHeading('#routesec', featureLabel('routing', profileLabel('sections', 'routing', 'Routing')));
+  setSectionHeading('#readbacksec', profileLabel('sections', 'diagnostics', 'Protocol readback'));
+  const matrixTab = $('#routetabs [data-rtab="matrix"]');
+  if (matrixTab) matrixTab.textContent = featureLabel('routing', 'Routing');
 
   applyProfileCapabilities();
   document.documentElement.style.setProperty('--meter-grad', meterGradient());
