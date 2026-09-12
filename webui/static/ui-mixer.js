@@ -553,7 +553,8 @@ function paintMixerKnob(input) {
 // Native range controls map a click directly to the pointer position. The
 // mixer and Gazelle Reverb controls are rotary, so use the same relative drag model
 // as the physical knobs: vertical movement changes the value gradually and a
-// plain click does not jump it to a new position.
+// plain click does not jump it to a new position. Frequency-tagged EQ ranges
+// use the same drag distance in log-frequency space for finer low-end control.
 function wirePrecisionRange(input) {
   if (!input || input.dataset.precisionWired) return;
   input.dataset.precisionWired = '1';
@@ -563,6 +564,13 @@ function wirePrecisionRange(input) {
   const clamp = value => {
     const snapped = lo + Math.round((value - lo) / step) * step;
     return Math.max(lo, Math.min(hi, snapped));
+  };
+  const logarithmic = input.dataset.logarithmic === 'true'
+    && lo > 0 && hi > lo;
+  const dragValue = (value, dy) => {
+    if (!logarithmic) return value + dy * ((hi - lo) / KNOB_DRAG_PIXELS);
+    const logRange = Math.log(hi) - Math.log(lo);
+    return Math.exp(Math.log(value) + dy * logRange / KNOB_DRAG_PIXELS);
   };
   const emit = type => input.dispatchEvent(new Event(type, {bubbles: true}));
   const finish = commit => {
@@ -586,7 +594,7 @@ function wirePrecisionRange(input) {
     const dy = startY - e.clientY;
     if (!moved && Math.abs(dy) < 2) return;
     moved = true;
-    input.value = clamp(startValue + dy * ((hi - lo) / KNOB_DRAG_PIXELS));
+    input.value = clamp(dragValue(startValue, dy));
     emit('input');
   });
   input.addEventListener('pointerup', () => finish(true));

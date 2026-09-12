@@ -76,6 +76,12 @@
 .surround-band > strong { color:var(--fg); font:700 9px/1 ui-monospace,monospace; text-align:center; }
 .surround-eq-knob { min-width:0; height:47px; }
 .surround-eq-knob .mixer-readout { width:100%; min-width:0; box-sizing:border-box; padding:1px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:transparent; font-size:8px; }
+.surround-eq-number-row { width:100%; min-width:0; display:flex; align-items:baseline; gap:2px; }
+.surround-eq-number { min-width:0 !important; width:100%; padding:1px 0 !important; border:0; outline:0; background:transparent !important; color:var(--fg); font-size:8px !important; cursor:text; -moz-appearance:textfield; appearance:textfield; }
+.surround-eq-number:focus { box-shadow:0 1px 0 var(--accent); }
+.surround-eq-number::-webkit-inner-spin-button,
+.surround-eq-number::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.surround-eq-unit { flex:0 0 auto; color:var(--dim); font:8px/1 ui-monospace,monospace; }
 .surround-eq-knob .mixer-knob { width:34px; height:34px; margin:0 auto; opacity:.86; }
 .surround-eq-knob .mixer-knob input:disabled { cursor:default; }
 .surround-eq-knob .mixer-knob input:not(:disabled) { cursor:ns-resize; }

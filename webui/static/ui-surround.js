@@ -279,14 +279,22 @@ function surroundEqKnob(field, value, min, max, step, unit, digits,
   const angle = surroundKnobAngle(current, min, max, logarithmic);
   const inputLabel = `${field} band ${band + 1}`;
   return '<div class="mixer-knob-control surround-eq-knob">'
-    + '<output class="mixer-readout" data-surround-eq-value="'
-    + surroundEscape(field) + '">' + surroundNumber(current, digits) + unit + '</output>'
+    + '<div class="surround-eq-number-row">'
+    + '<input type="number" class="mixer-readout surround-eq-number"'
+    + ' data-surround-eq-number data-surround-eq-field="'
+    + surroundEscape(field) + '" data-surround-eq-speaker="' + speaker
+    + '" data-surround-eq-band="' + band + '" min="' + min + '" max="'
+    + max + '" step="' + step + '" value="' + surroundNumber(current, digits) + '"'
+    + (writable ? '' : ' disabled') + ' aria-label="' + surroundEscape(inputLabel)
+    + '">' + (unit ? '<span class="surround-eq-unit">' + surroundEscape(unit.trim()) + '</span>' : '')
+    + '</div>'
     + '<div class="mixer-knob surround-knob" title="' + surroundEscape(inputLabel) + '">'
     + '<i style="transform:translateX(-50%) rotate(' + angle + 'deg)"></i>'
     + '<input type="range" data-surround-eq-input data-surround-eq-field="'
     + surroundEscape(field) + '" data-surround-eq-speaker="' + speaker
     + '" data-surround-eq-band="' + band + '" min="' + min + '" max="'
     + max + '" step="' + step + '" value="' + surroundEscape(current) + '"'
+    + (logarithmic ? ' data-logarithmic="true"' : '')
     + (writable ? '' : ' disabled') + ' aria-label="' + surroundEscape(inputLabel)
     + '"></div>'
     + '</div>';
@@ -372,8 +380,8 @@ function surroundSpeakerHTML(data) {
 }
 
 function surroundEqDisplay(field, value) {
-  if (field === 'frequency') return surroundNumber(value, 0) + ' Hz';
-  if (field === 'gain') return surroundNumber(value, 2) + ' dB';
+  if (field === 'frequency') return surroundNumber(value, 0);
+  if (field === 'gain') return surroundNumber(value, 2);
   if (field === 'q') return surroundNumber(value, 2);
   if (field === 'mode') return surroundHex(value);
   return surroundNumber(value);
@@ -384,11 +392,31 @@ function surroundEqPaint(input) {
   const field = input.dataset.surroundEqField;
   const value = Number(input.value);
   const output = input.closest('.surround-eq-knob')?.querySelector(
-    '[data-surround-eq-value]');
-  if (output) output.textContent = surroundEqDisplay(field, value);
+    '[data-surround-eq-number]');
+  if (output) output.value = surroundEqDisplay(field, value);
   const pointer = input.closest('.mixer-knob')?.querySelector('i');
   if (pointer) pointer.style.transform = 'translateX(-50%) rotate('
     + surroundKnobAngle(value, +input.min, +input.max, field === 'frequency') + 'deg)';
+}
+
+function surroundEqSnap(value, min, max, step) {
+  const number = Number(value);
+  const lo = Number(min), hi = Number(max), increment = Number(step);
+  if (![number, lo, hi, increment].every(Number.isFinite)
+      || increment <= 0 || hi < lo) return null;
+  const snapped = lo + Math.round((number - lo) / increment) * increment;
+  return Math.max(lo, Math.min(hi, snapped));
+}
+
+function postSurroundEqInput(input) {
+  if (!input || input.disabled) return;
+  surroundEqPaint(input);
+  post('/api/surround/eq', {
+    speaker: Number(input.dataset.surroundEqSpeaker),
+    band: Number(input.dataset.surroundEqBand),
+    parameter: input.dataset.surroundEqField,
+    value: Number(input.value),
+  });
 }
 
 function surroundEqDefaultValue(input, resetPreset = SURROUND?.write?.eq?.reset) {
@@ -511,15 +539,23 @@ function buildSurround() {
       if (modal && !modal.hidden) setBassModal(modal, false);
     });
     host.addEventListener('change', event => {
+      const number = event.target.closest?.('[data-surround-eq-number]');
+      if (number && !number.disabled) {
+        const range = number.closest('.surround-eq-knob')?.querySelector(
+          '[data-surround-eq-input]');
+        if (!range || range.disabled) return;
+        const value = surroundEqSnap(number.value, range.min, range.max, range.step);
+        if (value == null) {
+          surroundEqPaint(range);
+          return;
+        }
+        range.value = String(value);
+        postSurroundEqInput(range);
+        return;
+      }
       const eq = event.target.closest?.('[data-surround-eq-input]');
       if (eq && !eq.disabled) {
-        surroundEqPaint(eq);
-        post('/api/surround/eq', {
-          speaker: Number(eq.dataset.surroundEqSpeaker),
-          band: Number(eq.dataset.surroundEqBand),
-          parameter: eq.dataset.surroundEqField,
-          value: Number(eq.value),
-        });
+        postSurroundEqInput(eq);
         return;
       }
       const speaker = event.target.closest('[data-surround-speaker]');

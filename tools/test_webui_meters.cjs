@@ -16,6 +16,8 @@ assert.match(html, /data-rpane="surround"/);
 assert.match(surroundCss, /\.surround-eq-grid \{[^}]*repeat\(16,minmax\(0,1fr\)\)/);
 assert.match(surroundCss, /\.surround-eq-legend/);
 assert.match(surroundCss, /\.surround-eq-reset \{[^}]*flex:0 0 auto;[^}]*width:max-content/);
+assert.match(surroundCss, /\.surround-eq-number-row/);
+assert.match(surroundCss, /\.surround-eq-unit/);
 const js = readWebUISource();
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
 const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
@@ -32,6 +34,11 @@ assert.match(js, /function surroundEqGrid\(speaker(?:, writable = false)?\)/);
 assert.match(js, /function surroundEqSigma\(q\)/);
 assert.match(js, /Math\.log2\(band\.frequency\)/);
 assert.match(js, /function surroundEqDefaultValue\(input/);
+assert.match(js, /data-surround-eq-number/);
+assert.match(js, /function surroundEqSnap\(value/);
+assert.match(js, /function postSurroundEqInput\(input\)/);
+assert.match(js, /data-logarithmic="true"/);
+assert.match(js, /Math\.exp\(Math\.log\(value\)/);
 assert.match(js, /input\.addEventListener\('dblclick'/);
 assert.match(js, /function requestSurroundEqReset\(button\)/);
 assert.match(js, /\/api\/surround\/eq\/reset/);
@@ -187,12 +194,18 @@ assert.equal(surroundContext.surroundEqDefaultValue(
   resetInput('gain', 5), resetPreset), 0);
 assert.equal(surroundContext.surroundEqDefaultValue(
   resetInput('mode', 5), resetPreset), null);
+assert.equal(surroundContext.surroundEqSnap(34.4, 20, 20000, 1), 34);
+assert.equal(surroundContext.surroundEqSnap(40.006, 20, 20000, 1), 40);
+assert.equal(surroundContext.surroundEqSnap(-1, 20, 20000, 1), 20);
 const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
   ...surroundData, write: {enabled: false, eq: {enabled: true, reset: resetPreset}},
 });
 assert.match(writableSurroundHTML, /experimental write · one field at a time/);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 64);
+assert.equal((writableSurroundHTML.match(/class="mixer-readout surround-eq-number"/g) || []).length, 48);
+assert.equal((writableSurroundHTML.match(/data-surround-eq-number/g) || []).length, 48);
 assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-input[^>]* disabled/);
+assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-number[^>]* disabled/);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-reset/g) || []).length, 1);
 assert.match(writableSurroundHTML, /data-surround-eq-speaker="0"/);
 assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-reset[^>]* disabled/);
