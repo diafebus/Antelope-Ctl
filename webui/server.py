@@ -230,6 +230,37 @@ def _surround_speaker_label(index, global_state):
     return f"Speaker {index + 1}"
 
 
+def _surround_format_name(profile, global_state, raw_body):
+    """Resolve a global readback to a profile-defined packed channel order."""
+    if not isinstance(global_state, dict) or not isinstance(raw_body, (bytes, bytearray)):
+        return None
+    contract = profile.get("frame", {}).get("surround_global_command", {}).get(
+        "contract", {}) or {}
+    try:
+        flags_a = int(global_state["flags_a_raw"])
+        flags_b = int(global_state["flags_b_raw"])
+        flags_a_mask = proto._as_int(contract.get("format_flags_a_write_mask", 0x3F))
+        flags_b_mask = proto._as_int(contract.get("format_flags_b_write_mask", 0x1F))
+        order_offset = proto._as_int(contract.get("channel_order_offset", 13))
+        order_size = proto._as_int(contract.get("channel_order_size", 10))
+    except (KeyError, TypeError, ValueError):
+        return None
+    actual_order = bytes(raw_body[order_offset:order_offset + order_size])
+    for item in contract.get("formats", []) or []:
+        try:
+            item_a = proto._as_int(item["flags_a"])
+            item_b = proto._as_int(item["flags_b"])
+            expected_order = proto.pack_surround_channel_order(
+                item["channel_order"], order_size)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if ((flags_a & flags_a_mask) == (item_a & flags_a_mask)
+                and (flags_b & flags_b_mask) == (item_b & flags_b_mask)
+                and actual_order == expected_order):
+            return str(item.get("name"))
+    return None
+
+
 def _structured_readback_targets(profile):
     """Yield safe ``(category, index)`` targets from record_layouts.
 
@@ -515,11 +546,15 @@ class Device:
         """Return decoded surround state and the profile's write boundary."""
         with self._lock:
             global_state = self.surround_global
+            global_raw = self.surround_global_raw
             speakers = dict(self.surround_speakers)
 
         global_view = _strip_surround_raw(global_state)
         if global_view is not None:
-            global_view["format"] = "2.1" if global_state.get("lfe_present") else "2.0"
+            global_view["format"] = (
+                _surround_format_name(
+                    self.profile, global_state, global_raw)
+                or ("2.1" if global_state.get("lfe_present") else "2.0"))
 
         contract = self.surround_contract or {}
         delay_range = list(contract.get("delay_range", []))
@@ -539,8 +574,51 @@ class Device:
             ],
             "readback_category": SURROUND_GLOBAL_CAT,
             "note": (
-                "Only global delay and level are writable in the verified 2.0 "
-                "surround contract."
+                "Global delay and level remain independently verified only for "
+                "the 2.0 scalar contract. Format selection is a separate "
+                "read-modify-write path."
+            ),
+        }
+        format_options = []
+        format_write_enabled = False
+        for item in contract.get("formats", []) or []:
+            try:
+                name = str(item["name"])
+                flags_a = proto._as_int(item["flags_a"])
+                flags_b = proto._as_int(item["flags_b"])
+                channel_order = [proto._as_int(value)
+                                 for value in item["channel_order"]]
+                proto.pack_surround_channel_order(
+                    channel_order,
+                    int(contract.get("channel_order_size", 10)))
+            except (KeyError, TypeError, ValueError):
+                continue
+            normal_write = bool(item.get("format_writable"))
+            format_options.append({
+                "name": name,
+                "flags_a": flags_a,
+                "flags_b": flags_b,
+                "channel_count": len(channel_order),
+                "writable": normal_write,
+                "experimental": not normal_write,
+            })
+            if normal_write and global_state is not None \
+                    and global_raw is not None:
+                try:
+                    proto.build_surround_global_format_command(
+                        self.profile, global_raw, name)
+                except (KeyError, TypeError, ValueError, proto.ConstraintError):
+                    pass
+                else:
+                    format_write_enabled = True
+        write["format"] = {
+            "enabled": format_write_enabled,
+            "fields": ["format"],
+            "options": format_options,
+            "readback_category": SURROUND_GLOBAL_CAT,
+            "note": (
+                "Only 2.0 and 2.1 are enabled for normal format writes. "
+                "Higher layouts remain visible for guarded self-tests."
             ),
         }
         eq_contract = self.profile.get("runtime_contracts", {}).get(
@@ -601,7 +679,12 @@ class Device:
 
         active_count = None
         if global_state is not None:
-            active_count = 3 if global_state.get("lfe_present") else 2
+            try:
+                count = int(global_state.get("flags_a_raw", 0)) & 0x1F
+            except (TypeError, ValueError):
+                count = 0
+            if 0 < count <= self.surround_speaker_count:
+                active_count = count
         speaker_view = []
         for index in range(self.surround_speaker_count):
             record = speakers.get(index)
@@ -1542,6 +1625,7 @@ class AuraVerbChange(BaseModel):
 
 
 class SurroundGlobalChange(BaseModel):
+    format: str | None = None
     delay_ms: float | None = None
     level_db: float | None = None
 
@@ -1717,6 +1801,29 @@ def api_surround():
 def api_surround_global(change: SurroundGlobalChange):
     if not DEV.surround_available:
         return _bad("surround global state is not safely mapped for this profile")
+    if change.format is not None:
+        if change.delay_ms is not None or change.level_db is not None:
+            return _bad("format changes cannot be combined with delay or level")
+        format_name = str(change.format).strip()
+        format_write = DEV.surround_json()["write"].get("format", {})
+        option = next((item for item in format_write.get("options", [])
+                       if item.get("name") == format_name), None)
+        if not format_write.get("enabled"):
+            return _bad("surround format writes are not enabled for this profile")
+        if option is None or not option.get("writable"):
+            return _bad(
+                f"surround format {format_name!r} is read-only; "
+                "higher layouts require the guarded self-test")
+
+        def do(t):
+            body = DEV._surround_global_body_for_write(t)
+            packet = proto.build_surround_global_format_command(
+                PROFILE, body, format_name)
+            t.write(packet)
+            DEV._cache_surround_global_packet(packet)
+
+        DEV.submit(do)
+        return {"ok": True, "queued": True, "format": format_name}
     if change.delay_ms is None and change.level_db is None:
         return _bad("provide a surround delay or level")
     if not DEV.surround_json()["write"]["enabled"]:

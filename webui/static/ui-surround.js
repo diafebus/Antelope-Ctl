@@ -90,10 +90,20 @@ function surroundGlobalHTML(data) {
   const delayRange = write.delay_ms_range?.length === 2 ? write.delay_ms_range : [0.6, 4.5];
   const levelRange = write.level_db_range?.length === 2 ? write.level_db_range : [-60, 16];
   const format = global?.format || (global?.lfe_present ? '2.1' : '2.0');
-  const formatOptions = SURROUND_FORMAT_OPTIONS.map(item =>
-    '<option value="' + item + '"' + (item === format ? ' selected' : '')
-      + (item === '2.0' || item === '2.1' ? '' : ' disabled') + '>' + item + '</option>'
-  ).join('');
+  const formatWrite = write.format || {};
+  const formatItems = formatWrite.options?.length
+    ? formatWrite.options
+    : SURROUND_FORMAT_OPTIONS.map(name => ({
+      name, writable: name === '2.0' || name === '2.1',
+    }));
+  const formatOptions = formatItems.map(item => {
+    const name = typeof item === 'string' ? item : item.name;
+    const safeName = surroundEscape(name);
+    const optionWritable = typeof item === 'string'
+      ? name === '2.0' || name === '2.1' : item.writable === true;
+    return '<option value="' + safeName + '"' + (name === format ? ' selected' : '')
+      + (optionWritable ? '' : ' disabled') + '>' + safeName + '</option>';
+  }).join('');
   const flags = global
     ? `${surroundHex(global.flags_a_raw)} / ${surroundHex(global.flags_b_raw)}`
     : 'waiting for readback';
@@ -103,8 +113,8 @@ function surroundGlobalHTML(data) {
       <span class="surround-state">${global ? surroundEscape(format) : 'WAITING'}</span></div>
     <div class="surround-controls">
       <label class="surround-control surround-format-control"><span class="surround-control-label">Format</span>
-        <select disabled aria-label="Surround format" title="Layouts beyond 2.1 require the MRC hardware">${formatOptions}</select>
-        <span class="surround-readonly">read-only</span></label>
+        <select data-surround-format aria-label="Surround format" title="${surroundEscape(formatWrite.note || 'Only 2.0 and 2.1 are enabled for normal writes')}"${formatWrite.enabled ? '' : ' disabled'}>${formatOptions}</select>
+        <span class="surround-readonly">${formatWrite.enabled ? '2.0 / 2.1 writable' : 'read-only'}</span></label>
       ${surroundRangeInput('delay_ms', 'Global delay', global?.global_delay_ms,
         delayRange, 'ms', writable, Number(write.delay_step_ms) || 0.1)}
       ${surroundRangeInput('level_db', 'Global level', global?.level_db,
@@ -562,6 +572,11 @@ function buildSurround() {
       if (speaker) {
         SURROUND_SPEAKER = Number(speaker.value) || 0;
         renderSurround();
+        return;
+      }
+      const format = event.target.closest?.('[data-surround-format]');
+      if (format && !format.disabled) {
+        post('/api/surround/global', {format: format.value});
         return;
       }
       const input = event.target.closest('[data-surround-global]');

@@ -48,8 +48,10 @@ Orion nested records: category `0x0b` link tables, `0x15` AFX instance counts,
 `0x16` mic-emulation state, and `0x19` AFX strip order. The CLI and WebUI
 display those profile-declared records. There is **no built-in
 per-input-channel EQ** on this device: input EQ is an AFX plugin, which is
-out of scope (`SCOPE.md`). Not decoded: surround formats past 2.1 (need the
-MRC licence), the `0x07` category, the outer query bounds for `0x0c`, and
+out of scope (`SCOPE.md`). Normal WebUI format writes are limited to 2.0 and
+2.1. The global format wire path was directly round-trip tested through 9.1.6
+with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
+bounds for `0x0c`, and
 the `0x74` channel-group names. Category `0x0b` link transitions still need
 a controlled capture; its returned bytes are not yet treated as verified
 control state. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
@@ -145,6 +147,7 @@ tools/scan_macos_capture.py    <- same, for native-macOS (Darwin XHC) pcapng -- 
 tools/hid_probe.py             <- dump the HID report descriptor + probe for a readable Feature report
 tools/selftest.py              <- round-trip self-test against real hardware via the readback (read-only by default, --write for restore-guaranteed writes)
 tools/surround_eq_selftest.py  <- bounded Surround EQ readback and one-field experimental write/restore test
+tools/surround_format_selftest.py <- bounded Surround format readback and reversible format write probes
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
 captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
@@ -964,11 +967,10 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   frame remains experimental because its candidate delay/level/invert head has
   not been dynamically paired with the readback. **Room Correction** turned out to be just the Launcher computing a
   curve host-side and writing it into that `0x87` per-speaker EQ -- no opcode,
-  no toggle (`params.surround_speaker` *is* the RC interface). Only **2.0 / 2.1**
-  could be captured, though --
-  **the bigger formats (5.1 … 9.1.6) are NOT supported and NOT tested**;
-  a clearly-marked best-effort deduction is in
-  `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED`. See
+no toggle (`params.surround_speaker` *is* the RC interface). The global format
+wire path was subsequently round-tripped through **9.1.6** on the connected
+Orion Studio III; the WebUI still exposes only **2.0 / 2.1** until the
+licence-dependent vendor behavior is better understood. See
 `params.surround_monitor` + `params.surround_speaker`.
 
 For a targeted hardware probe, stop the WebUI first so it releases the HID

@@ -1191,7 +1191,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
-| surround tab (global) | `0xeb` | `0xab` | - | `[18]` bit7 pre/post + format, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`); WebUI writes only verified 2.0 delay/level |
+| surround tab (global) | `0xeb` | `0xab` | - | `[18-19]` flags, `[31-40]` packed channel order, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`); WebUI format writes only 2.0/2.1, guarded self-test covers higher layouts |
 | surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: 4 opaque candidate-head bytes + EQ; dynamic head semantics unverified); bounded WebUI/self-test writes one EQ field at a time |
 | oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
@@ -1278,8 +1278,9 @@ too. See `params.screen_brightness`.
 ### Surround monitoring tab -- two frames
 
 The Surround tab has a **global** whole-state frame and a **per-speaker**
-one. The global frame has a profile-driven builder for the verified 2.0
-delay/level read-modify-write path. The per-speaker EQ now has a narrowly
+one. The global frame has separate profile-driven builders for the verified
+delay/level path and for format changes. Normal format writes are currently
+limited to 2.0 and 2.1 in the WebUI. The per-speaker EQ has a narrowly
 scoped, explicitly experimental one-field WebUI/self-test write path; its
 candidate delay/level/invert head remains read-only.
 
@@ -1326,12 +1327,29 @@ It also retires the old "`0x1b` = mixer bus level/range table" label: the
 repeating `50 00 50 00 58 02 00` that prompted that guess is just the
 default channel block `[80][80][600][0]`.
 
+**Format wire-path test (2026-09-12, connected Orion Studio III).** The vendor
+panel schema identifies flags A bits 0-4 as channel count, bit 5 as crossover /
+bass-management, and flags B bits 0-4 as the zero-based LFE channel index
+(`31` means no LFE). The ten-byte `channel_order` field is a right-aligned,
+big-endian sequence of five-bit speaker IDs. A guarded direct-HID round trip
+accepted every profile-derived SMPTE candidate from 2.0 through 9.1.6 and
+returned the requested flags and channel order after each write; the exact
+original 2.1 state was restored. This demonstrates that the global format
+command is not device-side locked on this unit. It does not prove that the
+vendor account/licence enables every surrounding feature in its own UI, so
+the WebUI intentionally enables only 2.0 and 2.1. Use
+`tools/surround_format_selftest.py` for the explicitly acknowledged higher
+layout probes.
+
 Antelope's docs say the Orion Studio SC surround system covers **23+
 layouts, stereo → Dolby Atmos 9.1.6**, but the full feature **needs the
 MRC (Multichannel Remote Control)** hardware. Without it only **2.0**
-(`[18]`/`[19]` = `0x02`/`0x9f`) and **2.1** (`0x23`/`0x82`) are selectable
-— all that could be captured. Manual p.76 has the full layout list. A
-**Room Correction** subsystem also exists (undecoded).
+(`[18]`/`[19]` = `0x02`/`0x9f`) and **2.1** (`0x23`/`0x82`) are exposed by
+the normal WebUI for now. The direct test above shows that the global wire
+command itself accepts the higher layouts despite that vendor licence/UI
+claim; whether all related vendor features are entitled remains open.
+Manual p.76 has the full layout list. A **Room Correction** subsystem also
+exists (decoded as the per-speaker EQ path).
 
 **Global: `0xab` / `0xeb`** (`macos-settings-srrndeq-post-pre` +
 `macos-srrnd-tab-...` + `srrnd-20-21`):
@@ -1339,8 +1357,9 @@ MRC (Multichannel Remote Control)** hardware. Without it only **2.0**
 | off | field | notes |
 |---|---|---|
 | 16-17 | `0xeb` param, `0x99` const | |
-| 18 | **flags A — bitfield** | **bit 0** = LFE / 2.1 (`0x02` 2.0 → `0x03` 2.1). **bit 5 (`0x20`) = bass-management on** (`srrnd-bass-management-on-off`: 2.1 BM-on `0x23` / BM-off `0x03`; BM defaults on when you enable 2.1). **bit 7 (`0x80`) = EQ pre/post** (`macos-srrnd-tab` `0x02`↔`0x82`; the 2026-09-01 note wrongly put this on `[19]`). `[19]` also moves with format (`0x9f` 2.0 / `0x82` 2.1) |
-| 19 | flags B (base `0x9f`) | moves only with the format (`0x9f` 2.0 / `0x82` 2.1) |
+| 18 | **flags A — bitfield** | bits 0-4 = channel count; bit 5 (`0x20`) = bass-management / crossover; bit 6 = global-delay bypass; bit 7 = pre/post meters. 2.0 = `0x02`; 2.1 with BM on = `0x23` |
+| 19 | **flags B — bitfield** | bits 0-4 = zero-based LFE index (`0x1f` = no LFE); bit 5 = EQ bypass; bit 6 = total-delay bypass; bit 7 = EQ pre/post. 2.0 = `0x9f`; 2.1 = `0x82` |
+| 31-40 | **packed channel order** | ten bytes, right-aligned big-endian five-bit `SurroundSpeakerId` values: 2.0 `[L,R]` = `00…0023`; 2.1 `[L,R,LFE]` = `00…000464` |
 | 20 | **global surround delay**, uint8, 0.1 ms/step (base `0x06` = 0.6 ms floor) | swept `0x06`..`0x2d` |
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
 | 25-26 | **per-speaker BYPASS mask**, LE16 — bit N = speaker N (1 = active, 0 = bypassed); default `0xFFFF` | confirmed (`srrnd-L-bypass`: bypassing L → `0xFFFF`→`0xFFFE`) |
@@ -1371,29 +1390,28 @@ R speaker = index 1, byte-identical to L. `copy speaker` / `paste speaker`
 just re-send `0x87` frames. `params.surround_monitor` +
 `params.surround_speaker`.
 
-#### Bigger surround formats — DEDUCED, NOT SUPPORTED, NOT TESTED
+#### Bigger surround formats — direct wire path tested; WebUI intentionally limited
 
-> The reference unit **cannot activate any surround format past 2.1**
-> (needs Antelope's MRC / surround licence), so none of this was captured.
-> It is inference from the ~4 observed `0xab` states, the confirmed
-> indices L=0 / R=1 / LFE=2, the format-agnostic `0x87` frame, standard
-> Dolby/SMPTE channel order, and Antelope's public docs (23+ formats,
-> stereo → 9.1.6; the MRC "mirrors" the same controls). **Do not rely on
-> it.** Full detail + a capture checklist in
-> `params.surround_monitor.bigger_surround_DEDUCED_UNTESTED`.
+> The connected Orion Studio III accepted guarded direct-HID writes for
+> 3.0, 3.1, 4.0, 4.1, 5.0, 5.1, 5.1.2, 5.1.4, 7.0, 7.0.2, 7.1,
+> 7.1.2, 7.1.4, 7.1.6, 9.1.2, 9.1.4, and 9.1.6 on 2026-09-12. Each
+> target matched the category-`0x1b` readback and the original 2.1 state
+> was restored. This is evidence against a device-side lock on the global
+> command, not proof that the vendor account/licence exposes every UI or
+> speaker feature. The WebUI therefore keeps these options disabled while
+> the self-test remains explicit.
 
 - **Per-speaker control should work for every format** (strongest
   inference): the `0x87`/`0xea` strip is identical for slots 0–15 and does
   not change with format; the `[25-30]` masks are already 16-bit.
-- **Speaker index → channel**: likely *positional* in Dolby order —
-  2.0 `[L,R]`, 2.1 `[L,R,LFE]` (confirmed); deduced 5.1
-  `[L,R,C,LFE,Ls,Rs]`, 7.1 `[L,R,C,LFE,Lss,Rss,Lsr,Rsr]`, +heights to
-  fill 16 for 9.1.6. Manual p.76 has the real list.
-- **Format selector** is `[18]`+`[19]`. Confirmed `[18]` bits: 0 = LFE,
-  5 = bass-management, 7 = EQ pre/post. The layout/channel-count bits
-  (`[18]` 1-4/6, all of `[19]`) are **unknown** — two data points, no
-  derivable pattern. The ~21 unseen values need one capture of the format
-  dropdown.
+- **Speaker index → channel**: the vendor's canonical SMPTE orders are now
+  encoded in the profile, including `[L,R,C,LFE,Ls,Rs]`-style positional
+  sequences through 9.1.6. The direct readbacks matched those packed orders.
+- **Format selector** is `[18]`+`[19]` plus the ten-byte packed order at
+  frame `[31-40]`. The profile's `format_writable` flag enables only 2.0 and
+  2.1 in normal callers; the higher entries are probe-only. The standalone
+  `tools/surround_format_selftest.py` requires an explicit experimental
+  acknowledgement for them.
 - **Room correction — FULLY RESOLVED** (`roomeq-swipe-short`): not a
   subsystem at all. No opcode, no frame, **no on/off toggle**. The
   Launcher runs the measurement (device traffic during it = just preamp
@@ -1780,7 +1798,7 @@ parameter writes remain observation-only/forbidden under `SCOPE.md`.
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
-| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global = pre/post `[18]` bit7 + format + level + delay + dim/mute/bypass. Per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, keeps modes raw, and labels only captured 2.0 L/R plus 2.1 L/R/LFE ownership. The WebUI and `tools/surround_eq_selftest.py` can explicitly write one frequency/Q/gain/raw-mode field and preserve the complete record; no broad sweep or higher-format/centre mapping is inferred. |
+| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, and masks; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, and keeps modes raw. The WebUI allows normal global format writes only for 2.0/2.1; `tools/surround_format_selftest.py` directly round-tripped all profile-derived layouts on 2026-09-12 and restores the original state. |
 | DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Readback category `0x19` now maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding (slot-index vs instance id, 2 data points); bypass polarity; whether the `0x19` type/instance values fully match the Launcher’s plugin catalogue. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |

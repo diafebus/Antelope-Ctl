@@ -358,6 +358,17 @@ def build_surround_global_command(profile: dict, readback_body: bytes,
     flags_b = readback_body[flags_b_offset]
     flags_a_mask = _as_int(contract.get('flags_a_mask', 0xFF))
     flags_b_mask = _as_int(contract.get('flags_b_mask', 0xFF))
+    channel_order_offset = contract.get('channel_order_offset')
+    channel_order_size = contract.get('channel_order_size')
+    current_order = None
+    if channel_order_offset is not None and channel_order_size is not None:
+        channel_order_offset = _as_int(channel_order_offset)
+        channel_order_size = _as_int(channel_order_size)
+        if (channel_order_offset < 0 or channel_order_size <= 0
+                or channel_order_offset + channel_order_size > template_size):
+            raise ValueError('invalid surround global channel-order bounds')
+        current_order = bytes(readback_body[
+            channel_order_offset:channel_order_offset + channel_order_size])
     writable_format = None
     for fmt in contract.get('formats', []) or []:
         if not fmt.get('writable'):
@@ -367,6 +378,13 @@ def build_surround_global_command(profile: dict, readback_body: bytes,
             fmt_b = _as_int(fmt['flags_b'])
         except (KeyError, TypeError, ValueError):
             continue
+        if current_order is not None and 'channel_order' in fmt:
+            try:
+                if current_order != pack_surround_channel_order(
+                        fmt['channel_order'], channel_order_size):
+                    continue
+            except (TypeError, ValueError):
+                continue
         if ((flags_a & flags_a_mask) == (fmt_a & flags_a_mask)
                 and (flags_b & flags_b_mask) == (fmt_b & flags_b_mask)):
             writable_format = fmt
@@ -418,6 +436,138 @@ def build_surround_global_command(profile: dict, readback_body: bytes,
                 width, byteorder=endian, signed=False)
         except (OverflowError, ValueError) as e:
             raise ValueError(f'invalid surround scalar encoding for {field!r}') from e
+    return bytes(pkt)
+
+
+def pack_surround_channel_order(channel_order, size: int = 10) -> bytes:
+    """Pack 1..16 five-bit Surround speaker IDs into a big-endian field."""
+    try:
+        values = [_as_int(value) for value in channel_order]
+    except (TypeError, ValueError) as exc:
+        raise ValueError('surround channel order must be an iterable of integers') from exc
+    if not values or len(values) > 16:
+        raise ValueError('surround channel order must contain 1..16 speakers')
+    if size <= 0 or len(values) * 5 > size * 8:
+        raise ValueError('surround channel order does not fit in the packed field')
+    if any(value < 0 or value > 0x1F for value in values):
+        raise ValueError('surround channel-order IDs must fit in five bits')
+    packed = 0
+    for value in values:
+        packed = (packed << 5) | value
+    return packed.to_bytes(size, 'big')
+
+
+def build_surround_global_format_command(
+        profile: dict, readback_body: bytes, format_name: str,
+        allow_experimental: bool = False) -> bytes:
+    """Build a complete-state Surround format change from fresh readback.
+
+    This is deliberately separate from :func:`build_surround_global_command`.
+    A format change rewrites the channel-count, LFE-position, crossover-mode,
+    and packed channel-order fields; the ordinary global builder only changes
+    the independently verified delay/level scalars.  Formats marked
+    ``format_writable`` in the profile are safe for normal callers.  Other
+    profile layouts can be probed only with an explicit experimental opt-in.
+    """
+    frame = profile['frame'].get('surround_global_command')
+    if not frame:
+        raise KeyError('this profile has no frame.surround_global_command')
+    contract = frame.get('contract', {}) or {}
+    status = str(contract.get('status', frame.get('runtime_status', ''))).strip().lower()
+    if status not in {'confirmed', 'capture-confirmed'}:
+        raise ConstraintError(
+            'surround format writes require a capture-confirmed runtime contract')
+    if not isinstance(readback_body, (bytes, bytearray)):
+        raise TypeError('surround global readback body must be bytes')
+    if not isinstance(format_name, str) or not format_name.strip():
+        raise ValueError('surround format name must be a non-empty string')
+
+    payload_offset = _as_int(contract.get('readback_payload_offset', 18))
+    template_size = _as_int(contract.get('template_size', 151))
+    size = _as_int(profile['transport']['report_size'])
+    if template_size <= 0 or payload_offset < 0 or payload_offset + template_size > size:
+        raise ValueError('invalid surround global readback template bounds')
+    if len(readback_body) < template_size:
+        raise ValueError(
+            f'surround global readback is too short (need {template_size}, '
+            f'got {len(readback_body)})')
+
+    flags_a_offset = _as_int(contract.get('flags_a_offset', payload_offset)) - payload_offset
+    flags_b_offset = _as_int(contract.get('flags_b_offset', payload_offset + 1)) - payload_offset
+    if not (0 <= flags_a_offset < template_size and 0 <= flags_b_offset < template_size):
+        raise ValueError('invalid surround global format flag offsets')
+
+    formats = contract.get('formats', []) or []
+    target = next((item for item in formats
+                   if str(item.get('name', '')).strip() == format_name.strip()), None)
+    if target is None:
+        raise ConstraintError(f'unknown surround format {format_name!r}')
+    if not target.get('format_writable') and not allow_experimental:
+        raise ConstraintError(
+            f'surround format {format_name} is not enabled for normal writes')
+
+    flags_a = readback_body[flags_a_offset]
+    flags_b = readback_body[flags_b_offset]
+    flags_a_mask = _as_int(contract.get('flags_a_mask', 0xFF))
+    flags_b_mask = _as_int(contract.get('flags_b_mask', 0xFF))
+    channel_order_offset = _as_int(contract.get('channel_order_offset', 13))
+    channel_order_size = _as_int(contract.get('channel_order_size', 10))
+    if (channel_order_size <= 0 or channel_order_offset < 0
+            or channel_order_offset + channel_order_size > template_size):
+        raise ValueError('invalid surround global channel-order bounds')
+    actual_order = bytes(readback_body[
+        channel_order_offset:channel_order_offset + channel_order_size])
+    recognized = False
+    for item in formats:
+        try:
+            item_a = _as_int(item['flags_a'])
+            item_b = _as_int(item['flags_b'])
+            item_order = pack_surround_channel_order(
+                item['channel_order'], channel_order_size)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if ((flags_a & flags_a_mask) == (item_a & flags_a_mask)
+                and (flags_b & flags_b_mask) == (item_b & flags_b_mask)
+                and actual_order == item_order):
+            recognized = True
+            break
+    if not recognized:
+        raise ConstraintError(
+            f'surround format flags {flags_a:#04x}/{flags_b:#04x} are not '
+            'recognized; refusing to change an unknown complete state')
+
+    try:
+        target_a = _as_int(target['flags_a'])
+        target_b = _as_int(target['flags_b'])
+        channel_order = [
+            _as_int(value) for value in target['channel_order']
+        ]
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f'surround format {format_name} has no valid channel-order contract') from exc
+
+    count_mask = _as_int(contract.get('format_flags_a_write_mask', 0x3F))
+    lfe_mask = _as_int(contract.get('format_flags_b_write_mask', 0x1F))
+    if count_mask < 0 or count_mask > 0xFF or lfe_mask < 0 or lfe_mask > 0xFF:
+        raise ValueError('invalid surround format write masks')
+    encoded_a = (flags_a & ~count_mask) | (target_a & count_mask)
+    encoded_b = (flags_b & ~lfe_mask) | (target_b & lfe_mask)
+
+    order_bytes = pack_surround_channel_order(channel_order, channel_order_size)
+
+    pkt = bytearray(size)
+    pkt[payload_offset:payload_offset + template_size] = readback_body[:template_size]
+    for operation in frame.get('runtime_operations', []) or []:
+        if operation.get('op') != 'fixed_byte':
+            continue
+        offset = _as_int(operation['offset'])
+        if not 0 <= offset < size:
+            raise ValueError(f'surround fixed byte offset {offset} is outside the report')
+        pkt[offset] = _as_int(operation['value']) & 0xFF
+    pkt[payload_offset + flags_a_offset] = encoded_a & 0xFF
+    pkt[payload_offset + flags_b_offset] = encoded_b & 0xFF
+    pkt[payload_offset + channel_order_offset:
+        payload_offset + channel_order_offset + channel_order_size] = order_bytes
     return bytes(pkt)
 
 

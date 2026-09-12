@@ -217,4 +217,22 @@ assert.match(globalHTML, /value="9\.1\.6" disabled/);
 assert.equal((globalHTML.match(/data-surround-bass-open/g) || []).length, 1);
 assert.match(globalHTML, /data-surround-bass-modal/);
 assert.match(globalHTML, /Bass Management/);
+const writableGlobalHTML = surroundContext.surroundGlobalHTML({
+  ...surroundData,
+  write: {
+    enabled: false,
+    format: {
+      enabled: true,
+      options: [
+        {name: '2.0', writable: true},
+        {name: '2.1', writable: true},
+        {name: '3.0', writable: false},
+      ],
+    },
+  },
+});
+assert.match(writableGlobalHTML, /data-surround-format/);
+assert.doesNotMatch(writableGlobalHTML, /<select[^>]*disabled/);
+assert.match(writableGlobalHTML, /value="2\.0" selected/);
+assert.match(writableGlobalHTML, /value="3\.0" disabled/);
 console.log('WebUI meter rendering checks passed (12 channels, scale, colors, peak hold, missing data).');

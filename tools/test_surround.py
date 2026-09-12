@@ -18,6 +18,7 @@ class SurroundCommandTests(unittest.TestCase):
         body = bytearray(range(151))
         body[0] = 0x02
         body[1] = 0x9F
+        body[13:23] = protocol.pack_surround_channel_order([1, 3])
         expected = bytearray(body)
         expected[2] = 12
         expected[4:6] = (650).to_bytes(2, "little")
@@ -34,11 +35,75 @@ class SurroundCommandTests(unittest.TestCase):
 
     def test_global_command_rejects_read_only_21_format(self):
         body = bytearray(151)
-        body[0] = 0x03
+        body[0] = 0x23
         body[1] = 0x82
+        body[13:23] = protocol.pack_surround_channel_order([1, 3, 4])
         with self.assertRaises(protocol.ConstraintError):
             protocol.build_surround_global_command(
                 self.profile, body, global_delay=12)
+
+    def test_channel_order_packing_matches_20_and_21_readbacks(self):
+        self.assertEqual(
+            protocol.pack_surround_channel_order([1, 3]),
+            bytes.fromhex("00000000000000000023"))
+        self.assertEqual(
+            protocol.pack_surround_channel_order([1, 3, 4]),
+            bytes.fromhex("00000000000000000464"))
+
+    def test_format_command_changes_only_declared_format_fields(self):
+        body = bytearray((index * 3) & 0xFF for index in range(151))
+        body[0] = 0x23
+        body[1] = 0x82
+        body[13:23] = protocol.pack_surround_channel_order([1, 3, 4])
+        expected = bytearray(body)
+        expected[0] = 0x02
+        expected[1] = 0x9F
+        expected[13:23] = protocol.pack_surround_channel_order([1, 3])
+
+        packet = protocol.build_surround_global_format_command(
+            self.profile, body, "2.0")
+
+        self.assertEqual(len(packet), 320)
+        self.assertEqual(packet[0], 0x70)
+        self.assertEqual(packet[4], 0xAB)
+        self.assertEqual(packet[16:18], bytes((0xEB, 0x99)))
+        self.assertEqual(packet[18:169], expected)
+        self.assertEqual(packet[169:], bytes(151))
+
+    def test_format_command_allows_normal_21_write(self):
+        body = bytearray(151)
+        body[0] = 0x02
+        body[1] = 0x9F
+        body[13:23] = protocol.pack_surround_channel_order([1, 3])
+
+        packet = protocol.build_surround_global_format_command(
+            self.profile, body, "2.1")
+
+        self.assertEqual(packet[18], 0x23)
+        self.assertEqual(packet[19], 0x82)
+        self.assertEqual(
+            packet[31:41], protocol.pack_surround_channel_order([1, 3, 4]))
+
+    def test_format_command_requires_explicit_higher_layout_opt_in(self):
+        body = bytearray(151)
+        body[0] = 0x23
+        body[1] = 0x82
+        body[13:23] = protocol.pack_surround_channel_order([1, 3, 4])
+        with self.assertRaises(protocol.ConstraintError):
+            protocol.build_surround_global_format_command(
+                self.profile, body, "3.0")
+
+    def test_format_command_can_build_vendor_derived_higher_layout(self):
+        body = bytearray(151)
+        body[0] = 0x23
+        body[1] = 0x82
+        body[13:23] = protocol.pack_surround_channel_order([1, 3, 4])
+        packet = protocol.build_surround_global_format_command(
+            self.profile, body, "3.0", allow_experimental=True)
+        self.assertEqual(packet[18], 0x03)
+        self.assertEqual(packet[19], 0x9F)
+        self.assertEqual(
+            packet[31:41], protocol.pack_surround_channel_order([1, 3, 2]))
 
     def test_global_command_rejects_short_readback(self):
         with self.assertRaises(ValueError):
