@@ -130,12 +130,12 @@
                    "surround_bypass", "surround_mute", "surround_dim",
                    "surround_speaker_delay", "surround_speaker_level",
                    "surround_speaker_phase", "surround_speaker_eq"],
-      "writable_controls": ["surround_global_delay", "surround_level"],
+      "writable_controls": ["surround_global_delay", "surround_level", "surround_speaker_eq"],
       "read_only_controls": ["surround_format", "surround_eq_position",
                               "surround_bass_management", "surround_bypass",
                               "surround_mute", "surround_dim",
                               "surround_speaker_delay", "surround_speaker_level",
-                              "surround_speaker_phase", "surround_speaker_eq"]
+                              "surround_speaker_phase"]
     },
     "settings": {
       "kind": "device_settings",
@@ -1715,13 +1715,13 @@
         "immersive_bass_management_DEDUCED": "The 2.1 BM window has 8-byte channel blocks from [43] (3 used). For >1 sub or per-bed bass routing the block structure most likely just repeats for more channels; the [41-42]/[25-26] flag fields probably widen. Unconfirmed.",
         "what_to_capture": "1) Launcher: open Surround, step through EVERY format in the dropdown, ~2 s each -> the [18]/[19] value per format + how many 0x87 slots go active. 2) For 5.1 (or any) touch one speaker's level/EQ -> confirms index->channel. 3) Open Room Correction: run a measurement, load/clear a correction -> new opcode or frame region. 4) Immersive bass management if present. All usbmon, filter to VID 0x23e5, one control per pause."
       },
-      "notes": "The Surround tab's GLOBAL controls. PER-SPEAKER (level/invert/delay + 16-band EQ, x16) = params.surround_speaker (opcode 0x87/0xea). Changing the format re-sends this frame then all 16 0x87 frames. FORMATS: per Antelope's public docs the Orion Studio SC surround system supports 23+ layouts, stereo up to Dolby Atmos 9.1.6, BUT the full feature requires the MRC (Multichannel Remote Control) hardware -- without it only 2.0 ([18]/[19] = 0x02/0x9f) and 2.1 (0x23/0x82) are selectable, which is all that could be captured on the reference unit. Antelope's manual p.76 lists all the layouts. Room Correction is NOT a separate subsystem -- it just writes into the per-speaker EQ (see room_correction_DECODED below). Sources: macos-settings-srrndeq-post-pre + macos-srrnd-tab + srrnd-20-21 + srrnd-LFE + srrnd-L/R-bypass-invert-lvl-delay + srrnd-EQ-L/R-* + srrnd-EQ-Q-and-mode (2026-09-01/03). Neither 0xab nor 0x87 has a CLI *write* command (both stay launcher-only for now -- this is a device-bundled surround feature, not an AFX plugin, so there is no SCOPE.md gate on it, just no write builder yet), but both READ back and are wired: `surround-status` / `surround-eq`."
+      "notes": "The Surround tab's GLOBAL controls. PER-SPEAKER (level/invert/delay + 16-band EQ, x16) = params.surround_speaker (opcode 0x87/0xea). Changing the format re-sends this frame then all 16 0x87 frames. FORMATS: per Antelope's public docs the Orion Studio SC surround system supports 23+ layouts, stereo up to Dolby Atmos 9.1.6, BUT the full feature requires the MRC (Multichannel Remote Control) hardware -- without it only 2.0 ([18]/[19] = 0x02/0x9f) and 2.1 (0x23/0x82) are selectable, which is all that could be captured on the reference unit. Antelope's manual p.76 lists all the layouts. Room Correction is NOT a separate subsystem -- it just writes into the per-speaker EQ (see room_correction_DECODED below). Sources: macos-settings-srrndeq-post-pre + macos-srrnd-tab + srrnd-20-21 + srrnd-LFE + srrnd-L/R-bypass-invert-lvl-delay + srrnd-EQ-L/R-* + srrnd-EQ-Q-and-mode (2026-09-01/03). The WebUI and `tools/surround_eq_selftest.py` expose only bounded one-field EQ writes; both surround frames READ back and are wired: `surround-status` / `surround-eq`."
     },
     "surround_speaker": {
       "id": "0xea",
-      "status": "WRITE frame geometry decoded from Launcher captures; runtime support is read-only category-0x1a EQ only. Frequency/Q/gain units and bounds are captured; mode bytes remain raw because endpoint labels are unproven. The four readback head bytes align positionally with OUT delay and packed level/invert, but dynamic refresh is unverified.",
+      "status": "WRITE frame geometry decoded from Launcher captures; runtime support exposes category-0x1a EQ readback plus an explicitly experimental, bounded one-field EQ write path. Frequency/Q/gain units and bounds are captured; mode bytes remain raw because endpoint labels are unproven. The four readback head bytes align positionally with OUT delay and packed level/invert, but dynamic refresh is unverified.",
       "type": "NEW opcode 0x87 -- one frame per speaker carries that speaker's whole surround-monitor strip",
-      "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. No normal runtime builder; the dedicated self-test has an explicit experimental one-field probe/restore builder.",
+      "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. The WebUI and dedicated self-test use an explicit experimental one-field EQ builder; candidate delay/level/invert head fields remain unwritable.",
       "readback": "frame.readback category 0x1a -- 16 records (one per speaker), 116 meaningful bytes. CORRECTION: bytes 0..3 are an opaque candidate head, not an EQ header and not absent; they positionally equal OUT delay plus packed level/invert but were captured only at defaults, so dynamic semantics are unverified. The 16 EQ bands begin at record byte 4 / response byte 20 in exact `<freq LE16><Q LE16 x100><gain LE16 signed><mode raw>` geometry. L/R carry the captured non-flat Room Correction curve. Runtime decoding is read-only and omits the candidate head.",
       "field_map": {
         "17": "0x75 -- constant subcmd",
@@ -1730,8 +1730,8 @@
         "21_22": "per-speaker LEVEL, LE16. base 600 (0x0258) = 0 dB; 0.1 dB/step; range 0 = -60 dB .. 760 = +16 dB (USER-CONFIRMED 2026-09-03). **bit 7 of [22] = phase INVERT** (level tops at 760 = 0x02F8 so [22] bit 7 is free: 0x02 -> 0x82 on the invert toggle).",
         "23_onward": "SIXTEEN parametric EQ bands, FULLY DECODED 2026-09-03 (srrnd-EQ-Q-and-mode + srrnd-EQ-L/R-* + srrnd-EQ-L-gain). One `0x87` frame carries all 16; the Launcher shows them as 2 pages of 8. **7-byte stride, band N at [23 + 7*N] (N 0..15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** FREQ = literal Hz, 20 .. 20000 Hz per band (user). Q = LE16, value = Q x100, range 10 (Q 0.10) .. 1800 (Q 18.0), default 0x0047 = 71 = Q 0.71 (Butterworth) -- the byte I earlier called a `0x47` marker IS the Q low byte. GAIN = LE16 signed, 0.01 dB, -2400 (-24 dB) .. +1200 (+12 dB) (user). MODE byte: `0x02` = bell (bands 2-15, always). **Bands 1 and 16 are the end-band slots** (band 1 = low end, band 16 = high end), each with TWO user modes: SHELVING and BAND-PASS (Antelope's labels; a 'flat' line in the UI is just shelf/pass at 0 gain and is NOT a separate mode). **Observed mode-byte values** -- band 1: `0x00` (rest) toggling to `0x04` (srrnd-EQ-Q-and-mode, L); band 16: `0x00` (rest) toggling `0x01` <-> `0x03` (srrnd-LFE, on the LFE strip). So the encoding is NOT a clean bitfield -- band 1 uses {0x00, 0x04}, band 16 uses {0x01, 0x03} (plus 0x00 as the untouched default). Which of the two is 'shelving' vs 'band-pass' is not yet pinned -- ask the user, they toggled it. In BOTH modes gain works and Q sets the slope. On the CENTRE channel the end bands are bell (`0x02`) only. Default freqs per page 30/120/500/1400/3000/5500/9500/14000 Hz."
       },
-      "open": "Todo 45 blocks every per-speaker write: dynamically prove category-0x1a candidate-head bytes after isolated delay/level/invert changes before any whole-record RMW. Exact endpoint mode-byte labels also remain unproven. Runtime must retain modes as raw read-only values, label only captured indices 0=L, 1=R, 2=LFE under known 2.0/2.1, and make no centre or higher-format guesses.",
-      "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. No normal write command in the CLI (0x87 stays launcher-only for production paths); tools/surround_eq_selftest.py can explicitly probe one EQ field and restore the complete record. The readback is wired -- `surround-eq`."
+      "open": "Todo 45 blocks candidate-head writes: dynamically prove category-0x1a candidate-head bytes after isolated delay/level/invert changes before exposing any whole-record geometry controls. Exact endpoint mode-byte labels also remain unproven, so modes stay raw. The bounded EQ path is limited to one frequency/Q/gain/mode field at a time and makes no centre or higher-format guesses.",
+      "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. The WebUI and tools/surround_eq_selftest.py can explicitly write one EQ field and preserve the complete record; candidate delay/level/invert head controls remain read-only. The readback is wired -- `surround-eq`."
     },
     "dc_coupling": {
       "id": "0x26",
@@ -1947,7 +1947,7 @@
       "gain_offset": 4,
       "gain_raw_range": [-2400, 1200],
       "mode_offset": 6,
-      "read_only": true,
+      "read_only": false,
       "write_contract": {
         "status": "experimental-unverified",
         "magic_offset": 0,
@@ -1961,7 +1961,7 @@
         "speaker_offset": 18,
         "payload_offset": 19,
         "band_data_offset": 4,
-        "notes": "The Launcher frame geometry is known, but the category-0x1a candidate head (body bytes 0..3) has not been dynamically paired with per-speaker delay/level/invert writes. The experimental self-test copies that head and the complete 116-byte record, changes one EQ field, verifies the EQ readback, and restores the original record. It must never be used for broad sweeps."
+        "notes": "The Launcher frame geometry is known, but the category-0x1a candidate head (body bytes 0..3) has not been dynamically paired with per-speaker delay/level/invert writes. The experimental self-test and bounded WebUI endpoint copy that head and the complete 116-byte record, change one EQ field, and preserve the rest. They must never be used for broad sweeps."
       },
       "evidence": "Four raw macOS init captures each contain all 16 complete category-0x1a reports. Representative capture macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frames 17676/17686/17696; full-report hashes index 0 1d24d575830495cc8ee035e4167c916c20aef8ffec02e6dba3d6608e4a555457, index 1 e64c226aa323787d2da3a40e43e173a8d3b7c6a02489b5fd60c08b59bdff5591, index 2 102b1b66a5e7abcd74c67f381a24a821dbb373d6bcc26272bdc6762afef848ef. Response bytes 16..19 are an opaque four-byte candidate head positionally aligned with speaker OUT delay and packed level/invert, but all readbacks captured only defaults, so dynamic semantics are unverified and omitted from the normal runtime view. EQ begins at response byte 20; 16 bands use the captured 7-byte little-endian geometry. Bytes 132..319 are captured zero padding. Normal runtime remains read-only; the dedicated self-test may emit the observed 0x87 only after explicit experimental confirmation."
     }

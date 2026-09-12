@@ -432,8 +432,9 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
     into the frame and changes at most one EQ field.  The candidate head holds
     delay/level/invert bytes whose dynamic pairing is not yet confirmed; the
     caller must therefore opt into this helper explicitly with
-    ``allow_experimental=True``.  Normal clients must continue treating the
-    per-speaker frame as read-only.
+    ``allow_experimental=True``.  The normal WebUI path may use this helper
+    only through its bounded one-field endpoint; the candidate head remains
+    read-only.
     """
     contract = profile.get('runtime_contracts', {}).get(
         'surround_speaker_eq')

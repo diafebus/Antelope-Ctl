@@ -66,15 +66,19 @@
 .surround-eq-line { fill:none; stroke:#e37c88; stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round; }
 .surround-eq-points circle { fill:#f3a0a8; stroke:#1a1d24; stroke-width:2; }
 .surround-eq-graph-note { display:block; padding:0 8px 7px; color:var(--dim); font:9px ui-monospace,monospace; }
-.surround-eq-grid { display:grid; grid-template-columns:repeat(16,minmax(76px,1fr)); gap:6px; min-width:1240px; }
-.surround-band { min-width:0; display:flex; flex-direction:column; align-items:stretch; gap:5px; padding:7px; background:#101217; border:1px solid #252a33; border-radius:5px; }
+.surround-eq-layout { display:grid; grid-template-columns:28px minmax(0,1fr); gap:0; min-width:0; }
+.surround-eq-legend { display:grid; grid-template-rows:9px repeat(3,47px) 21px; gap:3px; padding:4px 5px 4px 0; border-right:1px solid #252a33; color:var(--dim); font:700 9px/1 ui-monospace,monospace; text-align:center; }
+.surround-eq-legend > span { display:flex; align-items:center; justify-content:center; }
+.surround-eq-grid { display:grid; grid-template-columns:repeat(16,minmax(0,1fr)); gap:0; min-width:0; }
+.surround-band { min-width:0; display:grid; grid-template-rows:9px repeat(3,47px) 21px; gap:3px; padding:4px 5px; background:transparent; border:0; border-left:1px solid #252a33; border-radius:0; }
+.surround-band:first-child { border-left:0; }
 .surround-band > strong { color:var(--fg); font:700 9px/1 ui-monospace,monospace; text-align:center; }
-.surround-eq-knob { min-width:0; }
-.surround-eq-knob .mixer-readout { width:100%; min-width:0; box-sizing:border-box; padding:3px 1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9px; }
-.surround-eq-knob .mixer-knob { width:42px; height:42px; margin:0 auto; opacity:.86; }
+.surround-eq-knob { min-width:0; height:47px; }
+.surround-eq-knob .mixer-readout { width:100%; min-width:0; box-sizing:border-box; padding:1px 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:transparent; font-size:8px; }
+.surround-eq-knob .mixer-knob { width:34px; height:34px; margin:0 auto; opacity:.86; }
 .surround-eq-knob .mixer-knob input:disabled { cursor:default; }
-.surround-eq-knob .mixer-knob-label { font-size:8px; }
-.surround-eq-mode { display:flex; align-items:center; gap:5px; color:var(--dim); font:8px ui-monospace,monospace; }
+.surround-eq-knob .mixer-knob input:not(:disabled) { cursor:ns-resize; }
+.surround-eq-mode { min-width:0; height:21px; display:flex; align-items:center; gap:3px; color:var(--dim); font:8px ui-monospace,monospace; }
 .surround-eq-mode select { min-width:0; flex:1; background:#0e1116; color:var(--fg); border:1px solid #252a33; border-radius:3px; padding:3px; font:9px ui-monospace,monospace; }
 .surround-eq-mode select:disabled { opacity:.72; }
 .surround-empty { margin:0; padding:12px; color:var(--dim); font-size:11px; }
@@ -85,5 +89,5 @@
   .surround-controls, .surround-speaker-controls { grid-template-columns:1fr; }
   .surround-masks { grid-template-columns:1fr; }
   .surround-table { min-width:470px; }
-  .surround-eq-grid { grid-template-columns:repeat(16,minmax(76px,1fr)); }
+  .surround-eq-layout { min-width:988px; }
 }

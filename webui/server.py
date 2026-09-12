@@ -543,6 +543,43 @@ class Device:
                 "surround contract."
             ),
         }
+        eq_contract = self.profile.get("runtime_contracts", {}).get(
+            "surround_speaker_eq", {}) or {}
+        eq_write_contract = eq_contract.get("write_contract", {}) or {}
+        eq_write = {
+            "enabled": False,
+            "experimental": True,
+            "status": eq_write_contract.get("status", "unavailable"),
+            "fields": ["frequency", "q", "gain", "mode"],
+            "readback_category": SURROUND_EQ_CAT,
+            "speaker_count": self.surround_speaker_count,
+            "band_count": int(eq_contract.get("band_count", 16)),
+            "frequency_range": list(eq_contract.get(
+                "frequency_range", [20, 20000])),
+            "q_range": [
+                float(value) / 100
+                for value in eq_contract.get("q_raw_range", [10, 1800])
+            ],
+            "gain_range": [
+                float(value) / 100
+                for value in eq_contract.get("gain_raw_range", [-2400, 1200])
+            ],
+            "mode_range": list(eq_contract.get("mode_range", [0, 255])),
+            "note": (
+                "Experimental one-field EQ writes use a fresh category-0x1a "
+                "readback and preserve the rest of the speaker record."
+            ),
+        }
+        try:
+            record_size = int(eq_contract["record_size"])
+            proto.build_surround_speaker_eq_command(
+                self.profile, bytes(record_size), 0, 0, {},
+                allow_experimental=True)
+        except (KeyError, TypeError, ValueError, proto.ConstraintError):
+            pass
+        else:
+            eq_write["enabled"] = True
+        write["eq"] = eq_write
         if global_state is not None and self.surround_global_raw is not None:
             try:
                 delay_raw = round(global_state["global_delay_ms"] / delay_step)
@@ -577,6 +614,43 @@ class Device:
             "active_speaker_count": active_count,
             "write": write,
         }
+
+    def _surround_speaker_body_for_write(self, transport, speaker):
+        """Read a fresh per-speaker EQ record before an experimental write."""
+        if not self.surround_available:
+            raise RuntimeError("surround state is not safely mapped")
+        if not 0 <= int(speaker) < self.surround_speaker_count:
+            raise RuntimeError(f"surround speaker {speaker} is out of range")
+        req = proto.build_readback_query(
+            self.profile, SURROUND_EQ_CAT, int(speaker))
+        data = transport.query(
+            req,
+            lambda x: proto.is_readback_response(
+                self.profile, x, SURROUND_EQ_CAT, int(speaker)),
+            timeout=1.5)
+        if data is None:
+            raise RuntimeError(
+                f"no surround speaker readback for {speaker} -- not writing blind")
+        body = proto.readback_body(self.profile, data)
+        record = proto.parse_surround_speaker_eq_record(self.profile, body)
+        with self._lock:
+            self.surround_speakers[int(speaker)] = record
+        return bytes(body)
+
+    def _cache_surround_speaker_packet(self, speaker, packet):
+        """Update the local EQ cache from a complete speaker write packet."""
+        contract = self.profile.get("runtime_contracts", {}).get(
+            "surround_speaker_eq", {}) or {}
+        write = contract.get("write_contract", {}) or {}
+        payload_offset = int(write.get("payload_offset", 19))
+        record_size = int(contract.get("record_size", 116))
+        body = bytes(packet[payload_offset:payload_offset + record_size])
+        record = proto.parse_surround_speaker_eq_record(self.profile, body)
+        with self._lock:
+            changed = self.surround_speakers.get(int(speaker)) != record
+            self.surround_speakers[int(speaker)] = record
+            if changed:
+                self.rb_ver += 1
 
     def _surround_global_body_for_write(self, transport):
         """Read fresh global surround state before a complete-state write."""
@@ -1465,6 +1539,13 @@ class SurroundGlobalChange(BaseModel):
     level_db: float | None = None
 
 
+class SurroundEQChange(BaseModel):
+    speaker: int
+    band: int                  # 0-based EQ band index
+    parameter: str             # frequency | q | gain | mode
+    value: float
+
+
 class MixerLink(BaseModel):
     """A virtual-mixer stereo pair scoped to one mix."""
     pair: int
@@ -1494,6 +1575,56 @@ def _surround_raw_value(value, *, step, zero, bounds, label):
         high = (hi - zero) * step
         raise ValueError(f"{label} outside {low:g}..{high:g}")
     return raw
+
+
+def _surround_eq_raw_value(profile, parameter, value):
+    """Convert one UI EQ value to the profile-defined raw field value."""
+    contract = profile.get("runtime_contracts", {}).get(
+        "surround_speaker_eq", {}) or {}
+    try:
+        display = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{parameter} must be a finite number")
+    if not math.isfinite(display):
+        raise ValueError(f"{parameter} must be a finite number")
+
+    if parameter == "frequency":
+        raw_float = display
+        field = "frequency"
+        bounds = contract["frequency_range"]
+        label = "frequency"
+    elif parameter == "q":
+        raw_float = display * 100
+        field = "q_raw"
+        bounds = contract["q_raw_range"]
+        label = "Q"
+    elif parameter == "gain":
+        raw_float = display * 100
+        field = "gain_raw"
+        bounds = contract["gain_raw_range"]
+        label = "gain"
+    elif parameter == "mode":
+        raw_float = display
+        field = "mode"
+        bounds = contract.get("mode_range", [0, 255])
+        label = "mode"
+    else:
+        raise ValueError(
+            "parameter must be one of frequency, q, gain, or mode")
+
+    raw = int(round(raw_float))
+    if not math.isclose(raw_float, raw, abs_tol=1e-6):
+        raise ValueError(f"{label} has too many decimal places")
+    lo, hi = (int(item) for item in bounds)
+    if not lo <= raw <= hi:
+        if parameter == "q":
+            low, high = lo / 100, hi / 100
+        elif parameter == "gain":
+            low, high = lo / 100, hi / 100
+        else:
+            low, high = lo, hi
+        raise ValueError(f"{label} outside {low:g}..{high:g}")
+    return raw, field
 
 
 @app.get("/")
@@ -1588,6 +1719,48 @@ def api_surround_global(change: SurroundGlobalChange):
         "delay_ms": None if delay_raw is None else delay_raw * delay_step,
         "level_db": None if level_raw is None
         else (level_raw - level_zero) * level_step,
+    }
+
+
+@app.post("/api/surround/eq")
+def api_surround_eq(change: SurroundEQChange):
+    """Queue one bounded experimental per-speaker EQ field write."""
+    if not DEV.surround_available:
+        return _bad("surround state is not safely mapped for this profile")
+    eq_write = DEV.surround_json()["write"].get("eq", {})
+    if not eq_write.get("enabled"):
+        return _bad("surround EQ writes are not authorized for this profile")
+    parameter = str(change.parameter).strip().lower()
+    if not 0 <= change.speaker < DEV.surround_speaker_count:
+        return _bad(
+            f"speaker {change.speaker} out of range "
+            f"0..{DEV.surround_speaker_count - 1}")
+    band_count = int(eq_write.get("band_count", 16))
+    if not 0 <= change.band < band_count:
+        return _bad(f"band {change.band} out of range 0..{band_count - 1}")
+    try:
+        raw_value, field = _surround_eq_raw_value(
+            PROFILE, parameter, change.value)
+    except (KeyError, TypeError, ValueError) as exc:
+        return _bad(str(exc))
+
+    def do(t):
+        body = DEV._surround_speaker_body_for_write(t, change.speaker)
+        packet = proto.build_surround_speaker_eq_command(
+            PROFILE, body, change.speaker, change.band,
+            {field: raw_value}, allow_experimental=True)
+        t.write(packet)
+        DEV._cache_surround_speaker_packet(change.speaker, packet)
+
+    DEV.submit(do)
+    return {
+        "ok": True,
+        "queued": True,
+        "experimental": True,
+        "speaker": change.speaker,
+        "band": change.band,
+        "parameter": parameter,
+        "value": change.value,
     }
 
 

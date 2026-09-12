@@ -235,50 +235,67 @@ function surroundKnobAngle(value, min, max, logarithmic = false) {
   return (-135 + Math.max(0, Math.min(1, fraction)) * 270).toFixed(1);
 }
 
-function surroundEqKnob(label, value, min, max, step, unit, digits, logarithmic = false) {
+function surroundEqKnob(field, value, min, max, step, unit, digits,
+                        speaker, band, writable, logarithmic = false) {
   const number = Number(value);
   const current = Number.isFinite(number) ? number : min;
   const angle = surroundKnobAngle(current, min, max, logarithmic);
+  const inputLabel = `${field} band ${band + 1}`;
   return '<div class="mixer-knob-control surround-eq-knob">'
-    + '<output class="mixer-readout">' + surroundNumber(current, digits) + unit + '</output>'
-    + '<div class="mixer-knob surround-knob" title="' + surroundEscape(label) + '">'
+    + '<output class="mixer-readout" data-surround-eq-value="'
+    + surroundEscape(field) + '">' + surroundNumber(current, digits) + unit + '</output>'
+    + '<div class="mixer-knob surround-knob" title="' + surroundEscape(inputLabel) + '">'
     + '<i style="transform:translateX(-50%) rotate(' + angle + 'deg)"></i>'
-    + '<input type="range" min="' + min + '" max="' + max + '" step="' + step
-    + '" value="' + surroundEscape(current) + '" disabled aria-label="'
-    + surroundEscape(label) + '"></div>'
-    + '<label class="mixer-knob-label">' + surroundEscape(label) + '</label>'
+    + '<input type="range" data-surround-eq-input data-surround-eq-field="'
+    + surroundEscape(field) + '" data-surround-eq-speaker="' + speaker
+    + '" data-surround-eq-band="' + band + '" min="' + min + '" max="'
+    + max + '" step="' + step + '" value="' + surroundEscape(current) + '"'
+    + (writable ? '' : ' disabled') + ' aria-label="' + surroundEscape(inputLabel)
+    + '"></div>'
     + '</div>';
 }
 
-function surroundEqModeSelect(mode, index) {
+function surroundEqModeSelect(mode, index, speaker, writable) {
   const current = Number(mode);
   const values = index === 0 ? [0, 4] : index === 15 ? [0, 1, 3] : [2];
   if (Number.isFinite(current) && !values.includes(current)) values.push(current);
   const options = values.map(value => '<option value="' + value + '"'
     + (value === current ? ' selected' : '') + '>' + surroundHex(value) + '</option>').join('');
   return '<label class="surround-eq-mode"><span>MODE</span>'
-    + '<select disabled aria-label="band ' + (index + 1) + ' mode">' + options + '</select></label>';
+    + '<select data-surround-eq-input data-surround-eq-field="mode"'
+    + ' data-surround-eq-speaker="' + speaker + '" data-surround-eq-band="'
+    + index + '"' + (writable ? '' : ' disabled') + ' aria-label="band '
+    + (index + 1) + ' mode">' + options + '</select></label>';
 }
 
-function surroundEqBand(band, index) {
+function surroundEqBand(band, index, speaker, writable) {
   return '<article class="surround-band">'
     + '<strong>' + (index + 1) + '</strong>'
-    + surroundEqKnob('F', band.freq_hz, 20, 20000, 1, ' Hz', 0, true)
-    + surroundEqKnob('G', band.gain_db, -24, 12, 0.01, ' dB', 2)
-    + surroundEqKnob('Q', band.q, 0.1, 18, 0.01, '', 2)
-    + surroundEqModeSelect(band.mode, index)
+    + surroundEqKnob('frequency', band.freq_hz, 20, 20000, 1, ' Hz', 0,
+      speaker, index, writable, true)
+    + surroundEqKnob('gain', band.gain_db, -24, 12, 0.01, ' dB', 2,
+      speaker, index, writable)
+    + surroundEqKnob('q', band.q, 0.1, 18, 0.01, '', 2,
+      speaker, index, writable)
+    + surroundEqModeSelect(band.mode, index, speaker, writable)
     + '</article>';
 }
 
-function surroundEqGrid(speaker) {
+function surroundEqGrid(speaker, writable = false) {
   const bands = speaker?.bands || [];
   if (!bands.length) return '<p class="surround-empty">Waiting for the speaker EQ readback.</p>';
-  return '<div class="surround-eq-grid">' + bands.map(surroundEqBand).join('') + '</div>';
+  return '<div class="surround-eq-layout">'
+    + '<div class="surround-eq-legend" aria-hidden="true">'
+    + '<strong></strong><span>F</span><span>G</span><span>Q</span><span>MODE</span>'
+    + '</div><div class="surround-eq-grid">'
+    + bands.map((band, index) => surroundEqBand(
+      band, index, speaker.index, writable)).join('') + '</div></div>';
 }
 
 function surroundSpeakerHTML(data) {
   const count = data.speaker_count || data.speakers?.length || 16;
   const speaker = surroundSpeaker(SURROUND_SPEAKER, data);
+  const eqWritable = data.write?.eq?.enabled === true && speaker.readback === true;
   const options = Array.from({length: count}, (_, index) => {
     const item = surroundSpeaker(index, data);
     return `<option value="${index}"${index === SURROUND_SPEAKER ? ' selected' : ''}>
@@ -300,11 +317,42 @@ function surroundSpeakerHTML(data) {
       ${surroundCandidateControl('Phase invert', 'checkbox')}
     </div>
     <div class="surround-eq"><div class="surround-subhd"><h4>16-band EQ · single view</h4>
-      <span class="surround-readonly">read-only · mode bytes stay raw</span></div>
+      <span class="surround-readonly">${eqWritable
+        ? 'experimental write · one field at a time' : 'read-only · mode bytes stay raw'}</span></div>
       ${surroundEqGraph(speaker)}
-      ${surroundEqGrid(speaker)}</div>
-    <p class="surround-note">The per-speaker 0x87 frame is decoded for EQ readback. Its delay, level and phase head bytes remain candidate mappings, so the browser controls stay read-only.</p>
+      ${surroundEqGrid(speaker, eqWritable)}</div>
+    <p class="surround-note">${eqWritable
+      ? 'EQ changes write one frequency, gain, Q, or raw mode field at a time after a fresh readback; speaker delay, level and phase remain read-only.'
+      : 'The per-speaker 0x87 frame is decoded for EQ readback. Its delay, level and phase head bytes remain candidate mappings, so the browser controls stay read-only.'}</p>
   </section>`;
+}
+
+function surroundEqDisplay(field, value) {
+  if (field === 'frequency') return surroundNumber(value, 0) + ' Hz';
+  if (field === 'gain') return surroundNumber(value, 2) + ' dB';
+  if (field === 'q') return surroundNumber(value, 2);
+  if (field === 'mode') return surroundHex(value);
+  return surroundNumber(value);
+}
+
+function surroundEqPaint(input) {
+  if (!input) return;
+  const field = input.dataset.surroundEqField;
+  const value = Number(input.value);
+  const output = input.closest('.surround-eq-knob')?.querySelector(
+    '[data-surround-eq-value]');
+  if (output) output.textContent = surroundEqDisplay(field, value);
+  const pointer = input.closest('.mixer-knob')?.querySelector('i');
+  if (pointer) pointer.style.transform = 'translateX(-50%) rotate('
+    + surroundKnobAngle(value, +input.min, +input.max, field === 'frequency') + 'deg)';
+}
+
+function initSurroundEqControls(host) {
+  host.querySelectorAll('[data-surround-eq-input]').forEach(input => {
+    if (!input.disabled && input.type === 'range'
+        && typeof wirePrecisionRange === 'function') wirePrecisionRange(input);
+    surroundEqPaint(input);
+  });
 }
 
 function renderSurround() {
@@ -325,6 +373,7 @@ function renderSurround() {
         ? 'speaker count pending' : `${SURROUND.active_speaker_count} active speakers`}</span></div>
     <div class="surround-grid">${surroundGlobalHTML(SURROUND)}${surroundSpeakerHTML(SURROUND)}</div>
   </div>`;
+  initSurroundEqControls(host);
 }
 
 async function reloadSurround() {
@@ -339,6 +388,11 @@ function buildSurround() {
   if (!host) return;
   if (!SURROUND_BUILT) {
     host.addEventListener('input', event => {
+      const eq = event.target.closest?.('[data-surround-eq-input]');
+      if (eq) {
+        surroundEqPaint(eq);
+        return;
+      }
       const input = event.target.closest('[data-surround-global]');
       if (!input) return;
       const value = Number(input.value);
@@ -369,6 +423,17 @@ function buildSurround() {
       if (modal && !modal.hidden) setBassModal(modal, false);
     });
     host.addEventListener('change', event => {
+      const eq = event.target.closest?.('[data-surround-eq-input]');
+      if (eq && !eq.disabled) {
+        surroundEqPaint(eq);
+        post('/api/surround/eq', {
+          speaker: Number(eq.dataset.surroundEqSpeaker),
+          band: Number(eq.dataset.surroundEqBand),
+          parameter: eq.dataset.surroundEqField,
+          value: Number(eq.value),
+        });
+        return;
+      }
       const speaker = event.target.closest('[data-surround-speaker]');
       if (speaker) {
         SURROUND_SPEAKER = Number(speaker.value) || 0;

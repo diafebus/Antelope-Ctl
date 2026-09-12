@@ -955,12 +955,14 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   2026-09-04): global = readback category `0x1b`, per-speaker EQ =
   category `0x1a`. The CLI decodes both readbacks, and the WebUI Surround tab
   polls both categories. Its verified 2.0 global delay/level path performs a
-  fresh read-modify-write; per-speaker writes and other global controls remain
-  read-only. `tools/surround_eq_selftest.py` can read all 16 records or, with
-  explicit confirmation, probe one frequency, Q, gain, or raw mode byte in one
-  selected band and restore the complete record. The per-speaker write frame
-  remains experimental because its candidate delay/level/invert head has not
-  been dynamically paired with the readback. **Room Correction** turned out to be just the Launcher computing a
+  fresh read-modify-write; other global controls and per-speaker delay/level/
+  phase remain read-only. The WebUI exposes the experimental per-speaker EQ
+  path one field at a time, using a fresh read-modify-write that preserves the
+  complete record. `tools/surround_eq_selftest.py` can read all 16 records or,
+  with explicit confirmation, probe one frequency, Q, gain, or raw mode byte
+  in one selected band and restore the complete record. The per-speaker write
+  frame remains experimental because its candidate delay/level/invert head has
+  not been dynamically paired with the readback. **Room Correction** turned out to be just the Launcher computing a
   curve host-side and writing it into that `0x87` per-speaker EQ -- no opcode,
   no toggle (`params.surround_speaker` *is* the RC interface). Only **2.0 / 2.1**
   could be captured, though --

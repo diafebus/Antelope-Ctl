@@ -4,8 +4,10 @@ function buildChannels(n) {
   const wrap = $('#channels'); wrap.innerHTML = '';
   for (let ch = 0; ch < n; ch++) {
     const el = document.createElement('div');
-    const channelLabel = profileSpaceLabel('input', {index: ch + 1}, `CH${ch + 1}`);
-    const nextChannelLabel = profileSpaceLabel('input', {index: ch + 2}, `CH${ch + 2}`);
+    const channelLabel = profileSpaceLabel('input', {index: ch + 1}, `CH${ch + 1}`)
+      .replace(/^Preamp\s+/i, 'CH');
+    const nextChannelLabel = profileSpaceLabel('input', {index: ch + 2}, `CH${ch + 2}`)
+      .replace(/^Preamp\s+/i, 'CH');
     el.className = 'pre'; el.dataset.ch = ch;
     el.innerHTML = `
       <div class="top">

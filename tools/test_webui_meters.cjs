@@ -7,13 +7,14 @@ const {ROOT: root, JS_FILES, readWebUISource} = require('./webui_sources.cjs');
 const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
 const surroundCss = fs.readFileSync(path.join(root, 'webui/static/surround.css'), 'utf8');
 const sourceFiles = [...html.matchAll(/<script src="\/webui\/static\/([^"]+)"><\/script>/g)]
-  .map(match => match[1]);
+  .map(match => match[1].split('?')[0]);
 assert.deepEqual(sourceFiles, JS_FILES);
 assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/app\.css">/);
 assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/surround\.css\?v=[^"]+">/);
 assert.match(html, /data-rtab="surround"/);
 assert.match(html, /data-rpane="surround"/);
-assert.match(surroundCss, /\.surround-eq-grid \{[^}]*repeat\(16,minmax\(76px,1fr\)\)/);
+assert.match(surroundCss, /\.surround-eq-grid \{[^}]*repeat\(16,minmax\(0,1fr\)\)/);
+assert.match(surroundCss, /\.surround-eq-legend/);
 const js = readWebUISource();
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
 const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
@@ -25,7 +26,7 @@ assert.match(js, /selectMixer\(initial, !!routeMix \|\| !!selector \|\| hasSurfa
 assert.match(js, /function buildSurround\(\)/);
 assert.match(js, /const SURROUND_FORMAT_OPTIONS = \[/);
 assert.match(js, /function surroundEqGraph\(\w+\)/);
-assert.match(js, /function surroundEqGrid\(\w+\)/);
+assert.match(js, /function surroundEqGrid\(speaker(?:, writable = false)?\)/);
 assert.match(js, /16-band EQ · single view/);
 assert.match(js, /class="mixer-knob surround-knob"/);
 assert.doesNotMatch(js, /surroundEqTable/);
@@ -146,6 +147,16 @@ assert.equal((surroundHTML.match(/class="surround-eq-mode"/g) || []).length, 16)
 assert.match(surroundHTML, /16-band EQ · single view/);
 assert.match(surroundHTML, /<strong>1<\/strong>/);
 assert.doesNotMatch(surroundHTML, /<strong>BAND /);
+assert.match(surroundHTML, /<span>F<\/span><span>G<\/span><span>Q<\/span>/);
+assert.equal((surroundHTML.match(/class="mixer-knob-label"/g) || []).length, 0);
+const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
+  ...surroundData, write: {enabled: false, eq: {enabled: true}},
+});
+assert.match(writableSurroundHTML, /experimental write · one field at a time/);
+assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 64);
+assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-input[^>]* disabled/);
+const inputsSource = fs.readFileSync(path.join(root, 'webui/static/ui-inputs.js'), 'utf8');
+assert.match(inputsSource, /\.replace\(\/\^Preamp\\s\+\/i, 'CH'\)/);
 const globalHTML = surroundContext.surroundGlobalHTML(surroundData);
 assert.match(globalHTML, /value="2\.0" selected/);
 assert.match(globalHTML, /value="9\.1\.6" disabled/);
