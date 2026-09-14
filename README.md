@@ -61,6 +61,17 @@ in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
 
+### Evidence rule for write claims
+
+For profile-audit purposes, a writable parameter may be marked `confirmed` only
+when its evidence records a dated, model-local write, a device-side readback
+showing the before/after value, and restoration of the original value. Vendor
+software traffic, UI or audio behaviour, and an undifferentiated moving byte do
+not by themselves constitute a readback witness. Observed channel indices may
+confirm membership, but the maximum safe index remains derived until an
+out-of-range probe is performed; clients must not probe one casually because a
+sibling device faults hard on an invalid index.
+
 ## Legal status & disclaimer
 
 This is an independent interoperability project. It is **not affiliated

@@ -231,6 +231,18 @@ def build_command(profile: dict, param_name: str, channel: int, value: int) -> b
     return build_raw_command(profile, _as_int(pdef['id']), channel, value)
 
 
+def _ensure_param_buildable(profile: dict, param_id: int):
+    """Refuse profile-declared controls that must remain observation-only."""
+    for name, pdef in (profile.get('params', {}) or {}).items():
+        raw_id = pdef.get('id')
+        if raw_id is None:
+            continue
+        if _as_int(raw_id) == param_id and pdef.get('never_build'):
+            reason = pdef.get('never_build_reason', 'the profile marks it observation-only')
+            raise ConstraintError(
+                f'param "{name}" (0x{param_id:02x}) is marked never_build: {reason}')
+
+
 def build_raw_command(profile: dict, param_id: int, channel: int, value: int) -> bytes:
     """Escape hatch: build a frame from a raw param_id, for params not yet in the profile.
     Use this while you're still reverse-engineering something new (e.g. routing).
@@ -238,6 +250,7 @@ def build_raw_command(profile: dict, param_id: int, channel: int, value: int) ->
     channel_link, use build_link_command() instead, since it's a different shape."""
     f = profile['frame']['command']
     check_opcode(profile, _as_int(f['opcode']))
+    _ensure_param_buildable(profile, param_id)
     size = profile['transport']['report_size']
     pkt = bytearray(size)
     pkt[_as_int(f['magic_offset'])] = _as_int(f['magic'])
@@ -307,6 +320,7 @@ def build_global_command(profile: dict, param, value: int) -> bytes:
         param_id = _as_int(pdef['id'])
     else:
         param_id = _as_int(param)
+    _ensure_param_buildable(profile, param_id)
     check_opcode(profile, _as_int(f['opcode']))
     size = profile['transport']['report_size']
     pkt = bytearray(size)
@@ -2255,14 +2269,14 @@ CHANNEL_STATUS_READBACK_CATEGORY = 0x06
 
 
 def parse_preamp_gain_record(profile: dict, body: bytes):
-    """Decode a category-0x05 record: one plain byte per physical input
+    """Decode a category-0x05 record: one signed int8 byte per physical input
     channel = that preamp's gain in dB (line/direct modes read 0). This is an
     independent copy of the 0x73 state report's gain array (@49); confirmed
     2026-09-03 by a differential write (`set-gain 7 33` moved byte [7] to
     0x21, nothing else) and used as a cross-check against the pushed report.
     Returns a list of ints, length = the device's physical channel count."""
     n = space_channel_count(profile, 'input') or len(body)
-    return [body[i] for i in range(min(n, len(body)))]
+    return [i8(body[i]) for i in range(min(n, len(body)))]
 
 
 def parse_channel_status_record(profile: dict, body: bytes):

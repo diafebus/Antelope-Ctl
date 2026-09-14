@@ -445,7 +445,8 @@ def t_write_auraverb(dev):
     try:
         dev.write(proto.build_auraverb_command(dev.p, probe, en, mix=0))
         got = proto.parse_auraverb_record(dev.p, dev.read(cat, index))[0]
-        check('WRITE Gazelle Reverb: Mix 1 reverb-level changes',
+        check(f'WRITE Gazelle Reverb: Mix 1 reverb-level '
+              f'{orig["reverb_level"]} -> {probe["reverb_level"]}',
               got['params']['reverb_level'] == probe['reverb_level'],
               f"read back {got['params']['reverb_level']}")
         check('WRITE Gazelle Reverb: other params + enabled preserved',
@@ -518,6 +519,63 @@ def t_write_brightness(dev):
                '' if ok else f'RESTORE FAILED -- set it back with `set-brightness {orig}`')
 
 
+def t_write_bus_flags(dev):
+    """Round-trip dim and mono on every declared Orion bus.
+
+    The status byte is read from the pushed 0x73 report after each write and
+    the original value is restored before the next flag is tested.  A bus at
+    raw level 96 is the device's silent endpoint, so the probe temporarily
+    uses 95 dB attenuation to avoid testing a flag against that endpoint; the
+    original level is restored as part of the same finally block.
+    """
+    known = dev.p.get('buses', {}).get('known', {}) or {}
+    if not known or 'bus_block' not in dev.p.get('frame', {}).get('state_report', {}):
+        return record(SKIP, 'WRITE bus dim/mono', 'no profile bus-block contract')
+    for bus_key in sorted(known, key=int):
+        bus = int(bus_key)
+        for param, key in (('bus_dim', 'dim'), ('bus_mono', 'mono')):
+            data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
+            if data is None:
+                return record(FAIL, f'WRITE bus {bus} {key}', 'no state report before write')
+            before = proto.parse_bus_state(dev.p, data, bus)
+            orig = int(before[key])
+            probe = 0 if orig else 1
+            after = None
+            original_level = int(before['level'])
+            level_changed = False
+            try:
+                if original_level == 96:
+                    dev.write(proto.build_command(dev.p, 'bus_level', bus, 95))
+                    level_changed = True
+                    data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
+                    if data is not None:
+                        before = proto.parse_bus_state(dev.p, data, bus)
+                dev.write(proto.build_command(dev.p, param, bus, probe))
+                data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
+                after = proto.parse_bus_state(dev.p, data, bus) if data is not None else None
+                check(
+                    f'WRITE bus {bus} {key}: {orig} -> {probe} '
+                    f'(status 0x{before["status_raw"]:02x} -> '
+                    f'{after["status_raw"] if after else 0:02x})',
+                    after is not None and int(after[key]) == probe,
+                    f'no matching readback (got {after})',
+                )
+            finally:
+                dev.write(proto.build_command(dev.p, param, bus, orig))
+                if level_changed:
+                    dev.write(proto.build_command(dev.p, 'bus_level', bus, original_level))
+                data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
+                restored = proto.parse_bus_state(dev.p, data, bus) if data is not None else None
+                ok = restored is not None and int(restored[key]) == orig
+                record(
+                    PASS if ok else FAIL,
+                    f'WRITE bus {bus} {key}: restored {orig} '
+                    f'(status {after["status_raw"] if after else 0:02x} -> '
+                    f'{restored["status_raw"] if restored else 0:02x})',
+                    '' if ok else 'RESTORE FAILED -- inspect the output bus by hand!',
+                )
+
+
 def t_unverifiable():
     for name, why in (
             ('mic modeling / emuMic write',
@@ -579,6 +637,7 @@ def main():
     if args.write:
         print('\nwrite round trips (each restores)')
         t_write_brightness(dev)
+        t_write_bus_flags(dev)
         t_write_mixer(dev, args.write_mix)
         t_write_auraverb(dev)
         t_write_routing(dev, args.write_dest)

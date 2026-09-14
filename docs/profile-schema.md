@@ -34,6 +34,14 @@ evidence.
 - **`evidence`** / **`notes`**: free text. `evidence` names the capture
   and what it showed; `notes` is everything else. Keep the capture name
   in `evidence` so a claim can be re-checked.
+- **Write-evidence rule**: for a new `confirmed` writable parameter, record a
+  date, the value sent, the device-side readback before/after, and restoration
+  of the original value. Vendor-software traffic or an observed UI/audio
+  effect is not a readback witness. If those facts are absent, use
+  `observed`/`unconfirmed` and keep the command non-buildable when appropriate.
+- **Index bounds**: observed indices confirm that those indices exist; they do
+  not prove the first invalid index is safe to send. Mark an untested bound as
+  derived and document the hazard.
 - **`_comment`** keys are ignored by the code — inline documentation.
 - Unknown keys are ignored. Adding a key the code doesn't read yet is
   fine (it documents intent for a future CLI command or the webUI).

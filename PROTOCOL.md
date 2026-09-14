@@ -348,7 +348,7 @@ Enforced in code by `protocol.check_readback_index`, called from
 `ANTELOPE_ALLOW_UNSAFE_READBACK=1`; `tools/readback_enum.py` clamps every
 sweep to the declared count unless `--unsafe`.
 
-### Category map (Orion Studio Synergy Core; last revised 2026-09-04)
+### Category map (Orion Studio Synergy Core; last revised 2026-09-14)
 
 | cat | payload | status |
 |---|---|---|
@@ -357,7 +357,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x02` | per-channel present flag (scalar `01`), idx 0..63 | — |
 | **`0x03`** | **routing matrix** -- 1 record per destination group, idx = dest_id 0-14. Record = `<dest_id>` then a `(source_bank, source_index)` pair per output channel (`destination_channels[dest]` pairs) -- the **same array as the `0x53` write frame**. | **decoded, verified byte-identical against CLI-written routes** |
 | **`0x04`** | **virtual mixer** -- 1 record per mix, idx = mix 0-3. Record = 33 × 3-byte slots `<fader> <pan\|mute\|solo> <send>`, the **same field order as the `0x17`/`0xd4` write frame**; slot N = the strip written as `channel` N. See below. | **decoded, hardware round-trip verified** |
-| `0x05` | **preamp gain** -- 1 byte/channel = gain in dB (line/direct = 0). Independent copy of `0x73` @49. | **decoded + differential-write confirmed 2026-09-03** |
+| `0x05` | **preamp gain** -- 1 signed int8 byte/channel = gain in dB (line/direct = 0). Independent copy of `0x73` @49. | **decoded + differential-write confirmed 2026-09-03; live cross-check passed 2026-09-14** (raw `0xfe` correctly means `-2`) |
 | `0x06` | **channel status** -- 1 byte/channel, same packing as `0x73` @61: `(phase<<6)\|(phantom<<4)\|(mode&3)`. | **decoded + differential-write confirmed 2026-09-03** (phantom bit inferred from the shared encoding) |
 | `0x07` | EQ/filter band data — same `<freq><Q><gain><mode>` stride as `0x1a`. 8 records; live-read 2026-09-04: idx 0/1 = 8× a flat 5-band EQ (30/200/1k/5k/15k Hz), idx 2 = 16× a 19-byte range/capability record. Purpose unresolved (monitor/phones EQ? a capability table?). **Not** a per-input-channel EQ — the SC has none | undecoded |
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
@@ -667,8 +667,17 @@ negative-dB steps, and raw `96` (`0x60`) is the device's silent/`-inf`
 endpoint. This was confirmed directly on Monitor A on 2026-09-14; the
 capture-derived byte offsets remain valid.
 
-`bus_dim` / `bus_mono` were only exercised on 0/1/2/5 and may not apply to
-line_out / reamp. `bus_mute` confirmed on 0/1/2/3.
+`bus_dim` / `bus_mono` were restore-guaranteed live-round-tripped on all six
+bus ids on 2026-09-14, including line_out and reamp. The test temporarily set
+HP1 from silent raw level 96 to 95 because its `0x04` status bit is the silent
+endpoint marker there, then restored the original level and marker. `bus_mute`
+was confirmed on 0/1/2/3. The observed bus/channel members do not prove that
+the first id above the declared range is safe: the profile records these
+bounds as derived, and no out-of-range index has been tested on Orion.
+
+Model-specific id reminder: on Orion, `0x68` is `bus_dim`, `0x69` is
+`bus_mono`, and global `0x26` is `dc_coupling`. Do not import the meanings of
+those payload ids from a sibling profile.
 
 The Orion III has **two** physical reamp outputs (Reamp 1 / Reamp 2 --
 separate mono outs for two guitar amps, not a stereo pair). The settings
@@ -1261,7 +1270,7 @@ What the Settings/Device window controls actually do, from the captures
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
 | **Oscillator** -- settings panel (freq/level/mute) | `macos-settings-osc1-mute-1khz` etc. | opcode `0x12` / param `0x0a` / packed value @17 | **DECODED (native macOS, 2026-09-01)** -- the old "zero frames" was an inbound-only capture; see §11 below |
 | **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; in CLI (`set-brightness`). VM sent nothing because the slider is a no-op under the VM. |
-| **DC-coupling** | `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on` | opcode `0x12` / param `0x26` / value 0-1 @17 | **DECODED (native macOS, 2026-09-01); HW round-trip confirmed 2026-09-02 (user, via webui)** -- talkback fast/normal/safe modes in the same capture sent nothing |
+| **DC-coupling** | `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on` | opcode `0x12` / param `0x26` / value 0-1 @17 | **DECODED (native macOS, 2026-09-01); write effect observed 2026-09-02, no device-side readback** -- talkback fast/normal/safe modes in the same capture sent nothing |
 
 So the Settings window is a genuine mix: output levels/mute, the three
 trims, surround-EQ pre/post, screen brightness, **the oscillator panel**
@@ -1482,9 +1491,11 @@ just re-send `0x87` frames. `params.surround_monitor` +
 
 `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on`: the DC-coupling
 toggle is `SET_GLOBAL` (opcode `0x12`), param **`0x26`**, value `0`/`1`.
-**Hardware round-trip confirmed 2026-09-02** (user, via the webui
-`POST /api/dc-coupling`): the toggle does what it should on the outputs.
-No `0x73` readback, so state is tracked client-side.
+The write effect was observed on the outputs through the webui on 2026-09-02
+(`POST /api/dc-coupling`), but this was not a device-side round-trip: no
+`0x73` or other reply byte was found, and the webui tracks state client-side.
+Under the profile evidence rule this remains an unconfirmed write until a
+dated write/readback/restore witness is captured.
 No `0x73` readback. The **talkback latency modes** (fast / normal / safe)
 in the same capture sent **nothing** -- host-side, or a path not on this
 interface. **That negative is trustworthy**, unusually: the *same* capture
@@ -1585,11 +1596,12 @@ d4 05 <mix> <ch> <fader> <pan|flags> <send>
 | 18 | **mix** | 0 = Mix 1 (1/2/3 = Mix 2/3/4 presumed; only 0 captured) |
 | 19 | **channel** | 0 = master; 1-32 = input strips (each mix has 32 input strips) |
 | 20 | **fader** | attenuation in dB: `0` = 0 dB / unity … `90` = −90 dB |
-| 21 | **pan + flags** | bits 0-5 = pan: `0x02` = L30, `0x20` = centre, `0x3e` = R30 (raw = `0x20` + degrees); bit `0x40` = **mute**; bit `0x80` = **solo** |
+| 21 | **pan + flags** | bits 0-5 = signed logical pan `-30..30`: `0x02` = L30, `0x20` = centre, `0x3e` = R30 (raw = `0x20` + degrees); bit `0x40` = **mute**; bit `0x80` = **solo** |
 | 22 | **send** | Mix 1 input-strip AuraVerb send, inverted `0`-`96` (`0` = 0 dB, `96` = −∞) |
 
 One frame per `(mix, channel)` strip; it carries the whole strip state
-every time. Confirmed from `macos-mix1-send-pan-fader-mute-solo-link`
+every time. The fader, pan, send, mute, and solo controls are fields of this
+single `0xd4` frame, not five independent wire shapes. Confirmed from `macos-mix1-send-pan-fader-mute-solo-link`
 (2026-08, native macOS): send / pan / fader sweeps each moved exactly one
 byte 1:1; mute → `[21] |= 0x40`; solo → `[21] |= 0x80`.
 
@@ -1842,17 +1854,17 @@ parameter writes remain observation-only/forbidden under `SCOPE.md`.
 | Item | Status |
 |---|---|
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. Open: wire `route` writes for the other 9 destinations. |
-| Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(0x20=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number), decoded + hardware-verified; `mix-status` / `mix-set` in the CLI. (`0x1b` was once thought to be its bus-level table -- it is the surround global readback instead, §11; bus levels are `0x73` `bus_block`.) |
+| Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(signed `-30..30`, raw `0x20`=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number), decoded + hardware-verified; `mix-status` / `mix-set` in the CLI. Restore-guaranteed live round-trip 2026-09-14 changed Mix 4 channel 32 to -30 dB and restored it. (`0x1b` was once thought to be its bus-level table -- it is the surround global readback instead, §11; bus levels are `0x73` `bus_block`.) |
 | Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Current state readback is category `0x16`, index 0: eight `{target, emu_model, ch_swap, pattern}` records. The write frame still has no verified write/readback round-trip. Preamps 5-6 CAPTURED 2026-09-03 (webUI usbmon, `webui-emumic-preamp56-...`): `[18]=0x00`/`0x01` on the wire, pair = link pair 2, disable reverses phantom+gain+link. Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position. |
 | ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Open: does one space-0 command link pair N in *both* physical and ADAT? Needs different per-channel gains or a hardware test |
 | ~~Pan law~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x24` / 0-3 = -6/-3/-4.5/0 dB (`panning-law-6-3-45-0`). No readback. CLI `pan-law`. |
 | ~~Clock source~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x04` / 0-6 (Oven / WC / ADAT / ADATx2 / ADATx4 / S/PDIF / USB). Readback `0x73` @19 — which also explains the `0x73` @19 startup blip (USB→saved source re-lock). CLI `clock-source`. |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
-| Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. |
+| Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. Restore-guaranteed live round-trip 2026-09-14: `17 -> 40 -> 17`. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, and masks; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, and keeps modes raw. The WebUI allows normal global format writes only for 2.0/2.1; `tools/surround_format_selftest.py` directly round-tripped all profile-derived layouts on 2026-09-12 and restores the original state. |
-| DC-coupling | **resolved** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side) |
+| DC-coupling | **decoded; write effect observed 2026-09-02, no device-side readback** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side). A dated write/readback/restore capture is still needed before calling the write confirmed. |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Readback category `0x19` now maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding (slot-index vs instance id, 2 data points); bypass polarity; whether the `0x19` type/instance values fully match the Launcher’s plugin catalogue. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
