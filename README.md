@@ -61,6 +61,17 @@ in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
 
+### Evidence rule for write claims
+
+For profile-audit purposes, a writable parameter may be marked `confirmed` only
+when its evidence records a dated, model-local write, a device-side readback
+showing the before/after value, and restoration of the original value. Vendor
+software traffic, UI or audio behaviour, and an undifferentiated moving byte do
+not by themselves constitute a readback witness. Observed channel indices may
+confirm membership, but the maximum safe index remains derived until an
+out-of-range probe is performed; clients must not probe one casually because a
+sibling device faults hard on an invalid index.
+
 ## Legal status & disclaimer
 
 This is an independent interoperability project. It is **not affiliated
@@ -528,8 +539,10 @@ different things depending on which param you're setting:
   `1`=headphone 1, `2`=headphone 2, `3`=line out, `4`=reamp, `5`=monitor B.
   Ids 3/4 turned out to be the settings-tab Line and Reamp output levels
   (not the headphone-3/4 that was previously guessed). `bus_dim`/`bus_mono`
-  weren't exercised on 3/4 and may not apply to a line/reamp out;
-  `bus_mute` is confirmed on 3 only. The Orion III has **two** physical
+  were restore-guaranteed live-round-tripped on all six ids on 2026-09-14,
+  including Line and Reamp; bus 1 was temporarily moved off the raw-96 silent
+  endpoint so its status marker could be tested. `bus_mute` is confirmed on 3
+  only. The Orion III has **two** physical
   reamp outputs (Reamp 1 / Reamp 2 -- separate mono outs for two guitar
   amps); bus 4 is one shared "Reamp" level slider, whether Reamp 1/2 have
   independent levels is untested.
@@ -676,7 +689,10 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   bus ids `3` and `4` are the settings-tab **Line** and **Reamp** output
   levels -- confirmed in `settings-linevol-mute-reampvol-toggle` via full
   `bus_level` sweeps (readback offsets 37 and 40) plus a `bus_mute` toggle
-  on bus 3. All 6 bus slots are now identified; see "Buses vs. channels".
+  on bus 3. A restore-guaranteed self-test on 2026-09-14 also toggled
+  `bus_dim` and `bus_mono` on all six bus ids, including Line and Reamp, and
+  restored every flag and level. All 6 bus slots are now identified; see
+  "Buses vs. channels".
   The endpoint meaning is device-confirmed: Monitor A reads raw `0` at
   maximum (`0 dB`) and raw `96` at minimum (`-inf`); the command/state byte
   itself is unchanged.
@@ -955,7 +971,9 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   oscillator *into an output* is the `0x53` routing frame, source bank
   `0x0c` (`params.oscillator`, `params.routing`).
 - **DC-coupling** -- `SET_GLOBAL` (`0x12`), param `0x26`, value 0/1.
-  Talkback fast/normal/safe latency modes send nothing (host-side) -- a
+  A live WebUI check on 2026-09-14 confirmed device readback at `0x73` byte
+  93 bit 0: Off -> On moved `0x00 -> 0x01`, and On -> Off restored `0x00`.
+  Talkback fast/normal/safe latency modes still send nothing (host-side) -- a
   trustworthy negative, since the same capture carried DC-coupling's OUT
   frames. Thunderbolt/buffer settings are *probably* host driver only, but
   that rests on a capture that cannot be trusted -- see `PROTOCOL.md` §11.
