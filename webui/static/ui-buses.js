@@ -1,9 +1,9 @@
 "use strict";
 
 // ---- buses -----------------------------------------------------------
-// bus_level is ATTENUATION: 0 = 0 dB (loudest), 96 = -96 dB (silent). The
-// slider runs the natural way round (right = louder), so slider = 96 - level.
-const dbLabel = att => (att <= 0 ? '0 dB' : '−' + att + ' dB');
+// Device-confirmed output-bus attenuation: raw 0 = 0 dB (maximum/unity),
+// raw 1..95 = -N dB, and raw 96 = -∞ (silent).
+const busLevelLabel = raw => raw >= 96 ? '−∞' : raw <= 0 ? '0 dB' : `−${raw} dB`;
 
 // Monitor A / Monitor B get a rotary instead of a slider. The face is lifted
 // verbatim from assets/mon-knob.svg -- a spun-aluminium look built from a white
@@ -14,7 +14,9 @@ const dbLabel = att => (att <= 0 ? '0 dB' : '−' + att + ' dB');
 // prefixed per instance. viewBox is the source's own 0 0 27.2 27.2, centre
 // (13.6, 13.6). Only <g data-rot> (the indicator) turns -- the face is static
 // so its raster is cached.
-// frac 0 (silent) .. 1 (0 dB) -> 300 deg sweep, dead zone at the bottom.
+// The artwork's -150..150 sweep agrees with the attenuation scale: raw 96
+// (silence) starts at the low end and raw 0 (0 dB) ends at the high end.
+// Raw values are used directly for labels and writes.
 const VK_A0 = -150, VK_SWEEP = 300, VK_C = '13.6 13.6';
 const busIsMon = b => /^monitor/i.test(b.name || '');
 // Line Out + Reamp live in the settings panel (the gear), matching where the
@@ -45,20 +47,19 @@ const vknobHTML = svg => `
         <button class="btn" data-bdim>DIM</button>
         <button class="btn" data-bmono>MONO</button>
       </div>`;
-function paintMonKnob(el, att) {
-  const frac = Math.max(0, Math.min(1, (96 - att) / 96));
+function paintMonKnob(el, level) {
+  const frac = Math.max(0, Math.min(1, (96 - level) / 96));
   el.querySelector('[data-rot]').setAttribute(
     'transform', `rotate(${(VK_A0 + frac * VK_SWEEP).toFixed(1)} ${VK_C})`);
-  el.querySelector('[data-lvlval]').textContent = dbLabel(att);
+  el.dataset.busLevel = String(level);
+  el.querySelector('[data-lvlval]').textContent = busLevelLabel(level);
 }
 // optimistic value while the user turns the knob (see PENDING for preamps)
 const MON_PENDING = {}, MON_PENDING_TTL = 2500;
 function wireMonKnob(el, bus) {
   const knob = el.querySelector('[data-vknob]');
   let dragging = false, startY = 0, startAtt = 0, live = 0, sendTimer = null, lastSent = 0;
-  // text is '0' or '−53' (U+2212, not ASCII '-'); att is always >= 0 so just
-  // pull the digits out.
-  const curAtt = () => parseInt(el.querySelector('[data-lvlval]').textContent.replace(/\D/g, ''), 10) || 0;
+  const curAtt = () => Number(el.dataset.busLevel) || 0;
   const clampNow = () => (live = Math.max(0, Math.min(96, Math.round(live))));
   const sendNow = () => {
     clearTimeout(sendTimer); sendTimer = null;
@@ -84,7 +85,7 @@ function wireMonKnob(el, bus) {
   });
   knob.addEventListener('pointermove', e => {
     if (!dragging) return;
-    live = startAtt + (e.clientY - startY) * (96 / KNOB_DRAG_PIXELS);   // drag down = quieter
+    live = startAtt + (e.clientY - startY) * (96 / KNOB_DRAG_PIXELS); // drag down = quieter
     applyLive(); queueSend();
   });
   const stop = () => {
@@ -133,11 +134,11 @@ function buildBuses(buses) {
       ${outputMeter}
       <div class="row">
         <input type="range" data-lvl min="0" max="96" value="${96 - b.level}">
-        <span class="val" data-lvlval>${dbLabel(b.level)}</span>
+        <span class="val" data-lvlval>${busLevelLabel(b.level)}</span>
         ${canMute ? `<button class="btn" data-bmute>MUTE</button>` : ''}
       </div>`;
       el.querySelector('[data-lvl]').addEventListener('input', e =>
-        el.querySelector('[data-lvlval]').textContent = dbLabel(96 - +e.target.value));
+        el.querySelector('[data-lvlval]').textContent = busLevelLabel(96 - +e.target.value));
       el.querySelector('[data-lvl]').addEventListener('change', e =>
         post('/api/bus', {bus: b.bus, level: 96 - +e.target.value}));
       const bm = el.querySelector('[data-bmute]');
@@ -158,10 +159,13 @@ function applyBuses(buses) {
     if (r) {                                    // slider bus
       if (document.activeElement !== r) {
         r.value = 96 - b.level;
-        el.querySelector('[data-lvlval]').textContent = dbLabel(b.level);
+        el.querySelector('[data-lvlval]').textContent = busLevelLabel(b.level);
       }
       const bm = el.querySelector('[data-bmute]');
-      if (bm) bm.classList.toggle('on', !!b.mute);
+      if (bm) {
+        bm.classList.toggle('on', !!b.mute);
+        bm.title = b.mute_ambiguous ? 'Mute state is ambiguous at the silent endpoint' : '';
+      }
       return;
     }
     const p = MON_PENDING[b.bus];               // monitor rotary
@@ -169,7 +173,10 @@ function applyBuses(buses) {
     if (!MON_PENDING[b.bus] && !el.classList.contains('dragging')) paintMonKnob(el, b.level);
     ['mute', 'dim', 'mono'].forEach(param => {
       const btn = el.querySelector(`[data-b${param}]`);
-      if (btn) btn.classList.toggle('on', !!b[param]);
+      if (btn) {
+        btn.classList.toggle('on', !!b[param]);
+        if (param === 'mute') btn.title = b.mute_ambiguous ? 'Mute state is ambiguous at the silent endpoint' : '';
+      }
     });
   });
 }

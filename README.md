@@ -148,6 +148,7 @@ tools/hid_probe.py             <- dump the HID report descriptor + probe for a r
 tools/selftest.py              <- round-trip self-test against real hardware via the readback (read-only by default, --write for restore-guaranteed writes)
 tools/surround_eq_selftest.py  <- bounded Surround EQ readback and one-field experimental write/restore test
 tools/surround_format_selftest.py <- bounded Surround format readback and reversible format write probes
+tools/surround_eq_position_selftest.py <- Surround EQ PRE/POST readback and one-bit write/restore probe
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
 captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
@@ -380,7 +381,8 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 
 - one frame per `(mix 0-3, channel 1-32)` strip, carrying **fader**
   (0 dB … −90 dB), **pan** (−30 … +30, centre `0x20`), **mute** (`[21]`
-  bit 6), **solo** (`[21]` bit 7), and **send** (0 … 96, 96 = 0 dB).
+  bit 6), **solo** (`[21]` bit 7), and **send** (0 … 96, 0 = 0 dB and
+  96 = −∞).
 - soloing a channel makes the Launcher re-send all 32 strips (that's how
   we know each mix has 32 inputs).
 - **mix channel link** = `SET_LINK` with a new `space` byte `0x03`
@@ -536,9 +538,10 @@ Don't mix the two up -- `set-gain 5 10` and `set-bus-level 5 60` both use
 "5" but mean completely different things (physical channel 6 vs. Monitor B).
 
 **Reading `bus_mute` back:** the bus status byte's `0x04` bit is set both
-by an explicit mute *and* whenever that bus sits at `bus_level == 96` (max)
--- reproduced on buses 0, 3 and 4. A bus-status reader must check the
-level: at 96, `0x04` means "at max", not necessarily muted.
+by an explicit mute *and* whenever that bus sits at `bus_level == 96`
+(the silent / maximum-attenuation endpoint) -- reproduced on buses 0, 3 and
+4. A bus-status reader must check the level: at 96, `0x04` means "at the
+silent endpoint", not necessarily muted.
 
 ## Adding a new param (e.g. routing)
 
@@ -666,13 +669,17 @@ profile; `set-mode <ch> hiz` on ch 5-12 now refuses unless you pass `--force`).
 As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
 
 - **Output buses are confirmed.** Monitor A, Monitor B, Headphone 1, and
-  Headphone 2 each have a `bus_level` (0-96, 0=-inf, 96/0x60=0dB) plus
+  Headphone 2 each have a `bus_level` (0-96, 0/0x00=0dB maximum,
+  96/0x60=-inf/silent) plus
   `bus_dim`/`bus_mute`/`bus_mono` booleans, all readable back from a new
   `bus_block` in the state report (see `bus-status`). **Update (2026-08):**
   bus ids `3` and `4` are the settings-tab **Line** and **Reamp** output
   levels -- confirmed in `settings-linevol-mute-reampvol-toggle` via full
   `bus_level` sweeps (readback offsets 37 and 40) plus a `bus_mute` toggle
   on bus 3. All 6 bus slots are now identified; see "Buses vs. channels".
+  The endpoint meaning is device-confirmed: Monitor A reads raw `0` at
+  maximum (`0 dB`) and raw `96` at minimum (`-inf`); the command/state byte
+  itself is unchanged.
 - **Channel link syncs gain, phantom, AND phase_invert live -- but not mode.**
   `set-link <channel> on/off` sends a real, verified command (a distinct
   opcode/frame from everything else -- see `frame.link_command` in the
@@ -774,12 +781,15 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
     `mark-link <channel> on/off` command to tell it (updates only the
     cache, sends nothing to the device) so `set-gain`/etc. mirror correctly
     afterward.
-- **Resolved (2026-08):** the "unexplained" `mute` status bit that flipped
-  on by itself when `bus_level` hit 96 in the monitor-A capture is real and
+- **Resolved (2026-08; endpoint semantics confirmed on the device
+  2026-09-14):** the "unexplained" `mute` status bit that flipped on by
+  itself when `bus_level` hit 96 in the monitor-A capture is real and
   reproducible -- `settings-linevol-mute-reampvol-toggle` sweeps buses 3
-  and 4 to max repeatedly and the `0x04` bit tracks `level == 96` exactly,
-  every pass. So the bit means "muted **or** at max level"; a bus-status
-  reader must special-case `level == 96`. See `params.bus_mute` and
+  and 4 to the silent endpoint repeatedly and the `0x04` bit tracks
+  `level == 96` exactly, every pass. So the bit means "muted **or** at the
+  silent endpoint"; a bus-status reader must special-case `level == 96`.
+  The connected device was read at both endpoints: Monitor A reported raw 0
+  at maximum volume and raw 96 at minimum volume. See `params.bus_mute` and
   `unresolved_state_offsets` in the profile.
 - A single-byte state-report change at **offsets 17 and 19** (seen once
   in the original vumeter-test-ch1 session) turned up again in two later,
@@ -851,7 +861,7 @@ later if wanted). Full details in `profiles/orion_studio_sc.json` --
 |---|---|---|---|
 | Talkback button (hold-to-talk) | `0x12` / `0x1f` | value@17: 1=press, 0=release | offset 73, bit 6 (`0x40`) |
 | Talkback source | `0x12` / `0x27` | index@17: **0 = INT** (built-in talkback mic, the one behind the unit's physical TB button), **1-12 = preamps 1-12** | offset 73, **bits 0-1 only** (`source & 3`) |
-| Talkback gain (per source) | `0x12` / `0x20` | value@17: 0-96 (same scale as `bus_level`) | offset 74 (selected source's gain) |
+| Talkback gain (per source) | `0x12` / `0x20` | value@17: raw 0-96 (dB direction not independently confirmed) | offset 74 (selected source's gain) |
 | Talkback destination assign | `0x13` / `0x5d` | dest 0-3 @17, on/off @18 | offset 73, bits 2-5 (dest N = bit N+2) |
 
 Key takeaways:
@@ -957,9 +967,10 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   2026-09-03 from the `srrnd-*` captures. **Both read back** (found
   2026-09-04): global = readback category `0x1b`, per-speaker EQ =
   category `0x1a`. The CLI decodes both readbacks, and the WebUI Surround tab
-  polls both categories. Its verified 2.0 global delay/level path performs a
-  fresh read-modify-write; other global controls and per-speaker delay/level/
-  phase remain read-only. The WebUI exposes the experimental per-speaker EQ
+  polls both categories. Its 2.0/2.1 global delay/level and format paths
+  perform a fresh read-modify-write; EQ PRE/POST is a confirmed one-bit global
+  write. Other global controls and per-speaker delay/level/phase remain
+  read-only. The WebUI exposes the experimental per-speaker EQ
   path one field at a time, using a fresh read-modify-write that preserves the
   complete record. `tools/surround_eq_selftest.py` can read all 16 records or,
   with explicit confirmation, probe one frequency, Q, gain, or raw mode byte
@@ -970,8 +981,11 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
 no toggle (`params.surround_speaker` *is* the RC interface). The global format
 wire path was subsequently round-tripped through **9.1.6** on the connected
 Orion Studio III; the WebUI still exposes only **2.0 / 2.1** until the
-licence-dependent vendor behavior is better understood. See
-`params.surround_monitor` + `params.surround_speaker`.
+licence-dependent vendor behavior is better understood. The Bass Management
+popup displays only the active strips; 2.1 is ordered L · R · LFE with fixed
+strip widths. Its bounded experimental writes cover crossover cutoffs, filter
+order, bypass, fader, and mute; link, filter type, solo, and meter mappings
+remain guarded. See `params.surround_monitor` + `params.surround_speaker`.
 
 For a targeted hardware probe, stop the WebUI first so it releases the HID
 device, then run the dedicated self-test. It reads all speakers by default:
@@ -991,6 +1005,15 @@ python3 tools/surround_eq_selftest.py --write --speaker 0 --band 3 --parameter g
 Frequency and Q use Hz and the Q value shown by the UI; gain uses dB. Mode is
 accepted only as a raw byte because its end-band labels are not fully proven.
 
+The global EQ position can be independently read and round-tripped with:
+
+```
+python3 tools/surround_eq_position_selftest.py --write --confirm-experimental-write
+```
+
+The probe toggles PRE/POST, verifies category `0x1b`, and restores the original
+complete global state.
+
 ### Connect handshake & routing readback -- resolved (2026-08, native macOS)
 
 Four native-macOS captures of the Launcher connecting to the device
@@ -1003,16 +1026,18 @@ were recorded with **deliberately different LineOut routing** -- preamp
 - **The whole host->device connect handshake is one frame:**
   `SET_PARAM(param 0x49, channel 1, value 0)`. Present in all four macOS
   captures *and* in the older Windows `AntelopeINIT.tsv` -- cross-platform
-  confirmed. The device replies with the `0x74` topology enumeration
-  burst and normal `0x73`/`0x75` polling. In `on2` the Launcher also sent
+  confirmed. The Launcher also sends the `0x74` topology/readback query
+  burst; the device answers those queries with `0x75` responses while normal
+  `0x73`/`0x75` polling continues. In `on2` the Launcher also sent
   a short `SET_PARAM(gain 0x50)` sequence -- the user nudging gain sliders
   to force the buggy Launcher to flush state, not handshake or device
   behaviour.
-- **The routing readback is not at connect** (but it exists -- see the
-  cross-machine evidence under "Routing matrix" above). Diffing the on2
-  vs on3 connect sequences byte-for-byte: the `0x74` enumeration is
-  identical, the USB descriptors are identical, the final `0x73` state
-  report differs only in one preamp-gain byte and meter noise, and there
+- **The routing readback is present at connect.** The `0x74` routing queries
+  are identical between the on2/on3 captures, but their corresponding
+  `0x75` category-`0x03` responses contain the deliberately different routes.
+  Earlier analysis compared the requests and filtered the responses as meter
+  traffic. The USB descriptors are identical, the final `0x73` state report
+  differs only in one preamp-gain byte and meter noise, and there
   is no `0x53` frame in either direction. So the readback fires later --
   prime suspect: opening the routing-matrix *tab* (these captures only
   watched the connect).
@@ -1022,7 +1047,7 @@ were recorded with **deliberately different LineOut routing** -- preamp
   the Windows TSV layout -- use **`tools/scan_macos_capture.py`** for
   these (see `CAPTURING.md`).
 
-### Current meter status (2026-09-09)
+### Current meter status (2026-09-12)
 
 Physical-input raw meters use `0x73` full-report bytes **221–232**. Their
 dBFS calibration and separate clip indication remain unknown; the old
@@ -1034,6 +1059,18 @@ restore-safe test confirmed all four mixer-window selections:
 `@156+N`), while the separate Meters-window selections 21..24 gate a second
 copy at `@125..156` (strip N is `@124+N`). The selectors read back at
 `0x73[122]` and `[121]` respectively.
+
+**Surround meters are now mapped.** A restore-safe direct-HID sweep temporarily
+selected the already-probed 9.1.6 layout, routed Oscillator 1 directly to each
+of the 16 `Surround In` channels, and read only free-running `0x75` reports
+with byte `[1] = 0x1f`. Both selector 25 (`Surround In`) and selector 9
+(`Surround Out`) expose the same primary one-byte bank: Surround channel N is
+at full-report offset `@33 + N`, or `@34..@49` for channels 1..16. Raw `96`
+is silence and active test samples reached approximately raw `18`; this is
+not yet a calibrated dB scale. The `0x73` virtual-mixer meters were excluded.
+Weaker changes around `@50..@52` remain unresolved auxiliary candidates and
+are not part of the per-channel map. The original format, routing, selector,
+and oscillator mute state were restored after the test.
 
 The physical Preamp 1 tone was observed at `0x73 @221` (raw 18, reaching 0
 at louder moments); the other physical preamps, emuMic, Computer Playback,
@@ -1098,8 +1135,8 @@ profiles/orion_studio_sc.json meter` while making noise into a channel to see
 it live.
 
 **Capture format matters.** Wireshark's plain-text/"Copy as Text" export
-only exposes ~111 of each 320-byte report's bytes, which is why the meter
-report above is still unconfirmed. Always use `tshark -x`, or better, the
+only exposes ~111 of each 320-byte report's bytes, which is why early raw-byte
+meter claims remained unconfirmed. Always use `tshark -x`, or better, the
 whole-session `-T fields` dump described in `CAPTURING.md` (that's what all
 of the mona/monb/hp1/hp2/chlink captures used, and it's also what let
 `tools/scan_capture.py` find every transition automatically instead of

@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const {ROOT: root, JS_FILES, readWebUISource} = require('./webui_sources.cjs');
 const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
 const surroundCss = fs.readFileSync(path.join(root, 'webui/static/surround.css'), 'utf8');
+const busSource = fs.readFileSync(path.join(root, 'webui/static/ui-buses.js'), 'utf8');
 const sourceFiles = [...html.matchAll(/<script src="\/webui\/static\/([^"]+)"><\/script>/g)]
   .map(match => match[1].split('?')[0]);
 assert.deepEqual(sourceFiles, JS_FILES);
@@ -18,6 +19,33 @@ assert.match(surroundCss, /\.surround-eq-legend/);
 assert.match(surroundCss, /\.surround-eq-reset \{[^}]*flex:0 0 auto;[^}]*width:max-content/);
 assert.match(surroundCss, /\.surround-eq-number-row/);
 assert.match(surroundCss, /\.surround-eq-unit/);
+assert.match(surroundCss, /\.bass-board \{/);
+assert.match(surroundCss, /\.bass-group-lfe \{[^}]*--bass-color/);
+assert.match(surroundCss, /\.bass-strip::before/);
+assert.match(surroundCss, /\.bass-order-control/);
+assert.match(surroundCss, /grid-template-columns:var\(--bass-rail-width\) repeat\(var\(--bass-count\),var\(--bass-strip-width\)\)/);
+assert.match(surroundCss, /--bass-strip-width:64px/);
+assert.match(surroundCss, /\.bass-knob \{[^}]*width:32px; height:32px/);
+assert.match(surroundCss, /\.bass-knob-control \.mixer-readout \{[^}]*min-width:0/);
+assert.match(surroundCss, /\.bass-knob input:disabled \{[^}]*opacity:0/);
+assert.doesNotMatch(surroundCss, /\.bass-knob input:disabled, \.bass-order-control/);
+assert.match(surroundCss, /\.surround-eq-mode-button \{/);
+assert.match(surroundCss, /\.surround-eq-mode-button img \{/);
+assert.match(surroundCss, /\.bass-popup-body \{/);
+assert.match(surroundCss, /\.surround-bass-popup-page \{/);
+assert.match(busSource, /raw 0 = 0 dB \(maximum\/unity\)/);
+assert.match(busSource, /raw 1\.\.95 = -N dB, and raw 96 = -∞ \(silent\)/);
+assert.match(busSource, /value="\$\{96 - b\.level\}"/);
+assert.match(busSource, /post\('\/api\/bus', \{bus: b\.bus, level: 96 - \+e\.target\.value\}\)/);
+assert.match(busSource, /const frac = Math\.max\(0, Math\.min\(1, \(96 - level\) \/ 96\)\)/);
+assert.match(busSource, /Raw values are used directly for labels and writes/);
+assert.match(busSource, /live = startAtt \+ \(e\.clientY - startY\)/);
+assert.match(busSource, /live = curAtt\(\) \+ Math\.sign\(e\.deltaY\)/);
+const busLabelContext = vm.createContext({});
+vm.runInContext(busSource.slice(0, busSource.indexOf('// Monitor A')), busLabelContext);
+assert.equal(vm.runInContext('busLevelLabel(0)', busLabelContext), '0 dB');
+assert.equal(vm.runInContext('busLevelLabel(48)', busLabelContext), '−48 dB');
+assert.equal(vm.runInContext('busLevelLabel(96)', busLabelContext), '−∞');
 const js = readWebUISource();
 const profile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/orion_studio_sc.json')));
 const zenProfile = JSON.parse(fs.readFileSync(path.join(root, 'profiles/zen_go_sc.json')));
@@ -37,6 +65,8 @@ assert.match(js, /function surroundEqDefaultValue\(input/);
 assert.match(js, /data-surround-eq-number/);
 assert.match(js, /function surroundEqSnap\(value/);
 assert.match(js, /function postSurroundEqInput\(input\)/);
+assert.match(js, /function openSurroundBassWindow\(\)/);
+assert.match(js, /window\.open\('', 'antelopeBassManagement'/);
 assert.match(js, /data-logarithmic="true"/);
 assert.match(js, /Math\.exp\(Math\.log\(value\)/);
 assert.match(js, /input\.addEventListener\('dblclick'/);
@@ -144,7 +174,7 @@ const surroundBands = Array.from({length: 16}, (_, index) => ({
   freq_hz: 30 + index * 100,
   q: 0.71,
   gain_db: index - 8,
-  mode: index === 0 ? 0 : 2,
+  mode: index === 0 ? 0 : index === 15 ? 1 : 2,
 }));
 const surroundData = {
   speaker_count: 16,
@@ -159,12 +189,43 @@ const surroundHTML = surroundContext.surroundSpeakerHTML(surroundData);
 assert.equal((surroundHTML.match(/class="surround-band"/g) || []).length, 16);
 assert.equal((surroundHTML.match(/class="mixer-knob surround-knob"/g) || []).length, 48);
 assert.equal((surroundHTML.match(/class="surround-eq-mode"/g) || []).length, 16);
+assert.equal((surroundHTML.match(/class="surround-eq-mode-button"/g) || []).length, 16);
+assert.equal((surroundHTML.match(/srrndeq-bttn-bg\.svg/g) || []).length, 16);
+assert.match(surroundHTML, /srrndeq-bttn-lshelvingdown\.svg/);
+assert.match(surroundHTML, /srrndeq-bttn-hshelvingup\.svg/);
+assert.match(surroundHTML, /srrndeq-bttn-belldown\.svg/);
+assert.match(surroundHTML, /srrndeq-bttn-flat\.svg/);
+assert.match(surroundHTML, /srrndeq-bttn-bellup\.svg/);
 assert.match(surroundHTML, /16-band EQ · single view/);
 assert.match(surroundHTML, /<strong>1<\/strong>/);
 assert.doesNotMatch(surroundHTML, /<strong>BAND /);
 assert.match(surroundHTML, /<span>F<\/span><span>G<\/span><span>Q<\/span>/);
+assert.doesNotMatch(surroundHTML, /data-surround-eq-field="mode"/);
 assert.equal((surroundHTML.match(/class="mixer-knob-label"/g) || []).length, 0);
+assert.equal(surroundContext.surroundEqStateName(-1, 0, 0), 'lshelvingdown');
+assert.equal(surroundContext.surroundEqStateName(1, 0, 0), 'lshelvingup');
+assert.equal(surroundContext.surroundEqStateName(0, 0, 4), 'hpf');
+assert.equal(surroundContext.surroundEqStateName(-1, 15, 1), 'hshelvingdown');
+assert.equal(surroundContext.surroundEqStateName(1, 15, 1), 'hshelvingup');
+assert.equal(surroundContext.surroundEqStateName(0, 15, 3), 'lpf');
+assert.equal(surroundContext.surroundEqStateName(-1, 4, 2), 'belldown');
+assert.equal(surroundContext.surroundEqStateName(0, 4, 2), 'flat');
+assert.equal(surroundContext.surroundEqStateName(1, 4, 2), 'bellup');
+assert.equal(surroundContext.surroundEqStateName(-1, 0, 2), 'belldown');
+assert.equal(surroundContext.surroundEqModeValues(2, 0).join(','), '2');
 assert.ok(surroundContext.surroundEqSigma(10) < surroundContext.surroundEqSigma(0.5));
+const lowShelf = [{index: 0, frequency: 100, q: 0.71, gain: 6, mode: 0}];
+const highShelf = [{index: 15, frequency: 1000, q: 0.71, gain: 6, mode: 1}];
+const highPass = [{index: 0, frequency: 1000, q: 0.71, gain: 0, mode: 4}];
+const lowPass = [{index: 15, frequency: 1000, q: 0.71, gain: 0, mode: 3}];
+assert.ok(surroundContext.surroundEqResponseAt(lowShelf, 20)
+  > surroundContext.surroundEqResponseAt(lowShelf, 2000));
+assert.ok(surroundContext.surroundEqResponseAt(highShelf, 20000)
+  > surroundContext.surroundEqResponseAt(highShelf, 20));
+assert.ok(surroundContext.surroundEqResponseAt(highPass, 20)
+  < surroundContext.surroundEqResponseAt(highPass, 20000));
+assert.ok(surroundContext.surroundEqResponseAt(lowPass, 20)
+  > surroundContext.surroundEqResponseAt(lowPass, 20000));
 const graphBands = [
   {freq_hz: 100, q: 10, gain_db: 6, mode: 2},
   {freq_hz: 5000, q: 0.5, gain_db: -3, mode: 2},
@@ -175,7 +236,7 @@ const curve = surroundContext.surroundEqCurvePoints(graphBands.map((band, index)
 assert.equal(curve[0].frequency, 20);
 assert.equal(curve[curve.length - 1].frequency, 20000);
 const graphHTML = surroundContext.surroundEqGraph({bands: graphBands});
-assert.match(graphHTML, /Q-shaped gain estimate from readback/);
+assert.match(graphHTML, /Approximate EQ response from readback/);
 assert.match(graphHTML, /surround-eq-area" d="M 42 /);
 assert.match(graphHTML, / L 948 [^ ]+ L 42 /);
 const resetPreset = {
@@ -201,9 +262,11 @@ const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
   ...surroundData, write: {enabled: false, eq: {enabled: true, reset: resetPreset}},
 });
 assert.match(writableSurroundHTML, /experimental write · one field at a time/);
-assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 64);
+assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 48);
 assert.equal((writableSurroundHTML.match(/class="mixer-readout surround-eq-number"/g) || []).length, 48);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-number/g) || []).length, 48);
+assert.equal((writableSurroundHTML.match(/data-surround-eq-mode/g) || []).length, 48);
+assert.equal((writableSurroundHTML.match(/class="surround-eq-mode-button"[^>]* disabled/g) || []).length, 14);
 assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-input[^>]* disabled/);
 assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-number[^>]* disabled/);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-reset/g) || []).length, 1);
@@ -215,8 +278,70 @@ const globalHTML = surroundContext.surroundGlobalHTML(surroundData);
 assert.match(globalHTML, /value="2\.0" selected/);
 assert.match(globalHTML, /value="9\.1\.6" disabled/);
 assert.equal((globalHTML.match(/data-surround-bass-open/g) || []).length, 1);
-assert.match(globalHTML, /data-surround-bass-modal/);
-assert.match(globalHTML, /Bass Management/);
+assert.doesNotMatch(globalHTML, /data-surround-bass-modal/);
+assert.match(globalHTML, /Bass management/);
+const bass20HTML = surroundContext.surroundBassPopupHTML(surroundData);
+assert.match(bass20HTML, /class="surround-bass-popup-page"/);
+assert.equal((bass20HTML.match(/class="surround-bass-dialog"/g) || []).length, 1);
+assert.equal((bass20HTML.match(/class="bass-strip /g) || []).length, 2);
+assert.match(bass20HTML, /style="--bass-count:2"/);
+assert.match(bass20HTML, /data-bass-channel="1"/);
+assert.match(bass20HTML, /data-bass-channel="3"/);
+const bass51HTML = surroundContext.surroundBassPopupHTML({
+  ...surroundData,
+  global: {...surroundData.global, format: '5.1'},
+});
+assert.equal((bass51HTML.match(/class="bass-strip /g) || []).length, 6);
+assert.match(bass51HTML, /style="--bass-count:6"/);
+assert.ok(bass51HTML.indexOf('data-bass-channel="4"')
+  < bass51HTML.indexOf('data-bass-channel="1"'));
+assert.match(bass51HTML, /class="bass-strip bass-group-lfe" data-bass-channel="4"/);
+assert.match(bass20HTML, /data-bass-field="lp_cutoff_hz"[^>]* disabled/);
+const writableBassData = {
+  ...surroundData,
+  global: {
+    ...surroundData.global,
+    format: '2.1',
+    bass_mgmt_channels: [
+      {lp_cutoff_hz: 80, hp_cutoff_hz: 80, lp_order: 0, hp_order: 0,
+        fader_db: 0, fader_mute: false},
+      {lp_cutoff_hz: 90, hp_cutoff_hz: 90, lp_order: 1, hp_order: 1,
+        fader_db: -3, fader_mute: true},
+      {lp_cutoff_hz: 100, hp_cutoff_hz: 100, lp_order: 2, hp_order: 2,
+        fader_db: 3, fader_mute: false},
+    ],
+  },
+  write: {
+    enabled: false,
+    bass: {
+      enabled: true,
+      experimental: true,
+      fader_range_db: [-60, 16],
+      fields: ['lp_cutoff_hz', 'hp_cutoff_hz', 'lp_bypass', 'hp_bypass',
+        'lp_order', 'hp_order', 'fader_db', 'fader_mute'],
+      block_count: 3,
+      note: 'known Bass Management fields',
+    },
+  },
+};
+const writableBassHTML = surroundContext.surroundBassPopupHTML(writableBassData);
+assert.equal((writableBassHTML.match(/class="bass-strip /g) || []).length, 3);
+assert.match(writableBassHTML, /data-bass-field="lp_cutoff_hz"/);
+assert.doesNotMatch(writableBassHTML, /data-bass-field="lp_cutoff_hz"[^>]* disabled/);
+assert.match(writableBassHTML, /data-bass-field="fader_db"/);
+assert.match(writableBassHTML, /data-bass-field="fader_db"[^>]*min="-60" max="16" step="0.1" value="0"/);
+assert.match(writableBassHTML, /data-bass-field="fader_db"[^>]*min="-60" max="16" step="0.1" value="-3"/);
+assert.match(writableBassHTML, /data-bass-field="fader_db"[^>]*min="-60" max="16" step="0.1" value="3"/);
+assert.match(writableBassHTML, /data-bass-field="fader_mute"/);
+assert.match(writableBassHTML, /class="bass-chip bass-order-control"/);
+assert.match(writableBassHTML, /experimental read\/write/);
+assert.ok(writableBassHTML.indexOf('data-bass-channel="4"')
+  > writableBassHTML.indexOf('data-bass-channel="1"'));
+assert.equal((writableBassHTML.match(/class="bass-link"/g) || []).length, 9);
+assert.match(writableBassHTML, /class="bass-link"[^>]* disabled/);
+assert.equal(surroundContext.surroundBassInputValue({
+  dataset: {bassField: 'fader_db'}, value: '3.5',
+}), 3.5);
 const writableGlobalHTML = surroundContext.surroundGlobalHTML({
   ...surroundData,
   write: {
@@ -229,10 +354,19 @@ const writableGlobalHTML = surroundContext.surroundGlobalHTML({
         {name: '3.0', writable: false},
       ],
     },
+    eq_position: {
+      enabled: true,
+      experimental: false,
+      fields: ['pre', 'post'],
+      note: 'EQ position is writable',
+    },
   },
 });
 assert.match(writableGlobalHTML, /data-surround-format/);
-assert.doesNotMatch(writableGlobalHTML, /<select[^>]*disabled/);
+assert.doesNotMatch(writableGlobalHTML, /<select data-surround-format[^>]*disabled/);
 assert.match(writableGlobalHTML, /value="2\.0" selected/);
+assert.match(writableGlobalHTML, /data-surround-eq-position/);
+assert.doesNotMatch(writableGlobalHTML, /data-surround-eq-position[^>]* disabled/);
+assert.match(writableGlobalHTML, /EQ position is writable/);
 assert.match(writableGlobalHTML, /value="3\.0" disabled/);
 console.log('WebUI meter rendering checks passed (12 channels, scale, colors, peak hold, missing data).');

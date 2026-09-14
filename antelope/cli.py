@@ -176,7 +176,9 @@ def fmt_bus_state(profile, s):
     if 'dim' in s:
         parts.append(f"dim={'on' if s['dim'] else 'off'}")
     if 'mute' in s:
-        parts.append(f"mute={'on' if s['mute'] else 'off'}")
+        mute = 'unknown (silent-endpoint marker)' if s.get('mute_ambiguous') \
+            else ('on' if s['mute'] else 'off')
+        parts.append(f"mute={mute}")
     if 'mono' in s:
         parts.append(f"mono={'on' if s['mono'] else 'off'}")
     return '  '.join(parts)
@@ -1553,7 +1555,8 @@ def cmd_readback(args, profile):
     if cat == proto.SURROUND_GLOBAL_READBACK_CATEGORY:
         try:
             g = proto.parse_surround_global_record(profile, body)
-            print(f"  format: {'2.1' if g['lfe_present'] else '2.0'}  "
+            format_name = proto.surround_format_name(profile, body)
+            print(f"  format: {format_name or 'unknown'}  "
                   f"EQ {'post' if g['eq_post'] else 'pre'}  "
                   f"bass-mgmt {'on' if g['bass_mgmt_on'] else 'off'}")
             print(f"  delay {g['global_delay_ms']} ms  level {g['level_db']:+.1f} dB  "
@@ -1596,7 +1599,7 @@ def cmd_bus_status(args, profile):
             continue
         print(f"{bus_id:>2}  {proto.bus_name(profile, bus_id):<12} {s['level']:>5}  "
               f"{'on' if s.get('dim') else 'off':<3} "
-              f"{'on' if s.get('mute') else 'off':<4} "
+              f"{'?' if s.get('mute_ambiguous') else ('on' if s.get('mute') else 'off'):<4} "
               f"{'on' if s.get('mono') else 'off':<4}")
     unassigned = profile.get('buses', {}).get('unassigned_ids', [])
     if unassigned:
@@ -2075,7 +2078,8 @@ def cmd_surround_status(args, profile):
     except ValueError as e:
         sys.exit(f'not decodable as a surround global record: {e}')
 
-    print(f"format: {'2.1' if g['lfe_present'] else '2.0'}  "
+    body = proto.readback_body(profile, data)
+    print(f"format: {proto.surround_format_name(profile, body) or 'unknown'}  "
           f"EQ {'post' if g['eq_post'] else 'pre'}-fader  "
           f"bass-management {'on' if g['bass_mgmt_on'] else 'off'}")
     print(f"delay: {g['global_delay_ms']} ms   level: {g['level_db']:+.1f} dB")
@@ -2380,7 +2384,7 @@ def main():
     sp.add_argument('--pan', type=int, default=None,
                     help='-30 (full left) .. 0 (centre) .. +30 (full right)')
     sp.add_argument('--send', type=int, default=None,
-                    help='send level 0-96 (96 = 0 dB). Not present on every device.')
+                    help='send attenuation 0-96 (0 = 0 dB, 96 = silent). Not present on every device.')
     sp.add_argument('--mute', choices=['on', 'off'], default=None)
     sp.add_argument('--solo', choices=['on', 'off'], default=None)
     sp.add_argument('--timeout', type=float, default=2.0)

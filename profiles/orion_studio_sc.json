@@ -130,9 +130,8 @@
                    "surround_bypass", "surround_mute", "surround_dim",
                    "surround_speaker_delay", "surround_speaker_level",
                    "surround_speaker_phase", "surround_speaker_eq"],
-      "writable_controls": ["surround_format", "surround_global_delay", "surround_level", "surround_speaker_eq"],
-      "read_only_controls": ["surround_eq_position",
-                              "surround_bass_management", "surround_bypass",
+      "writable_controls": ["surround_format", "surround_global_delay", "surround_level", "surround_eq_position", "surround_speaker_eq", "surround_bass_management"],
+      "read_only_controls": ["surround_bypass",
                               "surround_mute", "surround_dim",
                               "surround_speaker_delay", "surround_speaker_level",
                               "surround_speaker_phase"]
@@ -170,7 +169,7 @@
       "param_id_offset": 16,
       "channel_offset": 17,
       "value_offset": 18,
-      "notes": "The general-purpose 'set one param for one target' frame. Used for every per-input-channel param (gain, mode, phantom, phase), the per-bus params (bus_level/bus_dim/bus_mute/bus_mono) and talkback_dest_assign. channel_offset means different things depending on the param: a physical input index (0-11) for channel params, a bus id (0-5, all six now identified -- see 'buses') for bus params, or a talkback destination index (0-3) for talkback_dest_assign. No known GET/query opcode -- state is read passively from IN reports. magic (byte 0) 0x70 is written for family consistency; on the sibling Discrete 8 Pro byte 0 is IGNORED on outgoing commands (offset 4 / opcode is the real discriminator there), and that most likely holds for Orion too -- byte 0 as 'the magic' is a property of the INCOMING reports (0x73/0x75/0x74), not the outgoing command."
+      "notes": "The general-purpose 'set one param for one target' frame. Used for every per-input-channel param (gain, mode, phantom, phase), the per-bus params (bus_level/bus_dim/bus_mute/bus_mono) and talkback_dest_assign. channel_offset means different things depending on the param: a physical input index (0-11) for channel params, a bus id (0-5, all six now identified -- see 'buses') for bus params, or a talkback destination index (0-3) for talkback_dest_assign. State is read passively from 0x73 reports or through the separate 0x74-query/0x75-response protocol; SET_PARAM itself has no matching GET opcode. magic (byte 0) 0x70 is written for family consistency; on the sibling Discrete 8 Pro byte 0 is IGNORED on outgoing commands (offset 4 / opcode is the real discriminator there), and that most likely holds for Orion too."
     },
     "link_command": {
       "magic_offset": 0,
@@ -465,11 +464,11 @@
         "channel_order_size": 10,
         "format_flags_a_write_mask": "0x3f",
         "format_flags_b_write_mask": "0x1f",
-        "flags_a_mask": "0x5f",
-        "flags_b_mask": "0x7f",
+        "flags_a_mask": "0x1f",
+        "flags_b_mask": "0x1f",
         "formats": [
           {"name": "2.0", "flags_a": "0x02", "flags_b": "0x9f", "channel_order": [1, 3], "format_writable": true, "writable": true},
-          {"name": "2.1", "flags_a": "0x23", "flags_b": "0x82", "channel_order": [1, 3, 4], "format_writable": true, "writable": false},
+          {"name": "2.1", "flags_a": "0x23", "flags_b": "0x82", "channel_order": [1, 3, 4], "format_writable": true, "writable": true},
           {"name": "3.0", "flags_a": "0x03", "flags_b": "0x9f", "channel_order": [1, 3, 2], "format_writable": false},
           {"name": "3.1", "flags_a": "0x24", "flags_b": "0x83", "channel_order": [1, 3, 2, 4], "format_writable": false},
           {"name": "4.0", "flags_a": "0x04", "flags_b": "0x9f", "channel_order": [1, 3, 2, 5], "format_writable": false},
@@ -496,7 +495,41 @@
         "level_zero_raw": 600,
         "level_step_db": 0.1,
         "mask_offsets": [25, 27, 29],
-        "evidence": "Writable 2.0 full OUT reports: macos-captures/macos-settings-srrndeq-post-pre.pcapng SHA-256 f809a52ebbade7cda3697202e4c10e05309d139ff810a95a304fdb0870f9190a frames 2383 at 3.388074 s (report SHA-256 e7c3435ee97cb73ec3c9d937d26852fcc0e232ee9184d1be4d459273ce2b2a3f) and 3808 at 7.060227 s (report SHA-256 d3f3e25e83f6df83dfb14ec28ac866d20a22ac05be75f4652253d38afbf51930). Paired 2.0 readback: macos-captures/macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frame 17664 at 26.573382 s, report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e. Meaningful body is command offsets 18..168; captured offsets 169..319 are fixed zero padding. User-supplied full 320-byte export new/srrnd-20-21.frames.txt SHA-256 3a2ad5b8710beda965bc1fe5ff07673371cd961897d4bc957baaa88d51deac8b lines 1 at 7.248712 s and 35 at 13.730188 s supports 2.1 read-only decoding, not writes. Delay 6..45 and level 0..760 are observed head bounds only."
+        "eq_position_write": {
+          "status": "confirmed",
+          "formats": ["2.0", "2.1"],
+          "readback_offset": 1,
+          "width": 1,
+          "mask": "0x80",
+          "shift": 7,
+          "values": {"pre": 0, "post": 1},
+          "note": "Category-0x1b flags-B bit 7 is the EQ PRE/POST selector. The macos-settings-srrndeq-post-pre capture changes only command byte 19 between 0x9f and 0x1f; the earlier flags-A probe merely proved that an unrelated preserved bit could round-trip."
+        },
+        "bass_management_write": {
+          "status": "experimental-unverified",
+          "formats": ["2.1"],
+          "block_offset": 25,
+          "block_stride": 8,
+          "block_count": 3,
+          "fields": {
+            "lp_cutoff_hz": {"offset": 0, "width": 2, "mask": "0x7fff", "raw_range": [20, 320], "step": 1, "zero": 0},
+            "hp_cutoff_hz": {"offset": 2, "width": 2, "mask": "0x7fff", "raw_range": [20, 320], "step": 1, "zero": 0},
+            "lp_bypass": {"offset": 0, "width": 2, "mask": "0x8000", "shift": 15, "raw_range": [0, 1], "boolean": true},
+            "hp_bypass": {"offset": 2, "width": 2, "mask": "0x8000", "shift": 15, "raw_range": [0, 1], "boolean": true},
+            "fader_db": {"offset": 4, "width": 2, "mask": "0x1fff", "raw_range": [0, 760], "step": 0.1, "zero": 600},
+            "fader_mute": {"offset": 4, "width": 2, "mask": "0x8000", "shift": 15, "raw_range": [0, 1], "boolean": true},
+            "lp_order": {"offset": 6, "width": 1, "raw_range": [0, 2], "display_values": [2, 4, 8], "raw_values": [0, 1, 2]},
+            "hp_order": {"offset": 7, "width": 1, "raw_range": [0, 2], "display_values": [2, 4, 8], "raw_values": [0, 1, 2]}
+          },
+          "links": {
+            "enabled": false,
+            "offset": 23,
+            "width": 2,
+            "note": "The nine link bits are observed in the 0xab body, but one-control-per-click mapping is not isolated yet."
+          },
+          "notes": "Bounded one-field writes copy a fresh category-0x1b body and preserve all other global, link, and channel-block bytes. Cutoffs, bypass bits, order values, fader, and fader mute are capture-mapped; link bits, filter type, and solo remain guarded."
+        },
+        "evidence": "Writable 2.0 full OUT reports: macos-captures/macos-settings-srrndeq-post-pre.pcapng SHA-256 f809a52ebbade7cda3697202e4c10e05309d139ff810a95a304fdb0870f9190a frames 2383 at 3.388074 s (report SHA-256 e7c3435ee97cb73ec3c9d937d26852fcc0e232ee9184d1be4d459273ce2b2a3f) and 3808 at 7.060227 s (report SHA-256 d3f3e25e83f6df83dfb14ec28ac866d20a22ac05be75f4652253d38afbf51930). Paired 2.0 readback: macos-captures/macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frame 17664 at 26.573382 s, report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e. Meaningful body is command offsets 18..168; captured offsets 169..319 are fixed zero padding. User-supplied full 320-byte export new/srrnd-20-21.frames.txt SHA-256 3a2ad5b8710beda965bc1fe5ff07673371cd961897d4bc957baaa88d51deac8b lines 1 at 7.248712 s and 35 at 13.730188 s establishes the 2.0/2.1 whole-state representations; a guarded direct-HID round-trip on 2026-09-12 subsequently confirmed 2.1 writes. Delay 6..45 and level 0..760 are observed head bounds only."
       },
       "notes": "Complete-state writes preserve the 151 meaningful bytes at frame offsets 18..168 and fix the captured padding at offsets 169..319 to zero. Normal format writes currently allow only 2.0 and 2.1; higher layouts have vendor-derived channel-order candidates for guarded hardware probes. The format builder changes only channel count, crossover mode, LFE index, and packed channel order, preserving bypass, mute, dim, delay, level, and EQ/meter position bits."
     },
@@ -610,7 +643,7 @@
           "25": "Surround In"
         },
         "evidence": "meterstab-select-preamp-emumic-compplay-adatin-spdifin-mix1lr-mix2lr-mix3lr-mix4lr-surroundout-lineout-hp1-hp2-mona-monb-reamp-adatout-spdifout-afxin-mix1-mix2-mix3-mix4-surroundin.pcapng, analyzed 2026-09-09: 26 OUT frames use SET_PARAM(0x49, target=0, value=0..25), and the matching 0x73 state report echoes each value at full-report offset 121. The capture filename names 24 positions; values 19 and 20 are retained as unnamed rather than guessed. Controlled live route test completed 2026-09-09.",
-        "notes": "This is the separate Meters window's source/destination selector. LIVE-TESTED 2026-09-09: values 21..24 select a shared 32-strip bank at full-report 0x73 @125..156 (strip N = @124 + N), with the selected Mix value echoed at @121. Physical Preamp 1 remains at @221 independently. Selector values 9 and 25 also produced the same pair of free-running 0x75 lanes (@34/@50) when the signal was routed through the surround destination; selector 18 produced 0x75 @32 for AFX In. Values 10..17 produced no stable transition in either full 0x73 or 0x75 reports under a unity-bus route test. Values 19/20 remain unnamed and untested."
+        "notes": "This is the separate Meters window's source/destination selector. LIVE-TESTED 2026-09-09: values 21..24 select a shared 32-strip bank at full-report 0x73 @125..156 (strip N = @124 + N), with the selected Mix value echoed at @121. Physical Preamp 1 remains at @221 independently. A direct Oscillator 1 sweep on 2026-09-12 mapped the primary Surround bank for selectors 9 and 25 to full-report 0x75 @34..@49 (Surround channel N = @33 + N); the earlier @34/@50 observation was preliminary. Additional @50..@52 changes remain auxiliary candidates. Selector 18 produced 0x75 @32 for AFX In. Values 10..17 produced no stable transition in either full 0x73 or 0x75 reports under a unity-bus route test. Values 19/20 remain unnamed and untested."
       },
       "physical_meter_base_offset": 221,
       "physical_meter_stride": 1,
@@ -651,10 +684,20 @@
           "target": "surround_meter_path",
           "selector_values": {"9": "Surround Out", "25": "Surround In"},
           "report": "0x75",
-          "payload_offsets": [34, 50],
+          "report_discriminator": {"offset": 1, "value": "0x1f"},
+          "channel_index_range": [1, 16],
+          "full_report_offset_range": [34, 49],
+          "full_report_offset_base": 34,
+          "full_report_offset_stride": 1,
+          "full_report_offset_formula": "full-report offset = 33 + Surround channel number",
           "raw_range": [0, 96],
-          "status": "observed_selector_path",
-          "evidence": "Live test 2026-09-09 routed Preamp 1 to the surround destination and compared active versus muted. Both selector 9 and selector 25 changed @34/@50; the test does not separate Surround In from Surround Out stage ownership."
+          "silence_raw": 96,
+          "direction": "inverted",
+          "status": "confirmed_per_channel",
+          "format_used": "9.1.6",
+          "evidence": "Controlled live direct-HID sweep 2026-09-12 temporarily changed the original 2.0 format to 9.1.6, routed Oscillator 1 directly to each of the 16 Surround In channels one at a time, and compared active versus all-muted 0x75 reports. The primary bank mapped Surround channel N to full-report @33 + N for both selector 9 (Surround Out) and selector 25 (Surround In); every active lane moved from raw 96 to approximately raw 18. The virtual-mixer 0x73 reports were excluded. The input-vs-output stage ownership of selectors 9 and 25 remains unresolved.",
+          "auxiliary_offsets": [50, 51, 52],
+          "auxiliary_status": "unresolved; no stable one-to-one 16-channel mapping"
         },
         {
           "target": "afx_in",
@@ -670,11 +713,11 @@
           "selector_values": {"10": "Line Out", "11": "HP1", "12": "HP2", "13": "Monitor A", "14": "Monitor B", "15": "Reamp", "16": "ADAT Out", "17": "S/PDIF Out"},
           "report_scan": "0x73 and 0x75 full report data bytes 16..319",
           "status": "no_transition_observed",
-          "evidence": "Live test 2026-09-09 routed Preamp 1 to each destination separately, muted the other channels, temporarily set the associated output bus to 96, and compared against muted. No stable meter transition appeared in either report type. This rules out a fixed HID lane in the tested conditions, but does not rule out a WebUI/Launcher meter calculated from the isochronous audio stream."
+          "evidence": "Live test 2026-09-09 routed Preamp 1 to each destination separately, muted the other channels, temporarily set the associated output bus to raw 96 (the silent endpoint), and compared against muted. No stable meter transition appeared in either report type. Because this test used the silent endpoint, it did not exercise a post-level output meter at unity; it rules out a fixed HID lane under those conditions, but does not rule out a WebUI/Launcher meter calculated from the isochronous audio stream."
         }
       ],
       "channel_meter_scale": "inverted raw 0..96: 0x60 (96) at rest/silence, falls toward 0x00 at top-of-scale saturation. No calibrated transfer curve is claimed for this physical bank.",
-      "channel_meter_notes": "CONFIRMED physical preamps 1-12: full-report 0x73 @221-232 (payload 0xcd-0xd8), one byte per input, selector-independent across observed selector values 15 and 18. LIVE-TESTED 2026-09-09: physical Preamp 1 measured raw 18 (and reached raw 0 at louder moments) at @221 while the user injected a tone; the other 11 inputs had no test signal and remain untested. CONFIRMED all 4 Meters-window Mix selectors: values 21..24 expose strip N at @124+N = @125..156. CONFIRMED all 4 mixer-window target-1 selections: matching target 1 exposes strip N at @156+N = @157..188; this is a separate bank. Free-running 0x75 live paths observed: selector 9/25 route test changed @34/@50 (surround path, input-vs-output stage unresolved), and selector 18 changed @32 (AFX In). Direct Line Out, HP1, HP2, Monitor A, Monitor B, Reamp, ADAT Out, and S/PDIF Out route tests produced no stable transition anywhere in 0x73/0x75 data bytes 16..319, even with associated buses temporarily at level 96. This is no HID-lane evidence under test conditions, not a claim that the Launcher has no visual meter; host/isochronous audio metering remains possible. Inverted raw range 0..96: 96 is rest/silence and values fall toward raw 0 at top-of-scale saturation; no separate clip flag or new calibration is claimed.",
+      "channel_meter_notes": "CONFIRMED physical preamps 1-12: full-report 0x73 @221-232 (payload 0xcd-0xd8), one byte per input, selector-independent across observed selector values 15 and 18. LIVE-TESTED 2026-09-09: physical Preamp 1 measured raw 18 (and reached raw 0 at louder moments) at @221 while the user injected a tone; the other 11 inputs had no test signal and remain untested. CONFIRMED all 4 Meters-window Mix selectors: values 21..24 expose strip N at @124+N = @125..156. CONFIRMED all 4 mixer-window target-1 selections: matching target 1 exposes strip N at @156+N = @157..188; this is a separate bank. CONFIRMED Surround per-channel bank: a direct Oscillator 1 sweep on 2026-09-12 mapped Surround channel N to full-report 0x75 @33+N, giving @34..@49 for channels 1..16 under selectors 9 and 25. The original 2.0 state was temporarily switched to 9.1.6 for the sweep and restored exactly. The primary Surround map uses only free-running 0x75 reports with byte 1 = 0x1f; virtual-mixer 0x73 meters were excluded. The input-vs-output stage remains unresolved, and @50..@52 remain auxiliary candidates. Selector 18 changed @32 for AFX In. Direct Line Out, HP1, HP2, Monitor A, Monitor B, Reamp, ADAT Out, and S/PDIF Out route tests produced no stable transition anywhere in 0x73/0x75 data bytes 16..319, even with associated buses temporarily at level 96. This is no HID-lane evidence under test conditions, not a claim that the Launcher has no visual meter; host/isochronous audio metering remains possible. Inverted raw range 0..96: 96 is rest/silence and values fall toward raw 0 at top-of-scale saturation; no separate clip flag or new calibration is claimed.",
       "status_bits": {
         "input_mode": {
           "mask": "0x03",
@@ -699,7 +742,8 @@
         "status_bits": {
           "mute": {
             "mask": "0x04",
-            "shift": 2
+            "shift": 2,
+            "ambiguous_when_level_equals": 96
           },
           "dim": {
             "mask": "0x08",
@@ -778,16 +822,20 @@
             "notes": "Talkback button / hold-to-talk active. Confirmed from capture talkback-bttn (2026-08): press -> bit 6 set, release -> cleared, every time."
           }
         },
-        "notes": "Sits immediately after the 12-byte channel status array (status_base_offset 61 + 12 = 73). offset 73 is a packed talkback status byte (see status_bits); offset 74 is the talkback gain (0-96, same scale as bus_level, 96=0dB) of the CURRENTLY SELECTED source -- confirmed from talkback-gain-int-ch1-2-12 (2026-08): sweeping param 0x20 moved offset 74 1:1 across 0-96, and re-selecting the source reset offset 74 to that source's own stored gain (so talkback gain is per-source, but only the selected source's value is visible here). CAVEAT: source_low and dest_assign share bits 2-3 (source index 4-12 sets bits that also mean dest0/dest1 assigned). The talkback-select and talkback-bttn captures were separate sessions -- source was 0 during the dest toggles and no dest/button was set during the source sweep -- so how these coexist in one byte when both are non-default is UNTESTED. Needs a combined capture before trusting the readback with talkback fully configured."
+        "notes": "Sits immediately after the 12-byte channel status array (status_base_offset 61 + 12 = 73). offset 73 is a packed talkback status byte (see status_bits); offset 74 is the talkback gain (0-96, same raw numeric range as bus_level) of the CURRENTLY SELECTED source -- confirmed from talkback-gain-int-ch1-2-12 (2026-08): sweeping param 0x20 moved offset 74 1:1 across 0-96, and re-selecting the source reset offset 74 to that source's own stored gain (so talkback gain is per-source, but only the selected source's value is visible here). Its endpoint dB direction is not independently confirmed and must not be inferred from the output-bus field. CAVEAT: source_low and dest_assign share bits 2-3 (source index 4-12 sets bits that also mean dest0/dest1 assigned). The talkback-select and talkback-bttn captures were separate sessions -- source was 0 during the dest toggles and no dest/button was set during the source sweep -- so how these coexist in one byte when both are non-default is UNTESTED. Needs a combined capture before trusting the readback with talkback fully configured."
       }
     },
     "meter_report": {
       "magic_offset": 0,
       "magic": "0x75",
-      "status": "superseded_for_per_channel",
+      "status": "confirmed_surround_per_channel; superseded_for_physical_inputs",
       "channel_meter_base_offset": 32,
+      "surround_meter_base_offset": 34,
+      "surround_meter_stride": 1,
+      "surround_meter_count": 16,
+      "surround_meter_selector_values": [9, 25],
       "channel_meter_scale": "inverted: 0x60 (96) at rest/silence, falls toward 0x00 as level rises",
-      "notes": "SUPERSEDED FOR PER-CHANNEL INPUTS: this 0x75 frame is not the physical-preamp bank. Controlled routing shows unresolved route-correlated pairs at full-report @32/@48 and @33/@49; @34/@35 also co-varied with 0x73 @177/@178 during playback. Do not assign these bytes fixed input, output, surround, or aggregate ownership. Physical preamps 1-12 use the selector-independent 0x73 @221-232 bank. Free-running meter observations require full-report 0x75 with byte 1 == 0x1f; 0x75 responses with byte 1 == 0x00 are readback and excluded. The retained db_curve is historical single-lane evidence and is not a new calibration claim for the physical bank.",
+      "notes": "This 0x75 frame is not the physical-preamp bank: physical preamps 1-12 use the selector-independent 0x73 @221-232 bank. A direct Oscillator 1 sweep on 2026-09-12 confirmed the primary Surround per-channel bank at full-report @34..@49, one byte per channel, for Meters-window selectors 9 (Surround Out) and 25 (Surround In). The offset formula is @33 + Surround channel number. Route-correlated pairs @32/@48 and @33/@49 remain unresolved outside this primary map; additional @50..@52 changes were not stable one-to-one Surround channels. Free-running meter observations require full-report 0x75 with byte 1 == 0x1f; 0x75 responses with byte 1 == 0x00 are readback and excluded. The retained db_curve is historical single-lane evidence and is not a new calibration claim for either the physical or Surround bank.",
       "db_curve": [
         [
           0,
@@ -1264,6 +1312,7 @@
   },
   "buses": {
     "addressing": "Output buses (monitor/headphone) are addressed with the SAME byte position as a per-input channel_offset (frame.command.channel_offset), but the value is a bus id, not a physical input index. Bus ids are NOT contiguous with each other or with channel indices -- do not assume bus id N means 'the Nth bus' in UI order.",
+    "level_encoding": "Device-confirmed attenuation: raw 0 = 0 dB maximum/unity, raw 1..95 = -N dB, raw 96 (0x60) = -inf/silent. The 0x47 command and state-report bus_block carry this raw value unchanged.",
     "known": {
       "0": {
         "name": "monitor_a",
@@ -1389,8 +1438,8 @@
         96
       ],
       "applies_to": "buses, not input channels -- send the bus id (see 'buses') in frame.command.channel_offset",
-      "encoding": "0 = -inf (silent) .. 96 (0x60) = 0dB / unity. Same raw 0-96 byte scale used elsewhere in this protocol (matches the resting/max value seen in gain and meter bytes), but this has only been shown to line up at the two ends (0 and 96) -- the shape of the curve in between (linear dB vs a real analog taper) is NOT confirmed.",
-      "evidence": "captures mona/monb/hp1/hp2 (2026-08): physical volume wheel dragged through its full range for buses 0, 5, 1, and 2 respectively; every SET_PARAM(0x47, bus_id, value) command in the log matched the very next state_report.bus_block reading for that bus_id. Extended in capture settings-linevol-mute-reampvol-toggle (2026-08): the settings-tab 'Line' and 'Reamp' volume sliders are SET_PARAM(0x47, bus=3) and SET_PARAM(0x47, bus=4) -- full 0-96 sweeps up and down, each matching bus_block offset 37 (bus 3) and offset 40 (bus 4) 1:1. So bus_level is now confirmed for all 6 bus ids (0-5)."
+      "encoding": "Device-confirmed attenuation scale: raw 0 (0x00) = 0 dB / maximum (unity), raw 1..95 = -N dB, and raw 96 (0x60) = -inf / silent. The captures establish the 0-96 wire range and 1:1 state-report offsets; endpoint meaning is confirmed from the device's actual output behavior, not inferred from unrelated meter fields. The exact transfer curve between the endpoints is not separately calibrated.",
+      "evidence": "captures mona/monb/hp1/hp2 (2026-08): physical volume wheel dragged through its full range for buses 0, 5, 1, and 2 respectively; every SET_PARAM(0x47, bus_id, value) command in the log matched the very next state_report.bus_block reading for that bus_id. Extended in capture settings-linevol-mute-reampvol-toggle (2026-08): the settings-tab 'Line' and 'Reamp' volume sliders are SET_PARAM(0x47, bus=3) and SET_PARAM(0x47, bus=4) -- full 0-96 sweeps up and down, each matching bus_block offset 37 (bus 3) and offset 40 (bus 4) 1:1. The endpoint semantics were subsequently confirmed against the connected device: 0 dB/max at raw 0 and -inf/silent at raw 96. So bus_level is confirmed for all 6 bus ids (0-5)."
     },
     "bus_dim": {
       "id": "0x68",
@@ -1405,7 +1454,7 @@
       "type": "bool",
       "applies_to": "buses",
       "evidence": "captures mona/monb/hp1/hp2 (2026-08): Mute button toggled on then off in isolation for each bus, matches status bit 'mute' (0x04). Also confirmed on bus 3 in capture settings-linevol-mute-reampvol-toggle (2026-08) via the settings-tab Line-output mute toggle. Not tested on buses 4 or 5.",
-      "notes": "The status byte's 0x04 bit is ALSO set, with no SET_PARAM(0x48) command, whenever a bus sits at bus_level == 96 (max). First seen once on bus 0 (mona capture) and thought to be a fluke; now REPRODUCED deliberately in settings-linevol-mute-reampvol-toggle (2026-08) on BOTH bus 3 and bus 4 -- the bit switches on exactly as the level sweep reaches 0x60 and switches off again on the very next step below max, every time. So bit 0x04 in the readback means 'muted OR at maximum level' and cannot distinguish the two on its own. Any bus-status readback must check bus_level: if level==96, treat 0x04 as 'at max' and report mute state as unknown/false unless a mute was explicitly sent. See unresolved_state_offsets."
+      "notes": "The status byte's 0x04 bit is ALSO set, with no SET_PARAM(0x48) command, whenever a bus sits at bus_level == 96 (the silent / maximum-attenuation endpoint). First seen once on bus 0 (mona capture) and thought to be a fluke; now REPRODUCED deliberately in settings-linevol-mute-reampvol-toggle (2026-08) on BOTH bus 3 and bus 4 -- the bit switches on exactly as the attenuation sweep reaches 0x60 and switches off again on the very next step below 96, every time. So bit 0x04 in the readback means 'muted OR at the silent endpoint' and cannot distinguish the two on its own. Any bus-status readback must check bus_level: if level==96, treat 0x04 as 'silent-endpoint marker' and report mute state as unknown/false unless a mute was explicitly sent. See unresolved_state_offsets."
     },
     "bus_mono": {
       "id": "0x69",
@@ -1645,7 +1694,7 @@
       ],
       "per": "talkback source -- set talkback_source first, then this sets that source's talkback-send gain",
       "frame": "global_command (opcode 0x12) -- gain value 0-96 at offset 17",
-      "encoding": "same raw 0-96 scale as bus_level (0 = -inf, 96/0x60 = 0dB/unity); curve shape between the ends not independently verified",
+      "encoding": "same raw 0-96 numeric range as bus_level, but the talkback endpoint semantics have not been independently confirmed; do not assume its dB direction from the output-bus field",
       "readback": "state_report.talkback_block, offset 74 -- shows the selected source's gain, 1:1 with the commanded value",
       "runtime_readback": {
         "frame": "state_report",
@@ -1709,13 +1758,13 @@
       "id": "0xeb",
       "status": "GLOBAL state partly decoded (0xab/0xeb whole-state frame): pre/post, level, delay, dim/mute/bypass, surround format. PER-SPEAKER state is a separate frame -- see params.surround_speaker.",
       "type": "NEW opcode 0xab -- whole-state command for the Surround tab's GLOBAL controls (like AuraVerb)",
-      "frame": "opcode 0xab @4, param_id 0xeb @16, then a fixed-layout payload. Scalar delay/level RMW remains limited to the readback-verified 2.0 contract. A separate format builder changes only the format count/crossover/LFE-index bits and packed channel-order bytes: normal WebUI writes are limited to 2.0 and 2.1, while higher vendor-derived layouts require an explicit self-test confirmation.",
+      "frame": "opcode 0xab @4, param_id 0xeb @16, then a fixed-layout payload. Scalar delay/level and EQ-position RMW are readback-verified for 2.0 and 2.1. A separate format builder changes only the format count/crossover/LFE-index bits and packed channel-order bytes: normal WebUI writes are limited to 2.0 and 2.1, while higher vendor-derived layouts require an explicit self-test confirmation.",
       "readback": "frame.readback category 0x1b (1 record, idx 0). Raw 2.0 captures verify the exact 16-byte response header, the 151-byte meaningful body mapping to command offsets 18..168, and the fixed zero tail. The user-supplied full 320-byte 2.1 export new/srrnd-20-21.frames.txt (SHA-256 3a2ad5b8710beda965bc1fe5ff07673371cd961897d4bc957baaa88d51deac8b, matching lines 1 at 7.248712 s and 35 at 13.730188 s) remains historical format evidence; a live category-0x1b readback of 2.1 was directly verified on 2026-09-12 and matched the format builder's flags and packed channel order.",
       "field_map": {
         "16": "0xeb param_id",
         "17": "0x99 -- constant",
-        "18": "flags A. Bits 0..4 are the active channel count (2.0 = 0x02, 3.0 = 0x03, 5.1.2 = 0x08, 9.1.6 = 0x10); bit 5 (0x20) enables bass management/crossover; bit 7 (0x80) is the observed surround-EQ PRE/POST state; bit 6 remains unknown. The normal 2.1 state is count 3 + BM = 0x23, while 2.1 with BM off is 0x03. The format write mask covers only bits 0..5, preserving EQ position and other state.",
-        "19": "flags B. The lower five bits carry the LFE channel index when an LFE is present (2.1 = 0x82, where the index is 2; higher layouts with a centre channel before LFE use 0x83, index 3); 0x9f is the no-LFE sentinel used by 2.0 and the no-LFE higher candidates. The format write mask covers only the lower five bits, preserving the remaining flags.",
+        "18": "flags A. Bits 0..4 are the active channel count (2.0 = 0x02, 3.0 = 0x03, 5.1.2 = 0x08, 9.1.6 = 0x10); bit 5 (0x20) enables bass management/crossover; bits 6-7 remain unknown and are preserved. The normal 2.1 state is count 3 + BM = 0x23, while 2.1 with BM off is 0x03. The format matcher uses only bits 0..4; the format writer changes bits 0..5 and preserves the rest.",
+        "19": "flags B. The lower five bits carry the LFE channel index when an LFE is present (2.1 = 0x82, where the index is 2; higher layouts with a centre channel before LFE use 0x83, index 3); 0x9f is the no-LFE sentinel used by 2.0 and the no-LFE higher candidates. Bit 7 (0x80) is the capture-backed surround-EQ PRE/POST state; bits 5-6 remain unknown. The format matcher and writer change only the lower five bits, preserving the remaining flags.",
         "20": "GLOBAL/total surround DELAY, uint8, base 0x06, swept 0x06..0x2d. Per-speaker delay is in the 0x87 frame.",
         "21": "0x00 -- constant",
         "22_23": "SURROUND MONITOR LEVEL (main slider), LE16. base 600 (0x0258) = 0 dB; 0.1 dB/step; range 0 = -60 dB .. 760 = +16 dB. USER-CONFIRMED 2026-09-03 (range -60..+16 dB). Swept smoothly in macos-srrnd-tab.",
@@ -1724,14 +1773,14 @@
         "27_28": "PER-SPEAKER MUTE MASK -- LE16, bit N = speaker N (like [25-26]). SOLO in the Launcher = Ctrl-click a speaker -> mutes all others; that writes this mask with only the selected speaker's bit set (user, 2026-09-03). Only 0x0000/0xFFFF captured directly, but the solo behaviour confirms it is a per-speaker mask.",
         "29_30": "DIM -- LE16, likewise a per-speaker DIM mask. (25/27/29 order still inferred from click order.)",
         "31_40": "PACKED CHANNEL ORDER -- ten bytes, right-aligned big-endian 5-bit speaker IDs from the vendor Surround model. IDs are L=1, C=2, R=3, LFE=4, S=5, Lw=6, Ls=7, Lrs=8, Rw=9, Rs=10, Rrs=11, Ltf=12, Ltm=13, Ltr=14, Rtf=15, Rtm=16, Rtr=17. 2.0 packs as `...0023`; 2.1 packs as `...0464`; higher candidates are recorded in contract.formats[].",
-        "23_onward_bass_mgmt": "The 2.1 BASS-MANAGEMENT window -- BYTE-MAPPED 2026-09-03 from srrnd-bassmanagement-HP...-mixerfaders + srrnd-bass-management-solo-mute. UI has a HIGH-PASS section, a LOW-PASS section and a MIXER (faders + mute + solo); the LINK buttons make the mixer channels move together, so all captures show 3 channels changing in lockstep. Layout of this region of the 0xab payload: [23-24] = `04 64` (LFE-present marker). [25-26] = LE16 flags, `0xFFFF` in every capture (individual bits unknown). [27-40] = zero. [41-42] = a ~9-bit bitfield the user set one bit per click during the 'filter type / link' clicks (ended 0x01FF); the exact bit<->control map (filter TYPE Butterworth/Linkwitz-Riley, link toggles) needs a one-control-per-click capture. THEN, from [43], 8-byte CHANNEL BLOCKS = 4 LE16 each, one per mixer channel (3 seen): [+0] LP cutoff (Hz, 20-320; **bit 15 = LP-filter bypass**), [+2] HP cutoff (Hz, 20-320; **bit 15 = HP-filter bypass**), [+4] channel FADER (LE16, base 600 = 0 dB, 0..760+; **bit 15 = mute** (confirmed via the solo-mute capture, toggled on the linked channels), bits 13-14 = solo + one more), [+6] FILTER ORDER (low byte = LP order, high byte = HP order; 0/1/2 = order 2/4/8). Blocks past the 3rd stay at the `[80][80][600][0]` default. NO readback. Not in the CLI. Frames kept in captures/new/*.frames.txt."
+        "23_onward_bass_mgmt": "The 2.1 BASS-MANAGEMENT window -- BYTE-MAPPED 2026-09-03 from srrnd-bassmanagement-HP...-mixerfaders + srrnd-bass-management-solo-mute. UI has a HIGH-PASS section, a LOW-PASS section and a MIXER (faders + mute + solo); the LINK buttons make the mixer channels move together, so all captures show 3 channels changing in lockstep. Layout of this region of the 0xab payload: [23-24] = `04 64` (LFE-present marker). [25-26] = LE16 flags, `0xFFFF` in every capture (individual bits unknown). [27-40] = zero. [41-42] = a ~9-bit bitfield the user set one bit per click during the 'filter type / link' clicks (ended 0x01FF); the exact bit<->control map (filter TYPE Butterworth/Linkwitz-Riley, link toggles) needs a one-control-per-click capture. THEN, from [43], 8-byte CHANNEL BLOCKS = 4 LE16 each, one per mixer channel (3 seen): [+0] LP cutoff (Hz, 20-320; **bit 15 = LP-filter bypass**), [+2] HP cutoff (Hz, 20-320; **bit 15 = HP-filter bypass**), [+4] channel FADER (LE16, base 600 = 0 dB, 0..760+; **bit 15 = mute** (confirmed via the solo-mute capture, toggled on the linked channels), low 13 bits are mapped and bits 13-14 are preserved as unverified flags), [+6] FILTER ORDER (low byte = LP order, high byte = HP order; 0/1/2 = order 2/4/8). The category-0x1b readback confirms this block map; the WebUI writes one cutoff, bypass, order, fader, or mute field at a time from a fresh 2.1 readback. Link, filter-type, and solo fields remain guarded. Frames kept in captures/new/*.frames.txt."
       },
       "open": "The global format wire path is no longer open: on 2026-09-12 a guarded direct-HID round-trip accepted every vendor-derived candidate from 2.0 through 9.1.6 and restored the original 2.1 body exactly. This demonstrates that the device accepted the format command; it does not establish whether the vendor application/account would expose the layouts or whether a licence changes other UI and per-speaker side effects. The WebUI therefore enables only 2.0 and 2.1, while the self-test requires explicit confirmation for higher layouts. [27-28]/[29-30] mute/dim remain per-speaker masks like [25-26], with only all-on/all-off captured directly. 2.1 BASS-MANAGEMENT window byte-mapped (field_map.23_onward_bass_mgmt); [41-42]/[25-26] individual bits still fuzzy. READBACK -- BOTH surround frames read back (established 2026-09-04, correcting the earlier 'no readback for any surround param'): the GLOBAL frame (0xab) = frame.readback category 0x1b, 1 record, body[N] == frame byte [18+N] (six field matches incl. format / delay / level / bypass mask / the [40] marker, and the bass-management channel blocks land exactly where field_map.23_onward_bass_mgmt predicted -- an independent confirmation of that map); the PER-SPEAKER EQ (0x87) = category 0x1a, 16 records, one per speaker, Room Correction curves visible there too. Both parsed + wired 2026-09-04 (protocol.parse_surround_global_record / parse_surround_speaker_eq_record, CLI `surround-status` / `surround-eq`). See 'bigger_surround_DEDUCED_UNTESTED' below.",
       "bigger_surround_DEDUCED_UNTESTED": {
         "!!!": "The FORMAT-related items in this block were previously deductions. The vendor panel's Surround model has now supplied the channel IDs, format counts, LFE indices, and packed channel orders recorded in frame.surround_global_command.contract.formats[]. On 2026-09-12, a guarded direct-HID self-test accepted every candidate from 2.0 through 9.1.6 and restored the original 2.1 state exactly. This validates the global wire path, not the vendor account/licence policy, complete Launcher sequencing, or higher-layout speaker labels. A normal client MUST keep higher layouts behind an explicit opt-in; the WebUI intentionally enables only 2.0 and 2.1. (NOTE: room_correction below is not deduced -- it was captured and resolved 2026-09-03.)",
         "per_speaker_control": "STRONGEST inference: the 0x87/0xea per-speaker frame (level / delay / polarity / 16-band EQ) is identical for every speaker slot 0..15 and does not change with format. So once the index->channel map is known, per-speaker monitoring control works for ANY format. The [25-30] bypass/mute/dim masks are already 16-bit (bit N = speaker N) so they scale automatically.",
         "speaker_index_to_channel_DEDUCED": "The vendor panel uses positional channel IDs in canonical SMPTE/Dolby-style order, now recorded for every candidate in contract.formats[]. Confirmed live states remain 2.0 = [L,R] and 2.1 = [L,R,LFE]. The higher candidates use [L,R,C,LFE,surrounds,wides,heights] as appropriate, with the exact 5-bit IDs and packed order in the profile. The direct format probes confirmed the device accepted those packed orders and channel counts, but did not independently exercise each higher speaker's level/EQ or prove all Launcher labels; keep higher per-speaker semantics provisional.",
-        "format_selector_DEDUCED": "The format is encoded in 0xab body bytes [0] and [1], corresponding to command offsets [18] and [19]. Flags A bits 0..4 carry the active channel count, bit 5 carries bass-management/crossover, and bit 7 carries the observed EQ pre/post state. Flags B lower bits carry the LFE index, with 0x9f as the no-LFE sentinel. The profile's format builder changes only those format masks plus the ten-byte right-aligned 5-bit channel-order field. Direct HID probes accepted 2.0, 2.1, 3.0, 3.1, 4.0/4.1, 5.x, 7.x, and 9.x through 9.1.6; the WebUI still exposes only 2.0 and 2.1.",
+        "format_selector_DEDUCED": "The format is encoded in 0xab body bytes [0] and [1], corresponding to command offsets [18] and [19]. Flags A bits 0..4 carry the active channel count and bit 5 carries bass-management/crossover. Flags B lower bits carry the LFE index, with 0x9f as the no-LFE sentinel; flags-B bit 7 carries the capture-backed EQ pre/post state. The profile's format builder changes only the declared format masks plus the ten-byte right-aligned 5-bit channel-order field, preserving all other bits. Direct HID probes accepted 2.0, 2.1, 3.0, 3.1, 4.0/4.1, 5.x, 7.x, and 9.x through 9.1.6; the WebUI still exposes only 2.0 and 2.1.",
         "room_correction_DECODED": "FULLY RESOLVED 2026-09-03 (roomeq-swipe-short capture): Room Correction is NOT a separate subsystem -- no opcode, no frame, no on/off toggle. The Launcher runs the measurement (only device traffic during it is preamp phantom + gain on the mic input), computes a correction curve HOST-SIDE, and writes it straight into the 0x87/0xea per-speaker 16-band EQ (bands 2-15; bands 1 & 16 -- the HPF/LPF end slots -- left at default). Example (spk0 after a 'short' correction): band2 15557 Hz / Q 0.10 / +4.42 dB, band3 44 Hz / Q 2.85 / -11.40 dB, band4 616 Hz / Q 2.78 / +5.72 dB, ... So `params.surround_speaker` IS the room-correction interface -- a Linux client can read/write it directly, or implement its own correction. 'Room Correction OFF' = bypass the surround EQ for that speaker (the per-speaker EQ bypass -- surround_monitor.field_map.25_26 mask; user-confirmed there is no dedicated RC toggle). The 3 RC types (short / longer / longest -- more sweeps, more precision) differ only in the MEASUREMENT, and in a 2.0 setup ALL of them write the SAME correction to L and R (user tested both the short and the advanced mode 2026-09-03 -- L and R EQ came out identical each time). So RC in stereo is a single averaged/room correction, not per-speaker; per-speaker curves presumably only happen in a multi-speaker format where each speaker is measured on its own. Same 0x87 frame regardless.",
         "immersive_bass_management_DEDUCED": "The 2.1 BM window has 8-byte channel blocks from [43] (3 used). For >1 sub or per-bed bass routing the block structure most likely just repeats for more channels; the [41-42]/[25-26] flag fields probably widen. Unconfirmed.",
         "what_to_capture": "Remaining validation is application-level: 1) if an entitled device/account is available, capture the Launcher selecting higher layouts and compare its full re-send sequence, including the number and labels of active 0x87 strips, against the direct probe; 2) in a higher layout, touch one speaker's level/EQ at a time to prove index-to-label mapping and any per-speaker side effects; 3) capture any licence/error response from the vendor UI. Immersive bass-management details remain open. All usbmon, filter to VID 0x23e5, one control per pause."
@@ -1917,16 +1966,16 @@
       "notes": "OPEN, promising 2026-09-05 (capture audioplaying-audiostop-meter.pcapng, antelope-ctl-UI-test sandbox repo root, gitignored -- decoded per this repo's tools/scan_capture.py methodology, tshark -Y \"usb.data_len==320\" -T fields -e frame.number -e frame.time_relative -e usbhid.data -e usb.capdata): a 2-byte pair, inverted scale like the 157-block, that tracked real playback audio precisely (raw 7-36 while playing) and snapped to EXACTLY 96 (dead silence) the instant playback stopped -- the cleanest on/off transition of any byte in the whole 320-byte report, cleaner than 157 itself (which only settled to ~90, not 96, in the same capture). At the same moment, live on real hardware, the Launcher's Mixer 1 tab channel 1 meter was confirmed showing this same signal. Owner unresolved; retain no runtime mapping. In the same playback capture, nearest-time pairing with meter-only full-report 0x75 reports filtered by byte 1 == 0x1f found @34/@35 co-varying with @177/@178 within 5 ms (r≈0.998 for each pair). This does not establish stereo ownership, Mix 1 L/R identity, or physical ownership. NOT the same thing as the 157+ch block (see state_report.channel_meter_notes) -- do not conflate mixer (virtual, software-summed) meters with preamp (physical analog input) meters. Not yet cross-checked against mix2-4 (would need their own capture with something routed and playing). No routing-command frame was present in either capture used during this investigation (recording started after routing was set up in both), so the exact commanded route is inferred from the state-report behavior and the live Launcher cross-check, not read back directly."
     },
     {
-      "offset": "bus status bit 0x04 at max level (was 'bus_mute coincidence')",
-      "notes": "RESOLVED (2026-08). See params.bus_mute.notes. What looked like a one-off fluke on bus 0 in the mona capture -- the status byte's 0x04 bit turning on with no mute command as bus_level reached 96 -- is real and reproducible: capture settings-linevol-mute-reampvol-toggle sweeps buses 3 and 4 to max repeatedly and the bit tracks level==96 exactly, on both buses, every pass. Not investigated further (behavior understood: 0x04 = muted OR at-max, ambiguous). No retest needed; any bus-status reader just has to special-case level==96."
+      "offset": "bus status bit 0x04 at silent endpoint (was 'bus_mute coincidence')",
+      "notes": "RESOLVED (2026-08; endpoint semantics confirmed on device 2026-09-14). See params.bus_mute.notes. What looked like a one-off fluke on bus 0 in the mona capture -- the status byte's 0x04 bit turning on with no mute command as bus_level reached 96 -- is real and reproducible: capture settings-linevol-mute-reampvol-toggle sweeps buses 3 and 4 to the silent endpoint repeatedly and the bit tracks level==96 exactly, on both buses, every pass. The behavior is 0x04 = muted OR at the silent endpoint, so it is ambiguous. No retest needed; any bus-status reader just has to special-case level==96."
     },
     {
       "offset": "channel_link readback",
       "notes": "RESOLVED 2026-09-03 -- dedicated live-device whole-report diff (raw 0x14 link toggle on preamp pair 3, no gain/mode sync so nothing else moves; 0x73 read 3x keeping only bytes stable across all 3): ZERO stable 0x73 bytes changed on link on OR off, and readback cats 0x0c / 0x15 / 0x06 were byte-identical. The earlier whole-report diff remains valid for the 0x73 state report, but it did not query category 0x0b. The extracted schema/log now map 0x0b to five nested link tables; transition correlation remains capture-required, so the client cache is still the fallback. See params.channel_link.notes."
     },
     {
-      "offset": "screen brightness -- RESOLVED (26); surround EQ pre-post -- still open",
-      "notes": "SCREEN BRIGHTNESS RESOLVED 2026-08: it was a VM artifact. Recaptured on native macOS (macos-scrbrght-0-100-50-multvalue) with the physical screen visibly changing -- it's opcode 0x12 / param 0x0e / value 0-100 at offset 17, read back at state_report offset 26. Now params.screen_brightness + state_report.screen_brightness_byte_offset. The old settings-scrbrght-surroundEQ capture showed nothing because the brightness slider does nothing under the VM (frames never reached the device). SURROUND EQ PRE/POST still open: that capture's 2 frames of opcode 0xab / param 0xeb (frame.surround_eq) had no 0x73 effect -- still needs a dedicated capture toggling it several times."
+      "offset": "screen brightness -- RESOLVED (26); surround EQ pre-post -- RESOLVED in category 0x1b",
+      "notes": "SCREEN BRIGHTNESS RESOLVED 2026-08: it was a VM artifact. Recaptured on native macOS (macos-scrbrght-0-100-50-multvalue) with the physical screen visibly changing -- it's opcode 0x12 / param 0x0e / value 0-100 at offset 17, read back at state_report offset 26. Now params.screen_brightness + state_report.screen_brightness_byte_offset. The old settings-scrbrght-surroundEQ capture showed nothing because the brightness slider does nothing under the VM (frames never reached the device). SURROUND EQ PRE/POST RESOLVED from macos-settings-srrndeq-post-pre.pcapng: category-0x1b flags-B bit 7 / command byte 19 toggles between POST and PRE; see frame.surround_global_command.contract.eq_position_write."
     },
     {
       "offset": "oscillator / test-tone generator (osc1 + osc2: mute, 1kHz/400Hz, 0/-6/-12/-18 dBFS) -- RESOLVED, and the earlier 'host-side' verdict CORRECTED",
@@ -1938,7 +1987,6 @@
     "shared_with": "discrete_8_pro_sc.json (confirmed working by peer PR); discrete_4 / discrete_4_pro profiles are stubs",
     "known_divergences_on_discrete_8_pro": [
       "input_mode 0x4f: no 'direct' mode -- value 3 CRASHES its firmware (Orion has 3=direct, confirmed here)",
-      "bus_level 0x47: encoding is plain negated dB (value N = -N dB), NOT Orion's 0-96 / 96=0dB-unity scale",
       "gain 0x50: mic -12..65 and hiz 0..40 (vs Orion mic 0..75, hiz 0..65); line -6..20 is the same. Discrete 8 device-side CLAMPS out-of-range gain to the mode range rather than rejecting -- Orion's clamp-vs-reject behaviour is untested",
       "channel_link (opcode 0x14 / param 0xa2): the frame shape that works on Orion does NOT link a pair on the Discrete 8 Pro, despite 0x14 being recognised -- link is the most device-specific part of the protocol",
       "outgoing byte 0: ignored on Discrete 8 (offset 4 is the discriminator); 0x70 is cosmetic on commands",

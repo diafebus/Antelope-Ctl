@@ -18,6 +18,7 @@ v3 adds two new areas, both still profile-driven:
     under profile["frame"] rather than bending SET_PARAM to fit.
 """
 import json
+import math
 
 
 def load_profile(path: str) -> dict:
@@ -322,7 +323,7 @@ def build_surround_global_command(profile: dict, readback_body: bytes,
     """Build a verified read-modify-write frame for the surround global state.
 
     The Launcher frame is a complete 320-byte state packet, not a partial
-    command.  The profile therefore supplies the writable 2.0 contract and
+    command.  The profile therefore supplies the writable 2.0/2.1 contract and
     the readback body is copied into the packet before changing only the
     confirmed delay and level fields.  Formats and per-speaker masks remain
     untouched.
@@ -568,6 +569,328 @@ def build_surround_global_format_command(
     pkt[payload_offset + flags_b_offset] = encoded_b & 0xFF
     pkt[payload_offset + channel_order_offset:
         payload_offset + channel_order_offset + channel_order_size] = order_bytes
+    return bytes(pkt)
+
+
+def _surround_eq_position_raw(field_spec: dict, value):
+    """Convert the displayed Surround EQ position to its raw bit value."""
+    if not isinstance(field_spec, dict):
+        raise ValueError('invalid surround EQ-position field contract')
+    values = field_spec.get('values', {'pre': 0, 'post': 1})
+    if not isinstance(values, dict):
+        raise ValueError('invalid surround EQ-position values')
+    if isinstance(value, bool):
+        raw = 1 if value else 0
+    elif isinstance(value, str):
+        name = value.strip().lower()
+        if name not in values:
+            raise ValueError(
+                f'surround EQ position must be one of {", ".join(values)}')
+        raw = _as_int(values[name])
+    else:
+        try:
+            raw = _as_int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                'surround EQ position must be PRE, POST, 0, or 1') from exc
+    allowed = {_as_int(item) for item in values.values()}
+    if raw not in allowed:
+        raise ValueError('invalid surround EQ-position value')
+    return raw
+
+
+def build_surround_global_eq_position_command(
+        profile: dict, readback_body: bytes, position,
+        allow_experimental: bool = False) -> bytes:
+    """Build a bounded Surround EQ PRE/POST read-modify-write frame.
+
+    The EQ position is the bit mapped in the global flags-B byte.  The helper
+    copies a fresh category-0x1b body, changes only the profile-declared bit,
+    and preserves the selected format, masks, Bass Management, and all other
+    global state.
+    """
+    frame = profile['frame'].get('surround_global_command')
+    if not frame:
+        raise KeyError('this profile has no frame.surround_global_command')
+    contract = frame.get('contract', {}) or {}
+    position_contract = contract.get('eq_position_write', {}) or {}
+    status = str(position_contract.get('status', '')).strip().lower()
+    if status not in {'experimental', 'experimental-unverified',
+                      'confirmed', 'capture-confirmed'}:
+        raise ConstraintError(
+            'surround EQ-position writes require an authorized profile contract')
+    if status in {'experimental', 'experimental-unverified'} \
+            and not allow_experimental:
+        raise ConstraintError(
+            'surround EQ-position writes are experimental; pass the explicit '
+            'allow_experimental flag')
+    check_opcode(profile, _as_int(frame['opcode']))
+    if not isinstance(readback_body, (bytes, bytearray)):
+        raise TypeError('surround global readback body must be bytes')
+
+    payload_offset = _as_int(contract.get('readback_payload_offset', 18))
+    template_size = _as_int(contract.get('template_size', 151))
+    size = _as_int(profile['transport']['report_size'])
+    if (template_size <= 0 or payload_offset < 0
+            or payload_offset + template_size > size):
+        raise ValueError('invalid surround global readback template bounds')
+    if len(readback_body) < template_size:
+        raise ValueError(
+            f'surround global readback is too short (need {template_size}, '
+            f'got {len(readback_body)})')
+
+    current_format = _surround_matching_format(
+        contract, readback_body[:template_size])
+    allowed_formats = {
+        str(item).strip() for item in position_contract.get('formats', []) or []
+    }
+    if current_format is None or (
+            allowed_formats
+            and str(current_format.get('name')) not in allowed_formats):
+        current_name = current_format.get('name') if current_format else 'unknown'
+        raise ConstraintError(
+            f'surround EQ-position writes are not enabled for format '
+            f'{current_name!r}')
+
+    try:
+        readback_offset = _as_int(position_contract.get('readback_offset', 0))
+        width = _as_int(position_contract.get('width', 1))
+        mask = _as_int(position_contract['mask'])
+        shift = _as_int(position_contract.get('shift', 0))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError('invalid surround EQ-position field contract') from exc
+    if (readback_offset < 0 or width <= 0
+            or readback_offset + width > template_size
+            or mask < 0 or shift < 0):
+        raise ValueError('invalid surround EQ-position field bounds')
+    full_mask = (1 << (width * 8)) - 1
+    if mask > full_mask:
+        raise ValueError('invalid surround EQ-position mask')
+    raw_value = _surround_eq_position_raw(position_contract, position)
+    if raw_value < 0 or (raw_value << shift) & ~mask:
+        raise ValueError('invalid encoded surround EQ-position value')
+
+    absolute = payload_offset + readback_offset
+    if absolute < 0 or absolute + width > size:
+        raise ValueError('surround EQ-position field falls outside the frame')
+    pkt = bytearray(size)
+    pkt[payload_offset:payload_offset + template_size] = readback_body[:template_size]
+    for operation in frame.get('runtime_operations', []) or []:
+        if operation.get('op') != 'fixed_byte':
+            continue
+        offset = _as_int(operation['offset'])
+        if not 0 <= offset < size:
+            raise ValueError(f'surround fixed byte offset {offset} is outside the report')
+        pkt[offset] = _as_int(operation['value']) & 0xFF
+    endian = str(position_contract.get('endian', 'little')).lower()
+    current = int.from_bytes(pkt[absolute:absolute + width], endian, signed=False)
+    encoded = (current & ~mask) | ((raw_value << shift) & mask)
+    try:
+        pkt[absolute:absolute + width] = encoded.to_bytes(
+            width, byteorder=endian, signed=False)
+    except (OverflowError, ValueError) as exc:
+        raise ValueError('invalid surround EQ-position encoding') from exc
+    return bytes(pkt)
+
+
+def _surround_matching_format(contract: dict, readback_body: bytes):
+    """Return the profile format matching a complete global readback body."""
+    try:
+        flags_a = readback_body[0]
+        flags_b = readback_body[1]
+        flags_a_mask = _as_int(contract.get('format_flags_a_write_mask', 0x3F))
+        flags_b_mask = _as_int(contract.get('format_flags_b_write_mask', 0x1F))
+        order_offset = _as_int(contract.get('channel_order_offset', 13))
+        order_size = _as_int(contract.get('channel_order_size', 10))
+    except (IndexError, TypeError, ValueError):
+        return None
+    if (order_offset < 0 or order_size <= 0
+            or order_offset + order_size > len(readback_body)):
+        return None
+    actual_order = bytes(readback_body[order_offset:order_offset + order_size])
+    for item in contract.get('formats', []) or []:
+        try:
+            item_a = _as_int(item['flags_a'])
+            item_b = _as_int(item['flags_b'])
+            expected_order = pack_surround_channel_order(
+                item['channel_order'], order_size)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if ((flags_a & flags_a_mask) == (item_a & flags_a_mask)
+                and (flags_b & flags_b_mask) == (item_b & flags_b_mask)
+                and actual_order == expected_order):
+            return item
+    return None
+
+
+def surround_format_name(profile: dict, readback_body: bytes):
+    """Return the profile-defined name for a complete Surround global body."""
+    contract = profile.get('frame', {}).get('surround_global_command', {}).get(
+        'contract', {}) or {}
+    item = _surround_matching_format(contract, readback_body)
+    return str(item.get('name')) if item is not None else None
+
+
+def _surround_bass_raw_value(field_spec: dict, value):
+    """Convert one Bass Management display value to its profile raw value."""
+    if not isinstance(field_spec, dict):
+        raise ValueError('invalid surround Bass Management field contract')
+    if field_spec.get('boolean'):
+        if isinstance(value, bool):
+            return 1 if value else 0
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            raise ValueError('Bass Management boolean value must be true or false')
+        if not math.isfinite(numeric) or numeric not in (0, 1):
+            raise ValueError('Bass Management boolean value must be true or false')
+        return int(numeric)
+
+    display_values = field_spec.get('display_values')
+    if display_values is not None:
+        raw_values = field_spec.get('raw_values')
+        if not isinstance(raw_values, list) or len(raw_values) != len(display_values):
+            raise ValueError('invalid Bass Management display-value mapping')
+        try:
+            display = float(value)
+        except (TypeError, ValueError):
+            raise ValueError('Bass Management value must be a finite number')
+        if not math.isfinite(display):
+            raise ValueError('Bass Management value must be a finite number')
+        match = next((index for index, candidate in enumerate(display_values)
+                      if display == float(candidate)), None)
+        if match is None:
+            raise ValueError(
+                f'Bass Management value {display:g} is not an allowed option')
+        raw = _as_int(raw_values[match])
+    else:
+        try:
+            display = float(value)
+            step = float(field_spec.get('step', 1))
+            zero = float(field_spec.get('zero', 0))
+        except (TypeError, ValueError):
+            raise ValueError('Bass Management value must be a finite number')
+        if not math.isfinite(display) or not math.isfinite(step) \
+                or not math.isfinite(zero) or step <= 0:
+            raise ValueError('invalid Bass Management value scale')
+        raw_float = display / step + zero
+        raw = int(round(raw_float))
+        if not math.isclose(raw_float, raw, abs_tol=1e-6):
+            raise ValueError('Bass Management value has too many decimal places')
+
+    try:
+        lo, hi = (_as_int(item) for item in field_spec['raw_range'])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError('invalid Bass Management raw range')
+    if not lo <= raw <= hi:
+        raise ValueError(f'Bass Management raw value {raw} outside {lo}..{hi}')
+    return raw
+
+
+def build_surround_global_bass_command(
+        profile: dict, readback_body: bytes, channel: int, field: str,
+        value, allow_experimental: bool = False) -> bytes:
+    """Build a bounded Bass Management read-modify-write frame.
+
+    The Bass Management controls share the complete 0xab/0xeb global packet.
+    This helper copies a fresh category-0x1b body, changes one profile-declared
+    channel-block field, and preserves every other global and crossover value.
+    """
+    frame = profile['frame'].get('surround_global_command')
+    if not frame:
+        raise KeyError('this profile has no frame.surround_global_command')
+    contract = frame.get('contract', {}) or {}
+    bass = contract.get('bass_management_write', {}) or {}
+    status = str(bass.get('status', '')).strip().lower()
+    if status not in {'experimental', 'experimental-unverified',
+                      'confirmed', 'capture-confirmed'}:
+        raise ConstraintError(
+            'Bass Management writes require an authorized profile contract')
+    if status in {'experimental', 'experimental-unverified'} \
+            and not allow_experimental:
+        raise ConstraintError(
+            'Bass Management writes are experimental; pass the explicit '
+            'allow_experimental flag')
+    check_opcode(profile, _as_int(frame['opcode']))
+    if not isinstance(readback_body, (bytes, bytearray)):
+        raise TypeError('surround global readback body must be bytes')
+
+    payload_offset = _as_int(contract.get('readback_payload_offset', 18))
+    template_size = _as_int(contract.get('template_size', 151))
+    size = _as_int(profile['transport']['report_size'])
+    if (template_size <= 0 or payload_offset < 0
+            or payload_offset + template_size > size):
+        raise ValueError('invalid surround global readback template bounds')
+    if len(readback_body) < template_size:
+        raise ValueError(
+            f'surround global readback is too short (need {template_size}, '
+            f'got {len(readback_body)})')
+
+    current_format = _surround_matching_format(contract, readback_body[:template_size])
+    allowed_formats = {str(item).strip() for item in bass.get('formats', []) or []}
+    if current_format is None or str(current_format.get('name')) not in allowed_formats:
+        current_name = current_format.get('name') if current_format else 'unknown'
+        raise ConstraintError(
+            f'Bass Management writes are not enabled for surround format '
+            f'{current_name!r}')
+
+    try:
+        channel = int(channel)
+    except (TypeError, ValueError) as exc:
+        raise ValueError('Bass Management channel must be an integer') from exc
+    block_count = _as_int(bass['block_count'])
+    if not 0 <= channel < block_count:
+        raise ValueError(
+            f'Bass Management channel {channel} outside 0..{block_count - 1}')
+
+    field = str(field).strip().lower()
+    fields = bass.get('fields', {}) or {}
+    field_spec = fields.get(field)
+    if field_spec is None or not field_spec.get('writable', True):
+        raise ConstraintError(
+            f'Bass Management field {field!r} is not enabled for writes')
+    raw_value = _surround_bass_raw_value(field_spec, value)
+
+    try:
+        block_offset = _as_int(bass['block_offset'])
+        block_stride = _as_int(bass['block_stride'])
+        field_offset = _as_int(field_spec['offset'])
+        width = _as_int(field_spec.get('width', 2))
+        endian = str(field_spec.get('endian', 'little')).lower()
+        mask = _as_int(field_spec.get('mask', (1 << (width * 8)) - 1))
+        shift = _as_int(field_spec.get('shift', 0))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f'invalid Bass Management field contract for {field}') from exc
+    if (block_offset < 0 or block_stride <= 0 or field_offset < 0
+            or width <= 0 or block_offset + block_count * block_stride > template_size
+            or field_offset + width > block_stride
+            or mask < 0 or shift < 0):
+        raise ValueError('invalid Bass Management channel-block bounds')
+    absolute = payload_offset + block_offset + channel * block_stride + field_offset
+    if absolute < 0 or absolute + width > size:
+        raise ValueError('Bass Management field falls outside the frame')
+    full_mask = (1 << (width * 8)) - 1
+    if mask > full_mask or raw_value < 0 or (raw_value << shift) & ~mask:
+        raise ValueError(f'invalid encoded Bass Management value for {field}')
+
+    pkt = bytearray(size)
+    pkt[payload_offset:payload_offset + template_size] = readback_body[:template_size]
+    for operation in frame.get('runtime_operations', []) or []:
+        if operation.get('op') != 'fixed_byte':
+            continue
+        offset = _as_int(operation['offset'])
+        if not 0 <= offset < size:
+            raise ValueError(f'surround fixed byte offset {offset} is outside the report')
+        pkt[offset] = _as_int(operation['value']) & 0xFF
+
+    current = int.from_bytes(pkt[absolute:absolute + width], endian, signed=False)
+    encoded = (current & ~mask) | ((raw_value << shift) & mask)
+    try:
+        pkt[absolute:absolute + width] = encoded.to_bytes(
+            width, byteorder=endian, signed=False)
+    except (OverflowError, ValueError) as exc:
+        raise ValueError(f'invalid Bass Management encoding for {field}') from exc
     return bytes(pkt)
 
 
@@ -2032,7 +2355,8 @@ def parse_surround_global_record(profile: dict, body: bytes):
     live read against a known state -- see frame.readback.categories.0x1b).
     So this decodes the same fields the write frame does, just offset by -18.
 
-    Returns a dict: lfe_present, bass_mgmt_on, eq_post (flags-A bits),
+    Returns a dict: lfe_present/lfe_index (flags-B low five bits),
+    bass_mgmt_on (flags-A bit 5), eq_post (flags-B bit 7),
     global_delay_ms, level_db (surround monitor level, -60..+16 dB),
     bypass_mask / mute_mask / dim_mask (LE16, bit N = speaker N), and
     bass_mgmt_channels -- a list of 8-byte 2.1 bass-management mixer blocks
@@ -2051,13 +2375,16 @@ def parse_surround_global_record(profile: dict, body: bytes):
         raise ValueError('surround global record too short')
     flags_a = body[0]
     flags_b = body[1]
+    lfe_index_raw = flags_b & 0x1f
+    lfe_index = None if lfe_index_raw == 0x1f else lfe_index_raw
     level_raw = int.from_bytes(body[4:6], 'little')
     out = {
         'flags_a_raw': flags_a,
         'flags_b_raw': flags_b,
-        'lfe_present': bool(flags_a & 0x01),
+        'lfe_present': lfe_index is not None,
+        'lfe_index': lfe_index,
         'bass_mgmt_on': bool(flags_a & 0x20),
-        'eq_post': bool(flags_a & 0x80),
+        'eq_post': bool(flags_b & 0x80),
         'global_delay_ms': body[2] / 10.0,
         'level_db': (level_raw - 600) / 10.0,
         'bypass_mask': int.from_bytes(body[7:9], 'little'),
@@ -2077,7 +2404,7 @@ def parse_surround_global_record(profile: dict, body: bytes):
             'lp_bypass': bool(lp_raw & 0x8000),
             'hp_cutoff_hz': hp_raw & 0x7fff,
             'hp_bypass': bool(hp_raw & 0x8000),
-            'fader_db': ((fader_raw & 0x7fff) - 600) / 10.0,
+            'fader_db': ((fader_raw & 0x1fff) - 600) / 10.0,
             'fader_mute': bool(fader_raw & 0x8000),
             'lp_order': chunk[6],
             'hp_order': chunk[7],
@@ -2452,7 +2779,8 @@ def parse_bus_state(profile: dict, data: bytes, bus_id: int) -> dict:
         raise ValueError(f'state report too short for bus {bus_id}')
 
     status_byte = data[status_off]
-    result = {'bus': bus_id, 'level': data[level_off]}
+    level = data[level_off]
+    result = {'bus': bus_id, 'level': level, 'status_raw': status_byte}
     if status_values:
         # Zen Go encodes the output mode as one enum byte (0=normal,
         # 1=mute, 2=dim), rather than the independent Orion bit flags.
@@ -2464,7 +2792,19 @@ def parse_bus_state(profile: dict, data: bytes, bus_id: int) -> dict:
         for bit_name, bit_def in status_bits.items():
             mask = _as_int(bit_def['mask'])
             shift = bit_def['shift']
-            result[bit_name] = (status_byte & mask) >> shift
+            value = (status_byte & mask) >> shift
+            ambiguous_level = bit_def.get('ambiguous_when_level_equals')
+            if value and ambiguous_level is not None \
+                    and level == _as_int(ambiguous_level):
+                # Some devices reuse a status bit at a level endpoint.  Do
+                # not claim that the logical state is enabled when the wire
+                # value alone cannot distinguish the two meanings.
+                result[bit_name] = 0
+                result[f'{bit_name}_ambiguous'] = True
+            else:
+                result[bit_name] = value
+                if ambiguous_level is not None:
+                    result[f'{bit_name}_ambiguous'] = False
     return result
 
 

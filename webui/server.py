@@ -225,7 +225,7 @@ def _surround_speaker_label(index, global_state):
         return "L"
     if index == 1:
         return "R"
-    if index == 2 and global_state and global_state.get("lfe_present"):
+    if global_state and index == global_state.get("lfe_index"):
         return "LFE"
     return f"Speaker {index + 1}"
 
@@ -234,31 +234,7 @@ def _surround_format_name(profile, global_state, raw_body):
     """Resolve a global readback to a profile-defined packed channel order."""
     if not isinstance(global_state, dict) or not isinstance(raw_body, (bytes, bytearray)):
         return None
-    contract = profile.get("frame", {}).get("surround_global_command", {}).get(
-        "contract", {}) or {}
-    try:
-        flags_a = int(global_state["flags_a_raw"])
-        flags_b = int(global_state["flags_b_raw"])
-        flags_a_mask = proto._as_int(contract.get("format_flags_a_write_mask", 0x3F))
-        flags_b_mask = proto._as_int(contract.get("format_flags_b_write_mask", 0x1F))
-        order_offset = proto._as_int(contract.get("channel_order_offset", 13))
-        order_size = proto._as_int(contract.get("channel_order_size", 10))
-    except (KeyError, TypeError, ValueError):
-        return None
-    actual_order = bytes(raw_body[order_offset:order_offset + order_size])
-    for item in contract.get("formats", []) or []:
-        try:
-            item_a = proto._as_int(item["flags_a"])
-            item_b = proto._as_int(item["flags_b"])
-            expected_order = proto.pack_surround_channel_order(
-                item["channel_order"], order_size)
-        except (KeyError, TypeError, ValueError):
-            continue
-        if ((flags_a & flags_a_mask) == (item_a & flags_a_mask)
-                and (flags_b & flags_b_mask) == (item_b & flags_b_mask)
-                and actual_order == expected_order):
-            return str(item.get("name"))
-    return None
+    return proto.surround_format_name(profile, raw_body)
 
 
 def _structured_readback_targets(profile):
@@ -574,9 +550,8 @@ class Device:
             ],
             "readback_category": SURROUND_GLOBAL_CAT,
             "note": (
-                "Global delay and level remain independently verified only for "
-                "the 2.0 scalar contract. Format selection is a separate "
-                "read-modify-write path."
+                "Global delay and level use a fresh category-0x1b read-modify-write "
+                "in the normal 2.0/2.1 formats."
             ),
         }
         format_options = []
@@ -598,6 +573,7 @@ class Device:
                 "name": name,
                 "flags_a": flags_a,
                 "flags_b": flags_b,
+                "channel_order": channel_order,
                 "channel_count": len(channel_order),
                 "writable": normal_write,
                 "experimental": not normal_write,
@@ -621,6 +597,77 @@ class Device:
                 "Higher layouts remain visible for guarded self-tests."
             ),
         }
+        position_contract = contract.get("eq_position_write", {}) or {}
+        position_values = position_contract.get(
+            "values", {"pre": 0, "post": 1})
+        position_status = str(position_contract.get(
+            "status", "unavailable")).strip().lower()
+        eq_position_write = {
+            "enabled": False,
+            "experimental": position_status in {
+                "experimental", "experimental-unverified"},
+            "status": position_contract.get("status", "unavailable"),
+            "fields": [str(value) for value in position_values],
+            "values": {
+                str(name): proto._as_int(value)
+                for name, value in position_values.items()
+            } if isinstance(position_values, dict) else {},
+            "formats": [str(name) for name in position_contract.get(
+                "formats", [])],
+            "readback_category": SURROUND_GLOBAL_CAT,
+            "note": position_contract.get(
+                "note",
+                "EQ PRE/POST writes use a fresh category-0x1b readback.",
+            ),
+        }
+        if global_raw is not None and eq_position_write["values"]:
+            try:
+                proto.build_surround_global_eq_position_command(
+                    self.profile, global_raw, "post", allow_experimental=True)
+            except (KeyError, TypeError, ValueError, proto.ConstraintError):
+                pass
+            else:
+                eq_position_write["enabled"] = True
+        write["eq_position"] = eq_position_write
+        bass_contract = contract.get("bass_management_write", {}) or {}
+        bass_fields_contract = bass_contract.get("fields", {}) or {}
+        bass_fields = [
+            str(name) for name, spec in bass_fields_contract.items()
+            if isinstance(spec, dict) and spec.get("writable", True)
+        ]
+        bass_write = {
+            "enabled": False,
+            "experimental": True,
+            "status": bass_contract.get("status", "unavailable"),
+            "fields": bass_fields,
+            "formats": [str(name) for name in bass_contract.get("formats", [])],
+            "block_count": int(bass_contract.get("block_count", 0)),
+            "readback_category": SURROUND_GLOBAL_CAT,
+            "cutoff_range_hz": [20, 320],
+            "fader_range_db": [-60, 16],
+            "order_values": [2, 4, 8],
+            "links": bass_contract.get("links", {}) or {},
+            "note": (
+                "Experimental one-field writes use a fresh category-0x1b "
+                "readback. Cutoffs, orders, bypass, fader, and mute are "
+                "mapped; link, filter type, solo, and meters remain guarded."
+            ),
+        }
+        if global_raw is not None and bass_fields:
+            sample_field = bass_fields[0]
+            sample_value = False if bass_fields_contract[sample_field].get("boolean") else (
+                2 if "order" in sample_field else
+                0 if "fader" in sample_field else 80
+            )
+            try:
+                proto.build_surround_global_bass_command(
+                    self.profile, global_raw, 0, sample_field, sample_value,
+                    allow_experimental=True)
+            except (KeyError, TypeError, ValueError, proto.ConstraintError):
+                pass
+            else:
+                bass_write["enabled"] = True
+        write["bass"] = bass_write
         eq_contract = self.profile.get("runtime_contracts", {}).get(
             "surround_speaker_eq", {}) or {}
         eq_write_contract = eq_contract.get("write_contract", {}) or {}
@@ -1221,6 +1268,7 @@ class Device:
                 "level": b["level"],
                 "dim": bool(b.get("dim")),
                 "mute": bool(b.get("mute")),
+                "mute_ambiguous": bool(b.get("mute_ambiguous")),
                 "mono": bool(b.get("mono")),
             })
         return out
@@ -1628,6 +1676,7 @@ class SurroundGlobalChange(BaseModel):
     format: str | None = None
     delay_ms: float | None = None
     level_db: float | None = None
+    eq_position: str | None = None
 
 
 class SurroundEQChange(BaseModel):
@@ -1635,6 +1684,12 @@ class SurroundEQChange(BaseModel):
     band: int                  # 0-based EQ band index
     parameter: str             # frequency | q | gain | mode
     value: float
+
+
+class SurroundBassChange(BaseModel):
+    channel: int               # 0-based Bass Management block slot
+    field: str                 # one profile-declared channel-block field
+    value: float | int | bool
 
 
 class SurroundEQReset(BaseModel):
@@ -1802,8 +1857,11 @@ def api_surround_global(change: SurroundGlobalChange):
     if not DEV.surround_available:
         return _bad("surround global state is not safely mapped for this profile")
     if change.format is not None:
-        if change.delay_ms is not None or change.level_db is not None:
-            return _bad("format changes cannot be combined with delay or level")
+        if (change.delay_ms is not None or change.level_db is not None
+                or change.eq_position is not None):
+            return _bad(
+                "format changes cannot be combined with delay, level, or "
+                "EQ position")
         format_name = str(change.format).strip()
         format_write = DEV.surround_json()["write"].get("format", {})
         option = next((item for item in format_write.get("options", [])
@@ -1824,6 +1882,45 @@ def api_surround_global(change: SurroundGlobalChange):
 
         DEV.submit(do)
         return {"ok": True, "queued": True, "format": format_name}
+    if change.eq_position is not None:
+        if change.delay_ms is not None or change.level_db is not None:
+            return _bad(
+                "EQ position cannot be combined with delay or level")
+        position_write = DEV.surround_json()["write"].get(
+            "eq_position", {})
+        if not position_write.get("enabled"):
+            return _bad(
+                "Surround EQ-position writes are not authorized for this "
+                "readback")
+        position = str(change.eq_position).strip().lower()
+        if position not in position_write.get("fields", []):
+            return _bad(
+                f"Surround EQ position {position!r} is not a writable option")
+
+        with DEV._lock:
+            cached_body = DEV.surround_global_raw
+        if cached_body is not None:
+            try:
+                proto.build_surround_global_eq_position_command(
+                    PROFILE, cached_body, position,
+                    allow_experimental=True)
+            except (KeyError, TypeError, ValueError, proto.ConstraintError) as exc:
+                return _bad(str(exc))
+
+        def do(t):
+            body = DEV._surround_global_body_for_write(t)
+            packet = proto.build_surround_global_eq_position_command(
+                PROFILE, body, position, allow_experimental=True)
+            t.write(packet)
+            DEV._cache_surround_global_packet(packet)
+
+        DEV.submit(do)
+        return {
+            "ok": True,
+            "queued": True,
+            "experimental": bool(position_write.get("experimental", False)),
+            "eq_position": position,
+        }
     if change.delay_ms is None and change.level_db is None:
         return _bad("provide a surround delay or level")
     if not DEV.surround_json()["write"]["enabled"]:
@@ -1859,6 +1956,54 @@ def api_surround_global(change: SurroundGlobalChange):
         "delay_ms": None if delay_raw is None else delay_raw * delay_step,
         "level_db": None if level_raw is None
         else (level_raw - level_zero) * level_step,
+    }
+
+
+@app.post("/api/surround/bass")
+def api_surround_bass(change: SurroundBassChange):
+    """Queue one bounded experimental Bass Management field write."""
+    if not DEV.surround_available:
+        return _bad("surround global state is not safely mapped for this profile")
+    bass_write = DEV.surround_json()["write"].get("bass", {})
+    if not bass_write.get("enabled"):
+        return _bad(
+            "Bass Management writes are available only for a fresh supported "
+            "surround readback")
+    field = str(change.field).strip().lower()
+    if field not in bass_write.get("fields", []):
+        return _bad(f"Bass Management field {field!r} is not writable")
+    block_count = int(bass_write.get("block_count", 0))
+    if not 0 <= change.channel < block_count:
+        return _bad(
+            f"Bass Management channel {change.channel} out of range "
+            f"0..{block_count - 1}")
+
+    with DEV._lock:
+        cached_body = DEV.surround_global_raw
+    if cached_body is not None:
+        try:
+            proto.build_surround_global_bass_command(
+                PROFILE, cached_body, change.channel, field, change.value,
+                allow_experimental=True)
+        except (KeyError, TypeError, ValueError, proto.ConstraintError) as exc:
+            return _bad(str(exc))
+
+    def do(t):
+        body = DEV._surround_global_body_for_write(t)
+        packet = proto.build_surround_global_bass_command(
+            PROFILE, body, change.channel, field, change.value,
+            allow_experimental=True)
+        t.write(packet)
+        DEV._cache_surround_global_packet(packet)
+
+    DEV.submit(do)
+    return {
+        "ok": True,
+        "queued": True,
+        "experimental": True,
+        "channel": change.channel,
+        "field": field,
+        "value": change.value,
     }
 
 

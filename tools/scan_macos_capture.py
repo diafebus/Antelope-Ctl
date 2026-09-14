@@ -6,8 +6,9 @@ scan_capture.py expects -- tshark leaves usbhid.data / usb.capdata empty,
 so this reads the raw frames instead.
 
 Layout: each vendor HID report = 40-byte Darwin pseudo-header + 320-byte
-payload (frame.len == 360). payload[0] = magic (0x70 out / 0x73 0x74 0x75
-in). Header byte 30 = endpoint (0x01 OUT host->dev, 0x82 IN dev->host);
+payload (frame.len == 360). payload[0] = magic (0x70 commands and 0x74 queries
+out / 0x73 and 0x75 reports in). Header byte 30 = endpoint (0x01 OUT
+host->dev, 0x82 IN dev->host);
 VID/PID at header bytes 36-39. tshark's usb.src/usb.dst direction labels
 are unreliable here -- outgoing frames are identified by magic 0x70.
 
@@ -32,10 +33,9 @@ def load(path):
         b = bytes.fromhex(L["frame_raw"][0])
         hdr, payload = b[:40], b[40:]
         magic = payload[0]
-        # magic is the reliable discriminator: 0x70 = host->device command,
-        # 0x73/0x74/0x75 = device->host report. Header byte 30 (endpoint) is
-        # not consistent enough on Darwin captures (0x74 rides endpoint 1).
-        direction = "OUT" if magic == 0x70 else "IN"
+        # Both 0x70 commands and 0x74 readback queries are host-to-device.
+        # Header byte 30 confirms that 0x74 uses endpoint 0x01 OUT.
+        direction = "OUT" if magic in (0x70, 0x74) else "IN"
         rows.append({
             "n": int(L["frame"]["frame.number"]),
             "t": float(L["frame"]["frame.time_relative"]),

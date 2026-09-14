@@ -49,7 +49,9 @@ real discriminator (§14).
 Ten command opcodes are known. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
 `0x53`). The WebUI also emits the profile-guarded `0xab` global surround
-read-modify-write. The WebUI also has an explicitly experimental `0x87`
+read-modify-write, including the confirmed EQ PRE/POST bit and bounded
+experimental Bass Management channel fields when a fresh supported 2.1
+readback is available. The WebUI also has an explicitly experimental `0x87`
 per-speaker EQ path: individual controls write one field, while Reset writes
 the profile-defined frequency/Q/gain preset for one speaker after a fresh
 readback. The remaining two are **not emitted by normal CLI/WebUI paths** —
@@ -78,7 +80,7 @@ single most important thing to get right.
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
-| `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim -- §11 | surround tab global; WebUI's verified 2.0 delay/level path uses a fresh read-modify-write |
+| `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim, `[43+]` = Bass Management channel blocks -- §11 | surround tab global; WebUI uses fresh read-modify-write for 2.0/2.1 global fields and bounded experimental 2.1 Bass Management fields |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; explicit one-field/reset writes in WebUI and one-field probe in `tools/surround_eq_selftest.py` |
 | `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
 | `0x1c` | *(AFX plugin parameters)* | `0xd5` | frame-identified only (§12a) -- payload never decoded on purpose | **observed only, never emitted** -- `0x1c` is in `forbidden_opcodes` (a licensed plugin's parameter set = bucket D) |
@@ -146,9 +148,9 @@ or handshake behaviour.
 HID report is a 40-byte Darwin pseudo-header + 320-byte payload =
 `frame.len == 360`; payload byte 0 is the usual magic. Header byte 30 =
 endpoint (`0x01` OUT / `0x82` IN); VID/PID at header bytes 36-39. The
-`0x74` enumeration arrives on IN endpoint 1, `0x73`/`0x75` on IN endpoint
-2. tshark's `usb.src`/`usb.dst` direction labels are unreliable here --
-discriminate outgoing frames by magic `0x70` + opcode instead.
+`0x74` enumeration is sent on OUT endpoint `0x01`; `0x73`/`0x75` arrive on
+IN endpoint `0x82`. tshark's `usb.src`/`usb.dst` direction labels are
+unreliable here, so use the magic together with the endpoint/direction.
 
 ---
 
@@ -574,10 +576,12 @@ status_byte = (phase_invert << 6) | (phantom << 4) | (input_mode & 0x03)
 | mono | `0x10` | 4 |
 
 **`mute` bit is ambiguous.** `0x04` reads 1 both when the bus is
-explicitly muted **and** whenever `bus_level == 96` (max), with no mute
-command -- reproduced on buses 0, 3, 4 (2026-08). A reader must
-special-case `level == 96`: at max level, treat `0x04` as "at unity", not
-"muted", unless a mute was explicitly sent.
+explicitly muted **and** whenever `bus_level == 96` (the silent /
+maximum-attenuation endpoint), with no mute command -- reproduced on buses
+0, 3, 4 (2026-08). A reader must special-case `level == 96`: at the silent
+endpoint, treat `0x04` as an endpoint marker, not definite mute, unless a
+mute was explicitly sent. The connected device was checked directly on
+2026-09-14: Monitor A reports raw 0 at maximum volume and raw 96 at minimum.
 
 ### Talkback status byte (offset 73)
 
@@ -656,6 +660,12 @@ indices.
 | 5 | monitor_b | monb, mon_b | 43 |
 
 `master_volume` is not a distinct param -- it is bus 0's `bus_level`.
+
+`bus_level` is an attenuation value, not a positive gain value: raw `0` is
+the device's maximum/0 dB endpoint, raw `1..95` are the corresponding
+negative-dB steps, and raw `96` (`0x60`) is the device's silent/`-inf`
+endpoint. This was confirmed directly on Monitor A on 2026-09-14; the
+capture-derived byte offsets remain valid.
 
 `bus_dim` / `bus_mono` were only exercised on 0/1/2/5 and may not apply to
 line_out / reamp. `bus_mute` confirmed on 0/1/2/3.
@@ -872,9 +882,10 @@ wrong assumption was that a readback *must* take one of those forms.
   Output report -- no Feature report, no report IDs**. The device
   **STALLs (EPIPE) every control-pipe `GET_REPORT`** -- both
   `GET_FEATURE` and `GET_REPORT(Input)`, at every length tried. So the
-  only thing the device ever sends is the unsolicited `0x73`/`0x74`/`0x75`
-  interrupt stream, and none of those carry routing (verified full-width
-  on the on2/on3 diff pair and every `matrix-*` capture).
+  only thing the device ever sends is the `0x73`/`0x75` interrupt stream.
+  This historical analysis failed to distinguish solicited `0x75` readback
+  responses from free-running meters; `0x74` is the host query, not a device
+  report.
 - **UAC2 can't carry it either** -- the audio-control interface is a stub
   (1 clock, 4 terminals, no Feature/Selector/Mixer units).
 - **Loading a preset is pure push.** `macos-session-load-pre-afx-to-line`
@@ -1071,17 +1082,51 @@ The same test found these additional paths while scanning all data bytes 16..
 319 in both `0x73` and free-running `0x75` reports:
 
 - Meters selector 9 (“Surround Out”) and 25 (“Surround In”) changed `0x75
-  @34/@50` when Preamp 1 was routed through the surround destination. The
-  bytes are confirmed as a surround selector path, but input-vs-output stage
-  ownership is not separated.
+  @34/@50` when Preamp 1 was routed through the surround destination. This
+  was a preliminary aggregate observation; the later 16-channel direct
+  oscillator sweep below supersedes it for per-channel ownership.
 - Meters selector 18 (“AFX In”) changed `0x75 @32` when Preamp 1 was routed
   to AFX In. No plugin parameter or activation traffic was used.
 - Selectors 10..17 (“Line Out”, HP1, HP2, Monitor A/B, Reamp, ADAT Out,
   S/PDIF Out) produced no stable transition in either report type, even with
-  the corresponding bus temporarily set to level 96 and all other channels
-  muted. This rules out a fixed HID meter lane under these conditions; it does
-  not rule out a Launcher/WebUI meter calculated from the USB isochronous audio
-  stream.
+  the corresponding bus temporarily set to raw level 96 (the silent endpoint)
+  and all other channels muted. This does not exercise a post-level output
+  meter at unity; it rules out a fixed HID meter lane under those conditions,
+  but does not rule out a Launcher/WebUI meter calculated from the USB
+  isochronous audio stream.
+
+### Controlled live Surround meter map — 2026-09-12
+
+A second restore-safe direct-HID sweep mapped the Surround per-channel meter
+bank without using a virtual mixer. The device was temporarily changed from
+the original 2.0 layout to the already-probed 9.1.6 layout so all sixteen
+Surround input slots were active. All Surround input channels were then muted,
+and Oscillator 1 was routed directly to one channel at a time through routing
+destination 14 (`Surround In`). The test captured only free-running `0x75`
+reports with byte `[1] = 0x1f`; `0x73` virtual-mixer reports were excluded.
+
+The primary bank is one byte per Surround channel:
+
+| Surround channel | `0x75` offset | Surround channel | `0x75` offset | Surround channel | `0x75` offset | Surround channel | `0x75` offset |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | `@34` | 5 | `@38` | 9 | `@42` | 13 | `@46` |
+| 2 | `@35` | 6 | `@39` | 10 | `@43` | 14 | `@47` |
+| 3 | `@36` | 7 | `@40` | 11 | `@44` | 15 | `@48` |
+| 4 | `@37` | 8 | `@41` | 12 | `@45` | 16 | `@49` |
+
+Equivalently, the offset is `33 + channel_number`. Every active channel
+moved from raw `96` at silence to approximately raw `18` with the test tone.
+The same primary `@34..@49` map appeared with both Meters-window selector 25
+(`Surround In`) and selector 9 (`Surround Out`). This confirms the live
+Surround meter path and per-channel ordering, but does not yet distinguish
+the input-stage and output-stage ownership of the two selectors. Additional
+changes around `@50..@52` were weaker and did not form a stable one-to-one
+sixteen-channel map; they remain auxiliary/aggregate candidates and are not
+part of the primary mapping. Raw values are intentionally documented without
+claiming a calibrated dB transfer for this `0x75` bank.
+
+The original Surround global frame, routing, meter selector, and oscillator
+mute state were restored and verified after the sweep.
 
 The physical-input test observed the user's tone at `0x73 @221` (raw 18,
 reaching raw 0 at louder moments). The remaining physical inputs require
@@ -1174,7 +1219,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | phantom | `0x51` | `0x13` | channel 0-11 | 0/1 (mic mode only) | status byte bit 4 |
 | phase_invert | `0x52` | `0x13` | channel 0-11 | 0/1 | status byte bit 6 |
 | adat_gain | `0x5b` | `0x13` | ADAT ch 0-15 | int8 dB, -6..+12 | ADAT gain array `75+ch` |
-| bus_level | `0x47` | `0x13` | bus id 0-5 | 0-96 (0=-inf, 96=0dB) | bus_block level `28+3N` |
+| bus_level | `0x47` | `0x13` | bus id 0-5 | attenuation 0-96 (0=0dB maximum, 96=-inf/silent) | bus_block level `28+3N` |
 | bus_dim | `0x68` | `0x13` | bus id | 0/1 | bus status bit 3 |
 | bus_mute | `0x48` | `0x13` | bus id | 0/1 | bus status bit 2 (ambiguous, section 6) |
 | bus_mono | `0x69` | `0x13` | bus id | 0/1 | bus status bit 4 |
@@ -1191,7 +1236,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
-| surround tab (global) | `0xeb` | `0xab` | - | `[18-19]` flags, `[31-40]` packed channel order, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`); WebUI format writes only 2.0/2.1, guarded self-test covers higher layouts |
+| surround tab (global) | `0xeb` | `0xab` | - | `[18-19]` flags, `[31-40]` packed channel order, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim, `[43+]` Bass Management blocks (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`); WebUI writes 2.0/2.1 format, delay/level, and confirmed EQ PRE/POST, plus bounded experimental 2.1 Bass Management fields; guarded self-test covers higher layouts |
 | surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: 4 opaque candidate-head bytes + EQ; dynamic head semantics unverified); bounded WebUI/self-test writes one EQ field at a time |
 | oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
@@ -1279,8 +1324,8 @@ too. See `params.screen_brightness`.
 
 The Surround tab has a **global** whole-state frame and a **per-speaker**
 one. The global frame has separate profile-driven builders for the verified
-delay/level path and for format changes. Normal format writes are currently
-limited to 2.0 and 2.1 in the WebUI. The per-speaker EQ has a narrowly
+2.0/2.1 delay/level and format paths, plus the confirmed EQ PRE/POST bit.
+Normal format writes are currently limited to 2.0 and 2.1 in the WebUI. The per-speaker EQ has a narrowly
 scoped, explicitly experimental one-field WebUI/self-test write path; its
 candidate delay/level/invert head remains read-only.
 
@@ -1341,6 +1386,14 @@ the WebUI intentionally enables only 2.0 and 2.1. Use
 `tools/surround_format_selftest.py` for the explicitly acknowledged higher
 layout probes.
 
+**EQ position mapping.** In
+`macos-captures/macos-settings-srrndeq-post-pre.pcapng`, the official Launcher
+toggles only flags-B bit 7 (command byte 19: `0x9f` / `0x1f`) for POST/PRE.
+The 2026-09-12 probe of flags-A bit 7 proved only that this unrelated preserved
+bit could round-trip; it did not establish its UI meaning. The profile and
+WebUI now target the capture-backed flags-B bit. The standalone probe still
+requires an explicit write acknowledgement.
+
 Antelope's docs say the Orion Studio SC surround system covers **23+
 layouts, stereo → Dolby Atmos 9.1.6**, but the full feature **needs the
 MRC (Multichannel Remote Control)** hardware. Without it only **2.0**
@@ -1357,15 +1410,15 @@ exists (decoded as the per-speaker EQ path).
 | off | field | notes |
 |---|---|---|
 | 16-17 | `0xeb` param, `0x99` const | |
-| 18 | **flags A — bitfield** | bits 0-4 = channel count; bit 5 (`0x20`) = bass-management / crossover; bit 6 = global-delay bypass; bit 7 = pre/post meters. 2.0 = `0x02`; 2.1 with BM on = `0x23` |
-| 19 | **flags B — bitfield** | bits 0-4 = zero-based LFE index (`0x1f` = no LFE); bit 5 = EQ bypass; bit 6 = total-delay bypass; bit 7 = EQ pre/post. 2.0 = `0x9f`; 2.1 = `0x82` |
+| 18 | **flags A — bitfield** | bits 0-4 = channel count; bit 5 (`0x20`) = bass-management / crossover; bits 6-7 remain unconfirmed and are preserved. 2.0 = `0x02`; 2.1 with BM on = `0x23` |
+| 19 | **flags B — bitfield** | bits 0-4 = zero-based LFE index (`0x1f` = no LFE); bit 7 (`0x80`) = EQ PRE/POST; bits 5-6 remain unconfirmed and are preserved. 2.0 = `0x9f`; 2.1 = `0x82` |
 | 31-40 | **packed channel order** | ten bytes, right-aligned big-endian five-bit `SurroundSpeakerId` values: 2.0 `[L,R]` = `00…0023`; 2.1 `[L,R,LFE]` = `00…000464` |
 | 20 | **global surround delay**, uint8, 0.1 ms/step (base `0x06` = 0.6 ms floor) | swept `0x06`..`0x2d` |
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
 | 25-26 | **per-speaker BYPASS mask**, LE16 — bit N = speaker N (1 = active, 0 = bypassed); default `0xFFFF` | confirmed (`srrnd-L-bypass`: bypassing L → `0xFFFF`→`0xFFFE`) |
 | 27-28 / 29-30 | **mute / dim**, per-speaker LE16 masks | mute confirmed by the Ctrl-click SOLO ("mute all others") writing only the selected bit |
 | 23-42 | **2.1 bass-management** header | `[23-24]` `04 64` LFE marker; `[25-26]` LE16 flags (`0xFFFF` in captures); `[41-42]` ~9-bit bitfield — filter *type* (Butterworth/Linkwitz-Riley) + link toggles, one bit/click, not individually mapped |
-| 43… | **BM mixer — 8-byte channel blocks** (3 used, LINK-mirrored) | `[+0]` LP cutoff (Hz 20–320, **bit 15 = LP bypass**); `[+2]` HP cutoff (same, **bit 15 = HP bypass**); `[+4]` **fader** (LE16, base `600` = 0 dB; **bit 15 = mute**, bits 13-14 = solo+1); `[+6]` filter **order** (LP low byte / HP high byte, `0/1/2` = 2/4/8) |
+| 43… | **BM mixer — 8-byte channel blocks** (3 used, LINK-mirrored) | `[+0]` LP cutoff (Hz 20–320, **bit 15 = LP bypass**); `[+2]` HP cutoff (same, **bit 15 = HP bypass**); `[+4]` **fader** (LE16, base `600` = 0 dB; low 13 bits are mapped, **bit 15 = mute**, bits 13-14 are preserved as unverified flags); `[+6]` filter **order** (LP low byte / HP high byte, `0/1/2` = 2/4/8). The WebUI can write one cutoff, bypass bit, order, fader, or mute field at a time from a fresh 2.1 readback; link/type/solo writes remain guarded. |
 | 40-168 | fixed default template | `23 00 00` then `[80][80][600][0]` repeated -- **not** the live EQ curve (that's the `0x87` frame) |
 
 **Per-speaker: `0x87` / `0xea`** -- DECODED 2026-09-03 (`srrnd-L/R-*`,
@@ -1850,8 +1903,9 @@ sibling device, folded into `orion_studio_sc.json` as `family_notes`,
   for a Report ID item (`0x85 ...`); if absent, Orion needs the prefix too.
 - **Outgoing byte 0 is cosmetic.** On the Discrete 8 Pro, byte 0 of a
   command is ignored (offset 4 is the discriminator). `0x70` is written
-  for family consistency. "Byte 0 = the magic" is a property of the
-  *incoming* reports (`0x73`/`0x75`/`0x74`), not the command.
+  for family consistency. "Byte 0 = the magic" is a property of wire-report
+  families (`0x70` commands, `0x74` queries, `0x73`/`0x75` responses), not
+  the command discriminator.
 - **`0x61` error frame.** The Discrete 8 Pro replies `0x61` (status @4,
   `0x10` = "unknown opcode") **only** for an unrecognised opcode; a
   recognised opcode gets **silence**. Silence ≠ success (its `0x14` was
@@ -1862,7 +1916,7 @@ sibling device, folded into `orion_studio_sc.json` as `family_notes`,
 
 | Param | Orion | Discrete 8 Pro |
 |---|---|---|
-| `bus_level` `0x47` | `0-96`, `96` = 0 dB unity | plain: value `N` = `-N` dB |
+| `bus_level` `0x47` | attenuation `0-96`, `0` = 0 dB, `96` = -inf | attenuation `0-96`, `N` = `-N` dB |
 | `gain` `0x50` mic | `0..75` | `-12..65` |
 | `gain` `0x50` hiz | `0..65` | `0..40` |
 | `gain` `0x50` line | `-6..20` | `-6..20` (same) |

@@ -20,8 +20,9 @@ compatibility.
     profile-declared nested readback records, refreshed one record per meter
     cycle on connect and every 45 s. Route/mixer/Gazelle Reverb writes update
     their serialized caches directly. The Surround tab exposes the bounded
-    `0x1b` global and `0x1a` speaker EQ records; the verified 2.0 global
-    delay/level path and bounded per-speaker EQ path write using fresh
+    `0x1b` global and `0x1a` speaker EQ records; the 2.0/2.1 global
+    format and delay/level paths plus confirmed EQ PRE/POST write using fresh
+    complete-state reads, and the bounded per-speaker EQ path writes using fresh
     complete-state reads. The EQ Reset action writes the profile preset for
     only the displayed speaker. `/api/readbacks` exposes the structured records
     to diagnostics and `/api/surround` serves the decoded Surround surface. Queries use the active
@@ -46,7 +47,8 @@ compatibility.
   The UI itself contains:
   - input strips styled after `ideas/PreampUI.svg` -- 270° gain knob
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
-  - output buses, screen brightness;
+  - output buses (device-confirmed attenuation: raw 0 = 0 dB maximum,
+    raw 96 = -inf/silent), screen brightness;
   - a **Routing** panel with `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4 | Surround` tabs;
     each Mix tab contains a compact horizontal board of vertical strips with
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
@@ -56,8 +58,10 @@ compatibility.
     stacked and the original mute/solo state is restored when the last Solo
     is released;
   - a **Surround** panel renders global format, delay/level, masks,
-    bass-management blocks, speaker selection, and per-speaker 16-band EQ;
-    unverified controls remain visibly read-only;
+    speaker selection, and per-speaker 16-band EQ. Its Bass Management popup
+    shows only the active format channels, places 2.1 as L · R · LFE, and groups
+    strips with colored bars; unverified controls and meters remain visibly
+    read-only. The global format selector allows 2.0 and 2.1.
   - a **Protocol readback** diagnostics section renders profile-declared link
     tables, mic-emulation state, AFX instance counts, and AFX strip order. It
     seeds mixer-pair link state from a complete profile-confirmed bitmap when

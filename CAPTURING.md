@@ -128,8 +128,9 @@ Re-check every "host-side" verdict on native macOS. Capture there:
    payload** (`frame.len == 360`); the payload (byte 0 = the usual magic
    `0x70`/`0x73`/`0x74`/`0x75`) is `frame_raw[80:]`. Header byte 30 =
    endpoint (`0x01` OUT / `0x82` IN); VID/PID at header bytes 36-39.
-   `usb.src`/`usb.dst` direction labels are unreliable -- identify
-   outgoing frames by magic `0x70` + opcode at payload[4] instead.
+   `usb.src`/`usb.dst` direction labels are unreliable -- identify ordinary
+   outgoing commands by magic `0x70` + opcode at payload[4], and readback
+   queries by magic `0x74` on endpoint `0x01` OUT.
    Use **`tools/scan_macos_capture.py`** (needs `tshark` on PATH):
    ```
    tools/scan_macos_capture.py CAP.pcapng                # outgoing cmds + 0x73 transitions

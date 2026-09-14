@@ -4,6 +4,7 @@
 let SURROUND = null;
 let SURROUND_SPEAKER = 0;
 let SURROUND_BUILT = false;
+let SURROUND_BASS_WINDOW = null;
 
 const SURROUND_FORMAT_OPTIONS = [
   '2.0', '2.1', '3.0', '3.1', '4.0', '4.1',
@@ -56,31 +57,425 @@ function surroundRangeInput(field, label, value, range, unit, writable, step = 0
   </label>`;
 }
 
-function surroundBassManagement(global) {
-  const channels = global?.bass_mgmt_channels || [];
-  if (!channels.length) return '<p class="surround-empty">No bass-management blocks in this readback.</p>';
-  const rows = channels.map((channel, index) => `<tr>
-    <td>Channel ${index + 1}</td>
-    <td>${surroundNumber(channel.lp_cutoff_hz, 0)} Hz${channel.lp_bypass ? ' · bypass' : ''}</td>
-    <td>${surroundNumber(channel.hp_cutoff_hz, 0)} Hz${channel.hp_bypass ? ' · bypass' : ''}</td>
-    <td>${surroundNumber(channel.fader_db)} dB${channel.fader_mute ? ' · mute' : ''}</td>
-    <td>${surroundNumber(channel.lp_order, 0)} / ${surroundNumber(channel.hp_order, 0)}</td>
-  </tr>`).join('');
-  return `<table class="surround-table"><thead><tr><th>channel</th><th>low-pass</th>
-    <th>high-pass</th><th>fader</th><th>order L/H</th></tr></thead><tbody>${rows}</tbody></table>`;
+const SURROUND_FORMAT_CHANNEL_ORDER = {
+  '2.0': [1, 3],
+  '2.1': [1, 3, 4],
+  '3.0': [1, 3, 2],
+  '3.1': [1, 3, 2, 4],
+  '4.0': [1, 3, 2, 5],
+  '4.1': [1, 3, 2, 4, 5],
+  '5.0': [1, 3, 2, 7, 10],
+  '5.1': [1, 3, 2, 4, 7, 10],
+  '5.1.2': [1, 3, 2, 4, 7, 10, 13, 16],
+  '5.1.4': [1, 3, 2, 4, 7, 10, 12, 15, 14, 17],
+  '7.0': [1, 3, 2, 7, 10, 8, 11],
+  '7.0.2': [1, 3, 2, 7, 10, 8, 11, 13, 16],
+  '7.1': [1, 3, 2, 4, 7, 10, 8, 11],
+  '7.1.2': [1, 3, 2, 4, 7, 10, 8, 11, 13, 16],
+  '7.1.4': [1, 3, 2, 4, 7, 10, 8, 11, 12, 15, 14, 17],
+  '7.1.6': [1, 3, 2, 4, 7, 10, 8, 11, 12, 15, 13, 16, 14, 17],
+  '9.1.2': [1, 3, 2, 4, 7, 10, 8, 11, 6, 9, 13, 16],
+  '9.1.4': [1, 3, 2, 4, 7, 10, 8, 11, 6, 9, 12, 15, 14, 17],
+  '9.1.6': [1, 3, 2, 4, 7, 10, 8, 11, 6, 9, 12, 15, 13, 16, 14, 17],
+};
+
+const SURROUND_BASS_CHANNEL_LABELS = {
+  1: 'L', 2: 'C', 3: 'R', 4: 'LFE', 5: 'S',
+  6: 'Lw', 7: 'Lss', 8: 'Lrs', 9: 'Rw', 10: 'Rss', 11: 'Rrs',
+  12: 'Ltf', 13: 'Ltm', 14: 'Ltr', 15: 'Rtf', 16: 'Rtm', 17: 'Rtr',
+};
+
+const SURROUND_BASS_DEFAULT_BLOCK = {
+  lp_cutoff_hz: 80,
+  hp_cutoff_hz: 80,
+  lp_bypass: false,
+  hp_bypass: false,
+  lp_order: 0,
+  hp_order: 0,
+  fader_db: 0,
+  fader_mute: false,
+  readback: false,
+};
+
+function surroundBassFormatOption(data) {
+  const format = data?.global?.format;
+  return (data?.write?.format?.options || []).find(item => item?.name === format)
+    || null;
 }
 
-function surroundBassModal(global) {
-  return '<div class="surround-bass-modal" data-surround-bass-modal hidden>'
-    + '<div class="surround-bass-dialog" role="dialog" aria-modal="true"'
+function surroundBassChannelOrder(data) {
+  const option = surroundBassFormatOption(data);
+  if (Array.isArray(option?.channel_order) && option.channel_order.length) {
+    return option.channel_order.map(Number).filter(Number.isFinite);
+  }
+  const format = data?.global?.format;
+  const fallback = SURROUND_FORMAT_CHANNEL_ORDER[format];
+  if (fallback) return [...fallback];
+  const count = Number(data?.active_speaker_count || data?.speaker_count || 0);
+  return Array.from({length: count}, (_, index) => index + 1);
+}
+
+function surroundBassChannelLabel(channelId) {
+  return SURROUND_BASS_CHANNEL_LABELS[channelId] || `CH${channelId}`;
+}
+
+function surroundBassGroup(channelId) {
+  if (channelId === 4) return 'lfe';
+  if ([1, 2, 3].includes(channelId)) return 'front';
+  if (channelId >= 12 && channelId <= 17) return 'height';
+  return 'surround';
+}
+
+function surroundBassChannels(data) {
+  const global = data?.global || {};
+  const blocks = global.bass_mgmt_channels || [];
+  const channels = surroundBassChannelOrder(data).map((channelId, slot) => ({
+    channelId,
+    slot,
+    label: surroundBassChannelLabel(channelId),
+    group: surroundBassGroup(channelId),
+    lfe: channelId === 4,
+    block: {...SURROUND_BASS_DEFAULT_BLOCK, ...(blocks[slot] || {}),
+      readback: !!blocks[slot]},
+  }));
+  const lfeIndex = channels.findIndex(channel => channel.lfe);
+  if (global.format !== '2.1' && lfeIndex > 0) {
+    channels.unshift(channels.splice(lfeIndex, 1)[0]);
+  }
+  return channels;
+}
+
+function surroundBassValue(value, digits = 0, fallback = '–') {
+  return Number.isFinite(Number(value)) ? surroundNumber(value, digits) : fallback;
+}
+
+function surroundBassOrder(value) {
+  return ({0: '2', 1: '4', 2: '8'})[Number(value)] || '–';
+}
+
+function surroundBassFieldWritable(write, field) {
+  return write?.enabled === true && Array.isArray(write.fields)
+    && write.fields.includes(field);
+}
+
+function surroundBassKnob(value, label, field, channel, bassWrite) {
+  const current = Number.isFinite(Number(value)) ? Number(value) : 80;
+  const angle = surroundKnobAngle(current, 20, 320, true);
+  const writable = surroundBassFieldWritable(bassWrite, field);
+  return '<div class="mixer-knob-control bass-knob-control">'
+    + '<output class="mixer-readout bass-readout" data-bass-readout>'
+    + surroundBassValue(current) + ' Hz</output>'
+    + '<div class="mixer-knob bass-knob" title="' + surroundEscape(label) + '">'
+    + '<i style="transform:translateX(-50%) rotate(' + angle + 'deg)"></i>'
+    + '<input type="range" data-bass-input data-bass-knob data-logarithmic="true"'
+    + ' data-bass-field="' + surroundEscape(field) + '" data-bass-slot="'
+    + channel.slot + '" min="20" max="320" step="1" value="' + current
+    + '"' + (writable ? '' : ' disabled') + ' aria-label="'
+    + surroundEscape(label) + '"></div></div>';
+}
+
+function surroundBassChip(value, label, className = '') {
+  return '<div class="bass-chip ' + className + '" title="'
+    + surroundEscape(label) + '"><span>' + surroundEscape(value) + '</span></div>';
+}
+
+function surroundBassOrderControl(value, label, field, channel, bassWrite) {
+  const current = surroundBassOrder(value);
+  const writable = surroundBassFieldWritable(bassWrite, field);
+  const options = ['2', '4', '8'].map(order => '<option value="' + order + '"'
+    + (order === current ? ' selected' : '') + '>' + order + '</option>').join('');
+  return '<select class="bass-chip bass-order-control" data-bass-input'
+    + ' data-bass-field="' + surroundEscape(field) + '" data-bass-slot="'
+    + channel.slot + '" aria-label="' + surroundEscape(label) + '"'
+    + (writable ? '' : ' disabled') + '>' + options + '</select>';
+}
+
+function surroundBassBypass(on, label, field, channel, bassWrite) {
+  const writable = surroundBassFieldWritable(bassWrite, field);
+  return '<button class="bass-bypass' + (on ? ' on' : '') + '" type="button"'
+    + ' data-bass-input data-bass-boolean="true" data-bass-field="'
+    + surroundEscape(field) + '" data-bass-slot="' + channel.slot
+    + '" aria-pressed="' + (on ? 'true' : 'false') + '"'
+    + (writable ? '' : ' disabled') + ' title="' + surroundEscape(label)
+    + '">BP</button>';
+}
+
+function surroundBassFilter(channel, side, bassWrite) {
+  const block = channel.block;
+  const highPass = side === 'hp';
+  const cutoff = highPass ? block.hp_cutoff_hz : block.lp_cutoff_hz;
+  const bypass = highPass ? block.hp_bypass : block.lp_bypass;
+  const order = highPass ? block.hp_order : block.lp_order;
+  const cutoffField = highPass ? 'hp_cutoff_hz' : 'lp_cutoff_hz';
+  const bypassField = highPass ? 'hp_bypass' : 'lp_bypass';
+  const orderField = highPass ? 'hp_order' : 'lp_order';
+  const label = (highPass ? 'High-pass' : 'Low-pass') + ' ' + channel.label;
+  const filterType = channel.lfe && !highPass ? 'L-R' : 'BW';
+  if (channel.lfe && highPass) {
+    return '<div class="bass-filter bass-filter-empty" aria-hidden="true"></div>';
+  }
+  return '<div class="bass-filter bass-filter-' + side + '">'
+    + '<div class="bass-filter-spacer"></div>'
+    + surroundBassKnob(cutoff, label + ' cutoff', cutoffField, channel, bassWrite)
+    + surroundBassChip(filterType, label + ' filter type', 'bass-filter-type')
+    + surroundBassOrderControl(order, label + ' filter order',
+      orderField, channel, bassWrite)
+    + surroundBassBypass(bypass, label + ' bypass', bypassField, channel, bassWrite)
+    + '</div>';
+}
+
+function surroundBassFader(channel, bassWrite) {
+  const fader = Number.isFinite(Number(channel.block.fader_db))
+    ? Number(channel.block.fader_db) : 0;
+  const configuredRange = bassWrite.fader_range_db;
+  const range = Array.isArray(configuredRange) && configuredRange.length === 2
+    ? configuredRange.map(Number) : [-60, 16];
+  const min = Number.isFinite(range[0]) ? range[0] : -60;
+  const max = Number.isFinite(range[1]) ? range[1] : 16;
+  const rangeValue = Math.max(min, Math.min(max, fader));
+  const faderWritable = surroundBassFieldWritable(bassWrite, 'fader_db');
+  const muteWritable = surroundBassFieldWritable(bassWrite, 'fader_mute');
+  return '<div class="bass-mixer-section">'
+    + '<output class="mxval bass-fader-value" data-bass-readout>'
+    + surroundBassValue(fader, 1) + 'dB</output>'
+    + '<div class="mixer-fader-row bass-fader-row">'
+    + '<div class="mixer-fader-well">'
+    + '<span class="mixer-fader-thumb" aria-hidden="true">'
+    + '<img class="mixer-fader-art" src="/webui/assets/fader-shadow.svg" alt="" draggable="false">'
+    + '</span>'
+    + '<input class="mixer-fader" type="range" data-fader data-bass-fader data-bass-input'
+    + ' data-bass-field="fader_db" data-bass-slot="' + channel.slot + '"'
+    + ' min="' + min + '" max="' + max + '" step="0.1" value="' + rangeValue
+    + '"' + (faderWritable ? '' : ' disabled') + ' aria-label="'
+    + surroundEscape(channel.label) + ' bass-management fader">'
+    + '</div>'
+    + '<div class="mixer-meter bass-meter" title="Bass-management meter unavailable pending Launcher capture">'
+    + '<i class="unavailable" data-bass-meter></i></div>'
+    + '</div>'
+    + '<div class="bass-mixer-buttons">'
+    + '<button type="button" class="bass-mixer-button bass-mute'
+    + (channel.block.fader_mute ? ' on' : '') + '" data-bass-input'
+    + ' data-bass-boolean="true" data-bass-field="fader_mute" data-bass-slot="'
+    + channel.slot + '" aria-pressed="' + (channel.block.fader_mute ? 'true' : 'false')
+    + '"' + (muteWritable ? '' : ' disabled') + ' aria-label="'
+    + surroundEscape(channel.label) + ' mute">M</button>'
+    + '<button type="button" class="bass-mixer-button bass-solo" disabled'
+    + ' title="Solo mapping pending a dedicated capture" aria-label="'
+    + surroundEscape(channel.label) + ' solo">S</button>'
+    + '</div></div>';
+}
+
+function surroundBassStrip(channel, bassWrite) {
+  return '<article class="bass-strip bass-group-' + channel.group
+    + '" data-bass-channel="' + channel.channelId + '" data-bass-slot="'
+    + channel.slot + '">'
+    + '<header class="bass-strip-header"><strong>' + surroundEscape(channel.label) + '</strong></header>'
+    + surroundBassFilter(channel, 'hp', bassWrite)
+    + surroundBassFilter(channel, 'lp', bassWrite)
+    + surroundBassFader(channel, bassWrite)
+    + '</article>';
+}
+
+function surroundBassRail() {
+  const linkIcon = typeof LINK_ICON === 'string' ? LINK_ICON : '↔';
+  const link = label => '<button class="bass-link" type="button" disabled title="'
+    + surroundEscape(label + ' · mapping pending capture') + '" aria-label="'
+    + surroundEscape(label) + '">' + linkIcon + '</button>';
+  return '<aside class="bass-rail">'
+    + '<div class="bass-rail-head"></div>'
+    + '<section class="bass-rail-filter"><strong>HIGH PASS</strong>'
+    + '<span>CUTOFF ' + link('Link high-pass cutoff') + '</span>'
+    + '<span>FILTER TYPE ' + link('Link high-pass filter type') + '</span>'
+    + '<span>FILTER ORDER ' + link('Link high-pass order') + '</span>'
+    + '<span>BYPASS ' + link('Link high-pass bypass') + '</span></section>'
+    + '<section class="bass-rail-filter"><strong>LOW PASS</strong>'
+    + '<span>CUTOFF ' + link('Link low-pass cutoff') + '</span>'
+    + '<span>FILTER TYPE ' + link('Link low-pass filter type') + '</span>'
+    + '<span>FILTER ORDER ' + link('Link low-pass order') + '</span>'
+    + '<span>BYPASS ' + link('Link low-pass bypass') + '</span></section>'
+    + '<section class="bass-rail-mixer"><strong>MIXER</strong>'
+    + '<span>CONTROL ' + link('Link mixer controls') + '</span></section></aside>';
+}
+
+function surroundBassManagement(data, bassWrite = data?.write?.bass || {}) {
+  const channels = surroundBassChannels(data);
+  if (!channels.length) return '<p class="surround-empty">No active bass-management channels in this format.</p>';
+  return '<div class="bass-board-scroll"><div class="bass-board" style="--bass-count:'
+    + channels.length + '">' + surroundBassRail()
+    + channels.map(channel => surroundBassStrip(channel, bassWrite)).join('') + '</div></div>';
+}
+
+function surroundBassWindowHTML(data) {
+  const global = data?.global || {};
+  const channels = surroundBassChannels(data);
+  const bassWrite = data?.write?.bass || {};
+  const format = global.format || 'unknown';
+  const bassStatus = bassWrite.enabled
+    ? (bassWrite.experimental ? 'experimental read/write' : 'read/write')
+    : (Array.isArray(bassWrite.formats) && bassWrite.formats.length
+      ? 'read-only · select ' + bassWrite.formats.join(' / ') + ' to enable'
+      : 'read-only');
+  return '<div class="surround-bass-dialog" style="--bass-count:' + channels.length
+    + '" role="dialog" aria-modal="true"'
     + ' aria-labelledby="surround-bass-title">'
-    + '<div class="surround-bass-modal-hd"><strong id="surround-bass-title">Bass Management</strong>'
+    + '<div class="surround-bass-window-hd"><strong id="surround-bass-title">BASS MANAGEMENT</strong>'
+    + '<span class="surround-meta">' + surroundEscape(format) + ' · '
+    + channels.length + ' strips</span>'
     + '<button class="modal-x" type="button" data-surround-bass-close aria-label="close">&times;</button></div>'
-    + '<div class="surround-bass-modal-bd">'
-    + '<div class="surround-subhd"><h4>Decoded channel blocks</h4><span class="surround-readonly">read-only</span></div>'
-    + surroundBassManagement(global)
-    + '<p class="surround-note">The 2.1 bass-management blocks are decoded from the global surround readback. Filter type and link flags remain observational.</p>'
-    + '</div></div></div>';
+    + '<div class="surround-bass-window-bd">'
+    + '<div class="bass-toolbar"><span>HIGH PASS · LOW PASS · MIXER</span>'
+    + '<span class="surround-readonly">'
+    + surroundEscape(bassStatus)
+    + ' · link/type/solo/meter mapping pending</span></div>'
+    + surroundBassManagement(data, bassWrite)
+    + '<p class="surround-note bass-note">Only the strips active in the selected Surround format are shown. In 2.1 the strips run L · R · LFE, with LFE highlighted in purple; larger layouts keep the compact LFE-first presentation. Known writes cover cutoffs, filter order, bypass, faders, and mute. '
+    + surroundEscape(bassWrite.note || 'Link buttons, filter type, solo, and Bass Management meters remain guarded.') + '</p>'
+    + '</div></div>';
+}
+
+function surroundBassPopupHTML(data) {
+  return '<main class="surround-bass-popup-page">'
+    + surroundBassWindowHTML(data) + '</main>';
+}
+
+function surroundBassPaint(input) {
+  if (!input) return;
+  const field = input.dataset.bassField;
+  if (field === 'fader_db') {
+    const value = Number(input.value);
+    const output = input.closest('.bass-mixer-section')?.querySelector(
+      '[data-bass-readout]');
+    if (output) output.textContent = `${surroundBassValue(value, 1)}dB`;
+    if (typeof paintMixerFader === 'function') {
+      paintMixerFader(input.closest('.bass-strip'), input.value);
+    }
+    return;
+  }
+  const value = Number(input.value);
+  const output = input.closest('.bass-knob-control')?.querySelector(
+    '[data-bass-readout]');
+  if (output) output.textContent = `${surroundBassValue(value)} Hz`;
+  const pointer = input.closest('.bass-knob')?.querySelector('i');
+  if (pointer) pointer.style.transform = 'translateX(-50%) rotate('
+    + surroundKnobAngle(value, +input.min, +input.max, true) + 'deg)';
+}
+
+function surroundBassInputValue(input) {
+  if (input.dataset.bassBoolean === 'true') return input.classList.contains('on');
+  const value = Number(input.value);
+  if (!Number.isFinite(value)) return null;
+  return value;
+}
+
+function postSurroundBassInput(input) {
+  if (!input || input.disabled) return;
+  const value = surroundBassInputValue(input);
+  if (value == null) return;
+  post('/api/surround/bass', {
+    channel: Number(input.dataset.bassSlot),
+    field: input.dataset.bassField,
+    value,
+  });
+}
+
+function initSurroundBassControls(host) {
+  host.querySelectorAll('[data-bass-knob]').forEach(input => {
+    if (!input.disabled && typeof wirePrecisionRange === 'function') {
+      wirePrecisionRange(input);
+    }
+    surroundBassPaint(input);
+  });
+  host.querySelectorAll('[data-bass-fader]').forEach(input => {
+    surroundBassPaint(input);
+  });
+}
+
+function surroundBassWindowIsOpen() {
+  return SURROUND_BASS_WINDOW && !SURROUND_BASS_WINDOW.closed;
+}
+
+function setSurroundBassLauncherState(open) {
+  document.querySelector('[data-surround-bass-open]')?.setAttribute(
+    'aria-expanded', String(open));
+}
+
+function initSurroundBassPopup(popup) {
+  const host = popup?.document?.body;
+  if (!host) return;
+  if (host.dataset.surroundBassPopupWired !== '1') {
+    host.addEventListener('input', event => {
+      const bass = event.target.closest?.('[data-bass-input]');
+      if (bass) surroundBassPaint(bass);
+    });
+    host.addEventListener('change', event => {
+      const bass = event.target.closest?.('[data-bass-input]');
+      if (bass && !bass.disabled) postSurroundBassInput(bass);
+    });
+    host.addEventListener('click', event => {
+      const close = event.target.closest?.('[data-surround-bass-close]');
+      if (close) {
+        popup.close();
+        return;
+      }
+      const bassBoolean = event.target.closest?.(
+        '[data-bass-input][data-bass-boolean]');
+      if (!bassBoolean || bassBoolean.disabled) return;
+      const on = !bassBoolean.classList.contains('on');
+      bassBoolean.classList.toggle('on', on);
+      bassBoolean.setAttribute('aria-pressed', String(on));
+      postSurroundBassInput(bassBoolean);
+    });
+    host.dataset.surroundBassPopupWired = '1';
+  }
+  initSurroundBassControls(host);
+}
+
+function refreshSurroundBassWindow() {
+  if (!surroundBassWindowIsOpen()) {
+    SURROUND_BASS_WINDOW = null;
+    setSurroundBassLauncherState(false);
+    return;
+  }
+  const popup = SURROUND_BASS_WINDOW;
+  popup.document.body.innerHTML = surroundBassPopupHTML(SURROUND);
+  initSurroundBassPopup(popup);
+}
+
+function openSurroundBassWindow() {
+  if (!SURROUND) return;
+  if (surroundBassWindowIsOpen()) {
+    SURROUND_BASS_WINDOW.focus();
+    return;
+  }
+  const popup = window.open('', 'antelopeBassManagement',
+    'popup=yes,location=no,toolbar=no,menubar=no,status=no,'
+    + 'scrollbars=yes,resizable=yes,width=1240,height=760');
+  if (!popup) {
+    if (typeof reportMessage === 'function') {
+      reportMessage('comm', 'Bass Management popup blocked',
+        'Allow popups for this page to open Bass Management in a separate window.');
+    }
+    return;
+  }
+  SURROUND_BASS_WINDOW = popup;
+  const d = popup.document;
+  d.open();
+  d.write('<!doctype html><html><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    + '<title>Bass Management — antelope-ctl</title>'
+    + '<link rel="stylesheet" href="/webui/static/app.css">'
+    + '<link rel="stylesheet" href="/webui/static/surround.css?v=surround-bass-window-v1">'
+    + '</head><body class="bass-popup-body"></body></html>');
+  d.close();
+  d.body.innerHTML = surroundBassPopupHTML(SURROUND);
+  popup.addEventListener('pagehide', () => {
+    if (SURROUND_BASS_WINDOW !== popup) return;
+    SURROUND_BASS_WINDOW = null;
+    setSurroundBassLauncherState(false);
+  }, {once: true});
+  setSurroundBassLauncherState(true);
+  initSurroundBassPopup(popup);
+  popup.focus();
 }
 
 function surroundGlobalHTML(data) {
@@ -91,6 +486,15 @@ function surroundGlobalHTML(data) {
   const levelRange = write.level_db_range?.length === 2 ? write.level_db_range : [-60, 16];
   const format = global?.format || (global?.lfe_present ? '2.1' : '2.0');
   const formatWrite = write.format || {};
+  const eqPositionWrite = write.eq_position || {};
+  const eqPositionWritable = eqPositionWrite.enabled === true;
+  const eqPosition = global?.eq_post ? 'post' : 'pre';
+  const eqPositionValues = eqPositionWrite.fields?.length
+    ? eqPositionWrite.fields : ['pre', 'post'];
+  const eqPositionOptions = eqPositionValues.map(value =>
+    '<option value="' + surroundEscape(value) + '"'
+      + (value === eqPosition ? ' selected' : '') + '>'
+      + surroundEscape(String(value).toUpperCase()) + '</option>').join('');
   const formatItems = formatWrite.options?.length
     ? formatWrite.options
     : SURROUND_FORMAT_OPTIONS.map(name => ({
@@ -119,9 +523,13 @@ function surroundGlobalHTML(data) {
         delayRange, 'ms', writable, Number(write.delay_step_ms) || 0.1)}
       ${surroundRangeInput('level_db', 'Global level', global?.level_db,
         levelRange, 'dB', writable, Number(write.level_step_db) || 0.1)}
-      <div class="surround-control"><span class="surround-control-label">EQ position</span>
-        <button class="btn" disabled>${global?.eq_post ? 'POST' : 'PRE'}</button>
-        <span class="surround-readonly">read-only</span></div>
+      <label class="surround-control"><span class="surround-control-label">EQ position</span>
+        <select data-surround-eq-position aria-label="Surround EQ position"
+          title="${surroundEscape(eqPositionWrite.note || 'EQ PRE/POST write status unavailable')}"
+          ${eqPositionWritable ? '' : ' disabled'}>${eqPositionOptions}</select>
+        <span class="surround-readonly">${eqPositionWritable
+          ? (eqPositionWrite.experimental ? 'experimental writable' : 'writable')
+          : 'read-only'}</span></label>
     </div>
     <p class="surround-note">${surroundEscape(write.note ||
       'Only the verified global delay and level path can be written.')}</p>
@@ -133,9 +541,8 @@ function surroundGlobalHTML(data) {
     <div class="surround-bass-launch">
       <div><h4>Bass management</h4>
         <span class="surround-meta">${global?.bass_mgmt_on ? 'ON' : 'OFF'} · decoded blocks</span></div>
-      <button class="btn" type="button" data-surround-bass-open aria-haspopup="dialog" aria-expanded="false">OPEN</button>
+      <button class="btn" type="button" data-surround-bass-open aria-haspopup="dialog" aria-expanded="${surroundBassWindowIsOpen() ? 'true' : 'false'}">OPEN</button>
     </div>
-    ${surroundBassModal(global)}
   </section>`;
 }
 
@@ -169,19 +576,61 @@ function surroundGraphPath(points) {
   return path;
 }
 
-function surroundEqSigma(q) {
+function surroundEqSafeQ(q) {
   const number = Number(q);
-  const safeQ = Number.isFinite(number) && number > 0 ? number : 0.71;
-  return Math.max(0.04, Math.min(2.5, 0.75 / safeQ));
+  return Number.isFinite(number) && number > 0 ? number : 0.71;
+}
+
+function surroundEqSigma(q) {
+  return Math.max(0.04, Math.min(2.5, 0.75 / surroundEqSafeQ(q)));
+}
+
+function surroundEqBandType(index, mode) {
+  const current = Number(mode);
+  if (current === 2 || !Number.isFinite(current)) return 'bell';
+  if (index === 0) return current === 4 ? 'hpf' : 'lshelving';
+  if (index === 15) return current === 3 ? 'lpf' : 'hshelving';
+  return 'bell';
+}
+
+function surroundEqShelfResponse(gain, frequency, cutoff, q, high) {
+  const logFrequency = Math.log2(Math.max(1, Number(frequency)));
+  const logCutoff = Math.log2(Math.max(1, Number(cutoff)));
+  const transition = Math.max(0.08, Math.min(1, 0.35 / surroundEqSafeQ(q)));
+  const distance = Math.max(-60, Math.min(60,
+    (logFrequency - logCutoff) / transition));
+  const amount = 1 / (1 + Math.exp((high ? -1 : 1) * distance));
+  return Number(gain) * amount;
+}
+
+function surroundEqPassResponse(frequency, cutoff, q, high) {
+  const ratio = Math.max(1e-6, Number(frequency) / Math.max(1, Number(cutoff)));
+  const ratioSquared = ratio * ratio;
+  const safeQ = Math.max(0.1, Math.min(18, surroundEqSafeQ(q)));
+  const denominator = Math.sqrt((1 - ratioSquared) ** 2
+    + ratioSquared / (safeQ * safeQ));
+  const magnitude = high ? ratioSquared / denominator : 1 / denominator;
+  return 20 * Math.log10(Math.max(1e-6, magnitude));
+}
+
+function surroundEqBandResponse(band, frequency) {
+  const type = surroundEqBandType(band.index, band.mode);
+  if (type === 'hpf') return surroundEqPassResponse(
+    frequency, band.frequency, band.q, true);
+  if (type === 'lpf') return surroundEqPassResponse(
+    frequency, band.frequency, band.q, false);
+  if (type === 'lshelving') return surroundEqShelfResponse(
+    band.gain, frequency, band.frequency, band.q, false);
+  if (type === 'hshelving') return surroundEqShelfResponse(
+    band.gain, frequency, band.frequency, band.q, true);
+  const logFrequency = Math.log2(frequency);
+  const distance = (logFrequency - Math.log2(band.frequency))
+    / surroundEqSigma(band.q);
+  return band.gain * Math.exp(-0.5 * distance * distance);
 }
 
 function surroundEqResponseAt(bands, frequency) {
-  const logFrequency = Math.log2(frequency);
-  return bands.reduce((total, band) => {
-    const distance = (logFrequency - Math.log2(band.frequency))
-      / surroundEqSigma(band.q);
-    return total + band.gain * Math.exp(-0.5 * distance * distance);
-  }, 0);
+  return bands.reduce((total, band) => total + surroundEqBandResponse(band, frequency), 0);
 }
 
 function surroundEqCurvePoints(bands, minFrequency = 20,
@@ -223,6 +672,7 @@ function surroundEqGraph(speaker) {
     frequency: Number(band.freq_hz),
     gain: Number(band.gain_db),
     q: Number(band.q),
+    mode: Number(band.mode),
   })).filter(point => Number.isFinite(point.frequency) && Number.isFinite(point.gain))
     .sort((a, b) => a.frequency - b.frequency || a.index - b.index)
   if (!bands.length) {
@@ -269,7 +719,7 @@ function surroundEqGraph(speaker) {
     + '<path class="surround-eq-line" d="' + line + '" />'
     + '<g class="surround-eq-points">' + markers + '</g>'
     + '</svg>'
-    + '<span class="surround-eq-graph-note">Q-shaped gain estimate from readback · full 20 Hz–20 kHz display span</span>'
+    + '<span class="surround-eq-graph-note">Approximate EQ response from readback · filter shapes follow the selected mode · full 20 Hz–20 kHz display span</span>'
     + '</div>';
 }
 
@@ -310,21 +760,86 @@ function surroundEqKnob(field, value, min, max, step, unit, digits,
     + '</div>';
 }
 
-function surroundEqModeSelect(mode, index, speaker, writable) {
+const SURROUND_EQ_ASSET_BASE = '/webui/assets/srrndeq-bttn-';
+const SURROUND_EQ_STATE_LABELS = {
+  belldown: 'Bell cut',
+  bellup: 'Bell boost',
+  flat: 'Flat',
+  hpf: 'High-pass',
+  lpf: 'Low-pass',
+  hshelvingdown: 'High shelving cut',
+  hshelvingup: 'High shelving boost',
+  lshelvingdown: 'Low shelving cut',
+  lshelvingup: 'Low shelving boost',
+};
+
+function surroundEqGainState(gain, prefix) {
+  const value = Number(gain);
+  if (value < 0) return prefix + 'down';
+  if (value > 0) return prefix + 'up';
+  return 'flat';
+}
+
+function surroundEqModeValues(mode, index) {
   const current = Number(mode);
-  const values = index === 0 ? [0, 4] : index === 15 ? [0, 1, 3] : [2];
-  if (Number.isFinite(current) && !values.includes(current)) values.push(current);
-  const options = values.map(value => '<option value="' + value + '"'
-    + (value === current ? ' selected' : '') + '>' + surroundHex(value) + '</option>').join('');
-  return '<label class="surround-eq-mode"><span>MODE</span>'
-    + '<select data-surround-eq-input data-surround-eq-field="mode"'
+  if (current === 2) return [2];
+  const values = index === 0 ? [0, 4] : index === 15 ? [1, 3] : [2];
+  if (Number.isFinite(current) && !values.includes(current)) values.unshift(current);
+  return values;
+}
+
+function surroundEqStateName(gain, index, mode) {
+  const type = surroundEqBandType(index, mode);
+  if (type === 'hpf' || type === 'lpf') return type;
+  return surroundEqGainState(gain, type);
+}
+
+function surroundEqStateLabel(state) {
+  return SURROUND_EQ_STATE_LABELS[state] || 'Filter type';
+}
+
+function updateSurroundEqModeButton(button, mode = button?.dataset?.surroundEqModeValue) {
+  if (!button) return;
+  const band = Number(button.dataset.surroundEqBand);
+  const gain = button.closest('.surround-band')?.querySelector(
+    '[data-surround-eq-field="gain"]')?.value;
+  const state = surroundEqStateName(gain, band, mode);
+  const label = surroundEqStateLabel(state);
+  const icon = button.querySelector('[data-surround-eq-state-icon]');
+  if (icon) icon.src = SURROUND_EQ_ASSET_BASE + state + '.svg';
+  button.dataset.surroundEqModeValue = String(mode);
+  button.dataset.surroundEqState = state;
+  button.value = String(mode);
+  button.title = button.disabled ? label : label + ' · click to change';
+  button.setAttribute('aria-label', label + ' for band ' + (band + 1));
+}
+
+function surroundEqModeButton(mode, index, speaker, writable, gain) {
+  const number = Number(mode);
+  const current = Number.isFinite(number) ? number
+    : index === 0 ? 0 : index === 15 ? 1 : 2;
+  const values = surroundEqModeValues(current, index);
+  const state = surroundEqStateName(gain, index, current);
+  const label = surroundEqStateLabel(state);
+  const enabled = writable && values.length > 1;
+  return '<div class="surround-eq-mode">'
+    + '<button type="button" class="surround-eq-mode-button"'
+    + ' data-surround-eq-mode data-surround-eq-mode-value="' + current
+    + '" data-surround-eq-mode-values="' + values.join(',')
+    + '" data-surround-eq-state="' + state + '"'
     + ' data-surround-eq-speaker="' + speaker + '" data-surround-eq-band="'
-    + index + '"' + (writable ? '' : ' disabled') + ' aria-label="band '
-    + (index + 1) + ' mode">' + options + '</select></label>';
+    + index + '"' + (enabled ? '' : ' disabled') + ' aria-label="'
+    + surroundEscape(label + ' for band ' + (index + 1)) + '" title="'
+    + surroundEscape(enabled ? label + ' · click to change' : label) + '">'
+    + '<img class="surround-eq-mode-bg" src="' + SURROUND_EQ_ASSET_BASE
+    + 'bg.svg" alt="" aria-hidden="true">'
+    + '<img class="surround-eq-mode-icon" data-surround-eq-state-icon src="'
+    + SURROUND_EQ_ASSET_BASE + state + '.svg" alt="" aria-hidden="true">'
+    + '</button></div>';
 }
 
 function surroundEqBand(band, index, speaker, writable) {
-  return '<article class="surround-band">'
+  return '<article class="surround-band" data-surround-eq-band="' + index + '">'
     + '<strong>' + (index + 1) + '</strong>'
     + surroundEqKnob('frequency', band.freq_hz, 20, 20000, 1, ' Hz', 0,
       speaker, index, writable, true)
@@ -332,7 +847,7 @@ function surroundEqBand(band, index, speaker, writable) {
       speaker, index, writable)
     + surroundEqKnob('q', band.q, 0.1, 18, 0.01, '', 2,
       speaker, index, writable)
-    + surroundEqModeSelect(band.mode, index, speaker, writable)
+    + surroundEqModeButton(band.mode, index, speaker, writable, band.gain_db)
     + '</article>';
 }
 
@@ -341,7 +856,7 @@ function surroundEqGrid(speaker, writable = false) {
   if (!bands.length) return '<p class="surround-empty">Waiting for the speaker EQ readback.</p>';
   return '<div class="surround-eq-layout">'
     + '<div class="surround-eq-legend" aria-hidden="true">'
-    + '<strong></strong><span>F</span><span>G</span><span>Q</span><span>MODE</span>'
+    + '<strong></strong><span>F</span><span>G</span><span>Q</span><span></span>'
     + '</div><div class="surround-eq-grid">'
     + bands.map((band, index) => surroundEqBand(
       band, index, speaker.index, writable)).join('') + '</div></div>';
@@ -380,11 +895,11 @@ function surroundSpeakerHTML(data) {
     </div>
     <div class="surround-eq"><div class="surround-subhd"><h4>16-band EQ · single view</h4>
       <span class="surround-readonly">${eqWritable
-        ? 'experimental write · one field at a time' : 'read-only · mode bytes stay raw'}</span></div>
+        ? 'experimental write · one field at a time' : 'read-only · filter buttons disabled'}</span></div>
       ${surroundEqGraph(speaker)}
       ${surroundEqGrid(speaker, eqWritable)}</div>
     <p class="surround-note">${eqWritable
-      ? 'EQ changes write one frequency, gain, Q, or raw mode field at a time after a fresh readback. Reset changes only this speaker\'s frequencies, Q, and gains; speaker delay, level and phase remain read-only.'
+      ? 'EQ changes write one frequency, gain, Q, or filter-type field at a time after a fresh readback. Reset changes only this speaker\'s frequencies, Q, and gains; speaker delay, level and phase remain read-only.'
       : 'The per-speaker 0x87 frame is decoded for EQ readback. Its delay, level and phase head bytes remain candidate mappings, so the browser controls stay read-only.'}</p>
   </section>`;
 }
@@ -407,6 +922,10 @@ function surroundEqPaint(input) {
   const pointer = input.closest('.mixer-knob')?.querySelector('i');
   if (pointer) pointer.style.transform = 'translateX(-50%) rotate('
     + surroundKnobAngle(value, +input.min, +input.max, field === 'frequency') + 'deg)';
+  if (field === 'gain') {
+    updateSurroundEqModeButton(input.closest('.surround-band')?.querySelector(
+      '[data-surround-eq-mode]'));
+  }
 }
 
 function surroundEqSnap(value, min, max, step) {
@@ -426,6 +945,25 @@ function postSurroundEqInput(input) {
     band: Number(input.dataset.surroundEqBand),
     parameter: input.dataset.surroundEqField,
     value: Number(input.value),
+  });
+}
+
+function postSurroundEqMode(button) {
+  if (!button || button.disabled) return;
+  const values = String(button.dataset.surroundEqModeValues || '').split(',')
+    .map(Number).filter(Number.isFinite);
+  if (values.length < 2) return;
+  const current = Number(button.dataset.surroundEqModeValue);
+  const index = values.indexOf(current);
+  const next = values[(index < 0 ? 0 : index + 1) % values.length];
+  updateSurroundEqModeButton(button, next);
+  const speaker = Number(button.dataset.surroundEqSpeaker);
+  const band = Number(button.dataset.surroundEqBand);
+  if (SURROUND?.speakers?.[speaker]?.bands?.[band]) {
+    SURROUND.speakers[speaker].bands[band].mode = next;
+  }
+  post('/api/surround/eq', {
+    speaker, band, parameter: 'mode', value: next,
   });
 }
 
@@ -495,13 +1033,16 @@ function renderSurround() {
     <div class="surround-grid">${surroundGlobalHTML(SURROUND)}${surroundSpeakerHTML(SURROUND)}</div>
   </div>`;
   initSurroundEqControls(host);
+  initSurroundBassControls(host);
 }
 
 async function reloadSurround() {
+  const previousFormat = SURROUND?.global?.format;
   SURROUND = await getJSON('/api/surround');
   const count = SURROUND.speaker_count || SURROUND.speakers?.length || 0;
   if (count && SURROUND_SPEAKER >= count) SURROUND_SPEAKER = 0;
   renderSurround();
+  if (previousFormat !== SURROUND?.global?.format) refreshSurroundBassWindow();
 }
 
 function buildSurround() {
@@ -514,6 +1055,11 @@ function buildSurround() {
         surroundEqPaint(eq);
         return;
       }
+      const bass = event.target.closest?.('[data-bass-input]');
+      if (bass) {
+        surroundBassPaint(bass);
+        return;
+      }
       const input = event.target.closest('[data-surround-global]');
       if (!input) return;
       const value = Number(input.value);
@@ -521,32 +1067,32 @@ function buildSurround() {
       const readout = host.querySelector(`[data-surround-value="${input.dataset.surroundGlobal}"]`);
       if (readout) readout.textContent = `${surroundNumber(value)} ${unit}`;
     });
-    const setBassModal = (modal, open) => {
-      if (!modal) return;
-      modal.hidden = !open;
-      host.querySelector('[data-surround-bass-open]')?.setAttribute(
-        'aria-expanded', String(open));
-      if (open) modal.querySelector('[data-surround-bass-close]')?.focus();
-    };
     host.addEventListener('click', event => {
       const reset = event.target.closest?.('[data-surround-eq-reset]');
       if (reset) {
         requestSurroundEqReset(reset);
         return;
       }
-      const open = event.target.closest?.('[data-surround-bass-open]');
-      if (open) {
-        setBassModal(host.querySelector('[data-surround-bass-modal]'), true);
+      const mode = event.target.closest?.('[data-surround-eq-mode]');
+      if (mode) {
+        postSurroundEqMode(mode);
         return;
       }
-      const modal = event.target.closest?.('[data-surround-bass-modal]');
-      const close = event.target.closest?.('[data-surround-bass-close]');
-      if (modal && (close || event.target === modal)) setBassModal(modal, false);
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key !== 'Escape') return;
-      const modal = host.querySelector('[data-surround-bass-modal]');
-      if (modal && !modal.hidden) setBassModal(modal, false);
+      const bassBoolean = event.target.closest?.(
+        '[data-bass-input][data-bass-boolean]');
+      if (bassBoolean) {
+        if (bassBoolean.disabled) return;
+        const on = !bassBoolean.classList.contains('on');
+        bassBoolean.classList.toggle('on', on);
+        bassBoolean.setAttribute('aria-pressed', String(on));
+        postSurroundBassInput(bassBoolean);
+        return;
+      }
+      const open = event.target.closest?.('[data-surround-bass-open]');
+      if (open) {
+        openSurroundBassWindow();
+        return;
+      }
     });
     host.addEventListener('change', event => {
       const number = event.target.closest?.('[data-surround-eq-number]');
@@ -568,6 +1114,11 @@ function buildSurround() {
         postSurroundEqInput(eq);
         return;
       }
+      const bass = event.target.closest?.('[data-bass-input]');
+      if (bass && !bass.disabled) {
+        postSurroundBassInput(bass);
+        return;
+      }
       const speaker = event.target.closest('[data-surround-speaker]');
       if (speaker) {
         SURROUND_SPEAKER = Number(speaker.value) || 0;
@@ -577,6 +1128,11 @@ function buildSurround() {
       const format = event.target.closest?.('[data-surround-format]');
       if (format && !format.disabled) {
         post('/api/surround/global', {format: format.value});
+        return;
+      }
+      const eqPosition = event.target.closest?.('[data-surround-eq-position]');
+      if (eqPosition && !eqPosition.disabled) {
+        post('/api/surround/global', {eq_position: eqPosition.value});
         return;
       }
       const input = event.target.closest('[data-surround-global]');
@@ -593,3 +1149,12 @@ function buildSurround() {
 $('#routetabs')?.addEventListener('click', event => {
   if (event.target.closest('[data-rtab="surround"]')) buildSurround();
 });
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => {
+    if (SURROUND_BASS_WINDOW && !SURROUND_BASS_WINDOW.closed) {
+      SURROUND_BASS_WINDOW.close();
+    }
+    SURROUND_BASS_WINDOW = null;
+  });
+}

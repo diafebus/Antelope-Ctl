@@ -36,6 +36,13 @@ All control payloads are 320 bytes. Requests use endpoint `0x01` OUT; responses 
 | AFX strip order | `0x19` | 0 through 63 |
 | AFX link table / closing marker | `0x0b` | 4 |
 
+The global Surround record at category `0x1b`, index 0 includes the EQ
+PRE/POST state and is the fresh-read source for the profile's bounded global
+writes. The EQ-position control changes only capture-backed flags-B bit 7;
+the official-Launcher transition and the correction to the earlier flags-A
+probe are documented in `PROTOCOL.md` and
+`tools/surround_eq_position_selftest.py`.
+
 Category `0x0b` occurs eight times, with indices `1,2,3,3,3,3,0,4`. These are five link-table selectors, not eight records: index 0 returns six preamp-pair states, index 1 eight ADAT-pair states, index 2 one S/PDIF-pair state, index 3 64 mixer-pair states, and index 4 32 AFX-link states. The Launcher repeats index 3 four times around mixer reads as a sequencing marker, but the response is still a real link table. Its `category_counts` value is therefore 5, the exclusive upper bound for observed outer indices 0 through 4. Indices 5 through 7 were absent from all five captures. The existing query validator rejects those indices.
 
 The other nested response shapes are also recorded in

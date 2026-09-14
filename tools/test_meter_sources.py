@@ -74,6 +74,30 @@ class MeterSourceTests(unittest.TestCase):
         self.assertEqual(cli._meter_bar(0, self.profile, source_frame=source), '########')
         self.assertEqual(cli._meter_bar(96, self.profile, source_frame=source), '........')
 
+    def test_orion_bus_silent_endpoint_marker_is_not_reported_as_definite_mute(self):
+        report = bytearray(320)
+        report[28] = 96
+        report[29] = 0x04
+
+        state = protocol.parse_bus_state(self.profile, report, 0)
+
+        self.assertEqual(state['level'], 96)
+        self.assertEqual(state['status_raw'], 0x04)
+        self.assertFalse(state['mute'])
+        self.assertTrue(state['mute_ambiguous'])
+
+        report[28] = 95
+        state = protocol.parse_bus_state(self.profile, report, 0)
+        self.assertTrue(state['mute'])
+        self.assertFalse(state['mute_ambiguous'])
+
+    def test_orion_bus_level_endpoint_contract_is_attenuation(self):
+        self.assertIn('level_encoding', self.profile['buses'])
+        encoding = self.profile['buses']['level_encoding']
+        self.assertIn('raw 0 = 0 dB maximum/unity', encoding)
+        self.assertIn('raw 96 (0x60) = -inf/silent', encoding)
+        self.assertIn('0x47', encoding)
+
     def test_web_samples_keep_channel_one_activity_and_channel_twelve_silence_uncalibrated(self):
         device = self.server.Device.__new__(self.server.Device)
         device.profile = self.profile

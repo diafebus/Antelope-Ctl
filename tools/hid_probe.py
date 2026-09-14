@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Probe the Antelope HID interface for a device-side readback path.
+Probe the Antelope HID interface for control-pipe readback paths.
 
-Every USB capture we have (connect, preset-load, per-control) shows the
-device sending only 0x73 / 0x74 / 0x75 interrupt reports on EP 0x82 --
-none of which carry routing / mixer / AuraVerb state. The write opcodes
-(0x53 / 0x17 / 0x1d) have no matching interrupt readback.
+The ordinary device-to-host interrupt reports are 0x73 and 0x75. Device
+state is now known to be readable in-band by sending a 0x74 query on EP
+0x01 OUT and receiving a 0x75 response on EP 0x82 IN. This older diagnostic
+still answers a separate question: whether HID Feature reports or control-pipe
+GET_REPORT expose another path (the tested Orion STALLed those requests).
 
-The one USB path a Wireshark/USBPcap capture can miss is a HID **Feature
+One USB path a Wireshark/USBPcap capture can miss is a HID **Feature
 report** (or a GET_REPORT on the Input report), which the OS/Launcher
 would pull over the control pipe (EP0). This tool asks the hidraw node
 directly:

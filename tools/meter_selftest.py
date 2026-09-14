@@ -332,8 +332,9 @@ def test_outputs(dev, routes, buses):
         bus_id = {0: 3, 1: 1, 2: 2, 3: 0, 4: 5, 5: 4}.get(dest)
         if bus_id is not None:
             # The output meter may be post-level. Preserve the user's level,
-            # but make a zero-level bus testable for this controlled pass.
-            dev.write(proto.build_command(dev.profile, 'bus_level', bus_id, 96))
+            # but put the bus at 0 dB (raw 0) for this controlled pass so the
+            # routed test signal can reach the destination. Raw 96 is -inf.
+            dev.write(proto.build_command(dev.profile, 'bus_level', bus_id, 0))
             if buses[bus_id].get('mute'):
                 dev.write(proto.build_command(dev.profile, 'bus_mute', bus_id, 0))
         dev.route(dest, working)
