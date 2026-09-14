@@ -961,7 +961,7 @@ every rate 44.1k-192k. Offsets **21-23 are the same rate in Hz** (24-bit
 big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
 -- both decoded in that sweep; `sample-rate` prints the measured Hz too.
 
-### Oscillator, DC-coupling, surround tab -- decoded (2026-09-01, native macOS)
+### Oscillator, DC-coupling, surround tab -- decoded 2026-09-01; DC readback confirmed 2026-09-14
 
 - **Oscillator / test-tone generator** -- the settings-tab panel is
   `SET_GLOBAL` (`0x12`), param `0x0a`, one **packed byte** @17:

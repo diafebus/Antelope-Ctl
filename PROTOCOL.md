@@ -1487,7 +1487,7 @@ just re-send `0x87` frames. `params.surround_monitor` +
   short and advanced; identical each time), so stereo RC is a single
   averaged correction, not per-speaker.
 
-### DC-coupling (`0x12` / `0x26`) -- DECODED 2026-09-01
+### DC-coupling (`0x12` / `0x26`) -- READBACK CONFIRMED 2026-09-14
 
 `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on`: the DC-coupling
 toggle is `SET_GLOBAL` (opcode `0x12`), param **`0x26`**, value `0`/`1`.

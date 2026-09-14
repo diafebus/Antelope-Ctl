@@ -2210,8 +2210,10 @@ def api_bus_toggle(t: BusToggle):
 
 @app.post("/api/dc-coupling")
 def api_dc_coupling(t: GlobalToggle):
-    """Output DC-coupling on/off (param 0x26, SET_GLOBAL 0x12). No 0x73
-    readback -- the browser tracks the state, like the preamp link."""
+    """Submit DC-coupling on/off (param 0x26, SET_GLOBAL 0x12).
+    Device readback is 0x73 state-report byte 93 bit 0; this endpoint currently
+    submits the requested value while the WebUI keeps an optimistic display
+    state."""
     DEV.submit(lambda tr: tr.write(proto.build_global_command(PROFILE, "dc_coupling", 1 if t.on else 0)))
     return {"ok": True}
 
