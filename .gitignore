@@ -23,6 +23,8 @@ CLAUDE.md
 CLAUDE.archive.md
 KERNEL.md
 SUMMARY.md
+# Local, working audit checklist/state -- keep out of the public project
+AUDIT.md
 
 # Local diagnostic tool output (may contain the device serial)
 tools/*_out.txt
