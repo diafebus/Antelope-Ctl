@@ -539,8 +539,10 @@ different things depending on which param you're setting:
   `1`=headphone 1, `2`=headphone 2, `3`=line out, `4`=reamp, `5`=monitor B.
   Ids 3/4 turned out to be the settings-tab Line and Reamp output levels
   (not the headphone-3/4 that was previously guessed). `bus_dim`/`bus_mono`
-  weren't exercised on 3/4 and may not apply to a line/reamp out;
-  `bus_mute` is confirmed on 3 only. The Orion III has **two** physical
+  were restore-guaranteed live-round-tripped on all six ids on 2026-09-14,
+  including Line and Reamp; bus 1 was temporarily moved off the raw-96 silent
+  endpoint so its status marker could be tested. `bus_mute` is confirmed on 3
+  only. The Orion III has **two** physical
   reamp outputs (Reamp 1 / Reamp 2 -- separate mono outs for two guitar
   amps); bus 4 is one shared "Reamp" level slider, whether Reamp 1/2 have
   independent levels is untested.
@@ -687,7 +689,10 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   bus ids `3` and `4` are the settings-tab **Line** and **Reamp** output
   levels -- confirmed in `settings-linevol-mute-reampvol-toggle` via full
   `bus_level` sweeps (readback offsets 37 and 40) plus a `bus_mute` toggle
-  on bus 3. All 6 bus slots are now identified; see "Buses vs. channels".
+  on bus 3. A restore-guaranteed self-test on 2026-09-14 also toggled
+  `bus_dim` and `bus_mono` on all six bus ids, including Line and Reamp, and
+  restored every flag and level. All 6 bus slots are now identified; see
+  "Buses vs. channels".
   The endpoint meaning is device-confirmed: Monitor A reads raw `0` at
   maximum (`0 dB`) and raw `96` at minimum (`-inf`); the command/state byte
   itself is unchanged.
