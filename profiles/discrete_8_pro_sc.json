@@ -194,7 +194,7 @@
       "type": "int",
       "applies_to": "buses",
       "encoding": "value N sets the bus to -N dB",
-      "notes": "Same param id as Orion, DIFFERENT SCALE. Orion encodes 0..96 with 96 (0x60) meaning 0 dB unity. Here the value is simply negated decibels: 30 gives -30 dB. The same byte therefore means about -66 dB on Orion and -30 dB here. This is the second place where an inherited param id carries a different encoding.",
+      "notes": "Same param id and attenuation direction as Orion. The value is simply negated decibels: 30 gives -30 dB. Orion reserves raw 96 (0x60) as the -inf/silent endpoint; this profile's capture documents the ordinary -N dB range and does not claim a separate sentinel beyond its observed range.",
       "evidence": "bus 0 sent 30 showed -30 dB; then buses 0/1/2/5 sent 60/45/55/50 and the matching outputs followed"
     },
     "bus_mute": {
