@@ -57,8 +57,9 @@ class OrionProfileAuditTests(unittest.TestCase):
         self.assertEqual(self.profile['params']['dc_coupling']['id'], '0x26')
         self.assertEqual(self.profile['params']['bus_dim']['status'], 'confirmed')
         self.assertEqual(self.profile['params']['bus_mono']['status'], 'confirmed')
-        self.assertEqual(self.profile['params']['dc_coupling']['status'],
-                         'unconfirmed -- write effect observed 2026-09-02; no device-side readback')
+        self.assertEqual(self.profile['params']['dc_coupling']['status'], 'confirmed')
+        self.assertEqual(self.profile['params']['dc_coupling']['state_byte'], 93)
+        self.assertEqual(self.profile['params']['dc_coupling']['state_bit'], 0)
 
     def test_preamp_gain_readback_is_signed(self):
         self.assertEqual(

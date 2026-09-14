@@ -1824,11 +1824,14 @@
     },
     "dc_coupling": {
       "id": "0x26",
-      "status": "unconfirmed -- write effect observed 2026-09-02; no device-side readback",
+      "status": "confirmed",
       "type": "SET_GLOBAL (opcode 0x12), boolean value at offset 17",
       "frame": "build_global_command(profile, 0x26, 0|1)",
-      "notes": "Output DC-coupling on/off. The capture also exercised the talkback latency modes (fast / normal / safe) -- those sent NO USB frames at all, and that negative IS trustworthy because the SAME capture carried this param's own OUT frames, so the OUT endpoint was demonstrably being logged at the time (host-side, or a path not on this interface). Only the DC-coupling toggle produced traffic: opcode 0x12 / param 0x26 / value 0 or 1, toggled off/on/off/on. No 0x73 readback was observed. The webui's 2026-09-02 output check was a user-observed write effect with client-side state tracking, not a device-side readback witness. Not in the CLI.",
-      "evidence": "macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on (2026-09-01) contains SET_GLOBAL 0x12 / param 0x26 values 0 and 1; the user observed the output effect through the webui on 2026-09-02. No device-side state/reply byte moved, so the write is retained as an unconfirmed observation rather than a round-trip claim."
+      "state_byte": 93,
+      "state_bit": 0,
+      "status": "confirmed",
+      "notes": "Output DC-coupling on/off. The established frame is SET_GLOBAL opcode 0x12 / param 0x26 / value 0 or 1 at offset 17. The 2026-09-14 live check started from default Off, changed the device state to On, and restored Off. Talkback fast/normal/safe latency modes in the earlier capture still sent no frames and remain a separate host-side observation.",
+      "evidence": "On 2026-09-14, the user clicked the WebUI DC-coupling button from Off to On with no other control change; the device's 0x73 state report moved byte 93 bit 0 from 0x00 to 0x01. Clicking Off restored the original value, and a final read returned byte 93 bit 0 as 0x00. The earlier macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on capture establishes the outgoing SET_GLOBAL 0x12 / 0x26 values 0 and 1."
     },
     "clock_source": {
       "id": "0x04",

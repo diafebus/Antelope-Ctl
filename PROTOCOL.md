@@ -1249,7 +1249,7 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: 4 opaque candidate-head bytes + EQ; dynamic head semantics unverified); bounded WebUI/self-test writes one EQ field at a time |
 | oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
-| DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | none in `0x73` |
+| DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | `0x73` byte 93 bit 0 |
 
 ---
 
@@ -1270,7 +1270,7 @@ What the Settings/Device window controls actually do, from the captures
 | **Oscillator** -- matrix insert | `matrix-source-enum` | `0x53` routing frame, source bank `0x0c` | **real device command** (§7) |
 | **Oscillator** -- settings panel (freq/level/mute) | `macos-settings-osc1-mute-1khz` etc. | opcode `0x12` / param `0x0a` / packed value @17 | **DECODED (native macOS, 2026-09-01)** -- the old "zero frames" was an inbound-only capture; see §11 below |
 | **Screen brightness** | `macos-scrbrght-0-100-50-multvalue` | opcode `0x12` / param `0x0e` / value 0-100 @17 | **real, confirmed (native macOS)** -- readback @26; in CLI (`set-brightness`). VM sent nothing because the slider is a no-op under the VM. |
-| **DC-coupling** | `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on` | opcode `0x12` / param `0x26` / value 0-1 @17 | **DECODED (native macOS, 2026-09-01); write effect observed 2026-09-02, no device-side readback** -- talkback fast/normal/safe modes in the same capture sent nothing |
+| **DC-coupling** | `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on` + live WebUI check | opcode `0x12` / param `0x26` / value 0-1 @17 | **confirmed 2026-09-14** -- `0x73` byte 93 bit 0 moved `0x00 -> 0x01 -> 0x00` for On then Off; talkback fast/normal/safe modes in the same capture sent nothing |
 
 So the Settings window is a genuine mix: output levels/mute, the three
 trims, surround-EQ pre/post, screen brightness, **the oscillator panel**
@@ -1491,12 +1491,11 @@ just re-send `0x87` frames. `params.surround_monitor` +
 
 `macos-settings-tb-fast-normal-safe-DC-Coupling-Off-on`: the DC-coupling
 toggle is `SET_GLOBAL` (opcode `0x12`), param **`0x26`**, value `0`/`1`.
-The write effect was observed on the outputs through the webui on 2026-09-02
-(`POST /api/dc-coupling`), but this was not a device-side round-trip: no
-`0x73` or other reply byte was found, and the webui tracks state client-side.
-Under the profile evidence rule this remains an unconfirmed write until a
-dated write/readback/restore witness is captured.
-No `0x73` readback. The **talkback latency modes** (fast / normal / safe)
+The established WebUI frame sends value `1` for On and `0` for Off. A live
+restore-guaranteed check on 2026-09-14 started from the default Off state;
+the device's `0x73` state byte 93 bit 0 moved `0x00 -> 0x01` when On was
+clicked, and the final read after Off returned it to `0x00`. No other control
+was changed. The **talkback latency modes** (fast / normal / safe)
 in the same capture sent **nothing** -- host-side, or a path not on this
 interface. **That negative is trustworthy**, unusually: the *same* capture
 carried the DC-coupling OUT frames, so the OUT endpoint was demonstrably
@@ -1864,7 +1863,7 @@ parameter writes remain observation-only/forbidden under `SCOPE.md`.
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. Restore-guaranteed live round-trip 2026-09-14: `17 -> 40 -> 17`. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, and masks; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20, omits the dynamically unproven four-byte candidate head, and keeps modes raw. The WebUI allows normal global format writes only for 2.0/2.1; `tools/surround_format_selftest.py` directly round-tripped all profile-derived layouts on 2026-09-12 and restores the original state. |
-| DC-coupling | **decoded; write effect observed 2026-09-02, no device-side readback** -- `0x12`/`0x26`, value 0/1 (§11). Talkback fast/normal/safe latency modes send nothing (host-side). A dated write/readback/restore capture is still needed before calling the write confirmed. |
+| DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Readback category `0x19` now maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding (slot-index vs instance id, 2 data points); bypass polarity; whether the `0x19` type/instance values fully match the Launcher’s plugin catalogue. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |

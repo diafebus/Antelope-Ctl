@@ -971,7 +971,9 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   oscillator *into an output* is the `0x53` routing frame, source bank
   `0x0c` (`params.oscillator`, `params.routing`).
 - **DC-coupling** -- `SET_GLOBAL` (`0x12`), param `0x26`, value 0/1.
-  Talkback fast/normal/safe latency modes send nothing (host-side) -- a
+  A live WebUI check on 2026-09-14 confirmed device readback at `0x73` byte
+  93 bit 0: Off -> On moved `0x00 -> 0x01`, and On -> Off restored `0x00`.
+  Talkback fast/normal/safe latency modes still send nothing (host-side) -- a
   trustworthy negative, since the same capture carried DC-coupling's OUT
   frames. Thunderbolt/buffer settings are *probably* host driver only, but
   that rests on a capture that cannot be trusted -- see `PROTOCOL.md` §11.
