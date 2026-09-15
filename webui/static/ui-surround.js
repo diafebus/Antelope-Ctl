@@ -450,9 +450,11 @@ function paintSurroundBassFader(strip, value) {
   if (!strip) return;
   const fader = strip.querySelector('[data-bass-fader]');
   const thumb = strip.querySelector('.mixer-fader-thumb');
-  const well = strip.querySelector('.bass-fader-row .mixer-fader-well');
   if (!fader || !thumb) return;
-  const span = well?.clientHeight || fader.clientHeight || 122;
+  // The native range is inset by 4px on both ends of the well. Use its
+  // actual client height so the artwork follows the same travel as the
+  // hidden input, rather than the larger containing well.
+  const span = fader.clientHeight || 114;
   const fraction = surroundBassFaderFraction(value, fader.min, fader.max);
   const handle = 50;
   const pos = handle / 2 + fraction * Math.max(0, span - handle);
@@ -487,9 +489,16 @@ function initSurroundBassControls(host) {
     }
     surroundBassPaint(input);
   });
-  host.querySelectorAll('[data-bass-fader]').forEach(input => {
-    surroundBassPaint(input);
-  });
+  const repaintFaders = () => host.querySelectorAll('[data-bass-fader]').forEach(
+    input => surroundBassPaint(input));
+  repaintFaders();
+  // A newly opened popup can paint once before its external stylesheet has
+  // produced the final layout. Repaint on the next frame so the thumb starts
+  // at the position represented by the restored dB value.
+  const view = host.ownerDocument?.defaultView;
+  if (typeof view?.requestAnimationFrame === 'function') {
+    view.requestAnimationFrame(repaintFaders);
+  }
 }
 
 function surroundBassWindowIsOpen() {
@@ -1113,9 +1122,9 @@ function surroundSpeakerHeadPaint(input) {
 
 function initSurroundSpeakerHeadControls(host) {
   host.querySelectorAll('[data-surround-speaker-head-input]').forEach(input => {
-    if (!input.disabled && typeof wirePrecisionRange === 'function') {
-      wirePrecisionRange(input);
-    }
+    // These are real horizontal sliders, unlike the rotary mixer/EQ inputs.
+    // Do not install wirePrecisionRange here: it prevents the native range
+    // interaction and interprets vertical pointer movement as the value.
     surroundSpeakerHeadPaint(input);
   });
 }

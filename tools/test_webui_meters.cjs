@@ -69,6 +69,10 @@ assert.match(js, /function surroundSpeakerHeadControl\(/);
 assert.match(js, /function surroundSpeakerBypassControl\(/);
 assert.match(js, /data-surround-speaker-head-toggle/);
 assert.match(js, /\/api\/surround\/speaker/);
+const speakerHeadInitStart = js.indexOf('function initSurroundSpeakerHeadControls');
+const speakerHeadInitEnd = js.indexOf('function postSurroundSpeakerHeadInput', speakerHeadInitStart);
+assert.ok(speakerHeadInitStart >= 0 && speakerHeadInitEnd > speakerHeadInitStart);
+assert.doesNotMatch(js.slice(speakerHeadInitStart, speakerHeadInitEnd), /wirePrecisionRange\s*\(/);
 assert.match(js, /function openSurroundBassWindow\(\)/);
 assert.match(js, /window\.open\('', 'antelopeBassManagement'/);
 assert.match(js, /data-logarithmic="true"/);
@@ -449,6 +453,19 @@ assert.ok(surroundContext.surroundBassFaderFraction(-3)
   > surroundContext.surroundBassFaderFraction(0));
 assert.ok(surroundContext.surroundBassFaderFraction(3)
   < surroundContext.surroundBassFaderFraction(0));
+const bassFaderStyle = {};
+const bassFaderThumb = {style: {setProperty: (name, value) => {
+  bassFaderStyle[name] = value;
+}}};
+const bassFaderInput = {min: '-60', max: '16', clientHeight: 114};
+const bassFaderStrip = {querySelector: selector => {
+  if (selector === '[data-bass-fader]') return bassFaderInput;
+  if (selector === '.mixer-fader-thumb') return bassFaderThumb;
+  if (selector === '.bass-fader-row .mixer-fader-well') return {clientHeight: 122};
+  return null;
+}};
+surroundContext.paintSurroundBassFader(bassFaderStrip, -60);
+assert.equal(bassFaderStyle['--fader-pos'], '89.0px');
 const stable20 = surroundContext.surroundBassChannels({
   ...writableBass20Data,
   global: {
