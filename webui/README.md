@@ -20,11 +20,13 @@ compatibility.
     profile-declared nested readback records, refreshed one record per meter
     cycle on connect and every 45 s. Route/mixer/Gazelle Reverb writes update
     their serialized caches directly. The Surround tab exposes the bounded
-    `0x1b` global and `0x1a` speaker EQ records; the 2.0/2.1 global
-    format and delay/level paths plus confirmed EQ PRE/POST write using fresh
-    complete-state reads, and the bounded per-speaker EQ path writes using fresh
-    complete-state reads. The EQ Reset action writes the profile preset for
-    only the displayed speaker. `/api/readbacks` exposes the structured records
+    `0x1b` global and `0x1a` speaker EQ/head records; the 2.0/2.1 global
+    format and delay/level paths, 2.0/2.1 Bass Management fields, and
+    confirmed EQ PRE/POST write using fresh complete-state reads. The bounded
+    per-speaker delay/level and EQ paths write one field from a fresh complete
+    state; delay/level writes request a post-write readback for mapping
+    discovery. The EQ Reset action writes the profile preset for only the
+    displayed speaker. `/api/readbacks` exposes the structured records
     to diagnostics and `/api/surround` serves the decoded Surround surface. Queries use the active
     profile's bounded category counts or explicit capture-confirmed layouts, so
     the BusFault hazard is never hit; schema-only layouts are displayed as
@@ -58,10 +60,13 @@ compatibility.
     stacked and the original mute/solo state is restored when the last Solo
     is released;
   - a **Surround** panel renders global format, delay/level, masks,
-    speaker selection, and per-speaker 16-band EQ. Its Bass Management popup
-    shows only the active format channels, places 2.1 as L · R · LFE, and groups
-    strips with colored bars; unverified controls and meters remain visibly
-    read-only. The global format selector allows 2.0 and 2.1.
+    speaker selection, per-speaker delay/level/phase, and 16-band EQ. Its Bass
+    Management popup shows only the active format channels, places 2.1 as
+    L · R · LFE, and groups strips with colored bars; experimental 2.0/2.1
+    bass, per-speaker delay/level/phase, and speaker bypass controls are
+    visibly marked as experimental. The global format selector allows 2.0 and
+    2.1; Bass Management filter type, Link, and Solo controls are also
+    experimental candidate probes.
   - a **Protocol readback** diagnostics section renders profile-declared link
     tables, mic-emulation state, AFX instance counts, and AFX strip order. It
     seeds mixer-pair link state from a complete profile-confirmed bitmap when
@@ -110,6 +115,11 @@ python3 server.py
 Open <http://127.0.0.1:8714>. Needs the Antelope attached and the udev
 rule in place (same as the CLI). Stop anything else that holds the HID
 node (the CLI, `selftest.py`) -- only one process can own it.
+
+Stop the foreground service from that same terminal with Ctrl+C. The server
+passes the signal through Uvicorn, immediately wakes its HID worker, closes
+the active transport, and then performs a bounded worker join before exiting.
+The `.venv` is only the Python environment; it is not a separate daemon.
 
 Profile: defaults to `../profiles/orion_studio_sc.json`; override with
 `ANTELOPE_PROFILE=/path/to/profile.json`.

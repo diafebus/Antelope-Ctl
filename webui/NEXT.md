@@ -79,8 +79,11 @@ from the profile.
     incrementally on connect and every 45 s, one record per fast-state cycle.
     Route/mix commands use the serialized cache after their initial verified
     readback and update it after a successful write. Surround global writes
-    fetch a fresh complete state and change only verified 2.0 delay/level;
-    per-speaker head/EQ writes remain blocked.
+    fetch a fresh complete state and change only verified 2.0/2.1 fields;
+    2.0/2.1 Bass Management, per-speaker delay/level/phase, and speaker
+    bypass writes are explicitly experimental, fresh-readback-only probes;
+    Bass filter type/Link/Solo bit assignments still need isolated captures,
+    and EQ writes remain bounded.
     Snapshot carries a monotonic `rb_ver`; the browser refetches
     `/api/routing` + `/api/mixer` + `/api/surround` when it bumps.
   - Commands are queued as callables `fn(transport)` and run at most one per
@@ -109,9 +112,11 @@ from the profile.
   (one HID owner -- stop the CLI/selftest first). `.venv` is gitignored.
   No auto-reload -- restart after editing `server.py`; `index.html` is read
   from disk per request. **Stopping it:** press Ctrl+C in the server terminal;
-  the WebUI now closes the active HID transport and joins its worker before
-  exiting. If an externally managed process ignores normal termination, use
-  the existing port/process tools rather than starting a second HID owner.
+  the signal is passed through Uvicorn, the WebUI immediately closes the
+  active HID transport, wakes its worker, and joins it before exiting. The
+  `.venv` is the interpreter environment, not a separate daemon. If an
+  externally managed process ignores normal termination, use the existing
+  port/process tools rather than starting a second HID owner.
 
 ### UI layout (index.html)
 
@@ -403,9 +408,10 @@ The superseded plan listed these TODOs:
 3. **More settings, once decoded** -- panel notes what's not wired:
    oscillator (`0x0a` packed byte, fields unconfirmed), pan law (never
    captured -- NOT `0x4b` target 3, ruled out live 2026-09-03), and TB
-   latency mode (never captured). Surround readback is now wired; only its
-   unverified format/mask/bass-management writes and per-speaker head/EQ
-   writes need dedicated captures before implementation.
+   latency mode (never captured). Surround readback is now wired; its
+   experimental 2.0/2.1 Bass Management and per-speaker delay/level paths
+   need dedicated one-field captures to validate the mappings and readback
+   behavior.
 4. **Re-sweep emuMic pattern range** for models 1/12/16/18. ~~Confirm the
    `157 + ch` meter offset on channels 5-12~~ -- MOOT. See the superseded
    historical meter plan above. The current physical-input base is 221.

@@ -210,9 +210,9 @@ class SurroundCommandTests(unittest.TestCase):
             protocol.build_surround_global_bass_command(
                 self.profile, body, channel=0, field="lp_cutoff_hz", value=80)
 
-        body[0] = 0x02
+        body[0] = 0x03
         body[1] = 0x9F
-        body[13:23] = protocol.pack_surround_channel_order([1, 3])
+        body[13:23] = protocol.pack_surround_channel_order([1, 3, 2])
         with self.assertRaises(protocol.ConstraintError):
             protocol.build_surround_global_bass_command(
                 self.profile, body, channel=0, field="lp_cutoff_hz", value=80,
@@ -223,6 +223,78 @@ class SurroundCommandTests(unittest.TestCase):
             protocol.build_surround_global_bass_command(
                 self.profile, body, channel=0, field="lp_cutoff_hz", value=500,
                 allow_experimental=True)
+
+    def test_bass_command_allows_experimental_20_blocks(self):
+        body = bytearray((index * 7 + 3) & 0xFF for index in range(151))
+        body[0] = 0x02
+        body[1] = 0x9F
+        body[13:23] = protocol.pack_surround_channel_order([1, 3])
+        block = 25 + 8
+        expected = bytearray(body)
+        current = int.from_bytes(body[block:block + 2], "little")
+        expected[block:block + 2] = ((current & 0x8000) | 120).to_bytes(
+            2, "little")
+
+        packet = protocol.build_surround_global_bass_command(
+            self.profile, body, channel=1, field="lp_cutoff_hz", value=120,
+            allow_experimental=True)
+
+        self.assertEqual(packet[18:169], expected)
+
+    def test_bass_filter_type_candidate_changes_only_declared_global_bit(self):
+        body = self._bass_21_body()
+        body[23] = 0xA4
+        body[24] = 0x52
+        expected = bytearray(body)
+        expected[23] |= 0x01
+
+        packet = protocol.build_surround_global_bass_command(
+            self.profile, body, channel=0, field="hp_filter_type",
+            value="Linkwitz-Riley", allow_experimental=True)
+
+        self.assertEqual(packet[18:169], expected)
+        self.assertEqual(packet[18 + 23], 0xA5)
+        self.assertEqual(packet[18 + 24], 0x52)
+
+    def test_bass_filter_type_parser_exposes_candidate_labels_and_slots(self):
+        body = self._bass_21_body()
+        body[23] = 0x01
+        body[24] = 0x00
+        body[25 + 4:25 + 6] = (635).to_bytes(2, "little")
+        body[25 + 8 + 4:25 + 8 + 6] = (0x4000 | 585).to_bytes(2, "little")
+
+        parsed = protocol.parse_surround_global_record(self.profile, body)
+
+        self.assertEqual(parsed["bass_mgmt_filter_types"], {
+            "hp": "Linkwitz-Riley", "lp": "Butterworth"})
+        self.assertEqual(parsed["bass_mgmt_channels"][0]["slot"], 0)
+        self.assertEqual(parsed["bass_mgmt_channels"][0]["channel_id"], 1)
+        self.assertEqual(parsed["bass_mgmt_channels"][0]["fader_raw"], 635)
+        self.assertEqual(parsed["bass_mgmt_channels"][1]["channel_id"], 3)
+        self.assertEqual(parsed["bass_mgmt_channels"][2]["channel_id"], 4)
+        self.assertTrue(parsed["bass_mgmt_channels"][1]["fader_solo"])
+        self.assertEqual(parsed["bass_mgmt_channels"][1]["fader_solo_raw"], 1)
+
+    def test_bass_speaker_bypass_changes_only_selected_global_mask_bit(self):
+        body = self._bass_21_body()
+        body[7:9] = (0xA5FF).to_bytes(2, "little")
+        expected = bytearray(body)
+        expected[7:9] = (0xA5FD).to_bytes(2, "little")
+
+        packet = protocol.build_surround_global_speaker_mask_command(
+            self.profile, body, speaker=1, field="bypass", value=True,
+            allow_experimental=True)
+
+        self.assertEqual(packet[18:169], expected)
+        self.assertEqual(packet[4], 0xAB)
+        self.assertEqual(packet[16:18], bytes((0xEB, 0x99)))
+
+        clear_packet = protocol.build_surround_global_speaker_mask_command(
+            self.profile, packet[18:169], speaker=1, field="bypass", value=False,
+            allow_experimental=True)
+        self.assertEqual(clear_packet[18 + 7:18 + 9],
+                         (0xA5FF).to_bytes(2, "little"))
+
 
     def test_global_command_rejects_short_readback(self):
         with self.assertRaises(ValueError):
@@ -262,6 +334,55 @@ class SurroundCommandTests(unittest.TestCase):
             protocol.build_surround_speaker_eq_command(
                 self.profile, bytes(304), speaker=0, band=0,
                 changes={"gain_raw": 100})
+
+    def test_speaker_parser_decodes_candidate_head(self):
+        body = bytearray(116)
+        body[0:2] = (100).to_bytes(2, "little")
+        body[2:4] = (0x8000 | 635).to_bytes(2, "little")
+
+        parsed = protocol.parse_surround_speaker_eq_record(self.profile, body)
+
+        self.assertEqual(parsed["head"]["delay_ms_raw"], 100)
+        self.assertEqual(parsed["head"]["delay_ms"], 10.6)
+        self.assertEqual(parsed["head"]["level_db_raw"], 635)
+        self.assertEqual(parsed["head"]["level_db"], 3.5)
+        self.assertTrue(parsed["head"]["phase_invert"])
+        self.assertEqual(parsed["head"]["phase_invert_raw"], 1)
+
+    def test_speaker_head_builder_changes_one_field_and_preserves_phase(self):
+        body = bytearray((index * 3) & 0xFF for index in range(304))
+        body[:4] = bytes((0x64, 0x00, 0x7B, 0x82))
+
+        delay_packet = protocol.build_surround_speaker_head_command(
+            self.profile, body, speaker=1, field="delay_ms", value=4.6,
+            allow_experimental=True)
+        self.assertEqual(delay_packet[16:19], bytes((0xEA, 0x75, 1)))
+        self.assertEqual(delay_packet[19:21], (40).to_bytes(2, "little"))
+        self.assertEqual(delay_packet[21:23], bytes((0x7B, 0x82)))
+        self.assertEqual(delay_packet[23:135], bytes(body[4:116]))
+
+        level_packet = protocol.build_surround_speaker_head_command(
+            self.profile, body, speaker=1, field="level_db", value=-3.5,
+            allow_experimental=True)
+        self.assertEqual(
+            level_packet[21:23], (0x8000 | 565).to_bytes(2, "little"))
+        self.assertEqual(level_packet[19:21], bytes((0x64, 0x00)))
+
+        phase_packet = protocol.build_surround_speaker_head_command(
+            self.profile, body, speaker=1, field="phase_invert", value=False,
+            allow_experimental=True)
+        self.assertEqual(phase_packet[21:23], (635).to_bytes(2, "little"))
+        phase_on_packet = protocol.build_surround_speaker_head_command(
+            self.profile, phase_packet[19:135], speaker=1,
+            field="phase_invert", value=True, allow_experimental=True)
+        self.assertEqual(phase_on_packet[21:23],
+                         (0x8000 | 635).to_bytes(2, "little"))
+
+    def test_speaker_head_builder_requires_explicit_experimental_opt_in(self):
+        with self.assertRaises(protocol.ConstraintError):
+            protocol.build_surround_speaker_head_command(
+                self.profile, bytes(304), speaker=0, field="delay_ms",
+                value=0.6)
 
     def test_speaker_builder_changes_only_one_band_field(self):
         body = bytearray((index * 3) & 0xFF for index in range(304))

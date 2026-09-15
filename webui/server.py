@@ -455,8 +455,13 @@ class Device:
             if self._transport is transport:
                 self._transport = None
 
-    def stop(self, timeout=2.0):
-        """Stop the HID worker so Ctrl+C can terminate the whole WebUI cleanly."""
+    def request_stop(self):
+        """Request an immediate worker/transport shutdown from a signal path.
+
+        This deliberately does not join the worker.  Terminal signal handlers
+        must stay short; ``stop()`` performs the bounded join once Uvicorn has
+        left its event loop.
+        """
         self._stop.set()
         with self._lock:
             transport = self._transport
@@ -464,6 +469,10 @@ class Device:
         # Wake a worker that is between fast-state reads.  None is an internal
         # sentinel and is never submitted by an HTTP handler.
         self.cmds.put(None)
+
+    def stop(self, timeout=2.0):
+        """Stop the HID worker so terminal Ctrl+C can end the WebUI cleanly."""
+        self.request_stop()
         worker = self._t
         if worker is not None and worker is not threading.current_thread():
             worker.join(timeout=max(0.0, float(timeout)))
@@ -629,12 +638,155 @@ class Device:
             else:
                 eq_position_write["enabled"] = True
         write["eq_position"] = eq_position_write
+        speaker_contract = self.profile.get("runtime_contracts", {}).get(
+            "surround_speaker_eq", {}) or {}
+        speaker_write_contract = speaker_contract.get("write_contract", {}) or {}
+        head_specs = speaker_contract.get("head_fields", {}) or {}
+        requested_head_fields = speaker_write_contract.get(
+            "head_fields", []) or []
+        head_fields = [
+            str(name) for name in requested_head_fields
+            if isinstance(head_specs.get(name), dict)
+            and head_specs[name].get("writable", False)
+        ]
+        head_controls = {}
+        for name in head_fields:
+            spec = head_specs[name]
+            if spec.get("boolean"):
+                head_controls[name] = {
+                    "label": str(spec.get("label", name)),
+                    "boolean": True,
+                }
+                continue
+            try:
+                display_range = [float(value) for value in spec["display_range"]]
+                step = float(spec["step"])
+                digits = int(spec.get("digits", 1))
+            except (KeyError, TypeError, ValueError):
+                continue
+            if len(display_range) != 2 or step <= 0:
+                continue
+            head_controls[name] = {
+                "label": str(spec.get("label", name)),
+                "unit": str(spec.get("unit", "")),
+                "range": display_range,
+                "step": step,
+                "digits": digits,
+            }
+        head_formats = [str(name) for name in speaker_write_contract.get(
+            "head_formats", [])]
+        head_write = {
+            "enabled": False,
+            "experimental": str(speaker_write_contract.get(
+                "status", "")).strip().lower() in {
+                    "experimental", "experimental-unverified"},
+            "status": speaker_write_contract.get("status", "unavailable"),
+            "fields": list(head_controls),
+            "controls": head_controls,
+            "formats": head_formats,
+            "readback_category": SURROUND_EQ_CAT,
+            "note": speaker_write_contract.get(
+                "head_notes",
+                "Experimental speaker delay/level/phase writes preserve the "
+                "complete category-0x1a record and should be compared with "
+                "fresh readback."),
+        }
+        current_format = global_view.get("format") if isinstance(
+            global_view, dict) else None
+        format_allowed = bool(current_format) and (
+            not head_formats or current_format in head_formats)
+        if format_allowed and head_fields:
+            sample_field = next((name for name in head_fields
+                                 if not head_specs[name].get("boolean")), None)
+            if sample_field is None:
+                sample_field = head_fields[0]
+            sample_spec = head_specs[sample_field]
+            try:
+                sample_value = (False if sample_spec.get("boolean") else
+                                head_controls[sample_field]["range"][0])
+                record_size = int(speaker_contract["record_size"])
+                proto.build_surround_speaker_head_command(
+                    self.profile, bytes(record_size), 0, sample_field,
+                    sample_value, allow_experimental=True)
+            except (KeyError, TypeError, ValueError, proto.ConstraintError):
+                pass
+            else:
+                head_write["enabled"] = True
+        write["speaker_head"] = head_write
+        speaker_mask_contract = contract.get("speaker_mask_write", {}) or {}
+        speaker_mask_fields_contract = speaker_mask_contract.get(
+            "fields", {}) or {}
+        speaker_mask_fields = [
+            str(name) for name, spec in speaker_mask_fields_contract.items()
+            if isinstance(spec, dict) and spec.get("writable", True)
+        ]
+        mask_formats = [str(name) for name in speaker_mask_contract.get(
+            "formats", [])]
+        mask_format_allowed = bool(current_format) and (
+            not mask_formats or current_format in mask_formats)
+        speaker_bypass_write = {
+            "enabled": False,
+            "experimental": str(speaker_mask_contract.get(
+                "status", "")).strip().lower() in {
+                    "experimental", "experimental-unverified"},
+            "status": speaker_mask_contract.get("status", "unavailable"),
+            "fields": speaker_mask_fields,
+            "formats": mask_formats,
+            "speaker_count": int(speaker_mask_contract.get(
+                "speaker_count", self.surround_speaker_count)),
+            "readback_category": SURROUND_GLOBAL_CAT,
+            "note": speaker_mask_contract.get(
+                "note", "Per-speaker mask writes use a fresh category-0x1b "
+                "global readback."),
+        }
+        if (mask_format_allowed and global_raw is not None
+                and speaker_mask_fields):
+            sample_field = speaker_mask_fields[0]
+            try:
+                proto.build_surround_global_speaker_mask_command(
+                    self.profile, global_raw, 0, sample_field, False,
+                    allow_experimental=True)
+            except (KeyError, TypeError, ValueError, proto.ConstraintError):
+                pass
+            else:
+                speaker_bypass_write["enabled"] = True
+        write["speaker_bypass"] = speaker_bypass_write
         bass_contract = contract.get("bass_management_write", {}) or {}
         bass_fields_contract = bass_contract.get("fields", {}) or {}
         bass_fields = [
             str(name) for name, spec in bass_fields_contract.items()
             if isinstance(spec, dict) and spec.get("writable", True)
         ]
+        bass_filter_type_values = {}
+        bass_link_fields = []
+        for name, spec in bass_fields_contract.items():
+            if (not isinstance(spec, dict)
+                    or str(spec.get("scope", "block")).strip().lower() != "global"):
+                continue
+            kind = str(spec.get("kind", "")).strip().lower()
+            if kind == "link":
+                bass_link_fields.append(str(name))
+                continue
+            if kind != "filter_type":
+                continue
+            display_values = spec.get("display_values")
+            raw_values = spec.get("raw_values")
+            if (not isinstance(display_values, list)
+                    or not isinstance(raw_values, list)
+                    or len(display_values) != len(raw_values)):
+                continue
+            bass_filter_type_values[str(name)] = [
+                {"value": display, "label": str(display)}
+                for display in display_values
+            ]
+        filter_types = {}
+        if isinstance(global_state, dict):
+            filter_types = dict(global_state.get(
+                "bass_mgmt_filter_types", {}) or {})
+        link_states = {}
+        if isinstance(global_state, dict):
+            link_states = dict(global_state.get(
+                "bass_mgmt_links", {}) or {})
         bass_write = {
             "enabled": False,
             "experimental": True,
@@ -646,19 +798,30 @@ class Device:
             "cutoff_range_hz": [20, 320],
             "fader_range_db": [-60, 16],
             "order_values": [2, 4, 8],
+            "filter_types": filter_types,
+            "filter_type_values": bass_filter_type_values,
+            "link_fields": bass_link_fields,
+            "link_states": link_states,
             "links": bass_contract.get("links", {}) or {},
             "note": (
                 "Experimental one-field writes use a fresh category-0x1b "
                 "readback. Cutoffs, orders, bypass, fader, and mute are "
-                "mapped; link, filter type, solo, and meters remain guarded."
+                "mapped. Filter type, Link, and Solo are experimental candidate "
+                "mappings and must be checked against the next readback; "
+                "meters remain guarded."
             ),
         }
         if global_raw is not None and bass_fields:
             sample_field = bass_fields[0]
-            sample_value = False if bass_fields_contract[sample_field].get("boolean") else (
-                2 if "order" in sample_field else
-                0 if "fader" in sample_field else 80
-            )
+            sample_spec = bass_fields_contract[sample_field]
+            if sample_spec.get("boolean"):
+                sample_value = False
+            elif isinstance(sample_spec.get("display_values"), list) \
+                    and sample_spec["display_values"]:
+                sample_value = sample_spec["display_values"][0]
+            else:
+                sample_value = (2 if "order" in sample_field else
+                                0 if "fader" in sample_field else 80)
             try:
                 proto.build_surround_global_bass_command(
                     self.profile, global_raw, 0, sample_field, sample_value,
@@ -735,13 +898,22 @@ class Device:
         speaker_view = []
         for index in range(self.surround_speaker_count):
             record = speakers.get(index)
+            speaker_data = _strip_surround_raw(record or {})
+            head = speaker_data.get("head", {})
+            bypass_mask = (global_state.get("bypass_mask")
+                           if isinstance(global_state, dict) else None)
+            bypass = (None if bypass_mask is None else
+                      not bool(int(bypass_mask) & (1 << index)))
             speaker_view.append({
                 "index": index,
                 "label": _surround_speaker_label(index, global_state),
                 "active": active_count is None or index < active_count,
                 "readback": record is not None,
-                "head_readback": False,
-                "bands": _strip_surround_raw(record or {}).get("bands", []),
+                "head_readback": bool(record is not None and head),
+                "head": head,
+                "bypass": bypass,
+                "bypass_readback": bypass_mask is not None,
+                "bands": speaker_data.get("bands", []),
             })
         return {
             "available": self.surround_available,
@@ -769,25 +941,27 @@ class Device:
             raise RuntimeError(
                 f"no surround speaker readback for {speaker} -- not writing blind")
         body = proto.readback_body(self.profile, data)
-        record = proto.parse_surround_speaker_eq_record(self.profile, body)
-        with self._lock:
-            self.surround_speakers[int(speaker)] = record
+        self._cache_surround_speaker_body(speaker, body)
         return bytes(body)
 
-    def _cache_surround_speaker_packet(self, speaker, packet):
-        """Update the local EQ cache from a complete speaker write packet."""
-        contract = self.profile.get("runtime_contracts", {}).get(
-            "surround_speaker_eq", {}) or {}
-        write = contract.get("write_contract", {}) or {}
-        payload_offset = int(write.get("payload_offset", 19))
-        record_size = int(contract.get("record_size", 116))
-        body = bytes(packet[payload_offset:payload_offset + record_size])
+    def _cache_surround_speaker_body(self, speaker, body):
+        """Cache one parsed speaker record and announce a changed readback."""
         record = proto.parse_surround_speaker_eq_record(self.profile, body)
         with self._lock:
             changed = self.surround_speakers.get(int(speaker)) != record
             self.surround_speakers[int(speaker)] = record
             if changed:
                 self.rb_ver += 1
+
+    def _cache_surround_speaker_packet(self, speaker, packet):
+        """Update the local cache from a complete speaker write packet."""
+        contract = self.profile.get("runtime_contracts", {}).get(
+            "surround_speaker_eq", {}) or {}
+        write = contract.get("write_contract", {}) or {}
+        payload_offset = int(write.get("payload_offset", 19))
+        record_size = int(contract.get("record_size", 116))
+        body = bytes(packet[payload_offset:payload_offset + record_size])
+        self._cache_surround_speaker_body(speaker, body)
 
     def _surround_global_body_for_write(self, transport):
         """Read fresh global surround state before a complete-state write."""
@@ -1688,7 +1862,13 @@ class SurroundEQChange(BaseModel):
 
 class SurroundBassChange(BaseModel):
     channel: int               # 0-based Bass Management block slot
-    field: str                 # one profile-declared channel-block field
+    field: str                 # one profile-declared block/global field
+    value: float | int | bool | str
+
+
+class SurroundSpeakerChange(BaseModel):
+    speaker: int               # 0-based speaker/readback index
+    field: str                 # delay_ms | level_db | phase_invert | bypass
     value: float | int | bool
 
 
@@ -1961,7 +2141,12 @@ def api_surround_global(change: SurroundGlobalChange):
 
 @app.post("/api/surround/bass")
 def api_surround_bass(change: SurroundBassChange):
-    """Queue one bounded experimental Bass Management field write."""
+    """Queue one bounded experimental Bass Management field write.
+
+    A global filter-type field still carries a channel slot in the API for a
+    uniform control shape; its profile scope makes the builder update only
+    the global header bit, never a channel block.
+    """
     if not DEV.surround_available:
         return _bad("surround global state is not safely mapped for this profile")
     bass_write = DEV.surround_json()["write"].get("bass", {})
@@ -1995,6 +2180,11 @@ def api_surround_bass(change: SurroundBassChange):
             allow_experimental=True)
         t.write(packet)
         DEV._cache_surround_global_packet(packet)
+        try:
+            DEV._surround_global_body_for_write(t)
+        except RuntimeError as exc:
+            print(f"[surround] post-write Bass Management readback: {exc!r}",
+                  file=sys.stderr, flush=True)
 
     DEV.submit(do)
     return {
@@ -2002,6 +2192,121 @@ def api_surround_bass(change: SurroundBassChange):
         "queued": True,
         "experimental": True,
         "channel": change.channel,
+        "field": field,
+        "value": change.value,
+    }
+
+
+@app.post("/api/surround/speaker")
+def api_surround_speaker(change: SurroundSpeakerChange):
+    """Queue one experimental per-speaker monitor control write.
+
+    Delay, level, and phase-invert use a fresh category-0x1a record and the
+    complete 0x87 speaker frame.  Bypass is a bit in the global per-speaker
+    mask, so it uses a fresh category-0x1b record and the complete 0xab frame.
+    Both paths perform a second fresh read after the write when possible.
+    """
+    if not DEV.surround_available:
+        return _bad("surround state is not safely mapped for this profile")
+    speaker_write = DEV.surround_json()["write"].get("speaker_head", {})
+    bypass_write = DEV.surround_json()["write"].get("speaker_bypass", {})
+    field = str(change.field).strip().lower()
+    use_bypass = field in bypass_write.get("fields", [])
+    if use_bypass:
+        if not bypass_write.get("enabled"):
+            return _bad(
+                "per-speaker bypass writes are not authorized for this "
+                "surround format")
+    elif not speaker_write.get("enabled"):
+        return _bad(
+            "per-speaker delay/level/phase writes are not authorized for this "
+            "surround format")
+    if not use_bypass and field not in speaker_write.get("fields", []):
+        return _bad(f"per-speaker field {field!r} is not writable")
+    speaker_count = (int(bypass_write.get("speaker_count", 0))
+                     if use_bypass else DEV.surround_speaker_count)
+    if not 0 <= change.speaker < speaker_count:
+        return _bad(
+            f"speaker {change.speaker} out of range "
+            f"0..{speaker_count - 1}")
+
+    if use_bypass:
+        try:
+            requested = proto._surround_boolean_value(
+                change.value, f"per-speaker {field}")
+        except (TypeError, ValueError) as exc:
+            return _bad(str(exc))
+
+        with DEV._lock:
+            cached_body = DEV.surround_global_raw
+        if cached_body is not None:
+            try:
+                proto.build_surround_global_speaker_mask_command(
+                    PROFILE, cached_body, change.speaker, field, requested,
+                    allow_experimental=True)
+            except (KeyError, TypeError, ValueError, proto.ConstraintError) as exc:
+                return _bad(str(exc))
+
+        def do(t):
+            body = DEV._surround_global_body_for_write(t)
+            packet = proto.build_surround_global_speaker_mask_command(
+                PROFILE, body, change.speaker, field, requested,
+                allow_experimental=True)
+            t.write(packet)
+            DEV._cache_surround_global_packet(packet)
+            try:
+                DEV._surround_global_body_for_write(t)
+            except RuntimeError as exc:
+                print(f"[surround] post-write speaker bypass readback: {exc!r}",
+                      file=sys.stderr, flush=True)
+
+        DEV.submit(do)
+        return {
+            "ok": True,
+            "queued": True,
+            "experimental": bool(bypass_write.get("experimental", False)),
+            "speaker": change.speaker,
+            "field": field,
+            "value": requested,
+        }
+
+    controls = speaker_write.get("controls", {})
+    control = controls.get(field, {}) if isinstance(controls, dict) else {}
+    if control.get("boolean"):
+        try:
+            requested = proto._surround_boolean_value(
+                change.value, f"per-speaker {field}")
+        except (TypeError, ValueError) as exc:
+            return _bad(str(exc))
+    else:
+        try:
+            requested = float(change.value)
+            minimum, maximum = (float(value) for value in control["range"])
+        except (TypeError, ValueError, KeyError):
+            return _bad(f"invalid value for per-speaker field {field}")
+        if not math.isfinite(requested) or not minimum <= requested <= maximum:
+            return _bad(
+                f"{field} outside {minimum:g}..{maximum:g}")
+
+    def do(t):
+        body = DEV._surround_speaker_body_for_write(t, change.speaker)
+        packet = proto.build_surround_speaker_head_command(
+            PROFILE, body, change.speaker, field, change.value,
+            allow_experimental=True)
+        t.write(packet)
+        DEV._cache_surround_speaker_packet(change.speaker, packet)
+        try:
+            DEV._surround_speaker_body_for_write(t, change.speaker)
+        except RuntimeError as exc:
+            print(f"[surround] post-write speaker readback: {exc!r}",
+                  file=sys.stderr, flush=True)
+
+    DEV.submit(do)
+    return {
+        "ok": True,
+        "queued": True,
+        "experimental": True,
+        "speaker": change.speaker,
         "field": field,
         "value": change.value,
     }
@@ -2723,13 +3028,52 @@ async def stream():
                                       "X-Accel-Buffering": "no"})
 
 
-if __name__ == "__main__":
+def _install_terminal_shutdown(server, device):
+    """Make Uvicorn's terminal signal path stop the device service first.
+
+    Uvicorn installs its own SIGINT/SIGTERM handlers inside ``Server.run``.
+    Wrapping ``handle_exit`` keeps that behavior (including the second-Ctrl+C
+    force-exit path) while also waking the HID worker immediately.  The
+    wrapper is intentionally small because it runs in Python's signal context;
+    the bounded worker join remains in ``run_server``'s ``finally`` block.
+    """
+    original = getattr(server, "handle_exit", None)
+    shutdown_requested = threading.Event()
+
+    def handle_exit(sig, frame):
+        if not shutdown_requested.is_set():
+            shutdown_requested.set()
+            device.request_stop()
+        original(sig, frame)
+
+    if original is None:
+        return server
+    server.handle_exit = handle_exit
+    return server
+
+
+def run_server():
+    """Run the local WebUI and make terminal shutdown deterministic."""
     DEV.start()
     try:
-        uvicorn.run(app, host="127.0.0.1", port=8714, log_level="warning")
+        config = uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=8714,
+            log_level="warning",
+            timeout_graceful_shutdown=2.0,
+        )
+        server = _install_terminal_shutdown(uvicorn.Server(config), DEV)
+        server.run()
     except KeyboardInterrupt:
-        # Uvicorn normally handles SIGINT itself; keep this for versions that
-        # let the interrupt escape so the HID worker is still joined below.
+        # Uvicorn re-raises the captured SIGINT after restoring the terminal
+        # handlers.  Treat that normal Ctrl+C path as a clean exit.
         pass
     finally:
+        # This is idempotent and also covers startup/runtime exceptions that
+        # never pass through the terminal signal handler.
         DEV.stop()
+
+
+if __name__ == "__main__":
+    run_server()

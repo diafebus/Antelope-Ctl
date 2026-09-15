@@ -3,6 +3,7 @@ import copy
 import importlib
 import json
 from pathlib import Path
+import signal
 import sys
 import threading
 import types
@@ -123,6 +124,79 @@ class MeterSourceTests(unittest.TestCase):
                                        13000, 15000])
         self.assertEqual(q_raw, 71)
         self.assertEqual(gain_raw, 0)
+
+    def test_surround_json_enables_20_bass_and_speaker_head_writes(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.profile
+        device.surround_contract = self.server._surround_global_contract(
+            self.profile)
+        device.surround_available = True
+        device.surround_speaker_count = 16
+        device._lock = threading.Lock()
+        global_body = bytearray(151)
+        global_body[0] = 0x02             # 2.0, no bass-management flag
+        global_body[1] = 0x9F             # no-LFE sentinel
+        global_body[4:6] = (600).to_bytes(2, 'little')
+        global_body[13:23] = protocol.pack_surround_channel_order(
+            [1, 3], 10)
+        device.surround_global_raw = bytes(global_body)
+        device.surround_global = protocol.parse_surround_global_record(
+            self.profile, global_body)
+        speaker_body = bytearray(116)
+        speaker_body[0:2] = (100).to_bytes(2, 'little')
+        speaker_body[2:4] = (0x8000 | 635).to_bytes(2, 'little')
+        speaker = protocol.parse_surround_speaker_eq_record(
+            self.profile, speaker_body)
+        device.surround_speakers = {0: speaker, 1: speaker}
+
+        payload = device.surround_json()
+
+        self.assertTrue(payload['write']['bass']['enabled'])
+        self.assertEqual(payload['write']['bass']['formats'], ['2.0', '2.1'])
+        self.assertEqual(payload['write']['bass']['filter_types'], {
+            'hp': 'Butterworth', 'lp': 'Butterworth'})
+        self.assertEqual(
+            [item['label'] for item in payload['write']['bass']
+             ['filter_type_values']['hp_filter_type']],
+            ['Butterworth', 'Linkwitz-Riley'])
+        self.assertTrue(payload['write']['speaker_head']['enabled'])
+        self.assertEqual(payload['write']['speaker_head']['fields'],
+                         ['delay_ms', 'level_db', 'phase_invert'])
+        self.assertEqual(
+            payload['write']['speaker_head']['controls']['delay_ms']['range'],
+            [0.6, 100.6])
+        self.assertEqual(
+            payload['speakers'][0]['head']['level_db'], 3.5)
+        self.assertTrue(payload['speakers'][0]['head']['phase_invert'])
+        self.assertTrue(payload['write']['speaker_bypass']['enabled'])
+        self.assertEqual(payload['write']['speaker_bypass']['fields'], ['bypass'])
+        self.assertTrue(payload['speakers'][0]['bypass'])
+
+    def test_terminal_shutdown_stops_device_before_uvicorn_exit(self):
+        class FakeServer:
+            def __init__(self):
+                self.should_exit = False
+                self.calls = []
+
+            def handle_exit(self, sig, frame):
+                self.calls.append((sig, frame))
+                self.should_exit = True
+
+        fake_server = FakeServer()
+        device = mock.Mock()
+        wrapped = self.server._install_terminal_shutdown(fake_server, device)
+
+        wrapped.handle_exit(signal.SIGINT, None)
+
+        device.request_stop.assert_called_once_with()
+        self.assertEqual(fake_server.calls, [(signal.SIGINT, None)])
+        self.assertTrue(fake_server.should_exit)
+
+        # A repeated Ctrl+C keeps Uvicorn's force-exit behavior but does not
+        # enqueue a second device shutdown request.
+        wrapped.handle_exit(signal.SIGINT, None)
+        device.request_stop.assert_called_once_with()
+        self.assertEqual(len(fake_server.calls), 2)
 
     def test_orion_selected_mixer_strip_meters_follow_the_window_selector(self):
         device = self.server.Device.__new__(self.server.Device)

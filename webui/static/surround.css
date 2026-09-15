@@ -65,6 +65,8 @@
 .bass-rail-filter strong, .bass-rail-mixer strong { color:#c5c9cf; font:700 10px/1 ui-monospace,monospace; letter-spacing:.04em; }
 .bass-rail-filter span, .bass-rail-mixer span { display:flex; align-items:center; justify-content:flex-end; gap:5px; font:8px/1.1 ui-monospace,monospace; white-space:nowrap; }
 .bass-link { width:20px; height:18px; flex:0 0 auto; padding:0; border:1px solid #72777e; border-radius:2px; background:#9da0a4; color:#25282d; cursor:default; }
+.bass-link:enabled { cursor:pointer; }
+.bass-link.on { background:var(--accent); border-color:var(--accent); color:#fff; }
 .bass-link .lkico { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.5; vertical-align:middle; }
 .bass-strip { position:relative; background:#181b21; border-left:1px solid #303641; border-bottom:4px solid var(--bass-color); }
 .bass-strip::before { content:""; position:absolute; z-index:1; top:0; left:0; right:0; height:3px; background:var(--bass-color); }
@@ -84,13 +86,13 @@
 .bass-knob input:not(:disabled) { cursor:ns-resize; }
 .bass-readout { width:100%; min-width:0; overflow:hidden; padding:2px 1px; font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
 .bass-chip { display:flex; align-items:center; justify-content:center; min-width:0; overflow:hidden; background:#050608; border:1px solid #252a33; border-radius:2px; color:#00aee5; font:700 10px/1 ui-monospace,monospace; text-overflow:ellipsis; white-space:nowrap; }
-.bass-order-control { appearance:none; text-align:center; cursor:default; }
-.bass-order-control:enabled { cursor:pointer; }
-.bass-order-control option { background:#050608; color:var(--fg); }
+.bass-order-control, .bass-filter-type { appearance:none; width:100%; padding:0 2px; text-align:center; cursor:default; }
+.bass-order-control:enabled, .bass-filter-type:enabled { cursor:pointer; }
+.bass-order-control option, .bass-filter-type option { background:#050608; color:var(--fg); }
 .bass-bypass { width:100%; min-width:0; padding:3px 0; border:1px solid #5f6369; border-radius:2px; background:#898c91; color:#17191d; cursor:default; font:700 9px/1 ui-monospace,monospace; }
 .bass-bypass:enabled { cursor:pointer; }
 .bass-bypass.on { background:var(--warn); border-color:var(--warn); }
-.bass-order-control:disabled, .bass-bypass:disabled { opacity:.78; }
+.bass-order-control:disabled, .bass-filter-type:disabled, .bass-bypass:disabled { opacity:.78; }
 .bass-mixer-section { display:grid; grid-template-rows:20px minmax(122px,1fr) 26px; gap:4px; min-height:0; padding:6px 4px 3px; }
 .bass-fader-value { justify-self:center; width:calc(100% - 2px); overflow:hidden; padding:3px 1px; font-size:9px; text-overflow:ellipsis; }
 .bass-fader-row { min-height:122px; gap:2px; }
@@ -109,7 +111,9 @@
 .surround-speakerbar label { display:flex; align-items:center; gap:6px; color:var(--dim); font-size:11px; }
 .surround-speaker-name { color:var(--fg); font:700 11px ui-monospace,monospace; }
 .surround-eq-reset { flex:0 0 auto; width:max-content; min-width:0; margin-left:auto; padding:5px 8px; }
-.surround-speaker-controls { grid-template-columns:repeat(3,minmax(0,1fr)); border-bottom:1px solid #252a33; }
+.surround-speaker-controls { grid-template-columns:repeat(4,minmax(0,1fr)); border-bottom:1px solid #252a33; }
+.surround-speaker-toggle { width:100%; min-width:0; }
+.surround-speaker-toggle.on { background:var(--accent); border-color:var(--accent); color:#fff; }
 .surround-disabled { opacity:.72; }
 .surround-disabled input[type=range] { opacity:.4; }
 .surround-disabled input[type=checkbox] { justify-self:end; accent-color:var(--accent); }

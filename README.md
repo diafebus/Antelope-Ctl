@@ -979,7 +979,7 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   that rests on a capture that cannot be trusted -- see `PROTOCOL.md` §11.
 - **Surround monitoring tab** -- **two** whole-state frames:
   `0xab`/`0xeb` = global (EQ pre/post `[18]` bit 7, level, delay, format,
-  per-speaker bypass/mute/dim masks, 2.1 bass-management window) and
+  per-speaker bypass/mute/dim masks, 2.0/2.1 bass-management window) and
   **`0x87`/`0xea` = per-speaker** ×16 (`[18]` = speaker 0-15, level +
   polarity, delay, a full 16-band parametric EQ per speaker). Decoded
   2026-09-03 from the `srrnd-*` captures. **Both read back** (found
@@ -987,14 +987,18 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   category `0x1a`. The CLI decodes both readbacks, and the WebUI Surround tab
   polls both categories. Its 2.0/2.1 global delay/level and format paths
   perform a fresh read-modify-write; EQ PRE/POST is a confirmed one-bit global
-  write. Other global controls and per-speaker delay/level/phase remain
-  read-only. The WebUI exposes the experimental per-speaker EQ
-  path one field at a time, using a fresh read-modify-write that preserves the
-  complete record. `tools/surround_eq_selftest.py` can read all 16 records or,
-  with explicit confirmation, probe one frequency, Q, gain, or raw mode byte
-  in one selected band and restore the complete record. The per-speaker write
-  frame remains experimental because its candidate delay/level/invert head has
-  not been dynamically paired with the readback. **Room Correction** turned out to be just the Launcher computing a
+  write. Mute and dim remain read-only; speaker-monitor bypass, per-speaker
+  phase, delay, and level are experimental readback probes. The WebUI exposes
+  those per-speaker controls alongside the EQ head controls,
+  plus the EQ path, one field at a time, using a fresh read-modify-write that
+  preserves the complete record and performs a post-write readback when
+  possible. The 2.0 Bass Management popup is now writable for its L/R strips
+  using the same bounded fresh-readback path as 2.1's L/R/LFE strips.
+  `tools/surround_eq_selftest.py` can read all 16 records or, with explicit
+  confirmation, probe one frequency, Q, gain, or raw mode byte in one selected
+  band and restore the complete record. The per-speaker head mapping remains
+  experimental because delay/level changes are being compared against fresh
+  category-0x1a readback. **Room Correction** turned out to be just the Launcher computing a
   curve host-side and writing it into that `0x87` per-speaker EQ -- no opcode,
 no toggle (`params.surround_speaker` *is* the RC interface). The global format
 wire path was subsequently round-tripped through **9.1.6** on the connected
@@ -1002,8 +1006,10 @@ Orion Studio III; the WebUI still exposes only **2.0 / 2.1** until the
 licence-dependent vendor behavior is better understood. The Bass Management
 popup displays only the active strips; 2.1 is ordered L · R · LFE with fixed
 strip widths. Its bounded experimental writes cover crossover cutoffs, filter
-order, bypass, fader, and mute; link, filter type, solo, and meter mappings
-remain guarded. See `params.surround_monitor` + `params.surround_speaker`.
+  order, bypass, fader, mute, filter type, link, and solo. Filter-type, link,
+  and solo bit assignments are experimental candidates and must be checked
+  against fresh readback. See `params.surround_monitor` +
+  `params.surround_speaker`.
 
 For a targeted hardware probe, stop the WebUI first so it releases the HID
 device, then run the dedicated self-test. It reads all speakers by default:
@@ -1031,6 +1037,16 @@ python3 tools/surround_eq_position_selftest.py --write --confirm-experimental-wr
 
 The probe toggles PRE/POST, verifies category `0x1b`, and restores the original
 complete global state.
+
+The combined Surround control probe exercises 2.0/2.1 Bass Management
+faders, filter type, Link, Solo, and speaker delay/level/phase/bypass, then
+restores the saved global and speaker records:
+
+```
+python3 tools/surround_format_selftest.py --write \
+  --test-bass-controls --test-speaker-controls \
+  --confirm-surround-control-write
+```
 
 ### Connect handshake & routing readback -- resolved (2026-08, native macOS)
 

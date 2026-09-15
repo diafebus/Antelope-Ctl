@@ -65,6 +65,10 @@ assert.match(js, /function surroundEqDefaultValue\(input/);
 assert.match(js, /data-surround-eq-number/);
 assert.match(js, /function surroundEqSnap\(value/);
 assert.match(js, /function postSurroundEqInput\(input\)/);
+assert.match(js, /function surroundSpeakerHeadControl\(/);
+assert.match(js, /function surroundSpeakerBypassControl\(/);
+assert.match(js, /data-surround-speaker-head-toggle/);
+assert.match(js, /\/api\/surround\/speaker/);
 assert.match(js, /function openSurroundBassWindow\(\)/);
 assert.match(js, /window\.open\('', 'antelopeBassManagement'/);
 assert.match(js, /data-logarithmic="true"/);
@@ -180,7 +184,9 @@ const surroundData = {
   speaker_count: 16,
   speakers: Array.from({length: 16}, (_, index) => ({
     index, label: 'Speaker ' + (index + 1), active: index < 2,
-    readback: true, bands: surroundBands,
+    readback: true, head_readback: true,
+    head: {delay_ms: 0.6, level_db: 0, phase_invert: false},
+    bypass: false, bypass_readback: true, bands: surroundBands,
   })),
   global: {format: '2.0', flags_a_raw: 2, flags_b_raw: 159},
   write: {enabled: false},
@@ -272,6 +278,41 @@ assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-number[^>]* disabled
 assert.equal((writableSurroundHTML.match(/data-surround-eq-reset/g) || []).length, 1);
 assert.match(writableSurroundHTML, /data-surround-eq-speaker="0"/);
 assert.doesNotMatch(writableSurroundHTML, /data-surround-eq-reset[^>]* disabled/);
+const writableHeadHTML = surroundContext.surroundSpeakerHTML({
+  ...surroundData,
+  speakers: surroundData.speakers.map(speaker => ({
+    ...speaker,
+    head_readback: true,
+    head: {delay_ms: 0.6, level_db: 0, phase_invert: false},
+  })),
+  write: {
+    speaker_head: {
+      enabled: true,
+      experimental: true,
+      fields: ['delay_ms', 'level_db', 'phase_invert'],
+      controls: {
+        delay_ms: {range: [0.6, 100.6], step: 0.1, unit: 'ms', digits: 1},
+        level_db: {range: [-60, 16], step: 0.1, unit: 'dB', digits: 1},
+        phase_invert: {boolean: true},
+      },
+    },
+    speaker_bypass: {
+      enabled: true, experimental: true, fields: ['bypass'],
+    },
+  },
+});
+assert.match(writableHeadHTML, /data-surround-speaker-head-field="delay_ms"/);
+assert.match(writableHeadHTML, /data-surround-speaker-head-field="level_db"/);
+assert.doesNotMatch(writableHeadHTML, /data-surround-speaker-head-field="delay_ms"[^>]* disabled/);
+assert.doesNotMatch(writableHeadHTML, /data-surround-speaker-head-field="level_db"[^>]* disabled/);
+assert.match(writableHeadHTML, /data-surround-speaker-head-field="delay_ms"[^>]*min="0.6" max="100.6"/);
+assert.match(writableHeadHTML, /data-surround-speaker-head-field="level_db"[^>]*min="-60" max="16"/);
+assert.match(writableHeadHTML, /Phase invert/);
+assert.match(writableHeadHTML, /data-surround-speaker-head-toggle/);
+assert.doesNotMatch(writableHeadHTML, /data-surround-speaker-head-toggle[^>]* disabled/);
+assert.match(writableHeadHTML, /Bypass processing/);
+assert.match(writableHeadHTML, /data-surround-speaker-bypass/);
+assert.doesNotMatch(writableHeadHTML, /data-surround-speaker-bypass[^>]* disabled/);
 const inputsSource = fs.readFileSync(path.join(root, 'webui/static/ui-inputs.js'), 'utf8');
 assert.match(inputsSource, /\.replace\(\/\^Preamp\\s\+\/i, 'CH'\)/);
 const globalHTML = surroundContext.surroundGlobalHTML(surroundData);
@@ -302,6 +343,7 @@ const writableBassData = {
   global: {
     ...surroundData.global,
     format: '2.1',
+    bass_mgmt_filter_types: {hp: 'Linkwitz-Riley', lp: 'Butterworth'},
     bass_mgmt_channels: [
       {lp_cutoff_hz: 80, hp_cutoff_hz: 80, lp_order: 0, hp_order: 0,
         fader_db: 0, fader_mute: false},
@@ -318,7 +360,24 @@ const writableBassData = {
       experimental: true,
       fader_range_db: [-60, 16],
       fields: ['lp_cutoff_hz', 'hp_cutoff_hz', 'lp_bypass', 'hp_bypass',
-        'lp_order', 'hp_order', 'fader_db', 'fader_mute'],
+        'lp_order', 'hp_order', 'fader_db', 'fader_mute',
+        'fader_solo', 'hp_filter_type', 'lp_filter_type',
+        'link_hp_cutoff', 'link_hp_filter_type', 'link_hp_order',
+        'link_hp_bypass', 'link_lp_cutoff', 'link_lp_filter_type',
+        'link_lp_order', 'link_lp_bypass', 'link_mixer'],
+      filter_type_values: {
+        hp_filter_type: [
+          {value: 'Butterworth', label: 'Butterworth'},
+          {value: 'Linkwitz-Riley', label: 'Linkwitz-Riley'},
+        ],
+        lp_filter_type: [
+          {value: 'Butterworth', label: 'Butterworth'},
+          {value: 'Linkwitz-Riley', label: 'Linkwitz-Riley'},
+        ],
+      },
+      link_fields: ['link_hp_cutoff', 'link_hp_filter_type', 'link_hp_order',
+        'link_hp_bypass', 'link_lp_cutoff', 'link_lp_filter_type',
+        'link_lp_order', 'link_lp_bypass', 'link_mixer'],
       block_count: 3,
       note: 'known Bass Management fields',
     },
@@ -334,14 +393,73 @@ assert.match(writableBassHTML, /data-bass-field="fader_db"[^>]*min="-60" max="16
 assert.match(writableBassHTML, /data-bass-field="fader_db"[^>]*min="-60" max="16" step="0.1" value="3"/);
 assert.match(writableBassHTML, /data-bass-field="fader_mute"/);
 assert.match(writableBassHTML, /class="bass-chip bass-order-control"/);
+assert.match(writableBassHTML, /class="bass-chip bass-filter-type"/);
+assert.match(writableBassHTML, /<option value="Linkwitz-Riley" selected>Linkwitz-Riley<\/option>/);
+assert.doesNotMatch(writableBassHTML, /data-bass-filter-type="true"[^>]* disabled/);
 assert.match(writableBassHTML, /experimental read\/write/);
 assert.ok(writableBassHTML.indexOf('data-bass-channel="4"')
   > writableBassHTML.indexOf('data-bass-channel="1"'));
 assert.equal((writableBassHTML.match(/class="bass-link"/g) || []).length, 9);
-assert.match(writableBassHTML, /class="bass-link"[^>]* disabled/);
+assert.doesNotMatch(writableBassHTML, /class="bass-link"[^>]* disabled/);
+assert.match(writableBassHTML, /data-bass-field="fader_solo"/);
+assert.doesNotMatch(writableBassHTML, /data-bass-field="fader_solo"[^>]* disabled/);
+const writableBass20Data = {
+  ...surroundData,
+  global: {
+    ...surroundData.global,
+    format: '2.0',
+    bass_mgmt_channels: [
+      {lp_cutoff_hz: 80, hp_cutoff_hz: 80, lp_order: 0, hp_order: 0,
+        fader_db: 0, fader_mute: false},
+      {lp_cutoff_hz: 90, hp_cutoff_hz: 90, lp_order: 1, hp_order: 1,
+        fader_db: -3, fader_mute: true},
+    ],
+  },
+  write: {
+    enabled: false,
+    bass: {
+      enabled: true,
+      experimental: true,
+      fader_range_db: [-60, 16],
+      fields: ['lp_cutoff_hz', 'hp_cutoff_hz', 'lp_bypass', 'hp_bypass',
+        'lp_order', 'hp_order', 'fader_db', 'fader_mute',
+        'fader_solo', 'hp_filter_type', 'lp_filter_type'],
+      filter_type_values: {
+        hp_filter_type: ['Butterworth', 'Linkwitz-Riley'],
+        lp_filter_type: ['Butterworth', 'Linkwitz-Riley'],
+      },
+      block_count: 3,
+    },
+  },
+};
+const writableBass20HTML = surroundContext.surroundBassPopupHTML(writableBass20Data);
+assert.match(writableBass20HTML, /2\.0 · 2 strips/);
+assert.doesNotMatch(writableBass20HTML, /data-bass-field="lp_cutoff_hz"[^>]* disabled/);
+assert.match(writableBass20HTML, /data-bass-field="hp_filter_type"/);
+assert.match(writableBass20HTML, /data-bass-field="lp_filter_type"/);
 assert.equal(surroundContext.surroundBassInputValue({
   dataset: {bassField: 'fader_db'}, value: '3.5',
 }), 3.5);
+assert.equal(surroundContext.surroundBassInputValue({
+  dataset: {bassField: 'hp_filter_type', bassFilterType: 'true'},
+  value: 'Linkwitz-Riley',
+}), 'Linkwitz-Riley');
+assert.ok(surroundContext.surroundBassFaderFraction(-3)
+  > surroundContext.surroundBassFaderFraction(0));
+assert.ok(surroundContext.surroundBassFaderFraction(3)
+  < surroundContext.surroundBassFaderFraction(0));
+const stable20 = surroundContext.surroundBassChannels({
+  ...writableBass20Data,
+  global: {
+    ...writableBass20Data.global,
+    bass_mgmt_channels: [
+      {channel_id: 3, slot: 1, fader_db: -3},
+      {channel_id: 1, slot: 0, fader_db: 4},
+    ],
+  },
+});
+assert.equal(JSON.stringify(stable20.map(channel => [channel.channelId, channel.slot,
+  channel.block.fader_db])), JSON.stringify([[1, 0, 4], [3, 1, -3]]));
 const writableGlobalHTML = surroundContext.surroundGlobalHTML({
   ...surroundData,
   write: {
