@@ -504,7 +504,7 @@
           "note": "Category-0x1b flags-B bit 7 is the EQ PRE/POST selector. The macos-settings-srrndeq-post-pre capture changes only command byte 19 between 0x9f and 0x1f; the earlier flags-A probe merely proved that an unrelated preserved bit could round-trip."
         },
         "speaker_mask_write": {
-          "status": "experimental-unverified",
+          "status": "confirmed",
           "formats": ["2.0", "2.1"],
           "speaker_count": 16,
           "fields": {
@@ -519,13 +519,13 @@
               "off_raw": 1,
               "boolean": true,
               "writable": true,
-              "mapping_status": "capture-confirmed"
+              "mapping_status": "confirmed"
             }
           },
-          "note": "The speaker-monitor Bypass button is a per-speaker bit in the category-0x1b global bypass mask (body bytes 7-8 / frame bytes 25-26): raw bit 1 means processing active and logical bypass clears that bit. A fresh complete global body is copied before each one-bit probe and the next readback must confirm the result."
+          "note": "The speaker-monitor Bypass button is a per-speaker bit in the category-0x1b global bypass mask (body bytes 7-8 / frame bytes 25-26): raw bit 1 means processing active and logical bypass clears that bit. Live probes for speakers 0 and 1 changed the bit and matched the immediate fresh readback; the original mask was restored."
         },
         "bass_management_write": {
-          "status": "experimental-unverified",
+          "status": "confirmed",
           "formats": ["2.0", "2.1"],
           "block_offset": 25,
           "block_stride": 8,
@@ -546,7 +546,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified",
+              "mapping_status": "confirmed",
               "readback": true
             },
             "lp_order": {"offset": 6, "width": 1, "raw_range": [0, 2], "display_values": [2, 4, 8], "raw_values": [0, 1, 2]},
@@ -564,7 +564,7 @@
               "display_values": ["Butterworth", "Linkwitz-Riley"],
               "raw_values": [0, 1],
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "lp_filter_type": {
               "label": "Low-pass filter type",
@@ -579,7 +579,7 @@
               "display_values": ["Butterworth", "Linkwitz-Riley"],
               "raw_values": [0, 1],
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_hp_cutoff": {
               "label": "Link high-pass cutoff",
@@ -592,7 +592,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_hp_filter_type": {
               "label": "Link high-pass filter type",
@@ -605,7 +605,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_hp_order": {
               "label": "Link high-pass order",
@@ -618,7 +618,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_hp_bypass": {
               "label": "Link high-pass bypass",
@@ -631,7 +631,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_lp_cutoff": {
               "label": "Link low-pass cutoff",
@@ -644,7 +644,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_lp_filter_type": {
               "label": "Link low-pass filter type",
@@ -657,7 +657,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_lp_order": {
               "label": "Link low-pass order",
@@ -670,7 +670,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_lp_bypass": {
               "label": "Link low-pass bypass",
@@ -683,7 +683,7 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             },
             "link_mixer": {
               "label": "Link mixer controls",
@@ -696,12 +696,12 @@
               "raw_range": [0, 1],
               "boolean": true,
               "writable": true,
-              "mapping_status": "experimental-unverified"
+              "mapping_status": "confirmed"
             }
           },
           "links": {
             "enabled": true,
-            "status": "experimental-unverified",
+            "status": "confirmed",
             "offset": 23,
             "width": 2,
             "field_order": [
@@ -709,9 +709,9 @@
               "link_hp_bypass", "link_lp_cutoff", "link_lp_filter_type",
               "link_lp_order", "link_lp_bypass", "link_mixer"
             ],
-            "note": "The nine link bits are capture-observed. The candidate control assignment follows the one-control sequence in the long export and must be checked against the fresh readback; the same bitfield is also the current candidate location for filter-type probes."
+            "note": "The nine link bits and the two filter-type fields were probed one at a time in both 2.0 and 2.1. Every requested raw value matched the immediate category-0x1b readback; the original global state was restored."
           },
-          "notes": "Bounded one-field writes copy a fresh category-0x1b body and preserve all other global, link, and channel-block bytes. The same three block slots are exposed for exploratory 2.0 L/R writes and confirmed 2.1 L/R/LFE writes; 2.0 does not set the bass-management flag, so these writes are intended to discover the device's behavior. Cutoffs, bypass bits, order values, fader, and fader mute are capture-mapped. Filter type, link, and solo controls are exposed as experimental candidate probes: filter type uses body offsets 23/24 (frame offsets 41/42), link uses the nine observed bits in that same field, and solo uses candidate bit 14 of each fader word. Every probe must be checked against the immediate fresh readback."
+          "notes": "Bounded one-field writes copy a fresh category-0x1b body and preserve all other global, link, and channel-block bytes. The same three block slots are exposed for 2.0 L/R and 2.1 L/R/LFE. Live probes confirmed the filter-type fields, nine link bits, fader-solo bit, and the existing crossover/fader fields in both writable layouts; each probe matched the immediate readback and the original global state was restored. 2.0 still does not set the bass-management flag, but its bounded fields accept and retain the tested values."
         },
         "evidence": "Writable 2.0 full OUT reports: macos-captures/macos-settings-srrndeq-post-pre.pcapng SHA-256 f809a52ebbade7cda3697202e4c10e05309d139ff810a95a304fdb0870f9190a frames 2383 at 3.388074 s (report SHA-256 e7c3435ee97cb73ec3c9d937d26852fcc0e232ee9184d1be4d459273ce2b2a3f) and 3808 at 7.060227 s (report SHA-256 d3f3e25e83f6df83dfb14ec28ac866d20a22ac05be75f4652253d38afbf51930). Paired 2.0 readback: macos-captures/macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frame 17664 at 26.573382 s, report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e. Meaningful body is command offsets 18..168; captured offsets 169..319 are fixed zero padding. User-supplied full 320-byte export new/srrnd-20-21.frames.txt SHA-256 3a2ad5b8710beda965bc1fe5ff07673371cd961897d4bc957baaa88d51deac8b lines 1 at 7.248712 s and 35 at 13.730188 s establishes the 2.0/2.1 whole-state representations; a guarded direct-HID round-trip on 2026-09-12 subsequently confirmed 2.1 writes. Delay 6..45 and level 0..760 are observed head bounds only."
       },
@@ -1403,7 +1403,7 @@
         "0x12": "UNKNOWN. A 2026-08 probe saw a scalar; a direct query at idx 0 returned an EMPTY body on 2026-09-04. The old 'clock source or sample-rate index?' guess is RULED OUT -- both of those read back from the 0x73 state report instead (clock source @19, sample-rate index @18, rate in Hz @21-23), confirmed on hardware 2026-09-03/04. Not in the 0x74 connect walk, so no safe index bound above 0. NB: readback category 0x12 is NOT the same thing as command opcode 0x12 (SET_GLOBAL) -- see frame.readback.namespace_warning.",
         "0x15": "AFX REMAINING FEATURED INSTANCES -- one outer record at index 0 containing 91 `{type_id, inst_count}` records. This is an availability/capacity table, not the AFX strip occupancy map.",
         "0x16": "MIC-EMULATION STATE -- one outer record at index 0 containing eight `{target, emu_model, ch_swap, pattern}` u8 records for the eight emulation taps. Decoded from the panel schema and manager-server responses; protocol.parse_mic_emulations.",
-        "0x1a": "SURROUND PER-SPEAKER EQ readback -- 116 meaningful bytes: a 4-byte head plus 16 EQ bands x 7 bytes. The head is decoded as delay raw LE16 (0.1 ms/step plus the 0.6 ms UI floor), level raw LE16 (0.1 dB/step around raw 600), and the level word's phase-invert bit. EQ begins at response byte 20 and uses `<freq LE16 Hz><Q LE16 x100><gain LE16 signed 0.01 dB><mode raw>`. One record per speaker index 0..15; only indices 0=L, 1=R, 2=LFE have capture-grounded labels. L/R carried the non-flat room-correction curve and LFE a distinct captured record. Runtime support exposes readback plus bounded one-field EQ, delay, level, and phase writes; delay/level/phase are experimental mapping probes, with the phase polarity bit capture-confirmed.",
+        "0x1a": "SURROUND PER-SPEAKER EQ readback -- 116 meaningful bytes: a 4-byte head plus 16 EQ bands x 7 bytes. The head is decoded as delay raw LE16 (0.1 ms/step plus the 0.6 ms UI floor), level raw LE16 (0.1 dB/step around raw 600), and the level word's phase-invert bit. EQ begins at response byte 20 and uses `<freq LE16 Hz><Q LE16 x100><gain LE16 signed 0.01 dB><mode raw>`. One record per speaker index 0..15; only indices 0=L, 1=R, 2=LFE have capture-grounded labels. L/R carried the non-flat room-correction curve and LFE a distinct captured record. Runtime support exposes readback plus bounded one-field EQ, delay, level, and phase writes; live probes on speakers 0 and 1 confirmed the delay/level/phase mappings and restored the original records.",
         "0x1b": "SURROUND GLOBAL readback, 1 record (idx 0). Four raw macOS init captures contain the same full 320-byte response (report SHA-256 48831c64197961c5cfdd0d1759290720b992e3f87807b199f5ad7c20f523973e), including header `75 00 00 00 40 01 00 00 1b 00 00 00 00 00 00 00`. Its first 151 body bytes equal command offsets 18..168 of raw 2.0 OUT frame 2383; the remaining mapped 151 bytes and final two response bytes are observed zero padding, not claimed variable state. Runtime decodes the 151 meaningful bytes, requires the full captured header and zero tail, keeps scalar and speaker-mask RMW bounded to the recognized 2.0/2.1 contract, and uses separate format and mask RMW builders. Normal format writes are enabled for 2.0 and 2.1; vendor-derived higher layouts remain guarded probe-only. A direct HID round-trip on 2026-09-12 accepted every profile candidate from 2.0 through 9.1.6 and restored the original 2.1 body exactly.",
         "0x19": "AFX STRIP ORDER -- 64 outer strip records (indices 0..63), each containing eight `{type, inst}` AFX slots. Empty slots are reported as `{type: 0, inst: 0}`. This is not the USB/TB stream-slot table.",
         "note": "Categories 0x1c..0x60 answer but with empty bodies (probed 2026-08-31). Full raw enumeration: tools/readback_enum.py."
@@ -1975,9 +1975,9 @@
         "27_28": "PER-SPEAKER MUTE MASK -- LE16, bit N = speaker N (like [25-26]). SOLO in the Launcher = Ctrl-click a speaker -> mutes all others; that writes this mask with only the selected speaker's bit set (user, 2026-09-03). Only 0x0000/0xFFFF captured directly, but the solo behaviour confirms it is a per-speaker mask.",
         "29_30": "DIM -- LE16, likewise a per-speaker DIM mask. (25/27/29 order still inferred from click order.)",
         "31_40": "PACKED CHANNEL ORDER -- ten bytes, right-aligned big-endian 5-bit speaker IDs from the vendor Surround model. IDs are L=1, C=2, R=3, LFE=4, S=5, Lw=6, Ls=7, Lrs=8, Rw=9, Rs=10, Rrs=11, Ltf=12, Ltm=13, Ltr=14, Rtf=15, Rtm=16, Rtr=17. 2.0 packs as `...0023`; 2.1 packs as `...0464`; higher candidates are recorded in contract.formats[].",
-      "23_onward_bass_mgmt": "The 2.0/2.1 BASS-MANAGEMENT window -- BYTE-MAPPED 2026-09-03 from srrnd-bassmanagement-HP...-mixerfaders + srrnd-bass-management-solo-mute. UI has a HIGH-PASS section, a LOW-PASS section and a MIXER (faders + mute + solo); the LINK buttons make the mixer channels move together, so all captures show 3 channels changing in lockstep. Layout of this region of the 0xab payload: [23-24] = `04 64` (LFE-present marker). [25-26] = LE16 flags, `0xFFFF` in every capture (individual bits unknown). [27-40] = zero. [41-42] = a ~9-bit bitfield the user set one bit per click during the 'filter type / link' clicks (ended 0x01FF); the exact bit<->control map (filter TYPE Butterworth/Linkwitz-Riley, link toggles) needs a one-control-per-click capture. THEN, from [43], 8-byte CHANNEL BLOCKS = 4 LE16 each, one per mixer channel (3 seen): [+0] LP cutoff (Hz, 20-320; **bit 15 = LP-filter bypass**), [+2] HP cutoff (Hz, 20-320; **bit 15 = HP-filter bypass**), [+4] channel FADER (LE16, base 600 = 0 dB, 0..760+; **bit 15 = mute** (confirmed via the solo-mute capture, toggled on the linked channels), low 13 bits are mapped and bits 13-14 are preserved as unverified flags), [+6] FILTER ORDER (low byte = LP order, high byte = HP order; 0/1/2 = order 2/4/8). The category-0x1b readback confirms this block map; the WebUI writes one cutoff, bypass, order, fader, mute, filter-type, Link, or Solo candidate at a time from a fresh 2.0/2.1 readback. In 2.0 the active UI exposes the L/R slots and keeps the third captured slot hidden; the profile still preserves all three blocks. Filter-type, Link, and Solo fields are experimental candidate probes; exact bit assignment still requires an isolated capture. Frames kept in captures/new/*.frames.txt."
+      "23_onward_bass_mgmt": "The 2.0/2.1 BASS-MANAGEMENT window -- BYTE-MAPPED 2026-09-03 from srrnd-bassmanagement-HP...-mixerfaders + srrnd-bass-management-solo-mute. UI has a HIGH-PASS section, a LOW-PASS section and a MIXER (faders + mute + solo); the LINK buttons make the mixer channels move together, so all captures show 3 channels changing in lockstep. Layout of this region of the 0xab payload: [23-24] = `04 64` (LFE-present marker). [25-26] = LE16 flags, `0xFFFF` in every capture (individual bits unknown). [27-40] = zero. [41-42] = a 9-bit bitfield for filter TYPE (Butterworth/Linkwitz-Riley) and link toggles, confirmed one control at a time by category-0x1b readback in both 2.0 and 2.1. THEN, from [43], 8-byte CHANNEL BLOCKS = 4 LE16 each, one per mixer channel (3 seen): [+0] LP cutoff (Hz, 20-320; **bit 15 = LP-filter bypass**), [+2] HP cutoff (Hz, 20-320; **bit 15 = HP-filter bypass**), [+4] channel FADER (LE16, base 600 = 0 dB, 0..760+; **bit 15 = mute**, **bit 14 = solo**, low 13 bits are mapped), [+6] FILTER ORDER (low byte = LP order, high byte = HP order; 0/1/2 = order 2/4/8). The category-0x1b readback confirms this block map; the WebUI writes one cutoff, bypass, order, fader, mute, filter-type, Link, or Solo field at a time from a fresh 2.0/2.1 readback. In 2.0 the active UI exposes the L/R slots and keeps the third captured slot hidden; the profile still preserves all three blocks. Every listed field was confirmed by immediate readback and the original global state was restored. Frames kept in captures/new/*.frames.txt."
       },
-      "open": "The global format wire path is no longer open: on 2026-09-12 a guarded direct-HID round-trip accepted every vendor-derived candidate from 2.0 through 9.1.6 and restored the original 2.1 body exactly. This demonstrates that the device accepted the format command; it does not establish whether the vendor application/account would expose the layouts or whether a licence changes other UI and per-speaker side effects. The WebUI therefore enables only 2.0 and 2.1, while the self-test requires explicit confirmation for higher layouts. [27-28]/[29-30] mute/dim remain per-speaker masks like [25-26], with only all-on/all-off captured directly. 2.0/2.1 BASS-MANAGEMENT window byte-mapped (field_map.23_onward_bass_mgmt); [41-42]/[25-26] individual bits still fuzzy. READBACK -- BOTH surround frames read back (established 2026-09-04, correcting the earlier 'no readback for any surround param'): the GLOBAL frame (0xab) = frame.readback category 0x1b, 1 record, body[N] == frame byte [18+N] (six field matches incl. format / delay / level / bypass mask / the [40] marker, and the bass-management channel blocks land exactly where field_map.23_onward_bass_mgmt predicted -- an independent confirmation of that map); the PER-SPEAKER EQ (0x87) = category 0x1a, 16 records, one per speaker, Room Correction curves visible there too. Both parsed + wired 2026-09-04 (protocol.parse_surround_global_record / parse_surround_speaker_eq_record, CLI `surround-status` / `surround-eq`). See 'bigger_surround_DEDUCED_UNTESTED' below.",
+      "open": "The global format wire path is no longer open: on 2026-09-12 a guarded direct-HID round-trip accepted every vendor-derived candidate from 2.0 through 9.1.6 and restored the original 2.1 body exactly. This demonstrates that the device accepted the format command; it does not establish whether the vendor application/account would expose the layouts or whether a licence changes other UI and per-speaker side effects. The WebUI therefore enables only 2.0 and 2.1, while the self-test requires explicit confirmation for higher layouts. [27-28]/[29-30] mute/dim remain per-speaker masks like [25-26], with only all-on/all-off captured directly. 2.0/2.1 BASS-MANAGEMENT window byte-mapped (field_map.23_onward_bass_mgmt); the [41-42] filter-type/link mapping and [43+] channel-block writes are confirmed by immediate readback in both 2.0 and 2.1. READBACK -- BOTH surround frames read back (established 2026-09-04, correcting the earlier 'no readback for any surround param'): the GLOBAL frame (0xab) = frame.readback category 0x1b, 1 record, body[N] == frame byte [18+N] (six field matches incl. format / delay / level / bypass mask / the [40] marker, and the bass-management channel blocks land exactly where field_map.23_onward_bass_mgmt predicted -- an independent confirmation of that map); the PER-SPEAKER EQ (0x87) = category 0x1a, 16 records, one per speaker, Room Correction curves visible there too. Both parsed + wired 2026-09-04 (protocol.parse_surround_global_record / parse_surround_speaker_eq_record, CLI `surround-status` / `surround-eq`). See 'bigger_surround_DEDUCED_UNTESTED' below.",
       "bigger_surround_DEDUCED_UNTESTED": {
         "!!!": "The FORMAT-related items in this block were previously deductions. The vendor panel's Surround model has now supplied the channel IDs, format counts, LFE indices, and packed channel orders recorded in frame.surround_global_command.contract.formats[]. On 2026-09-12, a guarded direct-HID self-test accepted every candidate from 2.0 through 9.1.6 and restored the original 2.1 state exactly. This validates the global wire path, not the vendor account/licence policy, complete Launcher sequencing, or higher-layout speaker labels. A normal client MUST keep higher layouts behind an explicit opt-in; the WebUI intentionally enables only 2.0 and 2.1. (NOTE: room_correction below is not deduced -- it was captured and resolved 2026-09-03.)",
         "per_speaker_control": "STRONGEST inference: the 0x87/0xea per-speaker frame (level / delay / polarity / 16-band EQ) is identical for every speaker slot 0..15 and does not change with format. So once the index->channel map is known, per-speaker monitoring control works for ANY format. The [25-30] bypass/mute/dim masks are already 16-bit (bit N = speaker N) so they scale automatically.",
@@ -1991,10 +1991,10 @@
     },
     "surround_speaker": {
       "id": "0xea",
-      "status": "WRITE frame geometry decoded from Launcher captures; runtime support exposes category-0x1a EQ/head readback plus explicitly experimental, bounded one-field EQ and delay/level/phase write paths. Frequency/Q/gain units and bounds are captured; mode bytes remain raw because endpoint labels are unproven. The four readback head bytes align positionally with OUT delay and packed level/invert, and isolated writes are used to validate dynamic refresh.",
+      "status": "WRITE frame geometry decoded from Launcher captures; runtime support exposes category-0x1a EQ/head readback plus confirmed, bounded one-field EQ and delay/level/phase write paths. Frequency/Q/gain units and bounds are captured; mode bytes remain raw because endpoint labels are unproven. The four readback head bytes align positionally with OUT delay and packed level/invert, and isolated writes matched fresh readback on speakers 0 and 1.",
       "type": "NEW opcode 0x87 -- one frame per speaker carries that speaker's whole surround-monitor strip",
-      "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. The WebUI uses explicit experimental one-field builders for EQ, delay, level, and phase; every head write starts from a fresh category-0x1a record and requests a post-write readback when possible.",
-      "readback": "frame.readback category 0x1a -- 16 records (one per speaker), 116 meaningful bytes. CORRECTION: bytes 0..3 are a candidate head, not an EQ header and not absent; they positionally equal OUT delay plus packed level/invert. The profile decodes delay, level, and phase-invert from that head; dynamic write semantics remain under validation. The 16 EQ bands begin at record byte 4 / response byte 20 in exact `<freq LE16><Q LE16 x100><gain LE16 signed><mode raw>` geometry. L/R carry the captured non-flat Room Correction curve. Runtime exposes the decoded head and bounded experimental delay/level/phase probes; phase polarity is capture-confirmed but its write/readback round-trip is still being tested.",
+      "frame": "opcode 0x87 @4, param_id 0xea @16, [17]=0x75 const, [18]=speaker 0..15, then the strip. Launcher sends 16 (one per speaker) whenever the surround tab opens or the format changes. The WebUI uses bounded one-field builders for EQ, delay, level, and phase; every head write starts from a fresh category-0x1a record and requests a post-write readback.",
+      "readback": "frame.readback category 0x1a -- 16 records (one per speaker), 116 meaningful bytes. CORRECTION: bytes 0..3 are a head, not an EQ header and not absent; they positionally equal OUT delay plus packed level/invert. The profile decodes delay, level, and phase-invert from that head; isolated writes on speakers 0 and 1 matched fresh readback. The 16 EQ bands begin at record byte 4 / response byte 20 in exact `<freq LE16><Q LE16 x100><gain LE16 signed><mode raw>` geometry. L/R carry the captured non-flat Room Correction curve. Runtime exposes the decoded head and bounded delay/level/phase writes; phase polarity is capture-confirmed and its write/readback round-trip is confirmed.",
       "field_map": {
         "17": "0x75 -- constant subcmd",
         "18": "speaker index 0..15. Confirmed: 2.0 -> L=0, R=1; 2.1 -> L=0, R=1, LFE=2 (srrnd-LFE, 2026-09-03). The LFE strip is a full 0x87 frame like any other -- same 16-band EQ, level, delay, invert (user + capture). Higher formats (5.1/7.1) not captured.",
@@ -2002,8 +2002,8 @@
         "21_22": "per-speaker LEVEL, LE16. base 600 (0x0258) = 0 dB; 0.1 dB/step; range 0 = -60 dB .. 760 = +16 dB (USER-CONFIRMED 2026-09-03). **bit 7 of [22] = phase INVERT** (level tops at 760 = 0x02F8 so [22] bit 7 is free: 0x02 -> 0x82 on the invert toggle).",
         "23_onward": "SIXTEEN parametric EQ bands, FULLY DECODED 2026-09-03 (srrnd-EQ-Q-and-mode + srrnd-EQ-L/R-* + srrnd-EQ-L-gain). One `0x87` frame carries all 16; the Launcher shows them as 2 pages of 8. **7-byte stride, band N at [23 + 7*N] (N 0..15): `<freq LE16 Hz> <Q LE16> <gain LE16 signed> <mode byte>`.** FREQ = literal Hz, 20 .. 20000 Hz per band (user). Q = LE16, value = Q x100, range 10 (Q 0.10) .. 1800 (Q 18.0), default 0x0047 = 71 = Q 0.71 (Butterworth) -- the byte I earlier called a `0x47` marker IS the Q low byte. GAIN = LE16 signed, 0.01 dB, -2400 (-24 dB) .. +1200 (+12 dB) (user). MODE byte: `0x02` = bell (bands 2-15, always). **Bands 1 and 16 are the end-band slots** (band 1 = low end, band 16 = high end), each with TWO user modes: SHELVING and BAND-PASS (Antelope's labels; a 'flat' line in the UI is just shelf/pass at 0 gain and is NOT a separate mode). **Observed mode-byte values** -- band 1: `0x00` (rest) toggling to `0x04` (srrnd-EQ-Q-and-mode, L); band 16: `0x00` (rest) toggling `0x01` <-> `0x03` (srrnd-LFE, on the LFE strip). So the encoding is NOT a clean bitfield -- band 1 uses {0x00, 0x04}, band 16 uses {0x01, 0x03} (plus 0x00 as the untouched default). Which of the two is 'shelving' vs 'band-pass' is not yet pinned -- ask the user, they toggled it. In BOTH modes gain works and Q sets the slope. On the CENTRE channel the end bands are bell (`0x02`) only. Default freqs per page 30/120/500/1400/3000/5500/9500/14000 Hz."
       },
-      "open": "Use controlled one-field category-0x1a comparisons to prove the dynamic delay/level/invert readback behavior. Exact endpoint mode-byte labels also remain unproven, so modes stay raw. The bounded EQ and head paths make no centre or higher-format guesses.",
-      "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. The WebUI and tools/surround_eq_selftest.py preserve the complete record; the WebUI additionally exposes experimental delay/level/phase head probes and performs a post-write readback when possible. The readback is wired -- `surround-eq`."
+      "open": "Exact endpoint mode-byte labels remain unproven, so modes stay raw. The bounded EQ and head paths make no centre or higher-format guesses.",
+      "notes": "Only the LEFT speaker fully swept for gain + page 2; L and R freqs both captured. User offered more captures. The WebUI and tools/surround_eq_selftest.py preserve the complete record; the WebUI exposes confirmed delay/level/phase head writes and performs a post-write readback. The readback is wired -- `surround-eq`."
     },
     "dc_coupling": {
       "id": "0x26",
@@ -2229,7 +2229,8 @@
           "display_range": [0.6, 100.6],
           "unit": "ms",
           "digits": 1,
-          "writable": true
+          "writable": true,
+          "mapping_status": "confirmed"
         },
         "level_db": {
           "label": "Speaker level",
@@ -2245,7 +2246,8 @@
           "display_range": [-60, 16],
           "unit": "dB",
           "digits": 1,
-          "writable": true
+          "writable": true,
+          "mapping_status": "confirmed"
         },
         "phase_invert": {
           "offset": 2,
@@ -2256,7 +2258,7 @@
           "raw_range": [0, 1],
           "boolean": true,
           "writable": true,
-          "mapping_status": "capture-confirmed"
+          "mapping_status": "confirmed"
         }
       },
       "band_count": 16,
@@ -2277,7 +2279,7 @@
       },
       "read_only": false,
       "write_contract": {
-        "status": "experimental-unverified",
+        "status": "confirmed",
         "magic_offset": 0,
         "magic": "0x70",
         "opcode_offset": 4,
@@ -2291,10 +2293,10 @@
         "band_data_offset": 4,
         "head_formats": ["2.0", "2.1"],
         "head_fields": ["delay_ms", "level_db", "phase_invert"],
-        "head_notes": "Delay, level, and phase-invert writes are explicitly experimental and limited to the confirmed 2.0/2.1 speaker layouts. Each write copies a fresh category-0x1a record, changes one head field, preserves the other head bits and all EQ bytes, then immediately permits a fresh readback comparison. Do not use them for unattended sweeps.",
-        "notes": "The Launcher frame geometry is known. The category-0x1a candidate head (body bytes 0..3) is decoded according to head_fields and exposed through the guarded WebUI write path so isolated delay, level, and phase-invert changes can be compared with fresh readbacks. The experimental self-test and bounded WebUI endpoint copy the complete 116-byte record and preserve the rest. They must never be used for broad sweeps."
+        "head_notes": "Delay, level, and phase-invert writes are confirmed for the 2.0/2.1 speaker layouts. Each write copies a fresh category-0x1a record, changes one head field, preserves the other head bits and all EQ bytes, and is followed by a fresh readback comparison.",
+        "notes": "The Launcher frame geometry and the category-0x1a head mapping are confirmed. Live probes for delay, level, and phase-invert on speakers 0 and 1 each matched the immediate readback; the original 116-byte speaker records were restored. The bounded WebUI endpoint continues to copy the complete record and preserve the rest."
       },
-      "evidence": "Four raw macOS init captures each contain all 16 complete category-0x1a reports. Representative capture macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frames 17676/17686/17696; full-report hashes index 0 1d24d575830495cc8ee035e4167c916c20aef8ffec02e6dba3d6608e4a555457, index 1 e64c226aa323787d2da3a40e43e173a8d3b7c6a02489b5fd60c08b59bdff5591, index 2 102b1b66a5e7abcd74c67f381a24a821dbb373d6bcc26272bdc6762afef848ef. Response bytes 16..19 are an opaque four-byte candidate head positionally aligned with speaker OUT delay and packed level/invert, but all readbacks captured only defaults, so dynamic semantics are unverified and omitted from the normal runtime view. EQ begins at response byte 20; 16 bands use the captured 7-byte little-endian geometry. Bytes 132..319 are captured zero padding. Normal runtime exposes bounded experimental delay/level/phase probes; the dedicated self-test may emit the observed 0x87 only after explicit experimental confirmation."
+      "evidence": "Four raw macOS init captures each contain all 16 complete category-0x1a reports. Representative capture macos-antelopeINIT-poweron.pcapng SHA-256 195fea4caefea43d3de5141b9457c50eaf72fe093899e47f8d46c645c7e40d80 frames 17676/17686/17696; full-report hashes index 0 1d24d575830495cc8ee035e4167c916c20aef8ffec02e6dba3d6608e4a555457, index 1 e64c226aa323787d2da3a40e43e173a8d3b7c6a02489b5fd60c08b59bdff5591, index 2 102b1b66a5e7abcd74c67f381a24a821dbb373d6bcc26272bdc6762afef848ef. Live readback probes on speakers 0 and 1 changed delay, level, and phase-invert independently and matched the requested raw values; both original records were restored. EQ begins at response byte 20; 16 bands use the captured 7-byte little-endian geometry. Bytes 132..319 are captured zero padding."
     }
   },
   "constraints": {
@@ -2308,7 +2310,7 @@
       "0x53",
       "0xab"
     ],
-    "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). 0x53 is hardware round-trip confirmed (2026-08-31): preamps->hp1/hp2 and a seeded 16-ch line_out routed from cli.py persisted correctly in the Windows Launcher. 0x17 (mixer) is still untested and not in a CLI command yet -- treat the mixer as experimental. 0x1d (SET_AURAVERB) added 2026-08-31 -- all 8 DSP params decoded (frame.auraverb_command); AuraVerb is device-bundled (no per-plugin activation) so it is in scope. 0xab (SET_SURROUND_GLOBAL) is allowed for the WebUI's 2.0/2.1 delay/level, speaker-mask, and Bass Management read-modify-write paths; 0x87 remains launcher-only for normal callers, while its delay/level/phase head probes require explicit experimental opt-in.",
+    "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) added 2026-08 as their frame models were decoded (frame.routing_command / frame.mix_command). 0x53 is hardware round-trip confirmed (2026-08-31): preamps->hp1/hp2 and a seeded 16-ch line_out routed from cli.py persisted correctly in the Windows Launcher. 0x17 (mixer) is still untested and not in a CLI command yet -- treat the mixer as experimental. 0x1d (SET_AURAVERB) added 2026-08-31 -- all 8 DSP params decoded (frame.auraverb_command); AuraVerb is device-bundled (no per-plugin activation) so it is in scope. 0xab (SET_SURROUND_GLOBAL) is allowed for the WebUI's 2.0/2.1 delay/level, speaker-mask, and Bass Management read-modify-write paths; 0x87 remains launcher-originated, but its bounded per-speaker EQ and delay/level/phase writes are confirmed when based on a fresh category-0x1a record.",
     "observed_opcodes_launcher_only": [
       "0x87"
     ],

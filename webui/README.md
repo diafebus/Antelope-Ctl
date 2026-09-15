@@ -23,10 +23,10 @@ compatibility.
     `0x1b` global and `0x1a` speaker EQ/head records; the 2.0/2.1 global
     format and delay/level paths, 2.0/2.1 Bass Management fields, and
     confirmed EQ PRE/POST write using fresh complete-state reads. The bounded
-    per-speaker delay/level and EQ paths write one field from a fresh complete
-    state; delay/level writes request a post-write readback for mapping
-    discovery. The EQ Reset action writes the profile preset for only the
-    displayed speaker. `/api/readbacks` exposes the structured records
+    per-speaker delay/level/phase and EQ paths write one field from a fresh
+    complete state and compare the next readback. The speaker bypass mask uses
+    the same complete-state approach. The EQ Reset action writes the profile
+    preset for only the displayed speaker. `/api/readbacks` exposes the structured records
     to diagnostics and `/api/surround` serves the decoded Surround surface. Queries use the active
     profile's bounded category counts or explicit capture-confirmed layouts, so
     the BusFault hazard is never hit; schema-only layouts are displayed as
@@ -62,11 +62,10 @@ compatibility.
   - a **Surround** panel renders global format, delay/level, masks,
     speaker selection, per-speaker delay/level/phase, and 16-band EQ. Its Bass
     Management popup shows only the active format channels, places 2.1 as
-    L · R · LFE, and groups strips with colored bars; experimental 2.0/2.1
-    bass, per-speaker delay/level/phase, and speaker bypass controls are
-    visibly marked as experimental. The global format selector allows 2.0 and
-    2.1; Bass Management filter type, Link, and Solo controls are also
-    experimental candidate probes.
+    L · R · LFE, and groups strips with colored bars; confirmed 2.0/2.1 Bass
+    Management, per-speaker delay/level/phase, and speaker bypass controls.
+    The global format selector allows 2.0 and 2.1; Bass Management filter
+    type, Link, and Solo controls are confirmed against fresh readbacks.
   - a **Protocol readback** diagnostics section renders profile-declared link
     tables, mic-emulation state, AFX instance counts, and AFX strip order. It
     seeds mixer-pair link state from a complete profile-confirmed bitmap when

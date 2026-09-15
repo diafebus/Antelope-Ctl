@@ -1154,16 +1154,14 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
                                       speaker: int, band: int,
                                       changes: dict = None,
                                       allow_experimental: bool = False) -> bytes:
-    """Build one explicitly experimental per-speaker EQ state frame.
+    """Build one bounded per-speaker EQ state frame.
 
     The 0x87/0xea frame is a complete speaker-strip state packet.  The
     readback exposes the 116-byte strip body, so this helper copies that body
     into the frame and changes at most one EQ field.  The candidate head holds
-    delay/level/phase bytes whose dynamic pairing is still being validated;
-    the caller must therefore opt into this helper explicitly with
-    ``allow_experimental=True``.  This EQ helper changes only an EQ field.  The
-    separate guarded head-write helper is used for the delay, level, and phase
-    probes.
+    delay/level/phase bytes, while the separate head-write helper handles those
+    fields.  Experimental profile contracts still require the explicit
+    ``allow_experimental=True`` opt-in.
     """
     contract = profile.get('runtime_contracts', {}).get(
         'surround_speaker_eq')
@@ -1171,7 +1169,8 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
         raise KeyError('profile has no runtime_contracts.surround_speaker_eq')
     write = contract.get('write_contract', {}) or {}
     status = str(write.get('status', '')).strip().lower()
-    if not allow_experimental:
+    if status in {'experimental', 'experimental-unverified'} \
+            and not allow_experimental:
         raise ConstraintError(
             'surround per-speaker EQ writes are experimental; pass the explicit '
             'allow_experimental flag from a dedicated test tool')
@@ -1266,14 +1265,13 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
 def build_surround_speaker_head_command(
         profile: dict, readback_body: bytes, speaker: int, field: str, value,
         allow_experimental: bool = False) -> bytes:
-    """Build one explicitly experimental per-speaker delay/level/phase write.
+    """Build one bounded per-speaker delay/level/phase write.
 
     The first four bytes of the category-0x1a record are copied into the
     complete 0x87/0xea speaker frame along with every EQ band.  Only one
     profile-declared head field is changed, so exploratory writes preserve
-    the rest of the speaker state.  The field mapping is intentionally
-    profile-owned: the Orion mapping is being validated by comparing this
-    write with the next category-0x1a readback.
+    the rest of the speaker state.  Experimental profile contracts still
+    require the explicit ``allow_experimental=True`` opt-in.
     """
     contract = profile.get('runtime_contracts', {}).get(
         'surround_speaker_eq')
@@ -1281,7 +1279,8 @@ def build_surround_speaker_head_command(
         raise KeyError('profile has no runtime_contracts.surround_speaker_eq')
     write = contract.get('write_contract', {}) or {}
     status = str(write.get('status', '')).strip().lower()
-    if not allow_experimental:
+    if status in {'experimental', 'experimental-unverified'} \
+            and not allow_experimental:
         raise ConstraintError(
             'surround per-speaker head writes are experimental; pass the '
             'explicit allow_experimental flag from a dedicated test tool')
@@ -2684,9 +2683,8 @@ def parse_surround_speaker_eq_record(profile: dict, body: bytes):
 
     The four-byte head is now retained and decoded according to the profile's
     ``head_fields`` contract.  Its positional relationship to the write
-    frame's delay / level / invert fields was known from captures; the
-    delay/level write path is explicitly experimental so callers can compare
-    the next readback against the requested value.  When a 2.0 Room
+    frame's delay / level / invert fields and the bounded write path were
+    confirmed by live 2.0/2.1 probes on speakers 0 and 1.  When a 2.0 Room
     Correction curve is loaded, speakers 0 and 1 read back identical curves
     (RC writes the same correction to L and R).
 

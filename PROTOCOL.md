@@ -50,19 +50,18 @@ Ten command opcodes are known. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
 `0x53`). The WebUI also emits the profile-guarded `0xab` global surround
 read-modify-write, including the confirmed EQ PRE/POST bit, the speaker
-bypass mask, and bounded experimental Bass Management channel fields when a
+bypass mask, and confirmed Bass Management channel fields when a
 fresh supported 2.0 or 2.1 readback is available. The same global Bass
 Management fields are exposed for the 2.0 L/R strips and 2.1 L/R/LFE strips.
-The WebUI also has an explicitly experimental `0x87` per-speaker path:
-delay/level/phase and EQ controls write one
-field, while Reset writes
+The WebUI also has a bounded `0x87` per-speaker path: delay/level/phase and EQ
+controls write one field, while Reset writes
 the profile-defined frequency/Q/gain preset for one speaker after a fresh
 readback. The remaining two are **not emitted by normal CLI/WebUI paths** —
 `0x23` (AFX slot assign) and `0x1c` (AFX plugin parameters; both are in
 `constraints.forbidden_opcodes`). The dedicated
 `tools/surround_eq_selftest.py` may emit one explicitly selected `0x87` probe
-after the user acknowledges its experimental status; it always reads and
-restores a complete speaker record.
+after the user acknowledges the write test; it always reads and restores a
+complete speaker record.
 
 **`0x1a` is not one of these ten.** It has never been observed as a write
 opcode on this device at all — it is not the surround EQ's write opcode
@@ -83,8 +82,8 @@ single most important thing to get right.
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
-| `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim, `[43+]` = Bass Management channel blocks -- §11 | surround tab global; WebUI uses fresh read-modify-write for 2.0/2.1 global fields, the speaker bypass mask, and bounded experimental 2.0/2.1 Bass Management fields |
-| `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; explicit one-field/reset writes in WebUI, including experimental delay/level/phase probes, and one-field EQ probe in `tools/surround_eq_selftest.py` |
+| `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim, `[43+]` = Bass Management channel blocks -- §11 | surround tab global; WebUI uses fresh read-modify-write for 2.0/2.1 global fields, the speaker bypass mask, and confirmed 2.0/2.1 Bass Management fields |
+| `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; bounded one-field/reset writes in WebUI, including confirmed delay/level/phase head fields and one-field EQ probes in `tools/surround_eq_selftest.py` |
 | `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
 | `0x1c` | *(AFX plugin parameters)* | `0xd5` | frame-identified only (§12a) -- payload never decoded on purpose | **observed only, never emitted** -- `0x1c` is in `forbidden_opcodes` (a licensed plugin's parameter set = bucket D) |
 
@@ -372,8 +371,8 @@ sweep to the declared count unless `--unsafe`.
 | `0x15` | one outer record at index 0 containing 91 `{type_id, inst_count}` remaining-featured-instance records | decoded from panel schema and response log |
 | `0x16` | one outer record at index 0 containing eight `{target, emu_model, ch_swap, pattern}` mic-emulation records | **decoded from the extracted panel schema and response logs; read-only parser** |
 | `0x19` | 64 indexed AFX strip records; each response contains eight `{type, inst}` slots, with `{0,0}` observed for empty slots | **decoded from the extracted panel schema and response logs; read-only parser** |
-| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 meaningful B = a 4-byte head plus 16 EQ bands (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode raw>`). **Correction:** EQ begins at response byte 20, not 16. The head is decoded as delay (0.1 ms units plus the 0.6 ms UI floor), level (0.1 dB units around raw 600), and phase-invert bit according to the profile contract; dynamic head semantics are still being validated. L/R held the non-flat 2.0 Room Correction curve; mode labels remain unproven. | decoded runtime readback; bounded experimental WebUI/self-test one-field EQ, delay, level, and phase read-modify-write probes; unknown modes stay raw |
-| **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.0/2.1 bass-management block. See the alignment proof below | **decoded + wired 2026-09-04** — `protocol.parse_surround_global_record`, CLI `surround-status`; bounded experimental speaker-bypass and Bass Management writes use fresh complete records |
+| `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 meaningful B = a 4-byte head plus 16 EQ bands (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode raw>`). **Correction:** EQ begins at response byte 20, not 16. The head is decoded as delay (0.1 ms units plus the 0.6 ms UI floor), level (0.1 dB units around raw 600), and phase-invert bit according to the profile contract; dynamic head writes are confirmed for speakers 0 and 1. L/R held the non-flat 2.0 Room Correction curve; mode labels remain unproven. | decoded runtime readback; bounded WebUI/self-test one-field EQ, delay, level, and phase read-modify-write probes; unknown modes stay raw |
+| **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.0/2.1 bass-management block. See the alignment proof below | **decoded + wired 2026-09-04** — `protocol.parse_surround_global_record`, CLI `surround-status`; confirmed speaker-bypass and Bass Management writes use fresh complete records |
 | `0x1c`-`0x60` | answer, empty bodies | — |
 
 > ### ⚠ Category numbers and opcode numbers are two different namespaces
@@ -1248,8 +1247,8 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | sample_rate | `0x03` | `0x12` | - | index 0-6 @17 (0=32k … 6=192k) | offset 18 (~1 s clock-relock lag) |
 | talkback_dest_assign | `0x5d` | `0x13` | dest 0-3 = Mon A / Mon B / HP1 / HP2 (menu toggles, not the matrix) | 0/1 @18 | offset 73 bits 2-5 |
 | routing | `0xd3` | `0x53` | destination group `@18` | array of `(bank,index)` pairs from `@19`, stride 2, one per output channel of the group -- §7 | **`0x74`/`0x75` readback, category `0x03` idx = dest_id -- §4a** |
-| surround tab (global) | `0xeb` | `0xab` | - | `[18-19]` flags, `[31-40]` packed channel order, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim, `[43+]` Bass Management blocks (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`); WebUI writes 2.0/2.1 format, delay/level, confirmed EQ PRE/POST, speaker bypass, and bounded experimental 2.0/2.1 Bass Management fields; guarded self-test covers higher layouts |
-| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: decoded 4-byte head + EQ; dynamic head semantics remain under validation); bounded WebUI writes one delay/level/phase field at a time and EQ/self-test writes preserve the complete record |
+| surround tab (global) | `0xeb` | `0xab` | - | `[18-19]` flags, `[31-40]` packed channel order, `[20]` delay, `[22-23]` level, `[25-30]` bypass/mute/dim, `[43+]` Bass Management blocks (§11) | readback cat `0x1b` (`body[N]`==frame`[18+N]`); WebUI writes 2.0/2.1 format, delay/level, confirmed EQ PRE/POST, speaker bypass, and confirmed 2.0/2.1 Bass Management fields; guarded self-test covers higher layouts |
+| surround tab (per-speaker ×16) | `0xea` | `0x87` | speaker 0-15 | delay/level/invert + 16-band EQ (§11) | readback cat `0x1a` (16 recs: decoded 4-byte head + EQ; dynamic head writes confirmed); bounded WebUI writes one delay/level/phase field at a time and EQ/self-test writes preserve the complete record |
 | oscillator (matrix insert) | `0xd3` | `0x53` | destination group `@18` | routing frame, source bank `0x0c` idx 0/1 = osc 1/2 (§7) | readback cat `0x03` (it is just a routing source) |
 | oscillator (settings panel: freq/level/mute) | `0x0a` | `0x12` | - | packed value byte @17: `0x01`/`0x04` osc1/2 freq, `0x30` level, `0x40`/`0x80` osc1/2 mute (§11) | none in `0x73` |
 | DC-coupling | `0x26` | `0x12` | - | 0/1 @17 (§11) | `0x73` byte 93 bit 0 |
@@ -1336,13 +1335,12 @@ too. See `params.screen_brightness`.
 
 The Surround tab has a **global** whole-state frame and a **per-speaker**
 one. The global frame has separate profile-driven builders for the verified
-2.0/2.1 delay/level and format paths, plus the confirmed EQ PRE/POST bit, and
-experimental speaker-bypass and Bass Management paths. Normal format writes
-are currently limited to 2.0 and 2.1 in the WebUI. The per-speaker frame has
-narrowly scoped, explicitly experimental one-field WebUI/self-test writes:
-the decoded delay, level, and phase head fields are writable for 2.0/2.1.
-Every write starts from a fresh category-0x1a record and the WebUI requests a
-post-write readback for mapping discovery. Speaker Bypass uses a fresh
+2.0/2.1 delay/level and format paths, the confirmed EQ PRE/POST bit, speaker
+bypass, and Bass Management paths. Normal format writes are currently limited
+to 2.0 and 2.1 in the WebUI. The per-speaker frame has narrowly scoped
+one-field WebUI/self-test writes for the confirmed delay, level, phase, and EQ
+fields in 2.0/2.1. Every write starts from a fresh category-0x1a record and
+is followed by a post-write readback. Speaker Bypass uses a fresh
 category-0x1b record and clears the selected speaker's active-processing bit;
 the level setting is intentionally preserved.
 
@@ -1358,13 +1356,12 @@ categories were actually read on 2026-09-04:
 Both are parsed by the reference tools. The WebUI validates the exact bounded
 readback targets and exposes the global decoded state and the per-speaker
 EQ/head fields. Response bytes 16–19 are a four-byte head: the positional
-delay/level/invert alignment is known, while isolated writes are still being
-used to prove dynamic refresh behavior. The experimental builders copy this
-head and the complete 116-byte record, change one selected field, preserve
-unrelated bits, and verify category `0x1a` when the next readback arrives. The
-WebUI uses the same bounded one-field read-modify-write rule and must not be
-used for broad sweeps. Mode bytes remain raw because shelf/pass labels are
-unproven.
+delay/level/invert alignment and dynamic write/readback behavior are confirmed
+by the guarded 2.0/2.1 probe. The builders copy this head and the complete
+116-byte record, change one selected field, preserve unrelated bits, and
+verify category `0x1a` when the next readback arrives. The WebUI uses the same
+bounded one-field read-modify-write rule and must not be used for broad
+sweeps. Mode bytes remain raw because shelf/pass labels are unproven.
 
 **Category `0x1b` alignment proof** — `body[N]` == the `0xab` frame's byte
 `[18+N]`, from one live read against a known 2.0 state:
@@ -1434,8 +1431,8 @@ exists (decoded as the per-speaker EQ path).
 | 22-23 | **surround monitor level**, LE16 (base `600` = 0 dB) | 0..760 = **−60..+16 dB** at 0.1 dB/step (user-confirmed 2026-09-03) |
 | 25-26 | **per-speaker BYPASS mask**, LE16 — bit N = speaker N (1 = active, 0 = bypassed); default `0xFFFF` | confirmed (`srrnd-L-bypass`: bypassing L → `0xFFFF`→`0xFFFE`) |
 | 27-28 / 29-30 | **mute / dim**, per-speaker LE16 masks | mute confirmed by the Ctrl-click SOLO ("mute all others") writing only the selected bit |
-| 23-42 | **2.0/2.1 bass-management** header | `[23-24]` `04 64` LFE marker; `[25-26]` LE16 flags (`0xFFFF` in captures); `[41-42]` ~9-bit candidate bitfield — filter *type* (Butterworth/Linkwitz-Riley) + link toggles, exposed one bit/click for readback testing but not individually capture-confirmed |
-| 43… | **BM mixer — 8-byte channel blocks** (3 used, LINK-mirrored) | `[+0]` LP cutoff (Hz 20–320, **bit 15 = LP bypass**); `[+2]` HP cutoff (same, **bit 15 = HP bypass**); `[+4]` **fader** (LE16, base `600` = 0 dB; low 13 bits are mapped, **bit 15 = mute**, bits 13-14 are preserved as unverified flags); `[+6]` filter **order** (LP low byte / HP high byte, `0/1/2` = 2/4/8). The WebUI can write one cutoff, bypass bit, order, fader, mute, filter-type, link, or solo candidate at a time from a fresh 2.0/2.1 readback; 2.0 exposes the L/R slots while the third slot is retained but not shown. Candidate filter-type/link/solo bit assignments still require isolated captures. |
+| 23-42 | **2.0/2.1 bass-management** header | `[23-24]` `04 64` LFE marker; `[25-26]` LE16 flags (`0xFFFF` in captures); `[41-42]` 9-bit bitfield — filter *type* (Butterworth/Linkwitz-Riley) + link toggles, confirmed by one-bit-at-a-time readback probes in both 2.0 and 2.1 |
+| 43… | **BM mixer — 8-byte channel blocks** (3 used, LINK-mirrored) | `[+0]` LP cutoff (Hz 20–320, **bit 15 = LP bypass**); `[+2]` HP cutoff (same, **bit 15 = HP bypass**); `[+4]` **fader** (LE16, base `600` = 0 dB; low 13 bits are mapped, **bit 15 = mute**, bit 14 = solo); `[+6]` filter **order** (LP low byte / HP high byte, `0/1/2` = 2/4/8). The WebUI can write one cutoff, bypass bit, order, fader, mute, filter-type, link, or solo field at a time from a fresh 2.0/2.1 readback; 2.0 exposes the L/R slots while the third slot is retained but not shown. All listed fields were confirmed by immediate readback and the original global state was restored. |
 | 40-168 | fixed default template | `23 00 00` then `[80][80][600][0]` repeated -- **not** the live EQ curve (that's the `0x87` frame) |
 
 **Per-speaker: `0x87` / `0xea`** -- DECODED 2026-09-03 (`srrnd-L/R-*`,
@@ -1870,7 +1867,7 @@ parameter writes remain observation-only/forbidden under `SCOPE.md`.
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Open: level field shared vs per-oscillator |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. Restore-guaranteed live round-trip 2026-09-14: `17 -> 40 -> 17`. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
-| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, experimental Bass Management/filter-type/Link/Solo candidates, experimental speaker bypass, and experimental per-speaker delay/level/phase probes; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
+| Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, confirmed Bass Management/filter-type/Link/Solo fields, confirmed speaker bypass, and confirmed per-speaker delay/level/phase fields; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
 | DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
 | AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Readback category `0x19` now maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding (slot-index vs instance id, 2 data points); bypass polarity; whether the `0x19` type/instance values fully match the Launcher’s plugin catalogue. Full work deferred to `antelope-ctl-afx`. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |

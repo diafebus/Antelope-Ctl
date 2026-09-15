@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read and experimentally round-trip the Surround global format.
+"""Read and round-trip the Surround global format and controls.
 
 Read the safe global state without changing it::
 
@@ -21,11 +21,12 @@ and restore the original global state at the end::
     python3 tools/surround_format_selftest.py --write --test-bass-faders \
         --confirm-bass-fader-write
 
-Exercise the candidate Bass Management filter/link/solo fields and the
+Exercise the confirmed Bass Management filter/link/solo fields and the
 speaker-monitor delay/level/phase/bypass controls::
 
     python3 tools/surround_format_selftest.py --write --test-bass-controls \
-        --test-speaker-controls --confirm-surround-control-write
+        --test-speaker-controls --confirm-format-write \
+        --confirm-surround-control-write
 
 The higher-layout candidates come from the vendor panel's Surround model and
 are sent directly to the device. A valid readback matching the requested
@@ -33,8 +34,8 @@ channel order means the wire path accepted the layout; it does not by itself
 prove that every licensed software feature is active. The fader test uses
 distinct values for stable channel IDs 1=L, 3=R, and 4=LFE, compares both
 directions using fresh category-0x1b readbacks, and restores the original
-complete body. Candidate control tests change one declared bit or head field
-at a time and restore the saved category-0x1a speaker records as well. Stop
+complete body. Control tests change one declared bit or head field at a time
+and restore the saved category-0x1a speaker records as well. Stop
 the WebUI and any other HID owner before running this tool. Never use it as a
 blind index sweep.
 """
@@ -776,17 +777,17 @@ def main():
     ap.add_argument('--test-bass-faders', action='store_true',
                     help='round-trip Bass Management faders through 2.0 and 2.1')
     ap.add_argument('--test-bass-controls', action='store_true',
-                    help='probe Bass Management filter/link/solo candidates')
+                    help='probe Bass Management filter/link/solo controls')
     ap.add_argument('--test-speaker-controls', action='store_true',
                     help='probe speaker delay/level/phase/bypass controls')
     ap.add_argument('--confirm-bass-fader-write', action='store_true',
                     help='acknowledge the Bass Management fader write test')
     ap.add_argument('--confirm-bass-control-write', action='store_true',
-                    help='acknowledge experimental Bass Management control probes')
+                    help='acknowledge Bass Management control probes')
     ap.add_argument('--confirm-speaker-control-write', action='store_true',
-                    help='acknowledge experimental speaker-monitor control probes')
+                    help='acknowledge speaker-monitor control probes')
     ap.add_argument('--confirm-surround-control-write', action='store_true',
-                    help='acknowledge all experimental Bass Management and speaker-control probes')
+                    help='acknowledge all Bass Management and speaker-control probes')
     ap.add_argument('--timeout', type=float, default=2.0)
     ap.add_argument('--settle', type=float, default=0.5,
                     help='seconds to wait after each write (default 0.5)')

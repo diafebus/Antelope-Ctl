@@ -204,11 +204,12 @@ class SurroundCommandTests(unittest.TestCase):
         self.assertEqual(mute_packet[18 + block + 4:18 + block + 6],
                          expected.to_bytes(2, "little"))
 
-    def test_bass_command_requires_explicit_opt_in_and_supported_format(self):
+    def test_bass_command_allows_confirmed_layouts_and_rejects_unknown(self):
         body = self._bass_21_body()
-        with self.assertRaises(protocol.ConstraintError):
-            protocol.build_surround_global_bass_command(
-                self.profile, body, channel=0, field="lp_cutoff_hz", value=80)
+        packet = protocol.build_surround_global_bass_command(
+            self.profile, body, channel=0, field="lp_cutoff_hz", value=80)
+        self.assertEqual(packet[18 + 25:18 + 27],
+                         (80).to_bytes(2, "little"))
 
         body[0] = 0x03
         body[1] = 0x9F
@@ -224,7 +225,7 @@ class SurroundCommandTests(unittest.TestCase):
                 self.profile, body, channel=0, field="lp_cutoff_hz", value=500,
                 allow_experimental=True)
 
-    def test_bass_command_allows_experimental_20_blocks(self):
+    def test_bass_command_allows_confirmed_20_blocks(self):
         body = bytearray((index * 7 + 3) & 0xFF for index in range(151))
         body[0] = 0x02
         body[1] = 0x9F
@@ -236,8 +237,7 @@ class SurroundCommandTests(unittest.TestCase):
             2, "little")
 
         packet = protocol.build_surround_global_bass_command(
-            self.profile, body, channel=1, field="lp_cutoff_hz", value=120,
-            allow_experimental=True)
+            self.profile, body, channel=1, field="lp_cutoff_hz", value=120)
 
         self.assertEqual(packet[18:169], expected)
 
@@ -329,11 +329,11 @@ class SurroundCommandTests(unittest.TestCase):
         self.assertIsNone(parsed["lfe_index"])
         self.assertFalse(parsed["eq_post"])
 
-    def test_speaker_builder_requires_explicit_experimental_opt_in(self):
-        with self.assertRaises(protocol.ConstraintError):
-            protocol.build_surround_speaker_eq_command(
-                self.profile, bytes(304), speaker=0, band=0,
-                changes={"gain_raw": 100})
+    def test_speaker_eq_builder_allows_confirmed_contract(self):
+        packet = protocol.build_surround_speaker_eq_command(
+            self.profile, bytes(304), speaker=0, band=0,
+            changes={"gain_raw": 100})
+        self.assertEqual(len(packet), 320)
 
     def test_speaker_parser_decodes_candidate_head(self):
         body = bytearray(116)
@@ -378,11 +378,11 @@ class SurroundCommandTests(unittest.TestCase):
         self.assertEqual(phase_on_packet[21:23],
                          (0x8000 | 635).to_bytes(2, "little"))
 
-    def test_speaker_head_builder_requires_explicit_experimental_opt_in(self):
-        with self.assertRaises(protocol.ConstraintError):
-            protocol.build_surround_speaker_head_command(
-                self.profile, bytes(304), speaker=0, field="delay_ms",
-                value=0.6)
+    def test_speaker_head_builder_allows_confirmed_contract(self):
+        packet = protocol.build_surround_speaker_head_command(
+            self.profile, bytes(304), speaker=0, field="delay_ms",
+            value=0.6)
+        self.assertEqual(len(packet), 320)
 
     def test_speaker_builder_changes_only_one_band_field(self):
         body = bytearray((index * 3) & 0xFF for index in range(304))

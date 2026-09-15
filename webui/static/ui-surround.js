@@ -181,6 +181,10 @@ function surroundBassFieldWritable(write, field) {
     && write.fields.includes(field);
 }
 
+function surroundBassMappingSuffix(write) {
+  return write?.experimental ? ' · experimental candidate mapping' : '';
+}
+
 function surroundBassKnob(value, label, field, channel, bassWrite) {
   const current = Number.isFinite(Number(value)) ? Number(value) : 80;
   const angle = surroundKnobAngle(current, 20, 320, true);
@@ -220,7 +224,7 @@ function surroundBassFilterType(value, label, field, channel, bassWrite) {
     + ' data-bass-filter-type="true" data-bass-field="'
     + surroundEscape(field) + '" data-bass-slot="' + channel.slot
     + '" aria-label="' + surroundEscape(label) + '" title="'
-    + surroundEscape(label + ' · experimental candidate mapping') + '"'
+    + surroundEscape(label + surroundBassMappingSuffix(bassWrite)) + '"'
     + (writable ? '' : ' disabled') + '>' + unknown + options + '</select>';
 }
 
@@ -314,7 +318,7 @@ function surroundBassFader(channel, bassWrite) {
     + ' data-bass-boolean="true" data-bass-field="fader_solo" data-bass-slot="'
     + channel.slot + '" aria-pressed="' + (soloOn ? 'true' : 'false')
     + '"' + (soloWritable ? '' : ' disabled') + ' title="'
-    + surroundEscape(channel.label + ' solo · experimental candidate mapping')
+    + surroundEscape(channel.label + ' solo' + surroundBassMappingSuffix(bassWrite))
     + '" aria-label="' + surroundEscape(channel.label) + ' solo">S</button>'
     + '</div></div>';
 }
@@ -344,7 +348,7 @@ function surroundBassLink(label, field, linkStates, bassWrite) {
     + ' data-bass-field="' + surroundEscape(field)
     + '" data-bass-slot="0" aria-pressed="' + (on ? 'true' : 'false')
     + '"' + (writable ? '' : ' disabled') + ' title="'
-    + surroundEscape(label + ' · experimental candidate mapping')
+    + surroundEscape(label + surroundBassMappingSuffix(bassWrite))
     + '" aria-label="' + surroundEscape(label) + '">' + linkIcon + '</button>';
 }
 
@@ -383,6 +387,9 @@ function surroundBassWindowHTML(data) {
   const channels = surroundBassChannels(data);
   const bassWrite = data?.write?.bass || {};
   const format = global.format || 'unknown';
+  const candidateNote = bassWrite.experimental
+    ? 'filter type, link, and solo are experimental candidates'
+    : 'filter type, link, and solo confirmed by readback';
   const bassStatus = bassWrite.enabled
     ? (bassWrite.experimental ? 'experimental read/write' : 'read/write')
     : (Array.isArray(bassWrite.formats) && bassWrite.formats.length
@@ -399,10 +406,10 @@ function surroundBassWindowHTML(data) {
     + '<div class="bass-toolbar"><span>HIGH PASS · LOW PASS · MIXER</span>'
     + '<span class="surround-readonly">'
     + surroundEscape(bassStatus)
-    + ' · filter type, link, and solo are experimental candidates; meters pending</span></div>'
+    + ' · ' + candidateNote + '; meters pending</span></div>'
     + surroundBassManagement(data, bassWrite)
-    + '<p class="surround-note bass-note">Only the strips active in the selected Surround format are shown. In 2.1 the strips run L · R · LFE, with LFE highlighted in purple; larger layouts keep the compact LFE-first presentation. Known writes cover cutoffs, filter order, bypass, faders, and mute. '
-    + surroundEscape(bassWrite.note || 'Filter type, link buttons, and solo are experimental candidate probes; Bass Management meters remain unavailable.') + '</p>'
+    + '<p class="surround-note bass-note">Only the strips active in the selected Surround format are shown. In 2.1 the strips run L · R · LFE, with LFE highlighted in purple; larger layouts keep the compact LFE-first presentation. Known writes cover cutoffs, filter order, bypass, faders, mute, filter type, Link, and Solo. '
+    + surroundEscape(bassWrite.note || 'Bass Management meters remain unavailable.') + '</p>'
     + '</div></div>';
 }
 
@@ -559,7 +566,7 @@ function openSurroundBassWindow() {
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
     + '<title>Bass Management — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css">'
-    + '<link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v2">'
+    + '<link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v3">'
     + '</head><body class="bass-popup-body"></body></html>');
   d.close();
   d.body.innerHTML = surroundBassPopupHTML(SURROUND);
@@ -659,7 +666,8 @@ function surroundSpeakerHeadControl(field, label, speaker, headWrite) {
   const unit = control.unit ? ` ${surroundEscape(control.unit)}` : '';
   const display = Number.isFinite(value)
     ? `${surroundNumber(value, digits)}${unit}` : 'waiting';
-  const status = writable ? 'experimental writable'
+  const status = writable
+    ? (headWrite?.experimental ? 'experimental writable' : 'writable')
     : (speaker?.head_readback ? 'read-only' : 'readback unavailable');
   return `<label class="surround-control${writable ? '' : ' surround-disabled'}">
     <span class="surround-control-label">${surroundEscape(label)}</span>
@@ -687,7 +695,9 @@ function surroundSpeakerPhaseControl(speaker, headWrite) {
       data-surround-speaker-head="${speaker?.index ?? 0}"
       aria-pressed="${head.phase_invert ? 'true' : 'false'}"${writable ? '' : ' disabled'}
       aria-label="Phase invert">${state === 'readback unavailable' ? 'Ø' : state}</button>
-    <span class="surround-readonly">${writable ? 'experimental writable' : state + ' · read-only'}</span></label>`;
+    <span class="surround-readonly">${writable
+      ? (headWrite?.experimental ? 'experimental writable' : 'writable')
+      : state + ' · read-only'}</span></label>`;
 }
 
 function surroundSpeakerBypassControl(speaker, bypassWrite) {
@@ -704,7 +714,9 @@ function surroundSpeakerBypassControl(speaker, bypassWrite) {
       data-surround-speaker-field="bypass" aria-pressed="${on ? 'true' : 'false'}"${writable ? '' : ' disabled'}
       aria-label="Bypass ${surroundEscape(speaker?.label || 'speaker')} processing"
       title="Bypass all channel processing except level">${state}</button>
-    <span class="surround-readonly">${writable ? 'experimental writable' : state + ' · read-only'}</span></label>`;
+    <span class="surround-readonly">${writable
+      ? (bypassWrite?.experimental ? 'experimental writable' : 'writable')
+      : state + ' · read-only'}</span></label>`;
 }
 
 function surroundMode(mode) {
@@ -1054,7 +1066,10 @@ function surroundSpeakerHTML(data) {
     </div>
     <div class="surround-eq"><div class="surround-subhd"><h4>16-band EQ · single view</h4>
       <span class="surround-readonly">${eqWritable
-        ? 'experimental write · one field at a time' : 'read-only · filter buttons disabled'}</span></div>
+        ? (data.write?.eq?.experimental
+          ? 'experimental write · one field at a time'
+          : 'writable · one field at a time')
+        : 'read-only · filter buttons disabled'}</span></div>
       ${surroundEqGraph(speaker)}
       ${surroundEqGrid(speaker, eqWritable)}</div>
     <p class="surround-note">${eqWritable || headWritable || bypassWritable

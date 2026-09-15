@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read and experimentally round-trip Surround EQ PRE/POST position.
+"""Read and round-trip Surround EQ PRE/POST position.
 
 Read the current global Surround state without changing it::
 
@@ -194,7 +194,7 @@ def main():
     ap.add_argument('--position', choices=('pre', 'post'),
                     help='probe target; defaults to the opposite of the current position')
     ap.add_argument('--confirm-experimental-write', action='store_true',
-                    help='acknowledge that the EQ-position transition needs live confirmation')
+                    help='acknowledge the EQ-position write test')
     ap.add_argument('--timeout', type=float, default=2.0)
     ap.add_argument('--settle', type=float, default=0.5,
                     help='seconds to wait after each write (default 0.5)')

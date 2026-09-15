@@ -139,8 +139,8 @@ For a per-speaker candidate head, `head_fields` maps each named field to its
 byte `offset`/`width`, optional bit `mask`/`shift`, raw bounds, and display
 scaling (`step`, `zero`, and `display_offset`). A field is writable only when
 its `writable` flag is true and its name is listed in the write contract's
-`head_fields`; `head_formats` limits the runtime formats in which the
-experimental control is exposed. The builder changes one field and preserves
+`head_fields`; `head_formats` limits the runtime formats in which the bounded
+control is exposed. The builder changes one field and preserves
 masked bits in the source record, so the phase/invert probe cannot disturb the
 level or delay bits. The separate `speaker_mask_write` contract describes the
 speaker-monitor Bypass button, whose logical `true` value clears the device's

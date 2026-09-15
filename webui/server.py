@@ -687,7 +687,7 @@ class Device:
             "readback_category": SURROUND_EQ_CAT,
             "note": speaker_write_contract.get(
                 "head_notes",
-                "Experimental speaker delay/level/phase writes preserve the "
+                "Speaker delay/level/phase writes preserve the "
                 "complete category-0x1a record and should be compared with "
                 "fresh readback."),
         }
@@ -789,7 +789,9 @@ class Device:
                 "bass_mgmt_links", {}) or {})
         bass_write = {
             "enabled": False,
-            "experimental": True,
+            "experimental": str(bass_contract.get(
+                "status", "")).strip().lower() in {
+                    "experimental", "experimental-unverified"},
             "status": bass_contract.get("status", "unavailable"),
             "fields": bass_fields,
             "formats": [str(name) for name in bass_contract.get("formats", [])],
@@ -804,10 +806,9 @@ class Device:
             "link_states": link_states,
             "links": bass_contract.get("links", {}) or {},
             "note": (
-                "Experimental one-field writes use a fresh category-0x1b "
-                "readback. Cutoffs, orders, bypass, fader, and mute are "
-                "mapped. Filter type, Link, and Solo are experimental candidate "
-                "mappings and must be checked against the next readback; "
+                "One-field writes use a fresh category-0x1b readback. "
+                "Cutoffs, orders, bypass, fader, mute, filter type, Link, "
+                "and Solo mappings were confirmed by the hardware probe; "
                 "meters remain guarded."
             ),
         }
@@ -836,7 +837,9 @@ class Device:
         eq_write_contract = eq_contract.get("write_contract", {}) or {}
         eq_write = {
             "enabled": False,
-            "experimental": True,
+            "experimental": str(eq_write_contract.get(
+                "status", "")).strip().lower() in {
+                    "experimental", "experimental-unverified"},
             "status": eq_write_contract.get("status", "unavailable"),
             "fields": ["frequency", "q", "gain", "mode"],
             "readback_category": SURROUND_EQ_CAT,
@@ -854,8 +857,8 @@ class Device:
             ],
             "mode_range": list(eq_contract.get("mode_range", [0, 255])),
             "note": (
-                "Experimental one-field EQ writes use a fresh category-0x1a "
-                "readback and preserve the rest of the speaker record."
+                "One-field EQ writes use a fresh category-0x1a readback and "
+                "preserve the rest of the speaker record."
             ),
         }
         reset_preset = eq_contract.get("reset_preset")
@@ -925,7 +928,7 @@ class Device:
         }
 
     def _surround_speaker_body_for_write(self, transport, speaker):
-        """Read a fresh per-speaker EQ record before an experimental write."""
+        """Read a fresh per-speaker EQ record before a bounded write."""
         if not self.surround_available:
             raise RuntimeError("surround state is not safely mapped")
         if not 0 <= int(speaker) < self.surround_speaker_count:
@@ -2141,7 +2144,7 @@ def api_surround_global(change: SurroundGlobalChange):
 
 @app.post("/api/surround/bass")
 def api_surround_bass(change: SurroundBassChange):
-    """Queue one bounded experimental Bass Management field write.
+    """Queue one bounded Bass Management field write.
 
     A global filter-type field still carries a channel slot in the API for a
     uniform control shape; its profile scope makes the builder update only
@@ -2190,7 +2193,7 @@ def api_surround_bass(change: SurroundBassChange):
     return {
         "ok": True,
         "queued": True,
-        "experimental": True,
+        "experimental": bool(bass_write.get("experimental", False)),
         "channel": change.channel,
         "field": field,
         "value": change.value,
@@ -2199,7 +2202,7 @@ def api_surround_bass(change: SurroundBassChange):
 
 @app.post("/api/surround/speaker")
 def api_surround_speaker(change: SurroundSpeakerChange):
-    """Queue one experimental per-speaker monitor control write.
+    """Queue one bounded per-speaker monitor control write.
 
     Delay, level, and phase-invert use a fresh category-0x1a record and the
     complete 0x87 speaker frame.  Bypass is a bit in the global per-speaker
@@ -2305,7 +2308,7 @@ def api_surround_speaker(change: SurroundSpeakerChange):
     return {
         "ok": True,
         "queued": True,
-        "experimental": True,
+        "experimental": bool(speaker_write.get("experimental", False)),
         "speaker": change.speaker,
         "field": field,
         "value": change.value,
@@ -2314,7 +2317,7 @@ def api_surround_speaker(change: SurroundSpeakerChange):
 
 @app.post("/api/surround/eq")
 def api_surround_eq(change: SurroundEQChange):
-    """Queue one bounded experimental per-speaker EQ field write."""
+    """Queue one bounded per-speaker EQ field write."""
     if not DEV.surround_available:
         return _bad("surround state is not safely mapped for this profile")
     eq_write = DEV.surround_json()["write"].get("eq", {})
@@ -2346,7 +2349,7 @@ def api_surround_eq(change: SurroundEQChange):
     return {
         "ok": True,
         "queued": True,
-        "experimental": True,
+        "experimental": bool(eq_write.get("experimental", False)),
         "speaker": change.speaker,
         "band": change.band,
         "parameter": parameter,

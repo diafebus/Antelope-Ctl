@@ -267,7 +267,7 @@ assert.equal(surroundContext.surroundEqSnap(-1, 20, 20000, 1), 20);
 const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
   ...surroundData, write: {enabled: false, eq: {enabled: true, reset: resetPreset}},
 });
-assert.match(writableSurroundHTML, /experimental write · one field at a time/);
+assert.match(writableSurroundHTML, /writable · one field at a time/);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 48);
 assert.equal((writableSurroundHTML.match(/class="mixer-readout surround-eq-number"/g) || []).length, 48);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-number/g) || []).length, 48);
@@ -288,7 +288,7 @@ const writableHeadHTML = surroundContext.surroundSpeakerHTML({
   write: {
     speaker_head: {
       enabled: true,
-      experimental: true,
+      experimental: false,
       fields: ['delay_ms', 'level_db', 'phase_invert'],
       controls: {
         delay_ms: {range: [0.6, 100.6], step: 0.1, unit: 'ms', digits: 1},
@@ -297,7 +297,7 @@ const writableHeadHTML = surroundContext.surroundSpeakerHTML({
       },
     },
     speaker_bypass: {
-      enabled: true, experimental: true, fields: ['bypass'],
+      enabled: true, experimental: false, fields: ['bypass'],
     },
   },
 });
@@ -357,7 +357,7 @@ const writableBassData = {
     enabled: false,
     bass: {
       enabled: true,
-      experimental: true,
+      experimental: false,
       fader_range_db: [-60, 16],
       fields: ['lp_cutoff_hz', 'hp_cutoff_hz', 'lp_bypass', 'hp_bypass',
         'lp_order', 'hp_order', 'fader_db', 'fader_mute',
@@ -396,7 +396,8 @@ assert.match(writableBassHTML, /class="bass-chip bass-order-control"/);
 assert.match(writableBassHTML, /class="bass-chip bass-filter-type"/);
 assert.match(writableBassHTML, /<option value="Linkwitz-Riley" selected>Linkwitz-Riley<\/option>/);
 assert.doesNotMatch(writableBassHTML, /data-bass-filter-type="true"[^>]* disabled/);
-assert.match(writableBassHTML, /experimental read\/write/);
+assert.match(writableBassHTML, /read\/write/);
+assert.match(writableBassHTML, /filter type, link, and solo confirmed by readback/);
 assert.ok(writableBassHTML.indexOf('data-bass-channel="4"')
   > writableBassHTML.indexOf('data-bass-channel="1"'));
 assert.equal((writableBassHTML.match(/class="bass-link"/g) || []).length, 9);
@@ -419,7 +420,7 @@ const writableBass20Data = {
     enabled: false,
     bass: {
       enabled: true,
-      experimental: true,
+      experimental: false,
       fader_range_db: [-60, 16],
       fields: ['lp_cutoff_hz', 'hp_cutoff_hz', 'lp_bypass', 'hp_bypass',
         'lp_order', 'hp_order', 'fader_db', 'fader_mute',

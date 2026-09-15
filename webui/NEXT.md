@@ -81,9 +81,9 @@ from the profile.
     readback and update it after a successful write. Surround global writes
     fetch a fresh complete state and change only verified 2.0/2.1 fields;
     2.0/2.1 Bass Management, per-speaker delay/level/phase, and speaker
-    bypass writes are explicitly experimental, fresh-readback-only probes;
-    Bass filter type/Link/Solo bit assignments still need isolated captures,
-    and EQ writes remain bounded.
+    bypass writes are confirmed fresh-readback-only paths; the completed live
+    probe also confirmed Bass filter type/Link/Solo bit assignments and fader
+    persistence across 2.0/2.1. EQ writes remain bounded.
     Snapshot carries a monotonic `rb_ver`; the browser refetches
     `/api/routing` + `/api/mixer` + `/api/surround` when it bumps.
   - Commands are queued as callables `fn(transport)` and run at most one per
@@ -409,9 +409,9 @@ The superseded plan listed these TODOs:
    oscillator (`0x0a` packed byte, fields unconfirmed), pan law (never
    captured -- NOT `0x4b` target 3, ruled out live 2026-09-03), and TB
    latency mode (never captured). Surround readback is now wired; its
-   experimental 2.0/2.1 Bass Management and per-speaker delay/level paths
-   need dedicated one-field captures to validate the mappings and readback
-   behavior.
+   confirmed 2.0/2.1 Bass Management and per-speaker delay/level paths now
+   use dedicated one-field readback validation; meters and higher-layout
+   application behavior remain open.
 4. **Re-sweep emuMic pattern range** for models 1/12/16/18. ~~Confirm the
    `157 + ch` meter offset on channels 5-12~~ -- MOOT. See the superseded
    historical meter plan above. The current physical-input base is 221.

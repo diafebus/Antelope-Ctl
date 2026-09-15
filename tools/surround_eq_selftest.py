@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read and experimentally round-trip one Surround speaker EQ field.
+"""Read and round-trip one Surround speaker EQ field.
 
 Read-only examples::
 
@@ -12,9 +12,8 @@ selected band, verifies the category-0x1a readback, and restores the complete
 
     python3 tools/surround_eq_selftest.py --write --speaker 0 --band 3 --parameter gain --value -1.00 --confirm-experimental-write
 
-The 0x87/0xea frame geometry is known from Launcher captures, but its
-per-speaker candidate head (delay/level/invert) has not been dynamically
-paired with the category-0x1a readback. Stop the WebUI and any other HID owner
+The 0x87/0xea frame geometry and the bounded one-field write/readback path are
+confirmed on the connected Orion. Stop the WebUI and any other HID owner
 before running this tool. Never use it as a blind sweep.
 """
 import argparse
@@ -178,7 +177,7 @@ def read_only(dev, profile, speaker):
             print(f'[FAIL] speaker {index}: {exc}')
             failures += 1
             continue
-        print(f'\nspeaker {index}: {len(bands)} bands, candidate head '
+        print(f'\nspeaker {index}: {len(bands)} bands, head '
               f'{record["header"].hex()}')
         for band_index, band in enumerate(bands):
             print(f'  {_format_band(band_index, band)}')
@@ -294,9 +293,9 @@ def main():
     ap.add_argument('--value',
                     help='new value: Hz, Q, dB, or a raw mode byte (e.g. 0x02)')
     ap.add_argument('--write', action='store_true',
-                    help='perform one experimental write and restore round trip')
+                    help='perform one write and restore round trip')
     ap.add_argument('--confirm-experimental-write', action='store_true',
-                    help='acknowledge that 0x87 per-speaker write semantics are unverified')
+                    help='acknowledge the 0x87 per-speaker write test')
     ap.add_argument('--timeout', type=float, default=2.0)
     ap.add_argument('--settle', type=float, default=0.5,
                     help='seconds to wait after each write (default 0.5)')
