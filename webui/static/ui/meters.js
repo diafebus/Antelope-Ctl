@@ -1,5 +1,7 @@
 "use strict";
 
+// Meter parsing and presentation.
+
 const METER_DEBUG = new URLSearchParams(location.search).has('meterdebug');
 const MDBG_SEEN = {};        // "tag@off" -> Set of values seen, to flag movers
 function mdbgGroup(hostId, tag, raw) {

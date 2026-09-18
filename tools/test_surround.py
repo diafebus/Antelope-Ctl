@@ -330,10 +330,24 @@ class SurroundCommandTests(unittest.TestCase):
         self.assertFalse(parsed["eq_post"])
 
     def test_speaker_eq_builder_allows_confirmed_contract(self):
+        self.assertIn("0x87", self.profile["constraints"]["allowed_opcodes"])
+        self.assertNotIn(
+            "0x87",
+            self.profile["constraints"].get("observed_opcodes_launcher_only", []),
+        )
         packet = protocol.build_surround_speaker_eq_command(
             self.profile, bytes(304), speaker=0, band=0,
             changes={"gain_raw": 100})
         self.assertEqual(len(packet), 320)
+
+    def test_runtime_writer_opcodes_are_in_the_profile_allow_list(self):
+        for name, contract in self.profile.get("runtime_contracts", {}).items():
+            write = contract.get("write_contract", {}) if isinstance(contract, dict) else {}
+            opcode = write.get("opcode") if isinstance(write, dict) else None
+            if opcode is None:
+                continue
+            with self.subTest(contract=name, opcode=opcode):
+                protocol.check_opcode(self.profile, int(opcode, 0))
 
     def test_speaker_parser_decodes_candidate_head(self):
         body = bytearray(116)

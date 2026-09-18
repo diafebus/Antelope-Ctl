@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const {ROOT: root, JS_FILES, readWebUISource} = require('./webui_sources.cjs');
 const html = fs.readFileSync(path.join(root, 'webui/static/index.html'), 'utf8');
 const surroundCss = fs.readFileSync(path.join(root, 'webui/static/surround.css'), 'utf8');
-const busSource = fs.readFileSync(path.join(root, 'webui/static/ui-buses.js'), 'utf8');
+const busSource = fs.readFileSync(path.join(root, 'webui/static/ui/buses.js'), 'utf8');
 const sourceFiles = [...html.matchAll(/<script src="\/webui\/static\/([^"]+)"><\/script>/g)]
   .map(match => match[1].split('?')[0]);
 assert.deepEqual(sourceFiles, JS_FILES);
@@ -176,7 +176,7 @@ assert.match(context.outputMeterHTML(2), /data-output-meter-lane="1"/);
 // Syntax-check every browser-loaded file, including code outside the tested functions.
 new vm.Script(js);
 const surroundContext = vm.createContext({$: () => null});
-vm.runInContext(fs.readFileSync(path.join(root, 'webui/static/ui-surround.js'), 'utf8'),
+vm.runInContext(fs.readFileSync(path.join(root, 'webui/static/ui/surround.js'), 'utf8'),
   surroundContext);
 const surroundBands = Array.from({length: 16}, (_, index) => ({
   freq_hz: 30 + index * 100,
@@ -317,7 +317,7 @@ assert.doesNotMatch(writableHeadHTML, /data-surround-speaker-head-toggle[^>]* di
 assert.match(writableHeadHTML, /Bypass processing/);
 assert.match(writableHeadHTML, /data-surround-speaker-bypass/);
 assert.doesNotMatch(writableHeadHTML, /data-surround-speaker-bypass[^>]* disabled/);
-const inputsSource = fs.readFileSync(path.join(root, 'webui/static/ui-inputs.js'), 'utf8');
+const inputsSource = fs.readFileSync(path.join(root, 'webui/static/ui/inputs.js'), 'utf8');
 assert.match(inputsSource, /\.replace\(\/\^Preamp\\s\+\/i, 'CH'\)/);
 const globalHTML = surroundContext.surroundGlobalHTML(surroundData);
 assert.match(globalHTML, /value="2\.0" selected/);

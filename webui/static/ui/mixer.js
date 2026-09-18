@@ -1,5 +1,7 @@
 "use strict";
 
+// Virtual mixer and Gazelle Reverb UI.
+
 // ---- compact virtual mixer ---------------------------------------------
 function loadMixerSources() {
   const key = 'mixerSources:' + (UI_FEATURES.profile || 'default');

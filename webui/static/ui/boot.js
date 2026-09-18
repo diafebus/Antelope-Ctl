@@ -1,5 +1,7 @@
 "use strict";
 
+// Capability setup, polling, and application startup.
+
 // ---- boot + live feed (SSE) ---------------------------------------
 function markOffline(text) {
   ONLINE = false;

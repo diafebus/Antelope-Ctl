@@ -1,5 +1,7 @@
 "use strict";
 
+// Physical and digital input-strip controls.
+
 function buildChannels(n) {
   const wrap = $('#channels'); wrap.innerHTML = '';
   for (let ch = 0; ch < n; ch++) {

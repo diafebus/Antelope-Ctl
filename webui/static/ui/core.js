@@ -1,4 +1,6 @@
 "use strict";
+
+// Shared UI state, persistence, messages, and API helpers.
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 let PROFILE = null, MODES = [], N_CH = 12, HIZ = new Set(), GAIN_RANGE = {}, N_PAIRS = 0;

@@ -1,5 +1,7 @@
 "use strict";
 
+// Structured protocol-readback diagnostics.
+
 // ---- profile-driven nested protocol readbacks -----------------------
 const RB_ESC = {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'};
 const rbEscape = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => RB_ESC[c]);

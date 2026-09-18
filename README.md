@@ -152,6 +152,7 @@ profiles/mic_models.json       <- account-bound mic-modelling ("emuMic") model c
 antelope/transport.py          <- generic HID open/read/write (no device-specific code)
 antelope/protocol.py           <- generic frame build/parse, driven entirely by the profile
 antelope/cli.py                <- generic CLI, driven entirely by the profile
+tools/README.md                <- tool index, safety classes, and command guide
 tools/capture_diff.py          <- offline helper for finding new params from captures
 tools/scan_capture.py          <- offline helper: auto-finds the transition across a whole capture (Windows TSV)
 tools/scan_macos_capture.py    <- same, for native-macOS (Darwin XHC) pcapng -- see CAPTURING.md

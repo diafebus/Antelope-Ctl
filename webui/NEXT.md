@@ -1,4 +1,8 @@
-# webui -- hand-off for the next session
+# Historical WebUI sandbox hand-off
+
+> Archived context from before the WebUI was integrated into this repository.
+> It is not a current work plan; use the repository-root `SUMMARY.md` and
+> `CLAUDE.md` for live state and backlog.
 
 Sandbox clone `antelope-ctl-UI-test`, branch **`ui-draft`** (no remote).
 Canonical protocol repo is **`../antelope-ctl`** -- its `SUMMARY.md` +

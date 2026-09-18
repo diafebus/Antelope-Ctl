@@ -1198,13 +1198,7 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
     except (KeyError, TypeError, ValueError) as e:
         raise ValueError('invalid surround speaker EQ write contract') from e
 
-    observed = _opcode_set(profile, 'observed_opcodes_launcher_only')
-    if opcode in _opcode_set(profile, 'forbidden_opcodes'):
-        raise ConstraintError(f'opcode {opcode:#04x} is forbidden by this profile')
-    if opcode not in observed:
-        raise ConstraintError(
-            f'opcode {opcode:#04x} is not explicitly marked launcher-only in '
-            'the profile; refusing an experimental write')
+    check_opcode(profile, opcode)
     if not isinstance(readback_body, (bytes, bytearray)):
         raise TypeError('surround speaker readback body must be bytes')
     if record_size <= 0 or len(readback_body) < record_size:
@@ -1305,13 +1299,7 @@ def build_surround_speaker_head_command(
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError('invalid surround speaker head write contract') from exc
 
-    observed = _opcode_set(profile, 'observed_opcodes_launcher_only')
-    if opcode in _opcode_set(profile, 'forbidden_opcodes'):
-        raise ConstraintError(f'opcode {opcode:#04x} is forbidden by this profile')
-    if opcode not in observed:
-        raise ConstraintError(
-            f'opcode {opcode:#04x} is not explicitly marked launcher-only in '
-            'the profile; refusing an experimental write')
+    check_opcode(profile, opcode)
     if not isinstance(readback_body, (bytes, bytearray)):
         raise TypeError('surround speaker readback body must be bytes')
     if record_size <= 0 or len(readback_body) < record_size:

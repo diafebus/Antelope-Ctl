@@ -1,5 +1,7 @@
 "use strict";
 
+// Device settings and mic-modeling controls.
+
 let MIC_MODELS = {};           // from /api/mic_models -- account-bound snapshot
 // Which Antelope modelling mic is plugged in. The HID protocol has NO readback
 // for this (or for model entitlements), so it's declared, not detected --

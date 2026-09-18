@@ -1,5 +1,7 @@
 "use strict";
 
+// Physical preamp strip rendering and interaction.
+
 function paintKnob(el, gain) {
   const [lo, hi] = modeRange(currentMode(el));
   const g = Math.max(lo, Math.min(hi, gain));

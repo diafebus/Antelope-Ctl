@@ -1,5 +1,7 @@
 "use strict";
 
+// Routing matrix and detached routing view.
+
 // ---- routing matrix (Phase 1: per-destination grid) -----------------
 // Rows = sources (grouped, collapsible); columns = the selected dest's
 // output channels. Routing is EXCLUSIVE per output channel -> exactly one

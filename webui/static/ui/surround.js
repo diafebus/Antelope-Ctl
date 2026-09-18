@@ -1,5 +1,7 @@
 "use strict";
 
+// Surround monitor, bass management, and speaker EQ UI.
+
 // ---- surround monitor ---------------------------------------------------
 let SURROUND = null;
 let SURROUND_SPEAKER = 0;

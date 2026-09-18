@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-antelope-ctl web UI -- DRAFT / sandbox.
+antelope-ctl web UI.
 
 A thin local daemon: one background thread owns the HID device, keeps an
 in-memory state snapshot, and pushes it to the browser over SSE.
@@ -1746,7 +1746,7 @@ except (KeyError, ValueError, TypeError) as _e:
 
 # ---------------------------------------------------------------- HTTP / SSE
 
-app = FastAPI(title="antelope-ctl webui (draft)")
+app = FastAPI(title="antelope-ctl webui")
 app.mount("/webui/assets", StaticFiles(directory=os.path.join(HERE, "assets")),
           name="webui-assets")
 app.mount("/webui/static", StaticFiles(directory=os.path.join(HERE, "static")),

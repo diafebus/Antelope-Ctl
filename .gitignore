@@ -14,6 +14,7 @@ captures/*.txt
 # Python
 __pycache__/
 *.pyc
+.venv/
 
 # Local CLI cache (link state) lives in ~/.cache/antelope-ctl, not here, but just in case
 *.cache
@@ -28,6 +29,9 @@ AUDIT.md
 
 # Local diagnostic tool output (may contain the device serial)
 tools/*_out.txt
+
+# Local WebUI design references; they are not application assets.
+/webui/ideas/
 
 # For other query that aren't necessarily related or relevant to the main repository
 sidejob/

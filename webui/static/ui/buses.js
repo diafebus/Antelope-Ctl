@@ -1,5 +1,7 @@
 "use strict";
 
+// Output-bus rendering and controls.
+
 // ---- buses -----------------------------------------------------------
 // Device-confirmed output-bus attenuation: raw 0 = 0 dB (maximum/unity),
 // raw 1..95 = -N dB, and raw 96 = -∞ (silent).

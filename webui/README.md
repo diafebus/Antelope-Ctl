@@ -1,7 +1,6 @@
-# webui -- DRAFT
+# webui
 
-A throwaway prototype of the "local daemon + thin browser UI" architecture
-(see the discussion in the main repo's SUMMARY / this sandbox's `SANDBOX.md`).
+The in-repository local daemon + thin browser UI for `antelope-ctl`.
 
 ## What it is
 
@@ -36,18 +35,18 @@ compatibility.
 
   Commands are queued as callables run one per meter cycle on the device
   thread, so control bursts cannot monopolize the live meter path.
-- **`static/index.html`** -- the small HTML shell, with the browser code kept in
-  ordered vanilla-JS files and the styles in `static/app.css`; there is still no
-  build step:
-  - `ui-base.js` -- shared state, storage, API helpers, and control primitives;
-  - `ui-inputs.js`, `ui-settings.js`, and `ui-preamp.js` -- input and device settings;
-  - `ui-meters.js` and `ui-buses.js` -- meter and output-bus rendering;
-  - `ui-routing.js` and `ui-mixer.js` -- routing and mixer surfaces;
-  - `ui-surround.js` -- profile-driven Surround monitor and EQ readback;
-  - `ui-readback.js` and `ui-boot.js` -- diagnostics, state fan-out, and startup.
+- **`static/index.html`** -- the small HTML shell, with ordered vanilla-JS
+  modules in `static/ui/` and styles in `static/app.css`; there is no build
+  step:
+  - `core.js` -- shared state, storage, API helpers, and control primitives;
+  - `inputs.js`, `settings.js`, and `preamp.js` -- input and device settings;
+  - `meters.js` and `buses.js` -- meter and output-bus rendering;
+  - `routing.js` and `mixer.js` -- routing and mixer surfaces;
+  - `surround.js` -- profile-driven Surround monitor and EQ readback;
+  - `readback.js` and `boot.js` -- diagnostics, state fan-out, and startup.
 
   The UI itself contains:
-  - input strips styled after `ideas/PreampUI.svg` -- 270° gain knob
+  - input strips styled after `assets/PreampUI.svg` -- 270° gain knob
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
   - output buses (device-confirmed attenuation: raw 0 = 0 dB maximum,
     raw 96 = -inf/silent), screen brightness;
@@ -122,11 +121,3 @@ The `.venv` is only the Python environment; it is not a separate daemon.
 
 Profile: defaults to `../profiles/orion_studio_sc.json`; override with
 `ANTELOPE_PROFILE=/path/to/profile.json`.
-
-## If this direction is worth keeping
-
-Copy `webui/` into the real repo (`../antelope-ctl`), add `fastapi` /
-`uvicorn` to a `webui/requirements.txt` there (keep `antelope/` itself
-stdlib-only), and grow it: routing/mixer panels (bounded readback),
-device reconnect UX, a `--host` flag + token for LAN use, a systemd user
-unit. Otherwise `rm -rf` this whole sandbox.
