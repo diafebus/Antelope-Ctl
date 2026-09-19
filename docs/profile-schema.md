@@ -66,7 +66,7 @@ evidence.
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
-| `unresolved_state_offsets` / `open_questions` | optional | the backlog, so "MVP done" isn't mistaken for "protocol done" |
+| `unresolved_state_offsets` / `open_questions` | optional | evidence boundaries, so "MVP done" isn't mistaken for "protocol done" |
 
 ---
 
@@ -382,8 +382,8 @@ the CLI and docs use. Minimum:
 - **`readback`** — where it reads back in `state_report`, or "none".
 - **`constraint`** — a human note like `"mic mode only"`.
 
-Params with no `id` and `status: "observed"` are the backlog — they
-document a control seen in a capture so the next person knows it exists.
+Params with no `id` and `status: "observed"` are observational-only: they
+document a control seen in a capture without authorizing a writer.
 
 ---
 

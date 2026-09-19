@@ -1,8 +1,9 @@
 # Historical WebUI sandbox hand-off
 
 > Archived context from before the WebUI was integrated into this repository.
-> It is not a current work plan; use the repository-root `SUMMARY.md` and
-> `CLAUDE.md` for live state and backlog.
+> It is not a current work plan. The sole live Orion completion queue is the
+> ignored, repository-root `AUDIT.md`; public documentation records evidence
+> and current behavior rather than a competing task list.
 
 Sandbox clone `antelope-ctl-UI-test`, branch **`ui-draft`** (no remote).
 Canonical protocol repo is **`../antelope-ctl`** -- its `SUMMARY.md` +
@@ -394,47 +395,10 @@ true for most normal use). Revisit once the real preamp/clip meter is
 sorted out (isochronous audio decode, or another approach), rather than
 ripping out the current display for nothing in its place.
 
-The superseded plan listed these TODOs:
-- Relabel `cli.py meter` (canonical) and this webui's preamp strips from
-  "preamp N" to "Mix N master" if the display stays as-is, OR replace it
-  with a real decoded preamp/clip meter once the isochronous audio
-  channel layout is known.
-- The old "Confirm the `157 + ch` meter offset on channels 5-12" item
-  below is now moot/wrong -- there is no per-channel 5-12 meter to
-  confirm; drop it once this section is acted on.
-
-## Still open / next
-
-1. **Virtual mixer follow-up:** map the master meter lane if one is exposed;
-   the current live mapping covers strips 1..32 at `0x73 @157..188`.
-2. **Hardware side-by-side for the compact mixer UI** -- verify the new visual
-   layout and meter response against the Launcher with a live signal.
-3. **More settings, once decoded** -- panel notes what's not wired:
-   oscillator (`0x0a` packed byte, fields unconfirmed), pan law (never
-   captured -- NOT `0x4b` target 3, ruled out live 2026-09-03), and TB
-   latency mode (never captured). Surround readback is now wired; its
-   confirmed 2.0/2.1 Bass Management and per-speaker delay/level paths now
-   use dedicated one-field readback validation; meters and higher-layout
-   application behavior remain open.
-4. **Re-sweep emuMic pattern range** for models 1/12/16/18. ~~Confirm the
-   `157 + ch` meter offset on channels 5-12~~ -- MOOT. See the superseded
-   historical meter plan above. The current physical-input base is 221.
-   (emuMic-range correction is
-   CLOSED -- `0xe5` on preamp 5/6 captured 2026-09-03, `[18]=0x00/0x01`;
-   listen test done -- `emumic5`==`emumic6` mono for a mono emulation,
-   model select audibly correct.) Gazelle Reverb's WebUI integration is
-   complete; see the protocol-support note above for the hardware caveat.
-5. **Hide undeclared sections** -- an empty `<section>` still renders its
-   header. Pairs with finishing the non-Orion stub profiles.
-6. **`--host` + token** for LAN access; localhost-only now.
-7. **Packaging** -- `pip install` + `antelope-ctld` / systemd user unit.
-   Keep `antelope/` stdlib-only; FastAPI stays in `webui/`.
-8. **OSC / MIDI / WebSocket bridge** -- the group wants controller mapping.
-   Add it to the Python service (`python-osc`, `mido`, `websockets`); do not
-   let it become a rewrite argument.
-9. **Small cleanups:** the static `[data-rpane="matrix"]` hint text still
-   reads matrix-only ("click a group to expand") though it sits under both
-   views; Firefox pop-out still shows a thin origin strip (browser-imposed).
+The superseded alternatives above were not actioned. The current physical
+input mapping is `0x73[221..232]`; the old `157 + ch` premise was incorrect.
+See `webui/METERS.md` for the evidence boundary and the local `AUDIT.md` for
+active work.
 
 **Art:** most in-use SVGs are inlined in `index.html`; the mixer
 `fader-shadow.svg` is served from `/webui/assets/`; `webui/assets/` holds the

@@ -668,7 +668,11 @@ Monitor/HP1 or HP2 surface for the shared 16-lane meter bank, and a complete
 q0b/03 bitmap can seed the visible mixer-pair links. These mappings remain
 device-specific evidence; they are not defaults for other Antelope products.
 
-## What's still unconfirmed
+## Known limits and incomplete evidence
+
+This is a reference of what the published implementation does not claim to
+have verified. It is not a development task tracker; the active Orion
+completion queue is maintained locally in the ignored `AUDIT.md`.
 
 See `"status": "unconfirmed"` entries in the profile, and
 `"unresolved_state_offsets"`. Nothing there is used by the CLI's normal
