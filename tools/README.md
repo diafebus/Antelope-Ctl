@@ -9,7 +9,7 @@ right tool.
 
 | Need | Tool | Writes to hardware? |
 | --- | --- | --- |
-| Run the ordinary offline regression suite | `python3 -m unittest tools.test_profile_labels tools.test_readback_records tools.test_orion_startup tools.test_surround tools.test_meter_sources` | No |
+| Run the complete offline regression suite | `python3 tools/offline_checks.py` | No |
 | Check browser rendering and mixer-link interaction | `node tools/test_webui_meters.cjs` and `node tools/test_webui_mixer_links.cjs` | No |
 | Verify the connected device through bounded readbacks | `python3 tools/selftest.py` | No by default |
 | Run restore-safe hardware round trips | `python3 tools/selftest.py --write` | Yes; restores state |
@@ -27,6 +27,9 @@ right tool.
 
 ## Safety classes
 
+- `offline_checks.py` is the documented all-in-one offline suite. It runs the
+  Python profile/protocol tests plus the WebUI meter, mixer-link, and static
+  source checks. Use `--python-only` only where Node.js is unavailable.
 - `test_*` and `webui_sources.cjs` are offline regressions.
 - `capture_diff.py` and `scan_*.py` analyse local captures only.
 - `selftest.py` and the `surround_*_selftest.py` scripts are live-device tools.
