@@ -995,11 +995,14 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   write. Mute and dim remain read-only. Speaker-monitor bypass and the
   per-speaker phase, delay, and level fields were hardware round-tripped on
   speakers 0 and 1 against fresh readbacks and restored exactly. The WebUI
-  exposes those per-speaker controls alongside the EQ head controls, plus the
-  EQ path, one field at a time, using a fresh read-modify-write that preserves
-  the complete record and performs a post-write readback. The 2.0 Bass
-  Management popup is now writable for its L/R strips using the same bounded
-  fresh-readback path as 2.1's L/R/LFE strips.
+  exposes those per-speaker controls alongside the EQ head controls. EQ knobs
+  write one field at a time through a fresh read-modify-write; direct graph
+  drags use the bounded `/api/surround/eq/point` path to update frequency and
+  gain together in one complete record. Both paths preserve the rest of the
+  state and perform a post-write readback. The graph supports damped point
+  dragging and Q adjustment by wheel only while the pointer is over a point.
+  The 2.0 Bass Management popup is writable for its L/R strips using the same
+  bounded fresh-readback path as 2.1's L/R/LFE strips.
   `tools/surround_eq_selftest.py` can read all 16 records or, with explicit
   confirmation, probe one frequency, Q, gain, or raw mode byte in one selected
   band and restore the complete record. The per-speaker head mapping is now
@@ -1010,7 +1013,10 @@ wire path was subsequently round-tripped through **9.1.6** on the connected
 Orion Studio III; the WebUI still exposes only **2.0 / 2.1** until the
 licence-dependent vendor behavior is better understood. The Bass Management
 popup displays only the active strips; 2.1 is ordered L · R · LFE with fixed
-  strip widths. Its bounded writes cover crossover cutoffs, filter order,
+strip widths. Faders use the profile dB range for a reload-safe percentage
+position, retain the supplied artwork, accept exact values by double-click,
+and keep their travel inset from the readout and Mute/Solo row. Its bounded
+writes cover crossover cutoffs, filter order,
   bypass, fader, mute, filter type, link, and solo. Each field was toggled in
   both 2.0 and 2.1 and matched the immediate category-0x1b readback; distinct
   fader values also survived the 2.0/2.1 transitions. See `params.surround_monitor` +

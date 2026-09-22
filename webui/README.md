@@ -22,10 +22,13 @@ compatibility.
     `0x1b` global and `0x1a` speaker EQ/head records; the 2.0/2.1 global
     format and delay/level paths, 2.0/2.1 Bass Management fields, and
     confirmed EQ PRE/POST write using fresh complete-state reads. The bounded
-    per-speaker delay/level/phase and EQ paths write one field from a fresh
-    complete state and compare the next readback. The speaker bypass mask uses
-    the same complete-state approach. The EQ Reset action writes the profile
-    preset for only the displayed speaker. `/api/readbacks` exposes the structured records
+    per-speaker delay/level/phase and EQ knob paths write one field from a
+    fresh complete state and compare the next readback. Direct EQ graph drags
+    are the bounded exception: `/api/surround/eq/point` updates frequency and
+    gain together in one complete-state frame so one pointer gesture stays
+    coherent. The speaker bypass mask uses the same complete-state approach.
+    The EQ Reset action writes the profile preset for only the displayed
+    speaker. `/api/readbacks` exposes the structured records
     to diagnostics and `/api/surround` serves the decoded Surround surface. Queries use the active
     profile's bounded category counts or explicit capture-confirmed layouts, so
     the BusFault hazard is never hit; schema-only layouts are displayed as
@@ -58,13 +61,20 @@ compatibility.
     selects its matching mixer surface/meter bank; multiple Solo buttons may be
     stacked and the original mute/solo state is restored when the last Solo
     is released;
-  - a **Surround** panel renders global format, delay/level, masks,
-    speaker selection, per-speaker delay/level/phase, and 16-band EQ. Its Bass
-    Management popup shows only the active format channels, places 2.1 as
-    L · R · LFE, and groups strips with colored bars; confirmed 2.0/2.1 Bass
-    Management, per-speaker delay/level/phase, and speaker bypass controls.
-    The global format selector allows 2.0 and 2.1; Bass Management filter
-    type, Link, and Solo controls are confirmed against fresh readbacks.
+  - a **Surround** panel packs global delay/level rotary controls, EQ position,
+    and the Bass Management launcher into one control box. Its speaker map
+    centralizes selection plus bypass/mute/dim feedback: inactive speakers are
+    grey, while the selected active speaker glows. Per-speaker delay/level,
+    phase, bypass, and 16-band EQ controls are shown below. EQ points can be
+    dragged with damped frequency/gain movement; the wheel changes Q only
+    while directly over a point, and the response curve updates live;
+  - the **Bass Management** popup shows only active format channels, places
+    2.1 as L · R · LFE, and groups strips with colored bars. Its fader readout
+    accepts an exact value on double-click. Fader thumbs use a reload-safe
+    percentage of the profile range and an 18 px top/bottom travel inset so
+    the original artwork does not overlap the readout or Mute/Solo controls.
+    Confirmed 2.0/2.1 writes include filter type, Link, Solo, fader, mute,
+    bypass, order, and cutoff. The global format selector allows 2.0 and 2.1;
   - a **Protocol readback** diagnostics section renders profile-declared link
     tables, mic-emulation state, AFX instance counts, and AFX strip order. It
     seeds mixer-pair link state from a complete profile-confirmed bitmap when
@@ -73,8 +83,10 @@ compatibility.
     `webui/device_ui.py`: Zen Go shows its input-source selectors, while any
     profile with a complete confirmed Gazelle Reverb (AuraVerb protocol)
     contract exposes the closed-by-default panel;
-  - rotary controls use relative vertical drags with a 240 px full-scale
-    travel for finer adjustment; the wheel remains a one-step adjustment;
+  - rotary controls use relative vertical drags (240 px full-scale by default,
+    with slower per-control travel for Surround monitor values). Wheel changes
+    are accepted only while the pointer is actually over the knob, so normal
+    page scrolling cannot accidentally alter a control;
   - reconnect UX -- the UI dims and goes non-interactive while the device
     is offline, and EventSource reconnects automatically.
 
