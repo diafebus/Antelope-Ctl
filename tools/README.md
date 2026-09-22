@@ -17,6 +17,7 @@ right tool.
 | Check or round-trip Surround format/control state | `python3 tools/surround_format_selftest.py` | Read-only by default |
 | Check or round-trip Surround EQ PRE/POST | `python3 tools/surround_eq_position_selftest.py` | Read-only by default |
 | Map live meter sources | `python3 tools/meter_selftest.py` | Yes; controlled, restores state |
+| Capture and restore one link transition | `python3 tools/link_transition_capture.py --family spdif --pair 0 --from-state off --to-state on --write --confirm-transition` | Yes; explicit state restore |
 | Compare two extracted command frames | `python3 tools/capture_diff.py before.hex after.hex` | No |
 | Analyse a Windows TSV capture | `python3 tools/scan_capture.py all_reports.tsv` | No |
 | Analyse a native-macOS capture | `python3 tools/scan_macos_capture.py CAP.pcapng` | No |
@@ -34,6 +35,12 @@ right tool.
 - `capture_diff.py` and `scan_*.py` analyse local captures only.
 - `selftest.py` and the `surround_*_selftest.py` scripts are live-device tools.
   Their write paths are opt-in and must restore the state they modify.
+- `link_transition_capture.py` reads only the five profile-declared category
+  `0x0b` tables unless `--write` is specified.  Its write mode makes one
+  requested transition and restores the operator-declared starting state in a
+  `finally` block.  Physical and ADAT links share wire space `0`; their write
+  mode requires an additional acknowledgement and should only be used when
+  both domains have been checked in the Launcher first.
 - `hid_probe.py`, `readback_enum.py`, `readback_probe.py`, and `ct_probe.py`
   are protocol-discovery tools. Never use a force/unsafe option for an
   exploratory sweep: an out-of-range outer readback index can BusFault the

@@ -19,6 +19,7 @@ PYTHON_MODULES = (
     "tools.test_readback_records",
     "tools.test_orion_startup",
     "tools.test_orion_profile_audit",
+    "tools.test_link_transition_capture",
     "tools.test_surround",
     "tools.test_meter_sources",
     "tools.test_offline_checks",
