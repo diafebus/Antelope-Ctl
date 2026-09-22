@@ -144,7 +144,7 @@
      top-right corner (nearest the partner). broken chain when off, whole chain
      + dim white glow on. */
   .linkbtn { position:absolute; top:11px; right:4px; z-index:3; width:20px; height:19px;
-             cursor:pointer; background:#0e1116; color:var(--dim); border:1px solid var(--line);
+             cursor:pointer; background:#141820; color:#b7bec9; border:1px solid #6b7482;
              border-radius:5px; padding:2px; display:flex; align-items:center; justify-content:center; }
   /* when linked, both strips of the pair carry a soft bar on the facing edge --
      same silver-glow language as the chain icon, so it reads as "chained", not
@@ -152,11 +152,11 @@
   .pre.linkstart { box-shadow:inset -3px 0 0 rgba(223,227,234,.55); }
   .pre.linkend   { box-shadow:inset  3px 0 0 rgba(223,227,234,.55); }
   .lkico { width:15px; height:15px; display:block; }
-  .lkico path, .lkico line { fill:none; stroke:var(--dim); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .lkico path, .lkico line { fill:none; stroke:#c2cad5; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .lkico .lk-whole { display:none; }
-  .linkbtn.on { border-color:#dfe3ea; background:#12151b; }
-  .linkbtn.on .lkico { filter:drop-shadow(0 0 3px rgba(255,255,255,.65)); }
-  .linkbtn.on .lkico path, .linkbtn.on .lkico line { stroke:#f2f4f8; }
+  .linkbtn.on { border-color:#fff0bd; background:#292317; box-shadow:0 0 0 1px rgba(255,223,139,.42), 0 0 9px rgba(255,220,126,.78), inset 0 0 7px rgba(255,235,177,.3); }
+  .linkbtn.on .lkico { filter:drop-shadow(0 0 3px rgba(255,255,255,.95)) drop-shadow(0 0 6px rgba(255,220,126,.9)); }
+  .linkbtn.on .lkico path, .linkbtn.on .lkico line { stroke:#fffdf1; }
   .linkbtn.on .lkico .lk-broken { display:none; }
   .linkbtn.on .lkico .lk-whole  { display:inline; }
   /* emuMic (mic modeling), preamps 5-12 (EMU button is Mic-mode-gated) */

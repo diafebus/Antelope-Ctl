@@ -32,6 +32,7 @@ tools/*_out.txt
 
 # Local WebUI design references; they are not application assets.
 /webui/ideas/
+/webui/examples/
 
 # For other query that aren't necessarily related or relevant to the main repository
 sidejob/

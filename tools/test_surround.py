@@ -417,6 +417,19 @@ class SurroundCommandTests(unittest.TestCase):
         self.assertEqual(packet[19:135], bytes(expected))
         self.assertEqual(packet[135:], bytes(185))
 
+    def test_speaker_builder_allows_one_graph_point_frequency_gain_pair(self):
+        body = bytearray(304)
+        packet = protocol.build_surround_speaker_eq_command(
+            self.profile, body, speaker=0, band=2,
+            changes={"frequency": 1800, "gain_raw": -125},
+            allow_experimental=True)
+
+        band_offset = 19 + 4 + 2 * 7
+        self.assertEqual(packet[band_offset:band_offset + 2],
+                         (1800).to_bytes(2, "little"))
+        self.assertEqual(packet[band_offset + 4:band_offset + 6],
+                         (-125).to_bytes(2, "little", signed=True))
+
     def test_speaker_reset_changes_eq_fields_and_preserves_modes(self):
         body = bytearray((index * 3) & 0xFF for index in range(304))
         body[:4] = bytes((0xA1, 0xB2, 0xC3, 0xD4))

@@ -1158,7 +1158,8 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
 
     The 0x87/0xea frame is a complete speaker-strip state packet.  The
     readback exposes the 116-byte strip body, so this helper copies that body
-    into the frame and changes at most one EQ field.  The candidate head holds
+    into the frame and changes one EQ field, or the frequency/gain pair from a
+    direct graph-point drag.  The candidate head holds
     delay/level/phase bytes, while the separate head-write helper handles those
     fields.  Experimental profile contracts still require the explicit
     ``allow_experimental=True`` opt-in.
@@ -1210,8 +1211,9 @@ def build_surround_speaker_eq_command(profile: dict, readback_body: bytes,
     if not 0 <= int(band) < band_count:
         raise ValueError(f'surround EQ band {band} is outside 0..{band_count - 1}')
     changes = dict(changes or {})
-    if len(changes) > 1:
-        raise ValueError('the experimental self-test changes one EQ field at a time')
+    if len(changes) > 1 and set(changes) != {'frequency', 'gain_raw'}:
+        raise ValueError(
+            'EQ changes one field at a time except for a frequency/gain graph point')
 
     size = _as_int(profile['transport']['report_size'])
     if (payload_offset < 0 or payload_offset + record_size > size

@@ -562,6 +562,9 @@ function wirePrecisionRange(input) {
   input.dataset.precisionWired = '1';
   const lo = +input.min, hi = +input.max;
   const step = Number(input.step) > 0 ? Number(input.step) : 1;
+  const configuredPixels = Number(input.dataset.precisionDragPixels);
+  const dragPixels = Number.isFinite(configuredPixels) && configuredPixels > 0
+    ? configuredPixels : KNOB_DRAG_PIXELS;
   let dragging = false, moved = false, startY = 0, startValue = 0, pid = null;
   const clamp = value => {
     const snapped = lo + Math.round((value - lo) / step) * step;
@@ -570,9 +573,9 @@ function wirePrecisionRange(input) {
   const logarithmic = input.dataset.logarithmic === 'true'
     && lo > 0 && hi > lo;
   const dragValue = (value, dy) => {
-    if (!logarithmic) return value + dy * ((hi - lo) / KNOB_DRAG_PIXELS);
+    if (!logarithmic) return value + dy * ((hi - lo) / dragPixels);
     const logRange = Math.log(hi) - Math.log(lo);
-    return Math.exp(Math.log(value) + dy * logRange / KNOB_DRAG_PIXELS);
+    return Math.exp(Math.log(value) + dy * logRange / dragPixels);
   };
   const emit = type => input.dispatchEvent(new Event(type, {bubbles: true}));
   const finish = commit => {
@@ -603,7 +606,9 @@ function wirePrecisionRange(input) {
   input.addEventListener('pointercancel', () => finish(true));
   input.addEventListener('lostpointercapture', () => finish(true));
   input.addEventListener('wheel', e => {
+    if (!input.matches(':hover')) return;
     e.preventDefault();
+    e.stopPropagation();
     input.value = clamp(+input.value - Math.sign(e.deltaY) * step);
     emit('input'); emit('change');
   }, {passive: false});

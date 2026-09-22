@@ -1863,6 +1863,14 @@ class SurroundEQChange(BaseModel):
     value: float
 
 
+class SurroundEQPointChange(BaseModel):
+    """The two EQ coordinates changed together by graph-point dragging."""
+    speaker: int
+    band: int                  # 0-based EQ band index
+    frequency: float
+    gain: float
+
+
 class SurroundBassChange(BaseModel):
     channel: int               # 0-based Bass Management block slot
     field: str                 # one profile-declared block/global field
@@ -2354,6 +2362,50 @@ def api_surround_eq(change: SurroundEQChange):
         "band": change.band,
         "parameter": parameter,
         "value": change.value,
+    }
+
+
+@app.post("/api/surround/eq/point")
+def api_surround_eq_point(change: SurroundEQPointChange):
+    """Queue the bounded frequency and gain update from one EQ graph drag."""
+    if not DEV.surround_available:
+        return _bad("surround state is not safely mapped for this profile")
+    eq_write = DEV.surround_json()["write"].get("eq", {})
+    if not eq_write.get("enabled"):
+        return _bad("surround EQ writes are not authorized for this profile")
+    if not 0 <= change.speaker < DEV.surround_speaker_count:
+        return _bad(
+            f"speaker {change.speaker} out of range "
+            f"0..{DEV.surround_speaker_count - 1}")
+    band_count = int(eq_write.get("band_count", 16))
+    if not 0 <= change.band < band_count:
+        return _bad(f"band {change.band} out of range 0..{band_count - 1}")
+    try:
+        frequency_raw, frequency_field = _surround_eq_raw_value(
+            PROFILE, "frequency", change.frequency)
+        gain_raw, gain_field = _surround_eq_raw_value(
+            PROFILE, "gain", change.gain)
+    except (KeyError, TypeError, ValueError) as exc:
+        return _bad(str(exc))
+
+    def do(t):
+        body = DEV._surround_speaker_body_for_write(t, change.speaker)
+        packet = proto.build_surround_speaker_eq_command(
+            PROFILE, body, change.speaker, change.band,
+            {frequency_field: frequency_raw, gain_field: gain_raw},
+            allow_experimental=True)
+        t.write(packet)
+        DEV._cache_surround_speaker_packet(change.speaker, packet)
+
+    DEV.submit(do)
+    return {
+        "ok": True,
+        "queued": True,
+        "experimental": bool(eq_write.get("experimental", False)),
+        "speaker": change.speaker,
+        "band": change.band,
+        "frequency": change.frequency,
+        "gain": change.gain,
     }
 
 

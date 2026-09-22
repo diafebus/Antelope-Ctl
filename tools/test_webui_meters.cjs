@@ -19,6 +19,15 @@ assert.match(surroundCss, /\.surround-eq-legend/);
 assert.match(surroundCss, /\.surround-eq-reset \{[^}]*flex:0 0 auto;[^}]*width:max-content/);
 assert.match(surroundCss, /\.surround-eq-number-row/);
 assert.match(surroundCss, /\.surround-eq-unit/);
+assert.match(surroundCss, /\.surround-global-body \{ display:grid; grid-template-columns:minmax\(0,1fr\) minmax\(310px,.8fr\)/);
+assert.match(surroundCss, /\.surround-global-controlbox \{ display:grid; grid-template-rows:auto auto auto/);
+assert.match(surroundCss, /\.surround-speaker-button-group \{ display:grid; grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+assert.match(surroundCss, /\.surround-speaker-map \{ display:grid; grid-template-columns:repeat\(8,minmax\(42px,1fr\)\)/);
+assert.match(surroundCss, /\.surround-speaker-node\.selected \{[^}]*box-shadow:/);
+assert.match(surroundCss, /\.bass-fader-number \{ border:1px solid var\(--accent\)/);
+assert.match(surroundCss, /\.surround-monitor-dial \{ width:42px; height:42px/);
+assert.match(surroundCss, /\.surround-speaker-toggle\.on \{[^}]*box-shadow:/);
+assert.match(surroundCss, /\.surround-bass-open \{ flex:0 0 auto; width:auto; min-width:50px/);
 assert.match(surroundCss, /\.bass-board \{/);
 assert.match(surroundCss, /\.bass-group-lfe \{[^}]*--bass-color/);
 assert.match(surroundCss, /\.bass-strip::before/);
@@ -56,7 +65,7 @@ assert.match(js, /const saved = localStorage\.getItem\(key\);[\s\S]*saved === '1
 assert.match(js, /selectMixer\(initial, !!routeMix \|\| !!selector \|\| hasSurfaceSelection\)/);
 assert.match(js, /function buildSurround\(\)/);
 assert.match(js, /const SURROUND_FORMAT_OPTIONS = \[/);
-assert.match(js, /function surroundEqGraph\(\w+\)/);
+assert.match(js, /function surroundEqGraph\(\w+, writable = false\)/);
 assert.match(js, /const maxGain = 18;/);
 assert.match(js, /function surroundEqGrid\(speaker(?:, writable = false)?\)/);
 assert.match(js, /function surroundEqSigma\(q\)/);
@@ -65,16 +74,36 @@ assert.match(js, /function surroundEqDefaultValue\(input/);
 assert.match(js, /data-surround-eq-number/);
 assert.match(js, /function surroundEqSnap\(value/);
 assert.match(js, /function postSurroundEqInput\(input\)/);
+assert.match(js, /function initSurroundEqGraphControls\(host\)/);
+assert.match(js, /data-surround-eq-point/);
+assert.match(js, /\/api\/surround\/eq\/point/);
+assert.match(js, /wheel over a point adjusts Q/);
+assert.match(js, /wheelRemainder/);
+assert.match(js, /wheelCommitTimer/);
 assert.match(js, /function surroundSpeakerHeadControl\(/);
 assert.match(js, /function surroundSpeakerBypassControl\(/);
+assert.match(js, /function surroundSpeakerOverview\(data\)/);
+assert.match(js, /data-surround-speaker-select/);
+assert.match(js, /class="mixer-knob surround-monitor-dial"/);
+assert.match(js, /class="btn surround-bass-open"/);
+assert.match(js, /function beginSurroundBassFaderEdit\(readout\)/);
+assert.match(js, /data-bass-fader-number/);
+assert.match(js, /const trackHandle = 20/);
+assert.match(js, /art\.style\.top/);
 assert.match(js, /data-surround-speaker-head-toggle/);
 assert.match(js, /\/api\/surround\/speaker/);
+assert.match(js, /input\.dataset\.surroundSpeakerHeadField !== 'level_db'[\s\S]*input\.value = '0'[\s\S]*dispatchEvent\(new Event\('change'/);
+assert.match(js, /function initSurroundGlobalControls\(host\)[\s\S]*wirePrecisionRange\(input\)/);
+assert.match(js, /data-precision-drag-pixels="\$\{field === 'level_db' \? 760 : 40\}"/);
+assert.match(js, /data-precision-drag-pixels="\$\{field === 'level_db' \? 760 : 1000\}"/);
 const speakerHeadInitStart = js.indexOf('function initSurroundSpeakerHeadControls');
 const speakerHeadInitEnd = js.indexOf('function postSurroundSpeakerHeadInput', speakerHeadInitStart);
 assert.ok(speakerHeadInitStart >= 0 && speakerHeadInitEnd > speakerHeadInitStart);
-assert.doesNotMatch(js.slice(speakerHeadInitStart, speakerHeadInitEnd), /wirePrecisionRange\s*\(/);
+assert.match(js.slice(speakerHeadInitStart, speakerHeadInitEnd), /wirePrecisionRange\(input\)/);
 assert.match(js, /function openSurroundBassWindow\(\)/);
 assert.match(js, /window\.open\('', 'antelopeBassManagement'/);
+assert.match(js, /surround\.css\?v=surround-controls-v11/);
+assert.match(js, /addEventListener\('load', repaintFaders/);
 assert.match(js, /data-logarithmic="true"/);
 assert.match(js, /Math\.exp\(Math\.log\(value\)/);
 assert.match(js, /input\.addEventListener\('dblclick'/);
@@ -207,6 +236,9 @@ assert.match(surroundHTML, /srrndeq-bttn-belldown\.svg/);
 assert.match(surroundHTML, /srrndeq-bttn-flat\.svg/);
 assert.match(surroundHTML, /srrndeq-bttn-bellup\.svg/);
 assert.match(surroundHTML, /16-band EQ · single view/);
+assert.match(surroundHTML, /class="surround-speaker-button-group"[\s\S]*Phase invert[\s\S]*Bypass processing/);
+assert.match(surroundHTML, /class="surround-eq-actions"[\s\S]*data-surround-eq-reset/);
+assert.doesNotMatch(surroundHTML, /data-surround-speaker>/);
 assert.match(surroundHTML, /<strong>1<\/strong>/);
 assert.doesNotMatch(surroundHTML, /<strong>BAND /);
 assert.match(surroundHTML, /<span>F<\/span><span>G<\/span><span>Q<\/span>/);
@@ -249,6 +281,8 @@ const graphHTML = surroundContext.surroundEqGraph({bands: graphBands});
 assert.match(graphHTML, /Approximate EQ response from readback/);
 assert.match(graphHTML, /surround-eq-area" d="M 42 /);
 assert.match(graphHTML, / L 948 [^ ]+ L 42 /);
+const writableGraphHTML = surroundContext.surroundEqGraph({index: 0, bands: graphBands}, true);
+assert.equal((writableGraphHTML.match(/data-surround-eq-point/g) || []).length, 2);
 const resetPreset = {
   frequency_hz: [30, 45, 90, 160, 350, 650, 1100, 1700,
     2500, 3500, 4750, 6250, 8250, 10750, 13000, 15000],
@@ -271,7 +305,7 @@ assert.equal(surroundContext.surroundEqSnap(-1, 20, 20000, 1), 20);
 const writableSurroundHTML = surroundContext.surroundSpeakerHTML({
   ...surroundData, write: {enabled: false, eq: {enabled: true, reset: resetPreset}},
 });
-assert.match(writableSurroundHTML, /writable · one field at a time/);
+assert.match(writableSurroundHTML, /writable · drag writes frequency \+ gain/);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-input/g) || []).length, 48);
 assert.equal((writableSurroundHTML.match(/class="mixer-readout surround-eq-number"/g) || []).length, 48);
 assert.equal((writableSurroundHTML.match(/data-surround-eq-number/g) || []).length, 48);
@@ -325,6 +359,10 @@ assert.match(globalHTML, /value="9\.1\.6" disabled/);
 assert.equal((globalHTML.match(/data-surround-bass-open/g) || []).length, 1);
 assert.doesNotMatch(globalHTML, /data-surround-bass-modal/);
 assert.match(globalHTML, /Bass management/);
+assert.match(globalHTML, /class="surround-global-controlbox"[\s\S]*data-surround-bass-open/);
+assert.equal((globalHTML.match(/data-surround-speaker-select/g) || []).length, 16);
+assert.match(globalHTML, /surround-speaker-node selected/);
+assert.match(globalHTML, /B bypass · M mute · D dim/);
 const bass20HTML = surroundContext.surroundBassPopupHTML(surroundData);
 assert.match(bass20HTML, /class="surround-bass-popup-page"/);
 assert.equal((bass20HTML.match(/class="surround-bass-dialog"/g) || []).length, 1);
@@ -440,10 +478,15 @@ const writableBass20Data = {
 const writableBass20HTML = surroundContext.surroundBassPopupHTML(writableBass20Data);
 assert.match(writableBass20HTML, /2\.0 · 2 strips/);
 assert.doesNotMatch(writableBass20HTML, /data-bass-field="lp_cutoff_hz"[^>]* disabled/);
+assert.match(writableBass20HTML, /data-bass-fader[^>]*data-precision-drag-pixels="760"/);
+assert.match(writableBass20HTML, /data-bass-fader-number/);
 assert.match(writableBass20HTML, /data-bass-field="hp_filter_type"/);
 assert.match(writableBass20HTML, /data-bass-field="lp_filter_type"/);
 assert.equal(surroundContext.surroundBassInputValue({
   dataset: {bassField: 'fader_db'}, value: '3.5',
+}), 3.5);
+assert.equal(surroundContext.surroundBassFaderSnap('3.46', {
+  min: '-60', max: '16', step: '0.1',
 }), 3.5);
 assert.equal(surroundContext.surroundBassInputValue({
   dataset: {bassField: 'hp_filter_type', bassFilterType: 'true'},
@@ -465,7 +508,7 @@ const bassFaderStrip = {querySelector: selector => {
   return null;
 }};
 surroundContext.paintSurroundBassFader(bassFaderStrip, -60);
-assert.equal(bassFaderStyle['--fader-pos'], '89.0px');
+assert.equal(bassFaderStyle['--fader-pos'], '104.0px');
 const stable20 = surroundContext.surroundBassChannels({
   ...writableBass20Data,
   global: {

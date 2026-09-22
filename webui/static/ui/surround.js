@@ -37,15 +37,34 @@ function surroundSpeaker(index, data = SURROUND) {
   };
 }
 
-function surroundMask(label, mask, data) {
-  const bits = Array.from({length: data.speaker_count || 16}, (_, index) => {
+function surroundSpeakerOverview(data) {
+  const global = data?.global || {};
+  const count = Number(data?.speaker_count || data?.speakers?.length || 16);
+  const flag = (mask, index) => (Number(mask || 0) & (1 << index)) !== 0;
+  const nodes = Array.from({length: count}, (_, index) => {
     const speaker = surroundSpeaker(index, data);
-    const on = (Number(mask || 0) & (1 << index)) !== 0;
-    return `<span class="surround-mask-bit${on ? ' on' : ''}" title="${surroundEscape(label)} bit ${index}">
-      <b>${surroundEscape(speaker.label)}</b><i>${on ? 'ON' : 'OFF'}</i></span>`;
+    const active = speaker.active !== false;
+    const selected = index === SURROUND_SPEAKER;
+    const bypassed = speaker.bypass === true;
+    const muted = flag(global.mute_mask, index);
+    const dimmed = flag(global.dim_mask, index);
+    const label = speaker.label || `Speaker ${index + 1}`;
+    const states = `<span class="surround-speaker-flags" aria-label="${surroundEscape(label)} state">
+      <i class="${bypassed ? 'on' : ''}" title="${bypassed ? 'Bypassed' : 'Processing active'}">B</i>
+      <i class="${muted ? 'on' : ''}" title="${muted ? 'Muted' : 'Not muted'}">M</i>
+      <i class="${dimmed ? 'on' : ''}" title="${dimmed ? 'Dimmed' : 'Not dimmed'}">D</i>
+    </span>`;
+    return `<button type="button" class="surround-speaker-node${active ? '' : ' inactive'}${selected ? ' selected' : ''}"
+      data-surround-speaker-select="${index}"${active ? '' : ' disabled'}
+      title="${surroundEscape(label)}${active ? ' · select speaker' : ' · inactive for this layout'}"
+      aria-pressed="${selected ? 'true' : 'false'}" aria-label="${surroundEscape(label)}${active ? '' : ', inactive'}">
+      <b>${index + 1}</b><strong>${surroundEscape(label)}</strong>${states}</button>`;
   }).join('');
-  return `<div class="surround-mask"><h4>${surroundEscape(label)} <span>${surroundHex(mask)}</span></h4>
-    <div class="surround-mask-bits">${bits}</div></div>`;
+  return `<section class="surround-speaker-overview" aria-label="Surround speaker overview">
+    <div class="surround-overview-head"><strong>Speakers</strong>
+      <span class="surround-meta">B bypass · M mute · D dim</span></div>
+    <div class="surround-speaker-map">${nodes}</div>
+  </section>`;
 }
 
 function surroundRangeInput(field, label, value, range, unit, writable, step = 0.1) {
@@ -54,12 +73,19 @@ function surroundRangeInput(field, label, value, range, unit, writable, step = 0
   const current = Number.isFinite(Number(value)) ? Number(value) : fallback;
   const display = Number.isFinite(Number(value))
     ? `${surroundNumber(value)} ${unit}` : 'waiting';
-  return `<label class="surround-control">
-    <span class="surround-control-label">${surroundEscape(label)}</span>
-    <input type="range" data-surround-global="${field}" min="${min}" max="${max}"
-      step="${step}" value="${current}"${writable ? '' : ' disabled'}>
-    <span class="surround-readout" data-surround-value="${field}">${display}</span>
-  </label>`;
+  const angle = surroundKnobAngle(current, min, max);
+  return `<div class="surround-monitor-knob">
+    <span class="surround-monitor-label">${surroundEscape(label)}</span>
+    <output class="mixer-readout surround-monitor-readout" data-surround-value="${field}">${display}</output>
+    <div class="mixer-knob surround-monitor-dial" title="${surroundEscape(label)} · drag up/down for precision">
+      <i style="transform:translateX(-50%) rotate(${angle}deg)"></i>
+      <input type="range" data-surround-global="${field}" min="${min}" max="${max}"
+        step="${step}" value="${current}"
+        data-precision-drag-pixels="${field === 'level_db' ? 760 : 40}"${writable ? '' : ' disabled'}
+        aria-label="${surroundEscape(label)}">
+    </div>
+    <span class="surround-readonly">${writable ? 'drag ↑↓ · wheel' : 'read-only'}</span>
+  </div>`;
 }
 
 const SURROUND_FORMAT_CHANNEL_ORDER = {
@@ -292,8 +318,13 @@ function surroundBassFader(channel, bassWrite) {
   const soloWritable = surroundBassFieldWritable(bassWrite, 'fader_solo');
   const soloOn = !!channel.block.fader_solo;
   return '<div class="bass-mixer-section">'
-    + '<output class="mxval bass-fader-value" data-bass-readout>'
+    + '<output class="mxval bass-fader-value" data-bass-readout data-bass-fader-readout'
+    + ' title="' + (faderWritable ? 'Double-click to enter an exact dB value' : 'Read-only') + '">'
     + surroundBassValue(fader, 1) + 'dB</output>'
+    + '<input class="mxval bass-fader-value bass-fader-number" type="number"'
+    + ' data-bass-fader-number min="' + min + '" max="' + max + '" step="0.1"'
+    + ' value="' + rangeValue + '" hidden aria-label="'
+    + surroundEscape(channel.label) + ' bass-management fader dB value">'
     + '<div class="mixer-fader-row bass-fader-row">'
     + '<div class="mixer-fader-well">'
     + '<span class="mixer-fader-thumb" aria-hidden="true">'
@@ -302,6 +333,7 @@ function surroundBassFader(channel, bassWrite) {
     + '<input class="mixer-fader" type="range" data-fader data-bass-fader data-bass-input'
     + ' data-bass-field="fader_db" data-bass-slot="' + channel.slot + '"'
     + ' min="' + min + '" max="' + max + '" step="0.1" value="' + rangeValue
+    + '" data-precision-drag-pixels="760'
     + '"' + (faderWritable ? '' : ' disabled') + ' aria-label="'
     + surroundEscape(channel.label) + ' bass-management fader">'
     + '</div>'
@@ -426,8 +458,11 @@ function surroundBassPaint(input) {
   if (field === 'fader_db') {
     const value = Number(input.value);
     const output = input.closest('.bass-mixer-section')?.querySelector(
-      '[data-bass-readout]');
+      '[data-bass-fader-readout]');
     if (output) output.textContent = `${surroundBassValue(value, 1)}dB`;
+    const number = input.closest('.bass-mixer-section')?.querySelector(
+      '[data-bass-fader-number]');
+    if (number?.hidden) number.value = String(value);
     paintSurroundBassFader(input.closest('.bass-strip'), input.value);
     return;
   }
@@ -452,15 +487,24 @@ function paintSurroundBassFader(strip, value) {
   if (!strip) return;
   const fader = strip.querySelector('[data-bass-fader]');
   const thumb = strip.querySelector('.mixer-fader-thumb');
+  const art = strip.querySelector('.mixer-fader-art');
   if (!fader || !thumb) return;
   // The native range is inset by 4px on both ends of the well. Use its
   // actual client height so the artwork follows the same travel as the
   // hidden input, rather than the larger containing well.
   const span = fader.clientHeight || 114;
   const fraction = surroundBassFaderFraction(value, fader.min, fader.max);
-  const handle = 50;
-  const pos = handle / 2 + fraction * Math.max(0, span - handle);
+  // Match the native range thumb's 20 px travel rather than compressing the
+  // visible artwork into a much shorter 50 px handle range.
+  const trackHandle = 20;
+  const pos = trackHandle / 2 + fraction * Math.max(0, span - trackHandle);
   thumb.style.setProperty('--fader-pos', pos.toFixed(1) + 'px');
+  // Set the actual artwork position as well as the CSS variable. This keeps
+  // newly opened popup windows accurate even if their stylesheet settles a
+  // frame after the first paint.
+  if (!art) return;
+  const artHeight = art.getBoundingClientRect().height || 66;
+  art.style.top = (4 + pos - artHeight / 2).toFixed(1) + 'px';
 }
 
 function surroundBassInputValue(input) {
@@ -484,6 +528,43 @@ function postSurroundBassInput(input) {
   });
 }
 
+function surroundBassFaderSnap(value, fader) {
+  const number = Number(value), min = Number(fader?.min), max = Number(fader?.max);
+  const step = Number(fader?.step) || 0.1;
+  if (![number, min, max, step].every(Number.isFinite) || step <= 0 || max < min) {
+    return null;
+  }
+  const snapped = min + Math.round((number - min) / step) * step;
+  return Math.max(min, Math.min(max, snapped));
+}
+
+function beginSurroundBassFaderEdit(readout) {
+  const section = readout?.closest('.bass-mixer-section');
+  const fader = section?.querySelector('[data-bass-fader]');
+  const number = section?.querySelector('[data-bass-fader-number]');
+  if (!fader || !number || fader.disabled) return;
+  readout.hidden = true;
+  number.hidden = false;
+  number.value = fader.value;
+  number.focus();
+  number.select();
+}
+
+function finishSurroundBassFaderEdit(number, commit = true) {
+  const section = number?.closest('.bass-mixer-section');
+  const fader = section?.querySelector('[data-bass-fader]');
+  const readout = section?.querySelector('[data-bass-fader-readout]');
+  if (!fader || !readout) return;
+  const value = surroundBassFaderSnap(number.value, fader);
+  if (value != null) {
+    fader.value = String(value);
+    surroundBassPaint(fader);
+    if (commit) postSurroundBassInput(fader);
+  }
+  number.hidden = true;
+  readout.hidden = false;
+}
+
 function initSurroundBassControls(host) {
   host.querySelectorAll('[data-bass-knob]').forEach(input => {
     if (!input.disabled && typeof wirePrecisionRange === 'function') {
@@ -491,16 +572,25 @@ function initSurroundBassControls(host) {
     }
     surroundBassPaint(input);
   });
-  const repaintFaders = () => host.querySelectorAll('[data-bass-fader]').forEach(
-    input => surroundBassPaint(input));
+  const repaintFaders = () => host.querySelectorAll('[data-bass-fader]').forEach(input => {
+    if (!input.disabled && typeof wirePrecisionRange === 'function') {
+      wirePrecisionRange(input);
+    }
+    surroundBassPaint(input);
+  });
   repaintFaders();
   // A newly opened popup can paint once before its external stylesheet has
   // produced the final layout. Repaint on the next frame so the thumb starts
   // at the position represented by the restored dB value.
   const view = host.ownerDocument?.defaultView;
   if (typeof view?.requestAnimationFrame === 'function') {
-    view.requestAnimationFrame(repaintFaders);
+    view.requestAnimationFrame(() => view.requestAnimationFrame(repaintFaders));
   }
+  // The popup's stylesheet can finish after its first layout frame.  Repaint
+  // once it loads as well, so the artwork uses the final (not zero-height)
+  // range rail instead of merely the correct numeric readout.
+  host.ownerDocument?.querySelector('link[href*="surround.css"]')
+    ?.addEventListener('load', repaintFaders, {once: true});
 }
 
 function surroundBassWindowIsOpen() {
@@ -521,8 +611,28 @@ function initSurroundBassPopup(popup) {
       if (bass) surroundBassPaint(bass);
     });
     host.addEventListener('change', event => {
+      const number = event.target.closest?.('[data-bass-fader-number]');
+      if (number) {
+        finishSurroundBassFaderEdit(number);
+        return;
+      }
       const bass = event.target.closest?.('[data-bass-input]');
       if (bass && !bass.disabled) postSurroundBassInput(bass);
+    });
+    host.addEventListener('dblclick', event => {
+      const readout = event.target.closest?.('[data-bass-fader-readout]');
+      if (readout) beginSurroundBassFaderEdit(readout);
+    });
+    host.addEventListener('keydown', event => {
+      const number = event.target.closest?.('[data-bass-fader-number]');
+      if (!number) return;
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        finishSurroundBassFaderEdit(number);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        finishSurroundBassFaderEdit(number, false);
+      }
     });
     host.addEventListener('click', event => {
       const close = event.target.closest?.('[data-surround-bass-close]');
@@ -577,7 +687,7 @@ function openSurroundBassWindow() {
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
     + '<title>Bass Management — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css">'
-    + '<link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v3">'
+    + '<link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v11">'
     + '</head><body class="bass-popup-body"></body></html>');
   d.close();
   d.body.innerHTML = surroundBassPopupHTML(SURROUND);
@@ -628,34 +738,35 @@ function surroundGlobalHTML(data) {
     <div class="surround-card-hd"><div><h3>Global monitor</h3>
       <p class="surround-meta">category 0x1b · ${surroundEscape(flags)}</p></div>
       <span class="surround-state">${global ? surroundEscape(format) : 'WAITING'}</span></div>
-    <div class="surround-controls">
-      <label class="surround-control surround-format-control"><span class="surround-control-label">Format</span>
-        <select data-surround-format aria-label="Surround format" title="${surroundEscape(formatWrite.note || 'Only 2.0 and 2.1 are enabled for normal writes')}"${formatWrite.enabled ? '' : ' disabled'}>${formatOptions}</select>
-        <span class="surround-readonly">${formatWrite.enabled ? '2.0 / 2.1 writable' : 'read-only'}</span></label>
-      ${surroundRangeInput('delay_ms', 'Global delay', global?.global_delay_ms,
-        delayRange, 'ms', writable, Number(write.delay_step_ms) || 0.1)}
-      ${surroundRangeInput('level_db', 'Global level', global?.level_db,
-        levelRange, 'dB', writable, Number(write.level_step_db) || 0.1)}
-      <label class="surround-control"><span class="surround-control-label">EQ position</span>
-        <select data-surround-eq-position aria-label="Surround EQ position"
-          title="${surroundEscape(eqPositionWrite.note || 'EQ PRE/POST write status unavailable')}"
-          ${eqPositionWritable ? '' : ' disabled'}>${eqPositionOptions}</select>
-        <span class="surround-readonly">${eqPositionWritable
-          ? (eqPositionWrite.experimental ? 'experimental writable' : 'writable')
-          : 'read-only'}</span></label>
+    <div class="surround-global-body">
+      <div class="surround-global-overview">
+        <label class="surround-format-picker"><span>Format</span>
+          <select data-surround-format aria-label="Surround format" title="${surroundEscape(formatWrite.note || 'Only 2.0 and 2.1 are enabled for normal writes')}"${formatWrite.enabled ? '' : ' disabled'}>${formatOptions}</select>
+          <small>${formatWrite.enabled ? '2.0 / 2.1 writable' : 'read-only'}</small></label>
+        ${surroundSpeakerOverview(data)}
+      </div>
+      <div class="surround-global-rail">
+        <section class="surround-global-controlbox">
+          <div class="surround-global-knob-row">
+            ${surroundRangeInput('delay_ms', 'Global delay', global?.global_delay_ms,
+              delayRange, 'ms', writable, Number(write.delay_step_ms) || 0.1)}
+            ${surroundRangeInput('level_db', 'Global level', global?.level_db,
+              levelRange, 'dB', writable, Number(write.level_step_db) || 0.1)}
+          </div>
+          <label class="surround-monitor-select"><span class="surround-monitor-label">EQ position</span>
+            <select data-surround-eq-position aria-label="Surround EQ position"
+              title="${surroundEscape(eqPositionWrite.note || 'EQ PRE/POST write status unavailable')}"
+              ${eqPositionWritable ? '' : ' disabled'}>${eqPositionOptions}</select>
+            <span class="surround-readonly">${eqPositionWritable
+              ? (eqPositionWrite.experimental ? 'experimental writable' : 'writable')
+              : 'read-only'}</span></label>
+          <div class="surround-global-bass"><span>Bass management <i>${global?.bass_mgmt_on ? 'ON' : 'OFF'}</i></span>
+            <button class="btn surround-bass-open" type="button" data-surround-bass-open aria-haspopup="dialog" aria-expanded="${surroundBassWindowIsOpen() ? 'true' : 'false'}">OPEN</button></div>
+        </section>
+      </div>
     </div>
     <p class="surround-note">${surroundEscape(write.note ||
       'Only the verified global delay and level path can be written.')}</p>
-    <div class="surround-masks">
-      ${surroundMask('Bypass', global?.bypass_mask, data)}
-      ${surroundMask('Mute', global?.mute_mask, data)}
-      ${surroundMask('Dim', global?.dim_mask, data)}
-    </div>
-    <div class="surround-bass-launch">
-      <div><h4>Bass management</h4>
-        <span class="surround-meta">${global?.bass_mgmt_on ? 'ON' : 'OFF'} · decoded blocks</span></div>
-      <button class="btn" type="button" data-surround-bass-open aria-haspopup="dialog" aria-expanded="${surroundBassWindowIsOpen() ? 'true' : 'false'}">OPEN</button>
-    </div>
   </section>`;
 }
 
@@ -680,14 +791,21 @@ function surroundSpeakerHeadControl(field, label, speaker, headWrite) {
   const status = writable
     ? (headWrite?.experimental ? 'experimental writable' : 'writable')
     : (speaker?.head_readback ? 'read-only' : 'readback unavailable');
-  return `<label class="surround-control${writable ? '' : ' surround-disabled'}">
-    <span class="surround-control-label">${surroundEscape(label)}</span>
-    <input type="range" data-surround-speaker-head-input
-      data-surround-speaker-head-field="${surroundEscape(field)}"
-      data-surround-speaker-head="${speaker?.index ?? 0}" min="${min}" max="${max}"
-      step="${step}" value="${current}"${writable ? '' : ' disabled'} aria-label="${surroundEscape(label)}">
-    <span class="surround-readout" data-surround-head-value="${surroundEscape(field)}">${display}</span>
-    <span class="surround-readonly">${status}</span></label>`;
+  const angle = surroundKnobAngle(current, min, max);
+  const gesture = field === 'level_db' ? ' · double-click = 0.0 dB' : '';
+  return `<div class="surround-monitor-knob${writable ? '' : ' surround-disabled'}">
+    <span class="surround-monitor-label">${surroundEscape(label)}</span>
+    <output class="mixer-readout surround-monitor-readout" data-surround-head-value="${surroundEscape(field)}">${display}</output>
+    <div class="mixer-knob surround-monitor-dial" title="${surroundEscape(label)} · drag up/down for precision${gesture}">
+      <i style="transform:translateX(-50%) rotate(${angle}deg)"></i>
+      <input type="range" data-surround-speaker-head-input
+        data-surround-speaker-head-field="${surroundEscape(field)}"
+        data-surround-speaker-head="${speaker?.index ?? 0}" min="${min}" max="${max}"
+        step="${step}" value="${current}"
+        data-precision-drag-pixels="${field === 'level_db' ? 760 : 1000}"${writable ? '' : ' disabled'} aria-label="${surroundEscape(label)}">
+    </div>
+    <span class="surround-readonly">${status}${writable ? ' · drag ↑↓ · wheel' : ''}</span>
+  </div>`;
 }
 
 function surroundSpeakerPhaseControl(speaker, headWrite) {
@@ -698,8 +816,8 @@ function surroundSpeakerPhaseControl(speaker, headWrite) {
     && Array.isArray(headWrite.fields)
     && headWrite.fields.includes('phase_invert');
   const state = available ? (head.phase_invert ? 'ON' : 'OFF') : 'readback unavailable';
-  return `<label class="surround-control${writable ? '' : ' surround-disabled'}">
-    <span class="surround-control-label">Phase invert</span>
+  return `<div class="surround-monitor-toggle${writable ? '' : ' surround-disabled'}">
+    <span class="surround-monitor-label">Phase invert</span>
     <button type="button" class="btn surround-speaker-toggle surround-phase-toggle${head.phase_invert ? ' on' : ''}"
       data-surround-speaker-head-toggle data-surround-speaker-head-boolean="true"
       data-surround-speaker-head-field="phase_invert"
@@ -708,7 +826,7 @@ function surroundSpeakerPhaseControl(speaker, headWrite) {
       aria-label="Phase invert">${state === 'readback unavailable' ? 'Ø' : state}</button>
     <span class="surround-readonly">${writable
       ? (headWrite?.experimental ? 'experimental writable' : 'writable')
-      : state + ' · read-only'}</span></label>`;
+      : state + ' · read-only'}</span></div>`;
 }
 
 function surroundSpeakerBypassControl(speaker, bypassWrite) {
@@ -718,8 +836,8 @@ function surroundSpeakerBypassControl(speaker, bypassWrite) {
     && Array.isArray(bypassWrite.fields) && bypassWrite.fields.includes('bypass');
   const on = available && speaker.bypass;
   const state = available ? (on ? 'ON' : 'OFF') : 'readback unavailable';
-  return `<label class="surround-control${writable ? '' : ' surround-disabled'}">
-    <span class="surround-control-label">Bypass processing</span>
+  return `<div class="surround-monitor-toggle${writable ? '' : ' surround-disabled'}">
+    <span class="surround-monitor-label">Bypass processing</span>
     <button type="button" class="btn surround-speaker-toggle surround-bypass-toggle${on ? ' on' : ''}"
       data-surround-speaker-bypass data-surround-speaker="${speaker?.index ?? 0}"
       data-surround-speaker-field="bypass" aria-pressed="${on ? 'true' : 'false'}"${writable ? '' : ' disabled'}
@@ -727,7 +845,7 @@ function surroundSpeakerBypassControl(speaker, bypassWrite) {
       title="Bypass all channel processing except level">${state}</button>
     <span class="surround-readonly">${writable
       ? (bypassWrite?.experimental ? 'experimental writable' : 'writable')
-      : state + ' · read-only'}</span></label>`;
+      : state + ' · read-only'}</span></div>`;
 }
 
 function surroundMode(mode) {
@@ -824,7 +942,7 @@ function surroundEqCurvePoints(bands, minFrequency = 20,
   });
 }
 
-function surroundEqGraph(speaker) {
+function surroundEqGraph(speaker, writable = false) {
   const width = 960;
   const height = 250;
   const left = 42;
@@ -882,7 +1000,9 @@ function surroundEqGraph(speaker) {
   const line = surroundGraphPath(curve);
   const area = line + ' L ' + curve[curve.length - 1].x + ' ' + (top + plotHeight)
     + ' L ' + curve[0].x + ' ' + (top + plotHeight) + ' Z';
-  const markers = points.map(point => '<circle cx="' + point.x + '" cy="' + point.y + '" r="4">'
+  const markers = points.map(point => '<circle cx="' + point.x + '" cy="' + point.y + '" r="4"'
+    + (writable ? ' data-surround-eq-point data-surround-eq-speaker="'
+      + speaker.index + '" data-surround-eq-band="' + point.index + '"' : '') + '>'
     + '<title>Band ' + (point.index + 1) + ': '
     + surroundNumber(point.frequency, 0) + ' Hz, '
     + surroundNumber(point.gain, 2) + ' dB, Q '
@@ -895,7 +1015,9 @@ function surroundEqGraph(speaker) {
     + '<path class="surround-eq-line" d="' + line + '" />'
     + '<g class="surround-eq-points">' + markers + '</g>'
     + '</svg>'
-    + '<span class="surround-eq-graph-note">Approximate EQ response from readback · filter shapes follow the selected mode · full 20 Hz–20 kHz display span</span>'
+    + '<span class="surround-eq-graph-note">' + (writable
+      ? 'Drag a point for frequency + gain · wheel over a point adjusts Q · '
+      : '') + 'Approximate EQ response from readback · filter shapes follow the selected mode · full 20 Hz–20 kHz display span</span>'
     + '</div>';
 }
 
@@ -1039,7 +1161,6 @@ function surroundEqGrid(speaker, writable = false) {
 }
 
 function surroundSpeakerHTML(data) {
-  const count = data.speaker_count || data.speakers?.length || 16;
   const speaker = surroundSpeaker(SURROUND_SPEAKER, data);
   const headWrite = data.write?.speaker_head || {};
   const bypassWrite = data.write?.speaker_bypass || {};
@@ -1051,40 +1172,36 @@ function surroundSpeakerHTML(data) {
   const eqResettable = eqWritable
     && Array.isArray(resetPreset?.frequency_hz)
     && resetPreset.frequency_hz.length === speaker.bands.length;
-  const options = Array.from({length: count}, (_, index) => {
-    const item = surroundSpeaker(index, data);
-    return `<option value="${index}"${index === SURROUND_SPEAKER ? ' selected' : ''}>
-      ${surroundEscape(item.label)}</option>`;
-  }).join('');
   const status = speaker.readback ? (speaker.active ? 'ACTIVE' : 'inactive') : 'WAITING';
   return `<section class="surround-card">
     <div class="surround-card-hd"><div><h3>Speaker monitor</h3>
       <p class="surround-meta">category 0x1a · one readback per speaker</p></div>
       <span class="surround-state">${surroundEscape(status)}</span></div>
     <div class="surround-speakerbar">
-      <label>Speaker <select data-surround-speaker>${options}</select></label>
       <span class="surround-speaker-name">${surroundEscape(speaker.label)}</span>
       <span class="surround-meta">${speaker.readback ? `${speaker.bands.length} EQ bands` : 'waiting for readback'}</span>
-      <button class="btn surround-eq-reset" type="button" data-surround-eq-reset
-        data-surround-eq-speaker="${speaker.index}"${eqResettable ? '' : ' disabled'}
-        title="Reset this speaker's EQ to the profile preset">RESET</button>
     </div>
     <div class="surround-controls surround-speaker-controls">
       ${surroundSpeakerHeadControl('delay_ms', 'Speaker delay', speaker, headWrite)}
       ${surroundSpeakerHeadControl('level_db', 'Speaker level', speaker, headWrite)}
-      ${surroundSpeakerPhaseControl(speaker, headWrite)}
-      ${surroundSpeakerBypassControl(speaker, bypassWrite)}
+      <div class="surround-speaker-button-group">
+        ${surroundSpeakerPhaseControl(speaker, headWrite)}
+        ${surroundSpeakerBypassControl(speaker, bypassWrite)}
+      </div>
     </div>
     <div class="surround-eq"><div class="surround-subhd"><h4>16-band EQ · single view</h4>
-      <span class="surround-readonly">${eqWritable
+      <div class="surround-eq-actions"><span class="surround-readonly">${eqWritable
         ? (data.write?.eq?.experimental
-          ? 'experimental write · one field at a time'
-          : 'writable · one field at a time')
-        : 'read-only · filter buttons disabled'}</span></div>
-      ${surroundEqGraph(speaker)}
+          ? 'experimental write · drag writes frequency + gain'
+          : 'writable · drag writes frequency + gain')
+        : 'read-only · filter buttons disabled'}</span>
+        <button class="btn surround-eq-reset" type="button" data-surround-eq-reset
+          data-surround-eq-speaker="${speaker.index}"${eqResettable ? '' : ' disabled'}
+          title="Reset this speaker's EQ to the profile preset">RESET</button></div></div>
+      ${surroundEqGraph(speaker, eqWritable)}
       ${surroundEqGrid(speaker, eqWritable)}</div>
     <p class="surround-note">${eqWritable || headWritable || bypassWritable
-      ? 'EQ changes write one field at a time after a fresh readback. Speaker delay, level, phase invert, and bypass use complete-state read-modify-write paths with an immediate readback comparison when possible.'
+      ? 'EQ knobs write one field at a time; graph drags write frequency and gain together after a fresh readback. Speaker delay, level, phase invert, and bypass use complete-state read-modify-write paths with an immediate readback comparison when possible.'
       : 'The per-speaker 0x87 frame and global bypass mask are decoded for readback. Speaker delay, level, phase, and bypass writes are available only after their supported 2.0/2.1 contracts and fresh readbacks.'}</p>
   </section>`;
 }
@@ -1117,17 +1234,55 @@ function surroundSpeakerHeadPaint(input) {
   if (!input) return;
   const field = input.dataset.surroundSpeakerHeadField;
   const value = Number(input.value);
-  const output = input.closest('.surround-control')?.querySelector(
+  const output = input.closest('.surround-monitor-knob')?.querySelector(
     `[data-surround-head-value="${field}"]`);
   if (output) output.textContent = `${surroundNumber(value, field === 'level_db' ? 1 : 1)} ${field === 'level_db' ? 'dB' : 'ms'}`;
+  const pointer = input.closest('.surround-monitor-dial')?.querySelector('i');
+  if (pointer) pointer.style.transform = 'translateX(-50%) rotate('
+    + surroundKnobAngle(value, +input.min, +input.max) + 'deg)';
+}
+
+function surroundGlobalPaint(input) {
+  if (!input) return;
+  const field = input.dataset.surroundGlobal;
+  const value = Number(input.value);
+  const unit = field === 'delay_ms' ? 'ms' : 'dB';
+  const output = input.closest('.surround-monitor-knob')?.querySelector(
+    `[data-surround-value="${field}"]`);
+  if (output) output.textContent = `${surroundNumber(value)} ${unit}`;
+  const pointer = input.closest('.surround-monitor-dial')?.querySelector('i');
+  if (pointer) pointer.style.transform = 'translateX(-50%) rotate('
+    + surroundKnobAngle(value, +input.min, +input.max) + 'deg)';
 }
 
 function initSurroundSpeakerHeadControls(host) {
   host.querySelectorAll('[data-surround-speaker-head-input]').forEach(input => {
-    // These are real horizontal sliders, unlike the rotary mixer/EQ inputs.
-    // Do not install wirePrecisionRange here: it prevents the native range
-    // interaction and interprets vertical pointer movement as the value.
+    // Relative vertical dragging avoids the native slider's 1:1 pointer jump,
+    // while leaving keyboard changes and the range limits intact.
+    if (!input.disabled && typeof wirePrecisionRange === 'function') {
+      wirePrecisionRange(input);
+    }
     surroundSpeakerHeadPaint(input);
+    if (input.disabled || input.dataset.surroundSpeakerHeadField !== 'level_db') return;
+    input.addEventListener('dblclick', event => {
+      const minimum = Number(input.min);
+      const maximum = Number(input.max);
+      if (!Number.isFinite(minimum) || !Number.isFinite(maximum)
+          || minimum > 0 || maximum < 0) return;
+      event.preventDefault();
+      input.value = '0';
+      surroundSpeakerHeadPaint(input);
+      input.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+  });
+}
+
+function initSurroundGlobalControls(host) {
+  host.querySelectorAll('[data-surround-global]').forEach(input => {
+    if (!input.disabled && typeof wirePrecisionRange === 'function') {
+      wirePrecisionRange(input);
+    }
+    surroundGlobalPaint(input);
   });
 }
 
@@ -1169,6 +1324,164 @@ function postSurroundEqInput(input) {
     band: Number(input.dataset.surroundEqBand),
     parameter: input.dataset.surroundEqField,
     value: Number(input.value),
+  });
+}
+
+function postSurroundEqPoint(speaker, band, frequency, gain) {
+  if (!Number.isInteger(speaker) || !Number.isInteger(band)
+      || !Number.isFinite(frequency) || !Number.isFinite(gain)) return;
+  const localBand = SURROUND?.speakers?.[speaker]?.bands?.[band];
+  if (localBand) {
+    localBand.freq_hz = frequency;
+    localBand.gain_db = gain;
+  }
+  post('/api/surround/eq/point', {speaker, band, frequency, gain});
+}
+
+function surroundEqPointTitle(band, frequency, gain, q) {
+  return 'Band ' + (band + 1) + ': ' + surroundNumber(frequency, 0)
+    + ' Hz, ' + surroundNumber(gain, 2) + ' dB, Q ' + surroundNumber(q, 2);
+}
+
+function surroundEqGraphPaint(svg, host, speaker) {
+  const left = 42, top = 14, plotWidth = 906, plotHeight = 204;
+  const bands = [...svg.querySelectorAll('[data-surround-eq-point]')].map(point => {
+    const band = Number(point.dataset.surroundEqBand);
+    const field = name => host.querySelector('[data-surround-eq-input]'
+      + '[data-surround-eq-speaker="' + speaker + '"]'
+      + '[data-surround-eq-band="' + band + '"]'
+      + '[data-surround-eq-field="' + name + '"]');
+    const frequency = Number(field('frequency')?.value);
+    const gain = Number(field('gain')?.value);
+    const q = Number(field('q')?.value);
+    const mode = Number(SURROUND?.speakers?.[speaker]?.bands?.[band]?.mode);
+    return {index: band, frequency, gain, q, mode};
+  }).filter(item => [item.frequency, item.gain, item.q].every(Number.isFinite));
+  if (!bands.length) return;
+  const curve = surroundEqCurvePoints(bands).map(item => ({
+    ...item,
+    x: left + Math.log10(item.frequency / 20) / 3 * plotWidth,
+    y: top + (18 - Math.max(-24, Math.min(18, item.gain))) / 42 * plotHeight,
+  }));
+  const line = surroundGraphPath(curve);
+  const area = line + ' L ' + curve[curve.length - 1].x + ' ' + (top + plotHeight)
+    + ' L ' + curve[0].x + ' ' + (top + plotHeight) + ' Z';
+  svg.querySelector('.surround-eq-line')?.setAttribute('d', line);
+  svg.querySelector('.surround-eq-area')?.setAttribute('d', area);
+}
+
+function initSurroundEqGraphControls(host) {
+  host.querySelectorAll('[data-surround-eq-point]').forEach(point => {
+    const speaker = Number(point.dataset.surroundEqSpeaker);
+    const band = Number(point.dataset.surroundEqBand);
+    const selector = field => '[data-surround-eq-input][data-surround-eq-speaker="'
+      + speaker + '"][data-surround-eq-band="' + band
+      + '"][data-surround-eq-field="' + field + '"]';
+    const input = field => host.querySelector(selector(field));
+    const frequencyInput = input('frequency');
+    const gainInput = input('gain');
+    const qInput = input('q');
+    const svg = point.ownerSVGElement;
+    if (!frequencyInput || !gainInput || !qInput || !svg) return;
+    let dragging = false, moved = false, pointerId = null;
+    let wheelRemainder = 0, wheelCommitTimer = null;
+    let startX = 0, startY = 0, startFrequency = 0, startGain = 0;
+    const left = 42, top = 14, plotWidth = 906, plotHeight = 204;
+    const graphX = event => {
+      const bounds = svg.getBoundingClientRect();
+      return (event.clientX - bounds.left) * 960 / Math.max(1, bounds.width);
+    };
+    const graphY = event => {
+      const bounds = svg.getBoundingClientRect();
+      return (event.clientY - bounds.top) * 250 / Math.max(1, bounds.height);
+    };
+    const updateTitle = () => {
+      const title = point.querySelector('title');
+      const text = surroundEqPointTitle(band, +frequencyInput.value,
+        +gainInput.value, +qInput.value);
+      if (title) title.textContent = text;
+      point.setAttribute('aria-valuetext', text);
+    };
+    const update = event => {
+      // Damp pointer movement to make dense EQ work practical with a mouse.
+      const x = Math.max(left, Math.min(left + plotWidth,
+        startX + (graphX(event) - startX) / 2.5));
+      const y = Math.max(top, Math.min(top + plotHeight,
+        startY + (graphY(event) - startY) / 2.5));
+      const frequency = surroundEqSnap(20 * Math.pow(1000, (x - left) / plotWidth),
+        frequencyInput.min, frequencyInput.max, frequencyInput.step);
+      const gain = surroundEqSnap(18 - (y - top) * 42 / plotHeight,
+        gainInput.min, gainInput.max, gainInput.step);
+      if (frequency == null || gain == null) return;
+      frequencyInput.value = String(frequency);
+      gainInput.value = String(gain);
+      surroundEqPaint(frequencyInput);
+      surroundEqPaint(gainInput);
+      point.setAttribute('cx', String(left + Math.log10(frequency / 20)
+        / 3 * plotWidth));
+      point.setAttribute('cy', String(top + (18 - gain) / 42 * plotHeight));
+      updateTitle();
+      surroundEqGraphPaint(svg, host, speaker);
+      moved = moved || frequency !== startFrequency || gain !== startGain;
+    };
+    const finish = commit => {
+      if (!dragging) return;
+      const didMove = moved;
+      dragging = false;
+      point.classList.remove('dragging');
+      if (pointerId != null) {
+        try { if (point.hasPointerCapture?.(pointerId)) point.releasePointerCapture(pointerId); } catch (_) {}
+        pointerId = null;
+      }
+      if (commit && didMove) postSurroundEqPoint(speaker, band,
+        +frequencyInput.value, +gainInput.value);
+    };
+    point.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      dragging = true; moved = false; pointerId = event.pointerId;
+      startX = graphX(event); startY = graphY(event);
+      startFrequency = +frequencyInput.value; startGain = +gainInput.value;
+      point.classList.add('dragging');
+      point.setPointerCapture(pointerId);
+    });
+    point.addEventListener('pointermove', event => { if (dragging) update(event); });
+    point.addEventListener('pointerup', () => finish(true));
+    point.addEventListener('pointercancel', () => finish(false));
+    point.addEventListener('lostpointercapture', () => finish(false));
+    point.addEventListener('wheel', event => {
+      // Wheel is captured only by a graph point; page scrolling stays normal elsewhere.
+      event.preventDefault();
+      event.stopPropagation();
+      // Trackpads emit many tiny pixel deltas while a wheel commonly emits a
+      // single large one. Accumulate the former, but cap every event to one
+      // Q tick so both controls feel deliberate rather than jumpy.
+      const multiplier = event.deltaMode === 1 ? 16
+        : event.deltaMode === 2 ? 180 : 1;
+      const delta = Number(event.deltaY) * multiplier;
+      if (!Number.isFinite(delta) || delta === 0) return;
+      if (wheelRemainder && Math.sign(delta) !== Math.sign(wheelRemainder)) {
+        wheelRemainder = 0;
+      }
+      wheelRemainder += delta;
+      if (Math.abs(wheelRemainder) < 12) return;
+      const direction = Math.sign(wheelRemainder);
+      wheelRemainder = 0;
+      const value = surroundEqSnap(+qInput.value - direction
+        * Number(qInput.step || 0.01), qInput.min, qInput.max, qInput.step);
+      if (value == null || value === +qInput.value) return;
+      qInput.value = String(value);
+      surroundEqPaint(qInput);
+      const localBand = SURROUND?.speakers?.[speaker]?.bands?.[band];
+      if (localBand) localBand.q = value;
+      updateTitle();
+      surroundEqGraphPaint(svg, host, speaker);
+      if (wheelCommitTimer != null) clearTimeout(wheelCommitTimer);
+      wheelCommitTimer = setTimeout(() => {
+        wheelCommitTimer = null;
+        postSurroundEqInput(qInput);
+      }, 140);
+    }, {passive: false});
+    updateTitle();
   });
 }
 
@@ -1256,8 +1569,10 @@ function renderSurround() {
         ? 'speaker count pending' : `${SURROUND.active_speaker_count} active speakers`}</span></div>
     <div class="surround-grid">${surroundGlobalHTML(SURROUND)}${surroundSpeakerHTML(SURROUND)}</div>
   </div>`;
+  initSurroundGlobalControls(host);
   initSurroundSpeakerHeadControls(host);
   initSurroundEqControls(host);
+  initSurroundEqGraphControls(host);
   initSurroundBassControls(host);
 }
 
@@ -1292,12 +1607,16 @@ function buildSurround() {
       }
       const input = event.target.closest('[data-surround-global]');
       if (!input) return;
-      const value = Number(input.value);
-      const unit = input.dataset.surroundGlobal === 'delay_ms' ? 'ms' : 'dB';
-      const readout = host.querySelector(`[data-surround-value="${input.dataset.surroundGlobal}"]`);
-      if (readout) readout.textContent = `${surroundNumber(value)} ${unit}`;
+      surroundGlobalPaint(input);
     });
     host.addEventListener('click', event => {
+      const speakerSelect = event.target.closest?.('[data-surround-speaker-select]');
+      if (speakerSelect) {
+        if (speakerSelect.disabled) return;
+        SURROUND_SPEAKER = Number(speakerSelect.dataset.surroundSpeakerSelect) || 0;
+        renderSurround();
+        return;
+      }
       const headToggle = event.target.closest?.(
         '[data-surround-speaker-head-toggle]');
       if (headToggle) {
@@ -1374,12 +1693,6 @@ function buildSurround() {
       const bass = event.target.closest?.('[data-bass-input]');
       if (bass && !bass.disabled) {
         postSurroundBassInput(bass);
-        return;
-      }
-      const speaker = event.target.closest('[data-surround-speaker]');
-      if (speaker) {
-        SURROUND_SPEAKER = Number(speaker.value) || 0;
-        renderSurround();
         return;
       }
       const format = event.target.closest?.('[data-surround-format]');

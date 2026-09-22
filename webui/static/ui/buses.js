@@ -97,7 +97,9 @@ function wireMonKnob(el, bus) {
   knob.addEventListener('pointerup', stop);
   knob.addEventListener('pointercancel', stop);
   knob.addEventListener('wheel', e => {
+    if (!knob.matches(':hover')) return;
     e.preventDefault();
+    e.stopPropagation();
     live = curAtt() + Math.sign(e.deltaY);                 // wheel down = quieter
     applyLive(); queueSend();
   }, {passive: false});

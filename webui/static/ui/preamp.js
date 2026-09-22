@@ -135,7 +135,9 @@ function wireKnob(el, ch) {
   knob.addEventListener('pointerup', stop);
   knob.addEventListener('pointercancel', stop);
   knob.addEventListener('wheel', e => {
+    if (!knob.matches(':hover')) return;
     e.preventDefault();
+    e.stopPropagation();
     live = currentGain(el, ch) - Math.sign(e.deltaY);
     applyLive(); queueSend();
   }, {passive: false});

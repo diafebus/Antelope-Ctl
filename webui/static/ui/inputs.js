@@ -192,7 +192,9 @@ function wireDigKnob(el, kind, ch) {
     live = 0; applyLive(); sendNow();
   });
   knob.addEventListener('wheel', e => {
+    if (!knob.matches(':hover')) return;
     e.preventDefault();
+    e.stopPropagation();
     live = digCurGain(el, kind, ch) - Math.sign(e.deltaY);
     applyLive(); queueSend();
   }, {passive: false});
