@@ -313,6 +313,7 @@ function surroundBassFader(channel, bassWrite) {
   const min = Number.isFinite(range[0]) ? range[0] : -60;
   const max = Number.isFinite(range[1]) ? range[1] : 16;
   const rangeValue = Math.max(min, Math.min(max, fader));
+  const faderPosition = surroundBassFaderFraction(rangeValue, min, max) * 100;
   const faderWritable = surroundBassFieldWritable(bassWrite, 'fader_db');
   const muteWritable = surroundBassFieldWritable(bassWrite, 'fader_mute');
   const soloWritable = surroundBassFieldWritable(bassWrite, 'fader_solo');
@@ -327,9 +328,11 @@ function surroundBassFader(channel, bassWrite) {
     + surroundEscape(channel.label) + ' bass-management fader dB value">'
     + '<div class="mixer-fader-row bass-fader-row">'
     + '<div class="mixer-fader-well">'
-    + '<span class="mixer-fader-thumb" aria-hidden="true">'
+    + '<span class="bass-fader-travel" aria-hidden="true">'
+    + '<span class="mixer-fader-thumb" style="top:' + faderPosition.toFixed(3)
+    + '%">'
     + '<img class="mixer-fader-art" src="/webui/assets/fader-shadow.svg" alt="" draggable="false">'
-    + '</span>'
+    + '</span></span>'
     + '<input class="mixer-fader" type="range" data-fader data-bass-fader data-bass-input'
     + ' data-bass-field="fader_db" data-bass-slot="' + channel.slot + '"'
     + ' min="' + min + '" max="' + max + '" step="0.1" value="' + rangeValue
@@ -487,24 +490,12 @@ function paintSurroundBassFader(strip, value) {
   if (!strip) return;
   const fader = strip.querySelector('[data-bass-fader]');
   const thumb = strip.querySelector('.mixer-fader-thumb');
-  const art = strip.querySelector('.mixer-fader-art');
   if (!fader || !thumb) return;
-  // The native range is inset by 4px on both ends of the well. Use its
-  // actual client height so the artwork follows the same travel as the
-  // hidden input, rather than the larger containing well.
-  const span = fader.clientHeight || 114;
   const fraction = surroundBassFaderFraction(value, fader.min, fader.max);
-  // Match the native range thumb's 20 px travel rather than compressing the
-  // visible artwork into a much shorter 50 px handle range.
-  const trackHandle = 20;
-  const pos = trackHandle / 2 + fraction * Math.max(0, span - trackHandle);
-  thumb.style.setProperty('--fader-pos', pos.toFixed(1) + 'px');
-  // Set the actual artwork position as well as the CSS variable. This keeps
-  // newly opened popup windows accurate even if their stylesheet settles a
-  // frame after the first paint.
-  if (!art) return;
-  const artHeight = art.getBoundingClientRect().height || 66;
-  art.style.top = (4 + pos - artHeight / 2).toFixed(1) + 'px';
+  // Percentage positioning is independent of popup/CSS load timing. The
+  // initial percentage is also embedded in the generated HTML, so a reload
+  // cannot briefly or permanently leave every fader at the top.
+  thumb.style.top = (fraction * 100).toFixed(3) + '%';
 }
 
 function surroundBassInputValue(input) {
@@ -687,7 +678,7 @@ function openSurroundBassWindow() {
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
     + '<title>Bass Management — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css">'
-    + '<link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v11">'
+    + '<link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v16">'
     + '</head><body class="bass-popup-body"></body></html>');
   d.close();
   d.body.innerHTML = surroundBassPopupHTML(SURROUND);

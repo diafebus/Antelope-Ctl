@@ -88,8 +88,9 @@ assert.match(js, /class="mixer-knob surround-monitor-dial"/);
 assert.match(js, /class="btn surround-bass-open"/);
 assert.match(js, /function beginSurroundBassFaderEdit\(readout\)/);
 assert.match(js, /data-bass-fader-number/);
-assert.match(js, /const trackHandle = 20/);
-assert.match(js, /art\.style\.top/);
+assert.match(js, /thumb\.style\.top/);
+assert.match(surroundCss, /\.bass-fader-travel \{[^}]*inset:18px 0/);
+assert.match(surroundCss, /\.bass-fader-row \.mixer-fader-well::before \{ top:18px; bottom:18px/);
 assert.match(js, /data-surround-speaker-head-toggle/);
 assert.match(js, /\/api\/surround\/speaker/);
 assert.match(js, /input\.dataset\.surroundSpeakerHeadField !== 'level_db'[\s\S]*input\.value = '0'[\s\S]*dispatchEvent\(new Event\('change'/);
@@ -102,7 +103,7 @@ assert.ok(speakerHeadInitStart >= 0 && speakerHeadInitEnd > speakerHeadInitStart
 assert.match(js.slice(speakerHeadInitStart, speakerHeadInitEnd), /wirePrecisionRange\(input\)/);
 assert.match(js, /function openSurroundBassWindow\(\)/);
 assert.match(js, /window\.open\('', 'antelopeBassManagement'/);
-assert.match(js, /surround\.css\?v=surround-controls-v11/);
+assert.match(js, /surround\.css\?v=surround-controls-v16/);
 assert.match(js, /addEventListener\('load', repaintFaders/);
 assert.match(js, /data-logarithmic="true"/);
 assert.match(js, /Math\.exp\(Math\.log\(value\)/);
@@ -508,7 +509,7 @@ const bassFaderStrip = {querySelector: selector => {
   return null;
 }};
 surroundContext.paintSurroundBassFader(bassFaderStrip, -60);
-assert.equal(bassFaderStyle['--fader-pos'], '104.0px');
+assert.equal(bassFaderThumb.style.top, '100.000%');
 const stable20 = surroundContext.surroundBassChannels({
   ...writableBass20Data,
   global: {

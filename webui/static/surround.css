@@ -119,8 +119,11 @@
 .bass-fader-number::-webkit-inner-spin-button, .bass-fader-number::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 .bass-fader-row { min-height:122px; gap:2px; }
 .bass-fader-row .mixer-fader-well { width:32px; min-height:122px; flex-basis:32px; }
-.bass-fader-row .mixer-fader { width:32px; }
-.bass-fader-row .mixer-fader-art { width:38px; height:66px; }
+.bass-fader-row .mixer-fader-well::before { top:18px; bottom:18px; }
+.bass-fader-row .mixer-fader { inset:18px 0; width:32px; }
+.bass-fader-travel { position:absolute; z-index:1; inset:18px 0; pointer-events:none; }
+.bass-fader-travel .mixer-fader-thumb { inset:auto 0 auto 0; height:0; overflow:visible; }
+.bass-fader-row .mixer-fader-art { top:0; width:38px; height:66px; transform:translate(-50%,-50%); }
 .bass-meter { width:5px; min-height:122px; flex-basis:5px; }
 .bass-meter > i.unavailable { height:0; }
 .bass-mixer-buttons { display:flex; gap:3px; }
