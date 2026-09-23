@@ -17,6 +17,8 @@ Input link indicators use a separate, confirmed
 `frame.link_command.readback` mapping when a complete safe table is
 available. Orion maps its first six shared preamp/ADAT space-0 pair flags to
 `0x0b:0`; unmapped ADAT and S/PDIF links keep their saved-state fallback.
+On 2026-09-23, a live ADAT 7/8 ON/OFF test matched the device table and both
+the ADAT and physical preamp 7/8 icons followed the returned flag.
 
 Current entries:
 

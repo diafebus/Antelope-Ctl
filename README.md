@@ -231,6 +231,10 @@ a readback. This confirms the reported link flag, not whether both signal
 paths are linked. ADAT pairs 6-7 and S/PDIF still use the browser's saved
 link state until their readback mapping is verified.
 
+Live UI check (2026-09-23): after a hard reload, ADAT 7/8 showed ON; after
+the user clicked it OFF, the fresh device flag returned OFF and both the
+ADAT 7/8 and physical preamp 7/8 icons showed OFF.
+
 S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
 
 ```

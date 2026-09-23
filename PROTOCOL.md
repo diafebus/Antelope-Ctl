@@ -216,6 +216,13 @@ first six space-0 pair flags are read from index 0 for the preamp and ADAT
 WebUI controls. ADAT pairs 6/7 have no confirmed mapped flag; index 1 is
 safe to query but did not track this ADAT 7/8 transition.
 
+The user verified the browser behavior against that device state: after a
+hard reload the ADAT 7/8 icon showed ON; after clicking it OFF, the server's
+link-readback version advanced, index-0 record 3 returned 0, and both the
+ADAT 7/8 and physical preamp 7/8 icons showed OFF. This completes the WebUI
+indicator check in both directions; it confirms the shared flag display,
+not whether both signal paths are linked.
+
 ### What the categories are (resolved 2026-08-31 via §4a)
 
 - **`0x03` = 15** -- the **routing matrix**: 15 destination groups

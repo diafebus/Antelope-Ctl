@@ -52,6 +52,9 @@ states. The WebUI therefore reads the first six shared space-0 pair flags
 from index 0, while ADAT pairs 6/7 and other link families retain cache
 fallback. This later evidence does not change the startup query bounds or
 establish whether the physical and ADAT signal paths are both linked.
+The user also verified the WebUI after a hard reload: ADAT 7/8 showed ON,
+then both ADAT 7/8 and physical preamp 7/8 indicators showed OFF after the
+OFF click and matching index-0 readback.
 
 The other nested response shapes are also recorded in
 `frame.readback.record_layouts`: category `0x16` index 0 contains eight
