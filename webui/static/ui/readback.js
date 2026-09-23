@@ -31,13 +31,21 @@ function rbLinkBody(layout, entries) {
   const mixerMapped = linkSpec && layout.safe
     && Number(layout.category) === Number(linkSpec.category)
     && Number(layout.index) === Number(linkSpec.index);
-  const inputMapped = inputSpec && layout.safe
-    && Number(layout.category) === Number(inputSpec.category)
-    && Number(layout.index) === Number(inputSpec.index);
+  const inputTables = inputSpec ? [inputSpec, ...(inputSpec.additional_tables || [])] : [];
+  const inputTable = inputSpec && layout.safe && inputTables.find(table =>
+    Number(layout.category) === Number(table.category)
+    && Number(layout.index) === Number(table.index));
+  const inputMapped = !!inputTable;
+  const inputTransitionConfirmed = inputTable && (
+    Number(inputTable.category) === Number(inputSpec.category)
+    && Number(inputTable.index) === Number(inputSpec.index)
+    || inputTable.transition_confirmed === true);
   const note = mixerMapped
     ? 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.'
     : inputMapped
-      ? 'ON means the returned pair byte is non-zero; a complete table seeds the mapped preamp and ADAT links.'
+      ? inputTransitionConfirmed
+        ? 'ON means the returned pair byte is non-zero; this transition-confirmed table drives its mapped input-link indicators.'
+        : 'This table is schema-backed but did not track an ON transition; it is diagnostic only and does not drive the input-link indicators.'
       : 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
   return `<div class="rbvalues">${bits.join('')}</div>`
     + `<p class="rbnote">${note}</p>`;

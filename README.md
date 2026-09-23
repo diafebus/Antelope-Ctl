@@ -225,15 +225,28 @@ and physical `SET_LINK` frames are byte-identical (both `space` byte
 *physical* link (ch1&2 ... ch11&12). Pairs 6-7 are ADAT-only. See
 `params.adat_channel_link` in the profile.
 
-The WebUI now reads the first six space-0 pair flags from the device's
-`0x0b:0` table, so the matching preamp and ADAT link buttons converge after
-a readback. This confirms the reported link flag, not whether both signal
-paths are linked. ADAT pairs 6-7 and S/PDIF still use the browser's saved
-link state until their readback mapping is verified.
+The WebUI reads the first six space-0 pair flags from the device's `0x0b:0`
+table, so the matching preamp and ADAT link buttons converge after a
+readback. The profile declares an eight-byte `0x0b:1` ADAT table, so writes
+to ADAT pair indices 6/7 trigger fresh reads for diagnostics. However, a
+controlled ADAT 13/14 ON write completed a fresh index-1 readback while
+records 6/7 still returned zero. Those schema-shaped values are not used to
+drive the tail-pair indicators; they remain last-command state until a
+matching device flag is found. S/PDIF likewise remains on saved state until
+its link-table transition is verified. None of these flags proves that both
+physical and ADAT signal paths are linked by the shared space-0 command.
 
 Live UI check (2026-09-23): after a hard reload, ADAT 7/8 showed ON; after
 the user clicked it OFF, the fresh device flag returned OFF and both the
 ADAT 7/8 and physical preamp 7/8 icons showed OFF.
+
+ADAT 13/14 was toggled ON through the WebUI API on 2026-09-23; the server's
+fresh index-1 query succeeded (`link_rb_ver` advanced), but all eight records
+remained zero. It was returned to OFF and its gain restored to 0 dB after a
+one-sided +1 dB probe; ADAT 14 stayed at 0 dB during that single API write.
+This confirms that one gain write is not device-propagated to its partner;
+the browser must issue both writes when its link control is active. ADAT
+15/16 still needs the same exact live readback check.
 
 S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
 
@@ -729,8 +742,11 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   schema and manager-server log do identify readback category `0x0b` as five
   nested link tables (preamp, ADAT, S/PDIF, mixer, AFX). Their returned bytes
   are now exposed by `readback 0x0b <index>` and the WebUI. A controlled
-  2026-09-23 space-0 pair-3 transition correlated index 0 with the flag;
-  index 1 stayed zero during the ADAT WebUI action. Other families remain
+  2026-09-23 space-0 pair-3 transition correlated index 0 with the flag.
+  Index 0 carries six shared pairs; index 1 is schema-declared as eight ADAT
+  records. But a controlled pair-6 ON write followed by a successful fresh
+  index-1 readback returned all zeros, so those schema-only tail values are
+  diagnostic and do not drive WebUI link indicators. Other families remain
   uncorrelated.
 
   **Re-verified independently (2026-08) against the raw

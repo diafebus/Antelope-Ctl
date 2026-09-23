@@ -13,12 +13,17 @@ whose outer index is capture-confirmed are polled; schema-only entries are
 shown as capture-required. This keeps the presentation reusable without
 copying a device's category numbers into the browser.
 
-Input link indicators use a separate, confirmed
+Input link indicators use a profile-declared
 `frame.link_command.readback` mapping when a complete safe table is
-available. Orion maps its first six shared preamp/ADAT space-0 pair flags to
-`0x0b:0`; unmapped ADAT and S/PDIF links keep their saved-state fallback.
-On 2026-09-23, a live ADAT 7/8 ON/OFF test matched the device table and both
-the ADAT and physical preamp 7/8 icons followed the returned flag.
+available. Orion maps the first six shared preamp/ADAT space-0 pair flags to
+`0x0b:0`. The profile also declares eight ADAT link bytes at `0x0b:1`, and
+tail-pair writes query that table for diagnostics; however, a controlled
+ADAT 13/14 ON write produced a successful fresh readback with all eight
+records still zero. Those candidate bytes therefore do not override the
+saved tail-pair indicators; their tooltips state that device readback is
+unconfirmed. S/PDIF also keeps its saved-state fallback. On
+2026-09-23, a live ADAT 7/8 ON/OFF test matched the index-0 device table and
+both the ADAT and physical preamp 7/8 icons followed the returned flag.
 
 Current entries:
 

@@ -2467,26 +2467,66 @@ def api_toggle(t: Toggle):
 
 
 def _input_link_readback_target(profile, domain, pair):
-    """Return a bounded, profile-confirmed link table for this pair, if any."""
+    """Return a bounded, profile-declared link table for this input pair."""
     spec = profile.get("frame", {}).get("link_command", {}).get("readback")
     if not isinstance(spec, dict) or str(spec.get("status", "")).lower() not in \
             STRUCTURED_READBACK_SAFE_STATUSES:
         return None
-    try:
-        category = proto._as_int(spec["category"])
-        index = proto._as_int(spec["index"])
-        count = int(spec["record_count"])
-        pair_count = int(spec.get("pair_counts", {}).get(domain, 0))
-        layout = proto.readback_record_layout(profile, category, index,
-                                               kind="link_table")
-        if not (0 <= pair < pair_count <= count
-                and layout is not None
-                and int(layout["record_count"]) == count
-                and (category, index) in _structured_readback_targets(profile)):
-            return None
-    except (KeyError, TypeError, ValueError, proto.ConstraintError):
+
+    pair_counts = spec.get("pair_counts")
+    if not isinstance(pair_counts, dict):
         return None
-    return category, index
+    tables = [{
+        "category": spec.get("category"),
+        "index": spec.get("index"),
+        "record_count": spec.get("record_count"),
+        "pair_mappings": {
+            name: {"pair_start": 0, "record_start": 0, "pair_count": count}
+            for name, count in pair_counts.items()
+        },
+        "status": spec.get("status"),
+    }]
+    additional_tables = spec.get("additional_tables", [])
+    if not isinstance(additional_tables, list):
+        return None
+    tables.extend(additional_tables)
+
+    for table in tables:
+        if not isinstance(table, dict):
+            continue
+        status = str(table.get("status", "")).strip().lower()
+        if status not in STRUCTURED_READBACK_SAFE_STATUSES | {"schema-backed"}:
+            continue
+        try:
+            category = proto._as_int(table["category"])
+            index = proto._as_int(table["index"])
+            count = int(table["record_count"])
+            pair_mappings = table.get("pair_mappings")
+            if not isinstance(pair_mappings, dict):
+                continue
+            mapping = pair_mappings.get(domain)
+            if not isinstance(mapping, dict):
+                continue
+            pair_start = int(mapping.get("pair_start", 0))
+            record_start = int(mapping.get("record_start", 0))
+            pair_count = int(mapping["pair_count"])
+            layout = proto.readback_record_layout(
+                profile, category, index, kind="link_table")
+            domain_pairs = int(profile.get(
+                "channels" if domain == "preamp" else domain, {}
+            ).get("link_pairs", {}).get("count", 0))
+            if not (pair_count > 0
+                    and 0 <= pair_start <= pair < pair_start + pair_count <= domain_pairs
+                    and 0 <= record_start
+                    and record_start + pair_count <= count
+                    and layout is not None
+                    and int(layout["record_count"]) == count
+                    and (category, index) in _structured_readback_targets(profile)):
+                continue
+        except (KeyError, TypeError, ValueError, proto.ConstraintError):
+            continue
+        return category, index
+    return None
 
 
 def _queue_input_link_write(packet, domain, pair):

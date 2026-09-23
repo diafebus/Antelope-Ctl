@@ -18,7 +18,7 @@ function buildChannels(n) {
         `<option value="${m}"${String(m).toLowerCase() === 'hiz' && !HIZ.has(ch) ? ' disabled' : ''}>${m.toUpperCase()}</option>`).join('')}</select>
       </div>
       ${ch % 2 === 0 && pairOf(ch) < N_PAIRS
-        ? `<button class="linkbtn" data-link title="link ${channelLabel}+${nextChannelLabel}">${LINK_ICON}</button>`
+        ? `<button class="linkbtn" data-link title="${inputLinkButtonTitle('preamp', pairOf(ch), `${channelLabel}+${nextChannelLabel}`)}">${LINK_ICON}</button>`
         : ''}
       <div class="body">
         <div class="knob" data-knob tabindex="0">
@@ -107,47 +107,100 @@ function inputLinkReadbackSpec() {
   return spec;
 }
 
+function inputLinkPairReadbackConfirmed(domain, pair) {
+  const spec = inputLinkReadbackSpec();
+  if (!spec || !Number.isInteger(pair) || pair < 0) return false;
+  const primaryCount = Number(spec.pair_counts?.[domain] || 0);
+  if (Number.isInteger(primaryCount) && pair < primaryCount) return true;
+  const additional = Array.isArray(spec.additional_tables) ? spec.additional_tables : [];
+  return additional.some(table => {
+    if (table?.transition_confirmed !== true) return false;
+    const mapping = table.pair_mappings?.[domain];
+    if (!mapping) return false;
+    const pairStart = Number(mapping.pair_start || 0);
+    const pairCount = Number(mapping.pair_count);
+    return Number.isInteger(pairStart) && Number.isInteger(pairCount)
+      && pairCount > 0 && pairStart <= pair && pair < pairStart + pairCount;
+  });
+}
+
+function inputLinkButtonTitle(domain, pair, label) {
+  const title = `link ${label}`;
+  return inputLinkPairReadbackConfirmed(domain, pair)
+    ? title : `${title} (device state readback not confirmed)`;
+}
+
 function syncInputLinksFromReadback(structured) {
   const spec = inputLinkReadbackSpec();
   if (!spec || !Array.isArray(structured?.layouts)) return false;
-  const category = Number(spec.category), index = Number(spec.index);
-  const count = Number(spec.record_count);
-  const pairs = spec.pair_counts;
-  if (!Number.isInteger(category) || !Number.isInteger(index)
-      || !Number.isInteger(count) || count <= 0 || !pairs
-      || typeof pairs !== 'object' || Array.isArray(pairs)) return false;
-  const preampCount = Number(pairs.preamp || 0), adatCount = Number(pairs.adat || 0);
-  if (!Number.isInteger(preampCount) || !Number.isInteger(adatCount)
-      || preampCount < 0 || adatCount < 0 || (!preampCount && !adatCount)
-      || preampCount > count || adatCount > count
-      || preampCount > N_PAIRS || adatCount > DIG.adat.pairs) return false;
-
-  const layout = structured.layouts.find(item => item?.kind === 'link_table'
-    && Number(item.category) === category && Number(item.index) === index
-    && Number(item.record_count) === count && item.safe === true);
-  const records = layout?.current?.[String(index)];
-  if (!Array.isArray(records) || records.length !== count) return false;
-  const linked = Array(count);
-  for (const record of records) {
-    const selector = Number(record?.record_index);
-    const value = record?.linked;
-    if (!Number.isInteger(selector) || selector < 0 || selector >= count
-        || linked[selector] !== undefined
-        || (value !== true && value !== false && value !== 0 && value !== 1)) return false;
-    linked[selector] = value === true || value === 1;
+  const primaryPairs = spec.pair_counts;
+  if (!primaryPairs || typeof primaryPairs !== 'object' || Array.isArray(primaryPairs)) return false;
+  const primaryMappings = {};
+  for (const domain of ['preamp', 'adat']) {
+    const pairCount = Number(primaryPairs[domain] || 0);
+    if (!Number.isInteger(pairCount) || pairCount < 0) return false;
+    if (pairCount) primaryMappings[domain] = {
+      pair_start: 0, record_start: 0, pair_count: pairCount,
+    };
   }
-  for (let selector = 0; selector < count; selector++) {
-    if (linked[selector] === undefined) return false;
-  }
-
+  const tables = [{...spec, pair_mappings: primaryMappings, authoritative: true}]
+    .concat(Array.isArray(spec.additional_tables) ? spec.additional_tables : []);
   let preampChanged = false, adatChanged = false;
-  for (let pair = 0; pair < preampCount; pair++) {
-    if (!!LINKS[pair] !== linked[pair]) preampChanged = true;
-    if (linked[pair]) LINKS[pair] = true; else delete LINKS[pair];
-  }
-  for (let pair = 0; pair < adatCount; pair++) {
-    if (!!DIG.adat.links[pair] !== linked[pair]) adatChanged = true;
-    if (linked[pair]) DIG.adat.links[pair] = true; else delete DIG.adat.links[pair];
+  for (const table of tables) {
+    if (!table || typeof table !== 'object') continue;
+    const status = String(table.status || '').trim().toLowerCase();
+    if (!['confirmed', 'capture-confirmed', 'schema-backed'].includes(status)) continue;
+    if (!table.authoritative && table.transition_confirmed !== true) continue;
+    const category = Number(table.category), index = Number(table.index);
+    const count = Number(table.record_count);
+    if (!Number.isInteger(category) || !Number.isInteger(index)
+        || !Number.isInteger(count) || count <= 0) continue;
+    const mappings = table.pair_mappings;
+    if (!mappings || typeof mappings !== 'object' || Array.isArray(mappings)) continue;
+    const layout = structured.layouts.find(item => item?.kind === 'link_table'
+      && Number(item.category) === category && Number(item.index) === index
+      && Number(item.record_count) === count && item.safe === true);
+    const records = layout?.current?.[String(index)];
+    if (!Array.isArray(records) || records.length !== count) continue;
+    const linked = Array(count);
+    let valid = true;
+    for (const record of records) {
+      const selector = Number(record?.record_index);
+      const value = record?.linked;
+      if (!Number.isInteger(selector) || selector < 0 || selector >= count
+          || linked[selector] !== undefined
+          || (value !== true && value !== false && value !== 0 && value !== 1)) {
+        valid = false;
+        break;
+      }
+      linked[selector] = value === true || value === 1;
+    }
+    for (let selector = 0; selector < count && valid; selector++) {
+      if (linked[selector] === undefined) valid = false;
+    }
+    if (!valid) continue;
+
+    for (const domain of ['preamp', 'adat']) {
+      const mapping = mappings[domain];
+      if (!mapping || typeof mapping !== 'object') continue;
+      const pairStart = Number(mapping.pair_start || 0);
+      const recordStart = Number(mapping.record_start || 0);
+      const pairCount = Number(mapping.pair_count);
+      const domainCount = domain === 'preamp' ? N_PAIRS : DIG.adat.pairs;
+      if (!Number.isInteger(pairStart) || !Number.isInteger(recordStart)
+          || !Number.isInteger(pairCount) || pairCount <= 0
+          || pairStart < 0 || pairStart + pairCount > domainCount
+          || recordStart < 0 || recordStart + pairCount > count) continue;
+      const links = domain === 'preamp' ? LINKS : DIG.adat.links;
+      for (let offset = 0; offset < pairCount; offset++) {
+        const pair = pairStart + offset, on = linked[recordStart + offset];
+        if (!!links[pair] !== on) {
+          if (domain === 'preamp') preampChanged = true;
+          else adatChanged = true;
+        }
+        if (on) links[pair] = true; else delete links[pair];
+      }
+    }
   }
   if (preampChanged) { saveLinks(); refreshLinks(); }
   if (adatChanged) { digSaveLinks('adat'); digRefreshLinks('adat'); }
@@ -315,7 +368,7 @@ function buildDig(kind) {
         </div>
       </div>
       ${hasLink && ch % 2 === 0
-        ? `<button class="linkbtn" data-link title="link ${d.label(ch)}+${d.label(ch + 1)}">${LINK_ICON}</button>`
+        ? `<button class="linkbtn" data-link title="${inputLinkButtonTitle(kind, pair, `${d.label(ch)}+${d.label(ch + 1)}`)}">${LINK_ICON}</button>`
         : ''}`;
     const lk = el.querySelector('[data-link]');
     if (lk) lk.addEventListener('click', () => digToggleLink(kind, pair));

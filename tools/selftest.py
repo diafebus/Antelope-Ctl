@@ -29,8 +29,10 @@ WHAT IT CANNOT CHECK
   Reported as SKIP, not PASS, so the summary never overstates coverage:
   mic-modeling WRITE round trips (the current state is readable, but this
   self-test does not change DSP configuration), channel-link transition
-  correlation (category 0x0b is decoded, but its on/off transition still
-  needs a controlled capture), and sample rate (writing it drops audio).
+  correlation (the WebUI maps space-0 index 0 for the first six shared flags;
+  the schema-shaped ADAT index-1 tail table returned all zero after a pair-6
+  ON write and remains diagnostic only; S/PDIF/mixer/AFX transitions remain
+  manual), and sample rate (writing it drops audio).
 """
 import argparse
 import os
