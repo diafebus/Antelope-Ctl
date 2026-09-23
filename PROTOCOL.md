@@ -207,6 +207,15 @@ repeats index 3 around each mixer record as a sequencing marker, but its
 response is still a real link table. The profile's `record_layouts` and
 `protocol.parse_link_table` decode these nested bytes.
 
+The 2026-09-23 live WebUI probe captured `SET_LINK` space 0, pair 3, on at
+HID OUT `0x01`; the next bounded `0x0b:0` response at HID IN `0x82`
+returned record 3 = 1. After the user turned the pair off, a fresh response
+returned record 3 = 0. The `0x0b:1` ADAT record stayed 0 throughout. Earlier
+preamp pair 0 on/off observations also tracked `0x0b:0` record 0. Thus the
+first six space-0 pair flags are read from index 0 for the preamp and ADAT
+WebUI controls. ADAT pairs 6/7 have no confirmed mapped flag; index 1 is
+safe to query but did not track this ADAT 7/8 transition.
+
 ### What the categories are (resolved 2026-08-31 via §4a)
 
 - **`0x03` = 15** -- the **routing matrix**: 15 destination groups
@@ -363,7 +372,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x06` | **channel status** -- 1 byte/channel, same packing as `0x73` @61: `(phase<<6)\|(phantom<<4)\|(mode&3)`. | **decoded + differential-write confirmed 2026-09-03** (phantom bit inferred from the shared encoding) |
 | `0x07` | EQ/filter band data — same `<freq><Q><gain><mode>` stride as `0x1a`. 8 records; live-read 2026-09-04: idx 0/1 = 8× a flat 5-band EQ (30/200/1k/5k/15k Hz), idx 2 = 16× a 19-byte range/capability record. Purpose unresolved (monitor/phones EQ? a capability table?). **Not** a per-input-channel EQ — the SC has none | undecoded |
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
-| `0x0b` | **multiplexed link tables** -- outer index 0 = 6 preamp pairs, 1 = 8 ADAT pairs, 2 = 1 S/PDIF pair, 3 = 64 mixer pairs, 4 = 32 AFX channel links; each payload is an array of one-byte `linked` values. Index 3 is repeated around mixer reads as a Launcher sequencing marker. | **decoded from the extracted panel schema and response logs; link on/off transition still needs a controlled hardware capture** |
+| `0x0b` | **multiplexed link tables** -- outer index 0 = 6 preamp pairs, 1 = 8 ADAT pairs, 2 = 1 S/PDIF pair, 3 = 64 mixer pairs, 4 = 32 AFX channel links; each payload is an array of one-byte `linked` values. Index 3 is repeated around mixer reads as a Launcher sequencing marker. | **index-0 space-0 pair flags transition-confirmed 2026-09-23; ADAT index 1 stayed zero during that test. Other link-family transitions remain open.** |
 | `0x0c` | AFX available/max instance counts -- index 0 and index 1 each contain 90 `{type_id, inst_count}` records according to the panel schema. The outer index bounds are not established by the connect walk. | schema-decoded; outer query bounds capture-required |
 | `0x0d` | scalar `0x18` (=24), stable across re-reads. Meaning unknown | undecoded |
 | `0x11` | assignment status at index 0 (one byte) and feature mask at index 1 (200 bytes) | decoded from panel schema and response log |
@@ -733,6 +742,11 @@ one `SET_LINK(space=0, pair_index=N)` links pair N in *both* spaces. To
 settle it: link a physical and an ADAT pair in one session with different
 per-channel gains, or test on hardware.
 
+The 2026-09-23 WebUI ADAT 7/8 (pair 3) transition changed the `0x0b:0`
+record for pair 3, while the separate `0x0b:1` ADAT record stayed zero.
+That confirms which returned flag tracks the space-0 command for this pair;
+it does not establish whether both physical and ADAT signal paths are linked.
+
 ### S/PDIF link pair
 
 One L/R pair, `SET_LINK` with `space=0x01` / `pair_index=0x00`. Same
@@ -988,14 +1002,13 @@ panel. But:
     Workflow: unlink -> set mode per channel (gain resets to the new
     mode's range) -> re-link.
 - **The state report has no dedicated channel-link bit, but category `0x0b`
-  is now mapped as five nested link tables.** The extracted Orion panel schema
-  and manager-server log identify preamp, ADAT, S/PDIF, mixer, and AFX tables
-  at indices 0..4. The earlier live whole-report diff did not query `0x0b`
-  because it was misclassified as a phase marker, so it cannot rule out these
-  tables. The captured responses are mostly zero-valued; a controlled
-  link-on/link-off capture is still required to correlate each returned byte
-  and its polarity. Until then, clients expose the bytes as observational
-  readback and retain their last-commanded cache as the control fallback.
+  contains five nested link tables.** The extracted Orion panel schema and
+  manager-server log identify preamp, ADAT, S/PDIF, mixer, and AFX tables
+  at indices 0..4. The earlier live whole-report diff did not query `0x0b`.
+  The 2026-09-23 space-0 pair-3 write and readback confirm index-0 on/off
+  polarity for the six mapped pair flags; index 1 did not track the ADAT
+  action. Clients may use the confirmed index-0 mapping while retaining a
+  local fallback for unmapped pairs and link families.
 
 Any non-Launcher controller must replicate the two-commands-per-change
 behaviour itself if it wants Launcher-equivalent results.
@@ -1236,8 +1249,8 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | bus_mono | `0x69` | `0x13` | bus id | 0/1 | bus status bit 4 |
 | output_trim | `0x4b` | `0x13` | target 0-2 | 0-6 | offsets 24-25 (section 6) |
 | spdif_gain | `0x5c` | `0x13` | S/PDIF ch (0=L, 1=R) | int8 dB, -6..+12 | offset `91` (L) / `92` (R) |
-| channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | candidate table `0x0b:0` (6 nested `linked` bytes); transition capture pending |
-| adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | candidate table `0x0b:1` (8 nested `linked` bytes); transition capture pending (gain bytes track together; preamp-link behaviour, CLI mirrors gain) |
+| channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | `0x0b:0` (6 nested `linked` bytes), transition-confirmed for space-0 pair flags |
+| adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | pairs 0-5 use the shared `0x0b:0` flag; `0x0b:1` did not track pair 3; pairs 6/7 remain readback-unmapped (CLI mirrors gain) |
 | spdif_channel_link | `0xa2` | `0x14` | **space=1** @17, pair_index @18 (0) | enabled @19 | candidate table `0x0b:2` (1 nested `linked` byte); transition capture pending (L/R gain bytes track together; CLI mirrors gain) |
 | mix_channel_link | `0xa2` | `0x14` | **space=3** @17, logical `(mix,pair)`; pair selector @18 is profile/surface-specific | enabled @19 | candidate table `0x0b:3` (64 nested `linked` bytes); transition capture pending (software-mirrored, §12) |
 | mix_fader / mix_pan / mix_send / mix_mute / mix_solo | `0xd4` | `0x17` | `mix` @18, `channel` @19 (1-32) | fader @20 (0-90 dB), pan @21 bits 0-5 (0x20=centre), mute @21 bit 6, solo @21 bit 7, send @22 (0-96) | none (§12) |
@@ -1879,7 +1892,7 @@ ignored `AUDIT.md`.
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
 | Shared meter banks / selectors | Physical inputs use `0x73 [221..232]`. Mixer-window selection is `0x49 / target 1 / value 0..3`, echoed at `[122]`. Meters-window selection is `0x49 / target 0 / value 0..25`, echoed at `[121]`; values 19/20 are unnamed in the capture filename. Shared lane ownership beyond the gated Mix 2 block remains unresolved. |
-| Channel-link readback bit | State-report bit still absent. Category `0x0b` supplies profile-mapped nested link bytes for the five link spaces, but an isolated transition capture is still required to confirm on/off polarity and whether all spaces update as expected. |
+| Channel-link readback bit | State-report bit still absent. A 2026-09-23 controlled space-0 pair-3 transition confirmed `0x0b:0` on/off polarity, while `0x0b:1` stayed zero. S/PDIF, mixer, AFX, and ADAT pairs 6/7 still need transition correlation. |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. Category `0x19` is now identified as AFX strip order (64 outer records × 8 slots), not the USB/TB channel stream. |
 | `bus_block` reserved byte (`30+3N`) | never changed -- padding or unexercised |

@@ -9,7 +9,7 @@ let UI_FEATURES = {}, AURAVERB = null, MIXER_SOURCES = {}, AURAVERB_LOCAL = null
 const MIX_PENDING = {}, MIX_PENDING_TTL = 5000;
 let MIX_SOLO_RESTORE = {};
 let MIX_LINKS = {};
-let RB_VER = -1, ONLINE = false;
+let RB_VER = -1, LINK_RB_VER = -1, ONLINE = false;
 let EMU_CHANNELS = new Set();
 const MESSAGES = new Map();
 

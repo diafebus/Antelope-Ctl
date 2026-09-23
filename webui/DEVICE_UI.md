@@ -13,6 +13,11 @@ whose outer index is capture-confirmed are polled; schema-only entries are
 shown as capture-required. This keeps the presentation reusable without
 copying a device's category numbers into the browser.
 
+Input link indicators use a separate, confirmed
+`frame.link_command.readback` mapping when a complete safe table is
+available. Orion maps its first six shared preamp/ADAT space-0 pair flags to
+`0x0b:0`; unmapped ADAT and S/PDIF links keep their saved-state fallback.
+
 Current entries:
 
 - `zen_go_sc`: shows the Zen Go mixer input-source selectors above its 16

@@ -75,8 +75,9 @@ function buildChannels(n) {
 // Both address spaces are gain + link only -- no mode / 48V / Ø, and the HID
 // protocol carries no ADAT/S-PDIF meters. Same knob art as the preamp; range
 // from the profile (params.adat_gain / spdif_gain, -6..+12 dB on the Orion).
-// Link transitions are not yet correlated to the profile's 0x0b readback, so
-// link state remains browser-side (localStorage) and mirrored across the pair.
+// Link state starts with the browser's saved value; a profile-confirmed 0x0b
+// mapping replaces it when a complete device table arrives. Unmapped pairs
+// retain that browser fallback.
 // Endpoints:
 // POST /api/adat-gain /api/spdif-gain /api/adat-link /api/spdif-link.
 const DIG = {
@@ -97,6 +98,60 @@ function digLoadLinks(k) {
 }
 function digSaveLinks(k) {
   try { localStorage.setItem(k + 'Links', JSON.stringify(DIG[k].links)); } catch (_) {}
+}
+
+function inputLinkReadbackSpec() {
+  const spec = PROFILE?.frame?.link_command?.readback;
+  if (!spec || !['confirmed', 'capture-confirmed'].includes(
+      String(spec.status || '').trim().toLowerCase())) return null;
+  return spec;
+}
+
+function syncInputLinksFromReadback(structured) {
+  const spec = inputLinkReadbackSpec();
+  if (!spec || !Array.isArray(structured?.layouts)) return false;
+  const category = Number(spec.category), index = Number(spec.index);
+  const count = Number(spec.record_count);
+  const pairs = spec.pair_counts;
+  if (!Number.isInteger(category) || !Number.isInteger(index)
+      || !Number.isInteger(count) || count <= 0 || !pairs
+      || typeof pairs !== 'object' || Array.isArray(pairs)) return false;
+  const preampCount = Number(pairs.preamp || 0), adatCount = Number(pairs.adat || 0);
+  if (!Number.isInteger(preampCount) || !Number.isInteger(adatCount)
+      || preampCount < 0 || adatCount < 0 || (!preampCount && !adatCount)
+      || preampCount > count || adatCount > count
+      || preampCount > N_PAIRS || adatCount > DIG.adat.pairs) return false;
+
+  const layout = structured.layouts.find(item => item?.kind === 'link_table'
+    && Number(item.category) === category && Number(item.index) === index
+    && Number(item.record_count) === count && item.safe === true);
+  const records = layout?.current?.[String(index)];
+  if (!Array.isArray(records) || records.length !== count) return false;
+  const linked = Array(count);
+  for (const record of records) {
+    const selector = Number(record?.record_index);
+    const value = record?.linked;
+    if (!Number.isInteger(selector) || selector < 0 || selector >= count
+        || linked[selector] !== undefined
+        || (value !== true && value !== false && value !== 0 && value !== 1)) return false;
+    linked[selector] = value === true || value === 1;
+  }
+  for (let selector = 0; selector < count; selector++) {
+    if (linked[selector] === undefined) return false;
+  }
+
+  let preampChanged = false, adatChanged = false;
+  for (let pair = 0; pair < preampCount; pair++) {
+    if (!!LINKS[pair] !== linked[pair]) preampChanged = true;
+    if (linked[pair]) LINKS[pair] = true; else delete LINKS[pair];
+  }
+  for (let pair = 0; pair < adatCount; pair++) {
+    if (!!DIG.adat.links[pair] !== linked[pair]) adatChanged = true;
+    if (linked[pair]) DIG.adat.links[pair] = true; else delete DIG.adat.links[pair];
+  }
+  if (preampChanged) { saveLinks(); refreshLinks(); }
+  if (adatChanged) { digSaveLinks('adat'); digRefreshLinks('adat'); }
+  return preampChanged || adatChanged;
 }
 function digCurGain(el, kind, ch) {
   const p = DIG_PENDING[digKey(kind, ch)];

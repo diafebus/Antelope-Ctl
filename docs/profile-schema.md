@@ -127,7 +127,7 @@ frame carries a fixed one). Then frame-specific offsets:
 |---|---|---|---|
 | `command` | SET_PARAM (`0x13`) | `channel_offset`, `value_offset` | `build_command(profile, param_name, channel, value)` |
 | `global_command` | SET_GLOBAL (`0x12`) | `value_offset` (no channel) | `build_global_command(profile, param, value)` |
-| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=physical/ADAT, `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link) | `build_link_command(profile, pair, enabled, space)` |
+| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=physical/ADAT, `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link); optional confirmed `readback{category,index,record_count,pair_counts}` maps space-0 input flags | `build_link_command(profile, pair, enabled, space)` |
 | `mix_command` | SET_MIX (`0x17` Orion / `0x16` Zen Go) | `subcmd_offset`+`subcmd`, `mix_offset`, `channel_offset`, `fader_offset`, `pan_flags_offset`, optional `send_offset`, `pan_center`, `pan_mask`, `mute_bit`, `solo_bit` | `build_mix_command(...)` |
 | `auraverb_command` | profile-defined Gazelle Reverb setter (AuraVerb protocol) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant`, confirmed `contract{readback_category, readback_index, fields[]}` | `build_auraverb_command(profile, params, enabled)`; the WebUI/CLI use the contract's bounded readback target and `parse_auraverb_record` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
@@ -199,6 +199,15 @@ indices. `readback_record_layout_indices()` returns only safe layout indices
 by default, and `build_readback_query()` applies the same guard. A layout
 derived from an application schema still needs a device capture before its
 outer index can be used.
+
+`frame.link_command.readback` separately maps an input link command to one
+safe `link_table` layout. The WebUI uses it only when `status` is `confirmed`
+or `capture-confirmed`, the returned table is complete, and
+`pair_counts.preamp` / `.adat` stay within both the layout and the declared
+channel counts. Only mapped pairs replace browser-cached link icons; an
+absent, incomplete, or provisional mapping leaves the cache alone. On Orion,
+both input controls send space 0 and the first six pair flags track `0x0b:0`;
+`0x0b:1` did not track the tested ADAT transition.
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two

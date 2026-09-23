@@ -415,6 +415,7 @@ class Device:
         self.snapshot = {"online": False}  # last known state, read by the web side
         self.version = 0
         self.rb_ver = 0
+        self.link_rb_ver = 0           # fresh link-table reads after link writes
         self.routing = {}                  # dest_id(int) -> [(bank, idx), ...]
         self.mixer = {}                    # mix(int)     -> [slot dict, ...]
         self.auraverb = {}                 # readback index -> list of mix dicts
@@ -1063,6 +1064,7 @@ class Device:
     def _publish(self, snap):
         with self._lock:
             snap["rb_ver"] = self.rb_ver
+            snap["link_rb_ver"] = self.link_rb_ver
             self.snapshot = snap
             self.version += 1
 
@@ -1348,17 +1350,17 @@ class Device:
         return routes + mixes + auraverb + surround + structured
 
     def _refresh_readback_one(self, transport, category, index):
-        """Read one bounded slow-state record; return whether it changed."""
+        """Read one bounded record; return changed, or None without a valid response."""
         try:
             req = proto.build_readback_query(self.profile, category, index)
         except proto.ConstraintError:
-            return False
+            return None
         data = transport.query(
             req,
             lambda x: proto.is_readback_response(self.profile, x, category, index),
             timeout=0.1)
         if data is None:
-            return False
+            return None
         try:
             body = proto.readback_body(self.profile, data)
             if category == SURROUND_GLOBAL_CAT:
@@ -1394,9 +1396,9 @@ class Device:
                 cache = self.auraverb
                 cache_key = index
             else:
-                return False
+                return None
         except (TypeError, ValueError):
-            return False
+            return None
         with self._lock:
             if cache.get(cache_key) == value:
                 return False
@@ -2464,13 +2466,49 @@ def api_toggle(t: Toggle):
     return {"ok": True}
 
 
+def _input_link_readback_target(profile, domain, pair):
+    """Return a bounded, profile-confirmed link table for this pair, if any."""
+    spec = profile.get("frame", {}).get("link_command", {}).get("readback")
+    if not isinstance(spec, dict) or str(spec.get("status", "")).lower() not in \
+            STRUCTURED_READBACK_SAFE_STATUSES:
+        return None
+    try:
+        category = proto._as_int(spec["category"])
+        index = proto._as_int(spec["index"])
+        count = int(spec["record_count"])
+        pair_count = int(spec.get("pair_counts", {}).get(domain, 0))
+        layout = proto.readback_record_layout(profile, category, index,
+                                               kind="link_table")
+        if not (0 <= pair < pair_count <= count
+                and layout is not None
+                and int(layout["record_count"]) == count
+                and (category, index) in _structured_readback_targets(profile)):
+            return None
+    except (KeyError, TypeError, ValueError, proto.ConstraintError):
+        return None
+    return category, index
+
+
+def _queue_input_link_write(packet, domain, pair):
+    target = _input_link_readback_target(PROFILE, domain, pair)
+
+    def do(transport):
+        transport.write(packet)
+        if target is None:
+            return
+        # This query follows the write in the same HID worker. A successful
+        # response wakes the browser even if the device kept the old value.
+        observed = DEV._refresh_readback_one(transport, *target)
+        if observed is not None:
+            with DEV._lock:
+                DEV.link_rb_ver += 1
+
+    DEV.submit(do)
+
+
 @app.post("/api/link")
 def api_link(l: Link):
-    """Engage/disengage a preamp-pair link (SET_LINK, frame.link_command).
-    The profile may expose a 0x0b link-table readback, but transition/polarity
-    correlation is still capture-pending for Orion. The browser therefore
-    keeps its last-commanded state as the control fallback; this endpoint only
-    puts the raw link frame on the wire."""
+    """Engage/disengage a preamp-pair link and refresh confirmed readback."""
     npairs = int(PROFILE["channels"].get("link_pairs", {}).get("count", 0))
     if not (0 <= l.pair < npairs):
         return _bad(f"pair {l.pair} out of range 0..{npairs - 1}")
@@ -2478,7 +2516,7 @@ def api_link(l: Link):
         pkt = proto.build_link_command(PROFILE, l.pair, l.enabled)
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
-    DEV.submit(lambda t: t.write(pkt))
+    _queue_input_link_write(pkt, "preamp", l.pair)
     return {"ok": True}
 
 
@@ -2508,20 +2546,14 @@ def api_spdif_gain(g: DigGain):
 
 
 def _dig_link(space_name, space_byte, npairs, l: "DigLink"):
-    """SET_LINK for the ADAT (space 0) / S-PDIF (space 1) domains. No link
-    transition has been correlated yet -- the browser tracks link state, like
-    the preamp link. The extracted Orion schema maps these spaces into the
-    category-0x0b link tables, but a controlled on/off capture is still
-    required. NOTE the ADAT link frame is byte-identical to the physical one
-    (both space 0), so a space-0 SET_LINK for pair N may also move physical
-    pair N -- see params.adat_channel_link.notes."""
+    """SET_LINK for ADAT/S-PDIF, refreshing a confirmed readback when mapped."""
     if not (0 <= l.pair < npairs):
         return _bad(f"{space_name} pair {l.pair} out of range 0..{npairs - 1}")
     try:
         pkt = proto.build_link_command(PROFILE, l.pair, l.enabled, space=space_byte)
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
-    DEV.submit(lambda t: t.write(pkt))
+    _queue_input_link_write(pkt, space_name, l.pair)
     return {"ok": True}
 
 

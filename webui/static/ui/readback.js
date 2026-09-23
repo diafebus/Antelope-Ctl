@@ -27,12 +27,18 @@ function rbLinkBody(layout, entries) {
   }));
   if (!bits.length) return '<p class="rbempty">Waiting for the first device response.</p>';
   const linkSpec = mixerLinkReadbackSpec();
-  const authoritative = linkSpec && layout.safe
+  const inputSpec = inputLinkReadbackSpec();
+  const mixerMapped = linkSpec && layout.safe
     && Number(layout.category) === Number(linkSpec.category)
     && Number(layout.index) === Number(linkSpec.index);
-  const note = authoritative
+  const inputMapped = inputSpec && layout.safe
+    && Number(layout.category) === Number(inputSpec.category)
+    && Number(layout.index) === Number(inputSpec.index);
+  const note = mixerMapped
     ? 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.'
-    : 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
+    : inputMapped
+      ? 'ON means the returned pair byte is non-zero; a complete table seeds the mapped preamp and ADAT links.'
+      : 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
   return `<div class="rbvalues">${bits.join('')}</div>`
     + `<p class="rbnote">${note}</p>`;
 }
@@ -119,6 +125,7 @@ async function reloadReadback() {
     getJSON('/api/readbacks')]);
   reloadSurround().catch(() => {});
   syncMixerLinksFromReadback(STRUCTURED);
+  syncInputLinksFromReadback(STRUCTURED);
   renderStructuredReadbacks();
   initAuraVerbPanel();
   const rh = routingHome();
@@ -157,8 +164,16 @@ function applyState(s) {
     $('#brightval').textContent = s.brightness;
   }
 
-  if (s.rb_ver !== undefined && (s.rb_ver !== RB_VER || !wasOnline)) {
+  let readbackChanged = !wasOnline;
+  if (s.rb_ver !== undefined && s.rb_ver !== RB_VER) {
     RB_VER = s.rb_ver;
+    readbackChanged = true;
+  }
+  if (s.link_rb_ver !== undefined && s.link_rb_ver !== LINK_RB_VER) {
+    LINK_RB_VER = s.link_rb_ver;
+    readbackChanged = true;
+  }
+  if (readbackChanged) {
     reloadReadback().catch(() => {});
   }
 }

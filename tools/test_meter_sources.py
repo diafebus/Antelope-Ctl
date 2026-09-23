@@ -249,6 +249,44 @@ class MeterSourceTests(unittest.TestCase):
         self.assertIn((0x19, 63), targets)
         self.assertNotIn((0x0c, 0), targets)
 
+    def test_input_link_write_refreshes_only_confirmed_pair_table(self):
+        profile = copy.deepcopy(self.profile)
+        profile['frame']['link_command']['readback'] = {
+            'status': 'capture-confirmed', 'category': '0x0b', 'index': 0,
+            'record_count': 6, 'pair_counts': {'preamp': 6, 'adat': 6},
+        }
+        self.assertEqual(self.server._input_link_readback_target(
+            profile, 'preamp', 3), (0x0b, 0))
+        self.assertEqual(self.server._input_link_readback_target(
+            profile, 'adat', 3), (0x0b, 0))
+        self.assertIsNone(self.server._input_link_readback_target(
+            profile, 'adat', 6))
+
+        device = self.server.Device(profile)
+        fake_transport = types.SimpleNamespace(write=mock.Mock())
+        with mock.patch.object(self.server, 'PROFILE', profile), \
+                mock.patch.object(self.server, 'DEV', device), \
+                mock.patch.object(device, 'submit',
+                                  side_effect=lambda fn: fn(fake_transport)), \
+                mock.patch.object(device, '_refresh_readback_one',
+                                  return_value=False) as refresh:
+            self.server._queue_input_link_write(b'link', 'adat', 3)
+            fake_transport.write.assert_called_once_with(b'link')
+            refresh.assert_called_once_with(fake_transport, 0x0b, 0)
+            self.assertEqual(device.link_rb_ver, 1)
+
+            fake_transport.write.reset_mock()
+            refresh.reset_mock()
+            self.server._queue_input_link_write(b'unmapped', 'adat', 6)
+            fake_transport.write.assert_called_once_with(b'unmapped')
+            refresh.assert_not_called()
+            self.assertEqual(device.link_rb_ver, 1)
+
+            refresh.reset_mock(return_value=True)
+            refresh.return_value = None  # a missing response must not publish stale data
+            self.server._queue_input_link_write(b'no-response', 'preamp', 3)
+            self.assertEqual(device.link_rb_ver, 1)
+
     def test_meter_report_source_keeps_existing_curve_and_clip_behavior(self):
         profile = copy.deepcopy(self.profile)
         profile['frame']['state_report'].pop('channel_meter_base_offset')

@@ -45,6 +45,14 @@ probe are documented in `PROTOCOL.md` and
 
 Category `0x0b` occurs eight times, with indices `1,2,3,3,3,3,0,4`. These are five link-table selectors, not eight records: index 0 returns six preamp-pair states, index 1 eight ADAT-pair states, index 2 one S/PDIF-pair state, index 3 64 mixer-pair states, and index 4 32 AFX-link states. The Launcher repeats index 3 four times around mixer reads as a sequencing marker, but the response is still a real link table. Its `category_counts` value is therefore 5, the exclusive upper bound for observed outer indices 0 through 4. Indices 5 through 7 were absent from all five captures. The existing query validator rejects those indices.
 
+A later controlled WebUI probe on 2026-09-23 captured `SET_LINK` space 0,
+pair 3 on, followed by a bounded index-0 response whose record 3 changed to
+1; a fresh response after off returned 0. Index-1 record 3 stayed 0 in both
+states. The WebUI therefore reads the first six shared space-0 pair flags
+from index 0, while ADAT pairs 6/7 and other link families retain cache
+fallback. This later evidence does not change the startup query bounds or
+establish whether the physical and ADAT signal paths are both linked.
+
 The other nested response shapes are also recorded in
 `frame.readback.record_layouts`: category `0x16` index 0 contains eight
 mic-emulation records; category `0x19` contains eight AFX slots per strip;

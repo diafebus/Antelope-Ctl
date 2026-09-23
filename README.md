@@ -52,9 +52,9 @@ out of scope (`SCOPE.md`). Normal WebUI format writes are limited to 2.0 and
 2.1. The global format wire path was directly round-trip tested through 9.1.6
 with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
 bounds for `0x0c`, and
-the `0x74` channel-group names. Category `0x0b` link transitions still need
-a controlled capture; its returned bytes are not yet treated as verified
-control state. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
+the `0x74` channel-group names. A controlled 2026-09-23 space-0 link
+transition confirmed category `0x0b` index 0 for the first six preamp/ADAT
+pair flags; other link families remain unverified. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
 (`SCOPE.md`); plugin *parameters* stay off-repo. The AFX-tab channel
@@ -224,6 +224,12 @@ and physical `SET_LINK` frames are byte-identical (both `space` byte
 `0x00`), so `set-adat-link` on pairs 0-5 may also toggle the matching
 *physical* link (ch1&2 ... ch11&12). Pairs 6-7 are ADAT-only. See
 `params.adat_channel_link` in the profile.
+
+The WebUI now reads the first six space-0 pair flags from the device's
+`0x0b:0` table, so the matching preamp and ADAT link buttons converge after
+a readback. This confirms the reported link flag, not whether both signal
+paths are linked. ADAT pairs 6-7 and S/PDIF still use the browser's saved
+link state until their readback mapping is verified.
 
 S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
 
@@ -718,8 +724,10 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   gain/status sync above, not a standalone flag. The extracted Orion panel
   schema and manager-server log do identify readback category `0x0b` as five
   nested link tables (preamp, ADAT, S/PDIF, mixer, AFX). Their returned bytes
-  are now exposed by `readback 0x0b <index>` and the WebUI, but an isolated
-  link-on/link-off capture has not yet correlated the bytes with transitions.
+  are now exposed by `readback 0x0b <index>` and the WebUI. A controlled
+  2026-09-23 space-0 pair-3 transition correlated index 0 with the flag;
+  index 1 stayed zero during the ADAT WebUI action. Other families remain
+  uncorrelated.
 
   **Re-verified independently (2026-08) against the raw
   `all_reports_ch-link-gain-ph-inv-test.tsv`**: every report in that capture
@@ -736,8 +744,9 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   in lockstep, for the whole sweep -- this is what `set-link`'s new
   before/after check (below) leans on.
 
-  **`set-link` still does an indirect confirmation.** Since the `0x0b` link
-  bytes are not transition-confirmed yet, `set-link ... on` snapshots gain/phantom/phase_invert for both
+  **`set-link` still does an indirect confirmation.** The CLI has not yet
+  adopted the confirmed `0x0b:0` flag for its own verification; `set-link ... on`
+  snapshots gain/phantom/phase_invert for both
   channels in the pair before and after sending the command. If they
   disagreed before and agree after, that's real (if indirect) evidence the
   link engaged, grounded in the confirmed mirroring behavior above -- not a
