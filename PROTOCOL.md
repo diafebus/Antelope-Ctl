@@ -1028,9 +1028,10 @@ panel. But:
   manager-server log identify preamp, ADAT, S/PDIF, mixer, and AFX tables
   at indices 0..4. The earlier live whole-report diff did not query `0x0b`.
   The 2026-09-23 space-0 pair-3 write and readback confirm index-0 on/off
-  polarity for the six mapped pair flags; index 1 did not track the ADAT
-  action. Clients may use the confirmed index-0 mapping while retaining a
-  local fallback for unmapped pairs and link families.
+  polarity for record 3; index 1 did not track the ADAT
+  action. Index 0 is not an authoritative Preamp or ADAT state mapping: the
+  same command selector from both controls changed it. Clients display its
+  bytes as raw diagnostics and keep independent controller-side button state.
 
 Any non-Launcher controller must replicate the two-commands-per-change
 behaviour itself if it wants Launcher-equivalent results.

@@ -2473,7 +2473,9 @@ def _input_link_readback_target(profile, domain, pair):
             STRUCTURED_READBACK_SAFE_STATUSES:
         return None
 
-    pair_counts = spec.get("pair_counts")
+    # A post-write diagnostic target need not be an authoritative mapping
+    # from a returned byte to one input domain (Orion space 0 is ambiguous).
+    pair_counts = spec.get("post_write_pair_counts", spec.get("pair_counts"))
     if not isinstance(pair_counts, dict):
         return None
     tables = [{

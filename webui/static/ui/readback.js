@@ -19,13 +19,9 @@ function rbLayoutBound(layout) {
 }
 
 function rbLinkBody(layout, entries) {
-  const bits = entries.flatMap(([outer, records]) => records.map(record => {
-    const on = Number(record.linked) !== 0;
-    const title = `${layout.name} entry ${record.record_index}: raw ${record.raw || '–'}`;
-    return `<span class="rbbit${on ? ' on' : ''}" title="${rbEscape(title)}">`
-      + `${rbEscape(outer)}:${record.record_index} ${on ? 'ON' : 'OFF'}</span>`;
-  }));
-  if (!bits.length) return '<p class="rbempty">Waiting for the first device response.</p>';
+  if (!entries.some(([, records]) => records.length)) {
+    return '<p class="rbempty">Waiting for the first device response.</p>';
+  }
   const linkSpec = mixerLinkReadbackSpec();
   const inputSpec = inputLinkReadbackSpec();
   const mixerMapped = linkSpec && layout.safe
@@ -41,17 +37,25 @@ function rbLinkBody(layout, entries) {
       && Number(inputTable.index) === Number(inputSpec.index)
       && inputTable.authoritative !== false)
     || inputTable.transition_confirmed === true);
+  const stateKnown = !!mixerMapped || !!(inputMapped && inputTransitionConfirmed);
+  const bits = entries.flatMap(([outer, records]) => records.map(record => {
+    const on = Number(record.linked) !== 0;
+    const title = `${layout.name} entry ${record.record_index}: raw ${record.raw || '–'}`;
+    const value = stateKnown ? (on ? 'ON' : 'OFF') : `= ${rbNum(record.linked)}`;
+    return `<span class="rbbit${stateKnown && on ? ' on' : ''}" title="${rbEscape(title)}">`
+      + `${rbEscape(outer)}:${record.record_index} ${value}</span>`;
+  }));
   let note;
   if (mixerMapped) {
     note = 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.';
   } else if (inputTable?.authoritative === false) {
-    note = 'This shared space-0 flag changes after Preamp and ADAT writes. It cannot identify which input domain is linked, so it does not drive either set of link buttons.';
+    note = 'Raw flags changed after both Preamp and ADAT writes. Their input-domain meaning is unresolved; they do not drive either set of link buttons.';
   } else if (inputMapped && inputTransitionConfirmed) {
     note = 'ON means the returned pair byte is non-zero; this transition-confirmed table drives its mapped input-link indicators.';
   } else if (inputMapped) {
     note = 'This table has no confirmed ON/OFF transition mapping; it is diagnostic only and does not drive the input-link indicators.';
   } else {
-    note = 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
+    note = 'Raw values only; link-state polarity and transition correlation remain unverified.';
   }
   return `<div class="rbvalues">${bits.join('')}</div>`
     + `<p class="rbnote">${note}</p>`;

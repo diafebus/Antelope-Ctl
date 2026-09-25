@@ -117,8 +117,9 @@ function discardAmbiguousInputLinkCache() {
   const marker = 'space0InputLinkCacheV2';
   try {
     if (localStorage.getItem(marker) === 'done') return;
-    const preampCount = Number(spec.pair_counts?.preamp || 0);
-    const adatCount = Number(spec.pair_counts?.adat || 0);
+    const queriedPairs = spec.post_write_pair_counts || spec.pair_counts || {};
+    const preampCount = Number(queriedPairs.preamp || 0);
+    const adatCount = Number(queriedPairs.adat || 0);
     for (let pair = 0; pair < preampCount; pair++) delete LINKS[pair];
     const adatLinks = digLoadLinks('adat');
     for (let pair = 0; pair < adatCount; pair++) delete adatLinks[pair];
@@ -149,9 +150,10 @@ function inputLinkPairReadbackConfirmed(domain, pair) {
 function inputLinkButtonTitle(domain, pair, label) {
   const title = `link ${label}`;
   const spec = inputLinkReadbackSpec();
+  const queriedPairs = spec?.post_write_pair_counts || spec?.pair_counts || {};
   if (spec?.authoritative === false && ['preamp', 'adat'].includes(domain)
-      && pair < Number(spec.pair_counts?.[domain] || 0)) {
-    return `${title} (shared device command may also affect the other input domain; separate state readback unavailable)`;
+      && pair < Number(queriedPairs[domain] || 0)) {
+    return `${title} (this browser mirrors paired gains; the shared device flag does not identify Preamp versus ADAT state)`;
   }
   return inputLinkPairReadbackConfirmed(domain, pair)
     ? title : `${title} (device state readback not confirmed)`;
@@ -160,7 +162,7 @@ function inputLinkButtonTitle(domain, pair, label) {
 function syncInputLinksFromReadback(structured) {
   const spec = inputLinkReadbackSpec();
   if (!spec || !Array.isArray(structured?.layouts)) return false;
-  const primaryPairs = spec.pair_counts;
+  const primaryPairs = spec.pair_counts || {};
   if (!primaryPairs || typeof primaryPairs !== 'object' || Array.isArray(primaryPairs)) return false;
   const primaryMappings = {};
   for (const domain of ['preamp', 'adat']) {

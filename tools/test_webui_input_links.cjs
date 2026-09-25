@@ -1,8 +1,10 @@
 // Offline device-backed input-link checks: node tools/test_webui_input_links.cjs
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const vm = require('node:vm');
+const path = require('node:path');
 
-const {readWebUISource} = require('./webui_sources.cjs');
+const {ROOT, readWebUISource} = require('./webui_sources.cjs');
 const js = readWebUISource();
 const source = js.slice(js.indexOf('function inputLinkReadbackSpec'),
   js.indexOf('function digCurGain'));
@@ -63,7 +65,7 @@ assert.equal(context.syncInputLinksFromReadback(payload([
 assert.equal(context.LINKS[0], true);
 assert.equal(context.DIG.adat.links[0], true);
 
-// Index 0 is the captured space-0 pair flag for preamps and ADAT pairs 0..5.
+// A synthetic authoritative profile can map a complete table to buttons.
 assert.equal(context.syncInputLinksFromReadback(payload(records)), true);
 assert.equal(context.LINKS[0], undefined);
 assert.equal(context.LINKS[3], true);
@@ -114,4 +116,36 @@ context.PROFILE.frame.link_command.readback.status = 'provisional';
 context.LINKS[0] = true;
 assert.equal(context.syncInputLinksFromReadback(payload(records)), false);
 assert.equal(context.LINKS[0], true);
+
+// Orion's real profile schedules the same diagnostic response after either
+// write, but it must never project that raw flag into either button set.
+context.PROFILE = JSON.parse(fs.readFileSync(path.join(
+  ROOT, 'profiles/orion_studio_sc.json'), 'utf8'));
+context.LINKS = {0: true};
+context.DIG.adat.links = {7: true};
+const savesBefore = {...saves};
+assert.equal(context.inputLinkPairReadbackConfirmed('preamp', 0), false);
+assert.equal(context.inputLinkPairReadbackConfirmed('adat', 0), false);
+assert.match(context.inputLinkButtonTitle('adat', 0, 'ADAT 1+ADAT 2'),
+  /does not identify Preamp versus ADAT state/);
+assert.equal(context.syncInputLinksFromReadback(payload(records)), false);
+assert.equal(context.LINKS[0], true);
+assert.equal(context.LINKS[3], undefined);
+assert.equal(context.DIG.adat.links[3], undefined);
+assert.equal(context.DIG.adat.links[7], true);
+assert.deepEqual(saves, savesBefore);
+
+const rbContext = vm.createContext({
+  rbEscape: value => String(value),
+  rbNum: value => String(Number(value)),
+  mixerLinkReadbackSpec: () => null,
+  inputLinkReadbackSpec: () => context.PROFILE.frame.link_command.readback,
+});
+vm.runInContext(js.slice(js.indexOf('function rbLinkBody'),
+  js.indexOf('function rbMicBody')), rbContext);
+const rawGrid = rbContext.rbLinkBody({
+  name: 'unassigned space-0 flags', category: 0x0b, index: 0, safe: true,
+}, [['0', records]]);
+assert.match(rawGrid, /0:3 = 1/);
+assert.doesNotMatch(rawGrid, /\bON\b/);
 console.log('WebUI input link readback checks passed.');

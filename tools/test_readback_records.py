@@ -14,7 +14,7 @@ class ReadbackRecordTests(unittest.TestCase):
         cls.zen = json.loads((root / 'profiles/zen_go_sc.json').read_text())
 
     def test_link_table_layouts_are_indexed_by_link_space(self):
-        expected = {0: ('space-0 input links', 6), 1: ('adats', 8), 2: ('spdifs', 1),
+        expected = {0: ('unassigned space-0 flags', 6), 1: ('adats', 8), 2: ('spdifs', 1),
                     3: ('mixer', 64), 4: ('afx', 32)}
         for index, (name, count) in expected.items():
             with self.subTest(index=index):

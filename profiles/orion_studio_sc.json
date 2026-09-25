@@ -191,7 +191,7 @@
         "category": "0x0b",
         "index": 0,
         "record_count": 6,
-        "pair_counts": {"preamp": 6, "adat": 6},
+        "post_write_pair_counts": {"preamp": 6, "adat": 6},
         "authoritative": false,
         "additional_tables": [
           {
@@ -1295,7 +1295,7 @@
           "kind": "link_table",
           "category": "0x0b",
           "index": 0,
-          "name": "space-0 input links",
+          "name": "unassigned space-0 flags",
           "record_count": 6,
           "record_stride": 1,
           "fields": [{"name": "linked", "offset": 0, "type": "u8"}],

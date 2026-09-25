@@ -226,15 +226,15 @@ and physical `SET_LINK` frames are byte-identical (both `space` byte
 *physical* link (ch1&2 ... ch11&12). Pairs 6-7 are ADAT-only. See
 `params.adat_channel_link` in the profile.
 
-The WebUI displays the first six space-0 pair flags from the device's
-`0x0b:0` table as diagnostics. Both Preamp and ADAT commands changed that
+The WebUI displays the first six unassigned space-0 flags from the device's
+`0x0b:0` table as raw diagnostics. Both Preamp and ADAT commands changed that
 table in controlled checks, so it cannot identify which input domain is
 linked and no longer drives either set of buttons. Their button state records
 the last command made in this browser. On first load after this correction,
 the browser clears old pair-0..5 link cache entries that may have been filled
 from the ambiguous table; it does not send a device command. The profile also
-declares an eight-byte `0x0b:1` ADAT table, so writes
-to ADAT pair indices 6/7 trigger fresh reads for diagnostics. However, a
+declares an eight-byte `0x0b:1` ADAT table, so writes to ADAT pair indices
+6/7 trigger fresh reads for diagnostics. However, a
 controlled ADAT 13/14 ON write completed a fresh index-1 readback while
 records 6/7 still returned zero. Those schema-shaped values are not used to
 drive the tail-pair indicators; they remain last-command state until a

@@ -240,8 +240,8 @@ class MeterSourceTests(unittest.TestCase):
         device._lock = threading.Lock()
         payload = device.structured_readbacks_json()
         by_name = {layout['name']: layout for layout in payload['layouts']}
-        self.assertEqual(by_name['space-0 input links']['current']['0'][0]['linked'], 1)
-        self.assertEqual(by_name['space-0 input links']['current']['0'][0]['raw'], '01')
+        self.assertEqual(by_name['unassigned space-0 flags']['current']['0'][0]['linked'], 1)
+        self.assertEqual(by_name['unassigned space-0 flags']['current']['0'][0]['raw'], '01')
         self.assertFalse(by_name['available']['safe'])
         self.assertTrue(by_name['available']['capture_required'])
         targets = set(self.server._structured_readback_targets(self.profile))
@@ -249,7 +249,15 @@ class MeterSourceTests(unittest.TestCase):
         self.assertIn((0x19, 63), targets)
         self.assertNotIn((0x0c, 0), targets)
 
-    def test_input_link_write_refreshes_the_mapped_pair_table(self):
+    def test_input_link_write_refreshes_the_bounded_diagnostic_table(self):
+        self.assertEqual(self.server._input_link_readback_target(
+            self.profile, 'preamp', 3), (0x0b, 0))
+        self.assertEqual(self.server._input_link_readback_target(
+            self.profile, 'adat', 3), (0x0b, 0))
+        self.assertEqual(self.server._input_link_readback_target(
+            self.profile, 'adat', 6), (0x0b, 1))
+        self.assertEqual(self.server._input_link_readback_target(
+            self.profile, 'spdif', 0), (0x0b, 2))
         profile = copy.deepcopy(self.profile)
         profile['frame']['link_command']['readback'] = {
             'status': 'capture-confirmed', 'category': '0x0b', 'index': 0,
