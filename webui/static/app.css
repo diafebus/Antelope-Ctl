@@ -340,7 +340,7 @@
          background:color-mix(in srgb, var(--c) 15%, #0d1016); color:var(--c);
          font:700 9px/1 ui-monospace,monospace; display:flex; align-items:center; justify-content:center;
          cursor:grab; user-select:none; touch-action:none; }
-  .rgc.rgto { width:30px; font-weight:600; }
+  .rgc.rgto { font-weight:600; }
   .rgc.fam-none { --c:#3a3f49; background:#0d1016; }
   .rgc:hover { outline:1px solid var(--accent); outline-offset:-1px; }
   .rgc.fam-pre{--c:#43c96a} .rgc.fam-emu{--c:#93e0b4} .rgc.fam-play{--c:#4a9eff} .rgc.fam-adat{--c:#e05561}

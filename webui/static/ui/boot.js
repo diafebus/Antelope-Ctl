@@ -59,17 +59,16 @@ function applyProfileCapabilities() {
   $('#gearbtn').hidden = !settings;
   const section = $('#routesec');
   section.hidden = !routing && !mixer && !surround;
+  // initRouteTabs owns pane visibility, including the tab restored from storage.
+  // Capability setup only controls which tabs are available.
   const matrixTab = $('#routetabs [data-rtab="matrix"]');
   matrixTab.hidden = !routing;
-  $('[data-rpane="matrix"]').hidden = !routing;
   $$('#routetabs [data-rtab^="mix"]').forEach(btn => {
     const n = Number(btn.dataset.rtab.slice(3));
     btn.hidden = !mixer || n > Number(cap.mixes || 0);
   });
   const surroundTab = $('#routetabs [data-rtab="surround"]');
   if (surroundTab) surroundTab.hidden = !surround;
-  const surroundPane = $('[data-rpane="surround"]');
-  if (surroundPane) surroundPane.hidden = !surround;
   const active = $('#routetabs .tabbtn.active');
   if (active?.hidden) {
     const first = [...$('#routetabs').querySelectorAll('.tabbtn')]
