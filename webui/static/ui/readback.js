@@ -37,16 +37,22 @@ function rbLinkBody(layout, entries) {
     && Number(layout.index) === Number(table.index));
   const inputMapped = !!inputTable;
   const inputTransitionConfirmed = inputTable && (
-    Number(inputTable.category) === Number(inputSpec.category)
-    && Number(inputTable.index) === Number(inputSpec.index)
+    (Number(inputTable.category) === Number(inputSpec.category)
+      && Number(inputTable.index) === Number(inputSpec.index)
+      && inputTable.authoritative !== false)
     || inputTable.transition_confirmed === true);
-  const note = mixerMapped
-    ? 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.'
-    : inputMapped
-      ? inputTransitionConfirmed
-        ? 'ON means the returned pair byte is non-zero; this transition-confirmed table drives its mapped input-link indicators.'
-        : 'This table is schema-backed but did not track an ON transition; it is diagnostic only and does not drive the input-link indicators.'
-      : 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
+  let note;
+  if (mixerMapped) {
+    note = 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.';
+  } else if (inputTable?.authoritative === false) {
+    note = 'This shared space-0 flag changes after Preamp and ADAT writes. It cannot identify which input domain is linked, so it does not drive either set of link buttons.';
+  } else if (inputMapped && inputTransitionConfirmed) {
+    note = 'ON means the returned pair byte is non-zero; this transition-confirmed table drives its mapped input-link indicators.';
+  } else if (inputMapped) {
+    note = 'This table has no confirmed ON/OFF transition mapping; it is diagnostic only and does not drive the input-link indicators.';
+  } else {
+    note = 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
+  }
   return `<div class="rbvalues">${bits.join('')}</div>`
     + `<p class="rbnote">${note}</p>`;
 }

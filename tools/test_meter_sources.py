@@ -240,8 +240,8 @@ class MeterSourceTests(unittest.TestCase):
         device._lock = threading.Lock()
         payload = device.structured_readbacks_json()
         by_name = {layout['name']: layout for layout in payload['layouts']}
-        self.assertEqual(by_name['preamps']['current']['0'][0]['linked'], 1)
-        self.assertEqual(by_name['preamps']['current']['0'][0]['raw'], '01')
+        self.assertEqual(by_name['space-0 input links']['current']['0'][0]['linked'], 1)
+        self.assertEqual(by_name['space-0 input links']['current']['0'][0]['raw'], '01')
         self.assertFalse(by_name['available']['safe'])
         self.assertTrue(by_name['available']['capture_required'])
         targets = set(self.server._structured_readback_targets(self.profile))

@@ -75,9 +75,10 @@ function buildChannels(n) {
 // Both address spaces are gain + link only -- no mode / 48V / Ø, and the HID
 // protocol carries no ADAT/S-PDIF meters. Same knob art as the preamp; range
 // from the profile (params.adat_gain / spdif_gain, -6..+12 dB on the Orion).
-// Link state starts with the browser's saved value; a profile-confirmed 0x0b
-// mapping replaces it when a complete device table arrives. Unmapped pairs
-// retain that browser fallback.
+// Link state starts with the browser's saved value. Only a profile mapping
+// confirmed for one specific input domain may replace it from 0x0b; Orion's
+// space-0 table also changes after ADAT writes, so it cannot identify which
+// input domain the user linked.
 // Endpoints:
 // POST /api/adat-gain /api/spdif-gain /api/adat-link /api/spdif-link.
 const DIG = {
@@ -107,11 +108,32 @@ function inputLinkReadbackSpec() {
   return spec;
 }
 
+function discardAmbiguousInputLinkCache() {
+  const spec = inputLinkReadbackSpec();
+  if (spec?.authoritative !== false) return;
+  // Older builds saved one space-0 response into both domains. Its ON bytes
+  // cannot tell us which control was used, so discard only those old pairs
+  // once; later button presses remain independent local controller state.
+  const marker = 'space0InputLinkCacheV2';
+  try {
+    if (localStorage.getItem(marker) === 'done') return;
+    const preampCount = Number(spec.pair_counts?.preamp || 0);
+    const adatCount = Number(spec.pair_counts?.adat || 0);
+    for (let pair = 0; pair < preampCount; pair++) delete LINKS[pair];
+    const adatLinks = digLoadLinks('adat');
+    for (let pair = 0; pair < adatCount; pair++) delete adatLinks[pair];
+    saveLinks();
+    localStorage.setItem('adatLinks', JSON.stringify(adatLinks));
+    localStorage.setItem(marker, 'done');
+  } catch (_) { /* local storage may be unavailable */ }
+}
+
 function inputLinkPairReadbackConfirmed(domain, pair) {
   const spec = inputLinkReadbackSpec();
   if (!spec || !Number.isInteger(pair) || pair < 0) return false;
   const primaryCount = Number(spec.pair_counts?.[domain] || 0);
-  if (Number.isInteger(primaryCount) && pair < primaryCount) return true;
+  if (spec.authoritative !== false && Number.isInteger(primaryCount)
+      && pair < primaryCount) return true;
   const additional = Array.isArray(spec.additional_tables) ? spec.additional_tables : [];
   return additional.some(table => {
     if (table?.transition_confirmed !== true) return false;
@@ -126,6 +148,11 @@ function inputLinkPairReadbackConfirmed(domain, pair) {
 
 function inputLinkButtonTitle(domain, pair, label) {
   const title = `link ${label}`;
+  const spec = inputLinkReadbackSpec();
+  if (spec?.authoritative === false && ['preamp', 'adat'].includes(domain)
+      && pair < Number(spec.pair_counts?.[domain] || 0)) {
+    return `${title} (shared device command may also affect the other input domain; separate state readback unavailable)`;
+  }
   return inputLinkPairReadbackConfirmed(domain, pair)
     ? title : `${title} (device state readback not confirmed)`;
 }
@@ -143,7 +170,8 @@ function syncInputLinksFromReadback(structured) {
       pair_start: 0, record_start: 0, pair_count: pairCount,
     };
   }
-  const tables = [{...spec, pair_mappings: primaryMappings, authoritative: true}]
+  const tables = [{...spec, pair_mappings: primaryMappings,
+    authoritative: spec.authoritative !== false}]
     .concat(Array.isArray(spec.additional_tables) ? spec.additional_tables : []);
   let preampChanged = false, adatChanged = false;
   for (const table of tables) {

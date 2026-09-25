@@ -117,6 +117,8 @@ async function boot() {
   DIG.spdif.pairs = PROFILE.spdif?.link_pairs?.count || 0;
   DIG.spdif.range = PROFILE.params?.spdif_gain?.range || [-6, 12];
 
+  discardAmbiguousInputLinkCache();
+
   $('[data-tab="inputs"]').textContent = profileLabel('sections', 'inputs', 'Inputs');
   $('[data-tab="adat"]').textContent = profileLabel('sections', 'digital_inputs', 'ADAT / S/PDIF');
   setSectionHeading('#busessec', featureLabel('buses', profileLabel('sections', 'outputs', 'Output buses')));

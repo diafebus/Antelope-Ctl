@@ -171,7 +171,7 @@ Declare those in the optional `frame.readback.record_layouts` list:
   "kind": "link_table",
   "category": "0x0b",
   "index": 0,
-  "name": "preamps",
+  "name": "space-0 input links",
   "record_count": 6,
   "record_stride": 1,
   "fields": [{"name": "linked", "offset": 0, "type": "u8"}],
@@ -201,13 +201,17 @@ derived from an application schema still needs a device capture before its
 outer index can be used.
 
 `frame.link_command.readback` separately maps an input link command to one
-safe `link_table` layout. The WebUI uses it only when `status` is `confirmed`
-or `capture-confirmed`, the returned table is complete, and
+safe `link_table` layout. The WebUI uses it to drive link buttons only when
+`status` is `confirmed` or `capture-confirmed`, `authoritative` is not false,
+the returned table is complete, and
 `pair_counts.preamp` / `.adat` stay within both the layout and the declared
 channel counts. Only mapped pairs replace browser-cached link icons; an
 absent, incomplete, or provisional mapping leaves the cache alone. On Orion,
-both input controls send space 0 and the first six pair flags track `0x0b:0`;
-`0x0b:1` did not track the tested ADAT transition.
+both input controls send space 0 and the first six pair flags track `0x0b:0`.
+This table is marked `authoritative: false` because a flag does not identify
+which domain is linked; it remains diagnostic and cannot overwrite either
+set of buttons. `0x0b:1` did not track the tested ADAT transition. S/PDIF's
+`0x0b:2` layout has not been correlated with a controlled link transition.
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two
