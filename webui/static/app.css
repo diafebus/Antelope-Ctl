@@ -333,8 +333,9 @@
            user-select:none; touch-action:none; }
   .rglbl.rgmute { color:#8b93a3; }
   .rglbl:hover { border-color:var(--accent); color:var(--fg); }
-  .rgcells { display:flex; gap:3px; }
-  .rgc { --c:#8b93a3; flex:0 0 auto; width:26px; padding:0 2px; height:22px; border-radius:3px;
+  .rgcells { --rg-cell-width:26px; display:flex; gap:3px; }
+  .rgspacer { flex:0 0 var(--rg-cell-width); pointer-events:none; }
+  .rgc { --c:#8b93a3; flex:0 0 auto; width:var(--rg-cell-width); padding:0 2px; height:22px; border-radius:3px;
          box-sizing:border-box; overflow:hidden; white-space:nowrap;
          border:1px solid color-mix(in srgb, var(--c) 38%, transparent);
          background:color-mix(in srgb, var(--c) 15%, #0d1016); color:var(--c);

@@ -481,11 +481,17 @@ function renderGrid() {
   const box = rgHost(); if (!box) return;
   RG_SIG = JSON.stringify((ROUTING && ROUTING.current) || {});
   const muteLabel = ROUTING.sources.find(s => s.kind === 'mute')?.label || 'MUTE';
+  const preampRows = SRC_GROUPS.find(g => g.key === 'preamp')?.rows || [];
 
-  const fromRow = g => `<div class="rgrow">
-    <div class="rglbl fam-${g.fam}" data-node="sg:${g.key}" tabindex="0" title="${g.name} — drag onto a destination row to map 1:1">${g.name}</div>
-    <div class="rgcells">${g.rows.map(r =>
-      `<div class="rgc fam-${g.fam}" data-node="${r.key}" tabindex="0" title="${r.label}">${rgNum(r.key)}</div>`).join('')}</div></div>`;
+  const fromRow = g => {
+    // EmuMic source 5 belongs below preamp 5, not in the first grid column.
+    const leading = g.key === 'emumic'
+      ? Math.max(0, preampRows.findIndex(r => r.number === g.rows[0]?.number)) : 0;
+    return `<div class="rgrow">
+      <div class="rglbl fam-${g.fam}" data-node="sg:${g.key}" tabindex="0" title="${g.name} — drag onto a destination row to map 1:1">${g.name}</div>
+      <div class="rgcells">${'<span class="rgspacer" aria-hidden="true"></span>'.repeat(leading)}${g.rows.map(r =>
+        `<div class="rgc fam-${g.fam}" data-node="${r.key}" tabindex="0" title="${r.label}">${rgNum(r.key)}</div>`).join('')}</div></div>`;
+  };
 
   const toRow = d => {
     const cur = curFor(d.id), N = d.channels;
