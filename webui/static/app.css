@@ -1,6 +1,7 @@
   :root { color-scheme: dark; --bg:#14161a; --panel:#1e2128; --panel2:#181b21; --line:#2c313c;
           --fg:#e7e9ee; --dim:#8b93a3; --accent:#4a9eff;
-          --meter:#3ecf8e; --warn:#f1c40f; --orange:#f5911e; --clip:#ff5d5d; }
+          --meter:#3ecf8e; --warn:#f1c40f; --orange:#f5911e; --clip:#ff5d5d;
+          --mix1:#f5911e; --mix2:#ef72ae; --mix3:#c7d64a; --mix4:#8da4ff; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg);
          font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
@@ -309,7 +310,10 @@
   .rmx tr.fam-sur,   .cs.fam-sur   { color:#38c6c0; }
   .rmx tr.fam-osc,   .cs.fam-osc   { color:#8b93a3; }
   .rmx tr.fam-spdif, .cs.fam-spdif { color:#5ad0e6; }
-  .rmx tr.fam-mix,   .cs.fam-mix   { color:#f5911e; }
+  .rmx tr.fam-mix1, .cs.fam-mix1 { color:var(--mix1); }
+  .rmx tr.fam-mix2, .cs.fam-mix2 { color:var(--mix2); }
+  .rmx tr.fam-mix3, .cs.fam-mix3 { color:var(--mix3); }
+  .rmx tr.fam-mix4, .cs.fam-mix4 { color:var(--mix4); }
   .rmx tr.fam-mute,  .cs.fam-mute  { color:#6b7280; }
   .rmx td.c.pending::after { content:''; position:absolute; inset:5px; border-radius:50%;
                              background:currentColor; animation:rpulse .4s ease-in-out infinite alternate; }
@@ -346,7 +350,8 @@
   .rgc:hover { outline:1px solid var(--accent); outline-offset:-1px; }
   .rgc.fam-pre{--c:#43c96a} .rgc.fam-emu{--c:#93e0b4} .rgc.fam-play{--c:#4a9eff} .rgc.fam-adat{--c:#e05561}
   .rgc.fam-afx{--c:#b07cff} .rgc.fam-sur{--c:#38c6c0} .rgc.fam-osc{--c:#8b93a3}
-  .rgc.fam-spdif{--c:#5ad0e6} .rgc.fam-mix{--c:#f5911e} .rgc.fam-mute{--c:#6b7280}
+  .rgc.fam-spdif{--c:#5ad0e6} .rgc.fam-mix1{--c:var(--mix1)} .rgc.fam-mix2{--c:var(--mix2)}
+  .rgc.fam-mix3{--c:var(--mix3)} .rgc.fam-mix4{--c:var(--mix4)} .rgc.fam-mute{--c:#6b7280}
   .rgc.fam-unknown{--c:#a07b45}
   .rglbl.fam-pre{color:#43c96a} .rglbl.fam-emu{color:#93e0b4} .rglbl.fam-play{color:#4a9eff} .rglbl.fam-adat{color:#e05561}
   .rglbl.fam-afx{color:#b07cff} .rglbl.fam-sur{color:#38c6c0} .rglbl.fam-osc{color:#8b93a3}
@@ -381,6 +386,7 @@
              max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .fam-pre{color:#43c96a}.fam-emu{color:#93e0b4}.fam-play{color:#4a9eff}.fam-adat{color:#e05561}.fam-afx{color:#b07cff}
   .fam-sur{color:#38c6c0}.fam-osc{color:#8b93a3}.fam-spdif{color:#5ad0e6}.fam-mix{color:#f5911e}.fam-mute{color:#6b7280}
+  .fam-mix1{color:var(--mix1)}.fam-mix2{color:var(--mix2)}.fam-mix3{color:var(--mix3)}.fam-mix4{color:var(--mix4)}
   /* ---- compact virtual mixer ----------------------------------------- */
   .mixer-shell { background:var(--panel2); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
   .mixer-hd { display:flex; align-items:center; gap:10px; padding:9px 12px;

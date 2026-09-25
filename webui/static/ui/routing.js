@@ -12,7 +12,7 @@
 const SRC_FAM = {                     // kind -> family (colour + row grouping)
   preamp: 'pre', emumic: 'emu', compplay: 'play', adat: 'adat', afx: 'afx',
   surround: 'sur', osc: 'osc', spdif: 'spdif',
-  mix1: 'mix', mix2: 'mix', mix3: 'mix', mix4: 'mix', mute: 'mute',
+  mix1: 'mix1', mix2: 'mix2', mix3: 'mix3', mix4: 'mix4', mute: 'mute',
 };
 let SRC_GROUPS = null;                // built once from ROUTING.sources
 function buildSrcGroups() {
@@ -474,7 +474,10 @@ function refreshRouting() {
 // Reuses routeSet / routeBatch / the readback (rb_ver) for verified/differs.
 let ROUTE_VIEW = (() => { try { return localStorage.getItem('routeView') || 'grid'; } catch (_) { return 'grid'; } })();
 
-const rgNum = key => key.split(':')[1] || '';
+const rgNum = key => {
+  const [kind, number] = key.split(':');
+  return /^mix[1-4]$/.test(kind) ? kind.slice(-1) + number : (number || '');
+};
 let RG_SIG = '';
 
 function renderGrid() {
@@ -490,7 +493,7 @@ function renderGrid() {
     return `<div class="rgrow">
       <div class="rglbl fam-${g.fam}" data-node="sg:${g.key}" tabindex="0" title="${g.name} — drag onto a destination row to map 1:1">${g.name}</div>
       <div class="rgcells">${'<span class="rgspacer" aria-hidden="true"></span>'.repeat(leading)}${g.rows.map(r =>
-        `<div class="rgc fam-${g.fam}" data-node="${r.key}" tabindex="0" title="${r.label}">${rgNum(r.key)}</div>`).join('')}</div></div>`;
+        `<div class="rgc fam-${SRC_FAM[r.kind] || g.fam}" data-node="${r.key}" tabindex="0" title="${r.label}">${rgNum(r.key)}</div>`).join('')}</div></div>`;
   };
 
   const toRow = d => {
