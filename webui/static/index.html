@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>antelope-ctl</title>
-<link rel="stylesheet" href="/webui/static/app.css">
+<link rel="stylesheet" href="/webui/static/app.css?v=routing-full-view-v1">
   <link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v16">
 </head>
 <body>
@@ -58,7 +58,6 @@
   <section id="routesec">
     <h2 class="sechd">Routing
       <span class="secbtns">
-        <button type="button" id="routepop" class="secbtn" title="open routing in a full window"></button>
         <button type="button" class="secbtn secmin" data-min="routebody" title="collapse this section" aria-expanded="true">–</button>
       </span>
     </h2>
@@ -72,6 +71,9 @@
         <button class="tabbtn" data-rtab="surround" role="tab">Surround</button>
       </div>
       <div data-rpane="matrix">
+        <div class="route-pane-actions">
+          <button type="button" id="routepop" class="secbtn" title="open routing in a full window"></button>
+        </div>
         <div id="routing"></div>
         <p class="hint">One destination at a time; rows are sources (click a group to expand).
            Each output channel takes exactly one source — click an empty cell to route it,

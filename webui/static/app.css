@@ -259,6 +259,7 @@
   .output-meter-label { color:var(--dim); font:8px/1 ui-monospace,monospace; }
 
   /* ---- routing + mixer panels ---- */
+  .route-pane-actions { display:flex; justify-content:flex-end; margin-bottom:8px; }
   /* ---- routing matrix (per-destination grid) ---- */
   .rtop { display:flex; align-items:center; gap:16px; margin-bottom:8px; flex-wrap:wrap; }
   .rviews { display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
@@ -359,7 +360,7 @@
   .rgc.rgflash-differ { box-shadow:inset 0 0 0 2px var(--clip); }
   .rgc.rgflash-timeout { box-shadow:inset 0 0 0 2px var(--dim); }
 
-  /* ---- section header controls (pop-out + collapse) ---- */
+  /* ---- section header and routing pane controls ---- */
   h2.sechd { display:flex; align-items:center; gap:10px; }
   .secbtns { margin-left:auto; display:flex; gap:6px; }
   .secbtn { background:#0e1116; border:1px solid var(--line); color:var(--dim); border-radius:5px;
