@@ -16,21 +16,26 @@ class LinkTransitionCaptureTests(unittest.TestCase):
         tables = capture.link_tables(self.profile)
         self.assertEqual(
             {name: table['index'] for name, table in tables.items()},
-            {'preamps': 0, 'adats': 1, 'spdifs': 2, 'mixer': 3, 'afx': 4},
+            {'unassigned space-0 flags': 0,
+             'space-1 flags (S/PDIF at record 0)': 1,
+             'unassigned link byte': 2, 'mixer': 3, 'afx': 4},
         )
 
-    def test_writable_families_have_matching_pair_counts(self):
-        for family, expected_space in (('physical', 0), ('adat', 0), ('spdif', 1)):
+    def test_writable_families_use_the_observed_table(self):
+        for family, expected_index in (('physical', 0), ('adat', 0), ('spdif', 1)):
             with self.subTest(family=family):
                 spec, table = capture.validate_target(self.profile, family, 0)
-                self.assertEqual(spec['space'], expected_space)
-                self.assertEqual(spec['pairs'], table['record_count'])
+                self.assertEqual(spec['space'], expected_index)
+                self.assertEqual(table['index'], expected_index)
 
     def test_pair_bounds_are_rejected_before_any_transport_is_opened(self):
         with self.assertRaises(ValueError):
             capture.validate_target(self.profile, 'spdif', 1)
         with self.assertRaises(ValueError):
             capture.validate_target(self.profile, 'physical', -1)
+        spec, table = capture.validate_target(self.profile, 'adat', 6)
+        self.assertIsNone(table)
+        self.assertIsNone(spec['table'])
 
     def test_diffs_identify_only_changed_slots(self):
         before = {'preamps': [0, 0], 'adats': [0]}

@@ -2,10 +2,11 @@
 """Capture one bounded Orion link transition and restore the declared state.
 
 This is intentionally a *capture assistant*, not another general link
-controller.  Category 0x0b has five safe, profile-declared link tables, but
-their correlation with SET_LINK still needs live evidence.  The script reads
-all five tables before and after one requested transition, writes a local JSON
-record, and restores the state the operator explicitly declared.
+controller.  Category 0x0b has five safe, profile-declared link tables.
+S/PDIF pair 0 tracks index-1 record 0; space-0 flags remain ambiguous between
+Preamp and ADAT, and ADAT pairs 6/7 have no identified readback byte. The
+script reads all five tables before and after one requested transition,
+writes a local JSON record, and restores the state the operator declared.
 
 Read-only inventory:
     python3 tools/link_transition_capture.py
@@ -17,7 +18,9 @@ One S/PDIF transition (the Launcher must show it currently off):
 Physical and ADAT links share SET_LINK space 0 on Orion.  Their write path
 therefore needs the extra --confirm-shared-space acknowledgement and records
 both tables; use it only when the corresponding pair is known to have the
-declared starting state in both domains.
+declared starting state in both domains. ADAT pairs 6/7 may be tested with
+explicit state/restore confirmation, but they have no mapped readback byte;
+the tool compares all five bounded tables instead.
 
 Only one process may own the HID node.  Stop the WebUI, CLI, and Launcher
 before running this tool.  The default output path is ignored by Git because
@@ -64,16 +67,19 @@ def link_tables(profile):
 def family_spec(profile, family):
     """Resolve a logical family through profile declarations, never defaults."""
     tables = link_tables(profile)
+    def table_at(index):
+        return next((name for name, table in tables.items()
+                     if table['index'] == index), None)
     if family == 'physical':
-        return {'table': 'preamps', 'space': 0,
+        return {'table': table_at(0), 'space': 0,
                 'pairs': _as_int(profile['channels']['link_pairs']['count']),
                 'shared_space': True}
     if family == 'adat':
-        return {'table': 'adats', 'space': 0,
+        return {'table': table_at(0), 'space': 0,
                 'pairs': _as_int(profile['adat']['link_pairs']['count']),
                 'shared_space': True}
     if family == 'spdif':
-        return {'table': 'spdifs', 'space': 1,
+        return {'table': table_at(1), 'space': 1,
                 'pairs': _as_int(profile['spdif']['link_pairs']['count']),
                 'shared_space': False}
     raise ValueError(f'unsupported link family {family!r}')
@@ -85,14 +91,19 @@ def validate_target(profile, family, pair):
     table = link_tables(profile).get(spec['table'])
     if table is None:
         raise ValueError(f'profile has no 0x0b table for {family} links')
-    if table['record_count'] != spec['pairs']:
-        raise ValueError(
-            f'{family} pair count ({spec["pairs"]}) disagrees with its '
-            f'0x0b table ({table["record_count"]}); refusing to write')
     if not 0 <= pair < spec['pairs']:
         raise ValueError(
             f'{family} pair {pair} is outside the profile-confirmed '
             f'0..{spec["pairs"] - 1} range')
+    if pair >= table['record_count']:
+        if family != 'adat':
+            raise ValueError(
+                f'{family} pair {pair} has no corresponding byte in '
+                f'0x0b/{table["index"]}; refusing a blind transition')
+        # ADAT tail pairs are a deliberate mapping experiment. The complete
+        # bounded 0x0b snapshot still shows any correlated table transition.
+        spec['table'] = None
+        return spec, None
     return spec, table
 
 
@@ -212,9 +223,14 @@ def main(argv=None):
 
     prior = args.from_state == 'on'
     requested = args.to_state == 'on'
-    target_before = before[spec['table']][args.pair]
-    print(f'operator-declared {args.family} pair {args.pair}: {args.from_state}; '
-          f'0x0b/{table["index"]} reports raw value {target_before}.')
+    if table is None:
+        print(f'operator-declared {args.family} pair {args.pair}: '
+              f'{args.from_state}; no mapped readback byte, comparing '
+              'all five bounded tables.')
+    else:
+        target_before = before[spec['table']][args.pair]
+        print(f'operator-declared {args.family} pair {args.pair}: {args.from_state}; '
+              f'0x0b/{table["index"]} reports raw value {target_before}.')
     record = {
         'format': 'antelope-ctl link transition capture v1',
         'timestamp_utc': datetime.now(timezone.utc).isoformat(),

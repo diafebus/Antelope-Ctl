@@ -165,7 +165,7 @@ function syncInputLinksFromReadback(structured) {
   const primaryPairs = spec.pair_counts || {};
   if (!primaryPairs || typeof primaryPairs !== 'object' || Array.isArray(primaryPairs)) return false;
   const primaryMappings = {};
-  for (const domain of ['preamp', 'adat']) {
+  for (const domain of ['preamp', 'adat', 'spdif']) {
     const pairCount = Number(primaryPairs[domain] || 0);
     if (!Number.isInteger(pairCount) || pairCount < 0) return false;
     if (pairCount) primaryMappings[domain] = {
@@ -175,7 +175,7 @@ function syncInputLinksFromReadback(structured) {
   const tables = [{...spec, pair_mappings: primaryMappings,
     authoritative: spec.authoritative !== false}]
     .concat(Array.isArray(spec.additional_tables) ? spec.additional_tables : []);
-  let preampChanged = false, adatChanged = false;
+  let preampChanged = false, adatChanged = false, spdifChanged = false;
   for (const table of tables) {
     if (!table || typeof table !== 'object') continue;
     const status = String(table.status || '').trim().toLowerCase();
@@ -210,23 +210,25 @@ function syncInputLinksFromReadback(structured) {
     }
     if (!valid) continue;
 
-    for (const domain of ['preamp', 'adat']) {
+    for (const domain of ['preamp', 'adat', 'spdif']) {
       const mapping = mappings[domain];
       if (!mapping || typeof mapping !== 'object') continue;
+      if (domain !== 'preamp' && !DIG[domain]) continue;
       const pairStart = Number(mapping.pair_start || 0);
       const recordStart = Number(mapping.record_start || 0);
       const pairCount = Number(mapping.pair_count);
-      const domainCount = domain === 'preamp' ? N_PAIRS : DIG.adat.pairs;
+      const domainCount = domain === 'preamp' ? N_PAIRS : DIG[domain]?.pairs;
       if (!Number.isInteger(pairStart) || !Number.isInteger(recordStart)
           || !Number.isInteger(pairCount) || pairCount <= 0
           || pairStart < 0 || pairStart + pairCount > domainCount
           || recordStart < 0 || recordStart + pairCount > count) continue;
-      const links = domain === 'preamp' ? LINKS : DIG.adat.links;
+      const links = domain === 'preamp' ? LINKS : DIG[domain].links;
       for (let offset = 0; offset < pairCount; offset++) {
         const pair = pairStart + offset, on = linked[recordStart + offset];
         if (!!links[pair] !== on) {
           if (domain === 'preamp') preampChanged = true;
-          else adatChanged = true;
+          else if (domain === 'adat') adatChanged = true;
+          else spdifChanged = true;
         }
         if (on) links[pair] = true; else delete links[pair];
       }
@@ -234,7 +236,8 @@ function syncInputLinksFromReadback(structured) {
   }
   if (preampChanged) { saveLinks(); refreshLinks(); }
   if (adatChanged) { digSaveLinks('adat'); digRefreshLinks('adat'); }
-  return preampChanged || adatChanged;
+  if (spdifChanged) { digSaveLinks('spdif'); digRefreshLinks('spdif'); }
+  return preampChanged || adatChanged || spdifChanged;
 }
 function digCurGain(el, kind, ch) {
   const p = DIG_PENDING[digKey(kind, ch)];

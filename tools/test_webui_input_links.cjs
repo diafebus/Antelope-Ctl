@@ -8,7 +8,8 @@ const {ROOT, readWebUISource} = require('./webui_sources.cjs');
 const js = readWebUISource();
 const source = js.slice(js.indexOf('function inputLinkReadbackSpec'),
   js.indexOf('function digCurGain'));
-const saves = {preamp: 0, adat: 0, paintPreamp: 0, paintAdat: 0};
+const saves = {preamp: 0, adat: 0, spdif: 0,
+  paintPreamp: 0, paintAdat: 0, paintSpdif: 0};
 const partnerPosts = [];
 const context = vm.createContext({
   PROFILE: {frame: {link_command: {readback: {
@@ -22,16 +23,18 @@ const context = vm.createContext({
   }}}},
   N_PAIRS: 6,
   LINKS: {0: true},
-  DIG: {adat: {api: 'adat', pairs: 8, links: {0: true, 7: true}}},
+  DIG: {adat: {api: 'adat', pairs: 8, links: {0: true, 7: true}},
+        spdif: {api: 'spdif', pairs: 1, links: {}}},
   DIG_PENDING: {},
   digKey: (kind, ch) => kind + ':' + ch,
   digPartner: ch => ch % 2 ? ch - 1 : ch + 1,
   digIsLinked: (kind, ch) => !!context.DIG[kind].links[Math.floor(ch / 2)],
   post: (path, body) => partnerPosts.push({path, body}),
   saveLinks: () => saves.preamp++,
-  digSaveLinks: kind => { assert.equal(kind, 'adat'); saves.adat++; },
+  digSaveLinks: kind => { saves[kind]++; },
   refreshLinks: () => saves.paintPreamp++,
-  digRefreshLinks: kind => { assert.equal(kind, 'adat'); saves.paintAdat++; },
+  digRefreshLinks: kind => { if (kind === 'adat') saves.paintAdat++;
+    else if (kind === 'spdif') saves.paintSpdif++; },
 });
 vm.runInContext(source, context);
 assert.equal(context.inputLinkPairReadbackConfirmed('preamp', 3), true);
@@ -72,7 +75,8 @@ assert.equal(context.LINKS[3], true);
 assert.equal(context.DIG.adat.links[0], undefined);
 assert.equal(context.DIG.adat.links[3], true);
 assert.equal(context.DIG.adat.links[7], true); // tail table has not arrived yet
-assert.deepEqual(saves, {preamp: 1, adat: 1, paintPreamp: 1, paintAdat: 1});
+assert.deepEqual(saves, {preamp: 1, adat: 1, spdif: 0,
+  paintPreamp: 1, paintAdat: 1, paintSpdif: 0});
 
 // A schema-only table is diagnostic; it cannot overwrite an unconfirmed link state.
 const tailOn = rowsFor(8, [6]);
@@ -85,7 +89,8 @@ context.PROFILE.frame.link_command.readback.additional_tables[0].transition_conf
 assert.equal(context.syncInputLinksFromReadback(payload(tailOn, 1)), true);
 assert.equal(context.DIG.adat.links[6], true);
 assert.equal(context.DIG.adat.links[7], undefined);
-assert.deepEqual(saves, {preamp: 1, adat: 2, paintPreamp: 1, paintAdat: 2});
+assert.deepEqual(saves, {preamp: 1, adat: 2, spdif: 0,
+  paintPreamp: 1, paintAdat: 2, paintSpdif: 0});
 
 // An incomplete or malformed tail table cannot clear an already observed pair.
 assert.equal(context.syncInputLinksFromReadback(payload(tailOn.slice(0, 7), 1, 8)), false);
@@ -126,6 +131,8 @@ context.DIG.adat.links = {7: true};
 const savesBefore = {...saves};
 assert.equal(context.inputLinkPairReadbackConfirmed('preamp', 0), false);
 assert.equal(context.inputLinkPairReadbackConfirmed('adat', 0), false);
+assert.equal(context.inputLinkPairReadbackConfirmed('adat', 7), false);
+assert.equal(context.inputLinkPairReadbackConfirmed('spdif', 0), true);
 assert.match(context.inputLinkButtonTitle('adat', 0, 'ADAT 1+ADAT 2'),
   /does not identify Preamp versus ADAT state/);
 assert.equal(context.syncInputLinksFromReadback(payload(records)), false);
@@ -134,6 +141,16 @@ assert.equal(context.LINKS[3], undefined);
 assert.equal(context.DIG.adat.links[3], undefined);
 assert.equal(context.DIG.adat.links[7], true);
 assert.deepEqual(saves, savesBefore);
+
+// The live S/PDIF OFF/ON transition belongs to index 1 record 0, despite
+// the older extracted schema having called that table ADAT.
+assert.equal(context.syncInputLinksFromReadback(payload(rowsFor(8, [0]), 1)), true);
+assert.equal(context.DIG.spdif.links[0], true);
+assert.equal(context.DIG.adat.links[7], true);
+assert.equal(context.syncInputLinksFromReadback(payload(rowsFor(8), 1)), true);
+assert.equal(context.DIG.spdif.links[0], undefined);
+assert.equal(context.syncInputLinksFromReadback(payload(rowsFor(1, [0]), 2)), false);
+assert.equal(context.DIG.spdif.links[0], undefined);
 
 const rbContext = vm.createContext({
   rbEscape: value => String(value),

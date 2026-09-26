@@ -213,9 +213,12 @@ both input controls send space 0; tested pair 0 and pair 3 transitions changed
 bytes in the six-record `0x0b:0` table.
 This table has `post_write_pair_counts` and `authoritative: false` because a
 flag does not identify which domain is linked; it remains diagnostic and
-cannot overwrite either set of buttons. `0x0b:1` did not track the tested
-ADAT transition. S/PDIF's
-`0x0b:2` layout has not been correlated with a controlled link transition.
+cannot overwrite either set of buttons. Direct ADAT pair 5 ON/OFF changed
+`0x0b:0` record 4, while pairs 7 and 8 changed none of the five safe link
+tables on a short read. `0x0b:1` has eight response bytes, but only record 0
+is mapped: a controlled S/PDIF OFF/ON changed it 1 → 0 → 1 while ADAT was
+held fixed. S/PDIF has one link pair. `0x0b:2` stayed zero in that test and
+remains unassigned.
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two

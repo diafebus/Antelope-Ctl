@@ -54,8 +54,9 @@ with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
 bounds for `0x0c`, and
 the `0x74` channel-group names. A controlled 2026-09-23 space-0 link
 transition confirmed category `0x0b` index 0 for six shared space-0 pair
-flags; it cannot separate Preamp from ADAT state, and the other input-link
-tables remain unverified. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
+flags; it cannot separate Preamp from ADAT state. A controlled S/PDIF OFF/ON
+transition mapped its single pair to `0x0b:1` record 0; the other seven bytes
+and `0x0b:2` remain unassigned. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
 (`SCOPE.md`); plugin *parameters* stay off-repo. The AFX-tab channel
@@ -232,15 +233,17 @@ table in controlled checks, so it cannot identify which input domain is
 linked and no longer drives either set of buttons. Their button state records
 the last command made in this browser. On first load after this correction,
 the browser clears old pair-0..5 link cache entries that may have been filled
-from the ambiguous table; it does not send a device command. The profile also
-declares an eight-byte `0x0b:1` ADAT table, so writes to ADAT pair indices
-6/7 trigger fresh reads for diagnostics. However, a
-controlled ADAT 13/14 ON write completed a fresh index-1 readback while
-records 6/7 still returned zero. Those schema-shaped values are not used to
-drive the tail-pair indicators; they remain last-command state until a
-matching device flag is found. S/PDIF writes now trigger an immediate bounded
-`0x0b:2` diagnostic query, but its button also remains on saved state until
-the table's link transition is verified. None of these flags proves that both
+from the ambiguous table; it does not send a device command. ADAT pair
+indices 6/7 have no confirmed readback byte; their buttons also retain the
+browser's last command. Direct ADAT pair-7 and pair-8 ON/OFF tests changed
+none of the five known link tables; pair 8 also stayed on for 40 seconds
+without a table change. An earlier ADAT 13/14 ON write left the eight-byte
+`0x0b:1` table at zero. A controlled 2026-09-26 S/PDIF OFF/ON test then
+showed that **record 0 of that same table follows S/PDIF**, changing
+`1 → 0 → 1` while ADAT links stayed fixed. The WebUI now refreshes
+`0x0b:1` after S/PDIF writes and uses only record 0 for its S/PDIF button.
+The one-byte `0x0b:2` table stayed zero during that test and remains an
+unassigned diagnostic. None of these flags proves that both
 physical and ADAT signal paths are linked by the shared space-0 command.
 
 The 2026-09-23 UI check showed the bug: after the ADAT 7/8 OFF command,
@@ -369,7 +372,7 @@ python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
 python3 -m antelope.cli ... matrix-status                    # LIVE read of the whole matrix from the device
 python3 -m antelope.cli ... mix-status 1                     # LIVE read of virtual Mix 1 (cat 0x04)
 python3 -m antelope.cli ... readback 0x03 0                  # raw: routing record for dest 0 (line out)
-python3 -m antelope.cli ... readback 0x0b 0                  # structured preamp-link table
+python3 -m antelope.cli ... readback 0x0b 0                  # six shared space-0 link flags
 python3 -m antelope.cli ... readback 0x16 0                  # structured mic-emulation state
 python3 -m antelope.cli ... readback 0x19 0                  # structured AFX strip order
 python3 -m antelope.cli ... readback                         # list the readback categories
@@ -747,16 +750,15 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   everything observed changing there is explained as a side effect of the
   gain/status sync above, not a standalone flag. The extracted Orion panel
   schema and manager-server log do identify readback category `0x0b` as five
-  nested link tables (shared space-0, ADAT, S/PDIF, mixer, AFX). Their returned bytes
+  nested link tables (shared space-0, an eight-byte table with S/PDIF at
+  record 0, one unassigned byte, mixer, AFX). Their returned bytes
   are now exposed by `readback 0x0b <index>` and the WebUI. A controlled
   2026-09-23 space-0 pair-3 transition correlated index 0 with the flag.
-  Index 0 carries six shared pairs; index 1 is schema-declared as eight ADAT
-  records. But a controlled pair-6 ON write followed by a successful fresh
-  index-1 readback returned all zeros, so those schema-only tail values are
-  diagnostic and do not drive WebUI link indicators. Index 0 likewise does
-  not drive Preamp or ADAT indicators because it changes after both kinds of
-  writes. S/PDIF index 2 is queried after its link writes for diagnostics,
-  but its state mapping remains uncorrelated.
+  Index 0 carries six shared pairs and does not drive Preamp or ADAT buttons.
+  A controlled pair-6 ADAT ON write left index-1 record 6 zero, while a
+  controlled S/PDIF OFF/ON changed index-1 record 0 from `1→0→1`. Only that
+  record drives the S/PDIF indicator. Index 2 stayed zero during S/PDIF
+  transitions and has no assigned control mapping.
 
   **Re-verified independently (2026-08) against the raw
   `all_reports_ch-link-gain-ph-inv-test.tsv`**: every report in that capture

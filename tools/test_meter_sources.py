@@ -254,10 +254,10 @@ class MeterSourceTests(unittest.TestCase):
             self.profile, 'preamp', 3), (0x0b, 0))
         self.assertEqual(self.server._input_link_readback_target(
             self.profile, 'adat', 3), (0x0b, 0))
+        self.assertIsNone(self.server._input_link_readback_target(
+            self.profile, 'adat', 6))
         self.assertEqual(self.server._input_link_readback_target(
-            self.profile, 'adat', 6), (0x0b, 1))
-        self.assertEqual(self.server._input_link_readback_target(
-            self.profile, 'spdif', 0), (0x0b, 2))
+            self.profile, 'spdif', 0), (0x0b, 1))
         profile = copy.deepcopy(self.profile)
         profile['frame']['link_command']['readback'] = {
             'status': 'capture-confirmed', 'category': '0x0b', 'index': 0,
