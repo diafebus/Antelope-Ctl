@@ -57,8 +57,9 @@ The WebUI also has a bounded `0x87` per-speaker path: delay/level/phase and EQ
 controls write one field, while Reset writes
 the profile-defined frequency/Q/gain preset for one speaker after a fresh
 readback. The remaining two are **not emitted by normal CLI/WebUI paths** —
-`0x23` (AFX slot assign) and `0x1c` (AFX plugin parameters; both are in
-`constraints.forbidden_opcodes`). The dedicated
+`0x23` (AFX slot assign, out of scope) and `0x1c` (AFX Real-Time
+parameters, in scope but not yet decoded or write-verified; currently
+blocked by `constraints.forbidden_opcodes` as an implementation guard). The dedicated
 `tools/surround_eq_selftest.py` may emit one explicitly selected `0x87` probe
 after the user acknowledges the write test; it always reads and restores a
 complete speaker record.
@@ -84,8 +85,8 @@ single most important thing to get right.
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim, `[43+]` = Bass Management channel blocks -- §11 | surround tab global; WebUI uses fresh read-modify-write for 2.0/2.1 global fields, the speaker bypass mask, and confirmed 2.0/2.1 Bass Management fields |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; bounded one-field/reset writes in WebUI, including confirmed delay/level/phase head fields and one-field EQ probes in `tools/surround_eq_selftest.py` |
-| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- `0x23` is in `forbidden_opcodes` (placing a plugin = bucket E) |
-| `0x1c` | *(AFX plugin parameters)* | `0xd5` | frame-identified only (§12a) -- payload never decoded on purpose | **observed only, never emitted** -- `0x1c` is in `forbidden_opcodes` (a licensed plugin's parameter set = bucket D) |
+| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- slot assignment is out of scope (bucket E) |
+| `0x1c` | *(AFX Real-Time parameters)* | `0xd5` | frame-identified only (§12a) -- payload not yet decoded | **not emitted** -- bucket D is in scope; the current forbidden-opcode guard remains until the payload and safe write behavior are established |
 
 Notes:
 - **`0x17` is overloaded** -- the param_id at @16 is the real discriminator:
@@ -422,9 +423,9 @@ sweep to the declared count unless `--unsafe`.
 > | `0x17` | SET_MIX / SET_MIC_MODELING | not queried |
 > | `0x1a` | **blocked as a precaution -- never actually observed as a write opcode on this device** (see below) | **surround per-speaker EQ** (decoded, in scope) |
 > | `0x1b` | — | **surround global** |
-> | `0x1c` | **forbidden** (AFX plugin *parameter* stream — bucket D, licensed-plugin content) | answers empty |
+> | `0x1c` | AFX Real-Time parameter stream (bucket D; in scope, but currently blocked pending decoding and write verification) | answers empty |
 > | `0x1d` | SET_AURAVERB (bundled, no activation — in scope) | answers empty |
-> | `0x23` | **forbidden** (AFX slot assign — bucket E, places/clears a plugin) | answers empty |
+> | `0x23` | **out of scope** (AFX slot assign — bucket E, assigns/clears a plugin) | answers empty |
 >
 > This table exists because of a real, already-documented bug: category
 > `0x1a` was mislabelled "ADAT" for weeks from a count coincidence (16
@@ -445,11 +446,12 @@ sweep to the declared count unless `--unsafe`.
 > `0x1a` there is actually a *candidate for the mic-modeling/emuMic frame*
 > (SCOPE.md §1, in scope, not an AFX plugin) rather than a confirmed
 > licensed-plugin opcode. So "forbidden" for `0x1a` means "unconfirmed,
-> blocked defensively" — not "known DSP, therefore off-limits." The policy
-> itself (SCOPE.md §4) targets Antelope's **purchasable, activation-gated
-> plugin catalogue**, not the device's built-in DSP: AuraVerb and the
-> surround EQ run on the same DSP unit and are both fully decoded and in
-> scope.
+> blocked defensively" — not "known DSP, therefore off-limits." Under
+> `SCOPE.md` §4, control of an AFX Real-Time effect already available under
+> a license assigned to the device is in scope. This is distinct from
+> Native/Cosmos DAW plugins. Plugin assignment/loading and license or
+> activation traffic remain out of scope; the `0x1c` command stays blocked
+> in the implementation until its payload and safe write path are verified.
 
 ### Reading routing back
 
@@ -1821,8 +1823,9 @@ reverblevel` (2026-08-31, each of the 8 controls swept in isolation →
 one byte each). Control names/ranges cross-checked against the Orion
 Studio Synergy Core manual p.50 and antelopeaudio.com/products/auraverb
 (facts only). AuraVerb is device-*bundled* (no per-plugin activation) so
-it is **in scope**; still off-limits is the licensed AFX plugin chain and
-anything touching license state. `0x1d` is in `constraints.allowed_opcodes`;
+it is **in scope**. AFX Real-Time parameter controls are also in scope
+under `SCOPE.md` §4; plugin assignment/loading and license or activation
+traffic remain out of scope. `0x1d` is in `constraints.allowed_opcodes`;
 `protocol.build_auraverb_command`; CLI `auraverb`.
 
 **Readback + hardware round-trip -- DONE 2026-09-03.** No `0x73` effect,
@@ -1842,17 +1845,21 @@ verified read-modify-write (cache kept only as an offline fallback);
 for **all four mixes**, so each mix has its own AuraVerb instance (only
 Mix 1 has been written).
 
-### 12a. AFX plugin-chain SLOT control (`0x23` / `0xd7`) -- observation only
+### 12a. AFX Real-Time effect slot control (`0x23` / `0xd7`) -- observation only
 
-**Bucket boundary (SCOPE.md).** This subsection documents the *slot* frame
-for **observation** and future readback decoding. It does **not** cover
-plugin parameters (opcode `0x1c` / param `0xd5` -- bucket D, frozen) or
-activation traffic (bucket F). `0x23` stays in
-`constraints.forbidden_opcodes`; no builder emits it. Source: two macOS
-Launcher captures (a "Tuner" utility on ch1/ch4, "MemoryCat Brigade" delay
-on ch1) held in the separate `antelope-ctl-afx` repo, 2026-09-04.
-Frame-identification only -- the `0x1c`/`0xd5` parameter stream was
-frame-counted, never read.
+**Bucket boundary (`SCOPE.md`).** This subsection documents the slot
+assignment frame for **observation** and readback decoding. Assignment or
+loading remains out of scope (bucket E), so `0x23` stays in
+`constraints.forbidden_opcodes` and no builder emits it. Device-side AFX
+Real-Time parameter control (`0x1c` / `0xd5`, bucket D) is in scope, but its
+payload remains undecoded and the current profile guard blocks writes until
+the control fields and safe write behavior are established. License,
+entitlement, and activation traffic (bucket F) remains out of scope.
+
+The slot-frame evidence is from macOS Launcher captures (a "Tuner" utility
+on ch1/ch4 and "MemoryCat Brigade" delay on ch1), dated 2026-09-04. Those
+captures identify slot assignment only. The `0x1c`/`0xd5` parameter stream
+was frame-counted but its payload was not read.
 
 **Slot assign** -- `70 … 23 … d7 11 <ch> <handle> 00` (opcode `0x23`):
 
@@ -1886,8 +1893,9 @@ indices (one per strip), each containing eight `{type, inst}` slot records;
 remaining-featured-instance counters. Category **`0x0c`** has schema entries
 for 90 available and 90 maximum type/count records, but its outer query bound
 was not present in the captured enumeration, so the profile deliberately
-marks those queries capture-required. The slot assignment and plugin
-parameter writes remain observation-only/forbidden under `SCOPE.md`.
+marks those queries capture-required. Slot assignment remains out of scope.
+Parameter writes are in scope under `SCOPE.md` §4, but this protocol
+reference does not yet decode them or authorize a write builder.
 ---
 
 ## 13. Evidence boundaries
@@ -1910,7 +1918,7 @@ ignored `AUDIT.md`.
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, confirmed Bass Management/filter-type/Link/Solo fields, confirmed speaker bypass, and confirmed per-speaker delay/level/phase fields; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
 | DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
-| AFX plugin-chain slot (`0x23`/`0xd7`) | §12a: frame field-mapped 2026-09-04 (Tuner + MemoryCat Launcher captures) -- `[18]` channel, `[19]` plugin-instance handle (`0x48`/`0x49`; `0x00` = clear), `[17]=0x11`. Bypass = `0x14`/`0x98` + handle. **Observation only** -- `0x23` stays forbidden (placing a plugin = bucket E, SCOPE.md); plugin parameters (`0x1c`/`0xd5`) frozen. Readback category `0x19` now maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding (slot-index vs instance id, 2 data points); bypass polarity; whether the `0x19` type/instance values fully match the Launcher’s plugin catalogue. Full work deferred to `antelope-ctl-afx`. |
+| AFX Real-Time effects | Slot assignment (`0x23`/`0xd7`) is field-mapped from 2026-09-04 Launcher captures, but remains out of scope and blocked. Parameter control (`0x1c`/`0xd5`) is in scope under `SCOPE.md` §4 but its payload has not been decoded; the implementation guard stays until field mapping and safe-write verification. Readback category `0x19` maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding and bypass polarity. Parameter-control research is documented here in `antelope-ctl` per project scope. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |

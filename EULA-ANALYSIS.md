@@ -1,19 +1,23 @@
 # EULA analysis -- Antelope Audio license terms vs. this project
 
-Phase 0 of the AFX plan ("paper first") and a general due-diligence record.
-Sources are Antelope's **own publicly published** legal pages:
+This is a limited source summary, not a legal opinion or a determination
+that any particular method is lawful. It distinguishes device-side AFX
+Real-Time effects from host-side Native/Cosmos plugins; the Cosmos EULA
+must not be used as a proxy for the terms covering device-side AFX control.
+Sources are Antelope's **own publicly published** pages:
 
 - General EULA -- <https://en.antelopeaudio.com/legal-terms/eula/>
 - Cosmos plug-in EULA -- <https://en.antelopeaudio.com/legal-terms/antelope-cosmos-eula/>
   (version stated on the page: **1.12.2023**)
+- Software effects ecosystem guide -- <https://support.antelopeaudio.com/en/support/solutions/articles/42000104538-understanding-the-antelope-audio-s-software-effects-ecosystem>
 
-Retrieved 2026-09-01. Quotes below are verbatim from those pages; if they
-have since changed, re-check before relying on this.
+Checked 2026-09-30. Quotes below are from the EULA pages as retrieved on
+that date; verify current terms and the agreement presented to a user before
+relying on them.
 
-**This is not legal advice.** It is a contributor-facing record of what the
-terms say and how the project stays on the right side of them. Bucket D
-(see `SCOPE.md` §4) still needs an actual IP lawyer's review before it
-proceeds.
+**This is not legal advice.** The project scope for device-side parameter
+control is in `SCOPE.md` §4. That scope is not a legal clearance, and the
+Cosmos EULA is not the basis for it.
 
 ---
 
@@ -78,95 +82,86 @@ develop-similar-software restrictions. Differences:
 
 Subscription / membership model, iLok-based activation.
 
+Its definition of "Software" is limited to the computer programs included
+in the Antelope Cosmos plugin bundles. The EULA is therefore not used here
+as a stand-in for terms governing device-side AFX Real-Time control.
+
 ---
 
 ## 2. Who these terms bind
 
-The restrictions bind a **"Licensee"** -- someone who accepted the EULA by
-"Using" the Software, defined as "download, install, activate, access or
-otherwise use". In practice:
+The EULAs describe a **Licensee** who accepts the relevant agreement and
+uses the software covered by it. The general EULA defines use to include
+downloading, installing, activating, accessing, or otherwise using its
+"Software". This text alone does not identify every program or device
+feature covered by a contributor's particular Launcher flow.
 
-- **A contributor who installs and runs the Antelope Launcher is a
-  Licensee** and is bound by (ii)/(iii)/(iv).
-- Someone who only ever interacts with the **USB hardware** and never
-  installs Antelope's software is not a Licensee *of the Software* and did
-  not accept this EULA. (Device firmware may be covered by a separate
-  agreement -- not reviewed here.)
+The Cosmos EULA defines its Software specifically as computer programs in
+the Antelope Cosmos plug-in bundles. It therefore describes the Cosmos
+Native product path; it is not evidence that a device-side AFX Real-Time
+parameter command is Cosmos plugin use. The public ecosystem guide
+describes Real-Time effects as running on device DSP/FPGA and their license
+as assigned to a supported device through Launcher. The separate agreement
+or terms applicable to that device entitlement have not been identified
+here.
 
-The exposure therefore sits on **whoever runs the Launcher to produce a
-capture** -- a personal, contract-law matter, not a claim against the repo
-or downstream users. This is why the contributor agreement in `SCOPE.md`
-§6 and the AFX-repo charter both call it out.
+Contributors remain responsible for the terms they personally accept when
+using Antelope software. This memo does not determine who is bound by which
+agreement, or whether a particular USB capture or control method complies
+with it.
 
 ---
 
-## 3. How the project stays inside the lines
+## 3. Technical boundaries used by this project
 
 | clause | project posture |
 |---|---|
-| (ii) reverse-engineer the Software | The project **never decompiles, disassembles, or inspects Antelope binaries/firmware**. It observes **USB traffic on the wire** between the app and hardware a contributor owns -- black-box observation of externally visible behaviour, not inspection of the program's code. `SCOPE.md` §2 makes this a hard rule. |
+| (ii) reverse-engineer the Software | The project does not decompile, disassemble, or inspect Antelope binaries/firmware. It observes USB control traffic between an app and hardware a contributor owns. This describes the method; it does not decide how a particular agreement applies to it. `SCOPE.md` §2 records the project rule. |
 | (iii) modify / combine / merge with other software | `antelope-ctl` contains **no Antelope code** -- not a line, not a table, not a constant. Nothing is combined or merged. |
-| (iv) develop software with similar functional attributes | This is the clause with real bite: `antelope-ctl` *is* software that controls the same device. See §4 -- its enforceability turns on jurisdiction. |
-| (v) device-bound Software on another device | Not applicable to a controller. Relevant to plug-in / mic-model licensing being account+device bound -- which is exactly why AFX bucket D is limited to a plug-in **already loaded and licensed on the target device**, and why the emuMic catalogue is a separate account-bound data file. |
+| (iv) develop software with similar functional attributes | `antelope-ctl` controls the same hardware, so this clause is relevant to the project. This memo does not decide its scope or enforceability. |
+| (v) device-bound Software on another device | The general EULA includes a restriction on using software licensed for one device on another. This project does not transfer a device license; AFX bucket D (see `SCOPE.md`) concerns control of an effect already available on the target device. The clause's application to that control is not determined here. |
 | (vi) remove/conceal notices | N/A -- no Antelope Software is redistributed. |
 | (vii) copying | N/A. Captures are never committed (`SCOPE.md` §2). |
 
 ---
 
-## 4. Jurisdiction -- the split that shapes the plan
+## 4. What the public sources establish about AFX, Native, and Cosmos
 
-- **Core work** (mixer / routing / preamp / clocking, via the Launcher and
-  the **general EULA**) -> **Bulgarian law**, i.e. **EU law**. The EU
-  Software Directive (2009/24/EC) gives mandatory rights to **observe,
-  study and test** a program you are entitled to run in order to determine
-  its underlying ideas and principles (Art. 5(3)), and to **decompile for
-  interoperability** (Art. 6). **Art. 8 makes contract terms that
-  contradict those rights null and void.** A EULA clause forbidding
-  black-box protocol observation *for interoperability* is, to that
-  extent, likely unenforceable in the EU. This is a genuine and
-  reasonably strong shield for the core project.
+Antelope's [software effects ecosystem guide](https://support.antelopeaudio.com/en/support/solutions/articles/42000104538-understanding-the-antelope-audio-s-software-effects-ecosystem)
+distinguishes these formats:
 
-- **Plug-in work** (if it ever touches Cosmos or a similarly licensed
-  plug-in, under the **Cosmos EULA**) -> **Michigan / US law**. No
-  equivalent statutory interoperability carve-out; US courts have enforced
-  contractual anti-reverse-engineering clauses in EULAs and held them not
-  preempted by copyright (*Bowers v. Baystate*, Fed. Cir. 2003). **The
-  plug-in chain sits in the less favourable jurisdiction.**
+| Format | Where it runs | License/activation path described by Antelope |
+|---|---|---|
+| Synergy Core Real-Time (AFX in this project) | FPGA/DSP inside a supported device | A Real-Time license is assigned to the device through Launcher; no iLok is required. |
+| Synergy Core Native | Computer, loaded in a DAW | iLok authorization; does not require Antelope hardware. |
+| Antelope Cosmos | Membership access to Native plugins | Cosmos membership provides Native versions; it does not provide Synergy Core Real-Time licenses. |
 
-This reinforces the structure in `SCOPE.md` §4 and the AFX-repo charter:
-keep the core work here under the EU-law umbrella, and firewall anything
-plug-in-specific into a separate repo, gated on a lawyer's review.
+The guide establishes a product and activation distinction. It does not
+identify the full agreement applicable to a particular device-bound
+Real-Time license, nor decide the legal status of observing or controlling
+that device over USB. The Cosmos EULA's Michigan governing-law clause
+applies to that agreement; it is not a sound basis for assigning Michigan
+law to AFX Real-Time parameter control. The general EULA states Bulgarian
+law, but this memo does not determine which software or conduct it governs.
 
----
-
-## 5. Practical enforcement picture
-
-Antelope's realistic options against an individual EU contributor:
-
-1. A **cease-and-desist letter** -- cheap to send, and the separate-repo
-   structure limits what one letter can reach.
-2. A **GitHub DMCA notice** -- but that is a *copyright* mechanism, and the
-   copyright claim against protocol-level interop work is weak (facts, not
-   expression; interop precedent). Counter-notice restores the repo.
-3. **Initiating arbitration** in Sofia (general EULA) or Detroit (Cosmos)
-   -- expensive, cross-border, slow, uncertain outcome on the merits given
-   §4.
-
-The mitigations already in place: no Antelope code in the repo, black-box
-observation only, a documented interoperability purpose, `captures/`
-never committed, offline `git bundle` backups, and (for the risky part)
-a separate, separately-hosted repo.
+The EU Software Directive and court decisions may be relevant to a legal
+analysis, but this document does not predict enforceability, litigation
+outcomes, enforcement likelihood, or the result under any jurisdiction.
+Those questions are outside this source summary.
 
 ---
 
-## 6. Open items before AFX bucket D
+## 5. Open documentation questions
 
-- [ ] Confirm there is no **separate hardware / firmware click-through**
-      agreement with stricter terms (check the box, the registration flow,
-      the firmware updater).
-- [ ] Re-fetch both EULAs and diff against the quotes above (they are
-      undated except Cosmos).
-- [ ] **One hour with an IP lawyer** who knows software licensing and the
-      EU Software Directive, specifically on: (a) whether Launcher protocol
-      capture is within Art. 5(3); (b) clause (iv) enforceability under
-      Bulgarian law; (c) the Michigan exposure for any plug-in work.
+- [ ] Identify and archive the product or device terms presented for the
+      particular AFX Real-Time license/device, if available to the owner.
+- [ ] Record which public terms a contributor accepted when using Launcher
+      for a capture. Do not assume the Cosmos EULA applies to that capture.
+- [ ] Keep protocol work limited to device control on hardware the
+      contributor owns and to effects already available under a license
+      assigned to that device; do not inspect plugin binaries or capture
+      license/activation traffic.
+
+These questions record what this memo has not established. They do not
+create a precondition for bucket D protocol work; see `SCOPE.md` §4. The
+Cosmos/Native license paths are not the AFX Real-Time device-control path.

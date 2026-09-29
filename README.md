@@ -22,7 +22,7 @@ used; the device firmware is not touched.
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
-| **`SCOPE.md` / `EULA-ANALYSIS.md`** | the AFX / Synergy Core plugin boundary — what this repo does and doesn't touch, and why (the plugin *parameter* layer is off-repo pending an IP-lawyer review) |
+| **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
 ### Naming
 
@@ -47,8 +47,9 @@ reverb, device identity, preamp/channel state, **both surround frames**
 Orion nested records: category `0x0b` link tables, `0x15` AFX instance counts,
 `0x16` mic-emulation state, and `0x19` AFX strip order. The CLI and WebUI
 display those profile-declared records. There is **no built-in
-per-input-channel EQ** on this device: input EQ is an AFX plugin, which is
-out of scope (`SCOPE.md`). Normal WebUI format writes are limited to 2.0 and
+per-input-channel EQ** on this device: input EQ uses an AFX Real-Time
+effect; its parameter controls are in scope but not yet decoded or
+implemented (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited to 2.0 and
 2.1. The global format wire path was directly round-trip tested through 9.1.6
 with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
 bounds for `0x0c`, and
@@ -58,8 +59,9 @@ flags; it cannot separate Preamp from ADAT state. A controlled S/PDIF OFF/ON
 transition mapped its single pair to `0x0b:1` record 0; the other seven bytes
 and `0x0b:2` remain unassigned. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
-in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
-(`SCOPE.md`); plugin *parameters* stay off-repo. The AFX-tab channel
+in `PROTOCOL.md` §12a but never emitted — assigning/loading a plugin is out
+of scope (`SCOPE.md`). AFX Real-Time parameter control is in scope, but its
+parameter stream is not yet decoded or emitted. The AFX-tab channel
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
 
@@ -101,12 +103,16 @@ this software interoperates with.
   contributor's own device on the contributor's own machine, kept
   minimal and included only as evidence for a documented finding. Device
   serial numbers are redacted where practical.
-- **The licensed AFX plugin chain is out of scope.** Those plugins
-  involve per-user licensing and online activation; this project does not
-  touch, emulate, or circumvent any licensing or authentication
- mechanism. Device-*bundled* effects that carry no per-plugin activation
-  (e.g. Gazelle Reverb, the device feature identified as AuraVerb in
-  protocol research) are treated as ordinary device controls.
+- **AFX means device-side Synergy Core Real-Time effects here.** Antelope
+  describes these as running on a supported device, with a Real-Time
+  license assigned to that device through Launcher. Their parameter
+  controls are in scope when the effect is already available under a
+  license assigned to the target device. Native plugins run in a DAW on the
+  computer; Cosmos membership provides Native versions, not Real-Time
+  licenses. This project does not handle license assignment, activation,
+  entitlement traffic, or plugin loading. See [`SCOPE.md`](SCOPE.md) and
+  [`EULA-ANALYSIS.md`](EULA-ANALYSIS.md); the Cosmos EULA is not treated as
+  the license for AFX Real-Time controls.
 - Use at your own risk. Sending control frames to hardware can put it in
   unexpected states; see "hazards" in the profile JSON. No warranty.
 
