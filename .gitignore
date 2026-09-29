@@ -26,6 +26,11 @@ KERNEL.md
 SUMMARY.md
 # Local, working audit checklist/state -- keep out of the public project
 AUDIT.md
+APPIMAGE-PLAN.md
+
+# Local Unity analytics and account session token
+/Unity/
+/settings.xml
 
 # Local diagnostic tool output (may contain the device serial)
 tools/*_out.txt
