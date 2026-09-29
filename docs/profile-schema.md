@@ -66,7 +66,7 @@ evidence.
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
-| `unresolved_state_offsets` / `open_questions` | optional | the backlog, so "MVP done" isn't mistaken for "protocol done" |
+| `unresolved_state_offsets` / `open_questions` | optional | evidence boundaries, so "MVP done" isn't mistaken for "protocol done" |
 
 ---
 
@@ -127,13 +127,25 @@ frame carries a fixed one). Then frame-specific offsets:
 |---|---|---|---|
 | `command` | SET_PARAM (`0x13`) | `channel_offset`, `value_offset` | `build_command(profile, param_name, channel, value)` |
 | `global_command` | SET_GLOBAL (`0x12`) | `value_offset` (no channel) | `build_global_command(profile, param, value)` |
-| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=physical/ADAT, `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link) | `build_link_command(profile, pair, enabled, space)` |
+| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=physical/ADAT, `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link); optional `readback` distinguishes diagnostic post-write queries from authoritative link-button mappings | `build_link_command(profile, pair, enabled, space)` |
 | `mix_command` | SET_MIX (`0x17` Orion / `0x16` Zen Go) | `subcmd_offset`+`subcmd`, `mix_offset`, `channel_offset`, `fader_offset`, `pan_flags_offset`, optional `send_offset`, `pan_center`, `pan_mask`, `mute_bit`, `solo_bit` | `build_mix_command(...)` |
 | `auraverb_command` | profile-defined Gazelle Reverb setter (AuraVerb protocol) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant`, confirmed `contract{readback_category, readback_index, fields[]}` | `build_auraverb_command(profile, params, enabled)`; the WebUI/CLI use the contract's bounded readback target and `parse_auraverb_record` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
 | `surround_global_command` | SET_SURROUND (`0xab`/`0xeb`) | complete-state template, readback cat/index, bounded delay/level, EQ-position, and Bass Management contracts, and `contract.formats[]` entries with packed `channel_order`; `format_writable` gates normal format writes while `runtime_operations` defines fixed header bytes | `build_surround_global_command(...)` for the verified scalar path, `build_surround_global_format_command(...)` for format changes, `build_surround_global_eq_position_command(...)` for PRE/POST, and `build_surround_global_bass_command(...)` for a declared Bass Management field; all use fresh read-modify-write |
-| `runtime_contracts.surround_speaker_eq` (no `frame.*` block) | SET_SURROUND_SPEAKER (`0x87`/`0xea`, per-speaker ×16) | documented byte-for-byte in `params.surround_speaker.field_map`; optional `reset_preset` | `build_surround_speaker_eq_command(...)` for one field and `build_surround_speaker_eq_reset_command(...)` for the explicit profile reset; both preserve the candidate head, while reset also preserves mode bytes |
-| `afx_slot` | *(AFX plugin-chain slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` is in `constraints.forbidden_opcodes` (placing a plugin = bucket E, `SCOPE.md`); plugin parameters (`0x1c`/`0xd5`) are frozen. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
+| `runtime_contracts.surround_speaker_eq` (no `frame.*` block) | SET_SURROUND_SPEAKER (`0x87`/`0xea`, per-speaker ×16) | documented byte-for-byte in `params.surround_speaker.field_map`; optional `candidate_head_size`, `head_fields`, and `reset_preset` | `parse_surround_speaker_eq_record(...)` decodes profile-declared head fields; `build_surround_speaker_head_command(...)` performs one guarded delay/level/phase probe, while `build_surround_speaker_eq_command(...)` and `build_surround_speaker_eq_reset_command(...)` preserve the complete head and remaining record state |
+| `surround_global_command.contract.speaker_mask_write` | SET_SURROUND (`0xab`/`0xeb`, global per-speaker mask) | category-`0x1b` body offset/width, bit shift, logical bypass polarity, and allowed formats | `build_surround_global_speaker_mask_command(...)` changes one speaker's bypass bit from a fresh complete global readback and preserves every other mask/state bit |
+
+For a per-speaker candidate head, `head_fields` maps each named field to its
+byte `offset`/`width`, optional bit `mask`/`shift`, raw bounds, and display
+scaling (`step`, `zero`, and `display_offset`). A field is writable only when
+its `writable` flag is true and its name is listed in the write contract's
+`head_fields`; `head_formats` limits the runtime formats in which the bounded
+control is exposed. The builder changes one field and preserves
+masked bits in the source record, so the phase/invert probe cannot disturb the
+level or delay bits. The separate `speaker_mask_write` contract describes the
+speaker-monitor Bypass button, whose logical `true` value clears the device's
+active-processing bit.
+| `afx_slot` | *(AFX Real-Time effect slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` remains blocked because slot assignment is bucket E (`SCOPE.md`). Parameter control (`0x1c`/`0xd5`) is in scope (bucket D), but no field map or builder exists yet; the opcode guard stays until safe-write verification. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, optional `destination_labels{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}`, `source_semantics{}` | `build_route_command(profile, dest, channels)` |
 | `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, optional nested `record_layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`) / `parse_readback_records` and its profile-specific wrappers; driven by `transport.HidTransport.query` |
 
@@ -159,7 +171,7 @@ Declare those in the optional `frame.readback.record_layouts` list:
   "kind": "link_table",
   "category": "0x0b",
   "index": 0,
-  "name": "preamps",
+  "name": "unassigned space-0 flags",
   "record_count": 6,
   "record_stride": 1,
   "fields": [{"name": "linked", "offset": 0, "type": "u8"}],
@@ -187,6 +199,26 @@ indices. `readback_record_layout_indices()` returns only safe layout indices
 by default, and `build_readback_query()` applies the same guard. A layout
 derived from an application schema still needs a device capture before its
 outer index can be used.
+
+`frame.link_command.readback` separately maps an input link command to safe
+`link_table` layouts. `post_write_pair_counts` schedules a diagnostic read
+after a matching input-link write without assigning the returned bytes to
+that input domain. The WebUI uses `pair_counts` to drive link buttons only when
+`status` is `confirmed` or `capture-confirmed`, `authoritative` is not false,
+the returned table is complete, and
+`pair_counts.preamp` / `.adat` stay within both the layout and the declared
+channel counts. Only mapped pairs replace browser-cached link icons; an
+absent, incomplete, or provisional mapping leaves the cache alone. On Orion,
+both input controls send space 0; tested pair 0 and pair 3 transitions changed
+bytes in the six-record `0x0b:0` table.
+This table has `post_write_pair_counts` and `authoritative: false` because a
+flag does not identify which domain is linked; it remains diagnostic and
+cannot overwrite either set of buttons. Direct ADAT pair 5 ON/OFF changed
+`0x0b:0` record 4, while pairs 7 and 8 changed none of the five safe link
+tables on a short read. `0x0b:1` has eight response bytes, but only record 0
+is mapped: a controlled S/PDIF OFF/ON changed it 1 → 0 → 1 while ADAT was
+held fixed. S/PDIF has one link pair. `0x0b:2` stayed zero in that test and
+remains unassigned.
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two
@@ -370,8 +402,8 @@ the CLI and docs use. Minimum:
 - **`readback`** — where it reads back in `state_report`, or "none".
 - **`constraint`** — a human note like `"mic mode only"`.
 
-Params with no `id` and `status: "observed"` are the backlog — they
-document a control seen in a capture so the next person knows it exists.
+Params with no `id` and `status: "observed"` are observational-only: they
+document a control seen in a capture without authorizing a writer.
 
 ---
 

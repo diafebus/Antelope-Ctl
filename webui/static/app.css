@@ -1,6 +1,7 @@
   :root { color-scheme: dark; --bg:#14161a; --panel:#1e2128; --panel2:#181b21; --line:#2c313c;
           --fg:#e7e9ee; --dim:#8b93a3; --accent:#4a9eff;
-          --meter:#3ecf8e; --warn:#f1c40f; --orange:#f5911e; --clip:#ff5d5d; }
+          --meter:#3ecf8e; --warn:#f1c40f; --orange:#f5911e; --clip:#ff5d5d;
+          --mix1:#f5911e; --mix2:#ef72ae; --mix3:#c7d64a; --mix4:#8da4ff; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg);
          font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
@@ -144,7 +145,7 @@
      top-right corner (nearest the partner). broken chain when off, whole chain
      + dim white glow on. */
   .linkbtn { position:absolute; top:11px; right:4px; z-index:3; width:20px; height:19px;
-             cursor:pointer; background:#0e1116; color:var(--dim); border:1px solid var(--line);
+             cursor:pointer; background:#141820; color:#b7bec9; border:1px solid #6b7482;
              border-radius:5px; padding:2px; display:flex; align-items:center; justify-content:center; }
   /* when linked, both strips of the pair carry a soft bar on the facing edge --
      same silver-glow language as the chain icon, so it reads as "chained", not
@@ -152,11 +153,11 @@
   .pre.linkstart { box-shadow:inset -3px 0 0 rgba(223,227,234,.55); }
   .pre.linkend   { box-shadow:inset  3px 0 0 rgba(223,227,234,.55); }
   .lkico { width:15px; height:15px; display:block; }
-  .lkico path, .lkico line { fill:none; stroke:var(--dim); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .lkico path, .lkico line { fill:none; stroke:#c2cad5; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .lkico .lk-whole { display:none; }
-  .linkbtn.on { border-color:#dfe3ea; background:#12151b; }
-  .linkbtn.on .lkico { filter:drop-shadow(0 0 3px rgba(255,255,255,.65)); }
-  .linkbtn.on .lkico path, .linkbtn.on .lkico line { stroke:#f2f4f8; }
+  .linkbtn.on { border-color:#fff0bd; background:#292317; box-shadow:0 0 0 1px rgba(255,223,139,.42), 0 0 9px rgba(255,220,126,.78), inset 0 0 7px rgba(255,235,177,.3); }
+  .linkbtn.on .lkico { filter:drop-shadow(0 0 3px rgba(255,255,255,.95)) drop-shadow(0 0 6px rgba(255,220,126,.9)); }
+  .linkbtn.on .lkico path, .linkbtn.on .lkico line { stroke:#fffdf1; }
   .linkbtn.on .lkico .lk-broken { display:none; }
   .linkbtn.on .lkico .lk-whole  { display:inline; }
   /* emuMic (mic modeling), preamps 5-12 (EMU button is Mic-mode-gated) */
@@ -259,6 +260,7 @@
   .output-meter-label { color:var(--dim); font:8px/1 ui-monospace,monospace; }
 
   /* ---- routing + mixer panels ---- */
+  .route-pane-actions { display:flex; justify-content:flex-end; margin-bottom:8px; }
   /* ---- routing matrix (per-destination grid) ---- */
   .rtop { display:flex; align-items:center; gap:16px; margin-bottom:8px; flex-wrap:wrap; }
   .rviews { display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
@@ -308,7 +310,10 @@
   .rmx tr.fam-sur,   .cs.fam-sur   { color:#38c6c0; }
   .rmx tr.fam-osc,   .cs.fam-osc   { color:#8b93a3; }
   .rmx tr.fam-spdif, .cs.fam-spdif { color:#5ad0e6; }
-  .rmx tr.fam-mix,   .cs.fam-mix   { color:#f5911e; }
+  .rmx tr.fam-mix1, .cs.fam-mix1 { color:var(--mix1); }
+  .rmx tr.fam-mix2, .cs.fam-mix2 { color:var(--mix2); }
+  .rmx tr.fam-mix3, .cs.fam-mix3 { color:var(--mix3); }
+  .rmx tr.fam-mix4, .cs.fam-mix4 { color:var(--mix4); }
   .rmx tr.fam-mute,  .cs.fam-mute  { color:#6b7280; }
   .rmx td.c.pending::after { content:''; position:absolute; inset:5px; border-radius:50%;
                              background:currentColor; animation:rpulse .4s ease-in-out infinite alternate; }
@@ -332,19 +337,21 @@
            user-select:none; touch-action:none; }
   .rglbl.rgmute { color:#8b93a3; }
   .rglbl:hover { border-color:var(--accent); color:var(--fg); }
-  .rgcells { display:flex; gap:3px; }
-  .rgc { --c:#8b93a3; flex:0 0 auto; width:26px; padding:0 2px; height:22px; border-radius:3px;
+  .rgcells { --rg-cell-width:26px; display:flex; gap:3px; }
+  .rgspacer { flex:0 0 var(--rg-cell-width); pointer-events:none; }
+  .rgc { --c:#8b93a3; flex:0 0 auto; width:var(--rg-cell-width); padding:0 2px; height:22px; border-radius:3px;
          box-sizing:border-box; overflow:hidden; white-space:nowrap;
          border:1px solid color-mix(in srgb, var(--c) 38%, transparent);
          background:color-mix(in srgb, var(--c) 15%, #0d1016); color:var(--c);
          font:700 9px/1 ui-monospace,monospace; display:flex; align-items:center; justify-content:center;
          cursor:grab; user-select:none; touch-action:none; }
-  .rgc.rgto { width:30px; font-weight:600; }
+  .rgc.rgto { font-weight:600; }
   .rgc.fam-none { --c:#3a3f49; background:#0d1016; }
   .rgc:hover { outline:1px solid var(--accent); outline-offset:-1px; }
   .rgc.fam-pre{--c:#43c96a} .rgc.fam-emu{--c:#93e0b4} .rgc.fam-play{--c:#4a9eff} .rgc.fam-adat{--c:#e05561}
   .rgc.fam-afx{--c:#b07cff} .rgc.fam-sur{--c:#38c6c0} .rgc.fam-osc{--c:#8b93a3}
-  .rgc.fam-spdif{--c:#5ad0e6} .rgc.fam-mix{--c:#f5911e} .rgc.fam-mute{--c:#6b7280}
+  .rgc.fam-spdif{--c:#5ad0e6} .rgc.fam-mix1{--c:var(--mix1)} .rgc.fam-mix2{--c:var(--mix2)}
+  .rgc.fam-mix3{--c:var(--mix3)} .rgc.fam-mix4{--c:var(--mix4)} .rgc.fam-mute{--c:#6b7280}
   .rgc.fam-unknown{--c:#a07b45}
   .rglbl.fam-pre{color:#43c96a} .rglbl.fam-emu{color:#93e0b4} .rglbl.fam-play{color:#4a9eff} .rglbl.fam-adat{color:#e05561}
   .rglbl.fam-afx{color:#b07cff} .rglbl.fam-sur{color:#38c6c0} .rglbl.fam-osc{color:#8b93a3}
@@ -359,7 +366,7 @@
   .rgc.rgflash-differ { box-shadow:inset 0 0 0 2px var(--clip); }
   .rgc.rgflash-timeout { box-shadow:inset 0 0 0 2px var(--dim); }
 
-  /* ---- section header controls (pop-out + collapse) ---- */
+  /* ---- section header and routing pane controls ---- */
   h2.sechd { display:flex; align-items:center; gap:10px; }
   .secbtns { margin-left:auto; display:flex; gap:6px; }
   .secbtn { background:#0e1116; border:1px solid var(--line); color:var(--dim); border-radius:5px;
@@ -379,6 +386,7 @@
              max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .fam-pre{color:#43c96a}.fam-emu{color:#93e0b4}.fam-play{color:#4a9eff}.fam-adat{color:#e05561}.fam-afx{color:#b07cff}
   .fam-sur{color:#38c6c0}.fam-osc{color:#8b93a3}.fam-spdif{color:#5ad0e6}.fam-mix{color:#f5911e}.fam-mute{color:#6b7280}
+  .fam-mix1{color:var(--mix1)}.fam-mix2{color:var(--mix2)}.fam-mix3{color:var(--mix3)}.fam-mix4{color:var(--mix4)}
   /* ---- compact virtual mixer ----------------------------------------- */
   .mixer-shell { background:var(--panel2); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
   .mixer-hd { display:flex; align-items:center; gap:10px; padding:9px 12px;

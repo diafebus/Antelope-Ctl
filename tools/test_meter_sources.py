@@ -3,6 +3,7 @@ import copy
 import importlib
 import json
 from pathlib import Path
+import signal
 import sys
 import threading
 import types
@@ -124,6 +125,79 @@ class MeterSourceTests(unittest.TestCase):
         self.assertEqual(q_raw, 71)
         self.assertEqual(gain_raw, 0)
 
+    def test_surround_json_enables_20_bass_and_speaker_head_writes(self):
+        device = self.server.Device.__new__(self.server.Device)
+        device.profile = self.profile
+        device.surround_contract = self.server._surround_global_contract(
+            self.profile)
+        device.surround_available = True
+        device.surround_speaker_count = 16
+        device._lock = threading.Lock()
+        global_body = bytearray(151)
+        global_body[0] = 0x02             # 2.0, no bass-management flag
+        global_body[1] = 0x9F             # no-LFE sentinel
+        global_body[4:6] = (600).to_bytes(2, 'little')
+        global_body[13:23] = protocol.pack_surround_channel_order(
+            [1, 3], 10)
+        device.surround_global_raw = bytes(global_body)
+        device.surround_global = protocol.parse_surround_global_record(
+            self.profile, global_body)
+        speaker_body = bytearray(116)
+        speaker_body[0:2] = (100).to_bytes(2, 'little')
+        speaker_body[2:4] = (0x8000 | 635).to_bytes(2, 'little')
+        speaker = protocol.parse_surround_speaker_eq_record(
+            self.profile, speaker_body)
+        device.surround_speakers = {0: speaker, 1: speaker}
+
+        payload = device.surround_json()
+
+        self.assertTrue(payload['write']['bass']['enabled'])
+        self.assertEqual(payload['write']['bass']['formats'], ['2.0', '2.1'])
+        self.assertEqual(payload['write']['bass']['filter_types'], {
+            'hp': 'Butterworth', 'lp': 'Butterworth'})
+        self.assertEqual(
+            [item['label'] for item in payload['write']['bass']
+             ['filter_type_values']['hp_filter_type']],
+            ['Butterworth', 'Linkwitz-Riley'])
+        self.assertTrue(payload['write']['speaker_head']['enabled'])
+        self.assertEqual(payload['write']['speaker_head']['fields'],
+                         ['delay_ms', 'level_db', 'phase_invert'])
+        self.assertEqual(
+            payload['write']['speaker_head']['controls']['delay_ms']['range'],
+            [0.6, 100.6])
+        self.assertEqual(
+            payload['speakers'][0]['head']['level_db'], 3.5)
+        self.assertTrue(payload['speakers'][0]['head']['phase_invert'])
+        self.assertTrue(payload['write']['speaker_bypass']['enabled'])
+        self.assertEqual(payload['write']['speaker_bypass']['fields'], ['bypass'])
+        self.assertTrue(payload['speakers'][0]['bypass'])
+
+    def test_terminal_shutdown_stops_device_before_uvicorn_exit(self):
+        class FakeServer:
+            def __init__(self):
+                self.should_exit = False
+                self.calls = []
+
+            def handle_exit(self, sig, frame):
+                self.calls.append((sig, frame))
+                self.should_exit = True
+
+        fake_server = FakeServer()
+        device = mock.Mock()
+        wrapped = self.server._install_terminal_shutdown(fake_server, device)
+
+        wrapped.handle_exit(signal.SIGINT, None)
+
+        device.request_stop.assert_called_once_with()
+        self.assertEqual(fake_server.calls, [(signal.SIGINT, None)])
+        self.assertTrue(fake_server.should_exit)
+
+        # A repeated Ctrl+C keeps Uvicorn's force-exit behavior but does not
+        # enqueue a second device shutdown request.
+        wrapped.handle_exit(signal.SIGINT, None)
+        device.request_stop.assert_called_once_with()
+        self.assertEqual(len(fake_server.calls), 2)
+
     def test_orion_selected_mixer_strip_meters_follow_the_window_selector(self):
         device = self.server.Device.__new__(self.server.Device)
         device.profile = self.profile
@@ -166,14 +240,78 @@ class MeterSourceTests(unittest.TestCase):
         device._lock = threading.Lock()
         payload = device.structured_readbacks_json()
         by_name = {layout['name']: layout for layout in payload['layouts']}
-        self.assertEqual(by_name['preamps']['current']['0'][0]['linked'], 1)
-        self.assertEqual(by_name['preamps']['current']['0'][0]['raw'], '01')
+        self.assertEqual(by_name['unassigned space-0 flags']['current']['0'][0]['linked'], 1)
+        self.assertEqual(by_name['unassigned space-0 flags']['current']['0'][0]['raw'], '01')
         self.assertFalse(by_name['available']['safe'])
         self.assertTrue(by_name['available']['capture_required'])
         targets = set(self.server._structured_readback_targets(self.profile))
         self.assertIn((0x0b, 0), targets)
         self.assertIn((0x19, 63), targets)
         self.assertNotIn((0x0c, 0), targets)
+
+    def test_input_link_write_refreshes_the_bounded_diagnostic_table(self):
+        self.assertEqual(self.server._input_link_readback_target(
+            self.profile, 'preamp', 3), (0x0b, 0))
+        self.assertEqual(self.server._input_link_readback_target(
+            self.profile, 'adat', 3), (0x0b, 0))
+        self.assertIsNone(self.server._input_link_readback_target(
+            self.profile, 'adat', 6))
+        self.assertEqual(self.server._input_link_readback_target(
+            self.profile, 'spdif', 0), (0x0b, 1))
+        profile = copy.deepcopy(self.profile)
+        profile['frame']['link_command']['readback'] = {
+            'status': 'capture-confirmed', 'category': '0x0b', 'index': 0,
+            'record_count': 6, 'pair_counts': {'preamp': 6, 'adat': 6},
+            'additional_tables': [{
+                'status': 'schema-backed', 'category': '0x0b', 'index': 1,
+                'record_count': 8,
+                'pair_mappings': {
+                    'adat': {'pair_start': 6, 'record_start': 6, 'pair_count': 2},
+                },
+            }],
+        }
+        self.assertEqual(self.server._input_link_readback_target(
+            profile, 'preamp', 3), (0x0b, 0))
+        self.assertEqual(self.server._input_link_readback_target(
+            profile, 'adat', 3), (0x0b, 0))
+        self.assertEqual(self.server._input_link_readback_target(
+            profile, 'adat', 6), (0x0b, 1))
+        self.assertEqual(self.server._input_link_readback_target(
+            profile, 'adat', 7), (0x0b, 1))
+        self.assertIsNone(self.server._input_link_readback_target(
+            profile, 'adat', 8))
+
+        device = self.server.Device(profile)
+        fake_transport = types.SimpleNamespace(write=mock.Mock())
+        with mock.patch.object(self.server, 'PROFILE', profile), \
+                mock.patch.object(self.server, 'DEV', device), \
+                mock.patch.object(device, 'submit',
+                                  side_effect=lambda fn: fn(fake_transport)), \
+                mock.patch.object(device, '_refresh_readback_one',
+                                  return_value=False) as refresh:
+            self.server._queue_input_link_write(b'link', 'adat', 3)
+            fake_transport.write.assert_called_once_with(b'link')
+            refresh.assert_called_once_with(fake_transport, 0x0b, 0)
+            self.assertEqual(device.link_rb_ver, 1)
+
+            fake_transport.write.reset_mock()
+            refresh.reset_mock()
+            self.server._queue_input_link_write(b'tail', 'adat', 6)
+            fake_transport.write.assert_called_once_with(b'tail')
+            refresh.assert_called_once_with(fake_transport, 0x0b, 1)
+            self.assertEqual(device.link_rb_ver, 2)
+
+            fake_transport.write.reset_mock()
+            refresh.reset_mock()
+            self.server._queue_input_link_write(b'unmapped', 'adat', 8)
+            fake_transport.write.assert_called_once_with(b'unmapped')
+            refresh.assert_not_called()
+            self.assertEqual(device.link_rb_ver, 2)
+
+            refresh.reset_mock(return_value=True)
+            refresh.return_value = None  # a missing response must not publish stale data
+            self.server._queue_input_link_write(b'no-response', 'preamp', 3)
+            self.assertEqual(device.link_rb_ver, 2)
 
     def test_meter_report_source_keeps_existing_curve_and_clip_behavior(self):
         profile = copy.deepcopy(self.profile)

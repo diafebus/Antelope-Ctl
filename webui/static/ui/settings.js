@@ -1,5 +1,7 @@
 "use strict";
 
+// Device settings and mic-modeling controls.
+
 let MIC_MODELS = {};           // from /api/mic_models -- account-bound snapshot
 // Which Antelope modelling mic is plugged in. The HID protocol has NO readback
 // for this (or for model entitlements), so it's declared, not detected --
@@ -187,7 +189,9 @@ function buildSettings() {
       DC.on = !DC.on;
       try { localStorage.setItem('dcCoupled', DC.on ? '1' : '0'); } catch (_) {}
       paint();
-      post('/api/dc-coupling', { on: DC.on });   // no device readback -- browser-tracked
+      // Device readback is 0x73 byte 93 bit 0; this panel remains optimistic
+      // until the state-report value is wired into its display state.
+      post('/api/dc-coupling', { on: DC.on });
     });
   }
 }

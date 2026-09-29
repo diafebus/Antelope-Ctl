@@ -14,6 +14,7 @@ captures/*.txt
 # Python
 __pycache__/
 *.pyc
+.venv/
 
 # Local CLI cache (link state) lives in ~/.cache/antelope-ctl, not here, but just in case
 *.cache
@@ -25,9 +26,18 @@ KERNEL.md
 SUMMARY.md
 # Local, working audit checklist/state -- keep out of the public project
 AUDIT.md
+APPIMAGE-PLAN.md
+
+# Local Unity analytics and account session token
+/Unity/
+/settings.xml
 
 # Local diagnostic tool output (may contain the device serial)
 tools/*_out.txt
+
+# Local WebUI design references; they are not application assets.
+/webui/ideas/
+/webui/examples/
 
 # For other query that aren't necessarily related or relevant to the main repository
 sidejob/

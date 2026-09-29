@@ -1,5 +1,7 @@
 "use strict";
 
+// Physical and digital input-strip controls.
+
 function buildChannels(n) {
   const wrap = $('#channels'); wrap.innerHTML = '';
   for (let ch = 0; ch < n; ch++) {
@@ -16,7 +18,7 @@ function buildChannels(n) {
         `<option value="${m}"${String(m).toLowerCase() === 'hiz' && !HIZ.has(ch) ? ' disabled' : ''}>${m.toUpperCase()}</option>`).join('')}</select>
       </div>
       ${ch % 2 === 0 && pairOf(ch) < N_PAIRS
-        ? `<button class="linkbtn" data-link title="link ${channelLabel}+${nextChannelLabel}">${LINK_ICON}</button>`
+        ? `<button class="linkbtn" data-link title="${inputLinkButtonTitle('preamp', pairOf(ch), `${channelLabel}+${nextChannelLabel}`)}">${LINK_ICON}</button>`
         : ''}
       <div class="body">
         <div class="knob" data-knob tabindex="0">
@@ -73,8 +75,10 @@ function buildChannels(n) {
 // Both address spaces are gain + link only -- no mode / 48V / Ø, and the HID
 // protocol carries no ADAT/S-PDIF meters. Same knob art as the preamp; range
 // from the profile (params.adat_gain / spdif_gain, -6..+12 dB on the Orion).
-// Link transitions are not yet correlated to the profile's 0x0b readback, so
-// link state remains browser-side (localStorage) and mirrored across the pair.
+// Link state starts with the browser's saved value. Only a profile mapping
+// confirmed for one specific input domain may replace it from 0x0b; Orion's
+// space-0 table also changes after ADAT writes, so it cannot identify which
+// input domain the user linked.
 // Endpoints:
 // POST /api/adat-gain /api/spdif-gain /api/adat-link /api/spdif-link.
 const DIG = {
@@ -95,6 +99,145 @@ function digLoadLinks(k) {
 }
 function digSaveLinks(k) {
   try { localStorage.setItem(k + 'Links', JSON.stringify(DIG[k].links)); } catch (_) {}
+}
+
+function inputLinkReadbackSpec() {
+  const spec = PROFILE?.frame?.link_command?.readback;
+  if (!spec || !['confirmed', 'capture-confirmed'].includes(
+      String(spec.status || '').trim().toLowerCase())) return null;
+  return spec;
+}
+
+function discardAmbiguousInputLinkCache() {
+  const spec = inputLinkReadbackSpec();
+  if (spec?.authoritative !== false) return;
+  // Older builds saved one space-0 response into both domains. Its ON bytes
+  // cannot tell us which control was used, so discard only those old pairs
+  // once; later button presses remain independent local controller state.
+  const marker = 'space0InputLinkCacheV2';
+  try {
+    if (localStorage.getItem(marker) === 'done') return;
+    const queriedPairs = spec.post_write_pair_counts || spec.pair_counts || {};
+    const preampCount = Number(queriedPairs.preamp || 0);
+    const adatCount = Number(queriedPairs.adat || 0);
+    for (let pair = 0; pair < preampCount; pair++) delete LINKS[pair];
+    const adatLinks = digLoadLinks('adat');
+    for (let pair = 0; pair < adatCount; pair++) delete adatLinks[pair];
+    saveLinks();
+    localStorage.setItem('adatLinks', JSON.stringify(adatLinks));
+    localStorage.setItem(marker, 'done');
+  } catch (_) { /* local storage may be unavailable */ }
+}
+
+function inputLinkPairReadbackConfirmed(domain, pair) {
+  const spec = inputLinkReadbackSpec();
+  if (!spec || !Number.isInteger(pair) || pair < 0) return false;
+  const primaryCount = Number(spec.pair_counts?.[domain] || 0);
+  if (spec.authoritative !== false && Number.isInteger(primaryCount)
+      && pair < primaryCount) return true;
+  const additional = Array.isArray(spec.additional_tables) ? spec.additional_tables : [];
+  return additional.some(table => {
+    if (table?.transition_confirmed !== true) return false;
+    const mapping = table.pair_mappings?.[domain];
+    if (!mapping) return false;
+    const pairStart = Number(mapping.pair_start || 0);
+    const pairCount = Number(mapping.pair_count);
+    return Number.isInteger(pairStart) && Number.isInteger(pairCount)
+      && pairCount > 0 && pairStart <= pair && pair < pairStart + pairCount;
+  });
+}
+
+function inputLinkButtonTitle(domain, pair, label) {
+  const title = `link ${label}`;
+  const spec = inputLinkReadbackSpec();
+  const queriedPairs = spec?.post_write_pair_counts || spec?.pair_counts || {};
+  if (spec?.authoritative === false && ['preamp', 'adat'].includes(domain)
+      && pair < Number(queriedPairs[domain] || 0)) {
+    return `${title} (this browser mirrors paired gains; the shared device flag does not identify Preamp versus ADAT state)`;
+  }
+  return inputLinkPairReadbackConfirmed(domain, pair)
+    ? title : `${title} (device state readback not confirmed)`;
+}
+
+function syncInputLinksFromReadback(structured) {
+  const spec = inputLinkReadbackSpec();
+  if (!spec || !Array.isArray(structured?.layouts)) return false;
+  const primaryPairs = spec.pair_counts || {};
+  if (!primaryPairs || typeof primaryPairs !== 'object' || Array.isArray(primaryPairs)) return false;
+  const primaryMappings = {};
+  for (const domain of ['preamp', 'adat', 'spdif']) {
+    const pairCount = Number(primaryPairs[domain] || 0);
+    if (!Number.isInteger(pairCount) || pairCount < 0) return false;
+    if (pairCount) primaryMappings[domain] = {
+      pair_start: 0, record_start: 0, pair_count: pairCount,
+    };
+  }
+  const tables = [{...spec, pair_mappings: primaryMappings,
+    authoritative: spec.authoritative !== false}]
+    .concat(Array.isArray(spec.additional_tables) ? spec.additional_tables : []);
+  let preampChanged = false, adatChanged = false, spdifChanged = false;
+  for (const table of tables) {
+    if (!table || typeof table !== 'object') continue;
+    const status = String(table.status || '').trim().toLowerCase();
+    if (!['confirmed', 'capture-confirmed', 'schema-backed'].includes(status)) continue;
+    if (!table.authoritative && table.transition_confirmed !== true) continue;
+    const category = Number(table.category), index = Number(table.index);
+    const count = Number(table.record_count);
+    if (!Number.isInteger(category) || !Number.isInteger(index)
+        || !Number.isInteger(count) || count <= 0) continue;
+    const mappings = table.pair_mappings;
+    if (!mappings || typeof mappings !== 'object' || Array.isArray(mappings)) continue;
+    const layout = structured.layouts.find(item => item?.kind === 'link_table'
+      && Number(item.category) === category && Number(item.index) === index
+      && Number(item.record_count) === count && item.safe === true);
+    const records = layout?.current?.[String(index)];
+    if (!Array.isArray(records) || records.length !== count) continue;
+    const linked = Array(count);
+    let valid = true;
+    for (const record of records) {
+      const selector = Number(record?.record_index);
+      const value = record?.linked;
+      if (!Number.isInteger(selector) || selector < 0 || selector >= count
+          || linked[selector] !== undefined
+          || (value !== true && value !== false && value !== 0 && value !== 1)) {
+        valid = false;
+        break;
+      }
+      linked[selector] = value === true || value === 1;
+    }
+    for (let selector = 0; selector < count && valid; selector++) {
+      if (linked[selector] === undefined) valid = false;
+    }
+    if (!valid) continue;
+
+    for (const domain of ['preamp', 'adat', 'spdif']) {
+      const mapping = mappings[domain];
+      if (!mapping || typeof mapping !== 'object') continue;
+      if (domain !== 'preamp' && !DIG[domain]) continue;
+      const pairStart = Number(mapping.pair_start || 0);
+      const recordStart = Number(mapping.record_start || 0);
+      const pairCount = Number(mapping.pair_count);
+      const domainCount = domain === 'preamp' ? N_PAIRS : DIG[domain]?.pairs;
+      if (!Number.isInteger(pairStart) || !Number.isInteger(recordStart)
+          || !Number.isInteger(pairCount) || pairCount <= 0
+          || pairStart < 0 || pairStart + pairCount > domainCount
+          || recordStart < 0 || recordStart + pairCount > count) continue;
+      const links = domain === 'preamp' ? LINKS : DIG[domain].links;
+      for (let offset = 0; offset < pairCount; offset++) {
+        const pair = pairStart + offset, on = linked[recordStart + offset];
+        if (!!links[pair] !== on) {
+          if (domain === 'preamp') preampChanged = true;
+          else if (domain === 'adat') adatChanged = true;
+          else spdifChanged = true;
+        }
+        if (on) links[pair] = true; else delete links[pair];
+      }
+    }
+  }
+  if (preampChanged) { saveLinks(); refreshLinks(); }
+  if (adatChanged) { digSaveLinks('adat'); digRefreshLinks('adat'); }
+  if (spdifChanged) { digSaveLinks('spdif'); digRefreshLinks('spdif'); }
+  return preampChanged || adatChanged || spdifChanged;
 }
 function digCurGain(el, kind, ch) {
   const p = DIG_PENDING[digKey(kind, ch)];
@@ -190,7 +333,9 @@ function wireDigKnob(el, kind, ch) {
     live = 0; applyLive(); sendNow();
   });
   knob.addEventListener('wheel', e => {
+    if (!knob.matches(':hover')) return;
     e.preventDefault();
+    e.stopPropagation();
     live = digCurGain(el, kind, ch) - Math.sign(e.deltaY);
     applyLive(); queueSend();
   }, {passive: false});
@@ -256,7 +401,7 @@ function buildDig(kind) {
         </div>
       </div>
       ${hasLink && ch % 2 === 0
-        ? `<button class="linkbtn" data-link title="link ${d.label(ch)}+${d.label(ch + 1)}">${LINK_ICON}</button>`
+        ? `<button class="linkbtn" data-link title="${inputLinkButtonTitle(kind, pair, `${d.label(ch)}+${d.label(ch + 1)}`)}">${LINK_ICON}</button>`
         : ''}`;
     const lk = el.querySelector('[data-link]');
     if (lk) lk.addEventListener('click', () => digToggleLink(kind, pair));

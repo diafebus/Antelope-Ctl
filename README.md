@@ -22,7 +22,7 @@ used; the device firmware is not touched.
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
-| **`SCOPE.md` / `EULA-ANALYSIS.md`** | the AFX / Synergy Core plugin boundary — what this repo does and doesn't touch, and why (the plugin *parameter* layer is off-repo pending an IP-lawyer review) |
+| **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
 ### Naming
 
@@ -47,17 +47,21 @@ reverb, device identity, preamp/channel state, **both surround frames**
 Orion nested records: category `0x0b` link tables, `0x15` AFX instance counts,
 `0x16` mic-emulation state, and `0x19` AFX strip order. The CLI and WebUI
 display those profile-declared records. There is **no built-in
-per-input-channel EQ** on this device: input EQ is an AFX plugin, which is
-out of scope (`SCOPE.md`). Normal WebUI format writes are limited to 2.0 and
+per-input-channel EQ** on this device: input EQ uses an AFX Real-Time
+effect; its parameter controls are in scope but not yet decoded or
+implemented (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited to 2.0 and
 2.1. The global format wire path was directly round-trip tested through 9.1.6
 with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
 bounds for `0x0c`, and
-the `0x74` channel-group names. Category `0x0b` link transitions still need
-a controlled capture; its returned bytes are not yet treated as verified
-control state. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
+the `0x74` channel-group names. A controlled 2026-09-23 space-0 link
+transition confirmed category `0x0b` index 0 for six shared space-0 pair
+flags; it cannot separate Preamp from ADAT state. A controlled S/PDIF OFF/ON
+transition mapped its single pair to `0x0b:1` record 0; the other seven bytes
+and `0x0b:2` remain unassigned. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
-in `PROTOCOL.md` §12a but never emitted — placing a plugin is out of scope
-(`SCOPE.md`); plugin *parameters* stay off-repo. The AFX-tab channel
+in `PROTOCOL.md` §12a but never emitted — assigning/loading a plugin is out
+of scope (`SCOPE.md`). AFX Real-Time parameter control is in scope, but its
+parameter stream is not yet decoded or emitted. The AFX-tab channel
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
 
@@ -99,12 +103,16 @@ this software interoperates with.
   contributor's own device on the contributor's own machine, kept
   minimal and included only as evidence for a documented finding. Device
   serial numbers are redacted where practical.
-- **The licensed AFX plugin chain is out of scope.** Those plugins
-  involve per-user licensing and online activation; this project does not
-  touch, emulate, or circumvent any licensing or authentication
- mechanism. Device-*bundled* effects that carry no per-plugin activation
-  (e.g. Gazelle Reverb, the device feature identified as AuraVerb in
-  protocol research) are treated as ordinary device controls.
+- **AFX means device-side Synergy Core Real-Time effects here.** Antelope
+  describes these as running on a supported device, with a Real-Time
+  license assigned to that device through Launcher. Their parameter
+  controls are in scope when the effect is already available under a
+  license assigned to the target device. Native plugins run in a DAW on the
+  computer; Cosmos membership provides Native versions, not Real-Time
+  licenses. This project does not handle license assignment, activation,
+  entitlement traffic, or plugin loading. See [`SCOPE.md`](SCOPE.md) and
+  [`EULA-ANALYSIS.md`](EULA-ANALYSIS.md); the Cosmos EULA is not treated as
+  the license for AFX Real-Time controls.
 - Use at your own risk. Sending control frames to hardware can put it in
   unexpected states; see "hazards" in the profile JSON. No warranty.
 
@@ -152,12 +160,13 @@ profiles/mic_models.json       <- account-bound mic-modelling ("emuMic") model c
 antelope/transport.py          <- generic HID open/read/write (no device-specific code)
 antelope/protocol.py           <- generic frame build/parse, driven entirely by the profile
 antelope/cli.py                <- generic CLI, driven entirely by the profile
+tools/README.md                <- tool index, safety classes, and command guide
 tools/capture_diff.py          <- offline helper for finding new params from captures
 tools/scan_capture.py          <- offline helper: auto-finds the transition across a whole capture (Windows TSV)
 tools/scan_macos_capture.py    <- same, for native-macOS (Darwin XHC) pcapng -- see CAPTURING.md
 tools/hid_probe.py             <- dump the HID report descriptor + probe for a readable Feature report
 tools/selftest.py              <- round-trip self-test against real hardware via the readback (read-only by default, --write for restore-guaranteed writes)
-tools/surround_eq_selftest.py  <- bounded Surround EQ readback and one-field experimental write/restore test
+tools/surround_eq_selftest.py  <- bounded Surround EQ readback and one-field write/restore test
 tools/surround_format_selftest.py <- bounded Surround format readback and reversible format write probes
 tools/surround_eq_position_selftest.py <- Surround EQ PRE/POST readback and one-bit write/restore probe
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
@@ -223,6 +232,37 @@ and physical `SET_LINK` frames are byte-identical (both `space` byte
 `0x00`), so `set-adat-link` on pairs 0-5 may also toggle the matching
 *physical* link (ch1&2 ... ch11&12). Pairs 6-7 are ADAT-only. See
 `params.adat_channel_link` in the profile.
+
+The WebUI displays the first six unassigned space-0 flags from the device's
+`0x0b:0` table as raw diagnostics. Both Preamp and ADAT commands changed that
+table in controlled checks, so it cannot identify which input domain is
+linked and no longer drives either set of buttons. Their button state records
+the last command made in this browser. On first load after this correction,
+the browser clears old pair-0..5 link cache entries that may have been filled
+from the ambiguous table; it does not send a device command. ADAT pair
+indices 6/7 have no confirmed readback byte; their buttons also retain the
+browser's last command. Direct ADAT pair-7 and pair-8 ON/OFF tests changed
+none of the five known link tables; pair 8 also stayed on for 40 seconds
+without a table change. An earlier ADAT 13/14 ON write left the eight-byte
+`0x0b:1` table at zero. A controlled 2026-09-26 S/PDIF OFF/ON test then
+showed that **record 0 of that same table follows S/PDIF**, changing
+`1 → 0 → 1` while ADAT links stayed fixed. The WebUI now refreshes
+`0x0b:1` after S/PDIF writes and uses only record 0 for its S/PDIF button.
+The one-byte `0x0b:2` table stayed zero during that test and remains an
+unassigned diagnostic. None of these flags proves that both
+physical and ADAT signal paths are linked by the shared space-0 command.
+
+The 2026-09-23 UI check showed the bug: after the ADAT 7/8 OFF command,
+`0x0b:0` went low and the old WebUI also switched off physical Preamp 7/8.
+That UI behavior did not establish the physical pair's actual link state.
+
+ADAT 13/14 was toggled ON through the WebUI API on 2026-09-23; the server's
+fresh index-1 query succeeded (`link_rb_ver` advanced), but all eight records
+remained zero. It was returned to OFF and its gain restored to 0 dB after a
+one-sided +1 dB probe; ADAT 14 stayed at 0 dB during that single API write.
+This confirms that one gain write is not device-propagated to its partner;
+the browser must issue both writes when its link control is active. ADAT
+15/16 still needs the same exact live readback check.
 
 S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
 
@@ -338,7 +378,7 @@ python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
 python3 -m antelope.cli ... matrix-status                    # LIVE read of the whole matrix from the device
 python3 -m antelope.cli ... mix-status 1                     # LIVE read of virtual Mix 1 (cat 0x04)
 python3 -m antelope.cli ... readback 0x03 0                  # raw: routing record for dest 0 (line out)
-python3 -m antelope.cli ... readback 0x0b 0                  # structured preamp-link table
+python3 -m antelope.cli ... readback 0x0b 0                  # six shared space-0 link flags
 python3 -m antelope.cli ... readback 0x16 0                  # structured mic-emulation state
 python3 -m antelope.cli ... readback 0x19 0                  # structured AFX strip order
 python3 -m antelope.cli ... readback                         # list the readback categories
@@ -667,7 +707,11 @@ Monitor/HP1 or HP2 surface for the shared 16-lane meter bank, and a complete
 q0b/03 bitmap can seed the visible mixer-pair links. These mappings remain
 device-specific evidence; they are not defaults for other Antelope products.
 
-## What's still unconfirmed
+## Known limits and incomplete evidence
+
+This is a reference of what the published implementation does not claim to
+have verified. It is not a development task tracker; the active Orion
+completion queue is maintained locally in the ignored `AUDIT.md`.
 
 See `"status": "unconfirmed"` entries in the profile, and
 `"unresolved_state_offsets"`. Nothing there is used by the CLI's normal
@@ -712,9 +756,15 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   everything observed changing there is explained as a side effect of the
   gain/status sync above, not a standalone flag. The extracted Orion panel
   schema and manager-server log do identify readback category `0x0b` as five
-  nested link tables (preamp, ADAT, S/PDIF, mixer, AFX). Their returned bytes
-  are now exposed by `readback 0x0b <index>` and the WebUI, but an isolated
-  link-on/link-off capture has not yet correlated the bytes with transitions.
+  nested link tables (shared space-0, an eight-byte table with S/PDIF at
+  record 0, one unassigned byte, mixer, AFX). Their returned bytes
+  are now exposed by `readback 0x0b <index>` and the WebUI. A controlled
+  2026-09-23 space-0 pair-3 transition correlated index 0 with the flag.
+  Index 0 carries six shared pairs and does not drive Preamp or ADAT buttons.
+  A controlled pair-6 ADAT ON write left index-1 record 6 zero, while a
+  controlled S/PDIF OFF/ON changed index-1 record 0 from `1→0→1`. Only that
+  record drives the S/PDIF indicator. Index 2 stayed zero during S/PDIF
+  transitions and has no assigned control mapping.
 
   **Re-verified independently (2026-08) against the raw
   `all_reports_ch-link-gain-ph-inv-test.tsv`**: every report in that capture
@@ -731,8 +781,9 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   in lockstep, for the whole sweep -- this is what `set-link`'s new
   before/after check (below) leans on.
 
-  **`set-link` still does an indirect confirmation.** Since the `0x0b` link
-  bytes are not transition-confirmed yet, `set-link ... on` snapshots gain/phantom/phase_invert for both
+  **`set-link` still does an indirect confirmation.** The CLI has not yet
+  adopted the confirmed `0x0b:0` flag for its own verification; `set-link ... on`
+  snapshots gain/phantom/phase_invert for both
   channels in the pair before and after sending the command. If they
   disagreed before and agree after, that's real (if indirect) evidence the
   link engaged, grounded in the confirmed mirroring behavior above -- not a
@@ -961,7 +1012,7 @@ every rate 44.1k-192k. Offsets **21-23 are the same rate in Hz** (24-bit
 big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
 -- both decoded in that sweep; `sample-rate` prints the measured Hz too.
 
-### Oscillator, DC-coupling, surround tab -- decoded (2026-09-01, native macOS)
+### Oscillator and surround tab -- decoded 2026-09-01; DC-coupling readback confirmed 2026-09-14
 
 - **Oscillator / test-tone generator** -- the settings-tab panel is
   `SET_GLOBAL` (`0x12`), param `0x0a`, one **packed byte** @17:
@@ -979,7 +1030,7 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   that rests on a capture that cannot be trusted -- see `PROTOCOL.md` §11.
 - **Surround monitoring tab** -- **two** whole-state frames:
   `0xab`/`0xeb` = global (EQ pre/post `[18]` bit 7, level, delay, format,
-  per-speaker bypass/mute/dim masks, 2.1 bass-management window) and
+  per-speaker bypass/mute/dim masks, 2.0/2.1 bass-management window) and
   **`0x87`/`0xea` = per-speaker** ×16 (`[18]` = speaker 0-15, level +
   polarity, delay, a full 16-band parametric EQ per speaker). Decoded
   2026-09-03 from the `srrnd-*` captures. **Both read back** (found
@@ -987,23 +1038,35 @@ big-endian) and **27 is the rate family** (`0x10 >> [21]`: base / 2x / 4x)
   category `0x1a`. The CLI decodes both readbacks, and the WebUI Surround tab
   polls both categories. Its 2.0/2.1 global delay/level and format paths
   perform a fresh read-modify-write; EQ PRE/POST is a confirmed one-bit global
-  write. Other global controls and per-speaker delay/level/phase remain
-  read-only. The WebUI exposes the experimental per-speaker EQ
-  path one field at a time, using a fresh read-modify-write that preserves the
-  complete record. `tools/surround_eq_selftest.py` can read all 16 records or,
-  with explicit confirmation, probe one frequency, Q, gain, or raw mode byte
-  in one selected band and restore the complete record. The per-speaker write
-  frame remains experimental because its candidate delay/level/invert head has
-  not been dynamically paired with the readback. **Room Correction** turned out to be just the Launcher computing a
+  write. Mute and dim remain read-only. Speaker-monitor bypass and the
+  per-speaker phase, delay, and level fields were hardware round-tripped on
+  speakers 0 and 1 against fresh readbacks and restored exactly. The WebUI
+  exposes those per-speaker controls alongside the EQ head controls. EQ knobs
+  write one field at a time through a fresh read-modify-write; direct graph
+  drags use the bounded `/api/surround/eq/point` path to update frequency and
+  gain together in one complete record. Both paths preserve the rest of the
+  state and perform a post-write readback. The graph supports damped point
+  dragging and Q adjustment by wheel only while the pointer is over a point.
+  The 2.0 Bass Management popup is writable for its L/R strips using the same
+  bounded fresh-readback path as 2.1's L/R/LFE strips.
+  `tools/surround_eq_selftest.py` can read all 16 records or, with explicit
+  confirmation, probe one frequency, Q, gain, or raw mode byte in one selected
+  band and restore the complete record. The per-speaker head mapping is now
+  confirmed by the combined delay/level/phase readback probe. **Room Correction** turned out to be just the Launcher computing a
   curve host-side and writing it into that `0x87` per-speaker EQ -- no opcode,
 no toggle (`params.surround_speaker` *is* the RC interface). The global format
 wire path was subsequently round-tripped through **9.1.6** on the connected
 Orion Studio III; the WebUI still exposes only **2.0 / 2.1** until the
 licence-dependent vendor behavior is better understood. The Bass Management
 popup displays only the active strips; 2.1 is ordered L · R · LFE with fixed
-strip widths. Its bounded experimental writes cover crossover cutoffs, filter
-order, bypass, fader, and mute; link, filter type, solo, and meter mappings
-remain guarded. See `params.surround_monitor` + `params.surround_speaker`.
+strip widths. Faders use the profile dB range for a reload-safe percentage
+position, retain the supplied artwork, accept exact values by double-click,
+and keep their travel inset from the readout and Mute/Solo row. Its bounded
+writes cover crossover cutoffs, filter order,
+  bypass, fader, mute, filter type, link, and solo. Each field was toggled in
+  both 2.0 and 2.1 and matched the immediate category-0x1b readback; distinct
+  fader values also survived the 2.0/2.1 transitions. See `params.surround_monitor` +
+  `params.surround_speaker`.
 
 For a targeted hardware probe, stop the WebUI first so it releases the HID
 device, then run the dedicated self-test. It reads all speakers by default:
@@ -1013,7 +1076,7 @@ python3 tools/surround_eq_selftest.py
 ```
 
 Write mode requires one speaker, one band, one field, an explicit value, and
-an acknowledgement of the experimental `0x87` path. It verifies the readback
+an acknowledgement of the `0x87` write path. It verifies the readback
 and restores the complete record:
 
 ```
@@ -1031,6 +1094,16 @@ python3 tools/surround_eq_position_selftest.py --write --confirm-experimental-wr
 
 The probe toggles PRE/POST, verifies category `0x1b`, and restores the original
 complete global state.
+
+The combined Surround control probe exercises 2.0/2.1 Bass Management
+faders, filter type, Link, Solo, and speaker delay/level/phase/bypass, then
+restores the saved global and speaker records:
+
+```
+python3 tools/surround_format_selftest.py --write \
+  --test-bass-controls --test-speaker-controls \
+  --confirm-format-write --confirm-surround-control-write
+```
 
 ### Connect handshake & routing readback -- resolved (2026-08, native macOS)
 

@@ -5,9 +5,8 @@ reverse-engineering of the USB-HID *control protocol* of Antelope audio
 interfaces, and a stdlib-only tool that speaks it, so the hardware can be
 controlled on Linux (and, later, from a community web UI).
 
-This document is **project policy**, agreed by all contributors. It is not
-legal advice. Where it says "get a lawyer's review first", that is a hard
-gate, not a suggestion.
+This document is **project scope**, agreed by contributors. It is not
+legal advice and does not decide whether any particular use is lawful.
 
 **Naming convention:** application-facing UI and software use **Gazelle
 Reverb**. **AuraVerb** is retained for the device's original feature name in
@@ -61,43 +60,49 @@ tool output that can contain a device serial is gitignored
 (`tools/*_out.txt`). A **device serial never enters a tracked file** --
 profiles describe the *layout* of the identity record, never a value.
 
-## 3. Jurisdiction note
+## 3. License boundary
 
-The project is maintained in the EU. EU law (Software Directive
-2009/24/EC, Arts. 5(3) and 6) gives mandatory rights to observe/study a
-program you may run, and to reverse-engineer for **interoperability** of
-an independently created program -- and Art. 8 voids contract terms that
-contradict them. US interoperability precedent (Sega v. Accolade, Sony v.
-Connectix) points the same way for protocol-level work.
+Do not treat Native or Cosmos terms as the license for device-side AFX
+controls. Antelope describes **Synergy Core Real-Time** effects as running
+on a supported device's DSP/FPGA, with a Real-Time license assigned to the
+device through Antelope Launcher. **Native** plugins run on the computer in
+a DAW and use iLok; a **Cosmos** membership grants access to Native versions
+and does not grant Real-Time versions. A purchase may include both formats,
+but their execution and activation paths are distinct. Sources and limits
+of this summary are recorded in `EULA-ANALYSIS.md`.
 
-Antelope's own published EULA terms, and how the project stays inside
-them, are recorded in **`EULA-ANALYSIS.md`**. The short version: the core
-work falls under the general EULA (Bulgarian / EU law -- favourable); any
-plug-in-specific work would fall under the Cosmos EULA (Michigan / US law
--- less favourable), which is another reason §4 buckets D/E/F are walled
-off. None of this is legal advice; bucket D needs a lawyer first.
+The Cosmos EULA describes the Cosmos bundle's computer programs. This
+project has no basis to apply it automatically to device-side AFX
+parameter control. The exact terms governing a Real-Time license assigned
+to a particular device have not been established here. The general EULA's
+application to a contributor's Launcher use is also a separate question.
+This document sets project scope; it is not a legal ruling or a claim that
+any method is legally cleared.
 
 ---
 
-## 4. AFX / Synergy Core plugin chain -- the bucket policy
+## 4. AFX / Synergy Core Real-Time controls
 
-Antelope's DSP plugins (Auto-Tune, the modelled EQ / comp / preamp
-collections, guitar-amp sims, etc.) are sold **per user** with **online
-activation**, and the DSP algorithms are Antelope's IP. This project is
-interop for the *mixer / routing / preamp / clocking* feature set. The
-plugin chain is an **edge we approach carefully, not a target**.
+Here, **AFX** means device-side Synergy Core Real-Time effects assigned to
+and processed by a supported interface. This is distinct from **Native**
+plugins, which run on the computer in a DAW, and **Cosmos**, which provides
+access to Native plugins. A Cosmos membership does not provide the
+device-side Real-Time license. See `EULA-ANALYSIS.md` for the official
+product-format source and the limits of what is known about applicable
+terms.
 
-**This policy is about licensed, per-user-activated plugin content -- not
-about the device's DSP/FX unit in general.** A feature that ships with the
-hardware/firmware and needs no separate online activation is not a bucket
-D/E/F concern just because it happens to run on the same DSP: **Gazelle
-Reverb** (AuraVerb in the protocol evidence; §1, the bundled reverb) and the
-**surround per-speaker EQ / Room
-Correction** (part of the surround-monitoring feature, §1) are both fully
-in scope and already decoded. The buckets exist to wall off *Antelope's
-purchasable, activation-gated plugin catalogue* (AFX plugins, Cosmos
-plug-ins), not to discourage using or documenting the unit's built-in
-signal processing.
+Controlling a parameter on an AFX Real-Time effect that is already
+available under a license assigned to the target device is in scope as
+device control, like changing a preamp setting. The project may observe,
+document, and implement those parameter controls using captures from
+hardware the contributor owns. This scope does not include reproducing the
+effect's DSP implementation or handling its license, entitlement, or
+activation.
+
+The **Gazelle Reverb** (AuraVerb in protocol evidence; §1) and the
+**surround per-speaker EQ / Room Correction** remain in scope as device
+features. Their existing status does not determine the status of licensed
+AFX effects, and neither should be conflated with Native or Cosmos plugins.
 
 Every AFX-related frame is classified into one of these buckets **before**
 it is ever sent, decoded-for-replication, or documented:
@@ -107,31 +112,28 @@ it is ever sent, decoded-for-replication, or documented:
 | **A. Signal routing** | routing an `afx_in` destination; source bank `0x05` (`afx_out`) | **In scope.** It is just the crosspoint matrix (`0x53`), nothing plugin-specific. |
 | **B. Slot bypass / enable** | a per-slot on/off (mixer-level, like AuraVerb's enable bit) | **OK to decode + expose.** It is a mute, not the plugin. |
 | **C. Reading slot state** | "slot N is occupied", "slot N is bypassed" | **OK to decode + display.** Observation only. |
-| **D. Plugin parameter set** | "set slot-N decay = 40" on an already-loaded, already-licensed plugin | **GATED.** Requires (a) a lawyer's review of Antelope's current EULA + activation terms, and (b) that it lives in the separate AFX repo, not here. Never instantiates anything. Behind an explicit opt-in. Skipped unless there is clear user value. |
-| **E. Instantiate / load / remove a plugin** | "put Auto-Tune in slot 3" | **OFF-LIMITS.** This is the licensing boundary. |
+| **D. AFX Real-Time parameter control** | "set slot-N decay = 40" on an effect already available under a license assigned to the target device | **In scope.** Observe and implement the device control. Do not load an effect or interact with its license/activation state. Native/Cosmos licensing is not a prerequisite or proxy for this work. |
+| **E. Assign / load / remove an effect** | "put Auto-Tune in slot 3" | **Out of scope for this project.** This project does not change which effects are installed or assigned to channels. |
 | **F. Licensing / activation / entitlement traffic** | the activation handshake, license tokens, entitlement checks | **OFF-LIMITS.** Never sent, never decoded for replication, never captured into any repo. |
 
-**This repo (`antelope-ctl`) will contain only buckets A, B, and C**, and
-only under a `SCOPE.md`-referenced module. Buckets D/E/F are out of this
-repo entirely.
+**This repo (`antelope-ctl`) may contain buckets A through D.** D remains
+subject to the same evidence, hardware ownership, and safe-write standards
+as other device controls. E and F remain outside project scope.
 
-If in doubt about a specific frame, it stays in the **"observed, not
-sent, not shipped"** state until a human decides -- default to *not*.
+An undocumented or unverified frame stays **unsent** until its meaning and
+write behavior are established. A frame is not out of scope merely because
+it controls a licensed AFX effect.
 
 ---
 
 ## 5. What this repo will never contain
 
-- A parameter map, control-surface description, or preset format for any
-  **licensed** AFX plugin (bucket D material).
+- Plugin DSP implementation, binaries, or source code.
 - Any capture, or analysis of a capture, of plugin **instantiation** or
   **licensing/activation** traffic (buckets E/F).
 - Anything derived from Antelope's software, firmware, or login-gated
   materials.
 - A device serial, in any tracked file.
-- A reference to, or dependency on, the separate AFX-investigation repo.
-  The dependency runs one way only: that repo may consume this one as a
-  library; this one does not know it exists.
 
 ---
 
@@ -143,10 +145,11 @@ By contributing you confirm that:
    observing its USB traffic -- not from Antelope's software, firmware, or
    any login-gated material.
 2. You have classified every AFX-related frame per §4 and submitted
-   nothing from buckets D/E/F to this repo.
-3. You understand that running the official Launcher to generate a
-   capture means **you** accepted its EULA, and any RE-clause exposure in
-   that EULA is a personal decision you made knowingly.
+   nothing from buckets E/F to this repo. Bucket D work controls only an
+   effect already available under a license assigned to the target device.
+3. You are responsible for the Antelope terms presented to and accepted
+   by you when using the Launcher. This project does not determine how
+   those terms apply to your contribution or to USB device control.
 4. You have not pasted copyrighted manual/UI text or Antelope binary
    contents into your contribution.
 

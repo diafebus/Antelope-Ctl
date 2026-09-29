@@ -1,7 +1,6 @@
-# webui -- DRAFT
+# webui
 
-A throwaway prototype of the "local daemon + thin browser UI" architecture
-(see the discussion in the main repo's SUMMARY / this sandbox's `SANDBOX.md`).
+The in-repository local daemon + thin browser UI for `antelope-ctl`.
 
 ## What it is
 
@@ -20,11 +19,16 @@ compatibility.
     profile-declared nested readback records, refreshed one record per meter
     cycle on connect and every 45 s. Route/mixer/Gazelle Reverb writes update
     their serialized caches directly. The Surround tab exposes the bounded
-    `0x1b` global and `0x1a` speaker EQ records; the 2.0/2.1 global
-    format and delay/level paths plus confirmed EQ PRE/POST write using fresh
-    complete-state reads, and the bounded per-speaker EQ path writes using fresh
-    complete-state reads. The EQ Reset action writes the profile preset for
-    only the displayed speaker. `/api/readbacks` exposes the structured records
+    `0x1b` global and `0x1a` speaker EQ/head records; the 2.0/2.1 global
+    format and delay/level paths, 2.0/2.1 Bass Management fields, and
+    confirmed EQ PRE/POST write using fresh complete-state reads. The bounded
+    per-speaker delay/level/phase and EQ knob paths write one field from a
+    fresh complete state and compare the next readback. Direct EQ graph drags
+    are the bounded exception: `/api/surround/eq/point` updates frequency and
+    gain together in one complete-state frame so one pointer gesture stays
+    coherent. The speaker bypass mask uses the same complete-state approach.
+    The EQ Reset action writes the profile preset for only the displayed
+    speaker. `/api/readbacks` exposes the structured records
     to diagnostics and `/api/surround` serves the decoded Surround surface. Queries use the active
     profile's bounded category counts or explicit capture-confirmed layouts, so
     the BusFault hazard is never hit; schema-only layouts are displayed as
@@ -34,18 +38,18 @@ compatibility.
 
   Commands are queued as callables run one per meter cycle on the device
   thread, so control bursts cannot monopolize the live meter path.
-- **`static/index.html`** -- the small HTML shell, with the browser code kept in
-  ordered vanilla-JS files and the styles in `static/app.css`; there is still no
-  build step:
-  - `ui-base.js` -- shared state, storage, API helpers, and control primitives;
-  - `ui-inputs.js`, `ui-settings.js`, and `ui-preamp.js` -- input and device settings;
-  - `ui-meters.js` and `ui-buses.js` -- meter and output-bus rendering;
-  - `ui-routing.js` and `ui-mixer.js` -- routing and mixer surfaces;
-  - `ui-surround.js` -- profile-driven Surround monitor and EQ readback;
-  - `ui-readback.js` and `ui-boot.js` -- diagnostics, state fan-out, and startup.
+- **`static/index.html`** -- the small HTML shell, with ordered vanilla-JS
+  modules in `static/ui/` and styles in `static/app.css`; there is no build
+  step:
+  - `core.js` -- shared state, storage, API helpers, and control primitives;
+  - `inputs.js`, `settings.js`, and `preamp.js` -- input and device settings;
+  - `meters.js` and `buses.js` -- meter and output-bus rendering;
+  - `routing.js` and `mixer.js` -- routing and mixer surfaces;
+  - `surround.js` -- profile-driven Surround monitor and EQ readback;
+  - `readback.js` and `boot.js` -- diagnostics, state fan-out, and startup.
 
   The UI itself contains:
-  - input strips styled after `ideas/PreampUI.svg` -- 270° gain knob
+  - input strips styled after `assets/PreampUI.svg` -- 270° gain knob
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
   - output buses (device-confirmed attenuation: raw 0 = 0 dB maximum,
     raw 96 = -inf/silent), screen brightness;
@@ -57,11 +61,20 @@ compatibility.
     selects its matching mixer surface/meter bank; multiple Solo buttons may be
     stacked and the original mute/solo state is restored when the last Solo
     is released;
-  - a **Surround** panel renders global format, delay/level, masks,
-    speaker selection, and per-speaker 16-band EQ. Its Bass Management popup
-    shows only the active format channels, places 2.1 as L · R · LFE, and groups
-    strips with colored bars; unverified controls and meters remain visibly
-    read-only. The global format selector allows 2.0 and 2.1.
+  - a **Surround** panel packs global delay/level rotary controls, EQ position,
+    and the Bass Management launcher into one control box. Its speaker map
+    centralizes selection plus bypass/mute/dim feedback: inactive speakers are
+    grey, while the selected active speaker glows. Per-speaker delay/level,
+    phase, bypass, and 16-band EQ controls are shown below. EQ points can be
+    dragged with damped frequency/gain movement; the wheel changes Q only
+    while directly over a point, and the response curve updates live;
+  - the **Bass Management** popup shows only active format channels, places
+    2.1 as L · R · LFE, and groups strips with colored bars. Its fader readout
+    accepts an exact value on double-click. Fader thumbs use a reload-safe
+    percentage of the profile range and an 18 px top/bottom travel inset so
+    the original artwork does not overlap the readout or Mute/Solo controls.
+    Confirmed 2.0/2.1 writes include filter type, Link, Solo, fader, mute,
+    bypass, order, and cutoff. The global format selector allows 2.0 and 2.1;
   - a **Protocol readback** diagnostics section renders profile-declared link
     tables, mic-emulation state, AFX instance counts, and AFX strip order. It
     seeds mixer-pair link state from a complete profile-confirmed bitmap when
@@ -70,8 +83,10 @@ compatibility.
     `webui/device_ui.py`: Zen Go shows its input-source selectors, while any
     profile with a complete confirmed Gazelle Reverb (AuraVerb protocol)
     contract exposes the closed-by-default panel;
-  - rotary controls use relative vertical drags with a 240 px full-scale
-    travel for finer adjustment; the wheel remains a one-step adjustment;
+  - rotary controls use relative vertical drags (240 px full-scale by default,
+    with slower per-control travel for Surround monitor values). Wheel changes
+    are accepted only while the pointer is actually over the knob, so normal
+    page scrolling cannot accidentally alter a control;
   - reconnect UX -- the UI dims and goes non-interactive while the device
     is offline, and EventSource reconnects automatically.
 
@@ -111,13 +126,10 @@ Open <http://127.0.0.1:8714>. Needs the Antelope attached and the udev
 rule in place (same as the CLI). Stop anything else that holds the HID
 node (the CLI, `selftest.py`) -- only one process can own it.
 
+Stop the foreground service from that same terminal with Ctrl+C. The server
+passes the signal through Uvicorn, immediately wakes its HID worker, closes
+the active transport, and then performs a bounded worker join before exiting.
+The `.venv` is only the Python environment; it is not a separate daemon.
+
 Profile: defaults to `../profiles/orion_studio_sc.json`; override with
 `ANTELOPE_PROFILE=/path/to/profile.json`.
-
-## If this direction is worth keeping
-
-Copy `webui/` into the real repo (`../antelope-ctl`), add `fastapi` /
-`uvicorn` to a `webui/requirements.txt` there (keep `antelope/` itself
-stdlib-only), and grow it: routing/mixer panels (bounded readback),
-device reconnect UX, a `--host` flag + token for LAN use, a systemd user
-unit. Otherwise `rm -rf` this whole sandbox.

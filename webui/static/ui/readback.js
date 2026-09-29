@@ -1,5 +1,7 @@
 "use strict";
 
+// Structured protocol-readback diagnostics.
+
 // ---- profile-driven nested protocol readbacks -----------------------
 const RB_ESC = {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'};
 const rbEscape = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => RB_ESC[c]);
@@ -17,20 +19,44 @@ function rbLayoutBound(layout) {
 }
 
 function rbLinkBody(layout, entries) {
+  if (!entries.some(([, records]) => records.length)) {
+    return '<p class="rbempty">Waiting for the first device response.</p>';
+  }
+  const linkSpec = mixerLinkReadbackSpec();
+  const inputSpec = inputLinkReadbackSpec();
+  const mixerMapped = linkSpec && layout.safe
+    && Number(layout.category) === Number(linkSpec.category)
+    && Number(layout.index) === Number(linkSpec.index);
+  const inputTables = inputSpec ? [inputSpec, ...(inputSpec.additional_tables || [])] : [];
+  const inputTable = inputSpec && layout.safe && inputTables.find(table =>
+    Number(layout.category) === Number(table.category)
+    && Number(layout.index) === Number(table.index));
+  const inputMapped = !!inputTable;
+  const inputTransitionConfirmed = inputTable && (
+    (Number(inputTable.category) === Number(inputSpec.category)
+      && Number(inputTable.index) === Number(inputSpec.index)
+      && inputTable.authoritative !== false)
+    || inputTable.transition_confirmed === true);
+  const stateKnown = !!mixerMapped || !!(inputMapped && inputTransitionConfirmed);
   const bits = entries.flatMap(([outer, records]) => records.map(record => {
     const on = Number(record.linked) !== 0;
     const title = `${layout.name} entry ${record.record_index}: raw ${record.raw || '–'}`;
-    return `<span class="rbbit${on ? ' on' : ''}" title="${rbEscape(title)}">`
-      + `${rbEscape(outer)}:${record.record_index} ${on ? 'ON' : 'OFF'}</span>`;
+    const value = stateKnown ? (on ? 'ON' : 'OFF') : `= ${rbNum(record.linked)}`;
+    return `<span class="rbbit${stateKnown && on ? ' on' : ''}" title="${rbEscape(title)}">`
+      + `${rbEscape(outer)}:${record.record_index} ${value}</span>`;
   }));
-  if (!bits.length) return '<p class="rbempty">Waiting for the first device response.</p>';
-  const linkSpec = mixerLinkReadbackSpec();
-  const authoritative = linkSpec && layout.safe
-    && Number(layout.category) === Number(linkSpec.category)
-    && Number(layout.index) === Number(linkSpec.index);
-  const note = authoritative
-    ? 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.'
-    : 'ON means the returned byte is non-zero; polarity and transition correlation remain provisional.';
+  let note;
+  if (mixerMapped) {
+    note = 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.';
+  } else if (inputTable?.authoritative === false) {
+    note = 'Raw flags changed after both Preamp and ADAT writes. Their input-domain meaning is unresolved; they do not drive either set of link buttons.';
+  } else if (inputMapped && inputTransitionConfirmed) {
+    note = 'ON means the returned pair byte is non-zero; this transition-confirmed table drives its mapped input-link indicators.';
+  } else if (inputMapped) {
+    note = 'This table has no confirmed ON/OFF transition mapping; it is diagnostic only and does not drive the input-link indicators.';
+  } else {
+    note = 'Raw values only; link-state polarity and transition correlation remain unverified.';
+  }
   return `<div class="rbvalues">${bits.join('')}</div>`
     + `<p class="rbnote">${note}</p>`;
 }
@@ -117,6 +143,7 @@ async function reloadReadback() {
     getJSON('/api/readbacks')]);
   reloadSurround().catch(() => {});
   syncMixerLinksFromReadback(STRUCTURED);
+  syncInputLinksFromReadback(STRUCTURED);
   renderStructuredReadbacks();
   initAuraVerbPanel();
   const rh = routingHome();
@@ -155,8 +182,16 @@ function applyState(s) {
     $('#brightval').textContent = s.brightness;
   }
 
-  if (s.rb_ver !== undefined && (s.rb_ver !== RB_VER || !wasOnline)) {
+  let readbackChanged = !wasOnline;
+  if (s.rb_ver !== undefined && s.rb_ver !== RB_VER) {
     RB_VER = s.rb_ver;
+    readbackChanged = true;
+  }
+  if (s.link_rb_ver !== undefined && s.link_rb_ver !== LINK_RB_VER) {
+    LINK_RB_VER = s.link_rb_ver;
+    readbackChanged = true;
+  }
+  if (readbackChanged) {
     reloadReadback().catch(() => {});
   }
 }

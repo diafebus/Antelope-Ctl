@@ -3,17 +3,17 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const JS_FILES = [
-  'ui-base.js',
-  'ui-inputs.js',
-  'ui-settings.js',
-  'ui-preamp.js',
-  'ui-meters.js',
-  'ui-buses.js',
-  'ui-routing.js',
-  'ui-mixer.js',
-  'ui-surround.js',
-  'ui-readback.js',
-  'ui-boot.js',
+  'ui/core.js',
+  'ui/inputs.js',
+  'ui/settings.js',
+  'ui/preamp.js',
+  'ui/meters.js',
+  'ui/buses.js',
+  'ui/routing.js',
+  'ui/mixer.js',
+  'ui/surround.js',
+  'ui/readback.js',
+  'ui/boot.js',
 ];
 
 function readWebUISource() {
