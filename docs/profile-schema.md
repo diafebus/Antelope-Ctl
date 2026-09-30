@@ -63,6 +63,7 @@ evidence.
 | `buses` | if the device has output buses | output-bus address space + names |
 | `adat`, `spdif` | if present on the device | extra input address spaces |
 | `mixer` | if decoded | virtual-mixer summary (human-facing; the frame is in `frame.mix_command`), plus optional profile-driven surface/link metadata. `has_master` defaults to true; set false for devices whose channel space starts at 0 with no master strip. |
+| `afx` | optional | device AFX channel/slot capacity and reference to the shared effect catalog; descriptive metadata, not a runtime write contract |
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
@@ -108,6 +109,109 @@ evidence.
 - `uses_numbered_reports` — if the HID report descriptor has no Report
   ID, Linux hidraw writes need a leading `0x00` (making them 321 bytes).
   Not auto-handled yet — see `family_notes`.
+
+---
+
+## `afx` and the shared effect catalog
+
+AFX capacity is device-specific. An optional top-level block records it:
+
+```json
+"afx": {
+  "channel_count": 32,
+  "slots_per_channel": 8,
+  "capacity_status": "documented",
+  "catalog": "afx_effects.json",
+  "evidence": "Public device documentation or model-local capture reference",
+  "notes": "Capacity and protocol-addressing limitations"
+}
+```
+
+`channel_count` counts mono processing channels; `slots_per_channel` counts
+insert positions in each channel's chain. Both are positive integers when
+known, or `null` when unknown. Missing `afx` means undeclared capability, not
+zero channels. `catalog` resolves relative to the device profile's directory.
+These additive keys are not consumed by a runtime AFX loader or writer yet.
+Each device needs its own capacity evidence; another profile's counts are
+not defaults.
+
+Orion declares 32 channels and eight slots from
+[Antelope's November 2019 demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
+The existing `0x19` layout also describes eight slots per strip. Its 64 outer
+records are protocol storage; mapping those records to the 32 user-facing
+channels is still unverified. Capacity metadata never changes the safety
+bounds in `frame.readback.category_counts`. Channel count times slot count
+is the number of insert positions, not a guaranteed simultaneous instance
+budget. DSP resources, stereo use, and per-effect instance limits are
+separate facts.
+
+`profiles/afx_effects.json` is a shared catalog, separate from device
+profiles and `mic_models.json`. It starts with an empty `effects` array.
+`catalog_schema` identifies the catalog format and version. Each future
+entry has a stable application ID, an original description, controls, and
+device-specific implementations. The following is an entry template,
+not a decoded effect:
+
+```json
+{
+  "id": "effect_key",
+  "name": "Effect display name",
+  "category": "delay",
+  "description": "Original description of the effect's purpose.",
+  "status": "unconfirmed",
+  "evidence": [],
+  "controls": [
+    {
+      "id": "control_key",
+      "label": "Control display name",
+      "description": "What this control changes.",
+      "kind": "continuous",
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "unconfirmed",
+      "evidence": []
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": null,
+      "status": "unconfirmed",
+      "commands": {"load": null, "recall": null, "parameters": null},
+      "control_encodings": {},
+      "evidence": []
+    }
+  ]
+}
+```
+
+Catalog IDs are stable names chosen by the project. `type_id` is the device's
+effect-type identifier once established; it is distinct from the runtime
+instance handle, channel index, and insert-slot index. Never infer a type
+ID from a handle observed in a previous session. Names and descriptive
+controls may be shared; wire IDs and encodings belong to the implementation
+for a particular profile. Do not assume another device uses the same map.
+
+A control's `kind` is `continuous`, `integer`, `boolean`, or `enum`.
+`range` is a display-value `[min, max]`, `step` and `default` use those same
+units, and `enum` maps stable option keys to display labels. Use `null` for
+unknown values. `control_encodings` is keyed by control ID and records the
+verified byte offset/width, signedness, endian order, scale, bit masks or
+wire enum, together with status and evidence. Each populated command
+definition must describe its frame or ordered frame sequence, runtime
+inputs, verification/restoration evidence, and whether it is writable.
+
+`load` denotes assigning an effect to a channel/slot. `recall` denotes
+restoring settings on an existing instance; if recall also loads an effect,
+document that explicitly. Both remain `null` until the operation is decoded.
+Definitions do not enable writes: current assignment and parameter opcode
+guards remain in force, and a future writer needs an explicit verified
+contract. The catalog contains neither installed-effect state nor account
+entitlements; licensing/activation traffic is outside its purpose. Gazelle
+Reverb retains its separate existing command/readback contract.
 
 ---
 

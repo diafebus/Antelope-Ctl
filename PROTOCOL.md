@@ -1813,6 +1813,16 @@ Mix 1 has been written).
 
 ### 12a. AFX Real-Time effect slot control (`0x23` / `0xd7`) -- observation only
 
+**Capacity/catalog metadata.** The Orion profile's top-level `afx` block
+records 32 mono channels and eight slots per channel, documented in
+[Antelope's November 2019 demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
+This is distinct from the 64 outer `0x19` storage records described below;
+their mapping to user-facing channels remains unverified. Insert-position
+capacity does not establish a simultaneous DSP instance budget. The shared
+`profiles/afx_effects.json` catalog is an empty scaffold for effect metadata
+and device-specific controls/commands; see `docs/profile-schema.md`. Neither
+metadata addition changes readback bounds or supplies a write builder.
+
 **Bucket boundary (`SCOPE.md`).** This subsection documents the slot
 assignment frame for **observation** and readback decoding. Assignment or
 loading remains out of scope (bucket E), so `0x23` stays in

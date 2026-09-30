@@ -1,0 +1,9 @@
+{
+  "catalog_schema": {
+    "id": "antelope-afx-effect-catalog",
+    "version": 1
+  },
+  "status": "scaffold",
+  "_comment": "Shared device-side AFX effect descriptions and control definitions. Device capacity belongs in each device profile's afx block. Entry format is documented in docs/profile-schema.md. effects is empty until effect identities and control mappings have supporting evidence; runtime instance handles must never be stored as effect IDs. Load/recall fields are reserved definitions, not permission to emit a command. No runtime loader or writer consumes this catalog yet.",
+  "effects": []
+}
