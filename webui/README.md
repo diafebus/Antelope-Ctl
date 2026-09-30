@@ -45,6 +45,7 @@ compatibility.
   - `inputs.js`, `settings.js`, and `preamp.js` -- input and device settings;
   - `meters.js` and `buses.js` -- meter and output-bus rendering;
   - `routing.js` and `mixer.js` -- routing and mixer surfaces;
+  - `afx.js` -- detachable AFX window sized from the profile's capacity;
   - `surround.js` -- profile-driven Surround monitor and EQ readback;
   - `readback.js` and `boot.js` -- diagnostics, state fan-out, and startup.
 
@@ -53,7 +54,12 @@ compatibility.
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
   - output buses (device-confirmed attenuation: raw 0 = 0 dB maximum,
     raw 96 = -inf/silent), screen brightness;
-  - a **Routing** panel with `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4 | Surround` tabs;
+  - a **Routing** panel with `Routing | AFX | Mix 1 | Mix 2 | Mix 3 | Mix 4 | Surround`;
+    **AFX** opens a separate resizable window and keeps the current main
+    tab selected. Profiles declaring AFX capacity expose the button; Orion
+    displays 32 channels with eight slot positions each. Slot contents are
+    unavailable until the channel/readback mapping is verified. Closing the
+    window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
     input strips additionally expose the Gazelle Reverb send; Mix 2-4 and all

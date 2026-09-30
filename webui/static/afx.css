@@ -1,0 +1,27 @@
+/* AFX launch button and detachable capacity window. */
+.afx-launcher {
+  background:none; border:0; margin:0 0 -1px; padding:7px 14px;
+  cursor:pointer; font:600 13px system-ui,sans-serif; color:var(--dim);
+  letter-spacing:.06em; border-bottom:2px solid transparent;
+}
+.afx-launcher[hidden] { display:none; }
+.afx-launcher:hover, .afx-launcher.on { color:#b07cff; }
+.afx-launcher.on { border-bottom-color:#b07cff; }
+.afx-launcher:focus-visible { outline:2px solid #b07cff; outline-offset:-2px; }
+.afx-window-header { flex-wrap:wrap; }
+.afx-window-header h1 { color:#b07cff; font-size:18px; }
+.afx-window-header p { margin:3px 0 0; font-size:12px; color:var(--dim); }
+.afx-capacity { margin-left:auto; color:var(--dim); font-size:12px; }
+.afx-window-main { max-width:none; gap:14px; }
+.afx-note { margin:0; color:var(--dim); font-size:12px; }
+.afx-channels { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+.afx-channel { min-width:0; background:var(--panel); border:1px solid var(--line); border-radius:7px; overflow:hidden; }
+.afx-channel h2 { margin:0; padding:9px 10px; border-bottom:1px solid var(--line); color:#b07cff; }
+.afx-slots { list-style:none; margin:0; padding:8px; display:grid; gap:6px; }
+.afx-slot { display:flex; align-items:center; gap:8px; padding:8px 6px;
+  background:var(--panel2); border:1px solid var(--line); border-radius:4px;
+  color:var(--dim); font-size:11px; }
+.afx-slot-number { color:#b07cff; font:11px ui-monospace,monospace; }
+@media (max-width:480px) {
+  .afx-capacity { margin-left:0; flex-basis:100%; }
+}

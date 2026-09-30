@@ -79,6 +79,10 @@ public effect pages. Orion type IDs, control ranges/encodings, and all
 load/recall/parameter commands remain unknown. No AFX loader or writer is
 enabled by this metadata. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
+The WebUI's **AFX** button, between Routing and Mix 1, opens a detachable
+window showing Orion's 32 channels and eight slot positions per channel.
+Slot contents are currently unavailable; the window displays capacity only.
+
 ### Evidence rule for write claims
 
 For profile-audit purposes, a writable parameter may be marked `confirmed` only

@@ -10,6 +10,7 @@ const JS_FILES = [
   'ui/meters.js',
   'ui/buses.js',
   'ui/routing.js',
+  'ui/afx.js',
   'ui/mixer.js',
   'ui/surround.js',
   'ui/readback.js',

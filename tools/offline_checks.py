@@ -28,6 +28,7 @@ NODE_CHECKS = (
     "tools/test_webui_meters.cjs",
     "tools/test_webui_mixer_links.cjs",
     "tools/test_webui_input_links.cjs",
+    "tools/test_webui_afx.cjs",
     "tools/webui_sources.cjs",
 )
 

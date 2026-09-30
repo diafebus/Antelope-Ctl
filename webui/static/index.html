@@ -6,6 +6,7 @@
 <title>antelope-ctl</title>
 <link rel="stylesheet" href="/webui/static/app.css?v=routing-mix-colors-v1">
   <link rel="stylesheet" href="/webui/static/surround.css?v=surround-controls-v16">
+<link rel="stylesheet" href="/webui/static/afx.css?v=afx-window-v1">
 </head>
 <body>
 <header>
@@ -64,6 +65,7 @@
     <div class="secbody" id="routebody">
       <div class="tabbar" id="routetabs" role="tablist">
         <button class="tabbtn active" data-rtab="matrix" role="tab">Routing</button>
+        <button class="afx-launcher" id="afxopen" type="button" aria-haspopup="dialog" aria-expanded="false" title="Open AFX in a separate window" hidden>AFX</button>
         <button class="tabbtn" data-rtab="mix1" role="tab">Mix 1</button>
         <button class="tabbtn" data-rtab="mix2" role="tab">Mix 2</button>
         <button class="tabbtn" data-rtab="mix3" role="tab">Mix 3</button>
@@ -157,9 +159,10 @@
 <script src="/webui/static/ui/meters.js"></script>
 <script src="/webui/static/ui/buses.js?v=bus-knob-attenuation-v3"></script>
 <script src="/webui/static/ui/routing.js?v=routing-mix-colors-v1"></script>
+<script src="/webui/static/ui/afx.js?v=afx-window-v1"></script>
 <script src="/webui/static/ui/mixer.js"></script>
 <script src="/webui/static/ui/surround.js?v=surround-controls-v20"></script>
 <script src="/webui/static/ui/readback.js?v=input-link-notes-v4"></script>
-<script src="/webui/static/ui/boot.js?v=input-link-spaces-v3"></script>
+<script src="/webui/static/ui/boot.js?v=afx-window-v1"></script>
 </body>
 </html>

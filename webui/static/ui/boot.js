@@ -50,6 +50,8 @@ function applyProfileCapabilities() {
   const routing = cap.routing === true && featureEnabled('routing', true);
   const mixer = cap.mixer === true && featureEnabled('mixer', true);
   const surround = cap.surround === true && featureEnabled('surround', false);
+  const afx = !!afxCapacity();
+  $('#afxopen').hidden = !afx;
   $('[data-tab="inputs"]').hidden = !inputs;
   $('[data-pane="inputs"]').hidden = !inputs;
   $('[data-tab="adat"]').hidden = !digital;
@@ -58,7 +60,7 @@ function applyProfileCapabilities() {
   $('#busessec').hidden = !buses;
   $('#gearbtn').hidden = !settings;
   const section = $('#routesec');
-  section.hidden = !routing && !mixer && !surround;
+  section.hidden = !routing && !mixer && !surround && !afx;
   // initRouteTabs owns pane visibility, including the tab restored from storage.
   // Capability setup only controls which tabs are available.
   const matrixTab = $('#routetabs [data-rtab="matrix"]');
