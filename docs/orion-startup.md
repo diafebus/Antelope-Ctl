@@ -23,7 +23,7 @@ All control payloads are 320 bytes. Requests use endpoint `0x01` OUT; responses 
 | Step | Category | Indices |
 | --- | --- | --- |
 | Assignment status / feature mask | `0x11` | 0, 1 |
-| Link tables with S/PDIF record 0 and an unassigned byte | `0x0b` | 1, 2 |
+| ADAT and S/PDIF link tables | `0x0b` | 1, 2 |
 | Observed startup command | Not a query | See below |
 | Surround global | `0x1b` | 0 |
 | Surround speaker EQ | `0x1a` | 0 through 15 |
@@ -43,32 +43,21 @@ the official-Launcher transition and the correction to the earlier flags-A
 probe are documented in `PROTOCOL.md` and
 `tools/surround_eq_position_selftest.py`.
 
-Category `0x0b` occurs eight times, with indices `1,2,3,3,3,3,0,4`. These are five link-table selectors, not eight records: index 0 returns six Preamp-pair link flags; index 1 returns eight bytes, of which record 0 tracks the single S/PDIF pair; index 2 returns one unassigned byte; index 3 returns 64 mixer-pair states; and index 4 returns 32 AFX-link states. The Launcher repeats index 3 four times around mixer reads as a sequencing marker, but the response is still a real link table. Its `category_counts` value is therefore 5, the exclusive upper bound for observed outer indices 0 through 4. Indices 5 through 7 were absent from all five captures. The existing query validator rejects those indices.
+Category `0x0b` occurs eight times with indices `1,2,3,3,3,3,0,4`.
+These are five selectors, not eight records. Index 0 has six Preamp flags,
+index 1 eight ADAT flags, index 2 one S/PDIF flag, index 3 64 mixer flags,
+and index 4 32 AFX flags. Repeated mixer reads do not expand query bounds:
+`category_counts` remains 5, permitting outer indices 0–4 only.
 
-A later controlled WebUI probe on 2026-09-23 captured `SET_LINK` space 0,
-pair 3 on, followed by a bounded index-0 response whose record 3 changed to
-1; a fresh response after off returned 0. Index-1 record 3 stayed 0 in both
-states. Index 0 returns the six Preamp link states for the 12 physical
-preamp inputs. ADAT has eight pairs, so these records are not its readback.
-The old WebUI used them as ADAT state; that mapping was incorrect. ADAT pair
-indices 6 and 7 have no identified readback byte. Controlled
-direct-HID ON/OFF tests on 2026-09-26 changed none of the five known tables
-for those pairs on a short read. Earlier tests also read index-0 record 4
-while exercising ADAT pair 4, but index 0 is the Preamp table and that
-comparison does not establish ADAT state. The previous ADAT loop was invalid.
-This evidence does not change the startup query bounds or confirm ADAT link
-state.
-The user also verified the old WebUI after a hard reload: ADAT 7/8 showed ON,
-then both ADAT 7/8 and physical Preamp 7/8 indicators showed OFF after the
-OFF click and matching index-0 readback. Record 3 is the Preamp 7/8 pair;
-using it for the ADAT indicator was incorrect and did not establish ADAT
-link state.
-ADAT 13/14 and 15/16 were also toggled ON and OFF. Their `SET_LINK` writes
-use pair indices 6 and 7; neither direct test changed an index-1 record.
-The table remains available in readback diagnostics but is not treated as
-the link indicator for those pairs. A controlled S/PDIF OFF/ON test, with
-ADAT held fixed, changed index-1 record 0 from 1 to 0 to 1. Index 2 stayed
-zero, so it must not drive the S/PDIF button.
+Direct device tests and Windows VM checks on 2026-09-30 confirmed input
+write spaces 0=Preamp, 1=ADAT, 2=S/PDIF and matching link-table indices.
+All eight ADAT selectors were individually toggled/restored; all-ON ADAT
+and S/PDIF ON states were deliberately retained for VM confirmation. Earlier
+Launcher digital buttons emitted incorrect write spaces; their old tests
+and the old WebUI mapped those replies to the wrong domains. The corrected
+profile supplies separate authoritative mappings for all three input banks.
+These results do not alter the startup walk, bounds, or establish retention
+through a device power cycle. See [PROTOCOL.md](../PROTOCOL.md) §4/§7.
 
 The other nested response shapes are also recorded in
 `frame.readback.record_layouts`: category `0x16` index 0 contains eight

@@ -3,8 +3,7 @@
 
 This is intentionally a *capture assistant*, not another general link
 controller.  Category 0x0b has five safe, profile-declared link tables.
-S/PDIF pair 0 tracks index-1 record 0; space-0 flags remain ambiguous between
-Preamp and ADAT, and ADAT pairs 6/7 have no identified readback byte. The
+Preamp, ADAT and S/PDIF use selectors/tables 0, 1 and 2 respectively. The
 script reads all five tables before and after one requested transition,
 writes a local JSON record, and restores the state the operator declared.
 
@@ -15,12 +14,10 @@ One S/PDIF transition (the Launcher must show it currently off):
     python3 tools/link_transition_capture.py --family spdif --pair 0 \
         --from-state off --to-state on --write --confirm-transition
 
-Physical and ADAT links share SET_LINK space 0 on Orion.  Their write path
-therefore needs the extra --confirm-shared-space acknowledgement and records
-both tables; use it only when the corresponding pair is known to have the
-declared starting state in both domains. ADAT pairs 6/7 may be tested with
-explicit state/restore confirmation, but they have no mapped readback byte;
-the tool compares all five bounded tables instead.
+Orion's eight ADAT pairs each have a mapped byte. All transitions compare
+all five bounded tables and restore the declared starting flag. A legacy
+profile whose Preamp and ADAT selectors coincide still requires the extra
+--confirm-shared-space acknowledgement.
 
 Only one process may own the HID node.  Stop the WebUI, CLI, and Launcher
 before running this tool.  The default output path is ignored by Git because
@@ -71,15 +68,15 @@ def family_spec(profile, family):
         return next((name for name, table in tables.items()
                      if table['index'] == index), None)
     if family == 'physical':
-        return {'table': table_at(0), 'space': 0,
+        return {'table': table_at(0), 'space': proto.input_link_space(profile, 'preamp'),
                 'pairs': _as_int(profile['channels']['link_pairs']['count']),
-                'shared_space': True}
+                'shared_space': proto.input_link_space(profile, 'preamp') == proto.input_link_space(profile, 'adat')}
     if family == 'adat':
-        return {'table': table_at(0), 'space': 0,
+        return {'table': table_at(1), 'space': proto.input_link_space(profile, 'adat'),
                 'pairs': _as_int(profile['adat']['link_pairs']['count']),
-                'shared_space': True}
+                'shared_space': proto.input_link_space(profile, 'preamp') == proto.input_link_space(profile, 'adat')}
     if family == 'spdif':
-        return {'table': table_at(1), 'space': 1,
+        return {'table': table_at(2), 'space': proto.input_link_space(profile, 'spdif'),
                 'pairs': _as_int(profile['spdif']['link_pairs']['count']),
                 'shared_space': False}
     raise ValueError(f'unsupported link family {family!r}')
@@ -96,14 +93,9 @@ def validate_target(profile, family, pair):
             f'{family} pair {pair} is outside the profile-confirmed '
             f'0..{spec["pairs"] - 1} range')
     if pair >= table['record_count']:
-        if family != 'adat':
-            raise ValueError(
-                f'{family} pair {pair} has no corresponding byte in '
-                f'0x0b/{table["index"]}; refusing a blind transition')
-        # ADAT tail pairs are a deliberate mapping experiment. The complete
-        # bounded 0x0b snapshot still shows any correlated table transition.
-        spec['table'] = None
-        return spec, None
+        raise ValueError(
+            f'{family} pair {pair} has no corresponding byte in '
+            f'0x0b/{table["index"]}; refusing a blind transition')
     return spec, table
 
 
@@ -182,7 +174,7 @@ def main(argv=None):
     parser.add_argument('--confirm-transition', action='store_true',
                         help='acknowledge that this changes then restores the named link')
     parser.add_argument('--confirm-shared-space', action='store_true',
-                        help='acknowledge physical/ADAT share wire space 0 on Orion')
+                        help='acknowledge shared Preamp/ADAT selectors in a legacy profile')
     parser.add_argument('--timeout', type=float, default=1.0,
                         help='readback response timeout in seconds (default: 1.0)')
     parser.add_argument('--settle', type=float, default=0.35,
@@ -211,7 +203,7 @@ def main(argv=None):
         spec, table = validate_target(profile, args.family, args.pair)
         if spec['shared_space'] and not args.confirm_shared_space:
             parser.error(
-                'physical and ADAT share SET_LINK space 0; --write for either needs '
+                'this profile shares Preamp and ADAT SET_LINK selectors; --write for either needs '
                 '--confirm-shared-space after checking both domains have --from-state')
 
     device = Device(profile, args.timeout)

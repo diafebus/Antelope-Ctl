@@ -122,35 +122,30 @@ context.LINKS[0] = true;
 assert.equal(context.syncInputLinksFromReadback(payload(records)), false);
 assert.equal(context.LINKS[0], true);
 
-// Orion's real profile schedules the same diagnostic response after either
-// write, but it must never project that raw flag into either button set.
+// Orion's confirmed tables update each input bank independently.
 context.PROFILE = JSON.parse(fs.readFileSync(path.join(
   ROOT, 'profiles/orion_studio_sc.json'), 'utf8'));
 context.LINKS = {0: true};
 context.DIG.adat.links = {7: true};
-const savesBefore = {...saves};
-assert.equal(context.inputLinkPairReadbackConfirmed('preamp', 0), false);
-assert.equal(context.inputLinkPairReadbackConfirmed('adat', 0), false);
-assert.equal(context.inputLinkPairReadbackConfirmed('adat', 7), false);
+assert.equal(context.inputLinkPairReadbackConfirmed('preamp', 0), true);
+assert.equal(context.inputLinkPairReadbackConfirmed('adat', 0), true);
+assert.equal(context.inputLinkPairReadbackConfirmed('adat', 7), true);
 assert.equal(context.inputLinkPairReadbackConfirmed('spdif', 0), true);
-assert.match(context.inputLinkButtonTitle('adat', 0, 'ADAT 1+ADAT 2'),
-  /does not identify Preamp versus ADAT state/);
-assert.equal(context.syncInputLinksFromReadback(payload(records)), false);
-assert.equal(context.LINKS[0], true);
-assert.equal(context.LINKS[3], undefined);
+assert.equal(context.inputLinkButtonTitle('adat', 0, 'ADAT 1+ADAT 2'), 'link ADAT 1+ADAT 2');
+assert.equal(context.syncInputLinksFromReadback(payload(records)), true);
+assert.equal(context.LINKS[0], undefined);
+assert.equal(context.LINKS[3], true);
 assert.equal(context.DIG.adat.links[3], undefined);
 assert.equal(context.DIG.adat.links[7], true);
-assert.deepEqual(saves, savesBefore);
 
-// The live S/PDIF OFF/ON transition belongs to index 1 record 0, despite
-// the older extracted schema having called that table ADAT.
 assert.equal(context.syncInputLinksFromReadback(payload(rowsFor(8, [0]), 1)), true);
-assert.equal(context.DIG.spdif.links[0], true);
-assert.equal(context.DIG.adat.links[7], true);
+assert.equal(context.DIG.spdif.links[0], undefined);
+assert.equal(context.DIG.adat.links[0], true);
+assert.equal(context.DIG.adat.links[7], undefined);
 assert.equal(context.syncInputLinksFromReadback(payload(rowsFor(8), 1)), true);
-assert.equal(context.DIG.spdif.links[0], undefined);
-assert.equal(context.syncInputLinksFromReadback(payload(rowsFor(1, [0]), 2)), false);
-assert.equal(context.DIG.spdif.links[0], undefined);
+assert.equal(context.DIG.adat.links[0], undefined);
+assert.equal(context.syncInputLinksFromReadback(payload(rowsFor(1, [0]), 2)), true);
+assert.equal(context.DIG.spdif.links[0], true);
 
 const rbContext = vm.createContext({
   rbEscape: value => String(value),
@@ -161,8 +156,8 @@ const rbContext = vm.createContext({
 vm.runInContext(js.slice(js.indexOf('function rbLinkBody'),
   js.indexOf('function rbMicBody')), rbContext);
 const rawGrid = rbContext.rbLinkBody({
-  name: 'unassigned space-0 flags', category: 0x0b, index: 0, safe: true,
+  name: 'preamp', category: 0x0b, index: 0, safe: true,
 }, [['0', records]]);
-assert.match(rawGrid, /0:3 = 1/);
-assert.doesNotMatch(rawGrid, /\bON\b/);
+assert.match(rawGrid, /0:3 ON/);
+assert.doesNotMatch(rawGrid, /0:3 = 1/);
 console.log('WebUI input link readback checks passed.');

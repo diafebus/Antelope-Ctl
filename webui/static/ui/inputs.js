@@ -110,6 +110,22 @@ function inputLinkReadbackSpec() {
 
 function discardAmbiguousInputLinkCache() {
   const spec = inputLinkReadbackSpec();
+  if (spec?.cache_revision) {
+    // Address corrections invalidate command/cache entries from older builds.
+    // Device readback repopulates each bank after the first complete response.
+    const marker = 'inputLinkCacheRevision';
+    try {
+      if (localStorage.getItem(marker) === spec.cache_revision) return;
+      for (const pair of Object.keys(LINKS)) delete LINKS[pair];
+      saveLinks();
+      for (const domain of ['adat', 'spdif']) {
+        for (const pair of Object.keys(DIG[domain].links)) delete DIG[domain].links[pair];
+        localStorage.setItem(domain + 'Links', '{}');
+      }
+      localStorage.setItem(marker, spec.cache_revision);
+    } catch (_) { /* local storage may be unavailable */ }
+    return;
+  }
   if (spec?.authoritative !== false) return;
   // Older builds saved one space-0 response into both domains. Its ON bytes
   // cannot tell us which control was used, so discard only those old pairs

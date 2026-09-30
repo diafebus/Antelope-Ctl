@@ -35,14 +35,13 @@ right tool.
 - `capture_diff.py` and `scan_*.py` analyse local captures only.
 - `selftest.py` and the `surround_*_selftest.py` scripts are live-device tools.
   Their write paths are opt-in and must restore the state they modify.
-- `link_transition_capture.py` reads only the five profile-declared category
-  `0x0b` tables unless `--write` is specified.  Its write mode makes one
-  requested transition and restores the operator-declared starting state in a
-  `finally` block. The six `0x0b:0` records are Preamp readback for the 12
-  physical preamps, not ADAT readback for ADAT's eight pairs. Captured ADAT UI
-  writes also used `space=0`, but this does not establish ADAT state. The write
-  mode requires an additional acknowledgement; do not use its Preamp table to
-  verify an ADAT link.
+- `link_transition_capture.py` compares all five safe Orion link tables
+  around one explicit transition and restores the declared starting flag.
+  Input spaces/readback selectors are 0=Preamp (six pairs), 1=ADAT (eight
+  pairs), and 2=S/PDIF (one pair), verified on 2026-09-30. All writes require
+  explicit transition confirmation. Legacy profiles with shared Preamp/ADAT
+  selectors additionally require `--confirm-shared-space`.
+
 - `hid_probe.py`, `readback_enum.py`, `readback_probe.py`, and `ct_probe.py`
   are protocol-discovery tools. Never use a force/unsafe option for an
   exploratory sweep: an out-of-range outer readback index can BusFault the

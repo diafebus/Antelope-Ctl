@@ -15,16 +15,15 @@ copying a device's category numbers into the browser.
 
 Input link indicators use a profile-declared
 `frame.link_command.readback` mapping when a complete safe table is
-available. Orion's `0x0b:0` contains six Preamp link flags for the device's
-12 physical preamps. ADAT has eight pairs, so this table is not ADAT
-readback. The previous ADAT checks incorrectly compared ADAT actions with
-these six Preamp records; they do not establish ADAT link state. Direct ADAT
-pair-7 and pair-8 ON/OFF tests changed none of the five known link tables on
-a short read. `0x0b:1` returns
-eight bytes, but only record 0 is assigned: it followed a controlled
-S/PDIF OFF/ON transition while ADAT was held fixed. S/PDIF has one pair;
-its button follows that record. `0x0b:2` remains unassigned. ADAT buttons
-without an authoritative readback retain this browser's command-backed state.
+available. Orion maps six Preamp pairs through `0x0b:0`, all eight ADAT
+pairs through `0x0b:1`, and S/PDIF through `0x0b:2`. Input writers resolve
+selectors from each profile bank's `link_pairs.space`: 0/1/2 on Orion.
+Direct hardware transitions and Windows VM indicators confirmed the mapping
+on 2026-09-30. The earlier digital write addresses and readback-domain
+assignments were incorrect. A profile `cache_revision` clears old saved
+input-link states once; complete readback repopulates the correct buttons.
+The backend queries the matching table immediately after each link write.
+Gain mirroring continues to use two per-channel writes in the browser.
 
 Current entries:
 

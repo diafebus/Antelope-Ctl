@@ -2474,7 +2474,7 @@ def _input_link_readback_target(profile, domain, pair):
         return None
 
     # A post-write diagnostic target need not be an authoritative mapping
-    # from a returned byte to one input domain (Orion space 0 is ambiguous).
+    # from a returned byte to one input domain. Confirmed mappings are separate.
     pair_counts = spec.get("post_write_pair_counts", spec.get("pair_counts"))
     if not isinstance(pair_counts, dict):
         return None
@@ -2555,7 +2555,8 @@ def api_link(l: Link):
     if not (0 <= l.pair < npairs):
         return _bad(f"pair {l.pair} out of range 0..{npairs - 1}")
     try:
-        pkt = proto.build_link_command(PROFILE, l.pair, l.enabled)
+        pkt = proto.build_link_command(
+            PROFILE, l.pair, l.enabled, space=proto.input_link_space(PROFILE, "preamp"))
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
     _queue_input_link_write(pkt, "preamp", l.pair)
@@ -2587,12 +2588,13 @@ def api_spdif_gain(g: DigGain):
     return _dig_gain("spdif", "spdif_gain", rng, g)
 
 
-def _dig_link(space_name, space_byte, npairs, l: "DigLink"):
+def _dig_link(space_name, npairs, l: "DigLink"):
     """SET_LINK for ADAT/S-PDIF, refreshing a confirmed readback when mapped."""
     if not (0 <= l.pair < npairs):
         return _bad(f"{space_name} pair {l.pair} out of range 0..{npairs - 1}")
     try:
-        pkt = proto.build_link_command(PROFILE, l.pair, l.enabled, space=space_byte)
+        pkt = proto.build_link_command(
+            PROFILE, l.pair, l.enabled, space=proto.input_link_space(PROFILE, space_name))
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
     _queue_input_link_write(pkt, space_name, l.pair)
@@ -2602,13 +2604,13 @@ def _dig_link(space_name, space_byte, npairs, l: "DigLink"):
 @app.post("/api/adat-link")
 def api_adat_link(l: DigLink):
     n = int(PROFILE.get("adat", {}).get("link_pairs", {}).get("count", 0))
-    return _dig_link("adat", 0, n, l)
+    return _dig_link("adat", n, l)
 
 
 @app.post("/api/spdif-link")
 def api_spdif_link(l: DigLink):
     n = int(PROFILE.get("spdif", {}).get("link_pairs", {}).get("count", 0))
-    return _dig_link("spdif", 1, n, l)
+    return _dig_link("spdif", n, l)
 
 
 @app.post("/api/output-trim")

@@ -29,11 +29,10 @@ WHAT IT CANNOT CHECK
   Reported as SKIP, not PASS, so the summary never overstates coverage:
   mic-modeling WRITE round trips (the current state is readable, but this
   self-test does not change DSP configuration), channel-link transition
-  correlation (space-0 index 0 is confirmed Preamp link readback; its earlier
-  use as ADAT readback was incorrect. The eight-byte index-1 table did not
-  change after an ADAT pair-6 ON write, and only its record 0 is mapped to
-  S/PDIF; mixer/AFX transitions remain
-  manual), and sample rate (writing it drops audio).
+  correlation (input selectors/readback tables 0=Preamp, 1=ADAT, 2=S/PDIF
+  were independently verified on 2026-09-30; this general self-test does not
+  toggle them. Mixer/AFX transitions remain manual), and sample rate
+  (writing it drops audio).
 """
 import argparse
 import os
