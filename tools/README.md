@@ -21,6 +21,7 @@ right tool.
 | Compare two extracted command frames | `python3 tools/capture_diff.py before.hex after.hex` | No |
 | Analyse a Windows TSV capture | `python3 tools/scan_capture.py all_reports.tsv` | No |
 | Analyse a native-macOS capture | `python3 tools/scan_macos_capture.py CAP.pcapng` | No |
+| Analyse Orion AFX chain/parameter traffic | `python3 tools/scan_afx_capture.py CAP.pcapng --output /tmp/afx-analysis.json` | No |
 | Inspect decoded readback traffic in a capture | `python3 tools/scan_readback.py CAP.pcapng` | No |
 | Inspect HID capabilities | `python3 tools/hid_probe.py --profile profiles/orion_studio_sc.json` | No |
 | Enumerate profile-bounded device readbacks | `python3 tools/readback_enum.py --profile profiles/orion_studio_sc.json` | Yes; bounded queries |

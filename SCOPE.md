@@ -113,24 +113,44 @@ it is ever sent, decoded-for-replication, or documented:
 | **B. Slot bypass / enable** | a per-slot on/off (mixer-level, like AuraVerb's enable bit) | **OK to decode + expose.** It is a mute, not the plugin. |
 | **C. Reading slot state** | "slot N is occupied", "slot N is bypassed" | **OK to decode + display.** Observation only. |
 | **D. AFX Real-Time parameter control** | "set slot-N decay = 40" on an effect already available under a license assigned to the target device | **In scope.** Observe and implement the device control. Do not load an effect or interact with its license/activation state. Native/Cosmos licensing is not a prerequisite or proxy for this work. |
-| **E. Assign / load / remove an effect** | "put Auto-Tune in slot 3" | **Out of scope for this project.** This project does not change which effects are installed or assigned to channels. |
+| **E. Assign / load / remove an effect** | "put Auto-Tune in slot 3" | **Generally out of scope.** The Orion Memory Cat pilot below is an explicit, bounded exception. |
 | **F. Licensing / activation / entitlement traffic** | the activation handshake, license tokens, entitlement checks | **OFF-LIMITS.** Never sent, never decoded for replication, never captured into any repo. |
 
 **This repo (`antelope-ctl`) may contain buckets A through D.** D remains
 subject to the same evidence, hardware ownership, and safe-write standards
-as other device controls. E and F remain outside project scope.
+as other device controls. F remains outside project scope. E is limited to
+the explicitly requested pilot below.
 
 An undocumented or unverified frame stays **unsent** until its meaning and
-write behavior are established. A frame is not out of scope merely because
+write behavior are established, except for the captured, explicitly
+operator-driven pilot tests described below. A frame is not out of scope merely because
 it controls a licensed AFX effect.
+
+### Orion Memory Cat pilot
+
+The owner explicitly requested a WebUI that loads and reorders Memory Cat
+Brigade and provided owned-device captures on 2026-09-30. This extends scope
+to observing the submitted load/remove/reorder sequences and implementing
+operator-driven tests for Memory Cat on Orion insert channel index 0
+(the owner's Preamp 1 test). Other loading paths remain excluded.
+
+Typed test builders use the captured complete eight-slot chain, preserve
+other effects, allocate only measured instance indices, and start from
+fresh bounded device readbacks. Slot mutations verify their resulting
+readback and stop further testing if verification fails. Generic raw AFX
+opcode guards stay enabled. Parameter tests require an explicit complete
+settings Apply; they do not claim parameter readback or automatic restoration.
+Stereo parameter sharing, other effects' writes, and other devices remain
+unsupported by this pilot. No licensing or activation traffic is handled.
 
 ---
 
 ## 5. What this repo will never contain
 
 - Plugin DSP implementation, binaries, or source code.
-- Any capture, or analysis of a capture, of plugin **instantiation** or
-  **licensing/activation** traffic (buckets E/F).
+- Licensing/activation traffic (bucket F), or loading implementations outside
+  the explicitly requested Orion Memory Cat pilot. Owner-submitted Orion
+  chain captures may be observed without enabling those effects' writes.
 - Anything derived from Antelope's software, firmware, or login-gated
   materials.
 - A device serial, in any tracked file.
@@ -145,7 +165,7 @@ By contributing you confirm that:
    observing its USB traffic -- not from Antelope's software, firmware, or
    any login-gated material.
 2. You have classified every AFX-related frame per §4 and submitted
-   nothing from buckets E/F to this repo. Bucket D work controls only an
+   nothing from bucket F or from E outside the Orion pilot to this repo. Bucket D work controls only an
    effect already available under a license assigned to the target device.
 3. You are responsible for the Antelope terms presented to and accepted
    by you when using the Launcher. This project does not determine how

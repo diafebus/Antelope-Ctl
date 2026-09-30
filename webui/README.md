@@ -46,6 +46,9 @@ compatibility.
   - `meters.js` and `buses.js` -- meter and output-bus rendering;
   - `routing.js` and `mixer.js` -- routing and mixer surfaces;
   - `afx.js` -- detachable AFX window sized from the profile's capacity;
+  - `afx-memorycat.js` / `afx-memorycat.css` -- the Memory Cat panel's own
+    presentation and control interactions;
+  - `afx-test.js` -- operator-driven device-rack pilot, separate from local previews;
   - `surround.js` -- profile-driven Surround monitor and EQ readback;
   - `readback.js` and `boot.js` -- diagnostics, state fan-out, and startup.
 
@@ -60,7 +63,13 @@ compatibility.
     offers a 32-channel selector and a single channel strip on the left,
     with that channel's eight rack units together on the right. Selection
     persists across popup close/reopen while the main page is open. Slot
-    contents are unavailable until the channel/readback mapping is verified. Closing the
+    contents remain unavailable outside the explicit channel-index-0 pilot.
+    Memory Cat previews have six draggable knobs and two mode selectors;
+    previews and device slot state are separate. The pilot exposes guarded
+    load/remove/reorder and full-state parameter Apply, with slot readback
+    verification and unconfirmed A/B switch polarity. Parameter settings are
+    drafts/last sent, not device readback. See the main README's AFX section.
+    Closing the
     window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1

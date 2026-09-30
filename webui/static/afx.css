@@ -49,6 +49,17 @@
 .afx-rack-face .afx-slot-number { font-size:16px; }
 .afx-rack-controls { padding:9px 12px; border:1px dashed #383b46; border-radius:4px;
   color:var(--dim); font-size:12px; }
+.afx-rack-controls { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.afx-preview-open { padding:5px 9px; border:1px solid #50446b; border-radius:4px;
+  background:#30283e; color:#d0b7ef; cursor:pointer; font:11px system-ui,sans-serif; }
+.afx-preview-status { margin:0 0 10px; color:var(--dim); font-size:12px; }
+.afx-preview-status:empty { display:none; }
+.afx-panel-position { color:#b78aef; font:13px ui-monospace,monospace; }
+.afx-panel-drag, .afx-panel-move { border:0; background:transparent; color:#9b92aa; cursor:pointer; padding:2px; }
+.afx-panel-drag { cursor:grab; font-size:20px; }
+.afx-panel-move:disabled { opacity:.3; cursor:default; }
+.afx-panel-drag:focus-visible, .afx-panel-move:focus-visible { outline:2px solid #b78aef; outline-offset:2px; }
+.afx-test-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 10px; font-size:11px; color:var(--dim); }
 @media (max-width:680px) {
   .afx-window-main { grid-template-columns:1fr; gap:16px; }
   .afx-channel-panel { position:static; }
@@ -57,4 +68,5 @@
 }
 @media (max-width:480px) {
   .afx-capacity { margin-left:0; flex-basis:100%; }
+
 }

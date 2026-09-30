@@ -4,7 +4,7 @@
     "version": 1
   },
   "status": "reference-only",
-  "_comment": "Shared device-side AFX reference catalog seeded from Gazelle measurements and public effect descriptions. Device capacity stays in device profiles. Shared control names are declared metadata; Orion Memory Cat Brigade has capture-observed field mappings, kept separate from verified writable encodings. Every load/recall/parameter command is null. Model-local type IDs are readback observations, not verified write discriminators. Runtime instance handles are never catalog IDs. No runtime loader or writer consumes this catalog.",
+  "_comment": "Shared device-side AFX reference catalog seeded from Gazelle measurements and public effect descriptions. Device capacity stays in device profiles. Shared control names are declared metadata; Orion Memory Cat Brigade has capture-observed field mappings, kept separate from verified writable encodings. Every load/recall/parameter command is null. Model-local type IDs are capture/readback observations, kept separate from runtime instance indices. Captured Orion write discriminators still require live pilot verification. Runtime instances are never catalog IDs. No runtime loader or writer consumes this catalog.",
   "provenance": {
     "gazelle_profile": "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json",
     "gazelle_findings": "https://github.com/Gazelle-ctl/gazelle-docs/blob/main/protocol/REPLIES.md",
@@ -641,13 +641,14 @@
     },
     {
       "id": "bbdchorus",
-      "name": "bbdchorus",
+      "name": "BBD-Chorus",
       "source_name": "bbdchorus",
-      "category": null,
-      "description": null,
+      "category": "chorus",
+      "description": "Bucket-brigade chorus and vibrato with selectable stereo modes.",
       "status": "reference-only",
       "evidence": [
-        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.78"
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.78",
+        "https://en.antelopeaudio.com/products/bbd-chorus/"
       ],
       "controls": [
         {"id": "level", "label": "Level", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
@@ -678,16 +679,19 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 78,
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng"
+          ],
+          "notes": "Owner-labelled Orion loading sequence identifies this type in full-chain assignments. Linked channels use distinct instance indices; no parameter encoding or full-license status is inferred from loadability. No runtime writer supports this effect.",
+          "type_id_write_status": "unconfirmed"
         }
       ]
     },
@@ -789,7 +793,7 @@
     },
     {
       "id": "deesser",
-      "name": "deesser",
+      "name": "Master De-Esser",
       "source_name": "deesser",
       "category": null,
       "description": null,
@@ -828,16 +832,33 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 27,
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng"
+          ],
+          "notes": "Orion type ID established by the owner-labelled load sequence. Instinct has a different opcode and a larger parameter block; Master De-Esser also uses a different opcode from Memory Cat. These observations do not enable loading or parameter writes for either effect.",
+          "type_id_write_status": "unconfirmed",
+          "parameter_observation": {
+            "opcode": "0x20",
+            "param_id": "0xd5",
+            "subcmd": "0x0e",
+            "type_id_offset": 18,
+            "instance_index_offset": 19,
+            "status": "capture-observed",
+            "writable": false,
+            "linked_instance_indices": [
+              0,
+              1
+            ],
+            "notes": "Unlabelled parameter movements. Linked UI sends identical state blocks to instance 1 then instance 0. No per-control names/scales or readback were established; do not reuse the Memory Cat byte encoding."
+          }
         }
       ]
     },
@@ -1611,7 +1632,7 @@
     },
     {
       "id": "instinct",
-      "name": "instinct",
+      "name": "Instinct",
       "source_name": "instinct",
       "category": null,
       "description": null,
@@ -1666,16 +1687,33 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 75,
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng"
+          ],
+          "notes": "Orion type ID established by the owner-labelled load sequence. Instinct has a different opcode and a larger parameter block; Master De-Esser also uses a different opcode from Memory Cat. These observations do not enable loading or parameter writes for either effect.",
+          "type_id_write_status": "unconfirmed",
+          "parameter_observation": {
+            "opcode": "0x7c",
+            "param_id": "0xd5",
+            "subcmd": "0x6a",
+            "type_id_offset": 18,
+            "instance_index_offset": 19,
+            "status": "capture-observed",
+            "writable": false,
+            "linked_instance_indices": [
+              0,
+              1
+            ],
+            "notes": "Unlabelled parameter movements. Linked UI sends identical state blocks to instance 1 then instance 0. No per-control names/scales or readback were established; do not reuse the Memory Cat byte encoding."
+          }
         }
       ]
     },
@@ -1871,7 +1909,7 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
+          "type_id": 73,
           "status": "capture-observed",
           "commands": {
             "load": null,
@@ -2055,9 +2093,10 @@
           "evidence": [
             "macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng",
             "https://es.antelopeaudio.com/wp-content/uploads/2020/11/Memory-Cat-Brigade.jpg",
-            "Owner clarified action order and six knob endpoints (0-100) on 2026-09-30."
+            "Owner clarified action order and six knob endpoints (0-100) on 2026-09-30.",
+            "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng"
           ],
-          "notes": "Orion-only observation from owned-device HID OUT traffic and the owner-labelled action sequence. Offsets are zero-based within the 320-byte report, excluding the 40-byte Darwin header. Each successive parameter change affects one byte in 20-27; a complete eight-control state block is inferred, not a reusable command template. Six knobs reach raw 0 and 100; intermediate display scaling, quantization and physical units remain unverified. Both switches alternate raw 0/1, but label-to-value polarity is unknown. Byte 18 is a session instance handle, never an effect type ID. No matching effect-parameter readback or baseline restoration was established. Commands stay null and opcode 0x1c remains blocked pending safe-write verification.",
+          "notes": "Orion-only observation from owned-device HID OUT traffic and owner-labelled actions. The new eight-instance capture establishes type ID 73 and a separate instance index: chain slots are {type, inst} pairs at bytes 19-34; parameter frames address type at 18 and instance at 19. Instance 4 retains its identity through reordering; the owner set its Level to 0 (frames 49667/49719). Report offsets exclude USB capture headers. Six knobs reach raw 0 and 100; intermediate display scaling, quantization and physical units remain unverified. Switch label polarity and effect-parameter readback remain unknown. Commands here remain null; explicitly bounded test operations belong to the Orion runtime contract, not a cross-device catalog writer.",
           "parameter_observation": {
             "report_length": 320,
             "opcode_offset": 4,
@@ -2065,11 +2104,8 @@
             "param_id_offset": 16,
             "param_id": "0xd5",
             "constant_bytes": {
-              "17": "0x0a",
-              "19": "0x00"
+              "17": "0x0a"
             },
-            "instance_handle_offset": 18,
-            "observed_instance_handle": "0x49",
             "parameter_offsets": [
               20,
               21,
@@ -2096,8 +2132,15 @@
             "status": "capture-observed",
             "writable": false,
             "readback_verified": false,
-            "restoration_verified": false
-          }
+            "restoration_verified": false,
+            "type_id_offset": 18,
+            "instance_index_offset": 19,
+            "observed_instance_indices": [
+              0,
+              4
+            ]
+          },
+          "type_id_write_status": "capture-observed"
         }
       ]
     },
@@ -3737,13 +3780,14 @@
     },
     {
       "id": "turboensembler",
-      "name": "turboensembler",
+      "name": "V12 Chorus",
       "source_name": "turboensembler",
-      "category": null,
-      "description": null,
+      "category": "chorus",
+      "description": "Multi-voice chorus with up to twelve generated voices.",
       "status": "reference-only",
       "evidence": [
-        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.70"
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.70",
+        "https://en.antelopeaudio.com/products/v12-chorus/"
       ],
       "controls": [
         {"id": "humanize", "label": "Humanize", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"]},
@@ -3778,16 +3822,19 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 70,
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng"
+          ],
+          "notes": "Owner-labelled Orion loading sequence identifies this type in full-chain assignments. Linked channels use distinct instance indices; no parameter encoding or full-license status is inferred from loadability. No runtime writer supports this effect.",
+          "type_id_write_status": "unconfirmed"
         }
       ]
     },

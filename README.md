@@ -48,8 +48,7 @@ Orion nested records: category `0x0b` link tables, `0x15` AFX instance counts,
 `0x16` mic-emulation state, and `0x19` AFX strip order. The CLI and WebUI
 display those profile-declared records. There is **no built-in
 per-input-channel EQ** on this device: input EQ uses an AFX Real-Time
-effect; its parameter controls are in scope but not yet decoded or
-implemented (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited to 2.0 and
+effect; AFX EQ parameter controls have no verified implementation (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited to 2.0 and
 2.1. The global format wire path was directly round-trip tested through 9.1.6
 with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
 bounds for `0x0c`, and
@@ -61,10 +60,10 @@ checks on 2026-09-30 confirmed input link selectors `0`=Preamp, `1`=ADAT,
 `2`=S/PDIF. Earlier Launcher button captures used incorrect digital selectors;
 the old project interpretation was corrected. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
-in `PROTOCOL.md` §12a but never emitted — assigning/loading a plugin is out
-of scope (`SCOPE.md`). AFX Real-Time parameter control is in scope, but its
-Memory Cat Brigade fields are capture-mapped, but no parameter writer is
-enabled. The AFX-tab channel
+in `PROTOCOL.md` §12a. General loading remains outside scope; the owner's
+explicitly requested Orion Memory Cat pilot is a bounded exception
+(`SCOPE.md`). Its operator-driven test interface supports whole-chain
+loading/removal/reordering and complete parameter Apply. The AFX-tab channel
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
 
@@ -79,16 +78,35 @@ with pinned source provenance. The first three descriptions are drawn from
 public effect pages. The Orion Memory Cat Brigade implementation records
 six observed 0–100 knob fields and two binary switch fields from an
 owner-labelled capture. Switch polarity, intermediate scaling and safe-write
-verification remain unresolved. Orion type IDs and all
-load/recall/parameter commands remain unknown. No AFX loader or writer is
-enabled by this metadata. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
+verification remain unresolved. Owner-labelled load captures establish
+Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
+Master De-Esser; catalog commands stay null. This metadata does not enable
+a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
 The WebUI's **AFX** button, between Routing and Mix 1, opens a detachable
 window with a channel selector and one channel overview on the left, and
 the selected channel's effects rack on the right. Orion offers 32 channels;
 the rack shows all eight slot panels together and remembers the selected
 channel while the main page remains open.
-Slot contents are currently unavailable; the window displays capacity only.
+Each effect's presentation has its own JavaScript and CSS module. Memory Cat
+provides six draggable knobs and two mode selectors in an original Gazelle
+rack design. Local previews retain settings per channel/slot and support
+drag-and-drop or keyboard-button reordering.
+
+For the Orion pilot, click **Connect device rack** to view channel-index-0
+slots (the owner's Preamp 1 capture). Empty slots offer **Load Memory Cat**;
+existing Memory Cats can be removed or reordered. Slot writes use fresh
+readbacks and verify the resulting chain. This is experimental and has not
+been tested live from this WebUI. Other channels/effects remain unavailable
+for device writes. **Unlink AFX 1/2 only** sends just the link-OFF command
+and preserves existing effects on both channels.
+
+Parameter values are drafts or last-sent settings, not device readback.
+Select switch positions **A (0)** / **B (1)** and use **Apply all settings**
+to send the complete eight-control block. The switch labels' wire polarity
+still needs the owner's test. This mono pilot refuses parameter/chain writes
+while the AFX link table has enabled flags; it never mirrors unknown stereo
+parameters or controls demo effects. No writes occur when opening a preview.
 
 ### Evidence rule for write claims
 

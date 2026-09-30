@@ -11,6 +11,8 @@ const JS_FILES = [
   'ui/buses.js',
   'ui/routing.js',
   'ui/afx.js',
+  'ui/afx-memorycat.js',
+  'ui/afx-test.js',
   'ui/mixer.js',
   'ui/surround.js',
   'ui/readback.js',

@@ -794,33 +794,49 @@
       "notes": "MIC MODELING / 'emuMic' -- the front-panel EMU button on preamps 5-12 (8 channels), shown per channel only in Mic mode. Runs Antelope's mic-emulation DSP (for their Edge Solo / Edge Duo / Edge Note modelling mics + model packs). Opcode 0x17 is SHARED: param_id at [16] disambiguates -- 0xd4 = virtual mixer (frame.mix_command), 0xe5 = mic modeling. Frame `e5 05 <ch> <en> <model> <swap> <pattern>`, bytes 16-22, rest 0. [17]=0x05 const; [18]=channel = 0-based input channel index - 4 (preamp 7 -> 2 ... preamp 12 -> 7); [19]=modeling ENABLED (1/0); [20]=MODEL ID (0 = EdgeDuo / raw mic, no emulation -- the default; 1..N = the emulation models, see profiles/mic_models.json); [21]=CHANNEL-ORDER SWAP (0/1); [22]=POLAR PATTERN, always a 0-based INDEX (NOT a class code -- corrected 2026-09-01 from macos-emumic-polar-patterns). With model 0 (EdgeDuo raw) it is the free 0-100 continuous morph (0 omni / 50 cardioid / 100 figure-8), user-confirmed. With an emulation model selected it is a small integer index into that model's pattern list, and its range is per-model: fixed mics lock it at 0 (models 2,5,6,8,13,14,15,17 -- one pattern); models 3,4,7 sweep 0..2 (omni/cardioid/fig-8); models 9,10,11 sweep 0..8 (9-detent multipattern); models 1,12,16,18 only 0..1 were swept (a 3rd value may exist -- not confirmed). Selecting a model writes [22] = that model's DEFAULT pattern index (0 for fixed, 1 = cardioid for the 3-way mics, 4 = cardioid for the 9-way mics) -- this is the value earlier misrecorded as 'pattern_class' in mic_models.json. Enable/pattern(model 0)/swap decoded 2026-08-31 from macos-ch7-8-micmodeling-* / macos-ch9-10_11-12-micmodeling-*; model IDs from 'emumic-model-select-...' (Windows KVM, 18 models cycled on preamps 7-8); per-model pattern-index ranges from macos-emumic-polar-patterns (2026-09-01, all 19 models swept on preamps 7-8). Whole state every frame; params MIRROR across the linked preamp pair (Launcher sends [18]=N then [18]=N+1). Disabling sets [19]=[21]=[22]=0. SIDE EFFECTS of enabling: the Launcher also turns on 48V phantom for the pair (SET_PARAM param 0x51) and links the preamp pair (SET_LINK space 0). The extracted panel schema and manager-server log now map current mic-emulation state to readback category 0x16 index 0 (eight target/model/swap/pattern records); in the passive 0x73 stream only the phantom bit (0x10) moves. build_micmodeling_command(profile, channel, enabled, pattern, swap, model); not in cli.py."
     },
     "afx_slot": {
-      "status": "OBSERVED / field-mapped 2026-09-04. Bucket C (read 'which channel holds which plugin instance') is documented here; bucket B (per-slot bypass) is documented but ships NO builder; the write that places/clears a plugin (opcode 0x23) stays in constraints.forbidden_opcodes = bucket E, OFF-LIMITS. Source: two macOS Launcher captures (Tuner utility toggled on ch1/ch4; MemoryCat Brigade delay on ch1) held in ../antelope-ctl-afx per the SCOPE.md firewall. FRAME IDENTIFICATION ONLY -- the plugin PARAMETER stream (opcode 0x1c / param 0xd5) was frame-counted, never decoded.",
+      "status": "Capture-observed 2026-09-30: whole eight-slot chain from the owner-labelled Preamp 1 load/remove/reorder capture. Type and instance are separate fields; this supersedes the 2026-09-04 single-handle interpretation.",
       "assign": {
         "magic": "0x70",
         "opcode": "0x23",
-        "opcode_note": "0x23 is in constraints.forbidden_opcodes; build_* refuses it. Placing or clearing a plugin on a channel insert = bucket E (instantiate/load/remove), OFF-LIMITS per SCOPE.md. Documented here for observation + future readback decoding, not to emit.",
-        "param_id_offset": 16, "param_id": "0xd7",
-        "subcmd_offset": 17, "subcmd": "0x11",
+        "opcode_note": "Generic opcode guard stays. The explicit Orion Memory Cat test contract is the only typed load/remove/reorder exception.",
+        "param_id_offset": 16,
+        "param_id": "0xd7",
+        "subcmd_offset": 17,
+        "subcmd": "0x11",
         "channel_offset": 18,
-        "channel_note": "0-based insert-channel index. Observed 0x00 (ch1) and 0x03 (ch4).",
-        "handle_offset": 19,
-        "handle_note": "plugin-instance HANDLE. Observed 0x48 (Tuner), 0x49 (MemoryCat Brigade); 0x00 = clear this channel's insert. The same handle keys the bypass frame ([18]) and the parameter frame (0x1c/0xd5 [18]). Plausibly 0x40 | slot_index (-> AFX slots 8, 9) or a sequential instance id -- only 2 data points. The handles pre-existed at capture start (plugins loaded in a prior Launcher session); this frame moves an existing instance onto/off a channel, it was never seen to create one.",
-        "tail_offset": 20, "tail": "0x00"
+        "channel_note": "Zero-based insert-strip index; owner reports all new operations on Preamp 1, index 0. Other channel-to-storage mappings are unverified.",
+        "slots_offset": 19,
+        "slot_stride": 2,
+        "slot_count": 8,
+        "type_offset": 0,
+        "instance_offset": 1,
+        "empty_slot": [
+          0,
+          0
+        ],
+        "evidence": "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng, frames 23127-53701: empty chain; type 73 instances 0-7; whole-chain reordering."
       },
       "bypass": {
         "magic": "0x70",
         "opcode": "0x14",
         "opcode_name": "SET_LINK opcode, reused",
-        "param_id_offset": 16, "param_id": "0x98",
-        "subcmd_offset": 17, "subcmd": "0x00",
-        "handle_offset": 18,
-        "handle_note": "plugin-instance handle, = assign.handle.",
-        "value_offset": 19,
-        "value_note": "0/1 toggle driven by the plugin's bypass control. Polarity not certain -- in the MemoryCat capture value=1 was held throughout parameter editing, suggesting 1 = ACTIVE / 0 = BYPASSED. Bucket B (a mixer-level insert mute, cf. AuraVerb enabled@28): exposing it is permitted, but a builder needs a handle from the readback (not decoded), so none ships.",
-        "bucket": "B"
+        "param_id_offset": 16,
+        "param_id": "0x98",
+        "state_offset": 17,
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "state_values": [
+          0,
+          1
+        ],
+        "state_polarity": "unconfirmed",
+        "status": "capture-observed",
+        "writable": false,
+        "bucket": "B",
+        "evidence": "antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng, frames 10215-11863: per-type/per-instance bypass reports with state byte 17 alternating 1 then 0. No bypass readback or polarity confirmation."
       },
-      "readback": "The AFX strip assignment is represented by readback category 0x19: each of its 64 indexed strip records contains eight {type, inst} slots. The Launcher also re-reads 0x0c and 0x15, which are instance-availability/remaining-count tables rather than the strip map. These are observation-only readbacks. Slot assignment/loading remains out of scope; AFX Real-Time parameter control is in scope but its command payload is not decoded yet. See frame.readback.record_layouts and PROTOCOL.md §12a.",
-      "notes": "AFX Real-Time effect slot control. SCOPE.md buckets: read 'channel N holds plugin X / bypassed' = C; per-slot bypass = B (builder needs a verified handle); assign/load/remove an effect = E (0x23 blocked and out of scope); parameter control = D (0x1c/0xd5, in scope but not decoded or write-verified); licensing/activation traffic = F (out of scope). AuraVerb (0x1d, frame.auraverb_command) is device-bundled and has a separate decoded control path. Native/Cosmos DAW plugin terms do not define the scope of AFX Real-Time device controls."
+      "readback": "Category 0x19 contains eight {type,inst} slots at each of 64 indices. Index 0 initially contains the owner-reported accidental Preamp 1 effect (type 6, instance 0); no post-load slot readback occurs in the new capture, so write-to-readback correlation remains a test requirement. Category 0x15:0 supplies remaining counts; 0x0c:0 has passive witnesses but remains query-guarded.",
+      "notes": "AFX Memory Cat test operations are an explicit Orion-only scope extension requested by the owner. Other effects/devices and bypass remain unsupported. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
     },
     "state_report": {
       "magic_offset": 0,
@@ -1169,7 +1185,7 @@
       "data_offset": 16,
       "discriminator_note": "The response magic is 0x75 but byte 1 = 0x00. The free-running METER report is also magic 0x75 but byte 1 = 0x1f; the STATE report (frame.state_report) is the same family with magic 0x73 -- effectively 'category 0, pushed continuously'. So (magic 0x75 AND byte1 0x00 AND category AND index) uniquely identifies a readback response amid the ~250 Hz state/meter stream.",
       "liveness": "The device answers EVERY (category, index) that is IN RANGE -- one it has no record for just comes back with an empty body. 'has a non-empty body' is the real liveness signal. Scalar categories return the same record for every index. Pace queries and reopen on halt (tools/readback_enum.py, transport.HidTransport.query).",
-      "namespace_warning": "READBACK CATEGORY NUMBERS AND COMMAND OPCODE NUMBERS ARE TWO SEPARATE NAMESPACES THAT OVERLAP. The same byte value means different things depending on where it sits: at frame offset 4 it is a command OPCODE, at the readback request's category_offset it is a CATEGORY. Colliding values in use here: 0x12 (opcode SET_GLOBAL / category UNKNOWN-empty), 0x13 (opcode SET_PARAM / category unqueried), 0x14 (opcode SET_LINK / category unqueried), 0x17 (opcode SET_MIX+SET_MIC_MODELING / category unqueried), 0x1a (opcode BLOCKED as an unconfirmed precaution -- never actually observed as a write opcode on this device, see constraints.forbidden_opcodes_note / category SURROUND PER-SPEAKER EQ, decoded + in scope), 0x1b (category SURROUND GLOBAL, decoded + in scope), 0x1c (opcode AFX Real-Time parameter stream -- bucket D, in scope but currently blocked pending payload decoding and safe-write verification / category answers empty), 0x1d (opcode SET_AURAVERB, bundled + no activation, in scope / category answers empty), 0x23 (opcode AFX slot assignment, blocked and out of scope -- bucket E / category answers empty). This has already caused one documented misread: category 0x1a was labelled 'ADAT' for weeks purely because its record count (16) matched the ADAT channel count, and the surround-EQ content was never checked (corrected 2026-09-04). Always check which namespace a hex value is in. AFX Real-Time effects run on the device; Native plugins run in a DAW on the host, and Cosmos membership provides Native access rather than a Real-Time device license. Do not use Native/Cosmos terms as a proxy for the device-side AFX control boundary. See SCOPE.md §4 and EULA-ANALYSIS.md.",
+      "namespace_warning": "READBACK CATEGORY NUMBERS AND COMMAND OPCODE NUMBERS ARE TWO SEPARATE NAMESPACES THAT OVERLAP. The same byte value means different things depending on where it sits: at frame offset 4 it is a command OPCODE, at the readback request's category_offset it is a CATEGORY. Colliding values in use here: 0x12 (opcode SET_GLOBAL / category UNKNOWN-empty), 0x13 (opcode SET_PARAM / category unqueried), 0x14 (opcode SET_LINK / category unqueried), 0x17 (opcode SET_MIX+SET_MIC_MODELING / category unqueried), 0x1a (opcode BLOCKED as an unconfirmed precaution -- never actually observed as a write opcode on this device, see constraints.forbidden_opcodes_note / category SURROUND PER-SPEAKER EQ, decoded + in scope), 0x1b (category SURROUND GLOBAL, decoded + in scope), 0x1c (opcode Memory Cat parameter stream -- generic guard enabled, explicit mono Orion test exception / category answers empty), 0x1d (opcode SET_AURAVERB, bundled + no activation, in scope / category answers empty), 0x23 (opcode AFX whole-chain assignment -- generic guard enabled, explicit Memory Cat pilot exception / category answers empty). This has already caused one documented misread: category 0x1a was labelled 'ADAT' for weeks purely because its record count (16) matched the ADAT channel count, and the surround-EQ content was never checked (corrected 2026-09-04). Always check which namespace a hex value is in. AFX Real-Time effects run on the device; Native plugins run in a DAW on the host, and Cosmos membership provides Native access rather than a Real-Time device license. Do not use Native/Cosmos terms as a proxy for the device-side AFX control boundary. See SCOPE.md §4 and EULA-ANALYSIS.md.",
       "hazard": "DO NOT QUERY AN INDEX PAST A CATEGORY'S RECORD COUNT. The firmware does not bounds-check the index: one index past the end returns adjacent memory with a WRONG layout, and a little further it faults. Confirmed 2026-08-31 on real hardware -- `category 0x04 index 5` hard-crashed the Orion Studio III (front panel: 'CRITICAL ERROR! / Failure.c / L: 204  E: 0 / BusFault_Handler' -- a Cortex-M BusFault) and the unit needed a physical power cycle. Diagnostic signature, in order: cat 0x04 idx 0-3 = four same-layout mixer records; idx 4 = answers but with a completely different layout (a float32 table = adjacent memory); idx 5 = NO response at all, then the OUT endpoint is dead. An EMPTY answer is normal; NO answer means the MCU just died inside the handler. NOTE: this supersedes the earlier diagnosis that the endpoint halt was caused by 'hammering' / query rate -- the 2026-08-31 crash took about ten slow queries. Rate was never the trigger; the out-of-range index was. Enforced by protocol.check_readback_index against readback.category_counts.",
       "identity": {
         "_comment": "LAYOUT ONLY -- the serial VALUE is never stored in this repo. It is read from the hardware on request (CLI `identity --serial`). Same record shape on the Orion Studio III and the Zen Go Synergy Core, so it is probably family-wide.",
@@ -2277,6 +2293,85 @@
     ]
   },
   "runtime_contracts": {
+    "afx_memorycat_test": {
+      "enabled": true,
+      "experimental": true,
+      "status": "capture-observed",
+      "effect_id": "memory_brigade",
+      "type_id": 73,
+      "channels": [
+        0
+      ],
+      "readback_category": "0x19",
+      "readback_index": 0,
+      "slot_count": 8,
+      "instance_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "chain_opcode": "0x23",
+      "chain_param_id": "0xd7",
+      "chain_subcmd": "0x11",
+      "parameter_opcode": "0x1c",
+      "parameter_param_id": "0xd5",
+      "parameter_subcmd": "0x0a",
+      "parameter_offsets": {
+        "blend": 20,
+        "level": 21,
+        "feedback": 22,
+        "chrs_vibr": 23,
+        "depth": 24,
+        "delay": 25,
+        "lpf_fc": 26,
+        "size": 27
+      },
+      "parameter_ranges": {
+        "blend": [
+          0,
+          100
+        ],
+        "level": [
+          0,
+          100
+        ],
+        "feedback": [
+          0,
+          100
+        ],
+        "chrs_vibr": [
+          0,
+          1
+        ],
+        "depth": [
+          0,
+          100
+        ],
+        "delay": [
+          0,
+          100
+        ],
+        "lpf_fc": [
+          0,
+          100
+        ],
+        "size": [
+          0,
+          1
+        ]
+      },
+      "parameter_readback": false,
+      "note": "Operator-triggered testing only. Fresh whole-chain read-modify-write and post-write slot verification; preserve unmodified slots. Full parameter settings require explicit Apply because current effect parameters cannot be read. Switch position polarity is unverified. No auto-initialization from old captures.",
+      "evidence": [
+        "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng",
+        "macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng"
+      ]
+    },
     "surround_speaker_eq": {
       "status": "confirmed",
       "readback_category": "0x1a",
@@ -2386,14 +2481,8 @@
       "0xab"
     ],
     "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) are hardware round-trip confirmed: `route` self-verifies every complete destination-group write, and `mix-set` read-modify-writes one complete mixer strip and verifies the result. 0x1d (SET_AURAVERB) is the bundled AuraVerb command with a confirmed category-0x0a readback. 0xab (SET_SURROUND_GLOBAL) is allowed for the WebUI's 2.0/2.1 global format, delay/level, speaker-mask, and Bass Management read-modify-write paths. 0x87 (SET_SURROUND_SPEAKER) is allowed for the bounded per-speaker delay/level/phase and EQ writes that start from a fresh category-0x1a record; all mapped fields have hardware readback confirmation and each write preserves the rest of that speaker record.",
-    "forbidden_opcodes": [
-      "0x01",
-      "0x02",
-      "0x1a",
-      "0x1c",
-      "0x23"
-    ],
-    "forbidden_opcodes_note": "0x01 / 0x02 are blocked as hardware-safety precautions (BusFault/unknown-dangerous family), unrelated to AFX. 0x1a has never been observed as a write opcode on this device and remains blocked as an unconfirmed cross-device precaution; the same value as readback category 0x1a is the decoded surround per-speaker EQ category. 0x23 / param 0xd7 is the AFX slot-assignment frame, observed in 2026-09-04 macOS Launcher captures; assignment/loading is bucket E and remains out of scope, so builders must never emit it. 0x1c / param 0xd5 is the AFX Real-Time parameter stream. Parameter control is bucket D and in scope under SCOPE.md §4, but its payload is not decoded or safe-write verified yet, so this profile guard currently blocks it pending implementation work. Native/Cosmos DAW licensing is not a proxy for AFX device-control terms. The per-slot BYPASS toggle (0x14 / 0x98, bucket B) is not forbidden, but has no builder because it needs a verified runtime handle. build_* refuses every opcode listed here.",
+    "forbidden_opcodes": ["0x01", "0x02", "0x1a", "0x1c", "0x23", "0x20", "0x7c"],
+    "forbidden_opcodes_note": "Generic builders refuse 0x01/0x02/0x1a/0x1c/0x20/0x23/0x7c. Hardware-dangerous families remain blocked. The explicit afx_memorycat_test contract permits only typed, operator-triggered Orion candidates for type 73 on channel index 0: whole-chain load/remove/reorder with fresh readbacks and post-write verification, or full eight-field parameter Apply for captured instance indices 0-7. Generic raw AFX writes, other effects/devices/channels and stereo parameter writers remain blocked. Parameter readback and switch polarity are unverified. Bypass 0x14/0x98 is observation-only (state at 17, type at 18, instance at 19); polarity is unknown. Runtime readback bounds are unchanged.",
     "channel_bounds": {
       "min": 0,
       "max": 11

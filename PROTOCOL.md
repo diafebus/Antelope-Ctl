@@ -46,7 +46,7 @@ real discriminator (§14).
 
 ## 2. Outgoing command frames (magic `0x70`)
 
-Ten command opcodes are known. **Six are emitted** by this CLI
+The ordinary and bounded AFX command families are listed below. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
 `0x53`). The WebUI also emits the profile-guarded `0xab` global surround
 read-modify-write, including the confirmed EQ PRE/POST bit, the speaker
@@ -56,15 +56,15 @@ Management fields are exposed for the 2.0 L/R strips and 2.1 L/R/LFE strips.
 The WebUI also has a bounded `0x87` per-speaker path: delay/level/phase and EQ
 controls write one field, while Reset writes
 the profile-defined frequency/Q/gain preset for one speaker after a fresh
-readback. The remaining two are **not emitted by normal CLI/WebUI paths** —
-`0x23` (AFX slot assign, out of scope) and `0x1c` (AFX Real-Time
-parameters, in scope but not yet decoded or write-verified; currently
-blocked by `constraints.forbidden_opcodes` as an implementation guard). The dedicated
+readback. Generic AFX `0x23` and `0x1c` writes remain blocked; the
+explicit Orion Memory Cat operator pilot is their only typed exception
+(§12a). Newly observed Instinct/Master De-Esser parameter opcodes `0x7c`
+and `0x20` are blocked and have no writer. The dedicated
 `tools/surround_eq_selftest.py` may emit one explicitly selected `0x87` probe
 after the user acknowledges the write test; it always reads and restores a
 complete speaker record.
 
-**`0x1a` is not one of these ten.** It has never been observed as a write
+**`0x1a` is not an observed Orion write family.** It has never been observed as a write
 opcode on this device at all — it is not the surround EQ's write opcode
 either (that's `0x87`/`0xea`, see §11). `constraints.forbidden_opcodes`
 blocks it anyway, purely as an unconfirmed precaution — see the note after
@@ -85,8 +85,10 @@ single most important thing to get right.
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim, `[43+]` = Bass Management channel blocks -- §11 | surround tab global; WebUI uses fresh read-modify-write for 2.0/2.1 global fields, the speaker bypass mask, and confirmed 2.0/2.1 Bass Management fields |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; bounded one-field/reset writes in WebUI, including confirmed delay/level/phase head fields and one-field EQ probes in `tools/surround_eq_selftest.py` |
-| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- slot assignment is out of scope (bucket E) |
-| `0x1c` | *(AFX Real-Time parameters)* | `0xd5` | frame-identified only (§12a) -- payload not yet decoded | **not emitted** -- bucket D is in scope; the current forbidden-opcode guard remains until the payload and safe write behavior are established |
+| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, eight `{type,instance}` pairs @19–34 -- §12a | Generic writes blocked; typed Orion Memory Cat operator test only |
+| `0x1c` | *(Memory Cat parameters)* | `0xd5` | `0x0a` @17, type @18, instance @19, eight fields @20–27 (§12a) | Generic writes blocked; full-state operator test only |
+| `0x20` | *(AFX parameters)* | `0xd5` | Master De-Esser subcommand `0x0e`, type @18, instance @19 (§12a); V12 also observed | Observation only; blocked |
+| `0x7c` | *(Instinct parameters)* | `0xd5` | subcommand `0x6a`, type @18, instance @19 (§12a) | Observation only; blocked |
 
 Notes:
 - **`0x17` is overloaded** -- the param_id at @16 is the real discriminator:
@@ -1818,47 +1820,61 @@ verified read-modify-write (cache kept only as an offline fallback);
 for **all four mixes**, so each mix has its own AuraVerb instance (only
 Mix 1 has been written).
 
-### 12a. AFX Real-Time effect slot control (`0x23` / `0xd7`) -- observation only
+### 12a. AFX Real-Time chain and parameter controls
 
-**Capacity/catalog metadata.** The Orion profile's top-level `afx` block
-records 32 mono channels and eight slots per channel, documented in
-[Antelope's November 2019 demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
-This is distinct from the 64 outer `0x19` storage records described below;
-their mapping to user-facing channels remains unverified. Insert-position
-capacity does not establish a simultaneous DSP instance budget. The shared
-`profiles/afx_effects.json` catalog contains reference effect names and
-declared controls from Gazelle's Discrete 4 findings, with model-local
-readback type IDs kept apart from unverified Orion IDs. Memory Cat Brigade
-has Orion-only capture-observed encodings; commands remain null. See
-`docs/profile-schema.md`. This metadata changes
-neither readback bounds nor write builders.
+**Capacity/catalog.** Orion documents 32 mono AFX channels with eight slots
+per channel in [Antelope's November 2019 demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
+The 64 outer `0x19` storage records are distinct from those user-facing
+channels; their complete mapping remains unverified. Capacity does not
+establish a DSP instance budget. The shared catalog records owner-observed
+Orion types independently of sibling-device IDs; its command definitions
+remain null. The profile's explicit `afx_memorycat_test` runtime contract
+supplies a separate, experimental operator test path.
 
-**Bucket boundary (`SCOPE.md`).** This subsection documents the slot
-assignment frame for **observation** and readback decoding. Assignment or
-loading remains out of scope (bucket E), so `0x23` stays in
-`constraints.forbidden_opcodes` and no builder emits it. Device-side AFX
-Real-Time parameter control (`0x1c` / `0xd5`, bucket D) is in scope, but its
-payload is partially mapped for Memory Cat Brigade below. The current profile guard blocks writes until
-the control fields and safe write behavior are established. License,
-entitlement, and activation traffic (bucket F) remains out of scope.
+**Scope/write boundary.** The owner requested loading, removal, reordering
+and parameter controls in our WebUI and supplied the captures below.
+`SCOPE.md` permits this Orion Memory Cat pilot on insert channel index 0
+(the owner's Preamp 1 test). Generic `0x23` and `0x1c` guards stay enabled;
+only typed pilot builders may emit the measured frames. Other effects,
+other devices and stereo parameter writes have no runtime writer. The agent
+performed offline analysis/tests, not a live hardware trial. Catalog
+observations are not a verified production-write contract. Licensing and
+activation traffic remain excluded.
 
-The slot-frame evidence is from macOS Launcher captures (a "Tuner" utility
-on ch1/ch4 and "MemoryCat Brigade" delay on ch1), dated 2026-09-04. Those
-slot captures identify assignment only. The separate parameter capture
-below supplies owner-labelled control sweeps.
+**Whole-chain assignment (`0x23` / `0xd7`).** The old single-handle
+interpretation is superseded by
+`antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng`.
+The owner removed an accidental effect, loaded one Memory Cat, cleared it,
+loaded eight, reordered them and changed one instance's Level to zero.
 
-**Memory Cat Brigade parameter observation (2026-09-30).** Offline analysis
-of `macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng`
-found 106 Orion HID OUT parameter reports (endpoint `0x01`, 320-byte payload).
-The owner confirmed the action order: Level, Blend, Feedback, Delay, Depth,
-Filter, VIB/CH switch, then the delay-range switch. Each knob was swept over
-its displayed 0–100 range. The
+| Report byte | Field | Observed encoding |
+|---|---|---|
+| 0 / 4 | magic / opcode | `0x70` / `0x23` |
+| 16 / 17 | selector / subcommand | `0xd7` / `0x11` |
+| 18 | insert-strip index | `0` in the owner's Preamp 1 test |
+| 19–34 | complete eight-slot chain | eight `{type, instance}` byte pairs |
+| 35–319 | tail | zero in the measured reports |
+
+Empty slots are `{0,0}`. Memory Cat is type **73 (`0x49`)**, not an instance
+handle. Its eight loaded instances are numbered **0–7**. The initial empty
+chain is frame 23127; the full chain is frame 44873. Reordering sends the
+whole chain, preserving instance identities. Frame 48043 puts instance 4
+first; 51665 moves it last; 53701 puts it second. Frames 49667/49719 address
+type 73, instance 4 and change Level from raw 35 to 0. Thus controls belong
+to the `{type,instance}` identity, independently of current slot position.
+The matching `0x15:0` counters decrease as instances are added; counts are
+remaining resources, not proof of account ownership.
+
+**Memory Cat parameter fields (`0x1c` / `0xd5`).** The owner clarified
+`macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng`:
+Level, Blend, Feedback, Delay, Depth and Filter were swept across displayed
+0–100, followed by the VIB/CH and delay-range switches. The
 [official faceplate](https://es.antelopeaudio.com/wp-content/uploads/2020/11/Memory-Cat-Brigade.jpg)
-confirms six knobs and two switches labelled Chorus/Vibrato and 550/1100 ms.
-Offsets below are zero-based report offsets, excluding the 40-byte Darwin
-capture header. All reports have opcode `0x1c` at byte 4, `0xd5` at 16,
-`0x0a` at 17, session instance handle `0x49` at 18, and zero at 19.
-Neither the meaning of byte 17 nor the handle-allocation rule is established.
+confirms six knobs and two switches. This yields 106 parameter reports.
+Offsets are zero-based within the 320-byte report, excluding USB headers.
+The header is magic `0x70` at 0, opcode `0x1c` at 4, selector `0xd5` at 16,
+subcommand `0x0a` at 17, **type at 18 and instance at 19**. The old capture
+addresses instance 0; the new level-zero capture addresses instance 4.
 
 | Control (owner's action order) | Report byte | Observed raw values | First/last changed frame |
 |---|---|---|---|
@@ -1871,58 +1887,76 @@ Neither the meaning of byte 17 nor the handle-allocation rule is established.
 | Chorus / Vibrato | 23 | 0, 1 | 47145 / 49074 |
 | 550 ms / 1100 ms | 27 | 0, 1 | 49842 / 52163 |
 
-All six knob fields reach both raw endpoints; intermediate display scaling,
-physical-unit conversions and quantization remain unverified. Both switches
-alternate `1,0,1,0`; which label corresponds to each value is unknown.
-Each consecutive changed parameter report changes one byte in 20–27, while
-bytes 28–319 remain zero. A complete eight-control state block is therefore
-inferred, not a command template established for other effects. The final
-state differs from the starting state, and no effect-parameter readback or
-restoration contract was established. The catalog marks these observations
-`capture-observed`, `writable: false`, and retains null commands. Byte 18
-is an instance handle, never proof of Orion's effect type ID. Opcode `0x1c`
-remains blocked; no runtime writer or hardware test was added.
+Every knob reaches both raw endpoints; intermediate display scaling,
+physical units and quantization remain unverified. Switches alternate
+`1,0,1,0`, but label polarity is unknown. Successive reports change one
+byte in 20–27; bytes 28–319 remain zero. The final state differs from the
+starting state. No effect-parameter readback or automatic restoration was
+established. The pilot requires an explicit full eight-field **Apply**;
+values are drafts or last sent, and switches show A (0) / B (1) until the
+owner verifies their labels. No old capture is used as current device state.
 
-**Slot assign** -- `70 … 23 … d7 11 <ch> <handle> 00` (opcode `0x23`):
+**Linked pairs and Launcher unlink behavior.**
+`antelope-orion-afx-link-1-to-32-channels-16links-total-ononon-offffoff.pcapng`
+contains 34 bare `SET_LINK` writes: space 4, pair 0–15 ON in ascending
+order, then OFF in descending order, with an extra 0/1/0 toggle on pair 5.
+It contains no link readback or parameter-sharing evidence.
 
-| byte | field | encoding |
-|---|---|---|
-| 16 | `0xd7` param | |
-| 17 | `0x11` const | sub-command = slot assign |
-| 18 | insert channel | 0-based (`0x00` = ch1, `0x03` = ch4 seen) |
-| 19 | plugin-instance **handle** | `0x48` = Tuner, `0x49` = MemoryCat Brigade; `0x00` = clear this channel's insert |
-| 20 | `0x00` | |
+`antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng`
+shows the Launcher assigning **distinct** instances to linked strips 0/1:
+Memory Cat type 73 instances 0/1, V12 Chorus type 70 instances 0/1, and
+BBD-Chorus type 78 instances 0/1. The owner identifies BBD-Chorus as a demo;
+loadability does not imply a full license. On unlink, frame 15999 sends
+link-OFF, then 16003/16007 explicitly rewrite the right chain and leave
+Memory Cat instance 1. This repeats after later unlink operations.
+`antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng`
+repeats that behavior on strips 2/3 (unlink 6447, partial right-chain rewrite
+6501). The extra assignments are host commands, not an effect created by
+the link-OFF frame alone. Our **Unlink only** sends the bare flag change,
+preserving existing effects on both channels.
 
-The handle also keys the bypass frame and the parameter frame. Plausibly
-`0x40 | slot_index` (→ AFX slots 8, 9) or a sequential instance id -- only
-two data points. The handles pre-existed at capture start (plugins were
-loaded in a prior Launcher session); this frame only moves an existing
-instance onto/off a channel -- it was **not** seen to instantiate one.
-Placing/clearing is bucket **E** regardless, hence `0x23` stays forbidden.
+`antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng`
+identifies Instinct type 75 and Master De-Esser type 27. It contains 46
+identical Instinct right-to-left parameter pairs and 63 identical
+Master De-Esser pairs. The Launcher mirrors separate instances, sending
+instance 1 then 0. Instinct uses opcode `0x7c`, selector `0xd5`, subcommand
+`0x6a`; Master De-Esser uses `0x20` / `0xd5` / `0x0e`. These unlabelled
+parameter sweeps establish neither control-name maps nor display scales.
+Memory Cat's byte layout must not be reused for them. V12 also has observed
+`0x20` / `0xd5` traffic. Stereo writes remain outside the pilot.
 
-**Slot bypass** -- `70 … 14 … 98 00 <handle> <0|1>` (reuses the `SET_LINK`
-opcode `0x14`, param `0x98`, sub-cmd `0x00`): `[18]` = handle, `[19]` =
-bypass toggle. Polarity not certain -- in the MemoryCat capture `[19]=1`
-was held all through parameter editing, so likely **1 = active / 0 =
-bypassed**. This is bucket **B** (a mixer-level insert mute, cf. AuraVerb
-`enabled@28`) and `0x14` is not forbidden, but a builder needs a handle
-from the readback, so none ships yet.
+**Bypass observation.** The 3/4 capture's Bypass All actions emit 16 reports
+using opcode `0x14`, selector `0x98`, **state at 17, type at 18, instance at
+19**. Values 1 then 0 are sent for each affected instance; state polarity
+and bypass readback remain unverified. This supersedes the old subcommand /
+handle / value map. Delete All emits successive whole-chain updates until
+both chains are empty. No bypass or general Delete All writer is enabled.
 
-**Readback.** The extracted panel schema and manager-server log identify
-three useful AFX-related readbacks. Category **`0x19`** has 64 safe outer
-indices (one per strip), each containing eight `{type, inst}` slot records;
-`{0,0}` is the observed empty value. Category **`0x15`** index 0 contains 91
-remaining-featured-instance counters. Category **`0x0c`** has schema entries
-for 90 available and 90 maximum type/count records, but its outer query bound
-was not present in the captured enumeration, so the profile deliberately
-marks those queries capture-required. The Memory Cat parameter capture also
-contains query/reply witnesses for `0x15:0` (frames 2043/2046, 91 records)
-and `0x0c:0` (2049/2051, 90 records), before parameter editing. They contain
-53 and 78 positive instance counts respectively; these counts do not prove
-account ownership. No `0x0c:1` or `0x19` query occurs in that capture.
-This offline witness does not change runtime bounds or query guards.
-Slot assignment remains out of scope. Parameter writes are in scope under
-`SCOPE.md` §4, but the observed fields do not authorize a write builder.
+**Readback/test verification.** Category `0x19` provides 64 safely bounded
+outer records, each with eight `{type,inst}` pairs. The new single-channel
+capture's initial index-0 replies (9885/12579) contain the owner's accidental
+type-6 instance; it has no post-load slot reply. The pilot therefore treats
+the write-to-readback correspondence as a live test requirement, starting
+from a fresh index-0 readback and checking every resulting chain. A failed
+or absent post-write match disables further tests for that server session.
+Other effects in that chain are preserved. Allocation requires the full
+64-record inventory plus a fresh `0x15:0` remaining counter, and uses only
+captured Memory Cat indices 0–7. The mono test also requires all decoded
+`0x0b:4` flags OFF; their transition correlation remains unverified.
+
+Category `0x15:0` contains 91 instance counters. `0x0c` declares 90 available
+and 90 maximum records, but its outer count is unknown and runtime queries
+remain capture-required. The old parameter capture includes `0x15:0`
+query/reply 2043/2046 and `0x0c:0` 2049/2051, with 53/78 positive counts.
+The new loading capture adds repeated `0x0c:0` witnesses. No runtime bounds
+were expanded and `0x0c:1` remains unconfirmed. Device resource counts,
+enabled/greyed-out picker entries, demo access and full ownership are
+separate observations.
+
+`tools/scan_afx_capture.py` automates offline slot/action ordering, parameter
+byte changes and identical mirrored-write comparisons for these captures.
+It filters verified Orion HID traffic and exports neither identity nor
+account traffic. It never queries or writes a device.
 ---
 
 ## 13. Evidence boundaries
@@ -1945,7 +1979,7 @@ ignored `AUDIT.md`.
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, confirmed Bass Management/filter-type/Link/Solo fields, confirmed speaker bypass, and confirmed per-speaker delay/level/phase fields; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
 | DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
-| AFX Real-Time effects | Slot assignment (`0x23`/`0xd7`) is field-mapped from 2026-09-04 Launcher captures, but remains out of scope and blocked. Parameter control (`0x1c`/`0xd5`) is in scope under `SCOPE.md` §4 with Memory Cat Brigade fields capture-mapped; the implementation guard stays until safe-write verification. Readback category `0x19` maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding and bypass polarity. Parameter-control research is documented here in `antelope-ctl` per project scope. |
+| AFX Real-Time effects | §12a: whole eight-slot chain decoded, separate type/instance addressing, Memory Cat knob fields mapped, and linked host mirroring observed for Instinct/Master De-Esser. The owner-requested mono Orion Memory Cat pilot has explicit operator tests; slot writes require fresh readback and post-write verification. Parameter readback, switch polarity, bypass polarity, full channel/storage mapping and other effect parameter maps remain unverified. Generic AFX opcode guards and runtime readback bounds remain unchanged. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |

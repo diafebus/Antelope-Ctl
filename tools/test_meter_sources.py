@@ -41,6 +41,7 @@ def load_server_without_web_or_hid_boundaries():
     staticfiles.StaticFiles = FakeStaticFiles
     pydantic = types.ModuleType('pydantic')
     pydantic.BaseModel = object
+    pydantic.StrictInt = int
     uvicorn = types.ModuleType('uvicorn')
     with mock.patch.dict(sys.modules, {
         'fastapi': fastapi,

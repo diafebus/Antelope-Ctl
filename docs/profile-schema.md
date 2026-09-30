@@ -218,18 +218,22 @@ inputs, verification/restoration evidence, and whether it is writable.
 `load` denotes assigning an effect to a channel/slot. `recall` denotes
 restoring settings on an existing instance; if recall also loads an effect,
 document that explicitly. Both remain `null` until the operation is decoded.
-Definitions do not enable writes: current assignment and parameter opcode
-guards remain in force, and a future writer needs an explicit verified
-contract. The catalog contains neither installed-effect state nor account
+Catalog definitions do not enable writes. Generic assignment and parameter
+opcode guards remain in force. The separate `runtime_contracts.afx_memorycat_test`
+is an explicit experimental operator path for Orion type 73 on channel index
+0: fresh whole-chain reads, preservation of other effects, post-write slot
+verification, and complete parameter Apply without a claimed readback. No
+other effect/device or stereo parameter writer is enabled. The catalog contains neither installed-effect state nor account
 entitlements; licensing/activation traffic is outside its purpose. Gazelle
 Reverb retains its separate existing command/readback contract.
 
 The seed entries use `status: reference-only`. The Discrete 4 implementation
 records a `readback-observed` type ID, with `type_id_write_status:
-unconfirmed`. Orion type IDs remain unknown. Memory Cat Brigade's Orion
+unconfirmed`. Owner-labelled loading captures now establish five Orion
+type IDs independently of the Discrete 4 observations. Memory Cat Brigade's Orion
 implementation contains eight `capture-observed` control encodings, with
 local capture and owner-action provenance. Its `parameter_observation`
-records the observed header, session handle and packet span; it is not a
+records the observed header, type/instance addressing and packet span; it is not a
 builder template. Offsets exclude the USB capture header. The six knob
 fields carry endpoint ranges, with unknown intermediate `scale`/`step`;
 the two switches carry display `options` with unknown `wire_enum` polarity.
@@ -278,7 +282,7 @@ masked bits in the source record, so the phase/invert probe cannot disturb the
 level or delay bits. The separate `speaker_mask_write` contract describes the
 speaker-monitor Bypass button, whose logical `true` value clears the device's
 active-processing bit.
-| `afx_slot` | *(AFX Real-Time effect slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` remains blocked because slot assignment is bucket E (`SCOPE.md`). Parameter control (`0x1c`/`0xd5`) is in scope (bucket D), Memory Cat Brigade has observed fields in the shared catalog, but no builder exists; the opcode guard stays until safe-write verification. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
+| `afx_slot` | `0x23`/`0xd7` whole-chain assignment + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `slots_offset`, `slot_stride`, eight type/instance pairs), `bypass{}` (`state_offset`, `type_id_offset`, `instance_index_offset`), `readback` (cat `0x19` slots; cats `0x0c`/`0x15` counts) | Generic AFX writes blocked. The separate `afx_memorycat_test` runtime contract is the bounded experimental operator exception. Bypass is observation-only with unknown polarity; no builder. See `PROTOCOL.md` §12a. |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, optional `destination_labels{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}`, `source_semantics{}` | `build_route_command(profile, dest, channels)` |
 | `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, optional nested `record_layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`) / `parse_readback_records` and its profile-specific wrappers; driven by `transport.HidTransport.query` |
 

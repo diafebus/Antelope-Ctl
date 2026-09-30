@@ -45,11 +45,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antelope import protocol as proto
 from antelope.transport import list_connected_hid, open_transport
 from webui.device_ui import features_for
+from webui.afx_catalog import preview_catalog
+from webui.afx_test import MemoryCatTest
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictInt
 import uvicorn
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -435,6 +437,7 @@ class Device:
         self._t = None
         self._stop = threading.Event()
         self._transport = None
+        self.connection_generation = 0
 
     def start(self):
         if self._t is not None and self._t.is_alive():
@@ -1209,6 +1212,12 @@ class Device:
                     break
                 with self._lock:
                     self._transport = transport
+                    self.connection_generation += 1
+                    # AFX instance allocation must wait for this connection's
+                    # complete inventory, rather than reuse pre-disconnect slots.
+                    self.structured = {key: value for key, value in self.structured.items()
+                                       if key[0] != 0x19}
+                    self.rb_ver += 1
                 last_readback = time.time()
                 readback_plan = self._readback_plan()
                 readback_changed = False
@@ -1746,6 +1755,8 @@ except (KeyError, ValueError, TypeError) as _e:
     PROFILE = proto.load_profile(PROFILE_PATH)
     DEV = Device(PROFILE)
 
+AFX_TEST = MemoryCatTest(DEV)
+
 # ---------------------------------------------------------------- HTTP / SSE
 
 app = FastAPI(title="antelope-ctl webui")
@@ -2038,6 +2049,59 @@ def api_readbacks():
     the UI can explain why a new capture is still required.
     """
     return DEV.structured_readbacks_json()
+
+
+@app.get("/api/afx/catalog")
+def api_afx_catalog():
+    """Local control previews, independent of loaded slots or device ownership."""
+    if PROFILE.get("afx", {}).get("catalog") != "afx_effects.json":
+        return preview_catalog({}, os.path.basename(PROFILE_PATH))
+    try:
+        with open(os.path.join(PROFILE_DIR, "afx_effects.json")) as source:
+            catalog = json.load(source)
+    except (OSError, ValueError):
+        catalog = {}
+    return preview_catalog(catalog, os.path.basename(PROFILE_PATH))
+
+
+class AfxChainTestChange(BaseModel):
+    operation: str
+    slot: StrictInt
+    source: StrictInt | None = None
+
+
+class AfxParameterTestChange(BaseModel):
+    instance: StrictInt
+    values: dict[str, StrictInt]
+
+
+@app.get("/api/afx/memorycat-test")
+def api_afx_memorycat_test():
+    return AFX_TEST.state()
+
+
+@app.post("/api/afx/memorycat-test/chain")
+def api_afx_memorycat_chain(change: AfxChainTestChange):
+    try:
+        return AFX_TEST.change_chain(change.operation, change.slot, change.source)
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
+
+
+@app.post("/api/afx/memorycat-test/parameters")
+def api_afx_memorycat_parameters(change: AfxParameterTestChange):
+    try:
+        return AFX_TEST.change_parameters(change.instance, change.values)
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
+
+
+@app.post("/api/afx/memorycat-test/unlink")
+def api_afx_memorycat_unlink():
+    try:
+        return AFX_TEST.unlink_pilot()
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
 
 
 @app.get("/api/surround")
