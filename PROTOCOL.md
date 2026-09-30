@@ -78,7 +78,7 @@ single most important thing to get right.
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), **clock_source (`0x04`)**, oscillator panel (`0x0a`, packed byte), **pan_law (`0x24`)**, DC-coupling (`0x26`) |
-| `0x14` | SET_LINK | `0xa2` (links) / `0x98` (AFX slot bypass, §12a) | `space` @17 (0 = Preamp; legacy ADAT UI writes also used 0 but are not validated, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
+| `0x14` | SET_LINK | `0xa2` (links) / `0x98` (AFX slot bypass, §12a) | `space` @17 (0 = Preamp, 1 = ADAT, 2 = S/PDIF, **3 = mixer**, 4 = AFX), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
@@ -1626,7 +1626,7 @@ the Launcher re-send a `mix_command` for **all 32 channels** of that mix
 (a handy channel-count probe -- that's how we know it's 32).
 
 **Mix channel link** = `SET_LINK` with a **new `space` byte `0x03`**
-(0 = Preamp, 1 = S/PDIF, 3 = mixer). The logical link identity is
+(0 = Preamp, 1 = ADAT, 2 = S/PDIF, 3 = mixer). The logical link identity is
 `(mix, pair_index)`, with `pair_index = channel // 2` within that mix; it is
 not one global pair shared by every mixer surface. `SET_LINK` has no separate
 mix byte, so a profile may declare a per-mix wire-selector stride when the
