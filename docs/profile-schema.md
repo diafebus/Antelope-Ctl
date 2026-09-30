@@ -133,8 +133,9 @@ known, or `null` when unknown. Missing `afx` means undeclared capability, not
 zero channels. `catalog` resolves relative to the device profile's directory.
 These additive keys are not consumed by a runtime AFX loader or writer yet.
 The WebUI uses positive integer counts to expose the AFX popup and size its
-channel/slot layout. Undeclared capacity hides the launcher; the popup does
-not infer slot contents, account ownership, or channel-to-readback mappings.
+channel selector and selected channel's rack layout. Undeclared capacity
+hides the launcher; the popup does not infer slot contents, account ownership,
+or channel-to-readback mappings.
 Each device needs its own capacity evidence; another profile's counts are
 not defaults.
 

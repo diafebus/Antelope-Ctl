@@ -80,7 +80,10 @@ load/recall/parameter commands remain unknown. No AFX loader or writer is
 enabled by this metadata. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
 The WebUI's **AFX** button, between Routing and Mix 1, opens a detachable
-window showing Orion's 32 channels and eight slot positions per channel.
+window with a channel selector and one channel overview on the left, and
+the selected channel's effects rack on the right. Orion offers 32 channels;
+the rack shows all eight slot panels together and remembers the selected
+channel while the main page remains open.
 Slot contents are currently unavailable; the window displays capacity only.
 
 ### Evidence rule for write claims

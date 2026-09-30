@@ -57,8 +57,10 @@ compatibility.
   - a **Routing** panel with `Routing | AFX | Mix 1 | Mix 2 | Mix 3 | Mix 4 | Surround`;
     **AFX** opens a separate resizable window and keeps the current main
     tab selected. Profiles declaring AFX capacity expose the button; Orion
-    displays 32 channels with eight slot positions each. Slot contents are
-    unavailable until the channel/readback mapping is verified. Closing the
+    offers a 32-channel selector and a single channel strip on the left,
+    with that channel's eight rack units together on the right. Selection
+    persists across popup close/reopen while the main page is open. Slot
+    contents are unavailable until the channel/readback mapping is verified. Closing the
     window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
