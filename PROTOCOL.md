@@ -1828,8 +1828,9 @@ their mapping to user-facing channels remains unverified. Insert-position
 capacity does not establish a simultaneous DSP instance budget. The shared
 `profiles/afx_effects.json` catalog contains reference effect names and
 declared controls from Gazelle's Discrete 4 findings, with model-local
-readback type IDs kept apart from unverified Orion IDs. Commands and control
-encodings remain empty; see `docs/profile-schema.md`. This metadata changes
+readback type IDs kept apart from unverified Orion IDs. Memory Cat Brigade
+has Orion-only capture-observed encodings; commands remain null. See
+`docs/profile-schema.md`. This metadata changes
 neither readback bounds nor write builders.
 
 **Bucket boundary (`SCOPE.md`).** This subsection documents the slot
@@ -1837,14 +1838,50 @@ assignment frame for **observation** and readback decoding. Assignment or
 loading remains out of scope (bucket E), so `0x23` stays in
 `constraints.forbidden_opcodes` and no builder emits it. Device-side AFX
 Real-Time parameter control (`0x1c` / `0xd5`, bucket D) is in scope, but its
-payload remains undecoded and the current profile guard blocks writes until
+payload is partially mapped for Memory Cat Brigade below. The current profile guard blocks writes until
 the control fields and safe write behavior are established. License,
 entitlement, and activation traffic (bucket F) remains out of scope.
 
 The slot-frame evidence is from macOS Launcher captures (a "Tuner" utility
 on ch1/ch4 and "MemoryCat Brigade" delay on ch1), dated 2026-09-04. Those
-captures identify slot assignment only. The `0x1c`/`0xd5` parameter stream
-was frame-counted but its payload was not read.
+slot captures identify assignment only. The separate parameter capture
+below supplies owner-labelled control sweeps.
+
+**Memory Cat Brigade parameter observation (2026-09-30).** Offline analysis
+of `macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng`
+found 106 Orion HID OUT parameter reports (endpoint `0x01`, 320-byte payload).
+The owner confirmed the action order: Level, Blend, Feedback, Delay, Depth,
+Filter, VIB/CH switch, then the delay-range switch. Each knob was swept over
+its displayed 0–100 range. The
+[official faceplate](https://es.antelopeaudio.com/wp-content/uploads/2020/11/Memory-Cat-Brigade.jpg)
+confirms six knobs and two switches labelled Chorus/Vibrato and 550/1100 ms.
+Offsets below are zero-based report offsets, excluding the 40-byte Darwin
+capture header. All reports have opcode `0x1c` at byte 4, `0xd5` at 16,
+`0x0a` at 17, session instance handle `0x49` at 18, and zero at 19.
+Neither the meaning of byte 17 nor the handle-allocation rule is established.
+
+| Control (owner's action order) | Report byte | Observed raw values | First/last changed frame |
+|---|---|---|---|
+| Level | 21 | 0–100 | 9594 / 15718 |
+| Blend | 20 | 0–100 | 16557 / 21420 |
+| Feedback | 22 | 0–100 | 22491 / 27078 |
+| Delay | 25 | 0–100 | 27996 / 35298 |
+| Depth | 24 | 0–100 | 35931 / 40426 |
+| Filter | 26 | 0–100 | 40945 / 45965 |
+| Chorus / Vibrato | 23 | 0, 1 | 47145 / 49074 |
+| 550 ms / 1100 ms | 27 | 0, 1 | 49842 / 52163 |
+
+All six knob fields reach both raw endpoints; intermediate display scaling,
+physical-unit conversions and quantization remain unverified. Both switches
+alternate `1,0,1,0`; which label corresponds to each value is unknown.
+Each consecutive changed parameter report changes one byte in 20–27, while
+bytes 28–319 remain zero. A complete eight-control state block is therefore
+inferred, not a command template established for other effects. The final
+state differs from the starting state, and no effect-parameter readback or
+restoration contract was established. The catalog marks these observations
+`capture-observed`, `writable: false`, and retains null commands. Byte 18
+is an instance handle, never proof of Orion's effect type ID. Opcode `0x1c`
+remains blocked; no runtime writer or hardware test was added.
 
 **Slot assign** -- `70 … 23 … d7 11 <ch> <handle> 00` (opcode `0x23`):
 
@@ -1878,9 +1915,14 @@ indices (one per strip), each containing eight `{type, inst}` slot records;
 remaining-featured-instance counters. Category **`0x0c`** has schema entries
 for 90 available and 90 maximum type/count records, but its outer query bound
 was not present in the captured enumeration, so the profile deliberately
-marks those queries capture-required. Slot assignment remains out of scope.
-Parameter writes are in scope under `SCOPE.md` §4, but this protocol
-reference does not yet decode them or authorize a write builder.
+marks those queries capture-required. The Memory Cat parameter capture also
+contains query/reply witnesses for `0x15:0` (frames 2043/2046, 91 records)
+and `0x0c:0` (2049/2051, 90 records), before parameter editing. They contain
+53 and 78 positive instance counts respectively; these counts do not prove
+account ownership. No `0x0c:1` or `0x19` query occurs in that capture.
+This offline witness does not change runtime bounds or query guards.
+Slot assignment remains out of scope. Parameter writes are in scope under
+`SCOPE.md` §4, but the observed fields do not authorize a write builder.
 ---
 
 ## 13. Evidence boundaries
@@ -1903,7 +1945,7 @@ ignored `AUDIT.md`.
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, confirmed Bass Management/filter-type/Link/Solo fields, confirmed speaker bypass, and confirmed per-speaker delay/level/phase fields; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
 | DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
-| AFX Real-Time effects | Slot assignment (`0x23`/`0xd7`) is field-mapped from 2026-09-04 Launcher captures, but remains out of scope and blocked. Parameter control (`0x1c`/`0xd5`) is in scope under `SCOPE.md` §4 but its payload has not been decoded; the implementation guard stays until field mapping and safe-write verification. Readback category `0x19` maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding and bypass polarity. Parameter-control research is documented here in `antelope-ctl` per project scope. |
+| AFX Real-Time effects | Slot assignment (`0x23`/`0xd7`) is field-mapped from 2026-09-04 Launcher captures, but remains out of scope and blocked. Parameter control (`0x1c`/`0xd5`) is in scope under `SCOPE.md` §4 with Memory Cat Brigade fields capture-mapped; the implementation guard stays until safe-write verification. Readback category `0x19` maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding and bypass polarity. Parameter-control research is documented here in `antelope-ctl` per project scope. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |

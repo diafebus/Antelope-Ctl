@@ -208,8 +208,10 @@ A control's `kind` is `continuous`, `integer`, `boolean`, or `enum`, or
 `range` is a display-value `[min, max]`, `step` and `default` use those same
 units, and `enum` maps stable option keys to display labels. Use `null` for
 unknown values. `control_encodings` is keyed by control ID and records the
-verified byte offset/width, signedness, endian order, scale, bit masks or
-wire enum, together with status and evidence. Each populated command
+byte offset/width, signedness, endian order, scale, bit masks or
+wire enum, together with status and evidence. A `capture-observed` mapping
+must carry `writable: false`; it records an observed field, not a verified
+write contract. Each populated command
 definition must describe its frame or ordered frame sequence, runtime
 inputs, verification/restoration evidence, and whether it is writable.
 
@@ -224,9 +226,16 @@ Reverb retains its separate existing command/readback contract.
 
 The seed entries use `status: reference-only`. The Discrete 4 implementation
 records a `readback-observed` type ID, with `type_id_write_status:
-unconfirmed`; the Orion implementation leaves its type ID and evidence
-empty. All three command definitions are `null`, and encodings are empty
-for both models. A declared control name carries neither an inferred range
+unconfirmed`. Orion type IDs remain unknown. Memory Cat Brigade's Orion
+implementation contains eight `capture-observed` control encodings, with
+local capture and owner-action provenance. Its `parameter_observation`
+records the observed header, session handle and packet span; it is not a
+builder template. Offsets exclude the USB capture header. The six knob
+fields carry endpoint ranges, with unknown intermediate `scale`/`step`;
+the two switches carry display `options` with unknown `wire_enum` polarity.
+The shared control declarations remain unchanged, so Orion observations
+do not become another model's contract. All three command definitions
+remain `null` for every implementation. A declared control name carries neither an inferred range
 nor an inferred byte width/offset. `source_name` preserves Gazelle's effect
 key; `name` uses a public product name only when one has been matched.
 Descriptions and categories otherwise remain `null`. A `#plugins...` or
@@ -269,7 +278,7 @@ masked bits in the source record, so the phase/invert probe cannot disturb the
 level or delay bits. The separate `speaker_mask_write` contract describes the
 speaker-monitor Bypass button, whose logical `true` value clears the device's
 active-processing bit.
-| `afx_slot` | *(AFX Real-Time effect slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` remains blocked because slot assignment is bucket E (`SCOPE.md`). Parameter control (`0x1c`/`0xd5`) is in scope (bucket D), but no field map or builder exists yet; the opcode guard stays until safe-write verification. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
+| `afx_slot` | *(AFX Real-Time effect slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` remains blocked because slot assignment is bucket E (`SCOPE.md`). Parameter control (`0x1c`/`0xd5`) is in scope (bucket D), Memory Cat Brigade has observed fields in the shared catalog, but no builder exists; the opcode guard stays until safe-write verification. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, optional `destination_labels{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}`, `source_semantics{}` | `build_route_command(profile, dest, channels)` |
 | `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, optional nested `record_layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`) / `parse_readback_records` and its profile-specific wrappers; driven by `transport.HidTransport.query` |
 

@@ -4,7 +4,7 @@
     "version": 1
   },
   "status": "reference-only",
-  "_comment": "Shared device-side AFX reference catalog seeded from Gazelle measurements and public effect descriptions. Device capacity stays in device profiles. Control names are declared metadata; ranges, kinds and encodings remain unknown. Every load/recall/parameter command is null. Model-local type IDs are readback observations, not verified write discriminators. Runtime instance handles are never catalog IDs. No runtime loader or writer consumes this catalog.",
+  "_comment": "Shared device-side AFX reference catalog seeded from Gazelle measurements and public effect descriptions. Device capacity stays in device profiles. Shared control names are declared metadata; Orion Memory Cat Brigade has capture-observed field mappings, kept separate from verified writable encodings. Every load/recall/parameter command is null. Model-local type IDs are readback observations, not verified write discriminators. Runtime instance handles are never catalog IDs. No runtime loader or writer consumes this catalog.",
   "provenance": {
     "gazelle_profile": "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json",
     "gazelle_findings": "https://github.com/Gazelle-ctl/gazelle-docs/blob/main/protocol/REPLIES.md",
@@ -1872,15 +1872,232 @@
         {
           "profile": "orion_studio_sc.json",
           "type_id": null,
-          "status": "unconfirmed",
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
-          "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "control_encodings": {
+            "level": {
+              "label": "Level",
+              "offset": 21,
+              "width": 1,
+              "signed": false,
+              "kind": "continuous",
+              "raw_range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "unit": "normalized",
+              "scale": null,
+              "step": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 9594,
+              "last_changed_frame": 15718
+            },
+            "blend": {
+              "label": "Blend",
+              "offset": 20,
+              "width": 1,
+              "signed": false,
+              "kind": "continuous",
+              "raw_range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "unit": "normalized",
+              "scale": null,
+              "step": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 16557,
+              "last_changed_frame": 21420
+            },
+            "feedback": {
+              "label": "Feedback",
+              "offset": 22,
+              "width": 1,
+              "signed": false,
+              "kind": "continuous",
+              "raw_range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "unit": "normalized",
+              "scale": null,
+              "step": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 22491,
+              "last_changed_frame": 27078
+            },
+            "delay": {
+              "label": "Delay",
+              "offset": 25,
+              "width": 1,
+              "signed": false,
+              "kind": "continuous",
+              "raw_range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "unit": "normalized",
+              "scale": null,
+              "step": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 27996,
+              "last_changed_frame": 35298
+            },
+            "depth": {
+              "label": "Depth",
+              "offset": 24,
+              "width": 1,
+              "signed": false,
+              "kind": "continuous",
+              "raw_range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "unit": "normalized",
+              "scale": null,
+              "step": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 35931,
+              "last_changed_frame": 40426
+            },
+            "lpf_fc": {
+              "label": "Filter",
+              "offset": 26,
+              "width": 1,
+              "signed": false,
+              "kind": "continuous",
+              "raw_range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "unit": "normalized",
+              "scale": null,
+              "step": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 40945,
+              "last_changed_frame": 45965
+            },
+            "chrs_vibr": {
+              "label": "Chorus / Vibrato",
+              "offset": 23,
+              "width": 1,
+              "signed": false,
+              "kind": "enum",
+              "raw_values": [
+                0,
+                1
+              ],
+              "options": {
+                "chorus": "Chorus",
+                "vibrato": "Vibrato"
+              },
+              "wire_enum": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 47145,
+              "last_changed_frame": 49074
+            },
+            "size": {
+              "label": "550 ms / 1100 ms",
+              "offset": 27,
+              "width": 1,
+              "signed": false,
+              "kind": "enum",
+              "raw_values": [
+                0,
+                1
+              ],
+              "options": {
+                "550ms": "550 ms",
+                "1100ms": "1100 ms"
+              },
+              "wire_enum": null,
+              "status": "capture-observed",
+              "writable": false,
+              "first_changed_frame": 49842,
+              "last_changed_frame": 52163
+            }
+          },
+          "evidence": [
+            "macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng",
+            "https://es.antelopeaudio.com/wp-content/uploads/2020/11/Memory-Cat-Brigade.jpg",
+            "Owner clarified action order and six knob endpoints (0-100) on 2026-09-30."
+          ],
+          "notes": "Orion-only observation from owned-device HID OUT traffic and the owner-labelled action sequence. Offsets are zero-based within the 320-byte report, excluding the 40-byte Darwin header. Each successive parameter change affects one byte in 20-27; a complete eight-control state block is inferred, not a reusable command template. Six knobs reach raw 0 and 100; intermediate display scaling, quantization and physical units remain unverified. Both switches alternate raw 0/1, but label-to-value polarity is unknown. Byte 18 is a session instance handle, never an effect type ID. No matching effect-parameter readback or baseline restoration was established. Commands stay null and opcode 0x1c remains blocked pending safe-write verification.",
+          "parameter_observation": {
+            "report_length": 320,
+            "opcode_offset": 4,
+            "opcode": "0x1c",
+            "param_id_offset": 16,
+            "param_id": "0xd5",
+            "constant_bytes": {
+              "17": "0x0a",
+              "19": "0x00"
+            },
+            "instance_handle_offset": 18,
+            "observed_instance_handle": "0x49",
+            "parameter_offsets": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "frame_count": 106,
+            "action_order": [
+              "level",
+              "blend",
+              "feedback",
+              "delay",
+              "depth",
+              "lpf_fc",
+              "chrs_vibr",
+              "size"
+            ],
+            "first_frame": 9455,
+            "last_frame": 52163,
+            "status": "capture-observed",
+            "writable": false,
+            "readback_verified": false,
+            "restoration_verified": false
+          }
         }
       ]
     },

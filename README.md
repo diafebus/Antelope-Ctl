@@ -63,7 +63,8 @@ the old project interpretation was corrected. The **AFX plugin-chain slot** fram
 which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a but never emitted — assigning/loading a plugin is out
 of scope (`SCOPE.md`). AFX Real-Time parameter control is in scope, but its
-parameter stream is not yet decoded or emitted. The AFX-tab channel
+Memory Cat Brigade fields are capture-mapped, but no parameter writer is
+enabled. The AFX-tab channel
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
 
@@ -75,7 +76,10 @@ as described in [Antelope's public demonstration](https://en.antelopeaudio.com/2
 The shared `profiles/afx_effects.json` catalog contains 80 reference effect
 entries and 729 declared control names from Gazelle's Discrete 4 findings,
 with pinned source provenance. The first three descriptions are drawn from
-public effect pages. Orion type IDs, control ranges/encodings, and all
+public effect pages. The Orion Memory Cat Brigade implementation records
+six observed 0–100 knob fields and two binary switch fields from an
+owner-labelled capture. Switch polarity, intermediate scaling and safe-write
+verification remain unresolved. Orion type IDs and all
 load/recall/parameter commands remain unknown. No AFX loader or writer is
 enabled by this metadata. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
