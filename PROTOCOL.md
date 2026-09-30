@@ -78,7 +78,7 @@ single most important thing to get right.
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), **clock_source (`0x04`)**, oscillator panel (`0x0a`, packed byte), **pan_law (`0x24`)**, DC-coupling (`0x26`) |
-| `0x14` | SET_LINK | `0xa2` (links) / `0x98` (AFX slot bypass, §12a) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
+| `0x14` | SET_LINK | `0xa2` (links) / `0x98` (AFX slot bypass, §12a) | `space` @17 (0 = Preamp; legacy ADAT UI writes also used 0 but are not validated, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
@@ -187,9 +187,9 @@ read the counts off against the Launcher's routing-tab labels.
 | # | category | indices | count | notes |
 |---|---|---|---|---|
 | 1 | `0x11` | 0-1 | 2 | **assignment status / feature mask** -- index 0 is status; index 1 is a 200-byte feature mask |
-| 2 | `0x0b` | 1, 2 | (2) | **ADAT and S/PDIF link tables** -- the same category is multiplexed by index; see below |
+| 2 | `0x0b` | 1, 2 | (2) | **Additional input-link tables** -- index 1 record 0 follows S/PDIF; no ADAT link table is confirmed |
 | 3 | `0x1b` | 0 | 1 | **surround GLOBAL state** (§4a, §11) -- not a digital-input entry, despite sitting here in the walk |
-| 4 | `0x1a` | 0-15 | 16 | **surround per-speaker EQ** (16 speakers) — *not* ADAT; the old "ADAT" label was a 16==16 count guess, corrected 2026-09-04 by a live read (§4a). ADAT has no readback category (its gain/link is `0x73` @75-90) |
+| 4 | `0x1a` | 0-15 | 16 | **surround per-speaker EQ** (16 speakers) — *not* ADAT; the old "ADAT" label was a 16==16 count guess, corrected 2026-09-04 by a live read (§4a). ADAT gain reads at `0x73` @75-90; ADAT link readback is unconfirmed |
 | 5 | `0x03` | 0-14 | 15 | unmapped -- see candidates below |
 | 6 | `0x04` | 0-3 | 4 | virtual mixer -- each entry is followed by the 64-entry `0x0b` index-3 mixer-link table |
 | 7 | `0x0a` | 0 | 1 | singleton |
@@ -201,8 +201,8 @@ read the counts off against the Launcher's routing-tab labels.
 ### `0x0b` is a multiplexed link-table category
 
 Its eight requests carry index values `1, 2, 3, 3, 3, 3, 0, 4`. The
-outer index selects the link table: index 0 has 6 shared space-0 input-pair
-bytes, index 1 has 8 bytes with S/PDIF at record 0, index 2 has one
+outer index selects the link table: index 0 has six Preamp-pair link flags,
+index 1 has 8 bytes with S/PDIF at record 0, index 2 has one
 unassigned byte, index 3 has 64 mixer-pair bytes, and index 4 has 32 AFX
 channel-link bytes. The extracted panel schema labels indices 1 and 2 as
 ADAT and S/PDIF respectively, but controlled device transitions contradict
@@ -215,17 +215,19 @@ The 2026-09-23 live WebUI probe captured `SET_LINK` space 0, pair 3, on at
 HID OUT `0x01`; the next bounded `0x0b:0` response at HID IN `0x82`
 returned record 3 = 1. After the user turned the pair off, a fresh response
 returned record 3 = 0. The `0x0b:1` record 3 stayed 0 throughout. Earlier
-preamp pair 0 on/off observations also tracked `0x0b:0` record 0. Index 0
-therefore reports the shared space-0 command state, but cannot distinguish
-the Preamp and ADAT input domains. The WebUI displays these bytes only as
-diagnostics and keeps their buttons separate. A controlled 2026-09-23 ADAT
+Preamp pair 0 on/off observations also tracked `0x0b:0` record 0. Index 0
+contains the six Preamp link states for the device's 12 physical preamps.
+ADAT has eight pairs, so this table cannot be its readback. The earlier ADAT
+checks incorrectly used these six Preamp records as ADAT state. The WebUI
+displays the table as raw diagnostics and keeps input-link buttons separate.
+A controlled 2026-09-23 ADAT
 pair-6 ON write completed a fresh index-1 query, but all eight records
 including record 6 remained 0. On 2026-09-26, with ADAT links held, a live
 S/PDIF OFF→ON round trip changed index-1 record 0 from 1→0→1. Indices 0
 and 2 did not change. The WebUI now maps only index-1 record 0 to the
 S/PDIF button. Index 2 remains raw diagnostic data, and ADAT pairs 6/7
-remain command-backed without a confirmed device-state byte. An ADAT pair-7
-OFF write changed none of the three returned tables.
+remain without confirmed ADAT device-state readback. An ADAT pair-7 OFF
+write changed none of the three returned tables.
 
 The same live session later sent ADAT pair-index 6 and 7 ON, then OFF
 commands. Pair 6's successful fresh readback stayed zero while ON, and the
@@ -233,12 +235,11 @@ user-visible device gains were restored after a one-sided +1 dB API write to
 ADAT 13 left ADAT 14 unchanged. The browser's paired-write path remains a
 separate behavior to verify through its controls.
 
-The user verified the browser behavior against that device state: after a
-hard reload the ADAT 7/8 icon showed ON; after clicking it OFF, the server's
-link-readback version advanced, index-0 record 3 returned 0, and both the
-ADAT 7/8 and physical preamp 7/8 icons showed OFF. This completes the WebUI
-indicator check in both directions; it confirms the shared flag display,
-not whether both signal paths are linked.
+The user verified the old browser behavior: after a hard reload the ADAT 7/8
+icon showed ON; after clicking it OFF, the server's link-readback version
+advanced, index-0 record 3 returned 0, and both ADAT 7/8 and physical Preamp
+7/8 icons showed OFF. Record 3 belongs to the Preamp 7/8 pair; using it for
+the ADAT icon was incorrect and did not confirm ADAT link state.
 
 ### What the categories are (resolved 2026-08-31 via §4a)
 
@@ -396,7 +397,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x06` | **channel status** -- 1 byte/channel, same packing as `0x73` @61: `(phase<<6)\|(phantom<<4)\|(mode&3)`. | **decoded + differential-write confirmed 2026-09-03** (phantom bit inferred from the shared encoding) |
 | `0x07` | EQ/filter band data — same `<freq><Q><gain><mode>` stride as `0x1a`. 8 records; live-read 2026-09-04: idx 0/1 = 8× a flat 5-band EQ (30/200/1k/5k/15k Hz), idx 2 = 16× a 19-byte range/capability record. Purpose unresolved (monitor/phones EQ? a capability table?). **Not** a per-input-channel EQ — the SC has none | undecoded |
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
-| `0x0b` | **multiplexed link tables** -- outer index 0 = 6 shared space-0 flags, 1 = 8 space-1 bytes, 2 = 1 unassigned byte, 3 = 64 mixer pairs, 4 = 32 AFX channel links. Index 3 is repeated around mixer reads. | **Index-0 flags cannot distinguish Preamp from ADAT. Controlled S/PDIF OFF/ON changed index-1 record 0 from 1→0→1 while index 2 stayed zero. Only index-1 record 0 is a confirmed domain-specific input-link readback.** |
+| `0x0b` | **multiplexed link tables** -- outer index 0 = 6 Preamp-pair flags for 12 physical preamps, 1 = 8 bytes (record 0 tracks S/PDIF; other records unmapped), 2 = 1 unassigned byte, 3 = 64 mixer pairs, 4 = 32 AFX channel links. Index 3 is repeated around mixer reads. | **Index 0 is Preamp readback; it does not report ADAT links (8 pairs). Controlled S/PDIF OFF/ON changed index-1 record 0 from 1→0→1 while index 2 stayed zero.** |
 | `0x0c` | AFX available/max instance counts -- index 0 and index 1 each contain 90 `{type_id, inst_count}` records according to the panel schema. The outer index bounds are not established by the connect walk. | schema-decoded; outer query bounds capture-required |
 | `0x0d` | scalar `0x18` (=24), stable across re-reads. Meaning unknown | undecoded |
 | `0x11` | assignment status at index 0 (one byte) and feature mask at index 1 (200 bytes) | decoded from panel schema and response log |
@@ -731,7 +732,7 @@ pair 1 = ch3&ch4, ... pair 5 = ch11&ch12. 6 pairs (index 0-5).
 
 | space @17 | domain | pair_index range |
 |---|---|---|
-| `0x00` | physical inputs **and** ADAT (shared) | physical 0-5, ADAT 0-7 |
+| `0x00` | Preamp physical-input links | pair indices 0-5 (six pairs across 12 preamps); ADAT controls were also captured sending this value, but that did not establish an ADAT link mapping |
 | `0x01` | S/PDIF | 0 only (the L/R pair) |
 | `0x03` | virtual mixer (Mix 1-4 strips) | `channel // 2` (§12) |
 | `0x04` | **AFX-tab channel stereo-link** | `channel // 2`, 16 pairs over 32 ch |
@@ -749,28 +750,21 @@ channel-pairing toggle — bucket A/B, not plugin-internal — buildable with
 `build_link_command(…, space=4)`; no CLI command. Previously offset 17 was
 thought unused/always-0. `0x02` unseen.
 
-### ADAT link pairs
+### ADAT link investigation
 
-`pair_index = channel_index // 2` over the 16-channel ADAT space: 8 pairs
-(0-7). Pairs 6 and 7 have no physical-channel equivalent.
+ADAT has 16 channels, which form eight pairs (indices 0-7). Captures show
+the ADAT UI emitted `SET_LINK` frames with pair indices `channel_index // 2`,
+including indices 6 and 7. This records the UI's wire traffic; it does not
+confirm that the device engaged those ADAT links.
 
-**Behaviour is identical to the preamp link** (user-confirmed on hardware):
-linked channels' gains move together, and -- as with the preamp -- the
-*device* doesn't do that, the software sends a second `SET_PARAM(adat_gain)`
-for the partner. `set-adat-gain` / `set-adat-link` replicate this.
-
-**Still ambiguous with physical link.** Physical link and ADAT link *both*
-use space `0x00`, and the physical-pair-0-ON and ADAT-pair-0-ON frames are
-byte-for-byte identical across all 320 bytes + USB metadata. S/PDIF (space
-`0x01`) is now unambiguous, but physical-vs-ADAT is not. Unknown: whether
-one `SET_LINK(space=0, pair_index=N)` links pair N in *both* spaces. To
-settle it: link a physical and an ADAT pair in one session with different
-per-channel gains, or test on hardware.
-
-The 2026-09-23 WebUI ADAT 7/8 (pair 3) transition changed the `0x0b:0`
-record for pair 3, while the separate `0x0b:1` ADAT record stayed zero.
-That confirms which returned flag tracks the space-0 command for this pair;
-it does not establish whether both physical and ADAT signal paths are linked.
+The earlier project mapping was incorrect. Category `0x0b`, index 0 has six
+records because the device has 12 physical preamps, paired into six Preamp
+links. It is Preamp link readback, not an ADAT table. Earlier checks looped
+over ADAT controls while reading those six Preamp records, so their ADAT
+state conclusions were invalid. The captured physical Preamp pair-0 and
+ADAT-UI pair-0 frames are byte-identical, but that does not validate the
+ADAT selector. Captured paired ADAT gain writes show software mirroring only;
+no ADAT-specific device-link readback or valid selector is confirmed.
 
 ### S/PDIF link pair
 
@@ -1028,13 +1022,14 @@ panel. But:
     mode's range) -> re-link.
 - **The state report has no dedicated channel-link bit, but category `0x0b`
   contains five nested link tables.** The extracted Orion panel schema and
-  manager-server log identify preamp, ADAT, S/PDIF, mixer, and AFX tables
-  at indices 0..4. The earlier live whole-report diff did not query `0x0b`.
-  The 2026-09-23 space-0 pair-3 write and readback confirm index-0 on/off
-  polarity for record 3; index 1 did not track the ADAT
-  action. Index 0 is not an authoritative Preamp or ADAT state mapping: the
-  same command selector from both controls changed it. Clients display its
-  bytes as raw diagnostics and keep independent controller-side button state.
+  manager-server log previously assigned indices to preamp, ADAT, S/PDIF,
+  mixer, and AFX. Controlled readback identifies index 0 as the six Preamp
+  pairs across 12 physical inputs; it cannot be ADAT's eight-pair table. The
+  earlier ADAT mapping was incorrect. The 2026-09-23 space-0 pair-3 write and
+  readback confirm index-0 on/off polarity for the Preamp 7/8 pair. Later
+  controlled S/PDIF toggles mapped index-1 record 0 to S/PDIF; the other seven
+  records remain unmapped. Clients display index 0 as raw diagnostics and
+  keep input-link buttons separate.
 
 Any non-Launcher controller must replicate the two-commands-per-change
 behaviour itself if it wants Launcher-equivalent results.
@@ -1275,8 +1270,8 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | bus_mono | `0x69` | `0x13` | bus id | 0/1 | bus status bit 4 |
 | output_trim | `0x4b` | `0x13` | target 0-2 | 0-6 | offsets 24-25 (section 6) |
 | spdif_gain | `0x5c` | `0x13` | S/PDIF ch (0=L, 1=R) | int8 dB, -6..+12 | offset `91` (L) / `92` (R) |
-| channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | `0x0b:0` (6 nested `linked` bytes) tracks space-0 commands but is not a domain-specific link state |
-| adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | pairs 0-5 change shared `0x0b:0`, which cannot distinguish ADAT from Preamp. Pairs 6/7 have no confirmed readback byte; an ADAT pair-7 OFF write changed none of indices 0–2. |
+| channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | `0x0b:0` (6 nested `linked` bytes) is confirmed Preamp-pair readback |
+| adat_channel_link | `0xa2` | `0x14` | captured ADAT UI frame used space=0 @17, pair_index @18 (0-7) | enabled @19 | The earlier ADAT mapping was incorrect: `0x0b:0` is readback for the six pairs of 12 physical preamps, not ADAT's eight pairs. No valid ADAT selector or device-state readback is confirmed; paired gain writes show software mirroring only. |
 | spdif_channel_link | `0xa2` | `0x14` | **space=1** @17, pair_index @18 (0) | enabled @19 | `0x0b:1` record 0 follows controlled OFF/ON (1→0→1); `0x0b:2` stayed zero. L/R gain mirroring is software-side. |
 | mix_channel_link | `0xa2` | `0x14` | **space=3** @17, logical `(mix,pair)`; pair selector @18 is profile/surface-specific | enabled @19 | candidate table `0x0b:3` (64 nested `linked` bytes); transition capture pending (software-mirrored, §12) |
 | mix_fader / mix_pan / mix_send / mix_mute / mix_solo | `0xd4` | `0x17` | `mix` @18, `channel` @19 (1-32) | fader @20 (0-90 dB), pan @21 bits 0-5 (0x20=centre), mute @21 bit 6, solo @21 bit 7, send @22 (0-96) | none (§12) |
@@ -1660,7 +1655,7 @@ the Launcher re-send a `mix_command` for **all 32 channels** of that mix
 (a handy channel-count probe -- that's how we know it's 32).
 
 **Mix channel link** = `SET_LINK` with a **new `space` byte `0x03`**
-(0 = physical/ADAT, 1 = S/PDIF, 3 = mixer). The logical link identity is
+(0 = Preamp, 1 = S/PDIF, 3 = mixer). The logical link identity is
 `(mix, pair_index)`, with `pair_index = channel // 2` within that mix; it is
 not one global pair shared by every mixer surface. `SET_LINK` has no separate
 mix byte, so a profile may declare a per-mix wire-selector stride when the
@@ -1909,7 +1904,7 @@ ignored `AUDIT.md`.
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. The other 9 destination write paths are not implemented. |
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(signed `-30..30`, raw `0x20`=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number), decoded + hardware-verified; `mix-status` / `mix-set` in the CLI. Restore-guaranteed live round-trip 2026-09-14 changed Mix 4 channel 32 to -30 dB and restored it. (`0x1b` was once thought to be its bus-level table -- it is the surround global readback instead, §11; bus levels are `0x73` `bus_block`.) |
 | Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Current state readback is category `0x16`, index 0: eight `{target, emu_model, ch_swap, pattern}` records. The write frame still has no verified write/readback round-trip. Preamps 5-6 CAPTURED 2026-09-03 (webUI usbmon, `webui-emumic-preamp56-...`): `[18]=0x00`/`0x01` on the wire, pair = link pair 2, disable reverses phantom+gain+link. Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position. |
-| ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Whether one space-0 command links pair N in *both* physical and ADAT is unverified; differing per-channel gains are required to distinguish the result. |
+| ADAT link control/readback | The captured ADAT UI command reused the Preamp `space=0` frame; the previous project mapping treated the six Preamp readback records as ADAT state and was incorrect. ADAT has eight pairs. No valid ADAT-specific command mapping or device-state readback is confirmed. |
 | ~~Pan law~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x24` / 0-3 = -6/-3/-4.5/0 dB (`panning-law-6-3-45-0`). No readback. CLI `pan-law`. |
 | ~~Clock source~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x04` / 0-6 (Oven / WC / ADAT / ADATx2 / ADATx4 / S/PDIF / USB). Readback `0x73` @19 — which also explains the `0x73` @19 startup blip (USB→saved source re-lock). CLI `clock-source`. |
 | S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
@@ -1924,7 +1919,7 @@ ignored `AUDIT.md`.
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
 | Shared meter banks / selectors | Physical inputs use `0x73 [221..232]`. Mixer-window selection is `0x49 / target 1 / value 0..3`, echoed at `[122]`. Meters-window selection is `0x49 / target 0 / value 0..25`, echoed at `[121]`; values 19/20 are unnamed in the capture filename. Shared lane ownership beyond the gated Mix 2 block remains unresolved. |
-| Channel-link readback bit | State-report bit still absent. Space-0 pair 3 confirms `0x0b:0` polarity for six shared flags. ADAT tail pairs have no confirmed byte. S/PDIF uses `0x0b:1` record 0 (controlled OFF/ON); `0x0b:2` is unassigned. Mixer and AFX still need transition correlation. |
+| Channel-link readback bit | State-report bit still absent. `0x0b:0` confirms six Preamp pairs across 12 physical inputs; it does not report ADAT's eight pairs. The prior ADAT mapping was incorrect and no ADAT-specific readback is confirmed. S/PDIF uses `0x0b:1` record 0 (controlled OFF/ON); `0x0b:2` is unassigned. Mixer and AFX still need transition correlation. |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. Category `0x19` is now identified as AFX strip order (64 outer records × 8 slots), not the USB/TB channel stream. |
 | `bus_block` reserved byte (`30+3N`) | never changed -- padding or unexercised |

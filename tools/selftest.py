@@ -29,9 +29,10 @@ WHAT IT CANNOT CHECK
   Reported as SKIP, not PASS, so the summary never overstates coverage:
   mic-modeling WRITE round trips (the current state is readable, but this
   self-test does not change DSP configuration), channel-link transition
-  correlation (the WebUI maps space-0 index 0 for the first six shared flags;
-  the schema-shaped ADAT index-1 tail table returned all zero after a pair-6
-  ON write and remains diagnostic only; S/PDIF/mixer/AFX transitions remain
+  correlation (space-0 index 0 is confirmed Preamp link readback; its earlier
+  use as ADAT readback was incorrect. The eight-byte index-1 table did not
+  change after an ADAT pair-6 ON write, and only its record 0 is mapped to
+  S/PDIF; mixer/AFX transitions remain
   manual), and sample rate (writing it drops audio).
 """
 import argparse

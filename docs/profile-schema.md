@@ -127,7 +127,7 @@ frame carries a fixed one). Then frame-specific offsets:
 |---|---|---|---|
 | `command` | SET_PARAM (`0x13`) | `channel_offset`, `value_offset` | `build_command(profile, param_name, channel, value)` |
 | `global_command` | SET_GLOBAL (`0x12`) | `value_offset` (no channel) | `build_global_command(profile, param, value)` |
-| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=physical/ADAT, `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link); optional `readback` distinguishes diagnostic post-write queries from authoritative link-button mappings | `build_link_command(profile, pair, enabled, space)` |
+| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=Preamp; the legacy ADAT path also used `0` but that mapping was incorrect; `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link); optional `readback` distinguishes diagnostic post-write queries from authoritative link-button mappings | `build_link_command(profile, pair, enabled, space)` |
 | `mix_command` | SET_MIX (`0x17` Orion / `0x16` Zen Go) | `subcmd_offset`+`subcmd`, `mix_offset`, `channel_offset`, `fader_offset`, `pan_flags_offset`, optional `send_offset`, `pan_center`, `pan_mask`, `mute_bit`, `solo_bit` | `build_mix_command(...)` |
 | `auraverb_command` | profile-defined Gazelle Reverb setter (AuraVerb protocol) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant`, confirmed `contract{readback_category, readback_index, fields[]}` | `build_auraverb_command(profile, params, enabled)`; the WebUI/CLI use the contract's bounded readback target and `parse_auraverb_record` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
@@ -209,13 +209,15 @@ the returned table is complete, and
 `pair_counts.preamp` / `.adat` stay within both the layout and the declared
 channel counts. Only mapped pairs replace browser-cached link icons; an
 absent, incomplete, or provisional mapping leaves the cache alone. On Orion,
-both input controls send space 0; tested pair 0 and pair 3 transitions changed
-bytes in the six-record `0x0b:0` table.
-This table has `post_write_pair_counts` and `authoritative: false` because a
-flag does not identify which domain is linked; it remains diagnostic and
-cannot overwrite either set of buttons. Direct ADAT pair 5 ON/OFF changed
-`0x0b:0` record 4, while pairs 7 and 8 changed none of the five safe link
-tables on a short read. `0x0b:1` has eight response bytes, but only record 0
+`0x0b:0` contains six Preamp link records, one for each pair of the 12
+physical preamps. ADAT has 16 channels, or eight pairs, and is not reported
+by this table. The old ADAT procedure looped through ADAT controls while
+reading the six Preamp records; its ADAT state conclusions were incorrect.
+The current profile still sets `authoritative: false`, so the WebUI keeps this
+table diagnostic instead of applying it to either input's buttons. Direct
+ADAT pair 5 ON/OFF was also compared with `0x0b:0` record 4, but that is not
+valid ADAT readback; pairs 7 and 8 changed
+none of the five safe link tables on a short read. `0x0b:1` has eight response bytes, but only record 0
 is mapped: a controlled S/PDIF OFF/ON changed it 1 → 0 → 1 while ADAT was
 held fixed. S/PDIF has one link pair. `0x0b:2` stayed zero in that test and
 remains unassigned.

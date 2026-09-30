@@ -33,7 +33,7 @@ existing CLI subcommand, profile key, and API path (`auraverb`) remain as
 compatibility identifiers.
 
 **Roughly what's decoded** (2026-09): preamp gain/mode/phantom/phase +
-link, ADAT & S/PDIF I/O, output buses (monitor/HP/line/reamp) with
+link, ADAT/S/PDIF gain controls (ADAT link state is unconfirmed), output buses (monitor/HP/line/reamp) with
 dim/mute/mono, the full **routing matrix** (15 dests, 12 source banks, read
 + write, self-verifying), the **virtual mixer** (4 mixes, read + write),
 **Gazelle Reverb** (read/write, hw-verified), **mic modeling / emuMic** (frame
@@ -53,9 +53,12 @@ implemented (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited 
 2.1. The global format wire path was directly round-trip tested through 9.1.6
 with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
 bounds for `0x0c`, and
-the `0x74` channel-group names. A controlled 2026-09-23 space-0 link
-transition confirmed category `0x0b` index 0 for six shared space-0 pair
-flags; it cannot separate Preamp from ADAT state. A controlled S/PDIF OFF/ON
+the `0x74` channel-group names. Category `0x0b` index 0 contains six link
+flags for the device's 12 physical preamps, paired as 1/2 through 11/12.
+Those flags are Preamp readback, not ADAT readback: ADAT has 16 channels and
+eight pairs. The earlier ADAT mapping and tests that reused these six flags
+were incorrect. ADAT device-link state still has no confirmed readback. A
+controlled S/PDIF OFF/ON
 transition mapped its single pair to `0x0b:1` record 0; the other seven bytes
 and `0x0b:2` remain unassigned. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
@@ -215,54 +218,54 @@ replicates. See "Channel link is real, but the syncing you see isn't the
 device doing it" below before assuming any other tool will behave the same
 way against this hardware.
 
-ADAT inputs -- a separate 16-channel space (ADAT ch 0-15), gain + link
-only (no mode/phantom/phase):
+ADAT inputs -- a separate 16-channel space (ADAT ch 0-15), gain plus an
+unvalidated link command (no mode/phantom/phase):
 
 ```
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json adat-status
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-gain 0 6      # ADAT ch1, +6 dB
-python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-link 0 on     # links ADAT ch1+ch2
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-link 0 on     # legacy command; does not confirm an ADAT link
 ```
 
-ADAT link behaves exactly like the preamp link (user-confirmed on
-hardware): linked channels move gain together, and -- as with the preamp
--- that's the *software* sending a second command, not the device, so
-`set-adat-gain` mirrors to the linked partner itself. **Caveat:** the ADAT
-and physical `SET_LINK` frames are byte-identical (both `space` byte
-`0x00`), so `set-adat-link` on pairs 0-5 may also toggle the matching
-*physical* link (ch1&2 ... ch11&12). Pairs 6-7 are ADAT-only. See
-`params.adat_channel_link` in the profile.
+The project's earlier ADAT link mapping was incorrect. The six `0x0b:0`
+records report all six Preamp pairs from the 12 physical preamps. ADAT has
+eight pairs, so those six records cannot be its link table. Earlier ADAT
+checks incorrectly looped over ADAT controls while treating Preamp records
+as ADAT readback. Captures show the ADAT UI sent `SET_LINK space=0` frames,
+but this does not establish a valid ADAT link command or an engaged ADAT
+device link. Paired-gain writes show software mirroring only.
 
-The WebUI displays the first six unassigned space-0 flags from the device's
-`0x0b:0` table as raw diagnostics. Both Preamp and ADAT commands changed that
-table in controlled checks, so it cannot identify which input domain is
-linked and no longer drives either set of buttons. Their button state records
-the last command made in this browser. On first load after this correction,
-the browser clears old pair-0..5 link cache entries that may have been filled
-from the ambiguous table; it does not send a device command. ADAT pair
-indices 6/7 have no confirmed readback byte; their buttons also retain the
-browser's last command. Direct ADAT pair-7 and pair-8 ON/OFF tests changed
+The current WebUI displays `0x0b:0` as raw Preamp diagnostics and keeps
+input-link buttons separate. Each input-link button records the last command
+made in this browser. On first load after this correction, the browser clears
+old pair-0..5 cache entries that may have been populated by the incorrect
+ADAT mapping; it does not send a device command. No ADAT pair has confirmed
+device-state readback. Direct ADAT pair-7 and pair-8 ON/OFF tests changed
 none of the five known link tables; pair 8 also stayed on for 40 seconds
-without a table change. An earlier ADAT 13/14 ON write left the eight-byte
-`0x0b:1` table at zero. A controlled 2026-09-26 S/PDIF OFF/ON test then
+without a table change. An earlier ADAT 13/14 ON write changed none of the
+eight records in `0x0b:1`; those records are not an ADAT link-state table.
+A controlled 2026-09-26 S/PDIF OFF/ON test then
 showed that **record 0 of that same table follows S/PDIF**, changing
 `1 → 0 → 1` while ADAT links stayed fixed. The WebUI now refreshes
 `0x0b:1` after S/PDIF writes and uses only record 0 for its S/PDIF button.
 The one-byte `0x0b:2` table stayed zero during that test and remains an
-unassigned diagnostic. None of these flags proves that both
-physical and ADAT signal paths are linked by the shared space-0 command.
+unassigned diagnostic. The six `0x0b:0` flags report Preamp links; the
+previous use of those flags as ADAT link state was incorrect. No ADAT-specific
+device-link readback has been confirmed.
 
 The 2026-09-23 UI check showed the bug: after the ADAT 7/8 OFF command,
-`0x0b:0` went low and the old WebUI also switched off physical Preamp 7/8.
-That UI behavior did not establish the physical pair's actual link state.
+`0x0b:0` record 3 went low and the old WebUI used it for both the physical
+Preamp 7/8 and ADAT 7/8 indicators. The Preamp indication matched the
+confirmed Preamp readback; using it for ADAT was incorrect and did not
+establish ADAT 7/8 link state.
 
 ADAT 13/14 was toggled ON through the WebUI API on 2026-09-23; the server's
 fresh index-1 query succeeded (`link_rb_ver` advanced), but all eight records
 remained zero. It was returned to OFF and its gain restored to 0 dB after a
 one-sided +1 dB probe; ADAT 14 stayed at 0 dB during that single API write.
-This confirms that one gain write is not device-propagated to its partner;
-the browser must issue both writes when its link control is active. ADAT
-15/16 still needs the same exact live readback check.
+This shows that the tested gain write did not update ADAT 14. Since the ADAT
+link state was not independently confirmed, this does not verify ADAT link
+behavior. The browser's paired-write path is separate from device readback.
 
 S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
 
@@ -272,9 +275,10 @@ python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-spdif-gain 0
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-spdif-link on    # links L+R
 ```
 
-Same gain-mirroring behaviour as the other links. The S/PDIF `SET_LINK`
-frame carries a distinct `space` byte (`0x01` vs `0x00` for physical/ADAT),
-so it has **no** cross-space ambiguity -- `set-spdif-link` only touches
+Same gain-mirroring behaviour as the other confirmed links. The S/PDIF
+`SET_LINK` frame carries a distinct `space` byte (`0x01` vs `0x00` for
+Preamp); the legacy ADAT UI also sent `0x00`, but that did not validate an
+ADAT mapping. S/PDIF has **no** cross-space ambiguity -- `set-spdif-link` only touches
 S/PDIF. Confirmed from `spdif-gain-link.pcapng` (gain param `0x5c`,
 readback at state-report offsets 91/92).
 
@@ -378,7 +382,7 @@ python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
 python3 -m antelope.cli ... matrix-status                    # LIVE read of the whole matrix from the device
 python3 -m antelope.cli ... mix-status 1                     # LIVE read of virtual Mix 1 (cat 0x04)
 python3 -m antelope.cli ... readback 0x03 0                  # raw: routing record for dest 0 (line out)
-python3 -m antelope.cli ... readback 0x0b 0                  # six shared space-0 link flags
+python3 -m antelope.cli ... readback 0x0b 0                  # six Preamp-pair link flags
 python3 -m antelope.cli ... readback 0x16 0                  # structured mic-emulation state
 python3 -m antelope.cli ... readback 0x19 0                  # structured AFX strip order
 python3 -m antelope.cli ... readback                         # list the readback categories
@@ -437,7 +441,7 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 - soloing a channel makes the Launcher re-send all 32 strips (that's how
   we know each mix has 32 inputs).
 - **mix channel link** = `SET_LINK` with a new `space` byte `0x03`
-  (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer); software-mirrored and scoped
+  (0 = Preamp, 1 = S/PDIF, 3 = mixer); software-mirrored and scoped
   independently per mix. A link in Mix 1 never mirrors a Mix 2-4 pair.
 - not in the passive `0x73` stream, but mixer state **is** readable via
   the `0x74`/`0x75` query protocol -- **category `0x04`, index = mix
@@ -756,15 +760,16 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   everything observed changing there is explained as a side effect of the
   gain/status sync above, not a standalone flag. The extracted Orion panel
   schema and manager-server log do identify readback category `0x0b` as five
-  nested link tables (shared space-0, an eight-byte table with S/PDIF at
+  nested link tables (six Preamp-pair flags, an eight-byte table with S/PDIF at
   record 0, one unassigned byte, mixer, AFX). Their returned bytes
   are now exposed by `readback 0x0b <index>` and the WebUI. A controlled
   2026-09-23 space-0 pair-3 transition correlated index 0 with the flag.
-  Index 0 carries six shared pairs and does not drive Preamp or ADAT buttons.
-  A controlled pair-6 ADAT ON write left index-1 record 6 zero, while a
-  controlled S/PDIF OFF/ON changed index-1 record 0 from `1→0→1`. Only that
-  record drives the S/PDIF indicator. Index 2 stayed zero during S/PDIF
-  transitions and has no assigned control mapping.
+  Index 0 reports the six Preamp pairs and does not currently drive either
+  set of buttons. Its earlier use as ADAT readback was incorrect.
+  A controlled pair-6 ADAT ON write left index-1 record 6 zero; that record
+  has no confirmed ADAT meaning. A controlled S/PDIF OFF/ON changed index-1
+  record 0 from `1→0→1`. Only that record drives the S/PDIF indicator. Index 2
+  stayed zero during S/PDIF transitions and has no assigned control mapping.
 
   **Re-verified independently (2026-08) against the raw
   `all_reports_ch-link-gain-ph-inv-test.tsv`**: every report in that capture
@@ -874,46 +879,39 @@ As of the 2026-08 ADAT test (adat-ch1-2-3-12-link12 capture):
   `adat_gain_base_offset = 75`, one byte per channel (confirmed for
   channels 1, 2, 3, and 12 in this capture). `params.adat_gain.id` is now
   `0x5b` -- distinct from physical-channel gain's `0x50`, as suspected.
-- **ADAT channel link is confirmed**, including the outgoing pair_index
-  encoding: `pair_index = adat_channel_index // 2`, same formula as
-  physical channels but over the 16-channel ADAT space, giving 8 pairs
-  (pair_index 0-7) instead of physical's 6. Linked ADAT channels' gain
-  bytes track together the same way physical-channel pairs do. The
-  outgoing frame reuses the *exact same* opcode/param_id as physical
-  channel_link (`0x70`/`0x14`/`0xa2`) -- see the important open caveat
-  about this below.
+- **ADAT UI link frames were captured**, with pair indices encoded as
+  `adat_channel_index // 2` over the 16-channel space (eight pairs, indices
+  0-7). This confirms what the UI sent, not that the device engaged an ADAT
+  link. The old interpretation of the six Preamp readback records as ADAT
+  state was incorrect. The UI's paired gain writes show software mirroring,
+  not device-side ADAT link behavior.
 
 As of the follow-up 2026-08 ADAT-link1-2-7-8 capture (activate link1,
 link2, link7, link8 in order; sweep gain on ch1/ch3/ch13/ch15; deactivate
 link8, link7, link2, link1):
 
-- **Confirms the pair_index formula across the full range, not just
-  pair_index 0.** link1/2/7/8 sent pair_index `0x00`/`0x01`/`0x06`/`0x07`
-  respectively, each immediately followed by gain-sync behavior on the
-  matching pair (ch1&2, ch3&4, ch13&14, ch15&16) -- including pair_index
-  6 and 7, which have no physical-channel equivalent (physical only goes
-  up to pair_index 5). Full round-trip (link then unlink, in the stated
-  order) confirmed for all four pairs.
+- **Confirms the UI's pair-index encoding**, not device ADAT link state.
+  link1/2/7/8 sent pair_index `0x00`/`0x01`/`0x06`/`0x07` respectively,
+  each followed by software gain-sync writes for the matching pair. ADAT
+  has eight pairs; the six `0x0b:0` records belong to the six physical
+  Preamp pairs and cannot confirm any ADAT pair. The captured ON/OFF frames
+  show command traffic only; they do not verify an ADAT link took effect.
 - **A momentary missed-sync frame was observed and is noted but not
   investigated further** (per instruction): while sweeping ch1's gain
   down, one step (ch1 -> -6dB) has no matching mirrored command for ch2,
   which stayed at -4dB. Looked like a one-off dropped command on the
   wire rather than a parsing artifact. Worth another look if it recurs
   during real use.
-- **Open question, partly answered (2026-08, raw pcapng).** The
+- **ADAT link mapping remains unconfirmed (2026-08, raw pcapng).** The
   physical-pair-0-ON frame (`ch-link-on-off.pcapng`) and the
   ADAT-pair-0-ON frame (`ADAT-link1-2-7-8.pcapng`) were compared
   byte-for-byte across **all 320 bytes plus the USB metadata** (endpoint
   `0x01`, device address 2, interface, direction): **zero differences.**
-  So `SET_LINK(pair_index, enabled)` is genuinely ambiguous at the wire
-  level -- there is no disambiguating byte or USB field, confirmed. What's
-  still unknown: whether one command links pair N in **both** the physical
-  and ADAT spaces at once (the Launcher just sending gain/mode sync for
-  whichever you're looking at). The two captures couldn't show this
-  because both channels of each pair already had equal gain. To settle it:
-  link a physical pair and an ADAT pair in one session with *different*
-  gains per channel, or test on hardware. Until then, if the CLI ever
-  sends `SET_LINK` it should assume it may affect both spaces.
+  The six `0x0b:0` records are the six physical Preamp pairs, covering the
+  device's 12 physical inputs. ADAT has eight pairs and is not reported by
+  that table. The earlier project mapping treated the Preamp table as ADAT
+  readback and was incorrect. Identical wire frames alone do not establish
+  that an ADAT link was engaged or that one command affects both domains.
 
 ### Talkback (confirmed, 2026-08 -- not yet in the CLI)
 

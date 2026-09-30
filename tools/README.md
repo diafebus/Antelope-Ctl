@@ -38,9 +38,11 @@ right tool.
 - `link_transition_capture.py` reads only the five profile-declared category
   `0x0b` tables unless `--write` is specified.  Its write mode makes one
   requested transition and restores the operator-declared starting state in a
-  `finally` block.  Physical and ADAT links share wire space `0`; their write
-  mode requires an additional acknowledgement and should only be used when
-  both domains have been checked in the Launcher first.
+  `finally` block. The six `0x0b:0` records are Preamp readback for the 12
+  physical preamps, not ADAT readback for ADAT's eight pairs. Captured ADAT UI
+  writes also used `space=0`, but this does not establish ADAT state. The write
+  mode requires an additional acknowledgement; do not use its Preamp table to
+  verify an ADAT link.
 - `hid_probe.py`, `readback_enum.py`, `readback_probe.py`, and `ct_probe.py`
   are protocol-discovery tools. Never use a force/unsafe option for an
   exploratory sweep: an out-of-range outer readback index can BusFault the

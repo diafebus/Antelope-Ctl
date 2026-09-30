@@ -15,11 +15,12 @@ copying a device's category numbers into the browser.
 
 Input link indicators use a profile-declared
 `frame.link_command.readback` mapping when a complete safe table is
-available. Orion's `0x0b:0` contains six shared space-0 flags: a direct
-ADAT pair-5 ON/OFF test changed record 4, but the same write space is used
-for preamps, so these bytes remain diagnostics rather than independent
-Preamp or ADAT button state. Direct ADAT pair-7 and pair-8 ON/OFF tests
-changed none of the five known link tables on a short read. `0x0b:1` returns
+available. Orion's `0x0b:0` contains six Preamp link flags for the device's
+12 physical preamps. ADAT has eight pairs, so this table is not ADAT
+readback. The previous ADAT checks incorrectly compared ADAT actions with
+these six Preamp records; they do not establish ADAT link state. Direct ADAT
+pair-7 and pair-8 ON/OFF tests changed none of the five known link tables on
+a short read. `0x0b:1` returns
 eight bytes, but only record 0 is assigned: it followed a controlled
 S/PDIF OFF/ON transition while ADAT was held fixed. S/PDIF has one pair;
 its button follows that record. `0x0b:2` remains unassigned. ADAT buttons
