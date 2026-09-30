@@ -1819,9 +1819,11 @@ records 32 mono channels and eight slots per channel, documented in
 This is distinct from the 64 outer `0x19` storage records described below;
 their mapping to user-facing channels remains unverified. Insert-position
 capacity does not establish a simultaneous DSP instance budget. The shared
-`profiles/afx_effects.json` catalog is an empty scaffold for effect metadata
-and device-specific controls/commands; see `docs/profile-schema.md`. Neither
-metadata addition changes readback bounds or supplies a write builder.
+`profiles/afx_effects.json` catalog contains reference effect names and
+declared controls from Gazelle's Discrete 4 findings, with model-local
+readback type IDs kept apart from unverified Orion IDs. Commands and control
+encodings remain empty; see `docs/profile-schema.md`. This metadata changes
+neither readback bounds nor write builders.
 
 **Bucket boundary (`SCOPE.md`).** This subsection documents the slot
 assignment frame for **observation** and readback decoding. Assignment or

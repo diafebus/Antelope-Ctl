@@ -21,7 +21,7 @@ used; the device firmware is not touched.
 | **`docs/profile-labeling.md`** | the cross-client labels and feature-manifest contract — how to add a device and keep shared parameter vocabulary consistent |
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
-| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` and the shared `afx_effects.json` catalog scaffold |
+| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` and the shared `afx_effects.json` reference catalog |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
 ### Naming
@@ -72,10 +72,12 @@ stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 AFX preparation separates device capacity from effect definitions. Orion's
 `afx` metadata declares 32 mono channels and eight insert slots per channel,
 as described in [Antelope's public demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
-The shared `profiles/afx_effects.json` catalog is currently empty; its
-documented entry format provides effect descriptions, controls, and
-device-specific command definitions. No AFX loader or writer is enabled
-by this metadata. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
+The shared `profiles/afx_effects.json` catalog contains 80 reference effect
+entries and 729 declared control names from Gazelle's Discrete 4 findings,
+with pinned source provenance. The first three descriptions are drawn from
+public effect pages. Orion type IDs, control ranges/encodings, and all
+load/recall/parameter commands remain unknown. No AFX loader or writer is
+enabled by this metadata. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
 ### Evidence rule for write claims
 

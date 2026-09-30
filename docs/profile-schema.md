@@ -146,7 +146,11 @@ budget. DSP resources, stereo use, and per-effect instance limits are
 separate facts.
 
 `profiles/afx_effects.json` is a shared catalog, separate from device
-profiles and `mic_models.json`. It starts with an empty `effects` array.
+profiles and `mic_models.json`. Its first reference set contains 80 named
+effect types from Gazelle's Discrete 4 read-only measurements dated
+2026-09-13, with 729 declaration-derived control names. The source profile
+is pinned in `provenance`; unnamed device types are omitted. These entries
+are not an Orion effect list or a list of installed/licensed effects.
 `catalog_schema` identifies the catalog format and version. Each future
 entry has a stable application ID, an original description, controls, and
 device-specific implementations. The following is an entry template,
@@ -195,7 +199,8 @@ ID from a handle observed in a previous session. Names and descriptive
 controls may be shared; wire IDs and encodings belong to the implementation
 for a particular profile. Do not assume another device uses the same map.
 
-A control's `kind` is `continuous`, `integer`, `boolean`, or `enum`.
+A control's `kind` is `continuous`, `integer`, `boolean`, or `enum`, or
+`null` while its semantics remain unknown.
 `range` is a display-value `[min, max]`, `step` and `default` use those same
 units, and `enum` maps stable option keys to display labels. Use `null` for
 unknown values. `control_encodings` is keyed by control ID and records the
@@ -212,6 +217,17 @@ guards remain in force, and a future writer needs an explicit verified
 contract. The catalog contains neither installed-effect state nor account
 entitlements; licensing/activation traffic is outside its purpose. Gazelle
 Reverb retains its separate existing command/readback contract.
+
+The seed entries use `status: reference-only`. The Discrete 4 implementation
+records a `readback-observed` type ID, with `type_id_write_status:
+unconfirmed`; the Orion implementation leaves its type ID and evidence
+empty. All three command definitions are `null`, and encodings are empty
+for both models. A declared control name carries neither an inferred range
+nor an inferred byte width/offset. `source_name` preserves Gazelle's effect
+key; `name` uses a public product name only when one has been matched.
+Descriptions and categories otherwise remain `null`. A `#plugins...` or
+`#params...` suffix in an evidence URL is a JSON key path within the linked
+source document, not an HTML anchor.
 
 ---
 
