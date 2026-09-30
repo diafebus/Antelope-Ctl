@@ -252,11 +252,17 @@ complete device readback repopulates the buttons. CLI link commands use the
 same corrected selectors but retain their separately labeled local cache
 for gain mirroring; `mark-adat-link` only changes that CLI cache.
 
+The user confirmed on 2026-09-30 that corrected WebUI ADAT and S/PDIF link
+writes and readbacks work, and the intended links survive controller
+restarts. These input-link mappings are confirmed.
+
 Earlier ADAT-button captures sent space 0, which targets Preamp flags.
 Earlier S/PDIF-button captures sent space 1, which targets ADAT. These UI
 commands explained both the Preamp changes and the misleading historical
-S/PDIF attribution of ADAT byte 0. ADAT pairs 7/8 failed the old tests because
-they were sent to the six-pair Preamp space. Gain coupling remains software
+S/PDIF attribution of ADAT byte 0, as well as the apparent failure to retain
+the intended digital-input links across Launcher restarts. ADAT pairs 7/8
+failed the old tests because they were sent to the six-pair Preamp space.
+Gain coupling remains software
 behavior: controllers send a separate gain command to each linked channel.
 These link-flag trials did not test firmware gain propagation or retention
 through a physical device power cycle.

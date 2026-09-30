@@ -17,9 +17,9 @@ Per-input-channel controls (physical inputs 1-12, addressed 0-11):
                                                                             # `status` can show it --
                                                                             # see cmd_set_link's docstring;
                                                                             # category 0x0b is available for
-                                                                            # structured link readback, but
-                                                                            # on/off transition correlation is
-                                                                            # still capture-pending)
+                                                                            # confirmed Orion input-link
+                                                                            # readback; this status view
+                                                                            # displays the CLI cache)
 
 ADAT input controls (16 ADAT channels, addressed 0-15 -- a separate space
 from the physical inputs; gain + link only, no mode/phantom/phase):
@@ -232,7 +232,7 @@ def _link_bracket(profile, link_state, ch):
     sent a set-link command for its pair, e.g.:
 
         0  mic   0dB  ...  -.
-        1  mic   0dB  ...  -'   (linked, pair 0 -- CLI-tracked, not device-confirmed)
+        1  mic   0dB  ...  -'   (linked, pair 0 -- CLI cache)
 
     Returns ('', '') if the pair has never been touched by this CLI (link_state
     has no entry) or is cached as off. This is NOT a device readback -- see the
@@ -249,7 +249,7 @@ def _link_bracket(profile, link_state, ch):
     if ch == lo:
         return ' -.', ''
     if ch == hi:
-        return " -'", f'  (linked, pair {pair} -- CLI-tracked, not device-confirmed)'
+        return " -'", f'  (linked, pair {pair} -- CLI cache)'
     return '', ''
 
 
@@ -289,14 +289,12 @@ def cmd_status(args, profile):
         print(f'note: only channels {confirmed} are explicitly verified for this device.')
     if link_state:
         print("note: the '-.'/\"-'\" markers above reflect the last `set-link` command THIS CLI has "
-              "sent (cached locally). The profile maps readback category 0x0b link tables, "
-              "but their on/off transitions are not capture-confirmed yet (see "
-              "params.channel_link.notes), so these markers remain the control fallback and "
-              "can go stale if link state changes outside this CLI.")
+              "sent (cached locally). This status view does not query link flags; "
+              "its cache can go stale if link state changes outside this CLI. "
+              "See the active profile's link readback mapping for device flags.")
     else:
-        print("note: channel-link state is not transition-confirmed yet -- readback category "
-              "0x0b is available with `readback 0x0b <index>`, but this status view uses the "
-              "local cache until a controlled capture correlates its bytes.")
+        print("note: this status view uses the local link cache, which has no entries. "
+              "See the active profile's link readback mapping for device flags.")
 
 
 def _partner_channel(profile, ch):
@@ -433,21 +431,14 @@ def cmd_set_invert(args, profile):
 
 # ---- channel-link: CLI-side state tracking (NOT a device readback) ----
 #
-# The protocol has no confirmed "link enabled" bit anywhere in the 0x73 state
-# report (see profile params.channel_link.notes -- re-verified independently
-# against the raw ch-link-gain-ph-inv-test.tsv capture: the state report is
-# byte-for-byte identical immediately before/after all 4 link/unlink commands
-# in that session). The extracted Orion schema does define candidate link
-# tables at readback category 0x0b, but their transition behavior has not been
-# captured yet. Until then, link state is inferred from live side effects
-# (gain/phantom/phase mirroring) or from remembering what this CLI sent.
+# Orion's 0x73 state report has no dedicated input-link bit. The confirmed
+# input flags instead come from category 0x0b: index 0 = Preamp, index 1 =
+# ADAT, index 2 = S/PDIF. The WebUI uses these device readbacks.
 #
-# What follows is the latter: a small on-disk cache of "what did *this CLI*
-# last tell the device", used only to paint an indicator in `status`. It is
-# NOT a substitute for transition-confirmed device readback, can drift from
-# truth (the official Launcher, or another instance of this CLI, can change
-# link state without this cache knowing), and is labeled as such everywhere
-# it's shown.
+# This CLI retains a small on-disk cache of "what did *this CLI* last tell
+# the device" for linked-control mirroring and status markers. These status
+# views do not query device link flags. The cache can drift if another
+# controller changes links and is labeled separately from device state.
 
 def _link_state_path(profile, kind=''):
     """Where to cache CLI-issued link state for this device (by vid/pid).
@@ -484,10 +475,8 @@ def _load_link_state(profile, kind=''):
 
 def _is_pair_linked(profile, link_state, ch):
     """True if THIS CLI's cache (see _load_link_state) thinks ch's pair is
-    linked. Not yet a transition-confirmed device fact -- the profile's
-    category-0x0b table is still a candidate (see the big comment above this
-    section) -- just the last `set-link`/`mark-link`
-    this CLI has issued for that pair. Works for both physical and ADAT
+    linked, based on the last `set-link`/`mark-link` this CLI issued for that
+    pair. This helper does not query device flags. Works for both physical and ADAT
     channels (pair_index = ch // 2 in both spaces); pass the matching
     link_state from _load_link_state(profile, kind)."""
     return bool(link_state.get(str(ch // 2)))
@@ -693,7 +682,7 @@ def _adat_link_bracket(profile, link_state, ch):
     if ch == lo:
         return ' -.', ''
     if ch == hi:
-        return " -'", f'  (linked, ADAT pair {pair} -- CLI-tracked, not device-confirmed)'
+        return " -'", f'  (linked, ADAT pair {pair} -- CLI cache)'
     return '', ''
 
 
@@ -729,9 +718,9 @@ def cmd_adat_status(args, profile):
         print(f"{ch:>4}  {g:>4}dB{glyph}{tail}")
     if link_state:
         print("note: the '-.'/\"-'\" markers reflect the last `set-adat-link` command THIS CLI has "
-              "sent (cached locally). The profile maps ADAT link bytes in readback category "
-              "0x0b, but their transitions are not capture-confirmed yet, so the cache remains "
-              "the safe fallback and can go stale outside this CLI.")
+              "sent (cached locally). This status view does not query link flags; "
+              "its cache can go stale outside this CLI. See the active profile's "
+              "link readback mapping for device flags.")
 
 
 def cmd_set_adat_gain(args, profile):
@@ -848,7 +837,7 @@ def _spdif_link_bracket(profile, link_state, ch):
     if ch == 0:
         return ' -.', ''
     if ch == 1:
-        return " -'", '  (linked -- CLI-tracked, not device-confirmed)'
+        return " -'", '  (linked -- CLI cache)'
     return '', ''
 
 
@@ -880,7 +869,7 @@ def cmd_spdif_status(args, profile):
         print(f"{ch} ({name})  {g:>4}dB{glyph}{tail}")
     if link_state:
         print("note: link marker reflects the last `set-spdif-link` from THIS CLI (cached) -- "
-              "no device-side readback.")
+              "this status view does not query device link flags.")
 
 
 def cmd_set_spdif_gain(args, profile):

@@ -1002,6 +1002,13 @@ panel. But:
   ADAT and S/PDIF. The earlier S/PDIF-at-index-1 label came from the
   Launcher's incorrect space-1 write. Correct input write spaces are 0/1/2.
 
+The user confirmed on 2026-09-30 that the corrected WebUI writes and reads
+ADAT and S/PDIF link flags correctly, with the intended links retained
+across controller restarts. The vendor Launcher's incorrect write selectors
+caused the earlier wrong-bank readbacks and restart symptoms. Input-link
+addressing and readback are fixed; this confirmation covers controller
+restarts, without extending the claim to a physical device power cycle.
+
 Any non-Launcher controller must replicate the two-commands-per-change
 behaviour itself if it wants Launcher-equivalent results.
 

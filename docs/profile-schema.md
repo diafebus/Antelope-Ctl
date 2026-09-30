@@ -331,8 +331,9 @@ channel counts. Only mapped pairs replace browser-cached link icons; an
 absent, incomplete, or provisional mapping leaves the cache alone. On Orion,
 `0x0b:0` maps six Preamp pairs, `0x0b:1` maps all eight ADAT pairs, and
 `0x0b:2` maps the S/PDIF L/R pair. Direct device transitions and Windows VM
-checks confirmed these domains on 2026-09-30. The primary `pair_counts`
-contains only Preamp; `additional_tables` uses transition-confirmed
+checks confirmed these domains on 2026-09-30; the user also verified corrected
+WebUI writes/readbacks and link retention across controller restarts.
+The primary `pair_counts` contains only Preamp; `additional_tables` uses transition-confirmed
 `pair_mappings` for ADAT and S/PDIF. `cache_revision` requests a one-time
 browser cache reset after an address correction, followed by device readback.
 
