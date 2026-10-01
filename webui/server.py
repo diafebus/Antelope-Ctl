@@ -21,12 +21,9 @@ Two kinds of state:
              snapshot carries a monotonic `rb_ver`; the browser refetches the
              slow APIs when it bumps.
 
-⚠ HARDWARE RULE (see ../antelope-ctl/CLAUDE.md "STANDING HARDWARE RULE"):
-never query a readback index past a category's record count -- it BusFaults
-the Orion (physical power cycle). Every query here goes through
-protocol.build_readback_query. Orion uses its enumerated category counts;
-profiles without those counts can only use explicitly capture-confirmed
-feature layouts, such as the Zen Go mixer records.
+Readback queries use protocol.build_readback_query and the active profile's
+authorized bounds. See PROTOCOL.md §4a for the firmware behavior and AGENTS.md
+for device-transaction instructions.
 
 Run:  pip install -r requirements.txt  &&  python3 server.py
 Then: http://127.0.0.1:8714

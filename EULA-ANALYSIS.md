@@ -157,10 +157,6 @@ Those questions are outside this source summary.
       particular AFX Real-Time license/device, if available to the owner.
 - [ ] Record which public terms a contributor accepted when using Launcher
       for a capture. Do not assume the Cosmos EULA applies to that capture.
-- [ ] Keep protocol work limited to device control on hardware the
-      contributor owns and to effects already available under a license
-      assigned to that device; do not inspect plugin binaries or capture
-      license/activation traffic.
 
 These questions record what this memo has not established. They do not
 create a precondition for bucket D protocol work; see `SCOPE.md` §4. The

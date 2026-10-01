@@ -16,7 +16,7 @@ used; the device firmware is not touched.
 | file | what's in it |
 |---|---|
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
-| **`AGENTS.md`** | persistent coding-agent instructions: Orion scope, profile/evidence conventions, safe hardware access and session handoffs |
+| **`AGENTS.md`** | sole project instruction entry point; local handoff and open tasks have separate roles |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
 | **`docs/profile-labeling.md`** | the cross-client labels and feature-manifest contract — how to add a device and keep shared parameter vocabulary consistent |
