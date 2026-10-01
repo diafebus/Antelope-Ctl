@@ -458,7 +458,7 @@ async function checkEffectPreviews() {
   state.links[0] = true;
   vm.runInContext('AFX_TEST_STATE.links[0] = true', context);
   await new Promise(resolve => setTimeout(resolve, 100));
-  assert.equal(writes.length, beforeStale, 'Link state is checked again before sending');
+  assert.equal(writes.length, beforeStale + 1, 'Linking must not discard knob edits; backend resolves partners from fresh readback');
   state.links[0] = false;
   vm.runInContext('AFX_TEST_STATE.links[0] = false', context);
   // A failed live send pauses this instance and is never retried.
@@ -524,6 +524,18 @@ async function checkEffectPreviews() {
   vm.runInContext('afxTestDeviceState({online:true,connection_generation:3})', context);
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(deviceReads, beforeReconnectReads + 1, 'Steady online state does not poll effect parameters');
+  // A linked empty side must not hide the real inserts in its partner rack.
+  state.links[0] = true;
+  state.channels[0] = Array.from({length:8},()=>({type:0,instance:0}));
+  state.channels[1] = [{type:73,instance:1},...Array.from({length:7},()=>({type:0,instance:0}))];
+  state.parameter_states['1'] = {values:{...baseline,level:88},bypassed:false,source:'readback'};
+  vm.runInContext('AFX_TEST_DRAFTS.set(1, {values:{level:5},parameterAvailable:true})', context);
+  vm.runInContext('selectAfxChannel(0)', context);
+  await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
+  assert.equal(live.nodes['afx-channel'].value, '1', 'Show the populated actual side of an otherwise empty linked rack');
+  assert.match(live.nodes['afx-rack'].innerHTML, /Memory Cat Brigade/);
+  assert.equal(vm.runInContext('afxTestDraft(1,0).values.level', context), 88,
+    'Fresh partner readbacks replace stale drafts before showing the populated side');
   live.close();
   console.log('AFX checks passed (effect picker, pair links, live coalescing, failure pause, reconnect).');
 }

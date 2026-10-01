@@ -1951,7 +1951,8 @@ are required for linked loading/replacement. Conflicting target/source effect
 types or occupied load targets abort before either write; other slots and
 unknown effects are preserved. Any write/verification failure latches further
 writes without automatic repair. Link/unlink itself still sends only its flag.
-Stereo parameter mirroring is a separate unsupported path.
+Memory Cat parameter mirroring is an explicit bounded operator candidate
+described below; other-effect parameter writers remain unsupported.
 
 **Bypass observation.** The 3/4 capture's Bypass All actions emit 16 reports
 using opcode `0x14`, selector `0x98`, **state at 17, type at 18, instance at
@@ -1995,7 +1996,7 @@ safe link tables. Pair N changed only `0x0b:4` byte N, 0=OFF and 1=ON; each
 trial restored all five tables exactly. `link_pair_records` records this
 mapping for bytes 0–15, leaving bytes 16–31 unmapped. The WebUI uses device
 readback for pair buttons and channel partner labels. Linked add/replace/remove/reorder is supported through paired whole-chain
-writes; only parameter edits still require that selected pair OFF. Other linked
+writes. Memory Cat parameter edits are enabled while linked, as described below. Other linked
 pairs do not block it. A link write
 sends only the flag and checks a fresh reply, without modifying either chain.
 
@@ -2046,7 +2047,7 @@ through a 60 ms coalescing queue, with one request in
 flight. Live acknowledgements do not repaint the rack during a drag. Errors
 pause live sending until an explicit Retry live controls click, without
 automatic retries; pending edits are discarded when their channel/session/draft
-no longer matches or their pair becomes linked. Drafts follow instance identities
+no longer matches. Link changes are resolved from fresh device flags at send time. Drafts follow instance identities
 through reordering. Opening, selection, load and Refresh read the selected
 chain, link table and captured Memory Cat instance states. Reconnect invalidates
 old caches/drafts and triggers a fresh selected-rack query from the main state
@@ -2055,8 +2056,25 @@ Parameter writes for captured instances0–2 verify the complete block afterward
 a mismatch disables further AFX writes. Instance-query timeouts stop more such
 queries until reconnect. Neither loading nor refreshing writes parameter or
 bypass defaults.
-Live parameter edits do not generate stereo parameter mirroring. Linked slot
-edits use the separately verified paired-chain path described above.
+**Linked Memory Cat parameter controls.** The owner reported that music kept
+playing but knobs had no audible effect while linked. Both browser and API
+were rejecting those sends. The bounded fix reads the selected chain and
+fresh link flags, locates the selected instance's slot and reads the linked
+partner. A same-slot type73 partner receives the complete same block, right
+then left, with separate instance addressing. An absent or different effect
+receives no write; a knob turn does not load a partner. Each captured read
+instance0–2 is queried and compared after writing; instances3–7 remain
+last-sent only without expanding query bounds. Responses list `updated_instances`
+and per-instance verification; aggregate verification requires all targets.
+Processing flags are read, never forced. This reuses the captured Memory Cat
+frame and the other captured effects' host-mirroring pattern; a Memory Cat-
+specific vendor stereo parameter capture is still pending.
+
+Refresh reads both linked chains and their captured Memory Cat states. If the
+selected rack is empty and its partner populated, the popup selects the actual
+populated channel. This avoids displaying an empty rack while hiding the
+linked partner's controls. Link toggles themselves still preserve both racks.
+
 
 **Tagged effect-instance state readback and Launcher-restart retention.**
 The second capture,

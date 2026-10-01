@@ -16,11 +16,13 @@ used; the device firmware is not touched.
 | file | what's in it |
 |---|---|
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
+| **`AGENTS.md`** | persistent coding-agent instructions: Orion scope, profile/evidence conventions, safe hardware access and session handoffs |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
 | **`docs/profile-labeling.md`** | the cross-client labels and feature-manifest contract — how to add a device and keep shared parameter vocabulary consistent |
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
+| **`docs/orion-afx-workflow.md`** | current AFX evidence, Linux readback recording, ordered effect implementation and minimal vendor captures |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` and the shared `afx_effects.json` reference catalog |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
@@ -50,9 +52,10 @@ display those profile-declared records. There is **no built-in
 per-input-channel EQ** on this device: input EQ uses an AFX Real-Time
 effect; AFX EQ parameter controls have no verified implementation (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited to 2.0 and
 2.1. The global format wire path was directly round-trip tested through 9.1.6
-with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
-bounds for `0x0c`, and
-the `0x74` channel-group names. Category `0x0b` index 0 contains six link
+with `tools/surround_format_selftest.py`. The meaning of classic category `0x07`,
+the outer query bounds for `0x0c`, and some `0x74` channel-group names remain
+unresolved. Tagged AFX instance-state queries use a separate namespace.
+Category `0x0b` index 0 contains six link
 flags for the device's 12 physical preamps, paired as 1/2 through 11/12.
 ADAT uses the eight records at `0x0b:1`; S/PDIF uses the single record at
 `0x0b:2`. Direct device transitions and subsequent Windows VM Launcher
@@ -77,8 +80,9 @@ entries and 729 declared control names from Gazelle's Discrete 4 findings,
 with pinned source provenance. The first three descriptions are drawn from
 public effect pages. The Orion Memory Cat Brigade implementation records
 six observed 0–100 knob fields and two binary switch fields from an
-owner-labelled capture. Switch polarity, intermediate scaling and parameter
-readback remain unresolved. The typed operator path separately records
+owner-labelled capture. Switch labels are owner-confirmed: raw0=550ms/Chorus,
+raw1=1100ms/Tremolo. Parameter/processing-state readbacks are captured for
+instances0–2; intermediate physical scaling remains unresolved. The typed operator path separately records
 verified chain/link round trips and owner-reported parameter operation. Owner-labelled load captures establish
 Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
 Master De-Esser; catalog commands stay null. This metadata does not enable
@@ -118,17 +122,22 @@ the selection: AFX 1 or 2 shows 1–2, AFX 3 or 4 shows 3–4, through 31–32.
 Its glow and accessible label identify the current link state. Linked
 channel-menu entries show their partner. Link indicators use device readback: all 16 space-4 flags were
 independently verified against `0x0b:4` records 0–15 on 2026-10-01. Records
-16–31 remain unmapped. Opening or refreshing the rack reads its selected
-chain and link flags directly.
+16–31 remain unmapped. Opening or refreshing reads link flags and selected
+chain/settings, including the partner when linked.
 The button sends only the flag, preserving both chains. Stereo parameter
-sharing is not implemented; unlink the selected pair before editing parameters.
+sharing is enabled for Memory Cat's bounded operator pilot: edits update the existing selected
+instance and a same-slot Memory Cat partner when present, using fresh chain
+readbacks. Audible confirmation and a Memory Cat-specific vendor stereo
+capture remain pending. Other-effect parameter controls remain unavailable.
 Adding, replacing, removing and reordering effects works while linked: the
 controller reads both adjacent chains, preflights both edits, allocates distinct
 instances and writes left then right, matching the captures. Both resulting
 chains must verify. Loads require two available instances and empty target slots
 on both sides; removal/replacement/reordering requires matching effect types at
 the edited slot. Conflicting chains remain unchanged for independent editing.
-Links on other pairs do not block that channel.
+If the selected linked rack is empty and the partner has effects, the popup
+selects that populated channel so its actual controls remain visible. Links
+on other pairs do not block that channel.
 
 Memory Cat instances0–2 now initialize from real device readback on opening,
 channel selection, loading and reconnect. The JSON profiles describe a separate
@@ -161,6 +170,9 @@ establish absence of a separate parameter-readback protocol; the new restart
 capture identifies it. That older restoration trial remains send-only evidence.
 See [PROTOCOL.md §12a](PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls)
 for the effect IDs, complete device-test findings and remaining evidence limits.
+The [Orion AFX workflow](docs/orion-afx-workflow.md) sets the next implementation
+order and documents Linux readback recording, reuse of existing captures and
+the minimal vendor-session fallback.
 
 **Local preview** explicitly switches to drafts; **Connect device rack**
 returns to device slots. Opening the rack or changing channels sends no

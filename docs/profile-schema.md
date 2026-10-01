@@ -231,7 +231,10 @@ confirmation; trailing records 16–31 remain unmapped.
 left/right writes with distinct instances, two remaining resources for load,
 fresh preflight and both post-write readbacks. Linked slot edits are allowed;
 conflicting slots preserve both chains for independent editing. This does not
-enable shared parameters or change the bare link-toggle contract.
+change the bare link-toggle contract. Memory Cat sharing uses its separate
+`afx_memorycat_test.linked_parameters` candidate: same-slot type73 partners,
+captured instance frames, fresh flags/chains, right/left writes and captured
+post-write reads. Missing/different partners are preserved.
 
 `runtime_contracts.afx_memorycat_test` additionally governs
 type 73 parameters on a selected channel: complete blocks from the first
@@ -253,7 +256,7 @@ Allocation requires all 64 safely bounded `0x19` storage records and a fresh
 and slot caches are invalidated on reconnect. The API labels confirmed parameter
 readbacks separately from last-sent fallback blocks. Link flags are device
 readbacks. No other device
-or stereo parameter writer is enabled. The catalog contains neither
+or other-effect stereo parameter writer is enabled. The catalog contains neither
 installed-effect state nor account entitlements; licensing/activation traffic is outside its purpose. Gazelle
 Reverb retains its separate existing command/readback contract.
 

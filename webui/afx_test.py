@@ -255,6 +255,12 @@ class MemoryCatTest:
             still_current()
             chain = self._read_chain(transport, channel)
             self._read_chain_parameters(transport, chain, still_current)
+            with self.device._lock:
+                pairs = self._link_states(self.device.structured.get((0x0b, 4)))
+            if pairs and pairs[channel // 2] is True:
+                still_current()
+                partner = self._read_chain(transport, channel ^ 1)
+                self._read_chain_parameters(transport, partner, still_current)
             return self.state()
         return self._execute(work, allow_linked=True, channel=channel, read_only=True)
 
@@ -328,28 +334,54 @@ class MemoryCatTest:
     def change_parameters(self, instance, values, *, channel=0):
         afx.test_channel(self.device.profile, channel)
         values = afx.validate_parameters(self.device.profile, values)
-        packet = afx.build_parameter_test(self.device.profile, instance, values)
+        afx.build_parameter_test(self.device.profile, instance, values)
+
         def work(transport, still_current):
             chain = self._read_chain(transport, channel)
             if (73, instance) not in chain:
                 raise RuntimeError(f'That Memory Cat instance is no longer on AFX {channel + 1}')
-            allowed = afx.parameter_readback_contract(self.device.profile)['effects']['memory_brigade']['query_instance_indices']
-            if instance in allowed and self.parameter_query_failed_transport is transport:
-                raise RuntimeError('Reconnect before changing this instance; effect-state query failed')
-            still_current()
-            transport.write(packet)
+            slot = chain.index((73, instance))
             with self.device._lock:
-                self.sent_parameters[instance] = (transport, dict(values))
-            verified = False
-            state = None
-            if instance in allowed:
+                pairs = self._link_states(self.device.structured.get((0x0b, 4)))
+            if pairs is None or pairs[channel // 2] is None:
+                raise RuntimeError('Fresh AFX link state is unavailable; nothing was changed')
+            targets = {channel: instance}
+            if pairs[channel // 2]:
+                spec = afx.test_contract(self.device.profile).get('linked_parameters', {})
+                if not spec.get('enabled') or spec.get('type_id') != 73:
+                    raise RuntimeError('Linked Memory Cat controls are unavailable for this profile')
+                partner_channel = channel ^ 1
+                partner_chain = self._read_chain(transport, partner_channel)
+                if partner_chain[slot][0] == 73:
+                    targets[partner_channel] = partner_chain[slot][1]
+            # Captured linked parameter families send right then left. Retain
+            # the measured Memory Cat frame/ranges; never load a missing partner.
+            instances = list(dict.fromkeys(targets[index] for index in sorted(targets, reverse=True)))
+            packets = {index: afx.build_parameter_test(self.device.profile, index, values)
+                       for index in instances}
+            allowed = afx.parameter_readback_contract(self.device.profile)['effects']['memory_brigade']['query_instance_indices']
+            if any(index in allowed for index in instances) and self.parameter_query_failed_transport is transport:
+                raise RuntimeError('Reconnect before changing this instance; effect-state query failed')
+            for index in instances:
                 still_current()
-                state = self._read_parameters(transport, instance)
-                if state['values'] != values:
-                    self.failed_verification = True
-                    raise RuntimeError('Parameter readback did not match; further AFX writes disabled')
-                verified = True
+                transport.write(packets[index])
+                with self.device._lock:
+                    self.sent_parameters[index] = (transport, dict(values))
+            updates = []
+            for index in instances:
+                state = None
+                if index in allowed:
+                    still_current()
+                    state = self._read_parameters(transport, index)
+                    if state['values'] != values:
+                        self.failed_verification = True
+                        raise RuntimeError('Parameter readback did not match; further AFX writes disabled')
+                updates.append({'instance': index, 'values': dict(values), 'verified': state is not None,
+                                'bypassed': state['bypassed'] if state else None})
+            selected = next(update for update in updates if update['instance'] == instance)
+            verified = all(update['verified'] for update in updates)
             return {'sent': True, 'verified': verified, 'instance': instance,
                     'values': values, 'parameter_readback': verified,
-                    'bypassed': state['bypassed'] if state else None}
-        return self._execute(work, channel=channel)
+                    'bypassed': selected['bypassed'], 'mirrored': len(instances) > 1,
+                    'updated_instances': updates}
+        return self._execute(work, allow_linked=True, channel=channel)

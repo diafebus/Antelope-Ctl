@@ -21,6 +21,7 @@ PYTHON_MODULES = (
     "tools.test_orion_profile_audit",
     "tools.test_afx_catalog",
     "tools.test_afx_test",
+    "tools.test_afx_state_capture",
     "tools.test_scan_afx_capture",
     "tools.test_link_transition_capture",
     "tools.test_surround",

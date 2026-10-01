@@ -168,6 +168,49 @@ class AfxTestTests(unittest.TestCase):
         self.assertTrue(result['bypassed'])
         self.assertFalse(transport.enabled[0])
 
+    def test_linked_parameters_mirror_matching_slot_and_verify_both(self):
+        transport = FakeTransport([(73,0)] + [(0,0)]*7, linked=True)
+        transport.chains[1] = [(73,1)] + [(0,0)]*7
+        transport.enabled[0] = False
+        service = MemoryCatTest(FakeDevice(self.profile, transport))
+        values = {**transport.parameters[0], 'level': 39, 'size': 1}
+        result = service.change_parameters(0, values)
+        self.assertEqual([packet[19] for packet in transport.writes], [1,0])
+        self.assertTrue(result['mirrored'])
+        self.assertTrue(result['verified'])
+        self.assertTrue(result['bypassed'])
+        self.assertFalse(transport.enabled[0])
+        self.assertTrue(transport.enabled[1])
+        self.assertEqual(service.state()['parameters']['1'], values)
+        self.assertEqual(transport.parameters[0], transport.parameters[1])
+
+    def test_linked_parameters_allow_populated_partner_without_loading_an_effect(self):
+        transport = FakeTransport([(0,0)]*8, linked=True)
+        transport.chains[1] = [(73,1)] + [(0,0)]*7
+        service = MemoryCatTest(FakeDevice(self.profile, transport))
+        state = service.refresh(0)
+        self.assertIn('1', state['parameter_states'])
+        values = {**transport.parameters[1], 'feedback': 26}
+        result = service.change_parameters(1, values, channel=1)
+        self.assertFalse(result['mirrored'])
+        self.assertTrue(result['verified'])
+        self.assertEqual([packet[19] for packet in transport.writes], [1])
+        self.assertEqual(transport.chains[0], [(0,0)]*8)
+        transport.chains[0][0] = (27,0)
+        service.change_parameters(1, {**values, 'feedback':27}, channel=1)
+        self.assertEqual(transport.chains[0][0], (27,0))
+        self.assertEqual([packet[19] for packet in transport.writes], [1,1])
+
+    def test_linked_parameters_do_not_expand_uncaptured_read_indices(self):
+        transport = FakeTransport([(73,2)] + [(0,0)]*7, linked=True)
+        transport.chains[1] = [(73,3)] + [(0,0)]*7
+        service = MemoryCatTest(FakeDevice(self.profile, transport))
+        result = service.change_parameters(2, transport.parameters[2])
+        self.assertTrue(result['mirrored'])
+        self.assertFalse(result['verified'])
+        self.assertEqual([query[16] for query in transport.queries if query[4] == 0x11], [2])
+        self.assertEqual([update['verified'] for update in result['updated_instances']], [False,True])
+
     def test_generic_guards_and_other_devices_remain_blocked(self):
         for opcode in (0x1c, 0x20, 0x23, 0x7c):
             with self.assertRaises(protocol.ConstraintError):
@@ -223,8 +266,8 @@ class AfxTestTests(unittest.TestCase):
         self.assertEqual(len(transport.writes), 10)
         self.assertTrue(all(packet[4] == 0x23 for packet in transport.writes))
         self.assertTrue(service.state()['links'][0])
-        # Parameter sharing remains separately guarded.
-        with self.assertRaisesRegex(RuntimeError, 'stereo links off'):
+        # An instance removed from the rack cannot receive parameters.
+        with self.assertRaisesRegex(RuntimeError, 'no longer'):
             service.change_parameters(0, transport.parameters[0])
 
     def test_linked_chain_preflight_preserves_both_on_capacity_or_slot_conflict(self):
@@ -309,7 +352,7 @@ class AfxTestTests(unittest.TestCase):
             service.set_link(pair, True)
             self.assertEqual(transport.writes[-1][16:20], bytes([0xa2, 4, pair, 1]))
             self.assertTrue(service.state()['links'][pair])
-        with self.assertRaisesRegex(RuntimeError, 'stereo links off'):
+        with self.assertRaisesRegex(RuntimeError, 'no longer'):
             service.change_parameters(0, transport.parameters[0])
         for bad_pair, enabled in ((16, True), (-1, False), (True, True), (0, 1)):
             with self.assertRaises(ValueError):
@@ -370,8 +413,9 @@ class AfxTestTests(unittest.TestCase):
         service.change_chain('load', 0, channel=30)
         self.assertEqual(transport.chains[30][0], (73,1))
         self.assertEqual(transport.chains[31][0], (73,2))
-        with self.assertRaisesRegex(RuntimeError, 'stereo links off'):
-            service.change_parameters(1, transport.parameters[1], channel=30)
+        result = service.change_parameters(1, transport.parameters[1], channel=30)
+        self.assertTrue(result['mirrored'])
+        self.assertTrue(result['verified'])
         # External change must supersede the session's last command.
         transport.link_flags[15] = 0
         service._read_links(transport)

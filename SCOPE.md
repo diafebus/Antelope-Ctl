@@ -141,7 +141,9 @@ and post-write verification remain mandatory. The owner subsequently requested
 linked add/remove/reorder: the captured paired-chain path writes both adjacent
 channels, with distinct measured instances and both readbacks verified.
 Preflight must preserve unknown effects and reject conflicting slots before
-any write; shared parameter editing remains guarded. Other loading paths remain
+any write. At the owner's request, linked Memory Cat parameter edits are a
+bounded operator candidate using its captured instance frame and fresh
+same-slot partner readbacks; other-effect parameter writers remain guarded. Other loading paths remain
 excluded. The owner also authorized bounded, reversible hardware tests to
 resolve the required protocol mappings; this does not authorize unsafe
 readback indices or licensing/activation traffic.
@@ -160,7 +162,7 @@ Subsequent edits are throttled/coalesced and verified against fresh replies.
 Failed sends require explicit retry; query timeouts stop instance reads until
 reconnect. These captures prove Launcher-restart retention, not power-cycle
 retention or support on another model. No automatic restoration is claimed.
-Stereo parameter sharing, other effects' parameter writes, unmeasured load
+Other effects' stereo/parameter writes, unmeasured load
 types, and other devices remain unsupported by this pilot. No licensing or
 activation traffic is handled.
 

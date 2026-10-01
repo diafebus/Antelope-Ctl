@@ -40,7 +40,7 @@ function afxTestChannelChanged(channel) {
   if (afxTestActive(channel)) {
     AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
       afxTestLinked(channel)
-        ? 'Linked rack: slot edits apply to both channels. Unlink to edit parameters.'
+        ? 'Linked rack: slot edits apply to both channels; Memory Cat controls follow matching partner effects.'
         : 'Select an effect in a slot. Memory Cat knobs and switches send live.';
   }
 }
@@ -118,8 +118,11 @@ async function afxTestRequest(path, body) {
       AFX_TEST_SESSION = state.session;
     }
     if (body === undefined && path === '/api/afx/memorycat-test') {
-      for (const record of state.channels?.[String(AFX_CHANNEL)] || [])
-        if (record.type === 73) AFX_TEST_DRAFTS.delete(record.instance);
+      const refreshed = state.links?.[Math.floor(AFX_CHANNEL / 2)] === true
+        ? [AFX_CHANNEL, AFX_CHANNEL ^ 1] : [AFX_CHANNEL];
+      for (const channel of refreshed)
+        for (const record of state.channels?.[String(channel)] || [])
+          if (record.type === 73) AFX_TEST_DRAFTS.delete(record.instance);
     }
     if (body && path.endsWith('/chain') && body.operation !== 'move') {
       const channel = String(body.channel ?? 0);
@@ -131,6 +134,13 @@ async function afxTestRequest(path, body) {
       }
     }
     AFX_TEST_STATE = state;
+    // A linked pair may have inserts on only one side. Show that actual rack
+    // rather than an empty partner; parameter requests keep its real channel.
+    const selected = state.channels?.[String(AFX_CHANNEL)];
+    const partner = state.channels?.[String(AFX_CHANNEL ^ 1)];
+    if (state.links?.[Math.floor(AFX_CHANNEL / 2)] === true
+        && selected?.every(row => row.type === 0) && partner?.some(row => row.type > 0))
+      AFX_CHANNEL ^= 1;
     if (Array.isArray(state.effects)) AFX_TEST_CHOICES = state.effects;
     if (!state.available) throw new Error('The Memory Cat pilot is unavailable for this profile.');
     selectAfxChannel(AFX_CHANNEL);
@@ -139,7 +149,7 @@ async function afxTestRequest(path, body) {
       : body && path.endsWith('/parameters')
       ? result.verified ? 'Settings verified by device readback.' : 'Settings sent; parameter readback unavailable.'
       : afxTestLinked(AFX_CHANNEL)
-      ? 'Linked rack: slot edits apply to both channels. Unlink to edit parameters.'
+      ? 'Linked rack: slot edits apply to both channels; Memory Cat controls follow matching partner effects.'
       : 'Select an effect in a slot. Memory Cat controls send live as you adjust them.';
   } catch (error) {
     if (body && AFX_WINDOW === popup && !popup.closed && AFX_TEST_DEVICE_VIEW) {

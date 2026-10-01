@@ -98,3 +98,22 @@ AFX regressions also cover linked left/right chain loads, replacement, removal
 and reorder, distinct allocation, preflight conflicts/resource exhaustion,
 and partner verification failure without automatic repair. No live paired-chain
 mutation was performed in this implementation pass.
+
+## Linux AFX state recordings
+
+`afx_state_capture.py` records changed state through the running WebUI actor
+with read-only GETs. It logs selected/linked-partner chains, flags and captured
+Memory Cat parameter/bypass readbacks, without identity, account data, settings
+writes or a second HID controller. Use a new local output path:
+
+```sh
+python3 tools/afx_state_capture.py --channel 1 --seconds 60 --interval 1 \
+  --output captures/memorycat-linked-readbacks.jsonl
+```
+
+Channels are1-based; current parameter coverage is Memory Cat instances0–2.
+Recording stops if the device connection changes. See the
+[Orion AFX workflow](../docs/orion-afx-workflow.md) for the effect rollout plan,
+existing-capture analysis, optional Linux-host usbmon capture and vendor-side
+endpoint-gesture fallback. This records our readback/control tests; an unknown
+vendor control still needs independent command/label evidence.

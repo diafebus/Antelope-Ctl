@@ -13,11 +13,6 @@ function afxLiveChanged(draft) {
     return;
   }
   if (!afxTestActive() || !AFX_TEST_STATE.online || !AFX_TEST_STATE.writes_enabled) return;
-  if (afxTestLinked(AFX_CHANNEL)) {
-    AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
-      'Unlink AFX pairs before editing parameters; stereo parameter sharing is not available yet.';
-    return;
-  }
   const values = Object.fromEntries(Object.entries(draft.values).map(([id, value]) => [id, Number(value)]));
   if (Object.values(draft.values).some(value => value == null)) return;
   AFX_LIVE_PENDING.set(draft.instance, {channel: AFX_CHANNEL, values, session: AFX_TEST_SESSION, draft});
@@ -37,7 +32,6 @@ async function afxLiveFlush() {
   AFX_LIVE_PENDING.delete(instance);
   if (pending.session !== AFX_TEST_SESSION || pending.channel !== AFX_CHANNEL
       || pending.draft !== AFX_TEST_DRAFTS.get(instance) || pending.draft.livePaused
-      || afxTestLinked(pending.channel)
       || !afxTestSlots(pending.channel)?.some(row => row.type === 73 && row.instance === instance)) {
     if (AFX_LIVE_PENDING.size) AFX_LIVE_TIMER = setTimeout(afxLiveFlush, 60);
     return;
@@ -53,17 +47,34 @@ async function afxLiveFlush() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Live parameter write failed');
     if (AFX_TEST_SESSION === pending.session && AFX_TEST_DRAFTS.get(instance) === pending.draft) {
+      for (const update of result.updated_instances || []) {
+        (AFX_TEST_STATE.parameters ||= {})[String(update.instance)] = {...update.values};
+        if (update.verified)
+          (AFX_TEST_STATE.parameter_states ||= {})[String(update.instance)] = {
+            values: {...update.values}, bypassed: update.bypassed, source: 'readback'};
+        const partnerDraft = AFX_TEST_DRAFTS.get(update.instance);
+        if (partnerDraft && partnerDraft !== pending.draft && !AFX_LIVE_PENDING.has(update.instance)) {
+          for (const control of partnerDraft.effect.controls)
+            partnerDraft.values[control.id] = control.kind === 'enum'
+              ? String(update.values[control.id]) : update.values[control.id];
+          partnerDraft.parameterAvailable = true;
+          partnerDraft.parameterSource = update.verified ? 'readback' : 'last-sent';
+          partnerDraft.bypassed = update.bypassed;
+        }
+      }
       (AFX_TEST_STATE.parameters ||= {})[String(instance)] = {...pending.values};
       pending.draft.liveReady = true;
       if (AFX_WINDOW === popup && !popup.closed) {
-        if (result.verified) {
+        const selectedVerified = result.updated_instances?.find(update => update.instance === instance)?.verified ?? result.verified;
+        if (selectedVerified) {
           pending.draft.parameterSource = 'readback';
           pending.draft.bypassed = result.bypassed;
           (AFX_TEST_STATE.parameter_states ||= {})[String(instance)] = {
             values: {...pending.values}, bypassed: result.bypassed, source: 'readback'};
         } else pending.draft.parameterSource = 'last-sent';
         popup.document.getElementById('afx-preview-status').textContent = result.verified
-          ? 'Live settings verified by device readback' : 'Live settings sent · parameter readback unavailable';
+          ? `Live settings verified by device readback${result.mirrored ? ' · linked pair' : ''}`
+          : 'Live settings sent · some instance readbacks unavailable';
         AFX_PANELS.get(pending.draft.effect.id).updateLiveStatus(pending.draft, popup.document);
       }
     }

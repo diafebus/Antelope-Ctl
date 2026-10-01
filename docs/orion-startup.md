@@ -100,7 +100,8 @@ This namespace is recorded under `frame.afx_slot.instance_state_readback`,
 separate from classic opcode`0x10` category enumeration. It does not add bounds
 to classic category`0x07`. The WebUI requests captured loaded Memory Cat
 instances0–2 when the rack opens, its selected channel changes, or the main
-state stream reconnects. Replies omit the instance: serialize requests and
+state stream reconnects. A linked refresh reads both actual chains and their
+captured instances; it does not assume the racks match. Replies omit the instance: serialize requests and
 stop these reads after a timeout until reconnect. Instances3–7 remain guarded.
 Opening/reconnecting sends no parameter or bypass defaults.
 

@@ -68,10 +68,13 @@ compatibility.
     button sits in the channel header. Device link readbacks mark linked channel
     partners. Linked add/replace/remove/reorder updates and verifies both chains
     with distinct instances; conflicting slots remain unchanged. Parameter
-    editing still requires unlinking the selected pair. Other linked pairs
+    editing supports Memory Cat's bounded linked candidate, with same-slot
+    partner writes and captured readback verification. Other linked pairs
     do not block that rack. Both the left list and rack support drag reordering, including
-    dragging between them. Refresh reads the selected slots and link table.
-    Local preview is an explicit alternative; missing device reads remain unavailable.
+    dragging between them. Refresh reads the link table and selected slots,
+    including the partner chain and settings when linked.
+    An empty linked selection automatically shows its populated partner. Local
+    preview is an explicit alternative; missing device reads remain unavailable.
     Memory Cat has six draggable knobs with fixed bodies and moving pointers,
     plus two mode selectors. Sliders are hidden; keyboard adjustment remains
     available with a visible focus ring. Edits send live from the first
@@ -79,7 +82,7 @@ compatibility.
     previews and device slot state are separate. The pilot exposes guarded
     load/replace/remove/reorder and full-state parameter initialization, with slot readback
     verification. Switch labels are owner-confirmed:0=550ms/Chorus,
-    1=1100ms/Tremolo, sourced from Orion JSON. Parameter settings are
+    1=1100ms/Tremolo, sourced from Orion JSON. Parameter settings come from
     device readback for captured Memory Cat instances0–2. Opening, changing
     channel, loading and reconnect query current settings and bypass state;
     unknown fields stay unavailable without a starting preset. Opening/refresh
@@ -90,7 +93,7 @@ compatibility.
     exercised while 1–2 were linked. All 16 pair flags have verified readback.
     Failed slot verification disables writes for the server session; Refresh
     stays read-only. Reconnect clears old AFX inventory, flags and initialized
-    drafts. Other effect parameters, shared parameters and bypass writes remain guarded.
+    drafts. Other effect parameters and bypass writes remain guarded.
     See the main README's AFX section and [the API/state contract](DEVICE_UI.md#orion-afx-rack).
     The channel dropdown adds a loaded-effect count only for occupied channels,
     alongside their link markers; empty and unavailable channels have no count.

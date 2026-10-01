@@ -70,7 +70,7 @@ The API retains its original `memorycat-test` names for compatibility:
 | Method/path | Request | Result/source |
 |---|---|---|
 | GET `/api/afx/catalog` | None | Local preview metadata, no device writes |
-| GET `/api/afx/memorycat-test` | Optional `channel=0..31&refresh=true` | Cached rack state; refresh reads the selected chain and AFX link table when online |
+| GET `/api/afx/memorycat-test` | Optional `channel=0..31&refresh=true` | Cached rack state; refresh reads links and selected chain/settings, plus the partner when linked |
 | POST `/api/afx/memorycat-test/chain` | `channel`, `operation`, `slot`; `source` for move, `effect_id` for load/replace | Fresh selected-chain RMW with post-write verification |
 | POST `/api/afx/memorycat-test/parameters` | `channel`, `instance`, complete eight-field `values` | Memory Cat block sent; fresh readback verifies captured instances0–2 |
 | POST `/api/afx/link` | `pair=0..15`, boolean `enabled` | Bare space-4 link flag with fresh readback verification |
@@ -93,9 +93,14 @@ Missing flags remain unknown; trailing records 16–31 are unmapped. AFX 1–2,
 labels. Linked chain mutations read both adjacent chains, preflight both edits
 and allocate distinct instances before writing left then right. Both readbacks
 must match. Insufficient paired resources, occupied load targets, or mismatched
-source/target effect types abort without writes. Parameter edits still require
-that pair OFF. Link toggles preserve both chains and do not reproduce the
-Launcher's extra assignments on unlink. Shared parameters remain unavailable.
+source/target effect types abort without writes. Memory Cat parameter edits also operate while linked. Link toggles preserve both chains and do not reproduce the
+Launcher's extra assignments on unlink. Only Memory Cat has a linked parameter writer: same-slot type73 instances
+receive the full block, with fresh verification for captured read indices0–2.
+`updated_instances` lists each target's values, bypass and verification; the
+aggregate `verified` flag requires all targets. Uncaptured read indices remain
+last-sent only. Missing/different partner effects are unchanged. Refresh reads
+both linked chains/states, and an empty selection switches to a populated
+partner's actual channel. Other-effect parameter controls remain unavailable.
 
 `parameter_states` holds device-read Memory Cat values and `bypassed`, keyed
 by instance. `parameters` retains the compatible eight-field map, preferring
@@ -107,7 +112,7 @@ a readback. Knob and switch edits send from the first edit,
 with no Apply step, and coalesce at 60 ms with one request in
 flight and no rack repaint during dragging. Changing the selected channel or
 connection discards mismatching queued edits; so does replacement of the draft
-or linking its pair before the send. Reordering preserves instance settings.
+or removal from its fresh chain before the send. Reordering preserves instance settings.
 The AFX channel dropdown shows a loaded-effect count (for example, `AFX 1 · 2 FX`)
 from slot readbacks only when at least one effect occupies that channel. Empty
 and unavailable channels have no count; existing link markers remain visible.
