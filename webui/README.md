@@ -70,7 +70,9 @@ compatibility.
     pairs do not block that rack. Both the left list and rack support drag reordering, including
     dragging between them. Refresh reads the selected slots and link table.
     Local preview is an explicit alternative; missing device reads remain unavailable.
-    Memory Cat has six draggable knobs and two mode selectors; after the first
+    Memory Cat has six draggable knobs with fixed bodies and moving pointers,
+    plus two mode selectors. Sliders are hidden; keyboard adjustment remains
+    available with a visible focus ring. After the first
     full Apply, edits send live through the throttled afx-live.js module;
     previews and device slot state are separate. The pilot exposes guarded
     load/replace/remove/reorder and full-state parameter initialization, with slot readback

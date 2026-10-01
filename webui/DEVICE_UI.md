@@ -96,7 +96,7 @@ Stereo chain/parameter sharing remains unavailable.
 
 `parameters` holds complete Memory Cat blocks last sent on the current
 connection, keyed by instance. Initialize an instance with one complete Apply;
-then knob, slider and switch edits coalesce at 60 ms with one request in
+then knob and switch edits coalesce at 60 ms with one request in
 flight and no rack repaint during dragging. Changing the selected channel or
 connection discards mismatching queued edits; reordering preserves instance
 settings, while load/replace requires fresh initialization. A/B switch labels

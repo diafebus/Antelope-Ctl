@@ -227,7 +227,7 @@ function openAfxWindow() {
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
     + '<title>AFX — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css?v=routing-mix-colors-v1">'
-    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-channel-rack-v7">'
+    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-channel-rack-v8">'
     + Array.from(AFX_PANELS.values(), panel => `<link rel="stylesheet" href="${afxEscape(panel.stylesheet)}">`).join('')
     + '</head><body class="afx-window-body" role="dialog" aria-label="AFX"></body></html>');
   d.close();

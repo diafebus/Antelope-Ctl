@@ -214,7 +214,9 @@ function afxTestPairHTML(channel) {
   if (!AFX_TEST_DEVICE_VIEW) return '';
   const pair = Math.floor(channel / 2), linked = AFX_TEST_STATE?.links?.[pair];
   const writable = AFX_TEST_STATE?.online && AFX_TEST_STATE?.writes_enabled;
-  return `<button class="afx-pair-link${linked === true ? ' on' : ''}" type="button" data-afx-pair="${pair}" aria-pressed="${linked == null ? 'mixed' : linked}"${writable ? '' : ' disabled'} title="${linked == null ? 'State unknown · click to link' : AFX_TEST_STATE.link_readback ? 'Device link readback' : 'Last command sent this session'}" aria-label="${linked === true ? 'Unlink' : 'Link'} AFX ${pair * 2 + 1}–${pair * 2 + 2}">↔ ${pair * 2 + 1}–${pair * 2 + 2}</button>`;
+  return `<button class="afx-pair-link${linked === true ? ' on' : ''}" type="button" data-afx-pair="${pair}" aria-pressed="${linked == null ? 'mixed' : linked}"${writable ? '' : ' disabled'} title="${linked == null ? 'State unknown · click to link' : AFX_TEST_STATE.link_readback ? 'Device link readback' : 'Last command sent this session'}" aria-label="${linked === true ? 'Unlink' : 'Link'} AFX ${pair * 2 + 1}–${pair * 2 + 2}">`
+    + '<svg class="afx-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/></svg>'
+    + `<span>${pair * 2 + 1}–${pair * 2 + 2}</span></button>`;
 }
 
 function afxTestLinkClick(event) {

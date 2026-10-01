@@ -9,8 +9,8 @@ function afxMemoryCatControlHTML(control, value, slot, live = false) {
     const fraction = (value - min) / (max - min);
     return `<label class="afx-effect-control" style="--afx-turn:${-135 + fraction * 270}deg;--afx-fill:${fraction * 270}deg">`
       + `<span class="afx-control-label">${label}</span>`
-      + `<span class="afx-knob" aria-hidden="true" data-afx-knob="${id}" data-afx-slot="${slot}"><span class="afx-knob-cap"></span></span>`
-      + `<input type="range" min="${min}" max="${max}" step="1" value="${value}"`
+      + `<span class="afx-knob" aria-hidden="true" data-afx-knob="${id}" data-afx-slot="${slot}"><span class="afx-knob-cap"><span class="afx-knob-pointer"></span></span></span>`
+      + `<input class="afx-knob-input" type="range" min="${min}" max="${max}" step="1" value="${value}"`
       + ` aria-label="${label}, ${scope}" data-afx-control="${id}" data-afx-slot="${slot}">`
       + `<span class="afx-control-value"><output>${value}</output><span> / ${max}</span></span></label>`;
   }
@@ -93,7 +93,7 @@ function afxMemoryCatPointerDown(draft, event) {
 
 AFX_PANELS.set('memory_brigade', {
   label: 'Memory Cat Brigade',
-  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v2',
+  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v3',
   render: afxMemoryCatHTML,
   input: afxMemoryCatInput,
   click: afxMemoryCatClick,

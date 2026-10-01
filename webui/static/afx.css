@@ -68,10 +68,12 @@
 .afx-slot-picker select { flex:1; min-width:0; padding:6px 4px; font:11px system-ui,sans-serif; width:100%; border:1px solid var(--line);
   border-radius:4px; background:var(--panel2); color:var(--fg); }
 .afx-slot-picker select:disabled { opacity:.6; }
-.afx-pair-link { padding:4px 7px; font:600 11px system-ui,sans-serif; white-space:nowrap; border:1px solid #68547f; border-radius:4px;
+.afx-pair-link { display:inline-flex; align-items:center; gap:4px; padding:4px 7px; font:600 11px system-ui,sans-serif; white-space:nowrap; border:1px solid #68547f; border-radius:4px;
   background:#30283e; color:#d0b7ef; cursor:pointer; }
 .afx-pair-link.on { color:#d4fcf4; border-color:#64b6a7; background:#29473f; }
 .afx-pair-link:disabled { opacity:.5; cursor:default; }
+.afx-link-icon { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
 .afx-link-note { margin:5px 0 0; color:var(--dim); font-size:10px; }
 @media (max-width:680px) {
   .afx-window-main { grid-template-columns:1fr; gap:16px; }
