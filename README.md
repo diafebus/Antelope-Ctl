@@ -93,11 +93,14 @@ provides six draggable knobs and two mode selectors in an original Gazelle
 rack design. Local previews retain settings per channel/slot and support
 drag-and-drop or keyboard-button reordering.
 
-For the Orion pilot, click **Connect device rack** to view channel-index-0
-slots (the owner's Preamp 1 capture). Empty slots offer **Load Memory Cat**;
+For the Orion pilot, opening **AFX** automatically shows channel-index-0
+device slots (the owner's Preamp 1 capture). Empty slots offer **Load Memory Cat**;
 existing Memory Cats can be removed or reordered. Slot writes use fresh
-readbacks and verify the resulting chain. This is experimental and has not
-been tested live from this WebUI. Other channels/effects remain unavailable
+readbacks and verify the resulting chain. The owner reported Memory Cat
+working from this WebUI on 2026-10-01; individual controls and switch polarity
+are not yet independently confirmed. This remains an experimental pilot.
+**Local preview** explicitly switches to drafts; **Connect device rack**
+returns to device slots. Other channels/effects remain unavailable
 for device writes. **Unlink AFX 1/2 only** sends just the link-OFF command
 and preserves existing effects on both channels.
 

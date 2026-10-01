@@ -4,10 +4,30 @@
 let AFX_TEST_STATE = null;
 let AFX_TEST_BUSY = false;
 let AFX_TEST_SESSION = null;
+let AFX_TEST_DEVICE_VIEW = false;
 const AFX_TEST_DRAFTS = new Map();
 
 function afxTestActive(channel = AFX_CHANNEL) {
-  return channel === 0 && !!AFX_TEST_STATE?.available;
+  return AFX_TEST_DEVICE_VIEW && channel === 0 && !!AFX_TEST_STATE?.available;
+}
+
+function afxTestChannelChanged(channel) {
+  if (!AFX_TEST_DEVICE_VIEW || !afxWindowIsOpen()) return;
+  if (channel !== 0) {
+    AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
+      'Device loading is currently available on AFX 1 only. This channel has local previews.';
+  } else if (AFX_TEST_STATE?.available) {
+    AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
+      'Device slots shown. Apply sends all eight draft settings; switch A/B polarity is unconfirmed.';
+  }
+}
+
+function afxTestOpen() {
+  if (!PROFILE?.runtime_contracts?.afx_memorycat_test?.enabled) return;
+  AFX_TEST_DEVICE_VIEW = true;
+  AFX_TEST_STATE = null;
+  selectAfxChannel(0);
+  return afxTestRequest('/api/afx/memorycat-test');
 }
 
 function afxTestToolbarHTML() {
@@ -32,7 +52,7 @@ async function afxTestRequest(path, body) {
     if (!response.ok) throw new Error(result.error || 'The AFX test request failed.');
     const state = body && (path.endsWith('/parameters') || path.endsWith('/unlink'))
       ? await fetch('/api/afx/memorycat-test').then(r => r.json()) : result;
-    if (AFX_WINDOW !== popup || popup.closed) return;
+    if (AFX_WINDOW !== popup || popup.closed || !AFX_TEST_DEVICE_VIEW) return;
     if (AFX_TEST_SESSION !== state.session) {
       AFX_TEST_DRAFTS.clear();
       AFX_TEST_SESSION = state.session;
@@ -76,10 +96,10 @@ function afxTestDraft(channel, slot) {
 }
 
 function afxTestRackHTML(capacity, channel) {
-  if (!afxTestActive(channel)) return null;
-  const writable = AFX_TEST_STATE.online && AFX_TEST_STATE.writes_enabled;
+  if (!AFX_TEST_DEVICE_VIEW || channel !== 0) return null;
+  const writable = AFX_TEST_STATE?.online && AFX_TEST_STATE?.writes_enabled;
   return Array.from({length: capacity.slots}, (_, slot) => {
-    const record = AFX_TEST_STATE.slots?.[slot], draft = afxTestDraft(channel, slot);
+    const record = AFX_TEST_STATE?.slots?.[slot], draft = afxTestDraft(channel, slot);
     let face;
     if (draft) face = AFX_PANELS.get(draft.effect.id).render(draft, slot);
     else {
@@ -96,6 +116,14 @@ function afxTestRackHTML(capacity, channel) {
   }).join('');
 }
 
+function afxTestSlotLabel(channel, slot) {
+  if (!afxTestActive(channel)) return null;
+  const record = AFX_TEST_STATE.slots?.[slot];
+  if (!record) return null;
+  return record.type === 0 && record.instance === 0 ? 'Empty'
+    : record.type === 73 ? 'Memory Cat' : `Effect type ${record.type}`;
+}
+
 function afxTestMove(source, slot) {
   if (!AFX_TEST_BUSY && afxTestActive())
     return afxTestRequest('/api/afx/memorycat-test/chain', {operation: 'move', source, slot});
@@ -103,13 +131,17 @@ function afxTestMove(source, slot) {
 
 function afxTestClick(event) {
   if (event.target.closest('[data-afx-test-connect]') || event.target.closest('[data-afx-test-refresh]')) {
+    AFX_TEST_DEVICE_VIEW = true;
     selectAfxChannel(0);
     void afxTestRequest('/api/afx/memorycat-test');
     return true;
   }
   if (event.target.closest('[data-afx-test-preview]')) {
+    AFX_TEST_DEVICE_VIEW = false;
     AFX_TEST_STATE = null;
     selectAfxChannel(AFX_CHANNEL);
+    AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
+      'Local previews do not load effects. Connect device rack to load Memory Cat on AFX 1.';
     return true;
   }
   if (event.target.closest('[data-afx-test-unlink]')) {
@@ -146,4 +178,5 @@ function afxTestClick(event) {
 }
 
 AFX_DEVICE_RACK = {toolbarHTML: afxTestToolbarHTML, rackHTML: afxTestRackHTML,
-  click: afxTestClick, draft: afxTestDraft, active: afxTestActive, move: afxTestMove};
+  click: afxTestClick, draft: afxTestDraft, active: afxTestActive, move: afxTestMove,
+  open: afxTestOpen, slotLabel: afxTestSlotLabel, channelChanged: afxTestChannelChanged};

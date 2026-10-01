@@ -2005,7 +2005,8 @@ def _surround_eq_reset_values(profile):
 
 @app.get("/")
 def index():
-    return FileResponse(os.path.join(HERE, "static", "index.html"))
+    return FileResponse(os.path.join(HERE, "static", "index.html"),
+                        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/profile")

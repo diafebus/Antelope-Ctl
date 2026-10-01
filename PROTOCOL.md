@@ -1939,6 +1939,9 @@ type-6 instance; it has no post-load slot reply. The pilot therefore treats
 the write-to-readback correspondence as a live test requirement, starting
 from a fresh index-0 readback and checking every resulting chain. A failed
 or absent post-write match disables further tests for that server session.
+The owner reported the Memory Cat effect working from the WebUI on
+2026-10-01. This is a functional user observation; it does not establish
+individual switch polarity, every control, restoration, or stereo behavior.
 Other effects in that chain are preserved. Allocation requires the full
 64-record inventory plus a fresh `0x15:0` remaining counter, and uses only
 captured Memory Cat indices 0–7. The mono test also requires all decoded

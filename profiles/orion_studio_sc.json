@@ -2366,6 +2366,11 @@
         ]
       },
       "parameter_readback": false,
+      "owner_test": {
+        "date": "2026-10-01",
+        "status": "user-reported",
+        "observation": "Owner reports Memory Cat works from the WebUI. Individual controls, switch polarity, removal/reordering and restoration were not separately confirmed."
+      },
       "note": "Operator-triggered testing only. Fresh whole-chain read-modify-write and post-write slot verification; preserve unmodified slots. Full parameter settings require explicit Apply because current effect parameters cannot be read. Switch position polarity is unverified. No auto-initialization from old captures.",
       "evidence": [
         "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng",

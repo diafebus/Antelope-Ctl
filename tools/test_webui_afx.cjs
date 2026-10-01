@@ -34,7 +34,7 @@ const context = vm.createContext({
         focus() { this.focused = true; },
       });
       const nodes = Object.fromEntries(['afx-device', 'afx-channel', 'afx-channel-name',
-        'afx-rack-title', 'afx-rack', 'afx-preview-status'].map(id => [id, node()]));
+        'afx-rack-title', 'afx-rack', 'afx-preview-status', 'afx-slot-list'].map(id => [id, node()]));
       const device = nodes['afx-device'], closeButton = node();
       const popup = {
         closed: false, focused: 0, events, device, closeButton, nodes,
@@ -56,6 +56,8 @@ const context = vm.createContext({
   fetch() { throw new Error('The capacity popup must not make device or account requests'); },
   post() { throw new Error('The capacity popup must not issue device writes'); },
 });
+// Capacity-only behavior must stay request-free when no device pilot is enabled.
+context.PROFILE.runtime_contracts.afx_memorycat_test.enabled = false;
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-memorycat.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-test.js'), 'utf8'), context);
@@ -128,6 +130,7 @@ assert.equal(lastPopup.closed, true);
 assert.equal(button.on, false);
 async function checkEffectPreviews() {
   context.PROFILE = JSON.parse(fs.readFileSync(path.join(ROOT, 'profiles/orion_studio_sc.json'), 'utf8'));
+  context.PROFILE.runtime_contracts.afx_memorycat_test.enabled = false;
   const effect = JSON.parse(fs.readFileSync(path.join(ROOT, 'profiles/afx_effects.json'), 'utf8'))
     .effects.find(item => item.id === 'memory_brigade');
   const implementation = effect.implementations.find(item => item.profile === 'orion_studio_sc.json');
@@ -257,18 +260,32 @@ async function checkEffectPreviews() {
   const state = {available: true, online: true, writes_enabled: true, slots: emptySlots,
     parameters: {}, session: 1};
   const writes = [];
+  let deviceReads = 0;
   context.fetch = async (url, options) => {
     assert.match(url, /^\/api\/afx\/memorycat-test/);
     if (options) {
       assert.equal(options.method, 'POST');
       writes.push({url, body: JSON.parse(options.body)});
-    }
+    } else deviceReads++;
     return {ok: true, json: async () => options && url.endsWith('/parameters') ? {sent: true, verified: false} : state};
   };
+  context.PROFILE.runtime_contracts.afx_memorycat_test.enabled = true;
+  vm.runInContext('AFX_CHANNEL = 31', context);
   button.click();
-  await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
+  await new Promise(resolve => setImmediate(resolve));
   const live = lastPopup;
+  assert.equal(deviceReads, 1, 'Opening the enabled pilot automatically reads the device rack');
+  assert.equal(writes.length, 0, 'Opening the rack must never write to the device');
+  assert.equal(live.nodes['afx-channel'].value, '0', 'Open on the supported pilot channel');
   assert.match(live.nodes['afx-rack'].innerHTML, /Device test/);
+  assert.equal((live.nodes['afx-rack'].innerHTML.match(/>Load Memory Cat</g) || []).length, 7);
+  assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /Preview Memory/);
+  assert.match(live.nodes['afx-slot-list'].innerHTML, /Memory Cat/);
+  assert.equal((live.nodes['afx-slot-list'].innerHTML.match(/>Empty</g) || []).length, 7);
+  vm.runInContext('selectAfxChannel(1)', context);
+  assert.match(live.nodes['afx-preview-status'].textContent, /AFX 1 only/);
+  assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /data-afx-device-load/);
+  vm.runInContext('selectAfxChannel(0)', context);
   const apply = {dataset: {afxDeviceApply: '0'}, closest: selector => selector === '[data-afx-device-apply]' ? apply : null};
   live.nodes['afx-rack'].click({target: apply});
   assert.match(live.nodes['afx-preview-status'].textContent, /Select both switch positions/);
@@ -291,8 +308,17 @@ async function checkEffectPreviews() {
   await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
   assert.equal(vm.runInContext('afxTestDraft(0, 1).values.chrs_vibr', context), null);
   assert.equal(writes.length, 1);
+  const previewButton = {closest: selector => selector === '[data-afx-test-preview]' ? previewButton : null};
+  vm.runInContext('afxTestClick', context)({target: previewButton});
+  assert.match(live.nodes['afx-rack'].innerHTML, /Preview Memory/);
+  assert.match(live.nodes['afx-preview-status'].textContent, /do not load effects/);
+  const refreshButton = {closest: selector => selector === '[data-afx-test-refresh]' ? refreshButton : null};
+  vm.runInContext('afxTestClick', context)({target: refreshButton});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-device-load/);
+  assert.equal(writes.length, 1, 'Switching rack views only reads metadata');
   live.close();
-  console.log('AFX checks passed (popup, knob drag, reorder, per-instance drafts, explicit Apply, reconnect).');
+  console.log('AFX checks passed (device rack on open, load buttons, previews, drag, Apply, reconnect).');
 }
 
 checkEffectPreviews().catch(error => { console.error(error); process.exitCode = 1; });

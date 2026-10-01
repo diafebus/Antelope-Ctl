@@ -62,7 +62,10 @@ compatibility.
     tab selected. Profiles declaring AFX capacity expose the button; Orion
     offers a 32-channel selector and a single channel strip on the left,
     with that channel's eight rack units together on the right. Selection
-    persists across popup close/reopen while the main page is open. Slot
+    persists across popup close/reopen while the main page is open for
+    profiles without a device pilot. Orion opens directly on AFX 1's device
+    rack with Load Memory Cat buttons on reported empty slots. Local preview
+    is an explicit alternative. Slot
     contents remain unavailable outside the explicit channel-index-0 pilot.
     Memory Cat previews have six draggable knobs and two mode selectors;
     previews and device slot state are separate. The pilot exposes guarded
