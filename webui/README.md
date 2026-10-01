@@ -78,7 +78,8 @@ compatibility.
     adjustment through the throttled afx-live.js module, with no Apply step;
     previews and device slot state are separate. The pilot exposes guarded
     load/replace/remove/reorder and full-state parameter initialization, with slot readback
-    verification and unconfirmed A/B switch polarity. Parameter settings are
+    verification. Switch labels are owner-confirmed:0=550ms/Chorus,
+    1=1100ms/Tremolo, sourced from Orion JSON. Parameter settings are
     device readback for captured Memory Cat instances0–2. Opening, changing
     channel, loading and reconnect query current settings and bypass state;
     unknown fields stay unavailable without a starting preset. Opening/refresh

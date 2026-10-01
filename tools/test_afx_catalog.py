@@ -25,6 +25,10 @@ class AfxCatalogTests(unittest.TestCase):
         for field in effect["controls"]:
             self.assertNotIn("offset", field)
             self.assertNotIn("wire_enum", field)
+        encodings = next(i for e in self.catalog['effects'] if e['id'] == 'memory_brigade'
+                         for i in e['implementations'] if i['profile'] == 'orion_studio_sc.json')['control_encodings']
+        self.assertEqual(encodings['chrs_vibr']['wire_enum'], {'0':'chorus','1':'tremolo'})
+        self.assertEqual(encodings['size']['wire_enum'], {'0':'550ms','1':'1100ms'})
         self.assertNotIn("commands", effect)
         self.assertNotIn("instance_handle", effect)
 

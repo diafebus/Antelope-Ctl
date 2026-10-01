@@ -151,7 +151,8 @@ the device reconnects, because a late reply carries no instance identity.
 Reconnect clears old slot inventory, link flags and initialized parameter
 drafts. Wait for the full inventory before loading. After loading or reconnect,
 the selected rack queries fresh settings before its first edit.
-Switch A/B polarity is still unconfirmed. The owner reports the effect and
+The owner confirmed both switches:0=550ms/Chorus,1=1100ms/Tremolo. The
+WebUI labels them from the Orion JSON. The owner reports the effect and
 applied parameter settings work. A 2026-10-01 Level 100→99→100 self-test
 found no stable parameter readback in the observed HID streams; the original
 settings were resent to restore the baseline, with the command acknowledged

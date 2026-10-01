@@ -44,8 +44,7 @@ function afxMemoryCatLiveMessage(draft) {
   return (draft.livePaused ? 'Live controls paused after a failed send.'
     : !draft.parameterAvailable ? 'Device settings unavailable · controls wait for a fresh readback.'
     : draft.parameterSource === 'readback' ? `Live controls · device settings · ${draft.bypassed ? 'bypassed' : 'active'}.`
-    : 'Live controls · last sent settings.')
-    + ' Switch A/B labels await confirmation.';
+    : 'Live controls · last sent settings.');
 }
 
 function afxMemoryCatUpdateLiveStatus(draft, doc) {

@@ -112,8 +112,10 @@ The AFX channel dropdown shows a loaded-effect count (for example, `AFX 1 · 2 F
 from slot readbacks only when at least one effect occupies that channel. Empty
 and unavailable channels have no count; existing link markers remain visible.
 
-Opening/refreshing never sends a parameter block. A/B switch label polarity
-remains unconfirmed. A failed live write pauses sending
+Opening/refreshing never sends a parameter block. Memory Cat switch options come from the
+owner-confirmed Orion JSON:0=550ms/Chorus,1=1100ms/Tremolo. The API keeps
+`chrs_vibr` as its compatibility identifier and reports
+`switch_polarity_confirmed=true`. A failed live write pauses sending
 until an explicit Retry live controls click, without automatic retries.
 
 `session` changes on device reconnect. The backend clears cached AFX inventory

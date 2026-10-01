@@ -123,7 +123,9 @@ class MemoryCatTest:
                 'writes_enabled': not self.failed_verification,
                 'parameter_readback': True, 'parameter_states': states,
                 'parameter_sources': sources, 'parameter_read_errors': errors,
-                'switch_polarity_confirmed': False,
+                'switch_polarity_confirmed': all(
+                    afx.parameter_readback_contract(device.profile)['effects']['memory_brigade']['fields'][name].get('label_polarity') == 'owner-confirmed'
+                    for name in ('chrs_vibr', 'size')),
                 'links': links, 'link_state_source': 'readback' if read_links is not None else 'last-sent',
                 'link_readback': read_links is not None}
 

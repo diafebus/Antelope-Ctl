@@ -41,7 +41,7 @@ function afxTestChannelChanged(channel) {
     AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
       afxTestLinked(channel)
         ? 'Linked rack: slot edits apply to both channels. Unlink to edit parameters.'
-        : 'Select an effect in a slot. Memory Cat knobs and switches send live; switch A/B polarity remains unconfirmed.';
+        : 'Select an effect in a slot. Memory Cat knobs and switches send live.';
   }
 }
 
@@ -165,11 +165,12 @@ function afxTestDraft(channel, slot) {
   if (record?.type !== 73) return null;
   if (!AFX_TEST_DRAFTS.has(record.instance)) {
     const fields = PROFILE.runtime_contracts.afx_memorycat_test.parameter_offsets;
+    const stateFields = PROFILE.frame.afx_slot.instance_state_readback.effects.memory_brigade.fields;
     const knobs = {level: 'Level', blend: 'Blend', feedback: 'Feedback', delay: 'Delay', depth: 'Depth', lpf_fc: 'Filter'};
     const controls = Object.keys(fields).map(id => ({id,
-      label: knobs[id] || (id === 'chrs_vibr' ? 'Chorus / Vibrato' : '550 ms / 1100 ms'),
+      label: knobs[id] || stateFields[id].label,
       kind: Object.hasOwn(knobs, id) ? 'continuous' : 'enum', range: [0, 100],
-      options: {'0': 'A · 0', '1': 'B · 1'},
+      options: stateFields[id].options,
     }));
     const read = AFX_TEST_STATE.parameter_states?.[String(record.instance)];
     const sent = read?.values || AFX_TEST_STATE.parameters?.[String(record.instance)];

@@ -134,6 +134,7 @@ class AfxTestTests(unittest.TestCase):
         state = service.refresh()
         self.assertEqual(state['parameters']['0'], transport.parameters[0])
         self.assertTrue(state['parameter_states']['0']['bypassed'])
+        self.assertTrue(state['switch_polarity_confirmed'])
         self.assertEqual(transport.writes, [])
         state = service.change_chain('load', 2)
         self.assertEqual(state['parameter_states']['2']['values'], transport.parameters[2])

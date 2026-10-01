@@ -266,7 +266,10 @@ local capture and owner-action provenance. Its `parameter_observation`
 records the observed header, type/instance addressing and packet span; it is not a
 builder template. Offsets exclude the USB capture header. The six knob
 fields carry endpoint ranges, with unknown intermediate `scale`/`step`;
-the two switches carry display `options` with unknown `wire_enum` polarity.
+the two switches carry owner-confirmed display `options` and raw-to-option
+`wire_enum` mappings:0=550ms/Chorus,1=1100ms/Tremolo. The canonical Orion
+instance-state fields supply the corresponding raw-keyed options to the live
+WebUI. `chrs_vibr` remains the compatibility field ID.
 The shared control declarations remain unchanged, so Orion observations
 do not become another model's contract. All three command definitions
 remain `null` for every implementation. A declared control name carries neither an inferred range

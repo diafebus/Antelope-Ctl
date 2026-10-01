@@ -2062,7 +2062,7 @@
               "readback_status": "capture-confirmed"
             },
             "chrs_vibr": {
-              "label": "Chorus / Vibrato",
+              "label": "Chorus / Tremolo",
               "offset": 23,
               "width": 1,
               "signed": false,
@@ -2073,18 +2073,23 @@
               ],
               "options": {
                 "chorus": "Chorus",
-                "vibrato": "Vibrato"
+                "tremolo": "Tremolo"
               },
-              "wire_enum": null,
+              "wire_enum": {
+                "0": "chorus",
+                "1": "tremolo"
+              },
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 47145,
               "last_changed_frame": 49074,
               "readback_offset": 20,
-              "readback_status": "capture-confirmed"
+              "readback_status": "capture-confirmed",
+              "label_polarity": "owner-confirmed",
+              "label_evidence": "2026-10-01 owner tested WebUI switches: A0=550ms, B1=1100ms; A0=Chorus, B1=Tremolo. Compatibility wire identifier chrs_vibr is retained."
             },
             "size": {
-              "label": "550 ms / 1100 ms",
+              "label": "Delay range",
               "offset": 27,
               "width": 1,
               "signed": false,
@@ -2097,13 +2102,18 @@
                 "550ms": "550 ms",
                 "1100ms": "1100 ms"
               },
-              "wire_enum": null,
+              "wire_enum": {
+                "0": "550ms",
+                "1": "1100ms"
+              },
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 49842,
               "last_changed_frame": 52163,
               "readback_offset": 24,
-              "readback_status": "capture-confirmed"
+              "readback_status": "capture-confirmed",
+              "label_polarity": "owner-confirmed",
+              "label_evidence": "2026-10-01 owner tested WebUI switches: A0=550ms, B1=1100ms; A0=Chorus, B1=Tremolo. Compatibility wire identifier chrs_vibr is retained."
             }
           },
           "evidence": [
@@ -2112,9 +2122,10 @@
             "Owner clarified action order and six knob endpoints (0-100) on 2026-09-30.",
             "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng",
             "antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng",
-            "antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng"
+            "antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng",
+            "2026-10-01 owner confirms Memory Cat WebUI A0=550ms/Chorus and B1=1100ms/Tremolo."
           ],
-          "notes": "Orion-only observation from owned-device HID OUT traffic and owner-labelled actions. The new eight-instance capture establishes type ID 73 and a separate instance index: chain slots are {type, inst} pairs at bytes 19-34; parameter frames address type at 18 and instance at 19. Instance 4 retains its identity through reordering; the owner set its Level to 0 (frames 49667/49719). Report offsets exclude USB capture headers. Six knobs reach raw 0 and 100; intermediate display scaling, quantization and physical units remain unverified. Switch label polarity remains unknown. New Launcher-restart captures confirm the eight-field parameter readback and processing-state byte; see state_readback. These observations apply to Orion only, not to another model without its own capture evidence. Commands here remain null; explicitly bounded test operations belong to the Orion runtime contract, not a cross-device catalog writer.",
+          "notes": "Orion-only observation from owned-device HID OUT traffic and owner-labelled actions. The new eight-instance capture establishes type ID 73 and a separate instance index: chain slots are {type, inst} pairs at bytes 19-34; parameter frames address type at 18 and instance at 19. Instance 4 retains its identity through reordering; the owner set its Level to 0 (frames 49667/49719). Report offsets exclude USB capture headers. Six knobs reach raw 0 and 100; intermediate display scaling, quantization and physical units remain unverified. Owner confirmed switch polarity on 2026-10-01:0=550ms/Chorus,1=1100ms/Tremolo; chrs_vibr remains the compatibility field ID. New Launcher-restart captures confirm the eight-field parameter readback and processing-state byte; see state_readback. These observations apply to Orion only, not to another model without its own capture evidence. Commands here remain null; explicitly bounded test operations belong to the Orion runtime contract, not a cross-device catalog writer.",
           "parameter_observation": {
             "report_length": 320,
             "opcode_offset": 4,
@@ -2150,7 +2161,11 @@
             "status": "capture-observed",
             "writable": false,
             "readback_verified": true,
-            "readback_verified_instance_indices": [0, 1, 2],
+            "readback_verified_instance_indices": [
+              0,
+              1,
+              2
+            ],
             "readback_evidence_ref": "state_readback",
             "restoration_verified": false,
             "type_id_offset": 18,

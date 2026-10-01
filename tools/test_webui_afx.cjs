@@ -203,11 +203,11 @@ async function checkEffectPreviews() {
 
   const modeButton = (value) => ({dataset: {afxSlot: '0', afxMode: 'chrs_vibr', afxValue: value},
     setAttribute(_key, value) { this.pressed = value; }});
-  const chorus = modeButton('chorus'), vibrato = modeButton('vibrato');
-  for (const option of [chorus, vibrato]) option.parentElement = {querySelectorAll: () => [chorus, vibrato]};
-  vibrato.closest = selector => ['[data-afx-slot]', '[data-afx-mode]'].includes(selector) ? vibrato : null;
-  popup.nodes['afx-rack'].click({target: vibrato});
-  assert.equal(vibrato.pressed, 'true');
+  const chorus = modeButton('chorus'), tremolo = modeButton('tremolo');
+  for (const option of [chorus, tremolo]) option.parentElement = {querySelectorAll: () => [chorus, tremolo]};
+  tremolo.closest = selector => ['[data-afx-slot]', '[data-afx-mode]'].includes(selector) ? tremolo : null;
+  popup.nodes['afx-rack'].click({target: tremolo});
+  assert.equal(tremolo.pressed, 'true');
   assert.equal(chorus.pressed, 'false');
 
   // Moving the bottom effect to the top preserves both drafts, including modes.
@@ -221,7 +221,7 @@ async function checkEffectPreviews() {
   popup.nodes['afx-rack'].drop({target: destination, dataTransfer: transfer, preventDefault() {}});
   assert.equal(vm.runInContext("AFX_DRAFTS.get('0:0').values.level", context), 88);
   assert.equal(vm.runInContext("AFX_DRAFTS.get('0:1').values.level", context), 42);
-  assert.equal(vm.runInContext("AFX_DRAFTS.get('0:1').values.chrs_vibr", context), 'vibrato');
+  assert.equal(vm.runInContext("AFX_DRAFTS.get('0:1').values.chrs_vibr", context), 'tremolo');
   transfer.value = '1:1';
   popup.nodes['afx-rack'].drop({target: destination, dataTransfer: transfer, preventDefault() {}});
   assert.equal(vm.runInContext("AFX_DRAFTS.get('0:0').values.level", context), 88, 'Cross-channel drop cannot move a draft');
@@ -233,7 +233,7 @@ async function checkEffectPreviews() {
   assert.equal(requests, 1, 'A local catalog is cached, rather than fetched per control');
   vm.runInContext('selectAfxChannel(0)', context);
   assert.match(popup.nodes['afx-rack'].innerHTML, /value="42"[^]*?data-afx-control="level"/);
-  assert.match(popup.nodes['afx-rack'].innerHTML, /aria-pressed="true"[^]*?data-afx-value="vibrato"/);
+  assert.match(popup.nodes['afx-rack'].innerHTML, /aria-pressed="true"[^]*?data-afx-value="tremolo"/);
   popup.close();
   button.click();
   assert.match(lastPopup.document.body.innerHTML, /value="42"[^]*?data-afx-control="level"/);
@@ -317,6 +317,11 @@ async function checkEffectPreviews() {
   vm.runInContext('selectAfxChannel(0)', context);
   assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /Apply all settings|data-afx-device-apply/);
   assert.match(live.nodes['afx-rack'].innerHTML, /Live controls · device settings · bypassed/);
+  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-mode="chrs_vibr" data-afx-value="0"[^>]*>Chorus<\/button>/);
+  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-mode="chrs_vibr" data-afx-value="1"[^>]*>Tremolo<\/button>/);
+  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-mode="size" data-afx-value="0"[^>]*>550 ms<\/button>/);
+  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-mode="size" data-afx-value="1"[^>]*>1100 ms<\/button>/);
+  assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /labels await confirmation|A · 0|B · 1/);
   assert.equal(vm.runInContext('afxTestDraft(0, 0).values.level', context), 0);
   live.nodes['afx-rack'].input({target: input});
   await new Promise(resolve => setTimeout(resolve, 100));

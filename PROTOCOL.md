@@ -1896,18 +1896,20 @@ addresses instance 0; the new level-zero capture addresses instance 4.
 | Delay | 25 | 0–100 | 27996 / 35298 |
 | Depth | 24 | 0–100 | 35931 / 40426 |
 | Filter | 26 | 0–100 | 40945 / 45965 |
-| Chorus / Vibrato | 23 | 0, 1 | 47145 / 49074 |
-| 550 ms / 1100 ms | 27 | 0, 1 | 49842 / 52163 |
+| Chorus / Tremolo (`chrs_vibr`) | 23 | 0=Chorus, 1=Tremolo | 47145 / 49074 |
+| Delay range | 27 | 0=550 ms, 1=1100 ms | 49842 / 52163 |
 
 Every knob reaches both raw endpoints; intermediate display scaling,
 physical units and quantization remain unverified. Switches alternate
-`1,0,1,0`, but label polarity is unknown. Successive reports change one
+`1,0,1,0`; the owner confirmed WebUI A0=550ms/Chorus and
+B1=1100ms/Tremolo on2026-10-01. Successive reports change one
 byte in 20–27; bytes 28–319 remain zero. The final state differs from the
 starting state. No effect-parameter readback or automatic restoration was
 established by that older capture. The later Launcher-restart capture below
 identifies parameter readback. The pilot sends complete eight-field blocks
-on knob/switch edits, initialized from device state; switches show A (0) / B (1) until the
-owner verifies their labels. No old capture is used as current device state.
+on knob/switch edits, initialized from device state. Switch labels now come
+from the confirmed Orion JSON enums. The wire/API identifier `chrs_vibr` is
+retained for compatibility; the owner labels its1position Tremolo. No old capture is used as current device state.
 
 **Linked pairs and Launcher unlink behavior.**
 `antelope-orion-afx-link-1-to-32-channels-16links-total-ononon-offffoff.pcapng`
@@ -2053,7 +2055,8 @@ Parameter writes for captured instances0–2 verify the complete block afterward
 a mismatch disables further AFX writes. Instance-query timeouts stop more such
 queries until reconnect. Neither loading nor refreshing writes parameter or
 bypass defaults.
-No partner-chain assignments or stereo parameter mirroring are generated.
+Live parameter edits do not generate stereo parameter mirroring. Linked slot
+edits use the separately verified paired-chain path described above.
 
 **Tagged effect-instance state readback and Launcher-restart retention.**
 The second capture,
@@ -2134,7 +2137,7 @@ ignored `AUDIT.md`.
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, confirmed Bass Management/filter-type/Link/Solo fields, confirmed speaker bypass, and confirmed per-speaker delay/level/phase fields; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
 | DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
-| AFX Real-Time effects | §12a: whole eight-slot chain decoded, separate type/instance addressing, Memory Cat parameter/processing-state readbacks confirmed for instances0–2, Launcher-restart retention confirmed, and linked host mirroring observed for Instinct/Master De-Esser. Mono slot writes require fresh readback and post-write verification. Direct slot round trips cover channels2–31, plus earlier owner testing on0. Switch label polarity, isolated bypass-enable writes, channel1 direct mono round trip, storage32–63 and other effect parameter maps remain unverified. Generic opcode guards and classic readback bounds remain unchanged. |
+| AFX Real-Time effects | §12a: whole eight-slot chain decoded, separate type/instance addressing, Memory Cat parameter/processing-state readbacks confirmed for instances0–2, Launcher-restart retention confirmed, and linked host mirroring observed for Instinct/Master De-Esser. Mono slot writes require fresh readback and post-write verification. Direct slot round trips cover channels2–31, plus earlier owner testing on0. Isolated bypass-enable writes, channel1 direct mono round trip, storage32–63 and other effect parameter maps remain unverified. Generic opcode guards and classic readback bounds remain unchanged. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. Direct trials on 2026-10-01 verified pair0–15 against category `0x0b` index4 records0–15 and restored original flags. Records16–31 remain unmapped. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
