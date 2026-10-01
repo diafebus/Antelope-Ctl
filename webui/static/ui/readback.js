@@ -153,6 +153,7 @@ async function reloadReadback() {
 
 // ---- state fan-out ---------------------------------------------------
 function applyState(s) {
+  AFX_DEVICE_RACK?.deviceState?.(s);
   const wasOnline = ONLINE;
   ONLINE = !!s.online;
   const st = $('#status');

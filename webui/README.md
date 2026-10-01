@@ -66,8 +66,10 @@ compatibility.
     persists across popup close/reopen while the main page is open. Orion supports device racks on AFX 1–32.
     Categorized effect selectors sit in the left slot list; its compact pair-link
     button sits in the channel header. Device link readbacks mark linked channel
-    partners; unlink only the selected pair before mono editing. Other linked
-    pairs do not block that rack. Both the left list and rack support drag reordering, including
+    partners. Linked add/replace/remove/reorder updates and verifies both chains
+    with distinct instances; conflicting slots remain unchanged. Parameter
+    editing still requires unlinking the selected pair. Other linked pairs
+    do not block that rack. Both the left list and rack support drag reordering, including
     dragging between them. Refresh reads the selected slots and link table.
     Local preview is an explicit alternative; missing device reads remain unavailable.
     Memory Cat has six draggable knobs with fixed bodies and moving pointers,
@@ -77,16 +79,20 @@ compatibility.
     previews and device slot state are separate. The pilot exposes guarded
     load/replace/remove/reorder and full-state parameter initialization, with slot readback
     verification and unconfirmed A/B switch polarity. Parameter settings are
-    a displayed starting preset/drafts/last sent, not device readback. With no
-    last-sent settings, the first edit sends all displayed starting values;
-    opening/refreshing does not send them. Failed live sends pause until an
+    device readback for captured Memory Cat instances0–2. Opening, changing
+    channel, loading and reconnect query current settings and bypass state;
+    unknown fields stay unavailable without a starting preset. Opening/refresh
+    sends no parameter writes. Post-write parameter readback verifies live
+    edits for these instances. Failed live sends pause until an
     explicit Retry live controls click. Mono load/remove verification covers
     AFX 3–32, plus earlier owner testing on AFX 1; AFX 2 mono writes were not
     exercised while 1–2 were linked. All 16 pair flags have verified readback.
     Failed slot verification disables writes for the server session; Refresh
     stays read-only. Reconnect clears old AFX inventory, flags and initialized
-    drafts. Other effect parameters, stereo sharing and bypass remain guarded.
+    drafts. Other effect parameters, shared parameters and bypass writes remain guarded.
     See the main README's AFX section and [the API/state contract](DEVICE_UI.md#orion-afx-rack).
+    The channel dropdown adds a loaded-effect count only for occupied channels,
+    alongside their link markers; empty and unavailable channels have no count.
     Closing the
     window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with

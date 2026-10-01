@@ -10,6 +10,9 @@ from collections import Counter, defaultdict
 import json
 from pathlib import Path
 import subprocess
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 PARAMETER_OPCODES = {0x1c, 0x20, 0x7c}
@@ -65,8 +68,27 @@ def extract_reports(path):
 def analyze_reports(reports):
     operations, parameters = [], defaultdict(list)
     readback_queries = Counter()
+    instance_queries, instance_states, pending_instances = [], [], {}
+    profile = json.loads((Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json').read_text())
+    from antelope import afx
     for number, timestamp, endpoint, payload in reports:
-        if len(payload) != 320 or endpoint != 1:
+        if len(payload) != 320:
+            continue
+        if endpoint == 0x82 and afx.is_parameter_response(profile, payload):
+            state = afx.parse_parameter_response(profile, payload)
+            pending = pending_instances.pop(73, None)
+            instance_states.append({'frame':number, 'seconds':timestamp, 'type':73,
+                'instance_from_query': pending['instance'] if pending else None,
+                'query_frame': pending['frame'] if pending else None, **state})
+            continue
+        if endpoint != 1:
+            continue
+        if payload[0] == 0x74 and payload[4] == 0x11 and payload[8] == 7 and payload[15] == 0x80:
+            selector = int.from_bytes(payload[12:16], 'little')
+            query = {'frame':number, 'seconds':timestamp, 'type':selector & 0x7fffffff,
+                     'instance':int.from_bytes(payload[16:20], 'little')}
+            instance_queries.append(query)
+            pending_instances[query['type']] = query
             continue
         if payload[0] == 0x74 and payload[4] == 0x10:
             if payload[8] in (0x0b, 0x0c, 0x15, 0x19):
@@ -120,6 +142,7 @@ def analyze_reports(reports):
                                            for (a, b), count in sorted(mirrored.items())], 'targets': targets})
     return {'report_offsets_exclude_usb_header': True, 'device_commands_sent': False,
             'ownership_inferred': False, 'operations': operations, 'parameter_groups': groups,
+            'instance_state_queries': instance_queries, 'memorycat_readbacks': instance_states,
             'readback_queries': [{'category': hex(category), 'index': index, 'count': count}
                                  for (category, index), count in sorted(readback_queries.items())]}
 

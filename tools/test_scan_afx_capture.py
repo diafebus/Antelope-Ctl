@@ -37,6 +37,16 @@ class ScanAfxCaptureTests(unittest.TestCase):
         self.assertEqual(result['parameter_groups'], [])
         self.assertNotIn('PRIVATE', str(result))
 
+    def test_tagged_instance_read_is_separate_from_category_queries(self):
+        request = bytes.fromhex('7400000011000000070000004900008002000000').ljust(320,b'\x00')
+        reply = bytes.fromhex('75000000400100000700000049000080013232310031303100').ljust(320,b'\x00')
+        result = analyze_reports([(1,1,1,request),(2,1.05,0x82,reply)])
+        self.assertEqual(result['readback_queries'], [])
+        self.assertEqual(result['instance_state_queries'][0]['instance'], 2)
+        self.assertEqual(result['memorycat_readbacks'][0]['instance_from_query'], 2)
+        self.assertEqual(result['memorycat_readbacks'][0]['values']['level'], 50)
+        self.assertFalse(result['memorycat_readbacks'][0]['bypassed'])
+
 
 if __name__ == '__main__':
     unittest.main()

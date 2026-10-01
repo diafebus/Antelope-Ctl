@@ -1904,8 +1904,9 @@ physical units and quantization remain unverified. Switches alternate
 `1,0,1,0`, but label polarity is unknown. Successive reports change one
 byte in 20–27; bytes 28–319 remain zero. The final state differs from the
 starting state. No effect-parameter readback or automatic restoration was
-established. The pilot sends complete eight-field blocks on knob/switch edits;
-values are a displayed WebUI starting preset or last sent, and switches show A (0) / B (1) until the
+established by that older capture. The later Launcher-restart capture below
+identifies parameter readback. The pilot sends complete eight-field blocks
+on knob/switch edits, initialized from device state; switches show A (0) / B (1) until the
 owner verifies their labels. No old capture is used as current device state.
 
 **Linked pairs and Launcher unlink behavior.**
@@ -1937,17 +1938,34 @@ parameter sweeps establish neither control-name maps nor display scales.
 Memory Cat's byte layout must not be reused for them. V12 also has observed
 `0x20` / `0xd5` traffic. Stereo writes remain outside the pilot.
 
+**Linked chain editing.** The owner requested linked rack editing on2026-10-01.
+The1/2 capture pairs load writes3427/3431,4997/5001,7505/7509 and reorder
+writes11947/11951,13671/13675, left then right with distinct instances.
+The3/4 capture likewise pairs loads3063/3067 and5185/5189, and removes
+slots in paired updates12531/12535 and12539/12543. The backend reads fresh
+link flags and both chains, preflights both mutations and allocations, then
+writes left and right and verifies both readbacks. Two free captured instances
+are required for linked loading/replacement. Conflicting target/source effect
+types or occupied load targets abort before either write; other slots and
+unknown effects are preserved. Any write/verification failure latches further
+writes without automatic repair. Link/unlink itself still sends only its flag.
+Stereo parameter mirroring is a separate unsupported path.
+
 **Bypass observation.** The 3/4 capture's Bypass All actions emit 16 reports
 using opcode `0x14`, selector `0x98`, **state at 17, type at 18, instance at
 19**. Each affected instance receives 1 then 0 only 3–5 ms apart; the
-same sequence repeats on later actions. The owner confirms that newly loaded
-effects start with bypass disengaged (processing active) in the tested state,
-and clicking bypass disables that effect slot. Interaction with Bypass All
-is untested. Loading preserves the device-assigned bypass state; the reported
-behavior is an observation; it does not set bypass flags or establish the
-current state of existing instances. The meaning of byte17 remains unresolved:
-a momentary press/release sequence is possible. State polarity and bypass
-readback remain unverified. This supersedes the old subcommand /
+same sequence repeats on later actions. The new
+`antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng` contains a single
+Bypass All write at31313: `0x14/0x98`, byte17=0, type73/instance0. Earlier
+instance-state reply17097 reports processing1; the following restart capture
+reports processing0 for this instance. Thus Memory Cat's processing flag is
+0=bypassed,1=active. The earlier duplicated1→0 actions remain a Launcher
+observation; an isolated enable write and other types' bypass transitions
+remain untested. At36233 the chain gains Memory Cat73/1, without any parameter
+or bypass initialization writes. The owner confirms this new effect is
+unbypassed after Bypass All. Loading preserves the device-assigned state;
+there is no forced default or inherited global bypass command.
+This supersedes the old subcommand /
 handle / value map. Delete All emits successive whole-chain updates until
 both chains are empty. No bypass or general Delete All writer is enabled.
 
@@ -1974,8 +1992,9 @@ All 16 space-4 link pairs were independently tested ON/OFF against all five
 safe link tables. Pair N changed only `0x0b:4` byte N, 0=OFF and 1=ON; each
 trial restored all five tables exactly. `link_pair_records` records this
 mapping for bytes 0–15, leaving bytes 16–31 unmapped. The WebUI uses device
-readback for pair buttons and channel partner labels. Only the selected pair
-must be OFF for mono edits; other linked pairs do not block it. A link write
+readback for pair buttons and channel partner labels. Linked add/replace/remove/reorder is supported through paired whole-chain
+writes; only parameter edits still require that selected pair OFF. Other linked
+pairs do not block it. A link write
 sends only the flag and checks a fresh reply, without modifying either chain.
 
 Local evidence, intentionally excluded from Git:
@@ -2026,13 +2045,53 @@ flight. Live acknowledgements do not repaint the rack during a drag. Errors
 pause live sending until an explicit Retry live controls click, without
 automatic retries; pending edits are discarded when their channel/session/draft
 no longer matches or their pair becomes linked. Drafts follow instance identities
-through reordering. With no last-sent block, a new/replaced instance displays
-the WebUI starting preset: Level100, Blend50, Feedback0, Delay50, Depth0,
-Filter100 and switches0/0. These are presentation choices, not captured vendor
-defaults or device state. The first edit sends all displayed values.
-Opening and Refresh read the selected chain and link table;
-reconnect invalidates cached slot inventory, link flags and parameter drafts.
+through reordering. Opening, selection, load and Refresh read the selected
+chain, link table and captured Memory Cat instance states. Reconnect invalidates
+old caches/drafts and triggers a fresh selected-rack query from the main state
+stream. Unknown controls remain unavailable, with no hardcoded starting preset.
+Parameter writes for captured instances0–2 verify the complete block afterward;
+a mismatch disables further AFX writes. Instance-query timeouts stop more such
+queries until reconnect. Neither loading nor refreshing writes parameter or
+bypass defaults.
 No partner-chain assignments or stereo parameter mirroring are generated.
+
+**Tagged effect-instance state readback and Launcher-restart retention.**
+The second capture,
+`antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng`,
+contains75 Memory Cat writes before closing/reopening the Launcher. Final
+instance0 at5633 has all six knobs0, switches0/1; instance1 at8435 has all
+six knobs100, switches0/0; instance2 at22343 has the eight-byte vector
+`[50,50,49,0,49,48,49,0]`. Display positions near50% are approximate, while
+the captured raw bytes are exact. After reopen there are no parameter replay
+writes. Replies34397/34427/34481 and37613/37639/37695 return those exact
+blocks. This establishes device-side retention across Launcher restart;
+power-cycle retention remains untested.
+
+This uses a different read namespace from category queries: request magic
+`0x74`, opcode`0x11` at4, kind`0x07` at8, tagged effect selector
+`0x80000000 | type_id` as LE32 at12, instance as LE32 at16. Memory Cat
+requests34373/34401/34457 select type73, instances0/1/2. Replies start
+`75 00 00 00 40 01 00 00 07 00 00 00 49 00 00 80`, then processing-enabled
+byte16 followed by the eight parameters at17–24 in write-field order;
+padding starts25. The reply echoes the type selector, **not the instance**.
+Serialize these requests, drain queued reports, disable retries and stop
+after a timeout until device reconnect. Do not pass this tagged selector to
+the opcode`0x10` category-index builder or expand category7 bounds.
+
+The runtime reader queries only fresh loaded Memory Cat instances0–2,
+the exact captured tuples. Other Memory Cat instance reads3–7 remain guarded.
+Instinct75/1, Master De-Esser27/1 and BBD78/0 also have observed requests/replies
+in the first capture, but their individual response fields are unlabelled and
+runtime queries remain disabled. These are not license/account readbacks.
+The reusable request/response layout, per-effect offsets, observed indices,
+correlation limits and evidence live in
+`profiles/orion_studio_sc.json#frame.afx_slot.instance_state_readback`;
+the shared AFX catalog references it from the Memory Cat Orion implementation.
+
+Read-only live API checks on2026-10-01 returned the exact captured minimum,
+maximum and half-value vectors for instances0/1/2 on AFX1/2, with processing
+flags0/1/1 and no read errors. The owner confirmed correct readback. These
+checks made no parameter, bypass, chain or link mutations.
 
 The owner authorized a Level self-test after applying the full settings.
 The test sent Level 100→99 while a raw HID listener observed incoming
@@ -2075,7 +2134,7 @@ ignored `AUDIT.md`.
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, confirmed Bass Management/filter-type/Link/Solo fields, confirmed speaker bypass, and confirmed per-speaker delay/level/phase fields; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
 | DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
-| AFX Real-Time effects | §12a: whole eight-slot chain decoded, separate type/instance addressing, Memory Cat knob fields mapped, and linked host mirroring observed for Instinct/Master De-Esser. The owner-requested mono Orion Memory Cat pilot has explicit operator tests; slot writes require fresh readback and post-write verification. Direct slot round trips cover channels2–31, plus earlier owner testing on0. Parameter readback, switch polarity, bypass polarity, channel1 mono writes, storage32–63 and other effect parameter maps remain unverified. Generic AFX opcode guards and runtime readback bounds remain unchanged. |
+| AFX Real-Time effects | §12a: whole eight-slot chain decoded, separate type/instance addressing, Memory Cat parameter/processing-state readbacks confirmed for instances0–2, Launcher-restart retention confirmed, and linked host mirroring observed for Instinct/Master De-Esser. Mono slot writes require fresh readback and post-write verification. Direct slot round trips cover channels2–31, plus earlier owner testing on0. Switch label polarity, isolated bypass-enable writes, channel1 direct mono round trip, storage32–63 and other effect parameter maps remain unverified. Generic opcode guards and classic readback bounds remain unchanged. |
 | AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. Direct trials on 2026-10-01 verified pair0–15 against category `0x0b` index4 records0–15 and restored original flags. Records16–31 remain unmapped. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |

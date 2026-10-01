@@ -6,6 +6,7 @@ let AFX_LIVE_TIMER = null;
 let AFX_LIVE_INFLIGHT = false;
 
 function afxLiveChanged(draft) {
+  if (!draft.parameterAvailable) return;
   if (draft.livePaused) {
     if (afxWindowIsOpen()) AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
       'Live controls paused after a failed send. Click Retry live controls to send the displayed settings.';
@@ -55,7 +56,14 @@ async function afxLiveFlush() {
       (AFX_TEST_STATE.parameters ||= {})[String(instance)] = {...pending.values};
       pending.draft.liveReady = true;
       if (AFX_WINDOW === popup && !popup.closed) {
-        popup.document.getElementById('afx-preview-status').textContent = 'Live settings sent · parameter readback unavailable';
+        if (result.verified) {
+          pending.draft.parameterSource = 'readback';
+          pending.draft.bypassed = result.bypassed;
+          (AFX_TEST_STATE.parameter_states ||= {})[String(instance)] = {
+            values: {...pending.values}, bypassed: result.bypassed, source: 'readback'};
+        } else pending.draft.parameterSource = 'last-sent';
+        popup.document.getElementById('afx-preview-status').textContent = result.verified
+          ? 'Live settings verified by device readback' : 'Live settings sent · parameter readback unavailable';
         AFX_PANELS.get(pending.draft.effect.id).updateLiveStatus(pending.draft, popup.document);
       }
     }

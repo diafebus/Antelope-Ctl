@@ -156,3 +156,65 @@ def build_parameter_test(profile, instance, values):
     for name, offset in contract['parameter_offsets'].items():
         packet[offset] = values[name]
     return bytes(packet)
+
+
+def parameter_readback_contract(profile):
+    reference = test_contract(profile).get('parameter_readback_contract', {})
+    layout = profile.get('frame', {}).get('afx_slot', {}).get('instance_state_readback', {})
+    request, response = layout.get('request', {}), layout.get('response', {})
+    effect = layout.get('effects', {}).get('memory_brigade', {})
+    expected_offsets = {name: offset - 3 for name, offset in test_contract(profile)['parameter_offsets'].items()}
+    if (reference != {'layout_ref': 'frame.afx_slot.instance_state_readback', 'effect_id': 'memory_brigade'}
+            or layout.get('status') != 'capture-confirmed' or layout.get('report_length') != 320
+            or any(request.get(key) != value for key, value in {
+                'magic_offset':0, 'opcode_offset':4, 'kind_offset':8,
+                'effect_selector_endian':'little', 'instance_endian':'little', 'reserved_fill':0}.items())
+            or (request.get('magic'), request.get('opcode'), request.get('kind'),
+                request.get('effect_selector_offset'), request.get('effect_selector_width'),
+                request.get('effect_selector_tag'), request.get('instance_offset'), request.get('instance_width'),
+                response.get('header_prefix_hex'), response.get('instance_echo'),
+                effect.get('type_id'), effect.get('query_instance_indices')) != (
+                    '0x74', '0x11', '0x07', 12, 4, '0x80000000', 16, 4,
+                    '750000004001000007000000', False, 73, [0, 1, 2])
+            or {name: spec.get('offset') for name, spec in effect.get('fields', {}).items()} != expected_offsets
+            or response.get('processing_enabled') != {'offset':16, 'width':1, 'range':[0,1],
+                'enum':{'0':'bypassed','1':'active'}, 'status':'capture-and-owner-correlated'}):
+        raise protocol.ConstraintError('Memory Cat instance readback is unavailable for this profile')
+    return layout
+
+
+def build_parameter_query(profile, instance):
+    layout = parameter_readback_contract(profile)
+    request = layout['request']
+    effect = layout['effects']['memory_brigade']
+    _integer(instance, 0, 2, 'Captured Memory Cat readback instance')
+    packet = bytearray(320)
+    for field in ('magic', 'opcode', 'kind'):
+        packet[request[field + '_offset']] = protocol._as_int(request[field])
+    offset, width = request['effect_selector_offset'], request['effect_selector_width']
+    packet[offset:offset + width] = (protocol._as_int(request['effect_selector_tag']) | effect['type_id']).to_bytes(width, request['effect_selector_endian'])
+    offset, width = request['instance_offset'], request['instance_width']
+    packet[offset:offset + width] = instance.to_bytes(width, request['instance_endian'])
+    return bytes(packet)
+
+
+def is_parameter_response(profile, data):
+    layout = parameter_readback_contract(profile)
+    expected = bytes.fromhex(layout['response']['header_prefix_hex']) + build_parameter_query(profile, 0)[12:16]
+    return (data is not None and len(data) == 320
+            and data[:16] == expected)
+
+
+def parse_parameter_response(profile, data):
+    if not is_parameter_response(profile, data):
+        raise ValueError('Not a captured Memory Cat parameter response')
+    layout = parameter_readback_contract(profile)
+    effect = layout['effects']['memory_brigade']
+    enabled_spec = layout['response']['processing_enabled']
+    enabled = data[enabled_spec['offset']]
+    if enabled not in enabled_spec['range'] or any(data[effect['zero_padding_offset']:]):
+        raise ValueError('Unexpected Memory Cat readback layout')
+    values = validate_parameters(profile, {name: data[spec['offset']]
+                                          for name, spec in effect['fields'].items()})
+    return {'values': values, 'processing_enabled': bool(enabled),
+            'bypassed': not bool(enabled)}

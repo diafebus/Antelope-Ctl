@@ -94,6 +94,10 @@ provides six draggable knobs and two mode selectors in an original Gazelle
 rack design. Local previews retain settings per channel/slot and support
 drag-and-drop or keyboard-button reordering.
 
+The AFX channel dropdown shows a loaded-effect count (for example, `AFX 1 · 2 FX`)
+from slot readbacks only when at least one effect occupies that channel. Empty
+and unavailable channels have no count; existing link markers remain visible.
+
 Opening **AFX** shows the device rack. Select any of AFX 1–32; each slot
 in the left channel frame has an effect selector grouped into Dynamics,
 EQ & Filters, Modulation, Delay & Reverb, Pitch & Tuning, Amps & Cabinets,
@@ -106,8 +110,7 @@ removes it. Loading uses fresh instance counters and the complete slot
 inventory, measured instance indices, and verified whole-chain writes.
 Counts describe resources, not license ownership. Direct load/remove tests
 on AFX 3–32 verified matching slot readbacks and exact restoration; AFX 1
-was owner-tested earlier. AFX 2 mono writes await testing while 1–2 are
-linked. Only Memory Cat has parameter controls so far. Drag effects within
+was owner-tested earlier. AFX 2 was not part of those mono trials. Only Memory Cat has parameter controls so far. Drag effects within
 or between the left slot list and the rack to reorder the selected chain.
 
 The compact pair button sits inside the left channel header and follows
@@ -118,30 +121,43 @@ independently verified against `0x0b:4` records 0–15 on 2026-10-01. Records
 16–31 remain unmapped. Opening or refreshing the rack reads its selected
 chain and link flags directly.
 The button sends only the flag, preserving both chains. Stereo parameter
-sharing is not implemented; unlink the selected pair before mono rack edits.
+sharing is not implemented; unlink the selected pair before editing parameters.
+Adding, replacing, removing and reordering effects works while linked: the
+controller reads both adjacent chains, preflights both edits, allocates distinct
+instances and writes left then right, matching the captures. Both resulting
+chains must verify. Loads require two available instances and empty target slots
+on both sides; removal/replacement/reordering requires matching effect types at
+the edited slot. Conflicting chains remain unchanged for independent editing.
 Links on other pairs do not block that channel.
 
-Memory Cat settings are drafts/last sent, not parameter readback. Knob and
-switch edits send automatically, including the first edit; there is no Apply
-step. Without last-sent settings, the panel shows a WebUI starting preset:
-Level100, Blend50, Feedback0, Delay50, Depth0, Filter100 and both switches A(0).
-These are not device readings or verified vendor defaults. The first edit
-sends all eight displayed values; opening or refreshing never sends settings.
+Memory Cat instances0–2 now initialize from real device readback on opening,
+channel selection, loading and reconnect. The JSON profiles describe a separate
+tagged instance-state query, its eight parameter offsets and processing flag.
+The owner's Launcher-restart capture returns the exact minimum/maximum/near-50%
+values without replaying parameter writes. New effects were also confirmed
+active after Bypass All; loading preserves the device-assigned state.
+Power-cycle persistence remains untested. Other instance reads/effect fields
+remain guarded; unknown settings stay unavailable. No hardcoded starting
+preset is sent. Knob and switch edits send automatically from the first edit;
+there is no Apply step. Opening or refreshing never sends settings.
 Requests are throttled
 and coalesced to the latest settings, with one in flight and no rack repaint
 during a drag. Failed writes pause live sending until an explicit Retry live
-controls click; they are not retried automatically. A missing
-or mismatching post-write slot readback disables further AFX writes for the
-server session; Refresh remains read-only and does not clear that failure.
+controls click; they are not retried automatically. A missing or mismatching
+post-write slot reply, or mismatching parameter reply, disables further AFX writes
+for the server session; Refresh remains read-only and does not clear that failure.
+An instance-query timeout blocks further captured instance reads and edits until
+the device reconnects, because a late reply carries no instance identity.
 Reconnect clears old slot inventory, link flags and initialized parameter
 drafts. Wait for the full inventory before loading. After loading or reconnect,
-the first edit sends the displayed starting preset if no last-sent block exists.
+the selected rack queries fresh settings before its first edit.
 Switch A/B polarity is still unconfirmed. The owner reports the effect and
 applied parameter settings work. A 2026-10-01 Level 100→99→100 self-test
 found no stable parameter readback in the observed HID streams; the original
 settings were resent to restore the baseline, with the command acknowledged
 but no parameter readback to independently verify restoration. This does not
-establish absence of a separate, undiscovered parameter-readback protocol.
+establish absence of a separate parameter-readback protocol; the new restart
+capture identifies it. That older restoration trial remains send-only evidence.
 See [PROTOCOL.md §12a](PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls)
 for the effect IDs, complete device-test findings and remaining evidence limits.
 

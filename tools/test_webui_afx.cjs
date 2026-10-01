@@ -256,9 +256,9 @@ async function checkEffectPreviews() {
   assert.doesNotMatch(reopened.document.body.innerHTML, /type="range"/);
   reopened.close();
 
-  // Opening reads metadata only; the first edit sends a complete starting block.
+  // Opening reads device settings; the first edit preserves all untouched values.
   const emptySlots = Array.from({length: 8}, () => ({type: 0, instance: 0}));
-  emptySlots[0] = {type: 73, instance: 4};
+  emptySlots[0] = {type: 73, instance: 0};
   const state = {available: true, online: true, writes_enabled: true, slots: emptySlots,
     channels: Object.fromEntries(Array.from({length:32}, (_,i) => [String(i), i === 0 ? emptySlots : Array.from({length:8}, () => ({type:0,instance:0}))])),
     allowed_channels: Array.from({length:32},(_,i)=>i), parameters: {}, session: 1, links: Array(16).fill(null), effects: [
@@ -267,6 +267,9 @@ async function checkEffectPreviews() {
       {id: 'deesser', name: 'Master De-Esser', category: 'Dynamics', type_id: 27, loadable: true},
       {id: 'unmapped', name: 'Unmapped effect', type_id: null, loadable: false},
     ]};
+  const baseline = {blend:0, level:0, feedback:0, chrs_vibr:0, depth:0, delay:0, lpf_fc:0, size:1};
+  state.parameter_readback = true;
+  state.parameter_states = {'0': {values:{...baseline}, bypassed:true, source:'readback'}};
   const writes = [];
   let deviceReads = 0;
   context.fetch = async (url, options) => {
@@ -274,9 +277,10 @@ async function checkEffectPreviews() {
     if (options) {
       assert.equal(options.method, 'POST');
       writes.push({url, body: JSON.parse(options.body)});
+      if (url.endsWith('/parameters')) state.parameter_states[String(writes.at(-1).body.instance)] = {values:{...writes.at(-1).body.values}, bypassed:true, source:'readback'};
       if (url.endsWith('/link')) state.links[writes.at(-1).body.pair] = writes.at(-1).body.enabled;
     } else deviceReads++;
-    return {ok: true, json: async () => options && url.endsWith('/parameters') ? {sent: true, verified: false} : state};
+    return {ok: true, json: async () => options && url.endsWith('/parameters') ? {sent: true, verified: true, bypassed: true} : JSON.parse(JSON.stringify(state))};
   };
   context.PROFILE.runtime_contracts.afx_memorycat_test.enabled = true;
   vm.runInContext('AFX_CHANNEL = 0', context);
@@ -292,6 +296,16 @@ async function checkEffectPreviews() {
   assert.match(live.nodes['afx-slot-list'].innerHTML, /<optgroup label="Dynamics">/);
   assert.match(live.nodes['afx-slot-list'].innerHTML, /<optgroup label="Delay &amp; Reverb">/);
   assert.doesNotMatch(live.nodes['afx-channel'].innerHTML, /link \?/);
+  assert.match(live.nodes['afx-channel'].innerHTML, />AFX 1 · 1 FX<\/option>/);
+  assert.match(live.nodes['afx-channel'].innerHTML, />AFX 2<\/option>/);
+  assert.doesNotMatch(live.nodes['afx-channel'].innerHTML, /0 FX/);
+  // Counts include every effect type and coexist with the linked partner.
+  assert.equal(vm.runInContext('afxTestChannelLabel(31)', context), 'AFX 32');
+  vm.runInContext('AFX_TEST_STATE.channels[31][0] = {type:73,instance:2}; AFX_TEST_STATE.channels[31][1] = {type:27,instance:1}; AFX_TEST_STATE.links[15] = true', context);
+  assert.equal(vm.runInContext('afxTestChannelLabel(31)', context), 'AFX 32 · 2 FX ↔ 31');
+  vm.runInContext('AFX_TEST_STATE.channels[31][0] = {type:0,instance:0}; AFX_TEST_STATE.channels[31][1] = {type:0,instance:0}', context);
+  assert.equal(vm.runInContext('afxTestChannelLabel(31)', context), 'AFX 32 ↔ 31');
+  vm.runInContext('AFX_TEST_STATE.links[15] = null', context);
   assert.match(live.document.body.innerHTML, /afx-channel-heading[^]*?afx-channel-name[^]*?afx-pair-control/);
   assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /data-afx-effect-select=/);
   assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /Preview Memory/);
@@ -302,19 +316,19 @@ async function checkEffectPreviews() {
   assert.doesNotMatch(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select="0"[^>]* disabled/);
   vm.runInContext('selectAfxChannel(0)', context);
   assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /Apply all settings|data-afx-device-apply/);
-  assert.match(live.nodes['afx-rack'].innerHTML, /First edit sends all displayed starting values/);
-  assert.equal(vm.runInContext('afxTestDraft(0, 0).values.level', context), 100);
+  assert.match(live.nodes['afx-rack'].innerHTML, /Live controls · device settings · bypassed/);
+  assert.equal(vm.runInContext('afxTestDraft(0, 0).values.level', context), 0);
   live.nodes['afx-rack'].input({target: input});
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(writes.length, 1);
   assert.equal(writes[0].body.channel, 0);
-  assert.equal(writes[0].body.instance, 4);
+  assert.equal(writes[0].body.instance, 0);
   assert.equal(writes[0].body.values.level, 42);
   assert.equal(writes[0].body.values.chrs_vibr, 0);
-  assert.equal(writes[0].body.values.size, 0);
+  assert.equal(writes[0].body.values.size, 1);
   assert.equal(Object.keys(writes[0].body.values).length, 8);
   assert.equal(vm.runInContext('afxTestDraft(0, 0).liveReady', context), true);
-  assert.match(live.nodes['afx-preview-status'].textContent, /Live settings sent/);
+  assert.match(live.nodes['afx-preview-status'].textContent, /Live settings verified/);
 
   // Rapid knob turns coalesce to the latest full state, without replacing DOM.
   const beforeLive = live.nodes['afx-rack'].innerHTML;
@@ -331,16 +345,18 @@ async function checkEffectPreviews() {
   assert.equal(writes[1].body.values.level, 45);
   assert.equal(writes[1].body.values.chrs_vibr, 1, 'Switch edits share the live queue');
   assert.equal(live.nodes['afx-rack'].innerHTML, beforeLive, 'Live sends preserve pointer-captured controls');
-  assert.match(live.nodes['afx-preview-status'].textContent, /Live settings sent/);
+  assert.match(live.nodes['afx-preview-status'].textContent, /Live settings verified/);
   // Instance drafts follow chain reorder and are discarded on reconnection.
   state.channels[0] = state.slots = [{type: 0, instance: 0}, ...emptySlots.slice(0, 7)];
   await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
   assert.equal(vm.runInContext('afxTestDraft(0, 1).values.level', context), 45);
   state.session = 2;
   state.parameters = {};
+  state.parameter_states = {'0': {values:{...baseline, level:28}, bypassed:false, source:'readback'}};
   await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
   assert.equal(vm.runInContext('afxTestDraft(0, 1).values.chrs_vibr', context), '0');
-  assert.equal(vm.runInContext('afxTestDraft(0, 1).liveReady', context), false);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).liveReady', context), true);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).values.level', context), 28, 'Reconnect uses actual device values');
   assert.equal(writes.length, 2);
   const previewButton = {closest: selector => selector === '[data-afx-test-preview]' ? previewButton : null};
   vm.runInContext('afxTestClick', context)({target: previewButton});
@@ -409,16 +425,17 @@ async function checkEffectPreviews() {
   assert.doesNotMatch(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select="0"[^>]* disabled/);
   state.links[15] = true;
   await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
-  assert.match(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select="0"[^>]* disabled/);
+  assert.doesNotMatch(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select="0"[^>]* disabled/);
   assert.match(live.nodes['afx-pair-control'].innerHTML, /Device link readback/);
   state.links.fill(false);
+  await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
   // First edit after reconnect sends immediately; stale channel/draft/link edits do not.
   vm.runInContext('selectAfxChannel(0)', context);
   input.dataset.afxSlot = '1';
   input.value = '39';
   live.nodes['afx-rack'].input({target: input});
   await new Promise(resolve => setTimeout(resolve, 100));
-  assert.equal(writes.at(-1).body.instance, 4);
+  assert.equal(writes.at(-1).body.instance, 0);
   assert.equal(writes.at(-1).body.values.level, 39);
   assert.equal(writes.at(-1).body.values.chrs_vibr, 0);
   assert.equal(vm.runInContext('afxTestDraft(0, 1).liveReady', context), true);
@@ -429,14 +446,16 @@ async function checkEffectPreviews() {
   assert.equal(writes.length, beforeStale, 'Queued edits cannot follow a channel change');
   vm.runInContext('selectAfxChannel(0)', context);
   live.nodes['afx-rack'].input({target: input});
-  vm.runInContext('AFX_TEST_DRAFTS.delete(4); afxTestDraft(0, 1)', context);
+  vm.runInContext('AFX_TEST_DRAFTS.delete(0); afxTestDraft(0, 1)', context);
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(writes.length, beforeStale, 'Reused instance IDs cannot receive an old draft');
   live.nodes['afx-rack'].input({target: input});
   state.links[0] = true;
+  vm.runInContext('AFX_TEST_STATE.links[0] = true', context);
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(writes.length, beforeStale, 'Link state is checked again before sending');
   state.links[0] = false;
+  vm.runInContext('AFX_TEST_STATE.links[0] = false', context);
   // A failed live send pauses this instance and is never retried.
   vm.runInContext('selectAfxChannel(0)', context);
   let failedRequests = 0;
@@ -476,6 +495,30 @@ async function checkEffectPreviews() {
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(slowWrites.length, 2);
   assert.equal(slowWrites[1].values.level, 42);
+  // Main-stream reconnect invalidates drafts and requests one fresh read automatically.
+  const beforeReconnect = writes.length;
+  vm.runInContext('afxTestDeviceState({online:false})', context);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).parameterAvailable', context), false);
+  live.nodes['afx-rack'].input({target: input});
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(writes.length, beforeReconnect, 'Offline drafts cannot send settings');
+  state.online = true;
+  state.session = 3;
+  state.parameter_states = {'0': {values:{...baseline,level:17},bypassed:true,source:'readback'}};
+  const beforeReconnectReads = deviceReads;
+  context.fetch = async (_url, options) => {
+    assert.equal(options, undefined, 'Reconnect only sends read requests');
+    deviceReads++;
+    return {ok:true,json:async()=>JSON.parse(JSON.stringify(state))};
+  };
+  vm.runInContext('afxTestDeviceState({online:true,connection_generation:3}); afxTestDeviceState({online:true,connection_generation:3})', context);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(deviceReads, beforeReconnectReads + 1, 'Reconnect refresh is coalesced');
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).values.level', context), 17);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).bypassed', context), true);
+  vm.runInContext('afxTestDeviceState({online:true,connection_generation:3})', context);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(deviceReads, beforeReconnectReads + 1, 'Steady online state does not poll effect parameters');
   live.close();
   console.log('AFX checks passed (effect picker, pair links, live coalescing, failure pause, reconnect).');
 }

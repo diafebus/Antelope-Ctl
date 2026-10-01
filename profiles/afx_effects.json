@@ -1937,7 +1937,9 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 9594,
-              "last_changed_frame": 15718
+              "last_changed_frame": 15718,
+              "readback_offset": 18,
+              "readback_status": "capture-confirmed"
             },
             "blend": {
               "label": "Blend",
@@ -1959,7 +1961,9 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 16557,
-              "last_changed_frame": 21420
+              "last_changed_frame": 21420,
+              "readback_offset": 17,
+              "readback_status": "capture-confirmed"
             },
             "feedback": {
               "label": "Feedback",
@@ -1981,7 +1985,9 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 22491,
-              "last_changed_frame": 27078
+              "last_changed_frame": 27078,
+              "readback_offset": 19,
+              "readback_status": "capture-confirmed"
             },
             "delay": {
               "label": "Delay",
@@ -2003,7 +2009,9 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 27996,
-              "last_changed_frame": 35298
+              "last_changed_frame": 35298,
+              "readback_offset": 22,
+              "readback_status": "capture-confirmed"
             },
             "depth": {
               "label": "Depth",
@@ -2025,7 +2033,9 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 35931,
-              "last_changed_frame": 40426
+              "last_changed_frame": 40426,
+              "readback_offset": 21,
+              "readback_status": "capture-confirmed"
             },
             "lpf_fc": {
               "label": "Filter",
@@ -2047,7 +2057,9 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 40945,
-              "last_changed_frame": 45965
+              "last_changed_frame": 45965,
+              "readback_offset": 23,
+              "readback_status": "capture-confirmed"
             },
             "chrs_vibr": {
               "label": "Chorus / Vibrato",
@@ -2067,7 +2079,9 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 47145,
-              "last_changed_frame": 49074
+              "last_changed_frame": 49074,
+              "readback_offset": 20,
+              "readback_status": "capture-confirmed"
             },
             "size": {
               "label": "550 ms / 1100 ms",
@@ -2087,16 +2101,20 @@
               "status": "capture-observed",
               "writable": false,
               "first_changed_frame": 49842,
-              "last_changed_frame": 52163
+              "last_changed_frame": 52163,
+              "readback_offset": 24,
+              "readback_status": "capture-confirmed"
             }
           },
           "evidence": [
             "macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng",
             "https://es.antelopeaudio.com/wp-content/uploads/2020/11/Memory-Cat-Brigade.jpg",
             "Owner clarified action order and six knob endpoints (0-100) on 2026-09-30.",
-            "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng"
+            "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng",
+            "antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng",
+            "antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng"
           ],
-          "notes": "Orion-only observation from owned-device HID OUT traffic and owner-labelled actions. The new eight-instance capture establishes type ID 73 and a separate instance index: chain slots are {type, inst} pairs at bytes 19-34; parameter frames address type at 18 and instance at 19. Instance 4 retains its identity through reordering; the owner set its Level to 0 (frames 49667/49719). Report offsets exclude USB capture headers. Six knobs reach raw 0 and 100; intermediate display scaling, quantization and physical units remain unverified. Switch label polarity and effect-parameter readback remain unknown. Commands here remain null; explicitly bounded test operations belong to the Orion runtime contract, not a cross-device catalog writer.",
+          "notes": "Orion-only observation from owned-device HID OUT traffic and owner-labelled actions. The new eight-instance capture establishes type ID 73 and a separate instance index: chain slots are {type, inst} pairs at bytes 19-34; parameter frames address type at 18 and instance at 19. Instance 4 retains its identity through reordering; the owner set its Level to 0 (frames 49667/49719). Report offsets exclude USB capture headers. Six knobs reach raw 0 and 100; intermediate display scaling, quantization and physical units remain unverified. Switch label polarity remains unknown. New Launcher-restart captures confirm the eight-field parameter readback and processing-state byte; see state_readback. These observations apply to Orion only, not to another model without its own capture evidence. Commands here remain null; explicitly bounded test operations belong to the Orion runtime contract, not a cross-device catalog writer.",
           "parameter_observation": {
             "report_length": 320,
             "opcode_offset": 4,
@@ -2131,7 +2149,9 @@
             "last_frame": 52163,
             "status": "capture-observed",
             "writable": false,
-            "readback_verified": false,
+            "readback_verified": true,
+            "readback_verified_instance_indices": [0, 1, 2],
+            "readback_evidence_ref": "state_readback",
             "restoration_verified": false,
             "type_id_offset": 18,
             "instance_index_offset": 19,
@@ -2140,7 +2160,28 @@
               4
             ]
           },
-          "type_id_write_status": "capture-observed"
+          "type_id_write_status": "capture-observed",
+          "state_readback": {
+            "status": "capture-confirmed",
+            "layout_ref": "orion_studio_sc.json#frame.afx_slot.instance_state_readback",
+            "effect_id": "memory_brigade",
+            "observed_instance_indices": [
+              0,
+              1,
+              2
+            ],
+            "query_only_loaded_instances": true,
+            "parameter_replay_on_launcher_restart": false,
+            "launcher_restart_retention": "capture-and-owner-confirmed",
+            "live_readback_verification": "Orion AFX1/2 read-only API returned exact captured instance0/1/2 parameters and processing flags on 2026-10-01; owner confirms correct readback.",
+            "power_cycle_retention": "untested",
+            "processing_enabled_offset": 16,
+            "processing_enabled_enum": {
+              "0": "bypassed",
+              "1": "active"
+            },
+            "load_after_bypass_all": "Owner confirms newly loaded effect active; loader preserves device-assigned state."
+          }
         }
       ]
     },

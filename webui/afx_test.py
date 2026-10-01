@@ -11,6 +11,45 @@ class MemoryCatTest:
         self.sent_parameters = {}  # instance -> (transport object, last sent values)
         self.failed_verification = False
         self.sent_links = {}  # pair -> (transport, requested state), not readback
+        self.read_parameters = {}  # instance -> (transport, parsed device state)
+        self.parameter_read_errors = {}
+        self.parameter_query_failed_transport = None
+
+    def _read_parameters(self, transport, instance):
+        if self.parameter_query_failed_transport is transport:
+            raise RuntimeError('Effect-state query timed out; reconnect before further instance queries')
+        request = afx.build_parameter_query(self.device.profile, instance)
+        response = transport.query(request, lambda data: afx.is_parameter_response(
+            self.device.profile, data), timeout=1.5, retries=0)
+        if response is None:
+            # These replies do not echo the instance. A late reply must not
+            # be attributed to the next instance, even on another channel.
+            self.parameter_query_failed_transport = transport
+            raise RuntimeError('No fresh Memory Cat state; reconnect before further instance queries')
+        try:
+            state = afx.parse_parameter_response(self.device.profile, response)
+        except ValueError:
+            self.parameter_query_failed_transport = transport
+            raise RuntimeError('Invalid Memory Cat state; reconnect before further instance queries') from None
+        with self.device._lock:
+            self.read_parameters[instance] = (transport, state)
+            self.parameter_read_errors.pop(instance, None)
+        return state
+
+    def _read_chain_parameters(self, transport, chain, still_current):
+        allowed = afx.parameter_readback_contract(self.device.profile)['effects']['memory_brigade']['query_instance_indices']
+        for effect_type, instance in chain:
+            if effect_type != 73:
+                continue
+            still_current()
+            try:
+                if instance not in allowed:
+                    raise RuntimeError('State query is not captured for this instance')
+                self._read_parameters(transport, instance)
+            except RuntimeError as error:
+                with self.device._lock:
+                    self.read_parameters.pop(instance, None)
+                    self.parameter_read_errors[instance] = (transport, str(error))
 
     def _link_states(self, records):
         contract = self.device.profile.get('runtime_contracts', {}).get('afx_rack_test', {})
@@ -60,6 +99,17 @@ class MemoryCatTest:
                 {'type': record['type'], 'instance': record['inst']} for record in records]
             parameters = {str(instance): dict(values) for instance, (transport, values)
                           in self.sent_parameters.items() if transport is device._transport}
+            loaded = {row['instance'] for rows in channels.values() if rows
+                      for row in rows if row['type'] == 73}
+            states = {str(instance): {**state, 'source':'readback'}
+                      for instance, (transport, state) in self.read_parameters.items()
+                      if transport is device._transport and online and instance in loaded}
+            for instance, state in states.items():
+                parameters[instance] = dict(state['values'])
+            sources = {instance: 'readback' if instance in states else 'last-sent'
+                       for instance in parameters}
+            errors = {str(instance): error for instance, (transport, error) in self.parameter_read_errors.items()
+                      if transport is device._transport and instance in loaded}
             links = [self.sent_links.get(pair) for pair in range(16)]
             links = [value[1] if value and value[0] is device._transport else None
                      for value in links]
@@ -71,7 +121,9 @@ class MemoryCatTest:
                 'online': online, 'slots': slots, 'parameters': parameters,
                 'session': device.connection_generation,
                 'writes_enabled': not self.failed_verification,
-                'parameter_readback': False, 'switch_polarity_confirmed': False,
+                'parameter_readback': True, 'parameter_states': states,
+                'parameter_sources': sources, 'parameter_read_errors': errors,
+                'switch_polarity_confirmed': False,
                 'links': links, 'link_state_source': 'readback' if read_links is not None else 'last-sent',
                 'link_readback': read_links is not None}
 
@@ -91,7 +143,7 @@ class MemoryCatTest:
             device.rb_ver += 1
         return slots
 
-    def _allocate_instance(self, transport, chain, spec, channel=0):
+    def _allocate_instance(self, transport, chain, spec, channel=0, *, reserved=(), required=1):
         device = self.device
         count = protocol.readback_category_count(device.profile, 0x19)
         with device._lock:
@@ -101,6 +153,7 @@ class MemoryCatTest:
             raise RuntimeError('Wait for the complete AFX inventory before loading an effect')
         effect_type = spec['type_id']
         used = {instance for kind, instance in chain if kind == effect_type}
+        used.update(reserved)
         used.update(row['inst'] for index, records in inventory.items() if index != channel
                     for row in records if row['type'] == effect_type)
         request = protocol.build_readback_query(device.profile, 0x15, 0)
@@ -111,8 +164,10 @@ class MemoryCatTest:
         counters = protocol.parse_afx_instance_table(device.profile,
             protocol.readback_body(device.profile, response), 0x15, 0)
         remaining = next((row['inst_count'] for row in counters if row['type_id'] == effect_type), 0)
-        if not remaining:
-            raise RuntimeError('The device reports no remaining instances of this effect')
+        if remaining < required:
+            if not remaining:
+                raise RuntimeError('The device reports no remaining instances of this effect')
+            raise RuntimeError(f'The device needs {required} remaining instances for this load')
         return next((index for index in spec['instance_indices'] if index not in used), None)
 
     def _execute(self, work, *, allow_linked=False, channel=0, read_only=False):
@@ -196,43 +251,77 @@ class MemoryCatTest:
         afx.test_channel(self.device.profile, channel)
         def work(transport, still_current):
             still_current()
-            self._read_chain(transport, channel)
+            chain = self._read_chain(transport, channel)
+            self._read_chain_parameters(transport, chain, still_current)
             return self.state()
         return self._execute(work, allow_linked=True, channel=channel, read_only=True)
 
     def change_chain(self, operation, slot, source=None, effect_id='memory_brigade', *, channel=0):
         afx.test_channel(self.device.profile, channel)
+        if type(slot) is not int or not 0 <= slot < 8:
+            raise ValueError('Slot must be an integer in 0..7')
+        if operation == 'move' and (type(source) is not int or not 0 <= source < 8):
+            raise ValueError('Source slot must be an integer in 0..7')
         effects = afx.load_effects(self.device.profile)
         allocating = operation in ('load', 'replace')
         if allocating and effect_id not in effects:
-            raise ValueError('Effect loading is not mapped for this Orion profile')
+            raise ValueError('That effect has no captured load mapping')
+
         def work(transport, still_current):
-            before = self._read_chain(transport, channel)
-            instance = self._allocate_instance(transport, before, effects[effect_id], channel) if allocating else None
-            if allocating and instance is None:
-                raise RuntimeError('All captured instance indices for this effect are already used')
-            after = afx.change_chain(self.device.profile, before, operation, slot,
-                                     source=source, instance=instance, effect_id=effect_id)
-            packet = afx.build_chain_test(self.device.profile, after, original_slots=before, channel=channel)
-            still_current()
-            transport.write(packet)
+            with self.device._lock:
+                pairs = self._link_states(self.device.structured.get((0x0b, 4)))
+            if pairs is None or pairs[channel // 2] is None:
+                raise RuntimeError('Fresh AFX pair state is unavailable; nothing was changed')
+            channels = [channel]
+            if pairs[channel // 2]:
+                contract = self.device.profile.get('runtime_contracts', {}).get('afx_rack_test', {})
+                if not contract.get('linked_chain_edits', {}).get('enabled'):
+                    raise RuntimeError('Linked chain editing is unavailable for this profile')
+                channels = [channel // 2 * 2, channel // 2 * 2 + 1]
+            before = {index: self._read_chain(transport, index) for index in channels}
+            if len(channels) == 2 and operation != 'load':
+                target = source if operation == 'move' else slot
+                if before[channels[0]][target][0] != before[channels[1]][target][0]:
+                    raise RuntimeError('Linked slots contain different effects; unlink to edit them independently')
+            after, reserved = {}, []
+            # Preflight both chains and allocations before issuing either write.
+            for index in channels:
+                instance = self._allocate_instance(transport, before[index], effects[effect_id], index,
+                    reserved=reserved, required=len(channels)) if allocating else None
+                if allocating and instance is None:
+                    raise RuntimeError('Not enough captured instance indices for this load')
+                if allocating:
+                    reserved.append(instance)
+                after[index] = afx.change_chain(self.device.profile, before[index], operation, slot,
+                    source=source, instance=instance, effect_id=effect_id)
+            packets = {index: afx.build_chain_test(self.device.profile, after[index],
+                original_slots=before[index], channel=index) for index in channels}
             try:
-                actual = self._read_chain(transport, channel)
+                # Captures show left then right, each with a distinct instance.
+                for index in channels:
+                    still_current()
+                    transport.write(packets[index])
+                for index in channels:
+                    still_current()
+                    if self._read_chain(transport, index) != after[index]:
+                        raise RuntimeError('Slot readback did not match the write')
             except Exception:
                 self.failed_verification = True
-                raise RuntimeError('Post-write slot readback failed; further AFX testing is disabled') from None
-            if actual != after:
-                # A mismatching device reply must not trigger another
-                # unverified corrective write.
-                self.failed_verification = True
-                raise RuntimeError('Slot readback did not match the write; further AFX testing is disabled')
+                raise RuntimeError('Post-write slot verification failed; further AFX testing is disabled') from None
             with self.device._lock:
-                if allocating and effects[effect_id]['type_id'] == 73:
-                    self.sent_parameters.pop(instance, None)
-                if operation in ('remove', 'replace') and before[slot][0] == 73:
-                    self.sent_parameters.pop(before[slot][1], None)
+                for index in channels:
+                    if allocating and effects[effect_id]['type_id'] == 73:
+                        instance = after[index][slot][1]
+                        self.sent_parameters.pop(instance, None)
+                        self.read_parameters.pop(instance, None)
+                    if operation in ('remove', 'replace') and before[index][slot][0] == 73:
+                        instance = before[index][slot][1]
+                        self.sent_parameters.pop(instance, None)
+                        self.read_parameters.pop(instance, None)
+            for index in channels:
+                self._read_chain_parameters(transport, after[index], still_current)
             return self.state()
-        return self._execute(work, channel=channel)
+        return self._execute(work, allow_linked=True, channel=channel)
 
     def change_parameters(self, instance, values, *, channel=0):
         afx.test_channel(self.device.profile, channel)
@@ -242,10 +331,23 @@ class MemoryCatTest:
             chain = self._read_chain(transport, channel)
             if (73, instance) not in chain:
                 raise RuntimeError(f'That Memory Cat instance is no longer on AFX {channel + 1}')
+            allowed = afx.parameter_readback_contract(self.device.profile)['effects']['memory_brigade']['query_instance_indices']
+            if instance in allowed and self.parameter_query_failed_transport is transport:
+                raise RuntimeError('Reconnect before changing this instance; effect-state query failed')
             still_current()
             transport.write(packet)
             with self.device._lock:
                 self.sent_parameters[instance] = (transport, dict(values))
-            return {'sent': True, 'verified': False, 'instance': instance,
-                    'values': values, 'parameter_readback': False}
+            verified = False
+            state = None
+            if instance in allowed:
+                still_current()
+                state = self._read_parameters(transport, instance)
+                if state['values'] != values:
+                    self.failed_verification = True
+                    raise RuntimeError('Parameter readback did not match; further AFX writes disabled')
+                verified = True
+            return {'sent': True, 'verified': verified, 'instance': instance,
+                    'values': values, 'parameter_readback': verified,
+                    'bypassed': state['bypassed'] if state else None}
         return self._execute(work, channel=channel)

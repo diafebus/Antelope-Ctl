@@ -4,6 +4,7 @@
 
 // ---- boot + live feed (SSE) ---------------------------------------
 function markOffline(text) {
+  AFX_DEVICE_RACK?.deviceState?.({online: false});
   ONLINE = false;
   applyMeters([]);
   applyMixerMeters(null);

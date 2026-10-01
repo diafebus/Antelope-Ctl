@@ -6,6 +6,7 @@ let AFX_TEST_BUSY = false;
 let AFX_TEST_SESSION = null;
 let AFX_TEST_DEVICE_VIEW = false;
 let AFX_TEST_CHOICES = [];
+let AFX_TEST_REFRESH_PENDING = false;
 const AFX_TEST_DRAFTS = new Map();
 
 function afxTestLinked(channel = AFX_CHANNEL) {
@@ -26,8 +27,7 @@ function afxTestCanMove(channel, slot) {
 
 function afxTestSlotPicker(channel, slot) {
   if (!AFX_TEST_DEVICE_VIEW) return null;
-  const writable = AFX_TEST_STATE?.online && AFX_TEST_STATE?.writes_enabled
-    && !afxTestLinked(channel);
+  const writable = AFX_TEST_STATE?.online && AFX_TEST_STATE?.writes_enabled;
   return afxTestPickerHTML(channel, slot, afxTestSlots(channel)?.[slot], writable);
 }
 
@@ -40,7 +40,7 @@ function afxTestChannelChanged(channel) {
   if (afxTestActive(channel)) {
     AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
       afxTestLinked(channel)
-        ? 'AFX links are on. Unlink before editing this mono rack; stereo sharing is not available yet.'
+        ? 'Linked rack: slot edits apply to both channels. Unlink to edit parameters.'
         : 'Select an effect in a slot. Memory Cat knobs and switches send live; switch A/B polarity remains unconfirmed.';
   }
 }
@@ -51,6 +51,42 @@ function afxTestOpen() {
   AFX_TEST_STATE = null;
   selectAfxChannel(AFX_CHANNEL);
   return afxTestRequest('/api/afx/memorycat-test');
+}
+
+async function afxTestRefresh() {
+  if (!AFX_TEST_DEVICE_VIEW || !afxWindowIsOpen() || AFX_TEST_REFRESH_PENDING) return;
+  AFX_TEST_REFRESH_PENDING = true;
+  try {
+    let requestedChannel;
+    do {
+      while (AFX_TEST_BUSY && afxWindowIsOpen()) await new Promise(resolve => setTimeout(resolve, 60));
+      if (!AFX_TEST_DEVICE_VIEW || !afxWindowIsOpen()) break;
+      requestedChannel = AFX_CHANNEL;
+      await afxTestRequest('/api/afx/memorycat-test');
+    } while (AFX_CHANNEL !== requestedChannel);
+  } finally { AFX_TEST_REFRESH_PENDING = false; }
+}
+
+function afxTestDeviceState(state) {
+  if (!AFX_TEST_DEVICE_VIEW || !afxWindowIsOpen()) return;
+  if (!state.online) {
+    if (AFX_TEST_STATE?.online || AFX_TEST_SESSION != null) {
+      AFX_TEST_SESSION = null;
+      AFX_TEST_DRAFTS.clear();
+      AFX_LIVE_PENDING.clear();
+      if (AFX_TEST_STATE) {
+        AFX_TEST_STATE.online = false;
+        AFX_TEST_STATE.parameters = {};
+        AFX_TEST_STATE.parameter_states = {};
+      }
+      selectAfxChannel(AFX_CHANNEL);
+    }
+  } else if (AFX_TEST_SESSION == null || Number.isInteger(state.connection_generation)
+      && state.connection_generation !== AFX_TEST_SESSION) {
+    AFX_TEST_DRAFTS.clear();
+    AFX_LIVE_PENDING.clear();
+    void afxTestRefresh();
+  }
 }
 
 function afxTestToolbarHTML() {
@@ -81,6 +117,10 @@ async function afxTestRequest(path, body) {
       AFX_TEST_DRAFTS.clear();
       AFX_TEST_SESSION = state.session;
     }
+    if (body === undefined && path === '/api/afx/memorycat-test') {
+      for (const record of state.channels?.[String(AFX_CHANNEL)] || [])
+        if (record.type === 73) AFX_TEST_DRAFTS.delete(record.instance);
+    }
     if (body && path.endsWith('/chain') && body.operation !== 'move') {
       const channel = String(body.channel ?? 0);
       const previous = AFX_TEST_STATE?.channels?.[channel]?.[body.slot];
@@ -97,9 +137,9 @@ async function afxTestRequest(path, body) {
     status.textContent = path.endsWith('/unlink') || path.endsWith('/link')
       ? state.link_readback ? 'Link flag verified by device readback; existing effects preserved.' : 'Link flag sent; readback unavailable.'
       : body && path.endsWith('/parameters')
-      ? 'Settings sent. Parameter readback is unavailable; confirm the result on the device.'
+      ? result.verified ? 'Settings verified by device readback.' : 'Settings sent; parameter readback unavailable.'
       : afxTestLinked(AFX_CHANNEL)
-      ? 'AFX links are on. Unlink before editing this mono rack; stereo sharing is not available yet.'
+      ? 'Linked rack: slot edits apply to both channels. Unlink to edit parameters.'
       : 'Select an effect in a slot. Memory Cat controls send live as you adjust them.';
   } catch (error) {
     if (body && AFX_WINDOW === popup && !popup.closed && AFX_TEST_DEVICE_VIEW) {
@@ -131,12 +171,14 @@ function afxTestDraft(channel, slot) {
       kind: Object.hasOwn(knobs, id) ? 'continuous' : 'enum', range: [0, 100],
       options: {'0': 'A · 0', '1': 'B · 1'},
     }));
-    const sent = AFX_TEST_STATE.parameters?.[String(record.instance)];
-    const starting = AFX_PANELS.get('memory_brigade').startingValues;
+    const read = AFX_TEST_STATE.parameter_states?.[String(record.instance)];
+    const sent = read?.values || AFX_TEST_STATE.parameters?.[String(record.instance)];
     const values = Object.fromEntries(controls.map(control => [control.id,
-      control.kind === 'continuous' ? sent?.[control.id] ?? starting[control.id]
-        : String(sent?.[control.id] ?? starting[control.id])]));
-    AFX_TEST_DRAFTS.set(record.instance, {live: true, liveReady: !!sent, livePaused: false, instance: record.instance,
+      control.kind === 'continuous' ? sent?.[control.id] ?? null
+        : sent?.[control.id] == null ? null : String(sent[control.id])]));
+    AFX_TEST_DRAFTS.set(record.instance, {live: true, liveReady: !!sent, parameterAvailable: !!sent,
+      parameterSource: read ? 'readback' : 'last-sent', bypassed: read?.bypassed,
+      livePaused: false, instance: record.instance,
       effect: {id: 'memory_brigade', name: 'Memory Cat Brigade', controls}, values});
   }
   return AFX_TEST_DRAFTS.get(record.instance);
@@ -203,7 +245,9 @@ function afxTestChange(event) {
 function afxTestChannelLabel(channel) {
   if (!AFX_TEST_DEVICE_VIEW) return `AFX ${channel + 1}`;
   const pair = Math.floor(channel / 2), linked = AFX_TEST_STATE?.links?.[pair];
-  return `AFX ${channel + 1}` + (linked === true ? ` ↔ ${channel % 2 ? channel : channel + 2}` : '');
+  const count = (afxTestSlots(channel) || []).filter(slot => slot.type > 0).length;
+  return `AFX ${channel + 1}` + (count ? ` · ${count} FX` : '')
+    + (linked === true ? ` ↔ ${channel % 2 ? channel : channel + 2}` : '');
 }
 
 function afxTestPairHTML(channel) {
@@ -283,4 +327,5 @@ function afxTestClick(event) {
 AFX_DEVICE_RACK = {toolbarHTML: afxTestToolbarHTML, rackHTML: afxTestRackHTML,
   click: afxTestClick, draft: afxTestDraft, active: afxTestActive, move: afxTestMove,
   open: afxTestOpen, slotLabel: afxTestSlotLabel, channelChanged: afxTestChannelChanged,
-  slotPicker: afxTestSlotPicker, canMove: afxTestCanMove, change: afxTestChange, pairHTML: afxTestPairHTML, channelLabel: afxTestChannelLabel, linkClick: afxTestLinkClick};
+  slotPicker: afxTestSlotPicker, canMove: afxTestCanMove, change: afxTestChange, pairHTML: afxTestPairHTML, channelLabel: afxTestChannelLabel, linkClick: afxTestLinkClick,
+  refresh: afxTestRefresh, deviceState: afxTestDeviceState};

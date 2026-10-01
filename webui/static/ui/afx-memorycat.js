@@ -1,23 +1,24 @@
 "use strict";
 
 // Memory Cat Brigade presentation only. No device commands or runtime handles.
-function afxMemoryCatControlHTML(control, value, slot, live = false) {
+function afxMemoryCatControlHTML(control, value, slot, live = false, ready = true) {
   const id = afxEscape(control.id), label = afxEscape(control.label);
   const scope = live ? 'device test draft' : 'local preview';
   if (control.kind === 'continuous') {
     const [min, max] = control.range;
-    const fraction = (value - min) / (max - min);
-    return `<label class="afx-effect-control" style="--afx-turn:${-135 + fraction * 270}deg;--afx-fill:${fraction * 270}deg">`
+    const known = value != null;
+    const fraction = known ? (value - min) / (max - min) : 0;
+    return `<label class="afx-effect-control${ready ? '' : ' unknown'}" style="--afx-turn:${-135 + fraction * 270}deg;--afx-fill:${fraction * 270}deg">`
       + `<span class="afx-control-label">${label}</span>`
       + `<span class="afx-knob" aria-hidden="true" data-afx-knob="${id}" data-afx-slot="${slot}"><span class="afx-knob-cap"><span class="afx-knob-pointer"></span></span></span>`
-      + `<input class="afx-knob-input" type="range" min="${min}" max="${max}" step="1" value="${value}"`
+      + `<input class="afx-knob-input" type="range" min="${min}" max="${max}" step="1" value="${known ? value : min}"${ready ? '' : ' disabled'}`
       + ` aria-label="${label}, ${scope}" data-afx-control="${id}" data-afx-slot="${slot}">`
-      + `<span class="afx-control-value"><output>${value}</output><span> / ${max}</span></span></label>`;
+      + `<span class="afx-control-value"><output>${known ? value : '—'}</output><span> / ${max}</span></span></label>`;
   }
   return `<div class="afx-mode-control"><span class="afx-control-label">${label}</span>`
     + `<div class="afx-mode-options" role="group" aria-label="${label}, ${scope}">`
     + Object.entries(control.options).map(([key, text]) =>
-      `<button type="button" class="afx-mode-button" aria-pressed="${value === key}"`
+      `<button type="button" class="afx-mode-button" aria-pressed="${value === key}"${ready ? '' : ' disabled'}`
       + ` data-afx-mode="${id}" data-afx-value="${afxEscape(key)}" data-afx-slot="${slot}">${afxEscape(text)}</button>`).join('')
     + '</div></div>';
 }
@@ -31,8 +32,8 @@ function afxMemoryCatHTML(draft, slot) {
     + '<span class="afx-effect-family">GAZELLE · DELAY</span>'
     + `<h3>${afxEscape(draft.effect.name)}</h3></div><span class="afx-preview-badge">${draft.live ? 'Device test' : 'Local preview'}</span>`
     + `<button type="button" class="afx-preview-close" ${draft.live ? 'data-afx-device-remove' : 'data-afx-remove'}="${slot}" aria-label="${draft.live ? 'Remove Memory Cat from the device' : 'Close local preview'}">×</button></div>`
-    + `<div class="afx-effect-controls"><div class="afx-knob-bank">${knobs.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live)).join('')}</div>`
-    + `<div class="afx-mode-bank">${modes.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live)).join('')}</div></div>`
+    + `<div class="afx-effect-controls"><div class="afx-knob-bank">${knobs.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live, !draft.live || draft.parameterAvailable)).join('')}</div>`
+    + `<div class="afx-mode-bank">${modes.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live, !draft.live || draft.parameterAvailable)).join('')}</div></div>`
     + (draft.live ? `<div class="afx-live-status" data-afx-live-state="${draft.instance}"><span>${afxMemoryCatLiveMessage(draft)}</span>`
       + `<button type="button" class="afx-preview-open" data-afx-device-resume="${slot}"${draft.livePaused ? '' : ' hidden'}>Retry live controls</button></div>`
       : '<p class="afx-preview-note">Preview settings only · effect loading and device controls are not connected.</p>')
@@ -41,8 +42,9 @@ function afxMemoryCatHTML(draft, slot) {
 
 function afxMemoryCatLiveMessage(draft) {
   return (draft.livePaused ? 'Live controls paused after a failed send.'
-    : draft.liveReady ? 'Live controls · last sent values, no parameter readback.'
-    : 'Live controls · current device settings unavailable. First edit sends all displayed starting values.')
+    : !draft.parameterAvailable ? 'Device settings unavailable · controls wait for a fresh readback.'
+    : draft.parameterSource === 'readback' ? `Live controls · device settings · ${draft.bypassed ? 'bypassed' : 'active'}.`
+    : 'Live controls · last sent settings.')
     + ' Switch A/B labels await confirmation.';
 }
 
@@ -54,6 +56,7 @@ function afxMemoryCatUpdateLiveStatus(draft, doc) {
 }
 
 function afxMemoryCatInput(draft, input) {
+  if (draft.live && !draft.parameterAvailable) return;
   const control = draft.effect.controls.find(c => c.id === input.dataset.afxControl);
   const value = Number(input.value);
   if (!control || control.kind !== 'continuous' || !Number.isSafeInteger(value)
@@ -68,6 +71,7 @@ function afxMemoryCatInput(draft, input) {
 }
 
 function afxMemoryCatClick(draft, event) {
+  if (draft.live && !draft.parameterAvailable) return;
   const button = event.target.closest('[data-afx-mode]');
   if (!button) return;
   const control = draft?.effect.controls.find(c => c.id === button.dataset.afxMode);
@@ -79,6 +83,7 @@ function afxMemoryCatClick(draft, event) {
 }
 
 function afxMemoryCatPointerDown(draft, event) {
+  if (draft.live && !draft.parameterAvailable) return;
   const knob = event.target.closest('[data-afx-knob]');
   if (!knob || event.button !== 0) return;
   const input = knob.closest('.afx-effect-control').querySelector('input');
@@ -107,10 +112,7 @@ function afxMemoryCatPointerDown(draft, event) {
 
 AFX_PANELS.set('memory_brigade', {
   label: 'Memory Cat Brigade',
-  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v4',
-  // A WebUI starting preset, never a claim about vendor defaults or device state.
-  startingValues: Object.freeze({level: 100, blend: 50, feedback: 0, delay: 50,
-    depth: 0, lpf_fc: 100, chrs_vibr: 0, size: 0}),
+  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v5',
   render: afxMemoryCatHTML,
   updateLiveStatus: afxMemoryCatUpdateLiveStatus,
   input: afxMemoryCatInput,

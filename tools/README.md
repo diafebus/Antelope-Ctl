@@ -84,3 +84,17 @@ fresh read/verify behavior, link readbacks and verification failures;
 `tools/test_webui_afx.cjs` covers left selectors, both drag surfaces, channel
 payloads, linked-pair guards, reconnect and live-write coalescing. These tests
 never open a HID node.
+
+`scan_afx_capture.py` also reports tagged effect-state queries separately from
+classic category queries, and decodes captured Memory Cat replies with the
+Orion JSON layout. `memorycat_readbacks` includes parameters, processing state
+and the most recent matching request's instance/frame; the reply itself does
+not echo an instance. This is offline capture correlation, not permission to
+query an unobserved instance. The two later owner captures establish retained
+parameters after Launcher restart and a newly loaded active effect after
+Bypass All, superseding the earlier self-test's missing-readback result.
+
+AFX regressions also cover linked left/right chain loads, replacement, removal
+and reorder, distinct allocation, preflight conflicts/resource exhaustion,
+and partner verification failure without automatic repair. No live paired-chain
+mutation was performed in this implementation pass.

@@ -227,20 +227,32 @@ operator-selected mono channel indices 0–31. `verified_channel_indices`
 records which channels have completed device trials. `link_pair_records`
 maps the 16 pair flags to `0x0b:4` records 0–15 only after direct transition
 confirmation; trailing records 16–31 remain unmapped.
+`afx_rack_test.linked_chain_edits` records the captured adjacent-pair behavior:
+left/right writes with distinct instances, two remaining resources for load,
+fresh preflight and both post-write readbacks. Linked slot edits are allowed;
+conflicting slots preserve both chains for independent editing. This does not
+enable shared parameters or change the bare link-toggle contract.
+
 `runtime_contracts.afx_memorycat_test` additionally governs
 type 73 parameters on a selected channel: complete blocks from the first
-operator edit, then throttled live edits without a claimed parameter readback.
-Without last-sent values, the displayed WebUI starting preset supplies the
-complete block; these are not device readings or vendor defaults. Opening the
-rack never sends parameters. Failed live sends require explicit retry. Slot writes
+operator edit, then throttled live edits. Its `parameter_readback_contract`
+references `frame.afx_slot.instance_state_readback`: request magic/opcode/kind,
+tagged effect selector, instance field, reply header, enabled flag and per-effect
+parameter offsets/ranges are data. Captured Memory Cat instances0–2 initialize
+from fresh device state and verify writes; unknown reads remain guarded.
+The shared AFX catalog's Orion implementation links to this layout and records
+read offsets and restart evidence without claiming another model's support.
+Opening the rack never sends parameters or forces defaults. Failed live sends
+require explicit retry; an instance-query timeout blocks more such reads until
+reconnect because the reply omits instance identity. Slot writes
 start from fresh selected-channel whole-chain reads and verify their results.
 A missing or mismatching result disables further AFX writes for that server
 session without a blind corrective write; read-only refresh remains available.
 Allocation requires all 64 safely bounded `0x19` storage records and a fresh
 `0x15:0` resource count, retaining globally distinct captured instances. Link
-and slot caches are invalidated on reconnect. The API reports link flags as
-readback values and parameter blocks as last-sent values; these sources must
-not be conflated. No other device
+and slot caches are invalidated on reconnect. The API labels confirmed parameter
+readbacks separately from last-sent fallback blocks. Link flags are device
+readbacks. No other device
 or stereo parameter writer is enabled. The catalog contains neither
 installed-effect state nor account entitlements; licensing/activation traffic is outside its purpose. Gazelle
 Reverb retains its separate existing command/readback contract.
@@ -305,7 +317,7 @@ masked bits in the source record, so the phase/invert probe cannot disturb the
 level or delay bits. The separate `speaker_mask_write` contract describes the
 speaker-monitor Bypass button, whose logical `true` value clears the device's
 active-processing bit.
-| `afx_slot` | `0x23`/`0xd7` whole-chain assignment + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `slots_offset`, `slot_stride`, eight type/instance pairs), `bypass{}` (`state_offset`, `type_id_offset`, `instance_index_offset`), `readback` (cat `0x19` slots; cats `0x0c`/`0x15` counts) | Generic AFX writes blocked. The separate `afx_rack_test` and `afx_memorycat_test` runtime contracts are bounded experimental operator exceptions. Bypass is observation-only with unknown polarity; no builder. See `PROTOCOL.md` §12a. |
+| `afx_slot` | `0x23`/`0xd7` whole-chain assignment + `0x14`/`0x98` bypass | `assign{}` (channel and eight type/instance pairs), `bypass{}` (state/type/instance), `readback` (cat `0x19` slots; cats `0x0c`/`0x15` counts), `instance_state_readback{}` (tagged query, response and per-effect fields) | Generic AFX writes blocked. Separate runtime contracts permit bounded Orion operator tests. Memory Cat parameter and processing-state reads are confirmed for instances0–2; bypass writes remain disabled. See `PROTOCOL.md` §12a. |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, optional `destination_labels{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}`, `source_semantics{}` | `build_route_command(profile, dest, channels)` |
 | `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, optional nested `record_layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`) / `parse_readback_records` and its profile-specific wrappers; driven by `transport.HidTransport.query` |
 

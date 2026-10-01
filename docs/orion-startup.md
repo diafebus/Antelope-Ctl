@@ -82,6 +82,28 @@ instance, and counters describe remaining resources rather than licenses. Catego
 has a schema-defined available/max table shape, but its outer query bounds
 are intentionally not added until a device capture confirms them.
 
+## Loaded-effect state on Launcher reconnect
+
+The later owner capture
+`antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng`
+adds a separate query namespace: magic `0x74`, opcode `0x11`, kind `0x07`,
+LE32 tagged effect selector `0x80000049` at byte12 and LE32 instance at byte16.
+Memory Cat queries34373/34401/34457 and replies34397/34427/34481 recover
+instances0/1/2 after Launcher restart, repeated in the later startup pass.
+Reply byte16 is processing enabled; bytes17–24 are the eight parameters.
+Minimum/maximum/approximately-half knob values exactly match the last writes;
+no parameter writes replay those values on reconnect. Power-cycle retention
+was not tested. Other effect query selectors observed in the companion
+Bypass All/load capture have unlabelled fields and remain runtime-disabled.
+
+This namespace is recorded under `frame.afx_slot.instance_state_readback`,
+separate from classic opcode`0x10` category enumeration. It does not add bounds
+to classic category`0x07`. The WebUI requests captured loaded Memory Cat
+instances0–2 when the rack opens, its selected channel changes, or the main
+state stream reconnects. Replies omit the instance: serialize requests and
+stop these reads after a timeout until reconnect. Instances3–7 remain guarded.
+Opening/reconnecting sends no parameter or bypass defaults.
+
 ## Observed startup command
 
 All five captures contain opcode `0x13`, parameter `0x49`, channel 1, value 0, after marker `0x0b:2`. Windows frame 15784 carries this command at 7.713707 seconds. The macOS poweron capture carries it in frame 12467 at 22.537315 seconds.

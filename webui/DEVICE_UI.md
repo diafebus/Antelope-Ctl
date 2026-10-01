@@ -72,7 +72,7 @@ The API retains its original `memorycat-test` names for compatibility:
 | GET `/api/afx/catalog` | None | Local preview metadata, no device writes |
 | GET `/api/afx/memorycat-test` | Optional `channel=0..31&refresh=true` | Cached rack state; refresh reads the selected chain and AFX link table when online |
 | POST `/api/afx/memorycat-test/chain` | `channel`, `operation`, `slot`; `source` for move, `effect_id` for load/replace | Fresh selected-chain RMW with post-write verification |
-| POST `/api/afx/memorycat-test/parameters` | `channel`, `instance`, complete eight-field `values` | Memory Cat block sent; acknowledged last-sent values, no parameter readback |
+| POST `/api/afx/memorycat-test/parameters` | `channel`, `instance`, complete eight-field `values` | Memory Cat block sent; fresh readback verifies captured instances0–2 |
 | POST `/api/afx/link` | `pair=0..15`, boolean `enabled` | Bare space-4 link flag with fresh readback verification |
 | POST `/api/afx/memorycat-test/unlink` | None | Compatibility path for unlinking pair 0 only |
 
@@ -90,25 +90,39 @@ distinguish device readback from a last-sent fallback. Direct 2026-10-01 trials
 verified `link_pair_records`: pair N reads `0x0b:4` record N, for N=0..15.
 Missing flags remain unknown; trailing records 16–31 are unmapped. AFX 1–2,
 3–4, through 31–32 share the corresponding pair button and menu partner
-labels. Only that pair must be OFF for mono changes. Link toggles preserve
-both chains and do not reproduce the Launcher's extra assignments on unlink.
-Stereo chain/parameter sharing remains unavailable.
+labels. Linked chain mutations read both adjacent chains, preflight both edits
+and allocate distinct instances before writing left then right. Both readbacks
+must match. Insufficient paired resources, occupied load targets, or mismatched
+source/target effect types abort without writes. Parameter edits still require
+that pair OFF. Link toggles preserve both chains and do not reproduce the
+Launcher's extra assignments on unlink. Shared parameters remain unavailable.
 
-`parameters` holds complete Memory Cat blocks last sent on the current
-connection, keyed by instance. Knob and switch edits send from the first edit,
+`parameter_states` holds device-read Memory Cat values and `bypassed`, keyed
+by instance. `parameters` retains the compatible eight-field map, preferring
+readback over last-sent blocks; `parameter_sources` distinguishes the two.
+`parameter_read_errors` reports missing/unmapped reads. Captured instance
+queries0–2 run after selected-chain reads on open/selection/load/refresh and
+reconnect. There is no hardcoded starting preset; unknown controls wait for
+a readback. Knob and switch edits send from the first edit,
 with no Apply step, and coalesce at 60 ms with one request in
 flight and no rack repaint during dragging. Changing the selected channel or
 connection discards mismatching queued edits; so does replacement of the draft
 or linking its pair before the send. Reordering preserves instance settings.
-When no last-sent block exists, the panel displays a WebUI starting preset
-(Level100, Blend50, Feedback0, Delay50, Depth0, Filter100, switches0/0), not
-device readings or vendor defaults. The first edit sends all displayed values;
-opening/refreshing never sends a parameter block. A/B switch labels
-and parameter readback remain unconfirmed. A failed live write pauses sending
+The AFX channel dropdown shows a loaded-effect count (for example, `AFX 1 · 2 FX`)
+from slot readbacks only when at least one effect occupies that channel. Empty
+and unavailable channels have no count; existing link markers remain visible.
+
+Opening/refreshing never sends a parameter block. A/B switch label polarity
+remains unconfirmed. A failed live write pauses sending
 until an explicit Retry live controls click, without automatic retries.
 
 `session` changes on device reconnect. The backend clears cached AFX inventory
-and link flags, and the browser drops old parameter drafts. Allocation waits
+and link flags; parameter caches are scoped to that transport. The browser
+drops old parameter drafts and requests fresh state when the main stream's
+`connection_generation` changes or reconnects after an offline event.
+Responses omit instance identity: requests are serialized with no retry,
+and a timeout stops further instance queries until device reconnect.
+Allocation waits
 for all 64 safe `0x19` storage records plus a fresh `0x15:0` resource counter.
 A missing/mismatching post-write chain reply latches `writes_enabled=false`
 for the server session; it does not attempt a blind repair. Read-only refresh

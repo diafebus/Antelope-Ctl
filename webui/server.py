@@ -488,7 +488,7 @@ class Device:
 
     def get(self):
         with self._lock:
-            return dict(self.snapshot), self.version
+            return {**self.snapshot, 'connection_generation': self.connection_generation}, self.version
 
     def routing_json(self):
         with self._lock:

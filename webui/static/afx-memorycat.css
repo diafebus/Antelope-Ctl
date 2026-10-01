@@ -19,6 +19,8 @@
   border:1px solid #585763; background:radial-gradient(circle at 35% 25%,#484753,#24232b 75%);
   box-shadow:0 3px 5px #0008; }
 .afx-knob-pointer { position:absolute; inset:0; transform:rotate(var(--afx-turn)); }
+.afx-effect-control.unknown .afx-knob-pointer { visibility:hidden; }
+.afx-effect-control.unknown .afx-knob { opacity:.5; cursor:default; }
 .afx-knob-pointer::after { content:""; position:absolute; width:3px; height:13px;
   left:calc(50% - 1.5px); top:4px; background:#ded3f3; border-radius:2px; }
 /* Keep native keyboard and screen-reader control without a visible slider. */

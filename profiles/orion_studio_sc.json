@@ -193,7 +193,7 @@
         "1": "ADAT: eight pairs, category 0x0b index 1",
         "2": "S/PDIF: one L/R pair, category 0x0b index 2",
         "3": "virtual-mixer channel link (Mix 1-4 strips) -- CONFIRMED macos-mix1-send-pan-fader-mute-solo-link (2026-08): linking mix ch1+ch2 sent SET_LINK space=0x03 pair_index=0x00 enabled=0x01. Software-mirrored like the other link spaces -- while linked the Launcher re-sent BOTH strips' mix_command frames on every fader move.",
-        "4": "AFX-tab channel stereo-link -- 32 channels -> 16 pairs, pair_index = channel_index // 2. CONFIRMED macos-afx-stereolink-1-2_3-4_5-6_27-28_29-30_31-32 (2026-09-04): the AFX tab stereo-link buttons for pairs 0/1/2 (ch 1-2, 3-4, 5-6) and 13/14/15 (ch 27-28, 29-30, 31-32) each sent ONE bare `a2 04 <pair> <en>` frame -- nothing past [19], NO partner gain-sync frame (there is no per-channel gain here, unlike the preamp link -- just the flag), NO transition-correlated readback was observed in that capture (the 0x73 deltas are meter jitter, uncorrelated with the link toggles; no 0x74 at all). The later Orion schema maps category 0x0b index 4 to AFX channel-link bytes, but a controlled toggle still needs capture confirmation. Bucket A/B -- a channel-pairing toggle, not plugin-internal. Buildable via build_link_command(profile, pair, enabled, space=4); no dedicated CLI command."
+        "4": "AFX-tab channel stereo-link -- 32 channels -> 16 pairs, pair_index = channel_index // 2. CONFIRMED macos-afx-stereolink-1-2_3-4_5-6_27-28_29-30_31-32 (2026-09-04): the AFX tab stereo-link buttons for pairs 0/1/2 (ch 1-2, 3-4, 5-6) and 13/14/15 (ch 27-28, 29-30, 31-32) each sent ONE bare `a2 04 <pair> <en>` frame -- nothing past [19], NO partner gain-sync frame (there is no per-channel gain here, unlike the preamp link -- just the flag), NO transition-correlated readback was observed in that capture (the 0x73 deltas are meter jitter, uncorrelated with the link toggles; no 0x74 at all). The later Orion schema maps category 0x0b index 4 to AFX channel-link bytes, and direct 2026-10-01 trials subsequently confirmed all16 space4 pairs against matching 0x0b:4 bytes0-15 with exact restoration. Bucket A/B -- a channel-pairing toggle, not plugin-internal. Buildable via build_link_command(profile, pair, enabled, space=4); no dedicated CLI command."
       },
       "readback": {
         "status": "capture-confirmed",
@@ -816,6 +816,57 @@
         ],
         "evidence": "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng, frames 23127-53701: empty chain; type 73 instances 0-7; whole-chain reordering."
       },
+      "instance_state_readback": {
+        "status": "capture-confirmed",
+        "report_length": 320,
+        "request": {
+          "magic": "0x74", "magic_offset": 0,
+          "opcode": "0x11", "opcode_offset": 4,
+          "kind": "0x07", "kind_offset": 8,
+          "effect_selector_offset": 12, "effect_selector_width": 4,
+          "effect_selector_endian": "little", "effect_selector_tag": "0x80000000",
+          "instance_offset": 16, "instance_width": 4, "instance_endian": "little",
+          "reserved_fill": 0
+        },
+        "response": {
+          "header_prefix_hex": "750000004001000007000000",
+          "effect_selector_offset": 12, "effect_selector_width": 4,
+          "instance_echo": false,
+          "processing_enabled": {"offset": 16, "width": 1, "range": [0, 1],
+            "enum": {"0": "bypassed", "1": "active"},
+            "status": "capture-and-owner-correlated"},
+          "parameter_data_offset": 17
+        },
+        "effects": {
+          "memory_brigade": {
+            "type_id": 73, "observed_instance_indices": [0, 1, 2],
+            "query_instance_indices": [0, 1, 2],
+            "query_only_loaded_instances": true,
+            "fields": {
+              "blend": {"offset": 17, "width": 1, "range": [0, 100]},
+              "level": {"offset": 18, "width": 1, "range": [0, 100]},
+              "feedback": {"offset": 19, "width": 1, "range": [0, 100]},
+              "chrs_vibr": {"offset": 20, "width": 1, "range": [0, 1], "label_polarity": "unconfirmed"},
+              "depth": {"offset": 21, "width": 1, "range": [0, 100]},
+              "delay": {"offset": 22, "width": 1, "range": [0, 100]},
+              "lpf_fc": {"offset": 23, "width": 1, "range": [0, 100]},
+              "size": {"offset": 24, "width": 1, "range": [0, 1], "label_polarity": "unconfirmed"}
+            },
+            "zero_padding_offset": 25,
+            "live_readback_verification": {"status": "device-and-owner-confirmed", "date": "2026-10-01", "channels": [0, 1], "instances": [0, 1, 2], "parameter_and_processing_state_match_capture": true, "device_mutations": false},
+            "restart_retention": {"status": "capture-and-owner-confirmed", "launcher_restart": true,
+              "power_cycle": "untested", "parameter_replay_on_reconnect": false,
+              "evidence": "Final instance0/1/2 writes5633/8435/22343 exactly match replies34397/34427/34481 and37613/37639/37695 after Launcher restart. No parameter writes occur during reconnect. Raw knob vectors are minimum, maximum and[50,50,49,0,49,48,49,0]; effect identities persist in q19."
+            }
+          },
+          "instinct": {"type_id": 75, "observed_instance_indices": [1], "parameter_encoding": "unlabelled float-like block", "runtime_query_enabled": false},
+          "deesser": {"type_id": 27, "observed_instance_indices": [1], "parameter_encoding": "unlabelled byte block", "runtime_query_enabled": false},
+          "bbdchorus": {"type_id": 78, "observed_instance_indices": [0], "parameter_encoding": "unlabelled byte block", "runtime_query_enabled": false}
+        },
+        "correlation": "Replies echo the tagged effect selector but omit the instance. Serialize requests on the device actor, drain queued reports before querying, and stop these reads after a timeout until a new device connection. Never reinterpret the tagged selector as an opcode0x10 category7 outer index.",
+        "evidence": ["antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng: queries17073-17243/replies17097-17267, repeated20281-20431/20309-20455", "antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng: queries34373/34401/34457, replies34397/34427/34481, repeated37585/37615/37667 and37613/37639/37695"],
+        "scope": "Orion capture evidence only. Reusable data layout, no claim that another model uses these selectors, effect IDs or bounds. No account/entitlement interpretation."
+      },
       "bypass": {
         "magic": "0x70",
         "opcode": "0x14",
@@ -829,16 +880,17 @@
           0,
           1
         ],
-        "state_polarity": "unconfirmed",
-        "load_observation": "Owner reports newly loaded effects start with bypass disengaged (effect processing active) in the tested state. Interaction with Bypass All is untested. Loading preserves whatever bypass state the device assigns; this observation must not initialize or force bypass flags or substitute for current-state readback.",
-        "ui_behavior": "Clicking bypass disables processing for that effect slot. The observed load behavior does not establish the wire meaning of byte 17 or the bypass state of already loaded instances.",
+        "state_polarity": "0=bypassed; 1=processing active",
+        "state_polarity_status": "Memory Cat capture-and-owner-correlated; isolated enable write and other effects pending",
+        "load_observation": "Owner-tested: after Bypass All, a newly added Memory Cat is active/unbypassed. Bypass All affects existing instances rather than enforcing bypass on future loads. Loading preserves the device-assigned state and sends no forced bypass command. Evidence: antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng, bypass existing73/0 at31313 then load73/1 at36233; owner confirms new instance active.",
+        "ui_behavior": "Clicking bypass disables processing for that effect slot. Current Memory Cat state is read from instance_state_readback response byte16:0=bypassed,1=active. Load defaults are not substituted for current readback.",
         "status": "capture-observed",
         "writable": false,
         "bucket": "B",
-        "evidence": "antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng, frames 10215-11863: per-type/per-instance byte 17 sends 1 then 0 only 3-5 ms apart for the same target, repeated on later actions. Owner 2026-10-01 confirms newly loaded effects default to bypass disengaged and click-to-bypass behavior. No bypass readback or byte-17 polarity confirmation; press/release semantics remain a possibility."
+        "evidence": "antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng: reply17097 shows73/0 active1, Bypass All write31313 sets byte17=0 for73/0, new73/1 added36233 and owner confirms active. Subsequent restart capture replies34397/37613 return73/0 processing0 while73/1 and73/2 return1. Earlier capture frames10215-11863 repeatedly sends1then0 for the same target; this duplication remains a Launcher observation, not proof of a momentary command. No runtime bypass writer enabled."
       },
       "readback": "Category 0x19 contains eight {type,inst} slots at each of 64 indices. Index 0 initially contains the owner-reported accidental Preamp 1 effect (type 6, instance 0); no post-load slot readback occurs in the new capture, so write-to-readback correlation remains a test requirement. Category 0x15:0 supplies remaining counts; 0x0c:0 has passive witnesses but remains query-guarded.",
-      "notes": "AFX captured-effect test operations are an explicit Orion-only scope extension requested by the owner. The picker supports the five captured load types on operator-selected mono indices0–31 with fresh selected-chain readback and post-write verification; other devices, unmeasured effects, bypass and stereo parameters remain unsupported. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
+      "notes": "AFX captured-effect test operations are an explicit Orion-only scope extension requested by the owner. The picker supports the five captured load types on operator-selected indices0–31 with fresh chain readback and post-write verification; linked edits write and verify both adjacent channels with distinct instances; other devices, unmeasured effects, bypass and stereo parameters remain unsupported. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
     },
     "state_report": {
       "magic_offset": 0,
@@ -2296,6 +2348,18 @@
   },
   "runtime_contracts": {
     "afx_rack_test": {
+      "linked_chain_edits": {
+        "enabled": true,
+        "status": "capture-observed",
+        "pair_channels": "adjacent even/odd channel indices",
+        "write_order": "left then right",
+        "instance_allocation": "distinct measured instances; two remaining resources required for load/replace",
+        "verification": "fresh link and both chain reads; preflight both mutations; verify both resulting chains",
+        "mismatched_slots": "preserve both chains and require independent editing when target/source effect types differ",
+        "link_toggle_behavior": "bare flag only; no chain cleanup or automatic copying on link/unlink",
+        "parameter_sharing": "not enabled",
+        "evidence": ["antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng: paired loads3427/3431,4997/5001,7505/7509; reorder11947/11951,13671/13675", "antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng: paired loads3063/3067,5185/5189; removals12531/12535,12539/12543"]
+      },
       "enabled": true,
       "experimental": true,
       "status": "capture-observed",
@@ -2356,7 +2420,7 @@
       "link_readback_confirmed": true,
       "link_pair_records": [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15]],
       "link_readback_evidence": "2026-10-01 owner-authorized direct HID trials: each space4 pair0–15 changed only matching 0x0b:4 record0–15 from0 to1; all five link tables restored exactly after each trial. Records16–31 are not mapped to the 32 user-facing channels. Raw transactions stay local.",
-      "note": "Explicit owner-requested effect picker and pair-link buttons. Load/remove/move only captured effect types and instance indices on operator-selected mono channels0–31. Direct load/remove round trips on2026-10-01 confirmed write channels2–31 against matching 0x19 indices and restored original chains; reorder additionally verified on2/31. Channel0 was owner-tested earlier; channel1 mono write remains unexercised while1–2 are linked. Every chain write verifies its selected index. Other types remain disabled; resource counters do not prove license ownership. Pair indicators use confirmed 0x0b:4 records0–15. Unknown/missing records remain unavailable. No stereo parameter mirroring."
+      "note": "Explicit owner-requested effect picker and pair-link buttons. Load/remove/move only captured effect types and instance indices on operator-selected channels0–31; confirmed link flags select a two-chain transaction for linked pairs, with distinct instances and both readbacks verified. Direct load/remove round trips on2026-10-01 confirmed write channels2–31 against matching 0x19 indices and restored original chains; reorder additionally verified on2/31. Channel0 was owner-tested earlier; channel1 mono write remains unexercised while1–2 are linked. Every chain write verifies its selected index. Other types remain disabled; resource counters do not prove license ownership. Pair indicators use confirmed 0x0b:4 records0–15. Unknown/missing records remain unavailable. No stereo parameter mirroring."
     },
     "afx_memorycat_test": {
       "enabled": true,
@@ -2428,13 +2492,17 @@
           1
         ]
       },
-      "parameter_readback": false,
+      "parameter_readback": true,
+      "parameter_readback_contract": {
+        "layout_ref": "frame.afx_slot.instance_state_readback",
+        "effect_id": "memory_brigade"
+      },
       "owner_test": {
         "date": "2026-10-01",
         "status": "user-reported",
         "observation": "Owner reports Memory Cat works from the WebUI. Individual controls, switch polarity, removal/reordering and restoration were not separately confirmed."
       },
-      "note": "Operator-triggered testing only. Fresh whole-chain read-modify-write and post-write slot verification; preserve unmodified slots. Knob/switch edits send complete eight-field blocks from the first edit, without Apply. Without last-sent settings, the first edit sends the displayed WebUI starting preset, not device readings or verified vendor defaults. Opening/refreshing never sends parameters. Later edits stream throttled complete blocks; failed sends require explicit retry. Switch position polarity is unverified. No auto-initialization from old captures.",
+      "note": "Operator-triggered testing only. Fresh whole-chain read-modify-write and post-write slot verification; preserve unmodified slots. Memory Cat instances0-2 have captured tagged instance-state queries: read actual parameters/bypass on open, selected-channel refresh, load and reconnect; verify parameter writes with fresh replies. Instance reads3-7 remain guarded pending captures. Unknown parameters stay unavailable, without hardcoded presets. Knob/switch edits send complete eight-field blocks from the first edit, without Apply; failed sends require explicit retry. A query timeout disables instance reads until reconnect because replies omit instance identity. Switch label polarity remains unverified. Loading never forces bypass or parameter defaults.",
       "evidence": [
         "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng",
         "macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng"
@@ -2550,7 +2618,7 @@
     ],
     "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) are hardware round-trip confirmed: `route` self-verifies every complete destination-group write, and `mix-set` read-modify-writes one complete mixer strip and verifies the result. 0x1d (SET_AURAVERB) is the bundled AuraVerb command with a confirmed category-0x0a readback. 0xab (SET_SURROUND_GLOBAL) is allowed for the WebUI's 2.0/2.1 global format, delay/level, speaker-mask, and Bass Management read-modify-write paths. 0x87 (SET_SURROUND_SPEAKER) is allowed for the bounded per-speaker delay/level/phase and EQ writes that start from a fresh category-0x1a record; all mapped fields have hardware readback confirmation and each write preserves the rest of that speaker record.",
     "forbidden_opcodes": ["0x01", "0x02", "0x1a", "0x1c", "0x23", "0x20", "0x7c"],
-    "forbidden_opcodes_note": "Generic builders refuse 0x01/0x02/0x1a/0x1c/0x20/0x23/0x7c. Hardware-dangerous families remain blocked. The explicit afx_memorycat_test contract permits only typed, operator-triggered Orion candidates for type 73 on operator-selected channel indices0–31: whole-chain captured-effect load/replace/remove/reorder with fresh readbacks and post-write verification, or complete eight-field parameter blocks from operator knob/switch edits for captured instance indices 0-7. The afx_rack_test contract additionally permits captured load types75/27/70/78 with measured indices0/1, alongside Memory Cat73/0-7. Generic raw AFX writes, unmeasured effects/devices, channels outside0–31 and stereo parameter writers remain blocked. Parameter readback and switch polarity are unverified. Bypass 0x14/0x98 is observation-only (state at 17, type at 18, instance at 19); polarity is unknown, while UI default disengaged is owner-confirmed. Runtime readback bounds are unchanged.",
+    "forbidden_opcodes_note": "Generic builders refuse 0x01/0x02/0x1a/0x1c/0x20/0x23/0x7c. Hardware-dangerous families remain blocked. The explicit afx_memorycat_test contract permits only typed, operator-triggered Orion candidates for type 73 on operator-selected channel indices0–31: whole-chain captured-effect load/replace/remove/reorder with fresh readbacks and post-write verification, or complete eight-field parameter blocks from operator knob/switch edits for captured instance indices 0-7. The afx_rack_test contract additionally permits captured load types75/27/70/78 with measured indices0/1, alongside Memory Cat73/0-7. Generic raw AFX writes, unmeasured effects/devices, channels outside0–31 and stereo parameter writers remain blocked. Captured tagged opcode0x11/kind0x07 reads initialize and verify Memory Cat instances0-2 only while loaded; requests/replies and effect fields live in frame.afx_slot.instance_state_readback. Switch label polarity remains unverified. Bypass 0x14/0x98 remains observation-only; Memory Cat state reads confirm 0=bypassed and 1=active. Newly loaded effects are owner-confirmed active even after Bypass All; no default state is forced. Isolated enable writes and other-effect bypass semantics remain pending. Classic category bounds remain unchanged.",
     "channel_bounds": {
       "min": 0,
       "max": 11

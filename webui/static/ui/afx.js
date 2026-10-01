@@ -235,6 +235,7 @@ function openAfxWindow() {
   d.getElementById('afx-device').textContent = PROFILE.device?.label || PROFILE.device?.name || '';
   d.getElementById('afx-channel').addEventListener('change', event => {
     selectAfxChannel(Number(event.target.value));
+    void AFX_DEVICE_RACK?.refresh?.();
   });
   d.getElementById('afx-pair-control').addEventListener('click', event => AFX_DEVICE_RACK?.linkClick?.(event));
   d.getElementById('afx-slot-list').addEventListener('change', event => AFX_DEVICE_RACK?.change?.(event));
