@@ -256,7 +256,7 @@ async function checkEffectPreviews() {
   assert.doesNotMatch(reopened.document.body.innerHTML, /type="range"/);
   reopened.close();
 
-  // Connecting reads metadata only; knobs and switches stay drafts until Apply.
+  // Opening reads metadata only; the first edit sends a complete starting block.
   const emptySlots = Array.from({length: 8}, () => ({type: 0, instance: 0}));
   emptySlots[0] = {type: 73, instance: 4};
   const state = {available: true, online: true, writes_enabled: true, slots: emptySlots,
@@ -301,23 +301,27 @@ async function checkEffectPreviews() {
   assert.match(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select="0"[^>]*>/);
   assert.doesNotMatch(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select="0"[^>]* disabled/);
   vm.runInContext('selectAfxChannel(0)', context);
-  const apply = {dataset: {afxDeviceApply: '0'}, closest: selector => selector === '[data-afx-device-apply]' ? apply : null};
-  live.nodes['afx-rack'].click({target: apply});
-  assert.match(live.nodes['afx-preview-status'].textContent, /Select both switch positions/);
-  assert.equal(writes.length, 0);
+  assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /Apply all settings|data-afx-device-apply/);
+  assert.match(live.nodes['afx-rack'].innerHTML, /First edit sends all displayed starting values/);
+  assert.equal(vm.runInContext('afxTestDraft(0, 0).values.level', context), 100);
   live.nodes['afx-rack'].input({target: input});
-  vm.runInContext("afxTestDraft(0, 0).values.chrs_vibr = '1'; afxTestDraft(0, 0).values.size = '0'", context);
-  assert.equal(writes.length, 0, 'Draft edits never send parameters');
-  await vm.runInContext("afxTestRequest('/api/afx/memorycat-test/parameters', {instance: 4, values: Object.fromEntries(Object.entries(afxTestDraft(0, 0).values).map(([id, value]) => [id, Number(value)]))})", context);
+  await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(writes.length, 1);
+  assert.equal(writes[0].body.channel, 0);
   assert.equal(writes[0].body.instance, 4);
   assert.equal(writes[0].body.values.level, 42);
-  assert.equal(writes[0].body.values.chrs_vibr, 1);
+  assert.equal(writes[0].body.values.chrs_vibr, 0);
+  assert.equal(writes[0].body.values.size, 0);
   assert.equal(Object.keys(writes[0].body.values).length, 8);
-  assert.match(live.nodes['afx-preview-status'].textContent, /Parameter readback is unavailable/);
+  assert.equal(vm.runInContext('afxTestDraft(0, 0).liveReady', context), true);
+  assert.match(live.nodes['afx-preview-status'].textContent, /Live settings sent/);
 
   // Rapid knob turns coalesce to the latest full state, without replacing DOM.
   const beforeLive = live.nodes['afx-rack'].innerHTML;
+  const liveSwitch = modeButton('1');
+  liveSwitch.closest = selector => ['[data-afx-slot]', '[data-afx-mode]'].includes(selector) ? liveSwitch : null;
+  liveSwitch.parentElement = {querySelectorAll: () => [liveSwitch]};
+  live.nodes['afx-rack'].click({target: liveSwitch});
   for (const value of ['43', '44', '45']) {
     input.value = value;
     live.nodes['afx-rack'].input({target: input});
@@ -325,6 +329,7 @@ async function checkEffectPreviews() {
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(writes.length, 2);
   assert.equal(writes[1].body.values.level, 45);
+  assert.equal(writes[1].body.values.chrs_vibr, 1, 'Switch edits share the live queue');
   assert.equal(live.nodes['afx-rack'].innerHTML, beforeLive, 'Live sends preserve pointer-captured controls');
   assert.match(live.nodes['afx-preview-status'].textContent, /Live settings sent/);
   // Instance drafts follow chain reorder and are discarded on reconnection.
@@ -334,7 +339,8 @@ async function checkEffectPreviews() {
   state.session = 2;
   state.parameters = {};
   await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
-  assert.equal(vm.runInContext('afxTestDraft(0, 1).values.chrs_vibr', context), null);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).values.chrs_vibr', context), '0');
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).liveReady', context), false);
   assert.equal(writes.length, 2);
   const previewButton = {closest: selector => selector === '[data-afx-test-preview]' ? previewButton : null};
   vm.runInContext('afxTestClick', context)({target: previewButton});
@@ -406,17 +412,70 @@ async function checkEffectPreviews() {
   assert.match(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select="0"[^>]* disabled/);
   assert.match(live.nodes['afx-pair-control'].innerHTML, /Device link readback/);
   state.links.fill(false);
+  // First edit after reconnect sends immediately; stale channel/draft/link edits do not.
+  vm.runInContext('selectAfxChannel(0)', context);
+  input.dataset.afxSlot = '1';
+  input.value = '39';
+  live.nodes['afx-rack'].input({target: input});
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(writes.at(-1).body.instance, 4);
+  assert.equal(writes.at(-1).body.values.level, 39);
+  assert.equal(writes.at(-1).body.values.chrs_vibr, 0);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).liveReady', context), true);
+  const beforeStale = writes.length;
+  live.nodes['afx-rack'].input({target: input});
+  vm.runInContext('selectAfxChannel(1)', context);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(writes.length, beforeStale, 'Queued edits cannot follow a channel change');
+  vm.runInContext('selectAfxChannel(0)', context);
+  live.nodes['afx-rack'].input({target: input});
+  vm.runInContext('AFX_TEST_DRAFTS.delete(4); afxTestDraft(0, 1)', context);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(writes.length, beforeStale, 'Reused instance IDs cannot receive an old draft');
+  live.nodes['afx-rack'].input({target: input});
+  state.links[0] = true;
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(writes.length, beforeStale, 'Link state is checked again before sending');
+  state.links[0] = false;
   // A failed live send pauses this instance and is never retried.
   vm.runInContext('selectAfxChannel(0)', context);
   let failedRequests = 0;
   context.fetch = async () => { failedRequests++; return {ok: false, json: async () => ({error: 'test failure'})}; };
-  vm.runInContext("const failedDraft = afxTestDraft(0, 1); failedDraft.liveReady = true; failedDraft.values.chrs_vibr = '0'; failedDraft.values.size = '1'; afxLiveChanged(failedDraft)", context);
-  await new Promise(resolve => setTimeout(resolve, 100));
-  assert.equal(failedRequests, 1);
-  assert.equal(vm.runInContext('afxTestDraft(0, 1).liveReady', context), false);
   vm.runInContext('afxLiveChanged(afxTestDraft(0, 1))', context);
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(failedRequests, 1);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).livePaused', context), true);
+  vm.runInContext('afxLiveChanged(afxTestDraft(0, 1))', context);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(failedRequests, 1);
+  const resume = {dataset: {afxDeviceResume: '1'}, closest: selector => selector === '[data-afx-device-resume]' ? resume : null};
+  context.fetch = async () => { failedRequests++; return {ok: true, json: async () => ({sent: true, verified: false})}; };
+  live.nodes['afx-rack'].click({target: resume});
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(failedRequests, 2, 'Only an explicit retry resumes failed sending');
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).livePaused', context), false);
+  // A slow acknowledgement keeps one request in flight and sends the latest turn next.
+  const slowWrites = [];
+  let releaseFirst;
+  context.fetch = async (_url, options) => {
+    slowWrites.push(JSON.parse(options.body));
+    if (slowWrites.length === 1) await new Promise(resolve => { releaseFirst = resolve; });
+    return {ok: true, json: async () => ({sent: true, verified: false})};
+  };
+  input.value = '40';
+  live.nodes['afx-rack'].input({target: input});
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(slowWrites.length, 1);
+  for (const value of ['41', '42']) {
+    input.value = value;
+    live.nodes['afx-rack'].input({target: input});
+  }
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(slowWrites.length, 1, 'No overlapping parameter requests');
+  releaseFirst();
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(slowWrites.length, 2);
+  assert.equal(slowWrites[1].values.level, 42);
   live.close();
   console.log('AFX checks passed (effect picker, pair links, live coalescing, failure pause, reconnect).');
 }

@@ -228,8 +228,11 @@ records which channels have completed device trials. `link_pair_records`
 maps the 16 pair flags to `0x0b:4` records 0–15 only after direct transition
 confirmation; trailing records 16–31 remain unmapped.
 `runtime_contracts.afx_memorycat_test` additionally governs
-type 73 parameters on a selected channel: explicit initial complete Apply, then throttled live
-edits from last-sent values without a claimed parameter readback. Slot writes
+type 73 parameters on a selected channel: complete blocks from the first
+operator edit, then throttled live edits without a claimed parameter readback.
+Without last-sent values, the displayed WebUI starting preset supplies the
+complete block; these are not device readings or vendor defaults. Opening the
+rack never sends parameters. Failed live sends require explicit retry. Slot writes
 start from fresh selected-channel whole-chain reads and verify their results.
 A missing or mismatching result disables further AFX writes for that server
 session without a blind corrective write; read-only refresh remains available.

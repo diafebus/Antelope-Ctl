@@ -34,8 +34,8 @@
   color:#8f98a5; padding:6px 4px; font:11px system-ui,sans-serif; cursor:pointer; white-space:nowrap; }
 .afx-mode-button[aria-pressed=true] { background:#24423f; color:#90dbd1; border-color:#427b72; }
 .afx-preview-note { margin:12px 0 0; color:#9894a5; font-size:10px; }
-.afx-test-apply { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
-.afx-test-apply span { color:#9894a5; font-size:10px; }
+.afx-live-status { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+.afx-live-status span { color:#9894a5; font-size:10px; }
 .afx-preview-open:focus-visible, .afx-preview-close:focus-visible, .afx-mode-button:focus-visible {
   outline:2px solid #b78aef; outline-offset:2px; }
 @media (max-width:1150px) {

@@ -72,12 +72,15 @@ compatibility.
     Local preview is an explicit alternative; missing device reads remain unavailable.
     Memory Cat has six draggable knobs with fixed bodies and moving pointers,
     plus two mode selectors. Sliders are hidden; keyboard adjustment remains
-    available with a visible focus ring. After the first
-    full Apply, edits send live through the throttled afx-live.js module;
+    available with a visible focus ring. Edits send live from the first
+    adjustment through the throttled afx-live.js module, with no Apply step;
     previews and device slot state are separate. The pilot exposes guarded
     load/replace/remove/reorder and full-state parameter initialization, with slot readback
     verification and unconfirmed A/B switch polarity. Parameter settings are
-    drafts/last sent, not device readback. Mono load/remove verification covers
+    a displayed starting preset/drafts/last sent, not device readback. With no
+    last-sent settings, the first edit sends all displayed starting values;
+    opening/refreshing does not send them. Failed live sends pause until an
+    explicit Retry live controls click. Mono load/remove verification covers
     AFX 3–32, plus earlier owner testing on AFX 1; AFX 2 mono writes were not
     exercised while 1–2 were linked. All 16 pair flags have verified readback.
     Failed slot verification disables writes for the server session; Refresh

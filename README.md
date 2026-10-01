@@ -63,7 +63,7 @@ which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a. General loading remains outside scope; the owner's
 explicitly requested Orion captured-effect rack pilot is a bounded exception
 (`SCOPE.md`). Its operator-driven test interface supports whole-chain
-loading/removal/reordering and complete parameter Apply. The AFX-tab channel
+loading/removal/reordering and live complete parameter blocks. The AFX-tab channel
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
 
@@ -121,16 +121,21 @@ The button sends only the flag, preserving both chains. Stereo parameter
 sharing is not implemented; unlink the selected pair before mono rack edits.
 Links on other pairs do not block that channel.
 
-Memory Cat settings are drafts/last sent, not parameter readback. Apply the
-complete eight-setting block once to initialize live controls; subsequent
-knob, slider and switch changes send automatically. Requests are throttled
+Memory Cat settings are drafts/last sent, not parameter readback. Knob and
+switch edits send automatically, including the first edit; there is no Apply
+step. Without last-sent settings, the panel shows a WebUI starting preset:
+Level100, Blend50, Feedback0, Delay50, Depth0, Filter100 and both switches A(0).
+These are not device readings or verified vendor defaults. The first edit
+sends all eight displayed values; opening or refreshing never sends settings.
+Requests are throttled
 and coalesced to the latest settings, with one in flight and no rack repaint
-during a drag. Failed writes pause live sending and are not retried. A missing
+during a drag. Failed writes pause live sending until an explicit Retry live
+controls click; they are not retried automatically. A missing
 or mismatching post-write slot readback disables further AFX writes for the
 server session; Refresh remains read-only and does not clear that failure.
 Reconnect clears old slot inventory, link flags and initialized parameter
-drafts. Wait for the full inventory before loading and use a complete Apply
-to initialize an instance after it is loaded or after reconnecting.
+drafts. Wait for the full inventory before loading. After loading or reconnect,
+the first edit sends the displayed starting preset if no last-sent block exists.
 Switch A/B polarity is still unconfirmed. The owner reports the effect and
 applied parameter settings work. A 2026-10-01 Level 100→99→100 self-test
 found no stable parameter readback in the observed HID streams; the original

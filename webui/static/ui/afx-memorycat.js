@@ -33,10 +33,24 @@ function afxMemoryCatHTML(draft, slot) {
     + `<button type="button" class="afx-preview-close" ${draft.live ? 'data-afx-device-remove' : 'data-afx-remove'}="${slot}" aria-label="${draft.live ? 'Remove Memory Cat from the device' : 'Close local preview'}">×</button></div>`
     + `<div class="afx-effect-controls"><div class="afx-knob-bank">${knobs.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live)).join('')}</div>`
     + `<div class="afx-mode-bank">${modes.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live)).join('')}</div></div>`
-    + (draft.live ? `<div class="afx-test-apply"><button type="button" class="afx-preview-open" data-afx-device-apply="${slot}">Apply all settings</button>`
-      + `<span>${draft.liveReady ? 'Knobs send live · last sent values, no parameter readback.' : 'Apply once to initialize live knobs · current parameter readback unavailable.'} Switch A/B labels await confirmation.</span></div>`
+    + (draft.live ? `<div class="afx-live-status" data-afx-live-state="${draft.instance}"><span>${afxMemoryCatLiveMessage(draft)}</span>`
+      + `<button type="button" class="afx-preview-open" data-afx-device-resume="${slot}"${draft.livePaused ? '' : ' hidden'}>Retry live controls</button></div>`
       : '<p class="afx-preview-note">Preview settings only · effect loading and device controls are not connected.</p>')
     + '</div>';
+}
+
+function afxMemoryCatLiveMessage(draft) {
+  return (draft.livePaused ? 'Live controls paused after a failed send.'
+    : draft.liveReady ? 'Live controls · last sent values, no parameter readback.'
+    : 'Live controls · current device settings unavailable. First edit sends all displayed starting values.')
+    + ' Switch A/B labels await confirmation.';
+}
+
+function afxMemoryCatUpdateLiveStatus(draft, doc) {
+  const group = doc.getElementById('afx-rack')?.querySelector?.(`[data-afx-live-state="${draft.instance}"]`);
+  if (!group) return;
+  group.querySelector('span').textContent = afxMemoryCatLiveMessage(draft);
+  group.querySelector('button').hidden = !draft.livePaused;
 }
 
 function afxMemoryCatInput(draft, input) {
@@ -93,8 +107,12 @@ function afxMemoryCatPointerDown(draft, event) {
 
 AFX_PANELS.set('memory_brigade', {
   label: 'Memory Cat Brigade',
-  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v3',
+  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v4',
+  // A WebUI starting preset, never a claim about vendor defaults or device state.
+  startingValues: Object.freeze({level: 100, blend: 50, feedback: 0, delay: 50,
+    depth: 0, lpf_fc: 100, chrs_vibr: 0, size: 0}),
   render: afxMemoryCatHTML,
+  updateLiveStatus: afxMemoryCatUpdateLiveStatus,
   input: afxMemoryCatInput,
   click: afxMemoryCatClick,
   pointerDown: afxMemoryCatPointerDown,

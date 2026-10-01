@@ -1904,8 +1904,8 @@ physical units and quantization remain unverified. Switches alternate
 `1,0,1,0`, but label polarity is unknown. Successive reports change one
 byte in 20–27; bytes 28–319 remain zero. The final state differs from the
 starting state. No effect-parameter readback or automatic restoration was
-established. The pilot requires an explicit full eight-field **Apply**;
-values are drafts or last sent, and switches show A (0) / B (1) until the
+established. The pilot sends complete eight-field blocks on knob/switch edits;
+values are a displayed WebUI starting preset or last sent, and switches show A (0) / B (1) until the
 owner verifies their labels. No old capture is used as current device state.
 
 **Linked pairs and Launcher unlink behavior.**
@@ -1939,8 +1939,15 @@ Memory Cat's byte layout must not be reused for them. V12 also has observed
 
 **Bypass observation.** The 3/4 capture's Bypass All actions emit 16 reports
 using opcode `0x14`, selector `0x98`, **state at 17, type at 18, instance at
-19**. Values 1 then 0 are sent for each affected instance; state polarity
-and bypass readback remain unverified. This supersedes the old subcommand /
+19**. Each affected instance receives 1 then 0 only 3–5 ms apart; the
+same sequence repeats on later actions. The owner confirms that newly loaded
+effects start with bypass disengaged (processing active) in the tested state,
+and clicking bypass disables that effect slot. Interaction with Bypass All
+is untested. Loading preserves the device-assigned bypass state; the reported
+behavior is an observation; it does not set bypass flags or establish the
+current state of existing instances. The meaning of byte17 remains unresolved:
+a momentary press/release sequence is possible. State polarity and bypass
+readback remain unverified. This supersedes the old subcommand /
 handle / value map. Delete All emits successive whole-chain updates until
 both chains are empty. No bypass or general Delete All writer is enabled.
 
@@ -2013,13 +2020,17 @@ do not establish device IDs, parameter encodings or license ownership. Per-effec
 panels stay in separate modules; the selected channel accompanies every chain
 and parameter request.
 
-After one explicit complete Apply, Memory Cat knob, slider and switch changes
-send complete blocks through a 60 ms coalescing queue, with one request in
+Memory Cat knob and switch changes send complete blocks from the first edit
+through a 60 ms coalescing queue, with one request in
 flight. Live acknowledgements do not repaint the rack during a drag. Errors
-pause live sending without automatic retries; pending edits are discarded
-when their channel/session no longer matches. Drafts follow instance identities
-through reordering, and a newly allocated/replaced instance requires fresh
-initialization. Opening and Refresh read the selected chain and link table;
+pause live sending until an explicit Retry live controls click, without
+automatic retries; pending edits are discarded when their channel/session/draft
+no longer matches or their pair becomes linked. Drafts follow instance identities
+through reordering. With no last-sent block, a new/replaced instance displays
+the WebUI starting preset: Level100, Blend50, Feedback0, Delay50, Depth0,
+Filter100 and switches0/0. These are presentation choices, not captured vendor
+defaults or device state. The first edit sends all displayed values.
+Opening and Refresh read the selected chain and link table;
 reconnect invalidates cached slot inventory, link flags and parameter drafts.
 No partner-chain assignments or stereo parameter mirroring are generated.
 

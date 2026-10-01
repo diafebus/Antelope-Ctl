@@ -146,9 +146,12 @@ Typed test builders use the captured complete eight-slot chain, preserve
 other effects, allocate only measured instance indices, and start from
 fresh bounded device readbacks. Slot mutations verify their resulting
 readback and stop further testing if verification fails. Generic raw AFX
-opcode guards stay enabled. Parameter tests initialize with an explicit
-complete settings Apply, then permit throttled live edits from last-sent
-settings; they do not claim parameter readback or automatic restoration.
+opcode guards stay enabled. At the owner's request, parameter controls send
+complete blocks from the first knob/switch edit, with no Apply step. Without
+last-sent settings, the first edit sends the displayed WebUI starting preset;
+opening/refreshing never initializes device parameters. Subsequent edits are
+throttled and coalesced. Failed sends require explicit retry. This does not
+claim parameter readback, vendor defaults or automatic restoration.
 Stereo parameter sharing, other effects' parameter writes, unmeasured load
 types, and other devices remain unsupported by this pilot. No licensing or
 activation traffic is handled.

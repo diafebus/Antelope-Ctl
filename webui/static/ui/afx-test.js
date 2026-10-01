@@ -41,7 +41,7 @@ function afxTestChannelChanged(channel) {
     AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
       afxTestLinked(channel)
         ? 'AFX links are on. Unlink before editing this mono rack; stereo sharing is not available yet.'
-        : 'Select an effect in a slot. Initialized Memory Cat knobs send live; switch A/B polarity remains unconfirmed.';
+        : 'Select an effect in a slot. Memory Cat knobs and switches send live; switch A/B polarity remains unconfirmed.';
   }
 }
 
@@ -91,11 +91,6 @@ async function afxTestRequest(path, body) {
       }
     }
     AFX_TEST_STATE = state;
-    if (body && path.endsWith('/parameters')) {
-      const draft = AFX_TEST_DRAFTS.get(body.instance);
-      if (draft) draft.liveReady = true;
-      (state.parameters ||= {})[String(body.instance)] = {...body.values};
-    }
     if (Array.isArray(state.effects)) AFX_TEST_CHOICES = state.effects;
     if (!state.available) throw new Error('The Memory Cat pilot is unavailable for this profile.');
     selectAfxChannel(AFX_CHANNEL);
@@ -105,7 +100,7 @@ async function afxTestRequest(path, body) {
       ? 'Settings sent. Parameter readback is unavailable; confirm the result on the device.'
       : afxTestLinked(AFX_CHANNEL)
       ? 'AFX links are on. Unlink before editing this mono rack; stereo sharing is not available yet.'
-      : 'Select an effect in a slot. Memory Cat controls send live after the first full Apply.';
+      : 'Select an effect in a slot. Memory Cat controls send live as you adjust them.';
   } catch (error) {
     if (body && AFX_WINDOW === popup && !popup.closed && AFX_TEST_DEVICE_VIEW) {
       // Read the failure latch, never retry the failed device mutation.
@@ -137,10 +132,11 @@ function afxTestDraft(channel, slot) {
       options: {'0': 'A · 0', '1': 'B · 1'},
     }));
     const sent = AFX_TEST_STATE.parameters?.[String(record.instance)];
+    const starting = AFX_PANELS.get('memory_brigade').startingValues;
     const values = Object.fromEntries(controls.map(control => [control.id,
-      control.kind === 'continuous' ? sent?.[control.id] ?? 0
-        : sent?.[control.id] == null ? null : String(sent[control.id])]));
-      AFX_TEST_DRAFTS.set(record.instance, {live: true, liveReady: !!sent, instance: record.instance,
+      control.kind === 'continuous' ? sent?.[control.id] ?? starting[control.id]
+        : String(sent?.[control.id] ?? starting[control.id])]));
+    AFX_TEST_DRAFTS.set(record.instance, {live: true, liveReady: !!sent, livePaused: false, instance: record.instance,
       effect: {id: 'memory_brigade', name: 'Memory Cat Brigade', controls}, values});
   }
   return AFX_TEST_DRAFTS.get(record.instance);
@@ -272,16 +268,13 @@ function afxTestClick(event) {
     void afxTestMove(source, source + Number(move.dataset.afxMove));
     return true;
   }
-  const apply = event.target.closest('[data-afx-device-apply]');
-  if (apply) {
-    const draft = afxTestDraft(AFX_CHANNEL, Number(apply.dataset.afxDeviceApply));
+  const resume = event.target.closest('[data-afx-device-resume]');
+  if (resume) {
+    const draft = afxTestDraft(AFX_CHANNEL, Number(resume.dataset.afxDeviceResume));
     if (!draft) return true;
-    if (['chrs_vibr', 'size'].some(id => draft.values[id] === null)) {
-      AFX_WINDOW.document.getElementById('afx-preview-status').textContent = 'Select both switch positions before applying the complete settings.';
-      return true;
-    }
-    const values = Object.fromEntries(Object.entries(draft.values).map(([key, value]) => [key, Number(value)]));
-    void afxTestRequest('/api/afx/memorycat-test/parameters', {channel: AFX_CHANNEL, instance: draft.instance, values});
+    draft.livePaused = false;
+    AFX_DEVICE_RACK.parameterChanged(draft);
+    AFX_PANELS.get(draft.effect.id).updateLiveStatus(draft, AFX_WINDOW.document);
     return true;
   }
   return false;

@@ -95,13 +95,17 @@ both chains and do not reproduce the Launcher's extra assignments on unlink.
 Stereo chain/parameter sharing remains unavailable.
 
 `parameters` holds complete Memory Cat blocks last sent on the current
-connection, keyed by instance. Initialize an instance with one complete Apply;
-then knob and switch edits coalesce at 60 ms with one request in
+connection, keyed by instance. Knob and switch edits send from the first edit,
+with no Apply step, and coalesce at 60 ms with one request in
 flight and no rack repaint during dragging. Changing the selected channel or
-connection discards mismatching queued edits; reordering preserves instance
-settings, while load/replace requires fresh initialization. A/B switch labels
+connection discards mismatching queued edits; so does replacement of the draft
+or linking its pair before the send. Reordering preserves instance settings.
+When no last-sent block exists, the panel displays a WebUI starting preset
+(Level100, Blend50, Feedback0, Delay50, Depth0, Filter100, switches0/0), not
+device readings or vendor defaults. The first edit sends all displayed values;
+opening/refreshing never sends a parameter block. A/B switch labels
 and parameter readback remain unconfirmed. A failed live write pauses sending
-without retries.
+until an explicit Retry live controls click, without automatic retries.
 
 `session` changes on device reconnect. The backend clears cached AFX inventory
 and link flags, and the browser drops old parameter drafts. Allocation waits
