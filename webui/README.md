@@ -63,11 +63,11 @@ compatibility.
     tab selected. Profiles declaring AFX capacity expose the button; Orion
     offers a 32-channel selector and a single channel strip on the left,
     with that channel's eight rack units together on the right. Selection
-    persists across popup close/reopen while the main page is open for
-    profiles without a device pilot. Orion supports device racks on AFX 1–32.
+    persists across popup close/reopen while the main page is open. Orion supports device racks on AFX 1–32.
     Categorized effect selectors sit in the left slot list; its compact pair-link
     button sits in the channel header. Device link readbacks mark linked channel
-    partners. Both the left list and rack support drag reordering, including
+    partners; unlink only the selected pair before mono editing. Other linked
+    pairs do not block that rack. Both the left list and rack support drag reordering, including
     dragging between them. Refresh reads the selected slots and link table.
     Local preview is an explicit alternative; missing device reads remain unavailable.
     Memory Cat has six draggable knobs and two mode selectors; after the first
@@ -75,7 +75,13 @@ compatibility.
     previews and device slot state are separate. The pilot exposes guarded
     load/replace/remove/reorder and full-state parameter initialization, with slot readback
     verification and unconfirmed A/B switch polarity. Parameter settings are
-    drafts/last sent, not device readback. See the main README's AFX section.
+    drafts/last sent, not device readback. Mono load/remove verification covers
+    AFX 3–32, plus earlier owner testing on AFX 1; AFX 2 mono writes were not
+    exercised while 1–2 were linked. All 16 pair flags have verified readback.
+    Failed slot verification disables writes for the server session; Refresh
+    stays read-only. Reconnect clears old AFX inventory, flags and initialized
+    drafts. Other effect parameters, stereo sharing and bypass remain guarded.
+    See the main README's AFX section and [the API/state contract](DEVICE_UI.md#orion-afx-rack).
     Closing the
     window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with

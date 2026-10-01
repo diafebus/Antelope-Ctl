@@ -228,9 +228,16 @@ records which channels have completed device trials. `link_pair_records`
 maps the 16 pair flags to `0x0b:4` records 0–15 only after direct transition
 confirmation; trailing records 16–31 remain unmapped.
 `runtime_contracts.afx_memorycat_test` additionally governs
-type 73 parameters: explicit initial complete Apply, then throttled live
+type 73 parameters on a selected channel: explicit initial complete Apply, then throttled live
 edits from last-sent values without a claimed parameter readback. Slot writes
-start from fresh whole-chain reads and verify their results. No other device
+start from fresh selected-channel whole-chain reads and verify their results.
+A missing or mismatching result disables further AFX writes for that server
+session without a blind corrective write; read-only refresh remains available.
+Allocation requires all 64 safely bounded `0x19` storage records and a fresh
+`0x15:0` resource count, retaining globally distinct captured instances. Link
+and slot caches are invalidated on reconnect. The API reports link flags as
+readback values and parameter blocks as last-sent values; these sources must
+not be conflated. No other device
 or stereo parameter writer is enabled. The catalog contains neither
 installed-effect state nor account entitlements; licensing/activation traffic is outside its purpose. Gazelle
 Reverb retains its separate existing command/readback contract.
@@ -250,7 +257,12 @@ do not become another model's contract. All three command definitions
 remain `null` for every implementation. A declared control name carries neither an inferred range
 nor an inferred byte width/offset. `source_name` preserves Gazelle's effect
 key; `name` uses a public product name only when one has been matched.
-Descriptions and categories otherwise remain `null`. A `#plugins...` or
+Descriptions otherwise remain `null`. Categories now group the menu by
+purpose: Dynamics, EQ & Filters, Modulation, Delay & Reverb, Pitch & Tuning,
+Amps & Cabinets, Preamps, Saturation & Distortion, and Other. Most were
+classified from the existing effect/control names; uncertain purposes remain
+Other. This presentation metadata carries no write permission, device-ID
+mapping or license evidence. A `#plugins...` or
 `#params...` suffix in an evidence URL is a JSON key path within the linked
 source document, not an HTML anchor.
 

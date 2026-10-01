@@ -204,6 +204,10 @@ read the counts off against the Launcher's routing-tab labels.
 
 Five outer selectors 0–4 return 6/8/1/64/32 nested flags: Preamp, ADAT,
 S/PDIF, mixer and AFX. Input spaces 0/1/2 write matching tables 0/1/2.
+Direct AFX trials on 2026-10-01 verified space-4 pairs 0–15 against
+`0x0b:4` bytes 0–15, with every original flag restored and all other tables
+unchanged. Trailing bytes 16–31 are not mapped to the 32 user-facing
+channels. See §12a for channel and parameter verification.
 Direct 2026-09-30 ADAT trials toggled/restored all eight space-1 pairs with
 other tables unchanged. Subsequent all-ON and space-2/pair-0 writes were
 retained at the user's request and confirmed in the Windows VM Launcher.
@@ -387,7 +391,7 @@ sweep to the declared count unless `--unsafe`.
 | `0x12` | **UNKNOWN**, empty body on 2026-09-04. The old "clock source or sample-rate index?" guess is **ruled out** -- both live in `0x73` instead (clock source @19, rate index @18, rate in Hz @21-23) | undecoded |
 | `0x15` | one outer record at index 0 containing 91 `{type_id, inst_count}` remaining-featured-instance records | decoded from panel schema and response log |
 | `0x16` | one outer record at index 0 containing eight `{target, emu_model, ch_swap, pattern}` mic-emulation records | **decoded from the extracted panel schema and response logs; read-only parser** |
-| `0x19` | 64 indexed AFX strip records; each response contains eight `{type, inst}` slots, with `{0,0}` observed for empty slots | **decoded from the extracted panel schema and response logs; read-only parser** |
+| `0x19` | 64 indexed AFX strip records; each response contains eight `{type, inst}` slots, with `{0,0}` observed for empty slots | **Decoded parser; typed mono writes verified against matching indices 2–31 on 2026-10-01, plus earlier owner testing on index 0. Index 1 mono writes and storage 32–63 remain unexercised by these trials.** |
 | `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 meaningful B = a 4-byte head plus 16 EQ bands (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode raw>`). **Correction:** EQ begins at response byte 20, not 16. The head is decoded as delay (0.1 ms units plus the 0.6 ms UI floor), level (0.1 dB units around raw 600), and phase-invert bit according to the profile contract; dynamic head writes are confirmed for speakers 0 and 1. L/R held the non-flat 2.0 Room Correction curve; mode labels remain unproven. | decoded runtime readback; bounded WebUI/self-test one-field EQ, delay, level, and phase read-modify-write probes; unknown modes stay raw |
 | **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.0/2.1 bass-management block. See the alignment proof below | **decoded + wired 2026-09-04** — `protocol.parse_surround_global_record`, CLI `surround-status`; confirmed speaker-bypass and Bass Management writes use fresh complete records |
 | `0x1c`-`0x60` | answer, empty bodies | — |
@@ -407,9 +411,9 @@ sweep to the declared count unless `--unsafe`.
 > | `0x17` | SET_MIX / SET_MIC_MODELING | not queried |
 > | `0x1a` | **blocked as a precaution -- never actually observed as a write opcode on this device** (see below) | **surround per-speaker EQ** (decoded, in scope) |
 > | `0x1b` | — | **surround global** |
-> | `0x1c` | AFX Real-Time parameter stream (bucket D; in scope, but currently blocked pending decoding and write verification) | answers empty |
+> | `0x1c` | Memory Cat Real-Time parameters; generic builder blocked, explicit full-state Orion operator path (§12a) | answers empty |
 > | `0x1d` | SET_AURAVERB (bundled, no activation — in scope) | answers empty |
-> | `0x23` | **out of scope** (AFX slot assign — bucket E, assigns/clears a plugin) | answers empty |
+> | `0x23` | AFX whole-chain assignment; generic builder blocked, five captured Orion types permitted by the operator exception (§12a, `SCOPE.md`) | answers empty |
 >
 > This table exists because of a real, already-documented bug: category
 > `0x1a` was mislabelled "ADAT" for weeks from a count coincidence (16
@@ -433,9 +437,10 @@ sweep to the declared count unless `--unsafe`.
 > blocked defensively" — not "known DSP, therefore off-limits." Under
 > `SCOPE.md` §4, control of an AFX Real-Time effect already available under
 > a license assigned to the device is in scope. This is distinct from
-> Native/Cosmos DAW plugins. Plugin assignment/loading and license or
-> activation traffic remain out of scope; the `0x1c` command stays blocked
-> in the implementation until its payload and safe write path are verified.
+> Native/Cosmos DAW plugins. General plugin loading and all license or
+> activation traffic remain excluded. The owner-requested Orion operator
+> exception permits five captured load types and complete Memory Cat
+> parameter blocks, while generic raw AFX builders remain blocked (§12a).
 
 ### Reading routing back
 
@@ -1831,8 +1836,8 @@ The 64 outer `0x19` storage records are distinct from those user-facing
 channels. Owner-authorized Memory Cat load/remove trials on 2026-10-01
 verified write channels 2–31 against matching `0x19` indices, with exact
 restoration and other channel chains unchanged. Index 0 was owner-tested
-earlier; index 1 mono writes and storage indices 32–63 remain unexercised. Capacity does not
-establish a DSP instance budget. The shared catalog records owner-observed
+earlier; index 1 mono writes and storage indices 32–63 remain unexercised
+by those trials. Capacity does not establish a DSP instance budget. The shared catalog records owner-observed
 Orion types independently of sibling-device IDs; its command definitions
 remain null. The profile's explicit `afx_memorycat_test` runtime contract
 supplies a separate, experimental operator test path.
@@ -1940,19 +1945,41 @@ handle / value map. Delete All emits successive whole-chain updates until
 both chains are empty. No bypass or general Delete All writer is enabled.
 
 **Readback/test verification.** Category `0x19` provides 64 safely bounded
-outer records, each with eight `{type,inst}` pairs. The new single-channel
-capture's initial index-0 replies (9885/12579) contain the owner's accidental
-type-6 instance; it has no post-load slot reply. The pilot therefore treats
-the write-to-readback correspondence as a live test requirement, starting
-from a fresh index-0 readback and checking every resulting chain. A failed
-or absent post-write match disables further tests for that server session.
-The owner reported the Memory Cat effect working from the WebUI on
-2026-10-01. This is a functional user observation; it does not establish
-individual switch polarity, every control, restoration, or stereo behavior.
-Other effects in that chain are preserved. Allocation requires the full
-64-record inventory plus a fresh `0x15:0` remaining counter, and uses only
-captured Memory Cat indices 0–7. The mono test also requires all decoded
-`0x0b:4` flags OFF; their transition correlation remains unverified.
+outer records, each with eight `{type,inst}` pairs. The original single-channel
+capture's index-0 replies (9885/12579) contain the owner's accidental type-6
+instance and no post-load reply. Subsequent evidence is stronger: the owner
+reported Memory Cat working on AFX 1, and authorized direct mono load/remove
+trials on AFX 3–32 on 2026-10-01. Those 30 trials verified write channels
+2–31 against the same readback indices, restored each original chain exactly,
+and preserved the other user-facing channels. Reordering additionally
+verified on channels 2 and 31. The existing AFX 1–2 link and effects were
+left untouched; index 1 mono writes were not exercised while linked.
+
+Every operator mutation starts from a fresh read of the selected channel and
+checks its resulting chain. A missing or mismatching post-write reply disables
+further writes for that server session; read-only refresh remains available.
+No blind corrective write follows a failed verification. Allocation requires
+the complete 64-record inventory plus a fresh `0x15:0` remaining counter,
+avoids instances present on other storage records, and accepts only the
+captured ranges in the effect table below. Unknown effects are preserved.
+
+All 16 space-4 link pairs were independently tested ON/OFF against all five
+safe link tables. Pair N changed only `0x0b:4` byte N, 0=OFF and 1=ON; each
+trial restored all five tables exactly. `link_pair_records` records this
+mapping for bytes 0–15, leaving bytes 16–31 unmapped. The WebUI uses device
+readback for pair buttons and channel partner labels. Only the selected pair
+must be OFF for mono edits; other linked pairs do not block it. A link write
+sends only the flag and checks a fresh reply, without modifying either chain.
+
+Local evidence, intentionally excluded from Git:
+
+- `captures/afx-link-readback-transitions-20261001.json`: direct HID requests,
+  replies and before/after/restored values for all 16 pairs.
+- `captures/afx-channel-slot-roundtrips-20261001.json`: 30 mono chain trials,
+  verified restoration and raw HID IN `0x0b`/`0x19` reports.
+
+These trials verify the listed mappings and chain restoration, not switch
+polarity, all effect controls, stereo sharing, or device power-cycle retention.
 
 Category `0x15:0` contains 91 instance counters. `0x0c` declares 90 available
 and 90 maximum records, but its outer count is unknown and runtime queries
@@ -1963,25 +1990,53 @@ were expanded and `0x0c:1` remains unconfirmed. Device resource counts,
 enabled/greyed-out picker entries, demo access and full ownership are
 separate observations.
 
-**Operator picker and live controls (2026-10-01).** The requested picker
-extends the index-0 chain pilot to observed types73/75/27/70/78, preserving
-unmapped types and using only measured instance indices (Memory Cat0–7,
-other captured types0/1). Fresh remaining counters and post-write slot
-verification are still required. Pair buttons send captured space4 flags
-for pairs0–15; last-sent indicators are session-local and not readback.
-No partner effect assignments or stereo parameter mirroring are generated.
-After an explicit initial complete Apply, Memory Cat edits stream throttled
-whole-state parameter blocks. Live responses do not repaint a dragged knob.
+**Operator picker and live controls (2026-10-01).** The bounded Orion path
+accepts mono channel indices 0–31 and these five independently captured types:
+
+| Effect | Orion type ID | Accepted instance indices | Runtime controls |
+|---|---|---|---|
+| Memory Cat Brigade | 73 (`0x49`) | 0–7 | Complete eight-field parameter block |
+| Instinct | 75 (`0x4b`) | 0, 1 | Load/replace/remove/reorder; parameters observation-only |
+| Master De-Esser | 27 (`0x1b`) | 0, 1 | Load/replace/remove/reorder; parameters observation-only |
+| V12 Chorus | 70 (`0x46`) | 0, 1 | Load/replace/remove/reorder; parameters observation-only |
+| BBD-Chorus | 78 (`0x4e`) | 0, 1 | Load/replace/remove/reorder; owner identifies demo access |
+
+These are measured instance ranges, not the full hardware instance limits or
+an entitlement list. The shared catalog's command definitions remain null;
+only the separate typed runtime contracts enable these operator actions.
+
+The popup keeps categorized effect selectors in the left slot list, a compact
+pair button in its channel header, and eight rack panels on the right. Both
+surfaces support drag reordering, including drops between them. Unsupported
+catalog choices remain disabled. Menu categories describe effect purpose and
+do not establish device IDs, parameter encodings or license ownership. Per-effect
+panels stay in separate modules; the selected channel accompanies every chain
+and parameter request.
+
+After one explicit complete Apply, Memory Cat knob, slider and switch changes
+send complete blocks through a 60 ms coalescing queue, with one request in
+flight. Live acknowledgements do not repaint the rack during a drag. Errors
+pause live sending without automatic retries; pending edits are discarded
+when their channel/session no longer matches. Drafts follow instance identities
+through reordering, and a newly allocated/replaced instance requires fresh
+initialization. Opening and Refresh read the selected chain and link table;
+reconnect invalidates cached slot inventory, link flags and parameter drafts.
+No partner-chain assignments or stereo parameter mirroring are generated.
 
 The owner authorized a Level self-test after applying the full settings.
-The test sent Level100→99 while a raw HID listener observed incoming
-traffic, then sent the full original settings to restore100. Baseline/changed/restored phases contained75/154/79
-state0x73 reports and76/153/79 diagnostic0x75 reports; changed/restored
-also contained queried0x0b:4 and0x19:0 replies. No stable reversible byte
+The test sent Level 100→99 while a raw HID listener observed incoming
+traffic, then resent the full original settings with Level 100. That restore
+command was acknowledged; restoration could not be independently checked
+without parameter readback. Baseline/changed/restored phases contained
+75/154/79 state `0x73` reports and 76/153/79 diagnostic `0x75` reports;
+changed/restored also contained queried `0x0b:4` and `0x19:0` replies. No stable reversible byte
 change was found in the observed free-running state/diagnostic streams;
 no parameter echo was identified. This is a limited observation, not proof
 that every undiscovered query lacks parameter readback. No unknown category
-or out-of-bounds query was sent. Local raw self-test evidence is not committed.
+or out-of-bounds query was sent. The local raw evidence is
+`captures/afx-parameter-readback-selftest-20261001.json`, intentionally
+excluded from Git. This parameter trial is separate from the verified slot
+and link round trips above.
 
 `tools/scan_afx_capture.py` automates offline slot/action ordering, parameter
 byte changes and identical mirrored-write comparisons for these captures.

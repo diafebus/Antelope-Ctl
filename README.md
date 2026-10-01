@@ -77,8 +77,9 @@ entries and 729 declared control names from Gazelle's Discrete 4 findings,
 with pinned source provenance. The first three descriptions are drawn from
 public effect pages. The Orion Memory Cat Brigade implementation records
 six observed 0–100 knob fields and two binary switch fields from an
-owner-labelled capture. Switch polarity, intermediate scaling and safe-write
-verification remain unresolved. Owner-labelled load captures establish
+owner-labelled capture. Switch polarity, intermediate scaling and parameter
+readback remain unresolved. The typed operator path separately records
+verified chain/link round trips and owner-reported parameter operation. Owner-labelled load captures establish
 Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
 Master De-Esser; catalog commands stay null. This metadata does not enable
 a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
@@ -111,8 +112,8 @@ or between the left slot list and the rack to reorder the selected chain.
 
 The compact pair button sits inside the left channel header and follows
 the selection: AFX 1 or 2 shows 1–2, AFX 3 or 4 shows 3–4, through 31–32.
-Its glow and accessible label identify the current link state. Linked channel-menu entries show their
-partner. Link indicators use device readback: all 16 space-4 flags were
+Its glow and accessible label identify the current link state. Linked
+channel-menu entries show their partner. Link indicators use device readback: all 16 space-4 flags were
 independently verified against `0x0b:4` records 0–15 on 2026-10-01. Records
 16–31 remain unmapped. Opening or refreshing the rack reads its selected
 chain and link flags directly.
@@ -124,12 +125,20 @@ Memory Cat settings are drafts/last sent, not parameter readback. Apply the
 complete eight-setting block once to initialize live controls; subsequent
 knob, slider and switch changes send automatically. Requests are throttled
 and coalesced to the latest settings, with one in flight and no rack repaint
-during a drag. Failed writes pause live sending and are not retried.
+during a drag. Failed writes pause live sending and are not retried. A missing
+or mismatching post-write slot readback disables further AFX writes for the
+server session; Refresh remains read-only and does not clear that failure.
+Reconnect clears old slot inventory, link flags and initialized parameter
+drafts. Wait for the full inventory before loading and use a complete Apply
+to initialize an instance after it is loaded or after reconnecting.
 Switch A/B polarity is still unconfirmed. The owner reports the effect and
 applied parameter settings work. A 2026-10-01 Level 100→99→100 self-test
 found no stable parameter readback in the observed HID streams; the original
-settings were sent to restore the baseline. This does not establish absence
-of a separate, undiscovered parameter-readback protocol.
+settings were resent to restore the baseline, with the command acknowledged
+but no parameter readback to independently verify restoration. This does not
+establish absence of a separate, undiscovered parameter-readback protocol.
+See [PROTOCOL.md §12a](PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls)
+for the effect IDs, complete device-test findings and remaining evidence limits.
 
 **Local preview** explicitly switches to drafts; **Connect device rack**
 returns to device slots. Opening the rack or changing channels sends no

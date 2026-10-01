@@ -31,7 +31,7 @@ right tool.
 
 - `offline_checks.py` is the documented all-in-one offline suite. It runs the
   Python profile/protocol tests plus the WebUI meter, mixer-link, input-link,
-  and static source checks. Use `--python-only` only where Node.js is unavailable.
+  AFX lifecycle/selection/reordering/live-write checks, and static source checks. Use `--python-only` only where Node.js is unavailable.
 - `test_*` and `webui_sources.cjs` are offline regressions.
 - `capture_diff.py` and `scan_*.py` analyse local captures only.
 - `selftest.py` and the `surround_*_selftest.py` scripts are live-device tools.
@@ -39,7 +39,12 @@ right tool.
 - `link_transition_capture.py` compares all five safe Orion link tables
   around one explicit transition and restores the declared starting flag.
   Input spaces/readback selectors are 0=Preamp (six pairs), 1=ADAT (eight
-  pairs), and 2=S/PDIF (one pair), verified on 2026-09-30. All writes require
+  pairs), and 2=S/PDIF (one pair), verified on 2026-09-30. Orion also supports
+  `--family afx`: space 4, pair indices 0–15, matching `0x0b:4` bytes 0–15,
+  independently verified on 2026-10-01. Bytes 16–31 remain unmapped. The
+  tool uses the explicit Orion rack contract and does not assign any effects.
+  Stop the WebUI/Launcher before using it so only one controller owns HID.
+  All writes require
   explicit transition confirmation. Legacy profiles with shared Preamp/ADAT
   selectors additionally require `--confirm-shared-space`.
 
@@ -51,3 +56,31 @@ right tool.
 Local tool output is ignored because it can contain device-specific data.
 Capture inputs are ignored too; keep only sanitized findings in the tracked
 profile and protocol documentation.
+
+## Orion AFX evidence and regression checks
+
+The 2026-10-01 device trials verified all 16 AFX link transitions against the
+five bounded link tables, then verified Memory Cat load/remove on the 30
+unlinked channels AFX 3–32. Each original chain was restored exactly;
+reordering additionally verified on AFX 3 and 32. AFX 1–2 and their existing
+link/effects were preserved. Earlier owner testing covers AFX 1; AFX 2 mono
+writes were not exercised while linked. A separate parameter test sent
+Level 100→99 and resent the original complete block, without identifying a
+parameter readback or independently verifying the restored parameter value.
+The results do not authorize queries beyond current profile bounds.
+
+The raw local evidence remains ignored:
+
+- `captures/afx-link-readback-transitions-20261001.json`
+- `captures/afx-channel-slot-roundtrips-20261001.json`
+- `captures/afx-parameter-readback-selftest-20261001.json`
+
+The committed findings are in [PROTOCOL.md §12a](../PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls).
+The temporary channel/parameter trial scripts are not installed public tools;
+do not confuse the offline `test_*` suite with an automatic hardware trial.
+`tools/test_afx_test.py` covers selected-channel bounds, instance allocation,
+fresh read/verify behavior, link readbacks and verification failures;
+`tools/test_afx_catalog.py` covers supported types and presentation groups;
+`tools/test_webui_afx.cjs` covers left selectors, both drag surfaces, channel
+payloads, linked-pair guards, reconnect and live-write coalescing. These tests
+never open a HID node.

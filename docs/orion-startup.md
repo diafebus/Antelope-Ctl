@@ -46,7 +46,9 @@ probe are documented in `PROTOCOL.md` and
 Category `0x0b` occurs eight times with indices `1,2,3,3,3,3,0,4`.
 These are five selectors, not eight records. Index 0 has six Preamp flags,
 index 1 eight ADAT flags, index 2 one S/PDIF flag, index 3 64 mixer flags,
-and index 4 32 AFX flags. Repeated mixer reads do not expand query bounds:
+and index 4 32 AFX table entries. The 16 channel-pair selectors for Orion's
+32 user-facing AFX channels map to entries 0–15; entries 16–31 remain
+unmapped. Repeated mixer reads do not expand query bounds:
 `category_counts` remains 5, permitting outer indices 0–4 only.
 
 Direct device tests and Windows VM checks on 2026-09-30 confirmed input
@@ -59,10 +61,24 @@ profile supplies separate authoritative mappings for all three input banks.
 These results do not alter the startup walk, bounds, or establish retention
 through a device power cycle. See [PROTOCOL.md](../PROTOCOL.md) §4/§7.
 
+Direct AFX trials on 2026-10-01 toggled each space-4 pair 0–15 ON/OFF,
+comparing all five safe link tables and restoring their original values after
+every trial. Only the corresponding `0x0b:4` byte changed. The WebUI uses
+this confirmed mapping for the pair button and linked-channel menu labels.
+Reconnect clears the cached AFX flags and slot inventory before polling the
+new connection; opening/refreshing the rack requests fresh selected-channel
+slots and link flags. This changes neither the startup query order nor its
+bounds and does not introduce default link or effect writes.
+
 The other nested response shapes are also recorded in
 `frame.readback.record_layouts`: category `0x16` index 0 contains eight
 mic-emulation records; category `0x19` contains eight AFX slots per strip;
-category `0x15` contains 91 remaining-instance counters. Category `0x0c`
+category `0x15` contains 91 remaining-instance counters. Mono load/remove
+trials verified write-channel/readback-index correspondence on indices 2–31,
+with original chains restored; index 0 was owner-tested earlier. Index 1 mono
+writes and storage indices 32–63 were not exercised by those trials. The
+loader waits for the complete 64-record inventory before allocating an
+instance, and counters describe remaining resources rather than licenses. Category `0x0c`
 has a schema-defined available/max table shape, but its outer query bounds
 are intentionally not added until a device capture confirms them.
 
@@ -78,7 +94,10 @@ macOS additionally queries firmware/identity categories `0x00` and `0x01`, plus 
 
 The profile preserves the Windows query sequence, not a merged or deduplicated sequence. These observations do not prove that every macOS request is required. Capture-specific gain restoration writes are not startup defaults and must not be replayed blindly.
 
-Capture analysis does not establish Linux hidraw report-ID handling, minimum delays, or the cause of a reported HID write timeout. No hardware writes were performed for this change.
+The original startup-capture analysis did not establish Linux hidraw report-ID
+handling, minimum delays, or the cause of a reported HID write timeout. It
+performed no hardware writes. The later authorized link/chain trials above
+are separate evidence; see [PROTOCOL.md §12a](../PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls).
 
 ## Offline regression checks
 
