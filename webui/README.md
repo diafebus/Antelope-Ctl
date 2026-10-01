@@ -48,7 +48,8 @@ compatibility.
   - `afx.js` -- detachable AFX window sized from the profile's capacity;
   - `afx-memorycat.js` / `afx-memorycat.css` -- the Memory Cat panel's own
     presentation and control interactions;
-  - `afx-test.js` -- operator-driven device-rack pilot, separate from local previews;
+  - `afx-test.js` -- effect selectors, pair buttons and device-rack pilot;
+  - `afx-live.js` -- throttled/coalesced Memory Cat edits without repainting knobs;
   - `surround.js` -- profile-driven Surround monitor and EQ readback;
   - `readback.js` and `boot.js` -- diagnostics, state fan-out, and startup.
 
@@ -64,12 +65,14 @@ compatibility.
     with that channel's eight rack units together on the right. Selection
     persists across popup close/reopen while the main page is open for
     profiles without a device pilot. Orion opens directly on AFX 1's device
-    rack with Load Memory Cat buttons on reported empty slots. Local preview
+    rack with per-slot effect selectors for captured Orion types. The pair-link
+    button follows the selected channel and menu labels show last-sent links. Local preview
     is an explicit alternative. Slot
     contents remain unavailable outside the explicit channel-index-0 pilot.
-    Memory Cat previews have six draggable knobs and two mode selectors;
+    Memory Cat has six draggable knobs and two mode selectors; after the first
+    full Apply, edits send live through the throttled afx-live.js module;
     previews and device slot state are separate. The pilot exposes guarded
-    load/remove/reorder and full-state parameter Apply, with slot readback
+    load/replace/remove/reorder and full-state parameter initialization, with slot readback
     verification and unconfirmed A/B switch polarity. Parameter settings are
     drafts/last sent, not device readback. See the main README's AFX section.
     Closing the

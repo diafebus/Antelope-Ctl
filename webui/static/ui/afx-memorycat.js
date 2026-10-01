@@ -34,7 +34,7 @@ function afxMemoryCatHTML(draft, slot) {
     + `<div class="afx-effect-controls"><div class="afx-knob-bank">${knobs.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live)).join('')}</div>`
     + `<div class="afx-mode-bank">${modes.map(c => afxMemoryCatControlHTML(c, draft.values[c.id], slot, draft.live)).join('')}</div></div>`
     + (draft.live ? `<div class="afx-test-apply"><button type="button" class="afx-preview-open" data-afx-device-apply="${slot}">Apply all settings</button>`
-      + '<span>Draft / last sent values · no parameter readback. Switch A/B labels await confirmation.</span></div>'
+      + `<span>${draft.liveReady ? 'Knobs send live · last sent values, no parameter readback.' : 'Apply once to initialize live knobs · current parameter readback unavailable.'} Switch A/B labels await confirmation.</span></div>`
       : '<p class="afx-preview-note">Preview settings only · effect loading and device controls are not connected.</p>')
     + '</div>';
 }
@@ -50,6 +50,7 @@ function afxMemoryCatInput(draft, input) {
   group.style.setProperty('--afx-turn', `${-135 + fraction * 270}deg`);
   group.style.setProperty('--afx-fill', `${fraction * 270}deg`);
   group.querySelector('output').textContent = String(value);
+  if (draft.live) AFX_DEVICE_RACK?.parameterChanged?.(draft);
 }
 
 function afxMemoryCatClick(draft, event) {
@@ -60,6 +61,7 @@ function afxMemoryCatClick(draft, event) {
   draft.values[control.id] = button.dataset.afxValue;
   for (const option of button.parentElement.querySelectorAll('button'))
     option.setAttribute('aria-pressed', String(option === button));
+  if (draft.live) AFX_DEVICE_RACK?.parameterChanged?.(draft);
 }
 
 function afxMemoryCatPointerDown(draft, event) {
@@ -91,7 +93,7 @@ function afxMemoryCatPointerDown(draft, event) {
 
 AFX_PANELS.set('memory_brigade', {
   label: 'Memory Cat Brigade',
-  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v1',
+  stylesheet: '/webui/static/afx-memorycat.css?v=afx-memorycat-v2',
   render: afxMemoryCatHTML,
   input: afxMemoryCatInput,
   click: afxMemoryCatClick,

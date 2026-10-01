@@ -45,7 +45,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antelope import protocol as proto
 from antelope.transport import list_connected_hid, open_transport
 from webui.device_ui import features_for
-from webui.afx_catalog import preview_catalog
+from webui.afx_catalog import preview_catalog, effect_choices
 from webui.afx_test import MemoryCatTest
 
 from fastapi import FastAPI
@@ -2069,6 +2069,12 @@ class AfxChainTestChange(BaseModel):
     operation: str
     slot: StrictInt
     source: StrictInt | None = None
+    effect_id: str = 'memory_brigade'
+
+
+class AfxLinkTestChange(BaseModel):
+    pair: StrictInt
+    enabled: bool
 
 
 class AfxParameterTestChange(BaseModel):
@@ -2078,13 +2084,19 @@ class AfxParameterTestChange(BaseModel):
 
 @app.get("/api/afx/memorycat-test")
 def api_afx_memorycat_test():
-    return AFX_TEST.state()
+    state = AFX_TEST.state()
+    try:
+        with open(os.path.join(PROFILE_DIR, 'afx_effects.json')) as source:
+            catalog = json.load(source)
+    except (OSError, ValueError):
+        catalog = {}
+    return {**state, 'effects': effect_choices(catalog, os.path.basename(PROFILE_PATH), PROFILE)}
 
 
 @app.post("/api/afx/memorycat-test/chain")
 def api_afx_memorycat_chain(change: AfxChainTestChange):
     try:
-        return AFX_TEST.change_chain(change.operation, change.slot, change.source)
+        return AFX_TEST.change_chain(change.operation, change.slot, change.source, change.effect_id)
     except (ValueError, RuntimeError) as error:
         return _bad(str(error))
 
@@ -2101,6 +2113,14 @@ def api_afx_memorycat_parameters(change: AfxParameterTestChange):
 def api_afx_memorycat_unlink():
     try:
         return AFX_TEST.unlink_pilot()
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
+
+
+@app.post('/api/afx/link')
+def api_afx_link(change: AfxLinkTestChange):
+    try:
+        return AFX_TEST.set_link(change.pair, change.enabled)
     except (ValueError, RuntimeError) as error:
         return _bad(str(error))
 

@@ -34,7 +34,7 @@ const context = vm.createContext({
         focus() { this.focused = true; },
       });
       const nodes = Object.fromEntries(['afx-device', 'afx-channel', 'afx-channel-name',
-        'afx-rack-title', 'afx-rack', 'afx-preview-status', 'afx-slot-list'].map(id => [id, node()]));
+        'afx-rack-title', 'afx-rack', 'afx-preview-status', 'afx-slot-list', 'afx-pair-control'].map(id => [id, node()]));
       const device = nodes['afx-device'], closeButton = node();
       const popup = {
         closed: false, focused: 0, events, device, closeButton, nodes,
@@ -53,6 +53,7 @@ const context = vm.createContext({
   },
   reportMessage: (key, title, body) => messages.set(key, {title, body}),
   clearMessage: key => messages.delete(key),
+  setTimeout, clearTimeout,
   fetch() { throw new Error('The capacity popup must not make device or account requests'); },
   post() { throw new Error('The capacity popup must not issue device writes'); },
 });
@@ -61,6 +62,7 @@ context.PROFILE.runtime_contracts.afx_memorycat_test.enabled = false;
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-memorycat.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-test.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-live.js'), 'utf8'), context);
 
 // Orion dimensions come from its profile; slots are unknown, never fake empty.
 button.click();
@@ -258,14 +260,20 @@ async function checkEffectPreviews() {
   const emptySlots = Array.from({length: 8}, () => ({type: 0, instance: 0}));
   emptySlots[0] = {type: 73, instance: 4};
   const state = {available: true, online: true, writes_enabled: true, slots: emptySlots,
-    parameters: {}, session: 1};
+    parameters: {}, session: 1, links: Array(16).fill(null), effects: [
+      {id: 'memory_brigade', name: 'Memory Cat Brigade', type_id: 73, loadable: true},
+      {id: 'instinct', name: 'Instinct', type_id: 75, loadable: true},
+      {id: 'deesser', name: 'Master De-Esser', type_id: 27, loadable: true},
+      {id: 'unmapped', name: 'Unmapped effect', type_id: null, loadable: false},
+    ]};
   const writes = [];
   let deviceReads = 0;
   context.fetch = async (url, options) => {
-    assert.match(url, /^\/api\/afx\/memorycat-test/);
+    assert.match(url, /^\/api\/afx\/(memorycat-test|link)/);
     if (options) {
       assert.equal(options.method, 'POST');
       writes.push({url, body: JSON.parse(options.body)});
+      if (url.endsWith('/link')) state.links[writes.at(-1).body.pair] = writes.at(-1).body.enabled;
     } else deviceReads++;
     return {ok: true, json: async () => options && url.endsWith('/parameters') ? {sent: true, verified: false} : state};
   };
@@ -278,13 +286,14 @@ async function checkEffectPreviews() {
   assert.equal(writes.length, 0, 'Opening the rack must never write to the device');
   assert.equal(live.nodes['afx-channel'].value, '0', 'Open on the supported pilot channel');
   assert.match(live.nodes['afx-rack'].innerHTML, /Device test/);
-  assert.equal((live.nodes['afx-rack'].innerHTML.match(/>Load Memory Cat</g) || []).length, 7);
+  assert.equal((live.nodes['afx-rack'].innerHTML.match(/data-afx-effect-select=/g) || []).length, 8);
+  assert.match(live.nodes['afx-rack'].innerHTML, /value="unmapped" disabled/);
   assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /Preview Memory/);
   assert.match(live.nodes['afx-slot-list'].innerHTML, /Memory Cat/);
   assert.equal((live.nodes['afx-slot-list'].innerHTML.match(/>Empty</g) || []).length, 7);
   vm.runInContext('selectAfxChannel(1)', context);
   assert.match(live.nodes['afx-preview-status'].textContent, /AFX 1 only/);
-  assert.doesNotMatch(live.nodes['afx-rack'].innerHTML, /data-afx-device-load/);
+  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-effect-select="0"[^>]* disabled/);
   vm.runInContext('selectAfxChannel(0)', context);
   const apply = {dataset: {afxDeviceApply: '0'}, closest: selector => selector === '[data-afx-device-apply]' ? apply : null};
   live.nodes['afx-rack'].click({target: apply});
@@ -300,14 +309,27 @@ async function checkEffectPreviews() {
   assert.equal(writes[0].body.values.chrs_vibr, 1);
   assert.equal(Object.keys(writes[0].body.values).length, 8);
   assert.match(live.nodes['afx-preview-status'].textContent, /Parameter readback is unavailable/);
+
+  // Rapid knob turns coalesce to the latest full state, without replacing DOM.
+  const beforeLive = live.nodes['afx-rack'].innerHTML;
+  for (const value of ['43', '44', '45']) {
+    input.value = value;
+    live.nodes['afx-rack'].input({target: input});
+  }
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(writes.length, 2);
+  assert.equal(writes[1].body.values.level, 45);
+  assert.equal(live.nodes['afx-rack'].innerHTML, beforeLive, 'Live sends preserve pointer-captured controls');
+  assert.match(live.nodes['afx-preview-status'].textContent, /Live settings sent/);
   // Instance drafts follow chain reorder and are discarded on reconnection.
   state.slots = [{type: 0, instance: 0}, ...emptySlots.slice(0, 7)];
   await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
-  assert.equal(vm.runInContext('afxTestDraft(0, 1).values.level', context), 42);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).values.level', context), 45);
   state.session = 2;
+  state.parameters = {};
   await vm.runInContext("afxTestRequest('/api/afx/memorycat-test')", context);
   assert.equal(vm.runInContext('afxTestDraft(0, 1).values.chrs_vibr', context), null);
-  assert.equal(writes.length, 1);
+  assert.equal(writes.length, 2);
   const previewButton = {closest: selector => selector === '[data-afx-test-preview]' ? previewButton : null};
   vm.runInContext('afxTestClick', context)({target: previewButton});
   assert.match(live.nodes['afx-rack'].innerHTML, /Preview Memory/);
@@ -315,10 +337,48 @@ async function checkEffectPreviews() {
   const refreshButton = {closest: selector => selector === '[data-afx-test-refresh]' ? refreshButton : null};
   vm.runInContext('afxTestClick', context)({target: refreshButton});
   await new Promise(resolve => setImmediate(resolve));
-  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-device-load/);
-  assert.equal(writes.length, 1, 'Switching rack views only reads metadata');
+  assert.match(live.nodes['afx-rack'].innerHTML, /data-afx-effect-select/);
+  assert.equal(writes.length, 2, 'Switching rack views only reads metadata');
+  const picker = {dataset: {afxEffectSelect: '0'}, value: 'unmapped', matches: () => true};
+  live.nodes['afx-rack'].change({target: picker});
+  assert.equal(writes.length, 2, 'Unmapped effect choices must not produce writes');
+  picker.value = 'instinct';
+  live.nodes['afx-rack'].change({target: picker});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes[2].body.operation, 'load');
+  assert.equal(writes[2].body.effect_id, 'instinct');
+  assert.equal(writes[2].body.slot, 0);
+  for (const channel of [0, 1, 2, 3, 30, 31]) {
+    vm.runInContext(`selectAfxChannel(${channel})`, context);
+    const pair = Math.floor(channel / 2);
+    assert.match(live.nodes['afx-pair-control'].innerHTML, new RegExp(`Link AFX ${pair * 2 + 1}–${pair * 2 + 2}`));
+  }
+  vm.runInContext('selectAfxChannel(2)', context);
+  const pairButton = {dataset: {afxPair: '1'}, closest: selector => selector === '[data-afx-pair]' ? pairButton : null};
+  live.nodes['afx-pair-control'].click({target: pairButton});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).body.pair, 1);
+  assert.equal(writes.at(-1).body.enabled, true);
+  assert.match(live.nodes['afx-channel'].innerHTML, /AFX 3 ↔ 4/);
+  assert.match(live.nodes['afx-channel'].innerHTML, /AFX 4 ↔ 3/);
+  assert.match(live.nodes['afx-pair-control'].innerHTML, /Unlink AFX 3–4/);
+  live.nodes['afx-pair-control'].click({target: pairButton});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).body.enabled, false);
+  assert.doesNotMatch(live.nodes['afx-channel'].innerHTML, /AFX 3 ↔ 4/);
+  // A failed live send pauses this instance and is never retried.
+  vm.runInContext('selectAfxChannel(0)', context);
+  let failedRequests = 0;
+  context.fetch = async () => { failedRequests++; return {ok: false, json: async () => ({error: 'test failure'})}; };
+  vm.runInContext("const failedDraft = afxTestDraft(0, 1); failedDraft.liveReady = true; failedDraft.values.chrs_vibr = '0'; failedDraft.values.size = '1'; afxLiveChanged(failedDraft)", context);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(failedRequests, 1);
+  assert.equal(vm.runInContext('afxTestDraft(0, 1).liveReady', context), false);
+  vm.runInContext('afxLiveChanged(afxTestDraft(0, 1))', context);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(failedRequests, 1);
   live.close();
-  console.log('AFX checks passed (device rack on open, load buttons, previews, drag, Apply, reconnect).');
+  console.log('AFX checks passed (effect picker, pair links, live coalescing, failure pause, reconnect).');
 }
 
 checkEffectPreviews().catch(error => { console.error(error); process.exitCode = 1; });

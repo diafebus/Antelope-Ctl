@@ -1,4 +1,4 @@
-"""Operator-driven Memory Cat testing, serialized through the device owner."""
+"""Captured Orion rack and Memory Cat parameter tests, serialized by the device."""
 from concurrent.futures import Future, TimeoutError
 import time
 
@@ -10,6 +10,7 @@ class MemoryCatTest:
         self.device = device
         self.sent_parameters = {}  # instance -> (transport object, last sent values)
         self.failed_verification = False
+        self.sent_links = {}  # pair -> (transport, requested state), not readback
 
     def state(self):
         device = self.device
@@ -24,11 +25,16 @@ class MemoryCatTest:
                 {'type': record['type'], 'instance': record['inst']} for record in records]
             parameters = {str(instance): dict(values) for instance, (transport, values)
                           in self.sent_parameters.items() if transport is device._transport}
+            links = [self.sent_links.get(pair) for pair in range(16)]
+            links = [value[1] if value and value[0] is device._transport else None
+                     for value in links]
         return {'available': True, 'experimental': True, 'channel': 0,
                 'online': online, 'slots': slots, 'parameters': parameters,
                 'session': device.connection_generation,
                 'writes_enabled': not self.failed_verification,
-                'parameter_readback': False, 'switch_polarity_confirmed': False}
+                'parameter_readback': False, 'switch_polarity_confirmed': False,
+                'links': links, 'link_state_source': 'last-sent',
+                'link_readback': False}
 
     def _read_chain(self, transport):
         device = self.device
@@ -45,7 +51,7 @@ class MemoryCatTest:
             device.rb_ver += 1
         return slots
 
-    def _allocate_instance(self, transport, chain):
+    def _allocate_instance(self, transport, chain, spec):
         device = self.device
         count = protocol.readback_category_count(device.profile, 0x19)
         with device._lock:
@@ -53,20 +59,21 @@ class MemoryCatTest:
                          for index in range(count or 0)}
         if count != 64 or any(len(records) != 8 for records in inventory.values()):
             raise RuntimeError('Wait for the complete AFX inventory before loading an effect')
-        used = {instance for effect_type, instance in chain if effect_type == 73}
+        effect_type = spec['type_id']
+        used = {instance for kind, instance in chain if kind == effect_type}
         used.update(row['inst'] for index, records in inventory.items() if index != 0
-                    for row in records if row['type'] == 73)
+                    for row in records if row['type'] == effect_type)
         request = protocol.build_readback_query(device.profile, 0x15, 0)
         response = transport.query(request, lambda data: protocol.is_readback_response(
             device.profile, data, 0x15, 0), timeout=1.5)
         if response is None:
-            raise RuntimeError('Memory Cat availability could not be read; nothing was loaded')
+            raise RuntimeError('Effect availability could not be read; nothing was loaded')
         counters = protocol.parse_afx_instance_table(device.profile,
             protocol.readback_body(device.profile, response), 0x15, 0)
-        remaining = next((row['inst_count'] for row in counters if row['type_id'] == 73), 0)
+        remaining = next((row['inst_count'] for row in counters if row['type_id'] == effect_type), 0)
         if not remaining:
-            raise RuntimeError('The device reports no remaining Memory Cat instances')
-        return next((index for index in range(8) if index not in used), None)
+            raise RuntimeError('The device reports no remaining instances of this effect')
+        return next((index for index in spec['instance_indices'] if index not in used), None)
 
     def _execute(self, work, *, allow_linked=False):
         device = self.device
@@ -104,7 +111,10 @@ class MemoryCatTest:
                 links = protocol.parse_link_table(device.profile,
                     protocol.readback_body(device.profile, response), 0x0b, 4)
                 if len(links) != 32 or (not allow_linked and any(row['linked'] for row in links)):
-                    raise RuntimeError('Turn AFX stereo links off before using the mono Memory Cat test')
+                    raise RuntimeError('Turn AFX stereo links off before changing the mono AFX rack')
+                if not allow_linked and any(owner is transport and enabled
+                                            for owner, enabled in self.sent_links.values()):
+                    raise RuntimeError('Turn AFX stereo links off before changing the mono rack')
                 result = work(transport, still_current)
             except Exception as error:
                 future.set_exception(error)
@@ -119,24 +129,36 @@ class MemoryCatTest:
             future.cancel()
             raise RuntimeError('AFX test timed out; refresh the rack before trying again') from None
 
-    def unlink_pilot(self):
+    def set_link(self, pair, enabled):
+        afx.test_contract(self.device.profile)
+        if type(pair) is not int or not 0 <= pair < 16 or type(enabled) is not bool:
+            raise ValueError('AFX link requires a pair in 0..15 and a boolean state')
         def work(transport, still_current):
-            packet = protocol.build_link_command(self.device.profile, 0, False, space=4)
+            packet = protocol.build_link_command(self.device.profile, pair, enabled, space=4)
             still_current()
             # The Launcher bug emits extra right-chain assignments here.
             # A link toggle must not silently create, clear, or reorder effects.
             transport.write(packet)
-            return {'sent': True, 'verified': False, 'pair': 0, 'enabled': False}
+            with self.device._lock:
+                self.sent_links[pair] = (transport, enabled)
+            return {'sent': True, 'verified': False, 'pair': pair, 'enabled': enabled}
         return self._execute(work, allow_linked=True)
 
-    def change_chain(self, operation, slot, source=None):
+    def unlink_pilot(self):
+        return self.set_link(0, False)
+
+    def change_chain(self, operation, slot, source=None, effect_id='memory_brigade'):
+        effects = afx.load_effects(self.device.profile)
+        allocating = operation in ('load', 'replace')
+        if allocating and effect_id not in effects:
+            raise ValueError('Effect loading is not mapped for this Orion profile')
         def work(transport, still_current):
             before = self._read_chain(transport)
-            instance = self._allocate_instance(transport, before) if operation == 'load' else None
-            if operation == 'load' and instance is None:
-                raise RuntimeError('All eight captured Memory Cat instance indices are already used')
+            instance = self._allocate_instance(transport, before, effects[effect_id]) if allocating else None
+            if allocating and instance is None:
+                raise RuntimeError('All captured instance indices for this effect are already used')
             after = afx.change_chain(self.device.profile, before, operation, slot,
-                                     source=source, instance=instance)
+                                     source=source, instance=instance, effect_id=effect_id)
             packet = afx.build_chain_test(self.device.profile, after, original_slots=before)
             still_current()
             transport.write(packet)
@@ -151,9 +173,9 @@ class MemoryCatTest:
                 self.failed_verification = True
                 raise RuntimeError('Slot readback did not match the write; further AFX testing is disabled')
             with self.device._lock:
-                if operation == 'load':
+                if allocating and effects[effect_id]['type_id'] == 73:
                     self.sent_parameters.pop(instance, None)
-                elif operation == 'remove':
+                if operation in ('remove', 'replace') and before[slot][0] == 73:
                     self.sent_parameters.pop(before[slot][1], None)
             return self.state()
         return self._execute(work)

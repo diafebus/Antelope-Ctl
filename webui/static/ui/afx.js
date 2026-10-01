@@ -149,8 +149,7 @@ function afxSlotListHTML(capacity, channel) {
 
 function afxWindowHTML(capacity) {
   const channel = afxSelectedChannel(capacity);
-  const options = Array.from({length: capacity.channels}, (_, index) =>
-    `<option value="${index}"${index === channel ? ' selected' : ''}>AFX ${index + 1}</option>`).join('');
+  const options = afxChannelOptionsHTML(capacity, channel);
   const slots = afxSlotListHTML(capacity, channel);
   return '<header class="afx-window-header"><div><h1>AFX</h1>'
     + '<p id="afx-device"></p></div>'
@@ -159,6 +158,7 @@ function afxWindowHTML(capacity) {
     + '<main class="afx-window-main"><aside class="afx-channel-panel" aria-label="Channel selection">'
     + '<label class="afx-channel-select" for="afx-channel">Select channel</label>'
     + `<select id="afx-channel">${options}</select>`
+    + '<div id="afx-pair-control"></div>'
     + `<article class="afx-channel"><h2 id="afx-channel-name">AFX ${channel + 1}</h2>`
     + `<p class="afx-chain-label">${capacity.slots} effect slots</p><ol id="afx-slot-list" class="afx-slots">${slots}</ol></article></aside>`
     + '<section class="afx-rack-panel" aria-labelledby="afx-rack-title">'
@@ -169,13 +169,20 @@ function afxWindowHTML(capacity) {
     + `<div id="afx-rack" class="afx-rack">${afxRackHTML(capacity, channel)}</div></section></main>`;
 }
 
+function afxChannelOptionsHTML(capacity, channel) {
+  return Array.from({length: capacity.channels}, (_, index) =>
+    `<option value="${index}"${index === channel ? ' selected' : ''}>${afxEscape(AFX_DEVICE_RACK?.channelLabel?.(index) || `AFX ${index + 1}`)}</option>`).join('');
+}
+
 function selectAfxChannel(channel) {
   const capacity = afxCapacity();
   if (!capacity || !Number.isSafeInteger(channel) || channel < 0 || channel >= capacity.channels) return;
   AFX_CHANNEL = channel;
   if (!afxWindowIsOpen()) return;
   const d = AFX_WINDOW.document;
+  d.getElementById('afx-channel').innerHTML = afxChannelOptionsHTML(capacity, channel);
   d.getElementById('afx-channel').value = String(channel);
+  d.getElementById('afx-pair-control').innerHTML = AFX_DEVICE_RACK?.pairHTML?.(channel) || '';
   d.getElementById('afx-channel-name').textContent = `AFX ${channel + 1}`;
   d.getElementById('afx-rack-title').textContent = `AFX ${channel + 1} · Effects rack`;
   d.getElementById('afx-slot-list').innerHTML = afxSlotListHTML(capacity, channel);
@@ -214,7 +221,7 @@ function openAfxWindow() {
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
     + '<title>AFX — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css?v=routing-mix-colors-v1">'
-    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-device-default-v4">'
+    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-picker-links-v5">'
     + Array.from(AFX_PANELS.values(), panel => `<link rel="stylesheet" href="${afxEscape(panel.stylesheet)}">`).join('')
     + '</head><body class="afx-window-body" role="dialog" aria-label="AFX"></body></html>');
   d.close();
@@ -223,6 +230,8 @@ function openAfxWindow() {
   d.getElementById('afx-channel').addEventListener('change', event => {
     selectAfxChannel(Number(event.target.value));
   });
+  d.getElementById('afx-pair-control').addEventListener('click', event => AFX_DEVICE_RACK?.linkClick?.(event));
+  d.getElementById('afx-rack').addEventListener('change', event => AFX_DEVICE_RACK?.change?.(event));
   d.getElementById('afx-rack').addEventListener('click', clickAfxPreview);
   d.body.addEventListener('click', event => {
     if (event.target.closest('.afx-test-toolbar')) AFX_DEVICE_RACK?.click(event);

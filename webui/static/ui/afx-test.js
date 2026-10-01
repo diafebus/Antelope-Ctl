@@ -5,6 +5,7 @@ let AFX_TEST_STATE = null;
 let AFX_TEST_BUSY = false;
 let AFX_TEST_SESSION = null;
 let AFX_TEST_DEVICE_VIEW = false;
+let AFX_TEST_CHOICES = [];
 const AFX_TEST_DRAFTS = new Map();
 
 function afxTestActive(channel = AFX_CHANNEL) {
@@ -18,7 +19,9 @@ function afxTestChannelChanged(channel) {
       'Device loading is currently available on AFX 1 only. This channel has local previews.';
   } else if (AFX_TEST_STATE?.available) {
     AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
-      'Device slots shown. Apply sends all eight draft settings; switch A/B polarity is unconfirmed.';
+      AFX_TEST_STATE.links?.some(linked => linked === true)
+        ? 'AFX links are on. Unlink before editing this mono rack; stereo sharing is not available yet.'
+        : 'Select an effect in a slot. Initialized Memory Cat knobs send live; switch A/B polarity remains unconfirmed.';
   }
 }
 
@@ -32,10 +35,9 @@ function afxTestOpen() {
 
 function afxTestToolbarHTML() {
   if (!PROFILE?.runtime_contracts?.afx_memorycat_test?.enabled) return '';
-  return '<div class="afx-test-toolbar"><span>Memory Cat · Preamp 1 pilot</span>'
+  return '<div class="afx-test-toolbar"><span>AFX · Preamp 1 test rack</span>'
     + '<button type="button" class="afx-preview-open" data-afx-test-connect>Connect device rack</button>'
     + '<button type="button" class="afx-preview-open" data-afx-test-refresh>Refresh slots</button>'
-    + '<button type="button" class="afx-preview-open" data-afx-test-unlink>Unlink AFX 1/2 only</button>'
     + '<button type="button" class="afx-preview-open" data-afx-test-preview>Local preview</button></div>';
 }
 
@@ -50,7 +52,7 @@ async function afxTestRequest(path, body) {
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'The AFX test request failed.');
-    const state = body && (path.endsWith('/parameters') || path.endsWith('/unlink'))
+    const state = body && (path.endsWith('/parameters') || path.endsWith('/unlink') || path.endsWith('/link'))
       ? await fetch('/api/afx/memorycat-test').then(r => r.json()) : result;
     if (AFX_WINDOW !== popup || popup.closed || !AFX_TEST_DEVICE_VIEW) return;
     if (AFX_TEST_SESSION !== state.session) {
@@ -58,13 +60,21 @@ async function afxTestRequest(path, body) {
       AFX_TEST_SESSION = state.session;
     }
     AFX_TEST_STATE = state;
+    if (body && path.endsWith('/parameters')) {
+      const draft = AFX_TEST_DRAFTS.get(body.instance);
+      if (draft) draft.liveReady = true;
+      (state.parameters ||= {})[String(body.instance)] = {...body.values};
+    }
+    if (Array.isArray(state.effects)) AFX_TEST_CHOICES = state.effects;
     if (!state.available) throw new Error('The Memory Cat pilot is unavailable for this profile.');
     selectAfxChannel(AFX_CHANNEL);
-    status.textContent = path.endsWith('/unlink')
-      ? 'Link-OFF sent. Existing effects on both channels were preserved.'
+    status.textContent = path.endsWith('/unlink') || path.endsWith('/link')
+      ? 'Link flag sent; existing effects were preserved. Stereo parameter sharing is not available yet.'
       : body && path.endsWith('/parameters')
       ? 'Settings sent. Parameter readback is unavailable; confirm the result on the device.'
-      : 'Device slots shown. Switch A/B polarity is unconfirmed; Apply sends all eight settings.';
+      : state.links?.some(linked => linked === true)
+      ? 'AFX links are on. Unlink before editing this mono rack; stereo sharing is not available yet.'
+      : 'Select an effect in a slot. Memory Cat controls send live after the first full Apply.';
   } catch (error) {
     if (AFX_WINDOW === popup && !popup.closed) status.textContent = error.message;
     // A write error must never be automatically retried.
@@ -89,31 +99,79 @@ function afxTestDraft(channel, slot) {
     const values = Object.fromEntries(controls.map(control => [control.id,
       control.kind === 'continuous' ? sent?.[control.id] ?? 0
         : sent?.[control.id] == null ? null : String(sent[control.id])]));
-    AFX_TEST_DRAFTS.set(record.instance, {live: true, instance: record.instance,
+      AFX_TEST_DRAFTS.set(record.instance, {live: true, liveReady: !!sent, instance: record.instance,
       effect: {id: 'memory_brigade', name: 'Memory Cat Brigade', controls}, values});
   }
   return AFX_TEST_DRAFTS.get(record.instance);
 }
 
 function afxTestRackHTML(capacity, channel) {
-  if (!AFX_TEST_DEVICE_VIEW || channel !== 0) return null;
-  const writable = AFX_TEST_STATE?.online && AFX_TEST_STATE?.writes_enabled;
+  if (!AFX_TEST_DEVICE_VIEW) return null;
+  const writable = AFX_TEST_STATE?.online && AFX_TEST_STATE?.writes_enabled
+    && !AFX_TEST_STATE.links?.some(linked => linked === true);
   return Array.from({length: capacity.slots}, (_, slot) => {
-    const record = AFX_TEST_STATE?.slots?.[slot], draft = afxTestDraft(channel, slot);
+    const record = channel === 0 ? AFX_TEST_STATE?.slots?.[slot] : null, draft = afxTestDraft(channel, slot);
     let face;
     if (draft) face = AFX_PANELS.get(draft.effect.id).render(draft, slot);
     else {
       const empty = record && record.type === 0 && record.instance === 0;
-      const text = empty ? 'Empty slot' : record ? `Effect type ${record.type} · controls unavailable` : 'Slot readback unavailable';
+      const choice = AFX_TEST_CHOICES.find(effect => effect.type_id === record?.type);
+      const text = empty ? 'Empty slot' : record ? `${choice?.name || `Effect type ${record.type}`} · controls unavailable` : 'Slot readback unavailable';
       face = `<div class="afx-rack-face"><h3><span class="afx-slot-number">${slot + 1}</span>Slot ${slot + 1}</h3>`
         + `<div class="afx-rack-controls"><span>${text}</span>`
-        + (empty ? `<button type="button" class="afx-preview-open" data-afx-device-load="${slot}"${writable ? '' : ' disabled'}>Load Memory Cat</button>` : '')
         + '</div></div>';
     }
     return `<article class="afx-rack-unit${draft ? ' afx-rack-effect' : ''}" data-afx-rack-slot="${slot}"`
-      + ` aria-label="Preamp 1, slot ${slot + 1}"><span class="afx-rack-ear" aria-hidden="true"></span>`
-      + face + '<span class="afx-rack-ear" aria-hidden="true"></span></article>';
+      + ` aria-label="AFX ${channel + 1}, slot ${slot + 1}"><span class="afx-rack-ear" aria-hidden="true"></span>`
+      + `<div class="afx-slot-unit">${afxTestPickerHTML(channel, slot, record, writable)}${face}</div>`
+      + '<span class="afx-rack-ear" aria-hidden="true"></span></article>';
   }).join('');
+}
+
+function afxTestPickerHTML(channel, slot, record, writable) {
+  const current = AFX_TEST_CHOICES.find(effect => effect.type_id === record?.type);
+  const empty = record?.type === 0 && record?.instance === 0;
+  const enabled = channel === 0 && writable && record && (empty || current?.loadable);
+  return `<label class="afx-slot-picker">Effect<select data-afx-effect-select="${slot}" aria-label="Effect for slot ${slot + 1}"${enabled ? '' : ' disabled'}>`
+    + `<option value=""${empty ? ' selected' : ''}>${record ? 'Empty' : 'Device slot unavailable'}</option>`
+    + (!empty && record && !current ? `<option selected disabled>Effect type ${record.type}</option>` : '')
+    + AFX_TEST_CHOICES.map(effect => `<option value="${afxEscape(effect.id)}"${current?.id === effect.id ? ' selected' : ''}${effect.loadable ? '' : ' disabled'}>${afxEscape(effect.name)}${effect.loadable ? '' : ' · not mapped'}</option>`).join('')
+    + '</select></label>';
+}
+
+function afxTestChange(event) {
+  const select = event.target;
+  if (!select.matches('[data-afx-effect-select]') || !afxTestActive() || AFX_TEST_BUSY) return;
+  const slot = Number(select.dataset.afxEffectSelect), record = AFX_TEST_STATE.slots?.[slot];
+  const empty = record?.type === 0 && record?.instance === 0;
+  const choice = AFX_TEST_CHOICES.find(effect => effect.id === select.value && effect.loadable);
+  if (!record || (!choice && select.value)) return;
+  if (!choice && empty || choice?.type_id === record.type) return;
+  void afxTestRequest('/api/afx/memorycat-test/chain', {
+    operation: choice ? empty ? 'load' : 'replace' : 'remove', slot,
+    ...(choice ? {effect_id: choice.id} : {}),
+  });
+}
+
+function afxTestChannelLabel(channel) {
+  if (!AFX_TEST_DEVICE_VIEW) return `AFX ${channel + 1}`;
+  const pair = Math.floor(channel / 2), linked = AFX_TEST_STATE?.links?.[pair];
+  return `AFX ${channel + 1}` + (linked === true ? ` ↔ ${channel % 2 ? channel : channel + 2}` : linked === false ? '' : ' · link ?');
+}
+
+function afxTestPairHTML(channel) {
+  if (!AFX_TEST_DEVICE_VIEW) return '';
+  const pair = Math.floor(channel / 2), linked = AFX_TEST_STATE?.links?.[pair];
+  const writable = AFX_TEST_STATE?.online && AFX_TEST_STATE?.writes_enabled;
+  return `<button class="afx-pair-link${linked === true ? ' on' : ''}" type="button" data-afx-pair="${pair}" aria-pressed="${linked == null ? 'mixed' : linked}"${writable ? '' : ' disabled'}>${linked === true ? 'Unlink' : 'Link'} AFX ${pair * 2 + 1}–${pair * 2 + 2}</button>`
+    + `<p class="afx-link-note">${linked == null ? 'Link state unknown' : 'Link state last sent by this server'}</p>`;
+}
+
+function afxTestLinkClick(event) {
+  const button = event.target.closest('[data-afx-pair]');
+  if (!button || !AFX_TEST_DEVICE_VIEW || AFX_TEST_BUSY) return;
+  const pair = Number(button.dataset.afxPair);
+  void afxTestRequest('/api/afx/link', {pair, enabled: AFX_TEST_STATE?.links?.[pair] !== true});
 }
 
 function afxTestSlotLabel(channel, slot) {
@@ -121,7 +179,7 @@ function afxTestSlotLabel(channel, slot) {
   const record = AFX_TEST_STATE.slots?.[slot];
   if (!record) return null;
   return record.type === 0 && record.instance === 0 ? 'Empty'
-    : record.type === 73 ? 'Memory Cat' : `Effect type ${record.type}`;
+    : AFX_TEST_CHOICES.find(effect => effect.type_id === record.type)?.name || `Effect type ${record.type}`;
 }
 
 function afxTestMove(source, slot) {
@@ -179,4 +237,5 @@ function afxTestClick(event) {
 
 AFX_DEVICE_RACK = {toolbarHTML: afxTestToolbarHTML, rackHTML: afxTestRackHTML,
   click: afxTestClick, draft: afxTestDraft, active: afxTestActive, move: afxTestMove,
-  open: afxTestOpen, slotLabel: afxTestSlotLabel, channelChanged: afxTestChannelChanged};
+  open: afxTestOpen, slotLabel: afxTestSlotLabel, channelChanged: afxTestChannelChanged,
+  change: afxTestChange, pairHTML: afxTestPairHTML, channelLabel: afxTestChannelLabel, linkClick: afxTestLinkClick};

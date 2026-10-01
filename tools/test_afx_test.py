@@ -17,6 +17,7 @@ class FakeTransport:
         self.writes = []
         self.mismatch = mismatch
         self.linked = linked
+        self.remaining = {73: 8, 75: 2, 27: 2, 70: 2, 78: 2}
 
     def query(self, request, match, timeout):
         category, index = request[8], request[12]
@@ -29,7 +30,7 @@ class FakeTransport:
             response[16] = int(self.linked)
         elif category == 0x15:
             for i in range(91):
-                response[16 + i * 2:18 + i * 2] = bytes([i, 8 if i == 73 else 0])
+                response[16 + i * 2:18 + i * 2] = bytes([i, self.remaining.get(i, 0)])
         else:
             raise AssertionError(f'Unexpected query {category:#x}:{index}')
         assert match(bytes(response))
@@ -144,6 +145,44 @@ class AfxTestTests(unittest.TestCase):
         self.assertEqual(len(transport.writes), 1)
         self.assertEqual(transport.writes[0][4], 0x14)
         self.assertEqual(transport.writes[0][16:20], bytes([0xa2, 4, 0, 0]))
+
+    def test_captured_effect_picker_load_replace_remove_and_instance_bounds(self):
+        transport = FakeTransport([(73, 0)] + [(0, 0)] * 7)
+        service = MemoryCatTest(FakeDevice(self.profile, transport))
+        service.change_chain('load', 1, effect_id='instinct')
+        self.assertEqual(transport.slots[:2], [(73, 0), (75, 0)])
+        service.change_chain('replace', 1, effect_id='deesser')
+        self.assertEqual(transport.slots[:2], [(73, 0), (27, 0)])
+        service.change_chain('remove', 1)
+        self.assertEqual(transport.slots[:2], [(73, 0), (0, 0)])
+        count = len(transport.writes)
+        with self.assertRaises(ValueError):
+            service.change_chain('load', 1, effect_id='unmapped')
+        transport.remaining[78] = 0
+        with self.assertRaisesRegex(RuntimeError, 'no remaining'):
+            service.change_chain('load', 1, effect_id='bbdchorus')
+        self.assertEqual(len(transport.writes), count)
+        with self.assertRaises(protocol.ConstraintError):
+            afx.build_chain_test(self.profile, [(75, 2)] + [(0, 0)] * 7)
+
+    def test_link_all_pairs_last_sent_and_reconnect_without_slot_writes(self):
+        transport = FakeTransport([(0, 0)] * 8)
+        device = FakeDevice(self.profile, transport)
+        service = MemoryCatTest(device)
+        self.assertEqual(service.state()['links'], [None] * 16)
+        for pair in (0, 1, 15):
+            service.set_link(pair, True)
+            self.assertEqual(transport.writes[-1][16:20], bytes([0xa2, 4, pair, 1]))
+            self.assertTrue(service.state()['links'][pair])
+        with self.assertRaisesRegex(RuntimeError, 'stereo links off'):
+            service.change_chain('load', 0)
+        for bad_pair, enabled in ((16, True), (-1, False), (True, True), (0, 1)):
+            with self.assertRaises(ValueError):
+                service.set_link(bad_pair, enabled)
+        self.assertEqual(len(transport.writes), 3)
+        self.assertFalse(service.state()['link_readback'])
+        device._transport = FakeTransport(transport.slots)
+        self.assertEqual(service.state()['links'], [None] * 16)
 
     def test_parameters_require_full_state_and_a_current_loaded_instance(self):
         values = dict(blend=50, level=0, feedback=0, chrs_vibr=0,

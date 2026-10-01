@@ -57,7 +57,7 @@ The WebUI also has a bounded `0x87` per-speaker path: delay/level/phase and EQ
 controls write one field, while Reset writes
 the profile-defined frequency/Q/gain preset for one speaker after a fresh
 readback. Generic AFX `0x23` and `0x1c` writes remain blocked; the
-explicit Orion Memory Cat operator pilot is their only typed exception
+explicit Orion captured-effect rack and Memory Cat parameter pilot is their typed exception
 (§12a). Newly observed Instinct/Master De-Esser parameter opcodes `0x7c`
 and `0x20` are blocked and have no writer. The dedicated
 `tools/surround_eq_selftest.py` may emit one explicitly selected `0x87` probe
@@ -85,7 +85,7 @@ single most important thing to get right.
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim, `[43+]` = Bass Management channel blocks -- §11 | surround tab global; WebUI uses fresh read-modify-write for 2.0/2.1 global fields, the speaker bypass mask, and confirmed 2.0/2.1 Bass Management fields |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; bounded one-field/reset writes in WebUI, including confirmed delay/level/phase head fields and one-field EQ probes in `tools/surround_eq_selftest.py` |
-| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, eight `{type,instance}` pairs @19–34 -- §12a | Generic writes blocked; typed Orion Memory Cat operator test only |
+| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, eight `{type,instance}` pairs @19–34 -- §12a | Generic writes blocked; typed captured-effect Orion rack test only |
 | `0x1c` | *(Memory Cat parameters)* | `0xd5` | `0x0a` @17, type @18, instance @19, eight fields @20–27 (§12a) | Generic writes blocked; full-state operator test only |
 | `0x20` | *(AFX parameters)* | `0xd5` | Master De-Esser subcommand `0x0e`, type @18, instance @19 (§12a); V12 also observed | Observation only; blocked |
 | `0x7c` | *(Instinct parameters)* | `0xd5` | subcommand `0x6a`, type @18, instance @19 (§12a) | Observation only; blocked |
@@ -1955,6 +1955,26 @@ The new loading capture adds repeated `0x0c:0` witnesses. No runtime bounds
 were expanded and `0x0c:1` remains unconfirmed. Device resource counts,
 enabled/greyed-out picker entries, demo access and full ownership are
 separate observations.
+
+**Operator picker and live controls (2026-10-01).** The requested picker
+extends the index-0 chain pilot to observed types73/75/27/70/78, preserving
+unmapped types and using only measured instance indices (Memory Cat0–7,
+other captured types0/1). Fresh remaining counters and post-write slot
+verification are still required. Pair buttons send captured space4 flags
+for pairs0–15; last-sent indicators are session-local and not readback.
+No partner effect assignments or stereo parameter mirroring are generated.
+After an explicit initial complete Apply, Memory Cat edits stream throttled
+whole-state parameter blocks. Live responses do not repaint a dragged knob.
+
+The owner authorized a Level self-test after applying the full settings.
+The test sent Level100→99 while a raw HID listener observed incoming
+traffic, then sent the full original settings to restore100. Baseline/changed/restored phases contained75/154/79
+state0x73 reports and76/153/79 diagnostic0x75 reports; changed/restored
+also contained queried0x0b:4 and0x19:0 replies. No stable reversible byte
+change was found in the observed free-running state/diagnostic streams;
+no parameter echo was identified. This is a limited observation, not proof
+that every undiscovered query lacks parameter readback. No unknown category
+or out-of-bounds query was sent. Local raw self-test evidence is not committed.
 
 `tools/scan_afx_capture.py` automates offline slot/action ordering, parameter
 byte changes and identical mirrored-write comparisons for these captures.

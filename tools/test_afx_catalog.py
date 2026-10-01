@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import unittest
 
-from webui.afx_catalog import preview_catalog
+from webui.afx_catalog import preview_catalog, effect_choices
 
 
 class AfxCatalogTests(unittest.TestCase):
@@ -40,6 +40,20 @@ class AfxCatalogTests(unittest.TestCase):
                               if i["profile"] == "orion_studio_sc.json")
         del implementation["control_encodings"]["size"]
         self.assertEqual(preview_catalog(catalog, "orion_studio_sc.json")["effects"], [])
+
+
+    def test_picker_enables_only_independently_captured_orion_types(self):
+        profile = json.loads((Path(__file__).resolve().parents[1]
+                              / 'profiles/orion_studio_sc.json').read_text())
+        choices = effect_choices(self.catalog, 'orion_studio_sc.json', profile)
+        self.assertEqual(len(choices), 80)
+        self.assertEqual({row['id'] for row in choices if row['loadable']},
+                         {'memory_brigade', 'instinct', 'deesser', 'turboensembler', 'bbdchorus'})
+        self.assertFalse(any(row['loadable'] for row in effect_choices(self.catalog, 'missing.json', profile)))
+        modified = copy.deepcopy(self.catalog)
+        next(row for row in modified['effects'] if row['id'] == 'instinct')['implementations'] = []
+        self.assertFalse(next(row for row in effect_choices(modified, 'orion_studio_sc.json', profile)
+                              if row['id'] == 'instinct')['loadable'])
 
 
 if __name__ == "__main__":

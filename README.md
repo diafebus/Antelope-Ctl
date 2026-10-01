@@ -61,7 +61,7 @@ checks on 2026-09-30 confirmed input link selectors `0`=Preamp, `1`=ADAT,
 the old project interpretation was corrected. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
 in `PROTOCOL.md` §12a. General loading remains outside scope; the owner's
-explicitly requested Orion Memory Cat pilot is a bounded exception
+explicitly requested Orion captured-effect rack pilot is a bounded exception
 (`SCOPE.md`). Its operator-driven test interface supports whole-chain
 loading/removal/reordering and complete parameter Apply. The AFX-tab channel
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
@@ -93,23 +93,36 @@ provides six draggable knobs and two mode selectors in an original Gazelle
 rack design. Local previews retain settings per channel/slot and support
 drag-and-drop or keyboard-button reordering.
 
-For the Orion pilot, opening **AFX** automatically shows channel-index-0
-device slots (the owner's Preamp 1 capture). Empty slots offer **Load Memory Cat**;
-existing Memory Cats can be removed or reordered. Slot writes use fresh
-readbacks and verify the resulting chain. The owner reported Memory Cat
-working from this WebUI on 2026-10-01; individual controls and switch polarity
-are not yet independently confirmed. This remains an experimental pilot.
-**Local preview** explicitly switches to drafts; **Connect device rack**
-returns to device slots. Other channels/effects remain unavailable
-for device writes. **Unlink AFX 1/2 only** sends just the link-OFF command
-and preserves existing effects on both channels.
+Opening **AFX** shows the tested AFX 1 device rack. Each slot has an effect
+selector: Memory Cat, Instinct, Master De-Esser, V12 Chorus and BBD-Chorus
+have independently captured Orion load IDs; unmapped entries are greyed out.
+Selecting a different effect replaces a supported insert; selecting Empty
+removes it. Loading uses fresh instance counters and the complete slot
+inventory, measured instance indices, and verified whole-chain writes.
+Counts describe resources, not license ownership. Other channel load paths
+remain disabled. Only Memory Cat has parameter controls so far.
 
-Parameter values are drafts or last-sent settings, not device readback.
-Select switch positions **A (0)** / **B (1)** and use **Apply all settings**
-to send the complete eight-control block. The switch labels' wire polarity
-still needs the owner's test. This mono pilot refuses parameter/chain writes
-while the AFX link table has enabled flags; it never mirrors unknown stereo
-parameters or controls demo effects. No writes occur when opening a preview.
+The pair button follows the selection: AFX 1 or 2 shows Link 1–2, AFX 3 or
+4 shows Link 3–4, through 31–32. Linked channel-menu entries show their
+partner. Link indicators reflect commands sent by this server session;
+initial state is unknown because the link-table mapping is unconfirmed.
+The button sends only the flag, preserving both chains. Stereo parameter
+sharing is not implemented; unlink AFX pairs before mono rack edits.
+
+Memory Cat settings are drafts/last sent, not parameter readback. Apply the
+complete eight-setting block once to initialize live controls; subsequent
+knob, slider and switch changes send automatically. Requests are throttled
+and coalesced to the latest settings, with one in flight and no rack repaint
+during a drag. Failed writes pause live sending and are not retried.
+Switch A/B polarity is still unconfirmed. The owner reports the effect and
+applied parameter settings work. A 2026-10-01 Level 100→99→100 self-test
+found no stable parameter readback in the observed HID streams; the original
+settings were sent to restore the baseline. This does not establish absence
+of a separate, undiscovered parameter-readback protocol.
+
+**Local preview** explicitly switches to drafts; **Connect device rack**
+returns to device slots. Opening the rack or changing channels sends no
+hardware mutations.
 
 ### Evidence rule for write claims
 

@@ -798,7 +798,7 @@
       "assign": {
         "magic": "0x70",
         "opcode": "0x23",
-        "opcode_note": "Generic opcode guard stays. The explicit Orion Memory Cat test contract is the only typed load/remove/reorder exception.",
+        "opcode_note": "Generic opcode guard stays. The explicit Orion rack test contract permits the five independently captured effect types on index0; the separate Memory Cat contract governs parameter writes.",
         "param_id_offset": 16,
         "param_id": "0xd7",
         "subcmd_offset": 17,
@@ -836,7 +836,7 @@
         "evidence": "antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng, frames 10215-11863: per-type/per-instance bypass reports with state byte 17 alternating 1 then 0. No bypass readback or polarity confirmation."
       },
       "readback": "Category 0x19 contains eight {type,inst} slots at each of 64 indices. Index 0 initially contains the owner-reported accidental Preamp 1 effect (type 6, instance 0); no post-load slot readback occurs in the new capture, so write-to-readback correlation remains a test requirement. Category 0x15:0 supplies remaining counts; 0x0c:0 has passive witnesses but remains query-guarded.",
-      "notes": "AFX Memory Cat test operations are an explicit Orion-only scope extension requested by the owner. Other effects/devices and bypass remain unsupported. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
+      "notes": "AFX captured-effect test operations are an explicit Orion-only scope extension requested by the owner. The picker supports the five captured load types on the tested index0 rack; other devices, unmeasured effects, bypass and stereo parameters remain unsupported. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
     },
     "state_report": {
       "magic_offset": 0,
@@ -1185,7 +1185,7 @@
       "data_offset": 16,
       "discriminator_note": "The response magic is 0x75 but byte 1 = 0x00. The free-running METER report is also magic 0x75 but byte 1 = 0x1f; the STATE report (frame.state_report) is the same family with magic 0x73 -- effectively 'category 0, pushed continuously'. So (magic 0x75 AND byte1 0x00 AND category AND index) uniquely identifies a readback response amid the ~250 Hz state/meter stream.",
       "liveness": "The device answers EVERY (category, index) that is IN RANGE -- one it has no record for just comes back with an empty body. 'has a non-empty body' is the real liveness signal. Scalar categories return the same record for every index. Pace queries and reopen on halt (tools/readback_enum.py, transport.HidTransport.query).",
-      "namespace_warning": "READBACK CATEGORY NUMBERS AND COMMAND OPCODE NUMBERS ARE TWO SEPARATE NAMESPACES THAT OVERLAP. The same byte value means different things depending on where it sits: at frame offset 4 it is a command OPCODE, at the readback request's category_offset it is a CATEGORY. Colliding values in use here: 0x12 (opcode SET_GLOBAL / category UNKNOWN-empty), 0x13 (opcode SET_PARAM / category unqueried), 0x14 (opcode SET_LINK / category unqueried), 0x17 (opcode SET_MIX+SET_MIC_MODELING / category unqueried), 0x1a (opcode BLOCKED as an unconfirmed precaution -- never actually observed as a write opcode on this device, see constraints.forbidden_opcodes_note / category SURROUND PER-SPEAKER EQ, decoded + in scope), 0x1b (category SURROUND GLOBAL, decoded + in scope), 0x1c (opcode Memory Cat parameter stream -- generic guard enabled, explicit mono Orion test exception / category answers empty), 0x1d (opcode SET_AURAVERB, bundled + no activation, in scope / category answers empty), 0x23 (opcode AFX whole-chain assignment -- generic guard enabled, explicit Memory Cat pilot exception / category answers empty). This has already caused one documented misread: category 0x1a was labelled 'ADAT' for weeks purely because its record count (16) matched the ADAT channel count, and the surround-EQ content was never checked (corrected 2026-09-04). Always check which namespace a hex value is in. AFX Real-Time effects run on the device; Native plugins run in a DAW on the host, and Cosmos membership provides Native access rather than a Real-Time device license. Do not use Native/Cosmos terms as a proxy for the device-side AFX control boundary. See SCOPE.md §4 and EULA-ANALYSIS.md.",
+      "namespace_warning": "READBACK CATEGORY NUMBERS AND COMMAND OPCODE NUMBERS ARE TWO SEPARATE NAMESPACES THAT OVERLAP. The same byte value means different things depending on where it sits: at frame offset 4 it is a command OPCODE, at the readback request's category_offset it is a CATEGORY. Colliding values in use here: 0x12 (opcode SET_GLOBAL / category UNKNOWN-empty), 0x13 (opcode SET_PARAM / category unqueried), 0x14 (opcode SET_LINK / category unqueried), 0x17 (opcode SET_MIX+SET_MIC_MODELING / category unqueried), 0x1a (opcode BLOCKED as an unconfirmed precaution -- never actually observed as a write opcode on this device, see constraints.forbidden_opcodes_note / category SURROUND PER-SPEAKER EQ, decoded + in scope), 0x1b (category SURROUND GLOBAL, decoded + in scope), 0x1c (opcode Memory Cat parameter stream -- generic guard enabled, explicit mono Orion test exception / category answers empty), 0x1d (opcode SET_AURAVERB, bundled + no activation, in scope / category answers empty), 0x23 (opcode AFX whole-chain assignment -- generic guard enabled, explicit captured-effect rack pilot exception / category answers empty). This has already caused one documented misread: category 0x1a was labelled 'ADAT' for weeks purely because its record count (16) matched the ADAT channel count, and the surround-EQ content was never checked (corrected 2026-09-04). Always check which namespace a hex value is in. AFX Real-Time effects run on the device; Native plugins run in a DAW on the host, and Cosmos membership provides Native access rather than a Real-Time device license. Do not use Native/Cosmos terms as a proxy for the device-side AFX control boundary. See SCOPE.md §4 and EULA-ANALYSIS.md.",
       "hazard": "DO NOT QUERY AN INDEX PAST A CATEGORY'S RECORD COUNT. The firmware does not bounds-check the index: one index past the end returns adjacent memory with a WRONG layout, and a little further it faults. Confirmed 2026-08-31 on real hardware -- `category 0x04 index 5` hard-crashed the Orion Studio III (front panel: 'CRITICAL ERROR! / Failure.c / L: 204  E: 0 / BusFault_Handler' -- a Cortex-M BusFault) and the unit needed a physical power cycle. Diagnostic signature, in order: cat 0x04 idx 0-3 = four same-layout mixer records; idx 4 = answers but with a completely different layout (a float32 table = adjacent memory); idx 5 = NO response at all, then the OUT endpoint is dead. An EMPTY answer is normal; NO answer means the MCU just died inside the handler. NOTE: this supersedes the earlier diagnosis that the endpoint halt was caused by 'hammering' / query rate -- the 2026-08-31 crash took about ten slow queries. Rate was never the trigger; the out-of-range index was. Enforced by protocol.check_readback_index against readback.category_counts.",
       "identity": {
         "_comment": "LAYOUT ONLY -- the serial VALUE is never stored in this repo. It is read from the hardware on request (CLI `identity --serial`). Same record shape on the Orion Studio III and the Zen Go Synergy Core, so it is probably family-wide.",
@@ -2293,6 +2293,67 @@
     ]
   },
   "runtime_contracts": {
+    "afx_rack_test": {
+      "enabled": true,
+      "experimental": true,
+      "status": "capture-observed",
+      "channels": [
+        0
+      ],
+      "slot_count": 8,
+      "effects": {
+        "memory_brigade": {
+          "type_id": 73,
+          "name": "Memory Cat Brigade",
+          "instance_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        },
+        "instinct": {
+          "type_id": 75,
+          "name": "Instinct",
+          "instance_indices": [
+            0,
+            1
+          ]
+        },
+        "deesser": {
+          "type_id": 27,
+          "name": "Master De-Esser",
+          "instance_indices": [
+            0,
+            1
+          ]
+        },
+        "turboensembler": {
+          "type_id": 70,
+          "name": "V12 Chorus",
+          "instance_indices": [
+            0,
+            1
+          ]
+        },
+        "bbdchorus": {
+          "type_id": 78,
+          "name": "BBD-Chorus",
+          "instance_indices": [
+            0,
+            1
+          ]
+        }
+      },
+      "link_space": 4,
+      "link_pair_count": 16,
+      "link_readback_confirmed": false,
+      "note": "Explicit owner-requested effect picker and pair-link buttons. Load/remove/move only captured effect types and instance indices on the tested index0 rack. Other types remain disabled; resource counters do not prove license ownership. Link state shown as last sent this session, never inferred from the unconfirmed 32-byte table. No stereo parameter mirroring."
+    },
     "afx_memorycat_test": {
       "enabled": true,
       "experimental": true,
@@ -2371,7 +2432,7 @@
         "status": "user-reported",
         "observation": "Owner reports Memory Cat works from the WebUI. Individual controls, switch polarity, removal/reordering and restoration were not separately confirmed."
       },
-      "note": "Operator-triggered testing only. Fresh whole-chain read-modify-write and post-write slot verification; preserve unmodified slots. Full parameter settings require explicit Apply because current effect parameters cannot be read. Switch position polarity is unverified. No auto-initialization from old captures.",
+      "note": "Operator-triggered testing only. Fresh whole-chain read-modify-write and post-write slot verification; preserve unmodified slots. The first complete settings block requires explicit Apply because current effect parameters cannot be read; later knob changes stream throttled complete blocks based on last-sent values. Switch position polarity is unverified. No auto-initialization from old captures.",
       "evidence": [
         "antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng",
         "macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng"
@@ -2487,7 +2548,7 @@
     ],
     "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) are hardware round-trip confirmed: `route` self-verifies every complete destination-group write, and `mix-set` read-modify-writes one complete mixer strip and verifies the result. 0x1d (SET_AURAVERB) is the bundled AuraVerb command with a confirmed category-0x0a readback. 0xab (SET_SURROUND_GLOBAL) is allowed for the WebUI's 2.0/2.1 global format, delay/level, speaker-mask, and Bass Management read-modify-write paths. 0x87 (SET_SURROUND_SPEAKER) is allowed for the bounded per-speaker delay/level/phase and EQ writes that start from a fresh category-0x1a record; all mapped fields have hardware readback confirmation and each write preserves the rest of that speaker record.",
     "forbidden_opcodes": ["0x01", "0x02", "0x1a", "0x1c", "0x23", "0x20", "0x7c"],
-    "forbidden_opcodes_note": "Generic builders refuse 0x01/0x02/0x1a/0x1c/0x20/0x23/0x7c. Hardware-dangerous families remain blocked. The explicit afx_memorycat_test contract permits only typed, operator-triggered Orion candidates for type 73 on channel index 0: whole-chain load/remove/reorder with fresh readbacks and post-write verification, or full eight-field parameter Apply for captured instance indices 0-7. Generic raw AFX writes, other effects/devices/channels and stereo parameter writers remain blocked. Parameter readback and switch polarity are unverified. Bypass 0x14/0x98 is observation-only (state at 17, type at 18, instance at 19); polarity is unknown. Runtime readback bounds are unchanged.",
+    "forbidden_opcodes_note": "Generic builders refuse 0x01/0x02/0x1a/0x1c/0x20/0x23/0x7c. Hardware-dangerous families remain blocked. The explicit afx_memorycat_test contract permits only typed, operator-triggered Orion candidates for type 73 on channel index 0: whole-chain captured-effect load/replace/remove/reorder with fresh readbacks and post-write verification, or full eight-field parameter Apply for captured instance indices 0-7. The afx_rack_test contract additionally permits captured load types75/27/70/78 with measured indices0/1, alongside Memory Cat73/0-7. Generic raw AFX writes, unmeasured effects/devices/channels and stereo parameter writers remain blocked. Parameter readback and switch polarity are unverified. Bypass 0x14/0x98 is observation-only (state at 17, type at 18, instance at 19); polarity is unknown. Runtime readback bounds are unchanged.",
     "channel_bounds": {
       "min": 0,
       "max": 11

@@ -1,7 +1,7 @@
-"""Bounded Orion Memory Cat candidates for explicit operator testing.
+"""Bounded Orion AFX candidates for explicit operator testing.
 
 These typed builders are the sole exceptions to the generic AFX opcode
-guards. They cannot select another effect, device, or unmeasured channel.
+guards. Only independently captured effects and measured indices are accepted.
 """
 from antelope import protocol
 
@@ -27,6 +27,26 @@ def _integer(value, lo, hi, label):
     return value
 
 
+def load_effects(profile):
+    base = test_contract(profile)
+    fallback = {'memory_brigade': {'type_id': 73, 'name': 'Memory Cat Brigade',
+                                  'instance_indices': base['instance_indices']}}
+    rack = profile.get('runtime_contracts', {}).get('afx_rack_test', {})
+    if not rack.get('enabled'):
+        return fallback
+    if (not rack.get('experimental') or rack.get('channels') != [0]
+            or rack.get('slot_count') != 8):
+        raise protocol.ConstraintError('AFX rack testing is unavailable for this profile')
+    observed = {'memory_brigade': (73, list(range(8))), 'instinct': (75, [0, 1]),
+                'deesser': (27, [0, 1]), 'turboensembler': (70, [0, 1]),
+                'bbdchorus': (78, [0, 1])}
+    effects = rack.get('effects', {})
+    for name, spec in effects.items():
+        if name not in observed or (spec.get('type_id'), spec.get('instance_indices')) != observed[name]:
+            raise protocol.ConstraintError('Effect is outside the independently captured Orion set')
+    return effects
+
+
 def validate_slots(slots):
     if len(slots) != 8:
         raise ValueError('An AFX chain must contain exactly eight slots')
@@ -42,28 +62,35 @@ def validate_slots(slots):
     return result
 
 
-def change_chain(profile, slots, operation, slot, *, source=None, instance=None):
-    contract = test_contract(profile)
+def change_chain(profile, slots, operation, slot, *, source=None, instance=None,
+                 effect_id='memory_brigade'):
+    effects = load_effects(profile)
+    known_types = {spec['type_id'] for spec in effects.values()}
     result = validate_slots(slots)
     _integer(slot, 0, 7, 'slot')
-    if operation == 'load':
-        if result[slot] != (0, 0):
+    if operation in ('load', 'replace'):
+        if operation == 'load' and result[slot] != (0, 0):
             raise ValueError('Load requires an empty slot; existing effects are preserved')
-        if instance not in contract['instance_indices'] or type(instance) is not int:
+        if operation == 'replace' and result[slot][0] not in known_types:
+            raise ValueError('Only captured effect types can be replaced')
+        if effect_id not in effects:
+            raise ValueError('Effect loading is not mapped for this Orion profile')
+        spec = effects[effect_id]
+        if instance not in spec['instance_indices'] or type(instance) is not int:
             raise ValueError('Instance is outside the captured test range')
-        result[slot] = (contract['type_id'], instance)
+        result[slot] = (spec['type_id'], instance)
     elif operation == 'remove':
-        if result[slot][0] != contract['type_id']:
-            raise ValueError('Only Memory Cat instances can be removed by this test')
+        if result[slot][0] not in known_types:
+            raise ValueError('Only captured effect types can be removed by this test')
         result.pop(slot)
         result.append((0, 0))
     elif operation == 'move':
         _integer(source, 0, 7, 'source slot')
-        if result[source][0] != contract['type_id']:
-            raise ValueError('Only Memory Cat instances can be moved by this test')
+        if result[source][0] not in known_types:
+            raise ValueError('Only captured effect types can be moved by this test')
         result.insert(slot, result.pop(source))
     else:
-        raise ValueError('Operation must be load, remove, or move')
+        raise ValueError('Operation must be load, replace, remove, or move')
     return validate_slots(result)
 
 
@@ -73,15 +100,16 @@ def build_chain_test(profile, slots, *, original_slots=None):
             contract.get('chain_subcmd')) != ('0x23', '0xd7', '0x11'):
         raise protocol.ConstraintError('Chain frame does not match the captured candidate')
     slots = validate_slots(slots)
-    if any(effect_type == 73 and instance not in contract['instance_indices']
+    types = {spec['type_id']: spec for spec in load_effects(profile).values()}
+    if any(effect_type in types and instance not in types[effect_type]['instance_indices']
            for effect_type, instance in slots):
-        raise protocol.ConstraintError('Memory Cat instance is outside the captured test range')
+        raise protocol.ConstraintError('Effect instance is outside the captured test range')
     original = validate_slots(original_slots if original_slots is not None else [(0, 0)] * 8)
     # A caller may preserve foreign effects from readback, never introduce,
-    # remove, or duplicate one through the Memory Cat test builder.
-    if sorted(slot for slot in slots if slot[0] not in (0, 73)) != sorted(
-            slot for slot in original if slot[0] not in (0, 73)):
-        raise protocol.ConstraintError('The Memory Cat candidate must preserve all other effects')
+    # remove, or duplicate one through the captured-effect test builder.
+    if sorted(slot for slot in slots if slot[0] and slot[0] not in types) != sorted(
+            slot for slot in original if slot[0] and slot[0] not in types):
+        raise protocol.ConstraintError('The AFX candidate must preserve all unknown effects')
     packet = bytearray(320)
     packet[0], packet[4] = 0x70, 0x23
     packet[16:19] = bytes([0xd7, 0x11, 0])

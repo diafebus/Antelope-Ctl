@@ -1,4 +1,22 @@
 """Presentation metadata for local AFX rack previews; no device commands."""
+from antelope import afx
+
+
+def effect_choices(catalog, profile_name, profile):
+    try:
+        allowed = afx.load_effects(profile)
+    except (ValueError, KeyError):
+        allowed = {}
+    choices = []
+    for effect in catalog.get('effects', []):
+        implementation = next((item for item in effect.get('implementations', [])
+                               if item.get('profile') == profile_name), {})
+        spec = allowed.get(effect['id'])
+        type_id = implementation.get('type_id')
+        choices.append({'id': effect['id'], 'name': effect['name'],
+                        'type_id': type_id,
+                        'loadable': bool(spec and spec['type_id'] == type_id)})
+    return sorted(choices, key=lambda item: item['name'].casefold())
 
 
 def preview_catalog(catalog, profile_name):

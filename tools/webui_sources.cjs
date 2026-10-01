@@ -13,6 +13,7 @@ const JS_FILES = [
   'ui/afx.js',
   'ui/afx-memorycat.js',
   'ui/afx-test.js',
+  'ui/afx-live.js',
   'ui/mixer.js',
   'ui/surround.js',
   'ui/readback.js',

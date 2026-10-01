@@ -60,6 +60,17 @@
 .afx-panel-move:disabled { opacity:.3; cursor:default; }
 .afx-panel-drag:focus-visible, .afx-panel-move:focus-visible { outline:2px solid #b78aef; outline-offset:2px; }
 .afx-test-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 10px; font-size:11px; color:var(--dim); }
+.afx-slot-unit { min-width:0; }
+.afx-slot-picker { display:flex; align-items:center; gap:12px; padding:8px 16px;
+  border-bottom:1px solid var(--line); color:var(--dim); font-size:11px; }
+.afx-slot-picker select { flex:1; min-width:0; padding:6px 8px; border:1px solid var(--line);
+  border-radius:4px; background:var(--panel2); color:var(--fg); }
+.afx-slot-picker select:disabled { opacity:.6; }
+.afx-pair-link { width:100%; padding:8px; border:1px solid #68547f; border-radius:4px;
+  background:#30283e; color:#d0b7ef; cursor:pointer; }
+.afx-pair-link.on { color:#d4fcf4; border-color:#64b6a7; background:#29473f; }
+.afx-pair-link:disabled { opacity:.5; cursor:default; }
+.afx-link-note { margin:5px 0 0; color:var(--dim); font-size:10px; }
 @media (max-width:680px) {
   .afx-window-main { grid-template-columns:1fr; gap:16px; }
   .afx-channel-panel { position:static; }
