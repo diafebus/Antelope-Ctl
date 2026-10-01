@@ -22,7 +22,7 @@ class LinkTransitionCaptureTests(unittest.TestCase):
         )
 
     def test_writable_families_use_the_observed_table(self):
-        for family, expected_index in (('physical', 0), ('adat', 1), ('spdif', 2)):
+        for family, expected_index in (('physical', 0), ('adat', 1), ('spdif', 2), ('afx', 4)):
             with self.subTest(family=family):
                 spec, table = capture.validate_target(self.profile, family, 0)
                 self.assertEqual(spec['space'], expected_index)
@@ -33,6 +33,9 @@ class LinkTransitionCaptureTests(unittest.TestCase):
             capture.validate_target(self.profile, 'spdif', 1)
         with self.assertRaises(ValueError):
             capture.validate_target(self.profile, 'physical', -1)
+        with self.assertRaises(ValueError):
+            capture.validate_target(self.profile, 'afx', 16)
+        self.assertEqual(capture.validate_target(self.profile, 'afx', 15)[0]['pairs'], 16)
         spec, table = capture.validate_target(self.profile, 'adat', 6)
         self.assertEqual(table['index'], 1)
         self.assertEqual(table['record_count'], 8)

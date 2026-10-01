@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class FakeTransport:
     def __init__(self, slots, *, mismatch=False, linked=False):
         self.slots = list(slots)
+        self.chains = {0: self.slots}
+        self.link_flags = [int(linked)] + [0] * 31
         self.writes = []
         self.mismatch = mismatch
         self.linked = linked
@@ -24,10 +26,10 @@ class FakeTransport:
         response = bytearray(320)
         response[0], response[8], response[12] = 0x75, category, index
         if category == 0x19:
-            response[16:32] = bytes(value for slot in self.slots for value in slot)
+            response[16:32] = bytes(value for slot in self.chains.get(index, [(0, 0)] * 8) for value in slot)
         elif category == 0x0b:
             self.assert_index = index
-            response[16] = int(self.linked)
+            response[16:48] = bytes(self.link_flags)
         elif category == 0x15:
             for i in range(91):
                 response[16 + i * 2:18 + i * 2] = bytes([i, self.remaining.get(i, 0)])
@@ -39,7 +41,10 @@ class FakeTransport:
     def write(self, packet):
         self.writes.append(packet)
         if packet[4] == 0x23 and not self.mismatch:
-            self.slots = list(zip(packet[19:35:2], packet[20:35:2]))
+            self.chains[packet[18]] = list(zip(packet[19:35:2], packet[20:35:2]))
+            self.slots = self.chains[0]
+        elif packet[4] == 0x14 and packet[16:18] == bytes([0xa2, 4]):
+            self.link_flags[packet[18]] = packet[19]
 
 
 class FakeDevice:
@@ -140,7 +145,7 @@ class AfxTestTests(unittest.TestCase):
         transport = FakeTransport(slots, linked=True)
         service = MemoryCatTest(FakeDevice(self.profile, transport))
         result = service.unlink_pilot()
-        self.assertFalse(result['verified'])
+        self.assertTrue(result['verified'])
         self.assertEqual(transport.slots, slots)
         self.assertEqual(len(transport.writes), 1)
         self.assertEqual(transport.writes[0][4], 0x14)
@@ -180,9 +185,68 @@ class AfxTestTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 service.set_link(bad_pair, enabled)
         self.assertEqual(len(transport.writes), 3)
-        self.assertFalse(service.state()['link_readback'])
+        self.assertTrue(service.state()['link_readback'])
         device._transport = FakeTransport(transport.slots)
+        device.structured.pop((0x0b, 4), None)
         self.assertEqual(service.state()['links'], [None] * 16)
+
+    def test_refresh_is_read_only_and_preserves_failure_latch(self):
+        transport = FakeTransport([(0, 0)] * 8)
+        transport.chains[31] = [(73, 4)] + [(0, 0)] * 7
+        service = MemoryCatTest(FakeDevice(self.profile, transport))
+        service.failed_verification = True
+        result = service.refresh(31)
+        self.assertEqual(result['channels']['31'][0], {'type':73, 'instance':4})
+        self.assertTrue(result['link_readback'])
+        self.assertFalse(result['writes_enabled'])
+        self.assertEqual(transport.writes, [])
+
+    def test_selected_channels_preserve_other_chains_and_instances(self):
+        transport = FakeTransport([(73, 0)] + [(0, 0)] * 7)
+        device = FakeDevice(self.profile, transport)
+        device.structured[(0x19, 0)][0] = dict(type=73, inst=0)
+        service = MemoryCatTest(device)
+        for channel, instance in ((2, 1), (31, 2)):
+            result = service.change_chain('load', 7, channel=channel)
+            self.assertEqual(result['channels'][str(channel)][7], {'type': 73, 'instance': instance})
+            self.assertEqual(transport.writes[-1][18], channel)
+            self.assertEqual(transport.chains[0][0], (73, 0))
+            service.change_chain('move', 0, 7, channel=channel)
+            values = dict(blend=1, level=90, feedback=0, chrs_vibr=0,
+                          depth=0, delay=20, lpf_fc=100, size=1)
+            service.change_parameters(instance, values, channel=channel)
+            self.assertEqual(transport.writes[-1][19], instance)
+            with self.assertRaisesRegex(RuntimeError, 'no longer'):
+                service.change_parameters(0, values, channel=channel)
+        writes = len(transport.writes)
+        for channel in (-1, 32, True, 1.5):
+            with self.assertRaises(ValueError):
+                service.change_chain('load', 0, channel=channel)
+        self.assertEqual(len(transport.writes), writes)
+        transport.mismatch = True
+        with self.assertRaisesRegex(RuntimeError, 'further AFX testing is disabled'):
+            service.change_chain('remove', 0, channel=31)
+
+    def test_link_readback_overrides_last_sent_and_only_guards_selected_pair(self):
+        profile = copy.deepcopy(self.profile)
+        profile['runtime_contracts']['afx_rack_test']['link_pair_records'] = [[pair] for pair in range(16)]
+        transport = FakeTransport([(0, 0)] * 8)
+        device = FakeDevice(profile, transport)
+        service = MemoryCatTest(device)
+        self.assertTrue(service.set_link(15, True)['verified'])
+        self.assertTrue(service.state()['link_readback'])
+        self.assertTrue(service.state()['links'][15])
+        service.change_chain('load', 0, channel=2)
+        with self.assertRaisesRegex(RuntimeError, 'stereo links off'):
+            service.change_chain('load', 0, channel=30)
+        # External change must supersede the session's last command.
+        transport.link_flags[15] = 0
+        service._read_links(transport)
+        self.assertFalse(service.state()['links'][15])
+        # A new transport never inherits old cached flags.
+        device.snapshot['online'] = False
+        device._transport = None
+        self.assertFalse(service.state()['link_readback'])
 
     def test_parameters_require_full_state_and_a_current_loaded_instance(self):
         values = dict(blend=50, level=0, feedback=0, chrs_vibr=0,

@@ -134,8 +134,13 @@ to observing the submitted load/remove/reorder sequences and implementing
 operator-driven tests on Orion insert channel index 0
 (the owner's Preamp 1 test). On 2026-10-01 the owner requested effect selectors. This extends the same
 verified chain path to the five independently captured Orion load types:
-Memory Cat, Instinct, Master De-Esser, V12 Chorus and BBD-Chorus. Other
-loading paths remain excluded.
+Memory Cat, Instinct, Master De-Esser, V12 Chorus and BBD-Chorus. The owner
+further requested loading on channels other than AFX 1, extending these
+bounded operator tests to Orion channels 0–31. Channel-specific fresh reads
+and post-write verification remain mandatory. Other loading paths remain
+excluded. The owner also authorized bounded, reversible hardware tests to
+resolve the required protocol mappings; this does not authorize unsafe
+readback indices or licensing/activation traffic.
 
 Typed test builders use the captured complete eight-slot chain, preserve
 other effects, allocate only measured instance indices, and start from

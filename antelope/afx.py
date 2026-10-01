@@ -13,12 +13,21 @@ def test_contract(profile):
             or protocol._as_int(device.get('vid', 0)) != 0x23e5
             or protocol._as_int(device.get('pid', 0)) != 0xa221
             or profile.get('transport', {}).get('report_size') != 320
-            or contract.get('type_id') != 73 or contract.get('channels') != [0]
+            or contract.get('type_id') != 73 or contract.get('channels') != list(range(32))
             or contract.get('slot_count') != 8
             or contract.get('instance_indices') != list(range(8))):
         raise protocol.ConstraintError('Memory Cat testing is unavailable for this profile')
     protocol.check_readback_index(profile, 0x19, 0)
     return contract
+
+
+def test_channel(profile, channel):
+    contract = test_contract(profile)
+    _integer(channel, 0, 31, 'AFX channel')
+    if channel not in contract['channels']:
+        raise protocol.ConstraintError('AFX channel is outside the operator test contract')
+    protocol.check_readback_index(profile, 0x19, channel)
+    return channel
 
 
 def _integer(value, lo, hi, label):
@@ -34,7 +43,7 @@ def load_effects(profile):
     rack = profile.get('runtime_contracts', {}).get('afx_rack_test', {})
     if not rack.get('enabled'):
         return fallback
-    if (not rack.get('experimental') or rack.get('channels') != [0]
+    if (not rack.get('experimental') or rack.get('channels') != list(range(32))
             or rack.get('slot_count') != 8):
         raise protocol.ConstraintError('AFX rack testing is unavailable for this profile')
     observed = {'memory_brigade': (73, list(range(8))), 'instinct': (75, [0, 1]),
@@ -94,8 +103,9 @@ def change_chain(profile, slots, operation, slot, *, source=None, instance=None,
     return validate_slots(result)
 
 
-def build_chain_test(profile, slots, *, original_slots=None):
+def build_chain_test(profile, slots, *, original_slots=None, channel=0):
     contract = test_contract(profile)
+    test_channel(profile, channel)
     if (contract.get('chain_opcode'), contract.get('chain_param_id'),
             contract.get('chain_subcmd')) != ('0x23', '0xd7', '0x11'):
         raise protocol.ConstraintError('Chain frame does not match the captured candidate')
@@ -112,7 +122,7 @@ def build_chain_test(profile, slots, *, original_slots=None):
         raise protocol.ConstraintError('The AFX candidate must preserve all unknown effects')
     packet = bytearray(320)
     packet[0], packet[4] = 0x70, 0x23
-    packet[16:19] = bytes([0xd7, 0x11, 0])
+    packet[16:19] = bytes([0xd7, 0x11, channel])
     packet[19:35] = bytes(value for slot in slots for value in slot)
     return bytes(packet)
 

@@ -47,6 +47,12 @@ class AfxCatalogTests(unittest.TestCase):
                               / 'profiles/orion_studio_sc.json').read_text())
         choices = effect_choices(self.catalog, 'orion_studio_sc.json', profile)
         self.assertEqual(len(choices), 80)
+        groups = {row['id']:row['category'] for row in choices}
+        self.assertEqual(groups['memory_brigade'], 'Delay & Reverb')
+        self.assertEqual(groups['instinct'], 'Dynamics')
+        self.assertEqual(groups['bbdchorus'], 'Modulation')
+        self.assertEqual(groups['api_550'], 'EQ & Filters')
+        self.assertTrue(all(row['category'] for row in choices))
         self.assertEqual({row['id'] for row in choices if row['loadable']},
                          {'memory_brigade', 'instinct', 'deesser', 'turboensembler', 'bbdchorus'})
         self.assertFalse(any(row['loadable'] for row in effect_choices(self.catalog, 'missing.json', profile)))

@@ -6,6 +6,8 @@ controller.  Category 0x0b has five safe, profile-declared link tables.
 Preamp, ADAT and S/PDIF use selectors/tables 0, 1 and 2 respectively. The
 script reads all five tables before and after one requested transition,
 writes a local JSON record, and restores the state the operator declared.
+AFX space4/pair0–15 tests use the explicit Orion rack contract; direct
+2026-10-01 trials confirmed matching index4 records0–15.
 
 Read-only inventory:
     python3 tools/link_transition_capture.py
@@ -78,6 +80,12 @@ def family_spec(profile, family):
     if family == 'spdif':
         return {'table': table_at(2), 'space': proto.input_link_space(profile, 'spdif'),
                 'pairs': _as_int(profile['spdif']['link_pairs']['count']),
+                'shared_space': False}
+    if family == 'afx':
+        contract = profile.get('runtime_contracts', {}).get('afx_rack_test', {})
+        if not contract.get('enabled') or contract.get('link_space') != 4 or contract.get('link_pair_count') != 16:
+            raise ValueError('profile has no bounded Orion AFX link test contract')
+        return {'table': table_at(4), 'space': 4, 'pairs': 16,
                 'shared_space': False}
     raise ValueError(f'unsupported link family {family!r}')
 
@@ -162,7 +170,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-p', '--profile', default='profiles/orion_studio_sc.json',
                         help='profile JSON path (default: Orion Studio SC)')
-    parser.add_argument('--family', choices=('physical', 'adat', 'spdif'),
+    parser.add_argument('--family', choices=('physical', 'adat', 'spdif', 'afx'),
                         help='link family for a controlled transition')
     parser.add_argument('--pair', type=int, help='zero-based pair index')
     parser.add_argument('--from-state', choices=('on', 'off'),

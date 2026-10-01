@@ -43,7 +43,7 @@ async function previewAfxEffect(slot, effectId) {
       AFX_DRAFTS.set(key, {effect, values: Object.fromEntries(effect.controls.map(control =>
         [control.id, control.kind === 'continuous' ? control.range[0] : null]))});
     }
-    popup.document.getElementById('afx-rack').innerHTML = afxRackHTML(capacity, channel);
+    selectAfxChannel(channel);
     status.textContent = 'Local previews do not load an effect or read its device settings.';
   } catch (error) {
     if (AFX_WINDOW === popup && !popup.closed && AFX_CHANNEL === channel)
@@ -142,8 +142,14 @@ function afxRackHTML(capacity, channel) {
 
 function afxSlotListHTML(capacity, channel) {
   return Array.from({length: capacity.slots}, (_, slot) => {
-    const label = AFX_DEVICE_RACK?.slotLabel?.(channel, slot) || 'Unavailable';
-    return `<li class="afx-slot"><span class="afx-slot-number">${slot + 1}</span><span>${afxEscape(label)}</span></li>`;
+    const draft = AFX_DRAFTS.get(afxDraftKey(channel, slot));
+    const label = AFX_DEVICE_RACK?.slotLabel?.(channel, slot) || draft?.effect.name || 'Unavailable';
+    const picker = AFX_DEVICE_RACK?.slotPicker?.(channel, slot);
+    const movable = picker != null ? AFX_DEVICE_RACK.canMove(channel, slot) : !!draft;
+    return `<li class="afx-slot" data-afx-list-slot="${slot}"><span class="afx-slot-number">${slot + 1}</span>`
+      + (picker ?? `<span class="afx-slot-label">${afxEscape(label)}</span>`)
+      + `<button type="button" class="afx-panel-drag" draggable="${movable}" data-afx-drag="${slot}"`
+      + ` aria-label="Drag slot ${slot + 1} to reorder"${movable ? '' : ' disabled'}>⠿</button></li>`;
   }).join('');
 }
 
@@ -158,8 +164,8 @@ function afxWindowHTML(capacity) {
     + '<main class="afx-window-main"><aside class="afx-channel-panel" aria-label="Channel selection">'
     + '<label class="afx-channel-select" for="afx-channel">Select channel</label>'
     + `<select id="afx-channel">${options}</select>`
-    + '<div id="afx-pair-control"></div>'
-    + `<article class="afx-channel"><h2 id="afx-channel-name">AFX ${channel + 1}</h2>`
+    + `<article class="afx-channel"><div class="afx-channel-heading"><h2 id="afx-channel-name">AFX ${channel + 1}</h2>`
+    + '<div id="afx-pair-control"></div></div>'
     + `<p class="afx-chain-label">${capacity.slots} effect slots</p><ol id="afx-slot-list" class="afx-slots">${slots}</ol></article></aside>`
     + '<section class="afx-rack-panel" aria-labelledby="afx-rack-title">'
     + `<div class="afx-rack-heading"><h2 id="afx-rack-title">AFX ${channel + 1} · Effects rack</h2>`
@@ -221,7 +227,7 @@ function openAfxWindow() {
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
     + '<title>AFX — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css?v=routing-mix-colors-v1">'
-    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-picker-links-v5">'
+    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-channel-rack-v7">'
     + Array.from(AFX_PANELS.values(), panel => `<link rel="stylesheet" href="${afxEscape(panel.stylesheet)}">`).join('')
     + '</head><body class="afx-window-body" role="dialog" aria-label="AFX"></body></html>');
   d.close();
@@ -231,7 +237,7 @@ function openAfxWindow() {
     selectAfxChannel(Number(event.target.value));
   });
   d.getElementById('afx-pair-control').addEventListener('click', event => AFX_DEVICE_RACK?.linkClick?.(event));
-  d.getElementById('afx-rack').addEventListener('change', event => AFX_DEVICE_RACK?.change?.(event));
+  d.getElementById('afx-slot-list').addEventListener('change', event => AFX_DEVICE_RACK?.change?.(event));
   d.getElementById('afx-rack').addEventListener('click', clickAfxPreview);
   d.body.addEventListener('click', event => {
     if (event.target.closest('.afx-test-toolbar')) AFX_DEVICE_RACK?.click(event);
@@ -250,26 +256,28 @@ function openAfxWindow() {
     const draft = AFX_DEVICE_RACK?.draft(AFX_CHANNEL, slot) || AFX_DRAFTS.get(afxDraftKey(AFX_CHANNEL, slot));
     if (draft) AFX_PANELS.get(draft.effect.id)?.pointerDown?.(draft, event);
   });
-  d.getElementById('afx-rack').addEventListener('dragstart', event => {
-    const handle = event.target.closest('[data-afx-drag]');
-    if (!handle) { event.preventDefault(); return; }
-    event.dataTransfer.setData('text/plain', `${AFX_CHANNEL}:${handle.dataset.afxDrag}`);
-    event.dataTransfer.effectAllowed = 'move';
-  });
-  d.getElementById('afx-rack').addEventListener('dragover', event => {
-    if (!event.target.closest('[data-afx-rack-slot]')) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  });
-  d.getElementById('afx-rack').addEventListener('drop', event => {
-    const target = event.target.closest('[data-afx-rack-slot]');
-    if (!target) return;
-    event.preventDefault();
-    const data = event.dataTransfer.getData('text/plain');
-    if (!/^\d+:\d+$/.test(data)) return;
-    const [channel, slot] = data.split(':').map(Number);
-    if (channel === AFX_CHANNEL) moveAfxDraft(slot, Number(target.dataset.afxRackSlot));
-  });
+  for (const id of ['afx-rack', 'afx-slot-list']) {
+    d.getElementById(id).addEventListener('dragstart', event => {
+      const handle = event.target.closest('[data-afx-drag]');
+      if (!handle || handle.disabled) { event.preventDefault(); return; }
+      event.dataTransfer.setData('text/plain', `${AFX_CHANNEL}:${handle.dataset.afxDrag}`);
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    d.getElementById(id).addEventListener('dragover', event => {
+      if (!event.target.closest('[data-afx-rack-slot]') && !event.target.closest('[data-afx-list-slot]')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    });
+    d.getElementById(id).addEventListener('drop', event => {
+      const target = event.target.closest('[data-afx-rack-slot]') || event.target.closest('[data-afx-list-slot]');
+      if (!target) return;
+      event.preventDefault();
+      const data = event.dataTransfer.getData('text/plain');
+      if (!/^\d+:\d+$/.test(data)) return;
+      const [channel, slot] = data.split(':').map(Number);
+      if (channel === AFX_CHANNEL) moveAfxDraft(slot, Number(target.dataset.afxRackSlot ?? target.dataset.afxListSlot));
+    });
+  }
   const closeButton = d.querySelector('[data-afx-close]');
   closeButton.addEventListener('click', closeAfxWindow);
   popup.addEventListener('keydown', event => {

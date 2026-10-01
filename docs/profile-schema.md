@@ -142,8 +142,10 @@ not defaults.
 Orion declares 32 channels and eight slots from
 [Antelope's November 2019 demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
 The existing `0x19` layout also describes eight slots per strip. Its 64 outer
-records are protocol storage; mapping those records to the 32 user-facing
-channels is still unverified. Capacity metadata never changes the safety
+records are protocol storage. Direct mono load/remove tests verified indices
+2–31 against the same write-channel indices on 2026-10-01, restoring every
+chain; index 0 was owner-tested earlier. Index 1 mono writes and storage
+indices 32–63 remain unexercised by that test. Capacity metadata never changes the safety
 bounds in `frame.readback.category_counts`. Channel count times slot count
 is the number of insert positions, not a guaranteed simultaneous instance
 budget. DSP resources, stereo use, and per-effect instance limits are
@@ -156,7 +158,7 @@ effect types from Gazelle's Discrete 4 read-only measurements dated
 is pinned in `provenance`; unnamed device types are omitted. These entries
 are not an Orion effect list or a list of installed/licensed effects.
 `catalog_schema` identifies the catalog format and version. Each future
-entry has a stable application ID, an original description, controls, and
+entry has a stable application ID, a presentation category, an original description, controls, and
 device-specific implementations. The following is an entry template,
 not a decoded effect:
 
@@ -221,7 +223,11 @@ document that explicitly. Both remain `null` until the operation is decoded.
 Catalog definitions do not enable writes. Generic assignment and parameter
 opcode guards remain in force. The separate `runtime_contracts.afx_rack_test`
 declares the five captured Orion load types and measured instance indices on
-channel index 0. `runtime_contracts.afx_memorycat_test` additionally governs
+operator-selected mono channel indices 0–31. `verified_channel_indices`
+records which channels have completed device trials. `link_pair_records`
+maps the 16 pair flags to `0x0b:4` records 0–15 only after direct transition
+confirmation; trailing records 16–31 remain unmapped.
+`runtime_contracts.afx_memorycat_test` additionally governs
 type 73 parameters: explicit initial complete Apply, then throttled live
 edits from last-sent values without a claimed parameter readback. Slot writes
 start from fresh whole-chain reads and verify their results. No other device

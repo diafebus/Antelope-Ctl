@@ -93,21 +93,32 @@ provides six draggable knobs and two mode selectors in an original Gazelle
 rack design. Local previews retain settings per channel/slot and support
 drag-and-drop or keyboard-button reordering.
 
-Opening **AFX** shows the tested AFX 1 device rack. Each slot has an effect
-selector: Memory Cat, Instinct, Master De-Esser, V12 Chorus and BBD-Chorus
-have independently captured Orion load IDs; unmapped entries are greyed out.
+Opening **AFX** shows the device rack. Select any of AFX 1–32; each slot
+in the left channel frame has an effect selector grouped into Dynamics,
+EQ & Filters, Modulation, Delay & Reverb, Pitch & Tuning, Amps & Cabinets,
+Preamps, Saturation & Distortion, and Other. These are presentation categories,
+not device capabilities. Memory Cat, Instinct, Master De-Esser, V12 Chorus
+and BBD-Chorus have independently captured Orion load IDs; unmapped entries
+are greyed out.
 Selecting a different effect replaces a supported insert; selecting Empty
 removes it. Loading uses fresh instance counters and the complete slot
 inventory, measured instance indices, and verified whole-chain writes.
-Counts describe resources, not license ownership. Other channel load paths
-remain disabled. Only Memory Cat has parameter controls so far.
+Counts describe resources, not license ownership. Direct load/remove tests
+on AFX 3–32 verified matching slot readbacks and exact restoration; AFX 1
+was owner-tested earlier. AFX 2 mono writes await testing while 1–2 are
+linked. Only Memory Cat has parameter controls so far. Drag effects within
+or between the left slot list and the rack to reorder the selected chain.
 
-The pair button follows the selection: AFX 1 or 2 shows Link 1–2, AFX 3 or
-4 shows Link 3–4, through 31–32. Linked channel-menu entries show their
-partner. Link indicators reflect commands sent by this server session;
-initial state is unknown because the link-table mapping is unconfirmed.
+The compact pair button sits inside the left channel header and follows
+the selection: AFX 1 or 2 shows 1–2, AFX 3 or 4 shows 3–4, through 31–32.
+Its glow and accessible label identify the current link state. Linked channel-menu entries show their
+partner. Link indicators use device readback: all 16 space-4 flags were
+independently verified against `0x0b:4` records 0–15 on 2026-10-01. Records
+16–31 remain unmapped. Opening or refreshing the rack reads its selected
+chain and link flags directly.
 The button sends only the flag, preserving both chains. Stereo parameter
-sharing is not implemented; unlink AFX pairs before mono rack edits.
+sharing is not implemented; unlink the selected pair before mono rack edits.
+Links on other pairs do not block that channel.
 
 Memory Cat settings are drafts/last sent, not parameter readback. Apply the
 complete eight-setting block once to initialize live controls; subsequent

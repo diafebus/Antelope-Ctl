@@ -1213,10 +1213,9 @@ class Device:
                 with self._lock:
                     self._transport = transport
                     self.connection_generation += 1
-                    # AFX instance allocation must wait for this connection's
-                    # complete inventory, rather than reuse pre-disconnect slots.
+                    # AFX inventory and link flags belong to this connection.
                     self.structured = {key: value for key, value in self.structured.items()
-                                       if key[0] != 0x19}
+                                       if key[0] != 0x19 and key != (0x0b, 4)}
                     self.rb_ver += 1
                 last_readback = time.time()
                 readback_plan = self._readback_plan()
@@ -2066,6 +2065,7 @@ def api_afx_catalog():
 
 
 class AfxChainTestChange(BaseModel):
+    channel: StrictInt = 0
     operation: str
     slot: StrictInt
     source: StrictInt | None = None
@@ -2078,13 +2078,19 @@ class AfxLinkTestChange(BaseModel):
 
 
 class AfxParameterTestChange(BaseModel):
+    channel: StrictInt = 0
     instance: StrictInt
     values: dict[str, StrictInt]
 
 
 @app.get("/api/afx/memorycat-test")
-def api_afx_memorycat_test():
+def api_afx_memorycat_test(channel: int = 0, refresh: bool = False):
     state = AFX_TEST.state()
+    if refresh and state.get('available') and state.get('online'):
+        try:
+            state = AFX_TEST.refresh(channel)
+        except (ValueError, RuntimeError) as error:
+            return _bad(str(error))
     try:
         with open(os.path.join(PROFILE_DIR, 'afx_effects.json')) as source:
             catalog = json.load(source)
@@ -2096,7 +2102,8 @@ def api_afx_memorycat_test():
 @app.post("/api/afx/memorycat-test/chain")
 def api_afx_memorycat_chain(change: AfxChainTestChange):
     try:
-        return AFX_TEST.change_chain(change.operation, change.slot, change.source, change.effect_id)
+        return AFX_TEST.change_chain(change.operation, change.slot, change.source, change.effect_id,
+                                     channel=change.channel)
     except (ValueError, RuntimeError) as error:
         return _bad(str(error))
 
@@ -2104,7 +2111,7 @@ def api_afx_memorycat_chain(change: AfxChainTestChange):
 @app.post("/api/afx/memorycat-test/parameters")
 def api_afx_memorycat_parameters(change: AfxParameterTestChange):
     try:
-        return AFX_TEST.change_parameters(change.instance, change.values)
+        return AFX_TEST.change_parameters(change.instance, change.values, channel=change.channel)
     except (ValueError, RuntimeError) as error:
         return _bad(str(error))
 

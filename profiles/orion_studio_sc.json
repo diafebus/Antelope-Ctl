@@ -798,13 +798,13 @@
       "assign": {
         "magic": "0x70",
         "opcode": "0x23",
-        "opcode_note": "Generic opcode guard stays. The explicit Orion rack test contract permits the five independently captured effect types on index0; the separate Memory Cat contract governs parameter writes.",
+        "opcode_note": "Generic opcode guard stays. The explicit Orion rack test contract permits the five independently captured effect types on mono indices0–31; the separate Memory Cat contract governs parameter writes.",
         "param_id_offset": 16,
         "param_id": "0xd7",
         "subcmd_offset": 17,
         "subcmd": "0x11",
         "channel_offset": 18,
-        "channel_note": "Zero-based insert-strip index; owner reports all new operations on Preamp 1, index 0. Other channel-to-storage mappings are unverified.",
+        "channel_note": "Zero-based insert-strip index0–31. Original Preamp1 capture uses0; 2026-10-01 direct load/remove trials verify matching 0x19 records2–31 with exact restoration. Channel0 owner-tested earlier; channel1 mono writes and storage32–63 remain unexercised.",
         "slots_offset": 19,
         "slot_stride": 2,
         "slot_count": 8,
@@ -836,7 +836,7 @@
         "evidence": "antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng, frames 10215-11863: per-type/per-instance bypass reports with state byte 17 alternating 1 then 0. No bypass readback or polarity confirmation."
       },
       "readback": "Category 0x19 contains eight {type,inst} slots at each of 64 indices. Index 0 initially contains the owner-reported accidental Preamp 1 effect (type 6, instance 0); no post-load slot readback occurs in the new capture, so write-to-readback correlation remains a test requirement. Category 0x15:0 supplies remaining counts; 0x0c:0 has passive witnesses but remains query-guarded.",
-      "notes": "AFX captured-effect test operations are an explicit Orion-only scope extension requested by the owner. The picker supports the five captured load types on the tested index0 rack; other devices, unmeasured effects, bypass and stereo parameters remain unsupported. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
+      "notes": "AFX captured-effect test operations are an explicit Orion-only scope extension requested by the owner. The picker supports the five captured load types on operator-selected mono indices0–31 with fresh selected-chain readback and post-write verification; other devices, unmeasured effects, bypass and stereo parameters remain unsupported. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
     },
     "state_report": {
       "magic_offset": 0,
@@ -1398,7 +1398,7 @@
           "record_stride": 1,
           "fields": [{"name": "linked", "offset": 0, "type": "u8"}],
           "status": "capture-confirmed",
-          "evidence": "AntelopeAudio/orionstudioiii/panels/report_format_2.3.1 and logs/managerserver.txt: GET_AFX_LINKS returns 32 linked bytes."
+          "evidence": "AntelopeAudio/orionstudioiii/panels/report_format_2.3.1 and logs/managerserver.txt: GET_AFX_LINKS returns 32 linked bytes. 2026-10-01 direct HID trials independently verified space4 pair0–15 against matching records0–15 (0=off,1=on), restoring all five tables exactly after each trial. Records16–31 remain unmapped; raw transactions stay local."
         },
         {
           "kind": "afx_instance_counts",
@@ -1483,7 +1483,7 @@
         "0x06": "CHANNEL STATUS -- one byte per physical input channel, SAME packing as the 0x73 state report status array (state_report.status_base_offset 61 / status_bits): (phase_invert<<6)|(phantom<<4)|(mode&0x03). DECODED + differential-write confirmed 2026-09-03 (`set-invert 7 on` -> byte [7]=0x40; `set-mode 7 line` -> 0x41; phantom bit 0x10 follows the same shared encoding, not re-exercised -- no +48V on the reference unit during the sweep). protocol.parse_channel_status_record.",
         "0x07": "EQ / filter band data -- same `<freq LE16><Q LE16 x100><gain LE16 signed><mode>` stride as the surround per-speaker EQ (0x1a below, frame.surround_speaker). Records are HETEROGENEOUS (live-read 2026-09-04): idx 0 and idx 1 are 8 x a flat 5-band EQ (30/200/1k/5k/15k Hz, Q 0.71, gain 0, modes 0/2/2/2/1); idx 2 is 16 x a 19-byte record `01 <e803=1000> 0000 <2710=10000> 0000 ffff <64=100> 00000000 <18=24> 00` that looks like a per-band RANGE/capability descriptor, not live state. Purpose unresolved -- possibly a monitor/phones EQ or a capability table for the surround EQ. NOT a per-input-channel EQ (the Synergy Core has none -- input EQ is an AFX plugin). Not in the 0x74 connect walk, so no safe index bound above 0.",
         "0x0a": "AuraVerb parameters -- DECODED + HARDWARE-CONFIRMED 2026-09-03 (protocol.parse_auraverb_record). Single record (index 0). Layout: a 0x00 header byte, then four 11-byte blocks (Mix 1..4); the 43-byte record truncates block 4 to 9 bytes. Each block = the frame.auraverb_command payload minus its [18] mix byte: [0]room_size [1]color [2]pre_delay [3]0x64(wet const) [4]early_reflection_gain [5]late_reflection_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled(01/00) [10]0xff(const). Decoded by differential readback -- set one param via `auraverb --<flag>`, re-read, see which byte moved; every param + the enable bit pinned this way and writing the pre-sweep values back reproduced the record byte-for-byte. CLI `auraverb` now live-reads this and does a verified read-modify-write; selftest.py t_auraverb / t_write_auraverb.",
-        "0x0b": "MULTIPLEXED LINK TABLES -- index 0 = six Preamp pair flags; index 1 = eight ADAT pair flags; index 2 = one S/PDIF pair flag; index 3 = 64 mixer pair flags; index 4 = 32 AFX channel-link flags. Input write selectors and matching readback tables 0/1/2 were verified by direct device transactions and Windows VM indicators on 2026-09-30. Mixer/AFX transition correlation remains pending. Each nested record is one u8 linked value. The Launcher repeats index 3 around mixer reads as a sequencing marker. See frame.readback.record_layouts and protocol.parse_link_table.",
+        "0x0b": "MULTIPLEXED LINK TABLES -- index 0 = six Preamp pair flags; index 1 = eight ADAT pair flags; index 2 = one S/PDIF pair flag; index 3 = 64 mixer pair flags; index 4 = 32 AFX channel-link flags. Input write selectors and matching readback tables 0/1/2 were verified by direct device transactions and Windows VM indicators on 2026-09-30. Mixer transition correlation remains pending. On 2026-10-01 all16 AFX space4 pairs changed only corresponding index4 records0–15 and restored exactly; records16–31 remain unmapped. Each nested record is one u8 linked value. The Launcher repeats index 3 around mixer reads as a sequencing marker. See frame.readback.record_layouts and protocol.parse_link_table.",
         "0x0c": "AFX INSTANCE COUNTS -- index 0 = 90 available type/count records; index 1 = 90 maximum type/count records according to the panel schema. The outer category index is intentionally unbounded until a device capture confirms that both indices are safe; see frame.readback.record_layouts.",
         "0x0d": "scalar 0x18 (=24). Re-read 2026-09-04, same value. Meaning unknown; stable across reads so it is a constant or a slowly-changing capability, not live state. Not in the 0x74 connect walk (no safe index bound above 0).",
         "0x11": "ASSIGNMENT / FEATURE STATE -- index 0 is one-byte assignment status; index 1 is a 200-byte feature mask. This is separate from the S/PDIF link flag at category 0x0b index 2 record 0.",
@@ -1875,7 +1875,7 @@
       "side_effects": "Engaging a pair's link immediately triggered fresh SET_PARAM(input_mode) and/or SET_PARAM(gain) commands for the SECOND (higher-numbered) channel of that pair -- consistent with the device syncing that channel's mode/gain to the first channel's current settings. Seen for pairs 1, 3, 4, 5 (channels ch4/ch8/ch10/ch12); not seen for pairs 0 or 2, most likely because those channels already matched, not because linking behaves differently for them. CORRECTED 2026-08 (user real-hardware test): sending ONLY the raw SET_LINK frame (opcode 0x14/param_id 0xa2) engages a real link flag on the device -- visible on the Orion's own control panel -- but the device firmware does NOT itself propagate mode/gain to the other channel; each channel keeps whatever value it already had. The mode/gain sync described above is the official Launcher software sending its own separate SET_PARAM(input_mode)/SET_PARAM(gain) commands right after the link command, not a firmware side effect of SET_LINK itself. Client software that wants Launcher-equivalent link behavior (this includes this repo's own cli.py as of 2026-08) must send that sync itself.",
       "live_sync_while_linked": "CONFIRMED (capture ch-link-gain-ph-inv-test, 2026-08): while a pair is linked, changing gain, phantom, OR phase_invert on either channel is mirrored to the other channel on essentially every command -- gain_base_offset bytes for both channels moved in lockstep through a full ramp (offsets 49 and 50 tracking together, ~8ms apart), and status_base_offset bytes for both channels flipped together for both the phantom bit (0x10) and the phase_invert bit (0x40). This supersedes the older 'gain/mode only' note below: gain, phantom, and phase_invert all live-sync while linked. input_mode does NOT live-sync -- see mode_requires_unlink. CORRECTED 2026-08: re-examining the same ch-link-gain-ph-inv-test.tsv capture that established this shows the outgoing 0x70/0x13 frames directly -- every gain change during the linked sweep produced TWO separate outgoing SET_PARAM(gain=0x50, channel, value) frames (channel 0 then channel 1, ~2ms apart, same value), not one command with an observed two-channel effect. So \"mirrored to the other channel\" here means the Launcher software issued two commands, one per channel -- not that the device propagates a single write. Same conclusion as side_effects above: this is an application-layer behavior that any alternative controller (including this repo's cli.py) must replicate itself if it wants the same result; the device does not do it for you. STRONGEST CONFIRMATION (user, 2026-08): turning the PHYSICAL front-panel gain wheel on a linked channel moves ONLY that channel -- the linked partner does not follow. The hardware wheel bypasses all host software on the input path, so this proves the device firmware has zero link-propagation logic; and the Launcher evidently only mirrors changes it initiates from its own UI, not hardware-wheel changes.",
       "mode_requires_unlink": "CONFIRMED (same capture, matches user report): input_mode cannot be changed on a linked pair -- the Launcher grays out the control. The captured workflow was unlink -> change input_mode independently per channel (status_base_offset mode bits for ch1 and ch2 changed at separate, unsynced moments, each also resetting that channel's gain to a value appropriate for the new mode's range) -> re-link. Once re-linked, subsequent phase_invert/phantom/gain changes resumed syncing across both channels immediately (no extra step needed for those three). This is expected device behavior, not a bug in the CLI or a broken link.",
-      "readback": "Category 0x0b has five safely bounded nested tables. Verified input mappings are index 0 = six Preamp pair flags, index 1 = eight ADAT pair flags, and index 2 = the S/PDIF L/R flag. SET_LINK spaces 0/1/2 address those respective tables. Direct device transitions, ADAT restoration trials, Windows VM indicators, and corrected WebUI operation confirmed the input mappings on 2026-09-30. Complete tables drive the WebUI input-link indicators. Mixer and AFX transitions remain uncorrelated; CLI gain mirroring retains its separately labeled local link cache.",
+      "readback": "Category 0x0b has five safely bounded nested tables. Verified input mappings are index 0 = six Preamp pair flags, index 1 = eight ADAT pair flags, and index 2 = the S/PDIF L/R flag. SET_LINK spaces 0/1/2 address those respective tables. Direct device transitions, ADAT restoration trials, Windows VM indicators, and corrected WebUI operation confirmed the input mappings on 2026-09-30. Complete tables drive the WebUI input-link indicators. AFX space4 pairs0–15 were verified against 0x0b:4 records0–15 on2026-10-01; mixer transitions remain uncorrelated; CLI gain mirroring retains its separately labeled local link cache.",
       "notes": "No dedicated link bit appears in the 0x73 state report; input link flags are queried through category 0x0b. Preamp, ADAT, and S/PDIF use separate write spaces and readback tables. Earlier tests sent the Launcher's incorrect digital-input selectors and therefore observed another bank or no valid pair; they did not establish a missing device readback. The corrected WebUI reads the device flags and the user confirmed retention across controller restarts."
     },
     "adat_gain": {
@@ -2297,9 +2297,7 @@
       "enabled": true,
       "experimental": true,
       "status": "capture-observed",
-      "channels": [
-        0
-      ],
+      "channels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
       "slot_count": 8,
       "effects": {
         "memory_brigade": {
@@ -2349,10 +2347,14 @@
           ]
         }
       },
+      "verified_channel_indices": [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+      "channel_readback_evidence": "2026-10-01 owner-authorized mono Memory Cat load/remove trials on indices2–31: fresh matching 0x19 readback verified every write, original chains restored exactly, other user-facing channels unchanged. Existing AFX1–2 link/effects retained. Raw HID IN readbacks stay local.",
       "link_space": 4,
       "link_pair_count": 16,
-      "link_readback_confirmed": false,
-      "note": "Explicit owner-requested effect picker and pair-link buttons. Load/remove/move only captured effect types and instance indices on the tested index0 rack. Other types remain disabled; resource counters do not prove license ownership. Link state shown as last sent this session, never inferred from the unconfirmed 32-byte table. No stereo parameter mirroring."
+      "link_readback_confirmed": true,
+      "link_pair_records": [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15]],
+      "link_readback_evidence": "2026-10-01 owner-authorized direct HID trials: each space4 pair0–15 changed only matching 0x0b:4 record0–15 from0 to1; all five link tables restored exactly after each trial. Records16–31 are not mapped to the 32 user-facing channels. Raw transactions stay local.",
+      "note": "Explicit owner-requested effect picker and pair-link buttons. Load/remove/move only captured effect types and instance indices on operator-selected mono channels0–31. Direct load/remove round trips on2026-10-01 confirmed write channels2–31 against matching 0x19 indices and restored original chains; reorder additionally verified on2/31. Channel0 was owner-tested earlier; channel1 mono write remains unexercised while1–2 are linked. Every chain write verifies its selected index. Other types remain disabled; resource counters do not prove license ownership. Pair indicators use confirmed 0x0b:4 records0–15. Unknown/missing records remain unavailable. No stereo parameter mirroring."
     },
     "afx_memorycat_test": {
       "enabled": true,
@@ -2360,9 +2362,7 @@
       "status": "capture-observed",
       "effect_id": "memory_brigade",
       "type_id": 73,
-      "channels": [
-        0
-      ],
+      "channels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
       "readback_category": "0x19",
       "readback_index": 0,
       "slot_count": 8,
@@ -2548,7 +2548,7 @@
     ],
     "allowed_opcodes_note": "0x53 (SET_ROUTE) and 0x17 (SET_MIX) are hardware round-trip confirmed: `route` self-verifies every complete destination-group write, and `mix-set` read-modify-writes one complete mixer strip and verifies the result. 0x1d (SET_AURAVERB) is the bundled AuraVerb command with a confirmed category-0x0a readback. 0xab (SET_SURROUND_GLOBAL) is allowed for the WebUI's 2.0/2.1 global format, delay/level, speaker-mask, and Bass Management read-modify-write paths. 0x87 (SET_SURROUND_SPEAKER) is allowed for the bounded per-speaker delay/level/phase and EQ writes that start from a fresh category-0x1a record; all mapped fields have hardware readback confirmation and each write preserves the rest of that speaker record.",
     "forbidden_opcodes": ["0x01", "0x02", "0x1a", "0x1c", "0x23", "0x20", "0x7c"],
-    "forbidden_opcodes_note": "Generic builders refuse 0x01/0x02/0x1a/0x1c/0x20/0x23/0x7c. Hardware-dangerous families remain blocked. The explicit afx_memorycat_test contract permits only typed, operator-triggered Orion candidates for type 73 on channel index 0: whole-chain captured-effect load/replace/remove/reorder with fresh readbacks and post-write verification, or full eight-field parameter Apply for captured instance indices 0-7. The afx_rack_test contract additionally permits captured load types75/27/70/78 with measured indices0/1, alongside Memory Cat73/0-7. Generic raw AFX writes, unmeasured effects/devices/channels and stereo parameter writers remain blocked. Parameter readback and switch polarity are unverified. Bypass 0x14/0x98 is observation-only (state at 17, type at 18, instance at 19); polarity is unknown. Runtime readback bounds are unchanged.",
+    "forbidden_opcodes_note": "Generic builders refuse 0x01/0x02/0x1a/0x1c/0x20/0x23/0x7c. Hardware-dangerous families remain blocked. The explicit afx_memorycat_test contract permits only typed, operator-triggered Orion candidates for type 73 on operator-selected channel indices0–31: whole-chain captured-effect load/replace/remove/reorder with fresh readbacks and post-write verification, or full eight-field parameter Apply for captured instance indices 0-7. The afx_rack_test contract additionally permits captured load types75/27/70/78 with measured indices0/1, alongside Memory Cat73/0-7. Generic raw AFX writes, unmeasured effects/devices, channels outside0–31 and stereo parameter writers remain blocked. Parameter readback and switch polarity are unverified. Bypass 0x14/0x98 is observation-only (state at 17, type at 18, instance at 19); polarity is unknown. Runtime readback bounds are unchanged.",
     "channel_bounds": {
       "min": 0,
       "max": 11

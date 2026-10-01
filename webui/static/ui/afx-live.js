@@ -12,14 +12,14 @@ function afxLiveChanged(draft) {
     return;
   }
   if (!afxTestActive() || !AFX_TEST_STATE.online || !AFX_TEST_STATE.writes_enabled) return;
-  if (AFX_TEST_STATE.links?.some(linked => linked === true)) {
+  if (afxTestLinked(AFX_CHANNEL)) {
     AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
       'Unlink AFX pairs before editing parameters; stereo parameter sharing is not available yet.';
     return;
   }
   const values = Object.fromEntries(Object.entries(draft.values).map(([id, value]) => [id, Number(value)]));
   if (Object.values(draft.values).some(value => value == null)) return;
-  AFX_LIVE_PENDING.set(draft.instance, {values, session: AFX_TEST_SESSION});
+  AFX_LIVE_PENDING.set(draft.instance, {channel: AFX_CHANNEL, values, session: AFX_TEST_SESSION});
   if (AFX_LIVE_TIMER == null && !AFX_LIVE_INFLIGHT)
     AFX_LIVE_TIMER = setTimeout(afxLiveFlush, 60);
 }
@@ -34,7 +34,7 @@ async function afxLiveFlush() {
   if (AFX_TEST_BUSY) { AFX_LIVE_TIMER = setTimeout(afxLiveFlush, 60); return; }
   const [instance, pending] = AFX_LIVE_PENDING.entries().next().value;
   AFX_LIVE_PENDING.delete(instance);
-  if (pending.session !== AFX_TEST_SESSION || !AFX_TEST_STATE.slots?.some(row => row.type === 73 && row.instance === instance)) {
+  if (pending.session !== AFX_TEST_SESSION || pending.channel !== AFX_CHANNEL || !afxTestSlots(pending.channel)?.some(row => row.type === 73 && row.instance === instance)) {
     if (AFX_LIVE_PENDING.size) AFX_LIVE_TIMER = setTimeout(afxLiveFlush, 60);
     return;
   }
@@ -44,7 +44,7 @@ async function afxLiveFlush() {
   try {
     const response = await fetch('/api/afx/memorycat-test/parameters', {
       method: 'POST', headers: {'content-type': 'application/json'},
-      body: JSON.stringify({instance, values: pending.values}),
+      body: JSON.stringify({channel: pending.channel, instance, values: pending.values}),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Live parameter write failed');

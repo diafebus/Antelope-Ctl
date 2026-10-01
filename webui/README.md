@@ -64,11 +64,12 @@ compatibility.
     offers a 32-channel selector and a single channel strip on the left,
     with that channel's eight rack units together on the right. Selection
     persists across popup close/reopen while the main page is open for
-    profiles without a device pilot. Orion opens directly on AFX 1's device
-    rack with per-slot effect selectors for captured Orion types. The pair-link
-    button follows the selected channel and menu labels show last-sent links. Local preview
-    is an explicit alternative. Slot
-    contents remain unavailable outside the explicit channel-index-0 pilot.
+    profiles without a device pilot. Orion supports device racks on AFX 1–32.
+    Categorized effect selectors sit in the left slot list; its compact pair-link
+    button sits in the channel header. Device link readbacks mark linked channel
+    partners. Both the left list and rack support drag reordering, including
+    dragging between them. Refresh reads the selected slots and link table.
+    Local preview is an explicit alternative; missing device reads remain unavailable.
     Memory Cat has six draggable knobs and two mode selectors; after the first
     full Apply, edits send live through the throttled afx-live.js module;
     previews and device slot state are separate. The pilot exposes guarded

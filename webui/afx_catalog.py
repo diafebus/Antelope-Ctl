@@ -1,6 +1,14 @@
 """Presentation metadata for local AFX rack previews; no device commands."""
 from antelope import afx
 
+MENU_CATEGORIES = {
+    'compressor': 'Dynamics', 'dynamics': 'Dynamics',
+    'eq': 'EQ & Filters', 'chorus': 'Modulation', 'modulation': 'Modulation',
+    'delay': 'Delay & Reverb', 'reverb': 'Delay & Reverb',
+    'pitch': 'Pitch & Tuning', 'amp': 'Amps & Cabinets',
+    'preamp': 'Preamps', 'saturation': 'Saturation & Distortion',
+}
+
 
 def effect_choices(catalog, profile_name, profile):
     try:
@@ -14,6 +22,7 @@ def effect_choices(catalog, profile_name, profile):
         spec = allowed.get(effect['id'])
         type_id = implementation.get('type_id')
         choices.append({'id': effect['id'], 'name': effect['name'],
+                        'category': MENU_CATEGORIES.get(effect.get('category'), 'Other'),
                         'type_id': type_id,
                         'loadable': bool(spec and spec['type_id'] == type_id)})
     return sorted(choices, key=lambda item: item['name'].casefold())

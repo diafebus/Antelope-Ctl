@@ -9,7 +9,7 @@
     "gazelle_profile": "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json",
     "gazelle_findings": "https://github.com/Gazelle-ctl/gazelle-docs/blob/main/protocol/REPLIES.md",
     "measurement_date": "2026-09-13",
-    "notes": "Gazelle documents 80 named types within a 90-entry enumeration on Discrete 4 Synergy Core; the remaining unnamed types are omitted. The declaration-derived control names do not establish their ranges, packing, or a write contract. Names not matched to public product documentation retain the Gazelle source name; product descriptions and categories remain null until established."
+    "notes": "Gazelle documents 80 named types within a 90-entry enumeration on Discrete 4 Synergy Core; the remaining unnamed types are omitted. The declaration-derived control names do not establish their ranges, packing, or a write contract. Names not matched to public product documentation retain the Gazelle source name; product descriptions remain null until established. Menu categories added on2026-10-01 are presentation groupings based on effect/control names, not device type IDs or license evidence. Uncertain purposes remain Other."
   },
   "effects": [
     {
@@ -66,7 +66,7 @@
       "id": "antares_autotune",
       "name": "antares_autotune",
       "source_name": "antares_autotune",
-      "category": null,
+      "category": "pitch",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -136,7 +136,7 @@
       "id": "antelope_tremolo",
       "name": "antelope_tremolo",
       "source_name": "antelope_tremolo",
-      "category": null,
+      "category": "modulation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -185,7 +185,7 @@
       "id": "api_550",
       "name": "api_550",
       "source_name": "api_550",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -239,7 +239,7 @@
       "id": "api_550b",
       "name": "api_550b",
       "source_name": "api_550b",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -294,7 +294,7 @@
       "id": "atuner",
       "name": "atuner",
       "source_name": "atuner",
-      "category": null,
+      "category": "pitch",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -337,7 +337,7 @@
       "id": "audiobaton",
       "name": "audiobaton",
       "source_name": "audiobaton",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -391,7 +391,7 @@
       "id": "autowah",
       "name": "autowah",
       "source_name": "autowah",
-      "category": null,
+      "category": "modulation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -490,7 +490,7 @@
       "id": "ba_31",
       "name": "ba_31",
       "source_name": "ba_31",
-      "category": null,
+      "category": "preamp",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -536,7 +536,7 @@
       "id": "bae_10dcf",
       "name": "bae_10dcf",
       "source_name": "bae_10dcf",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -590,7 +590,7 @@
       "id": "bbd_126",
       "name": "BBD-126",
       "source_name": "BBD-126",
-      "category": null,
+      "category": "modulation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -699,7 +699,7 @@
       "id": "brainiac",
       "name": "Brainiac",
       "source_name": "Brainiac",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -752,7 +752,7 @@
       "id": "compressor",
       "name": "compressor",
       "source_name": "compressor",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -795,7 +795,7 @@
       "id": "deesser",
       "name": "Master De-Esser",
       "source_name": "deesser",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -866,7 +866,7 @@
       "id": "diode609",
       "name": "diode609",
       "source_name": "diode609",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -922,7 +922,7 @@
       "id": "distortion",
       "name": "distortion",
       "source_name": "distortion",
-      "category": null,
+      "category": "saturation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -969,7 +969,7 @@
       "id": "drum_all_nite",
       "name": "Drum-All-Nite",
       "source_name": "Drum-All-Nite",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1022,7 +1022,7 @@
       "id": "eq",
       "name": "eq",
       "source_name": "eq",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1071,7 +1071,7 @@
       "id": "filtek",
       "name": "filtek",
       "source_name": "filtek",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1127,7 +1127,7 @@
       "id": "gate_keeper",
       "name": "Gate Keeper",
       "source_name": "Gate Keeper",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1180,7 +1180,7 @@
       "id": "guitar_amp",
       "name": "guitar_amp",
       "source_name": "guitar_amp",
-      "category": null,
+      "category": "amp",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1240,7 +1240,7 @@
       "id": "guitar_cab",
       "name": "guitar_cab",
       "source_name": "guitar_cab",
-      "category": null,
+      "category": "amp",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1306,7 +1306,7 @@
       "id": "gyratec_xiv",
       "name": "gyratec_xiv",
       "source_name": "gyratec_xiv",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1371,7 +1371,7 @@
       "id": "gyratex_ix",
       "name": "gyratex_ix",
       "source_name": "gyratex_ix",
-      "category": null,
+      "category": "preamp",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1419,7 +1419,7 @@
       "id": "gyratex_x",
       "name": "gyratex_x",
       "source_name": "gyratex_x",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1470,7 +1470,7 @@
       "id": "harrison_32c",
       "name": "harrison_32c",
       "source_name": "harrison_32c",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1529,7 +1529,7 @@
       "id": "helios_69",
       "name": "helios_69",
       "source_name": "helios_69",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1580,7 +1580,7 @@
       "id": "impresser",
       "name": "impresser",
       "source_name": "impresser",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1634,7 +1634,7 @@
       "id": "instinct",
       "name": "Instinct",
       "source_name": "instinct",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1721,7 +1721,7 @@
       "id": "lang",
       "name": "lang",
       "source_name": "lang",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1775,7 +1775,7 @@
       "id": "liverpool",
       "name": "liverpool",
       "source_name": "liverpool",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -1825,7 +1825,7 @@
       "id": "marblewhite",
       "name": "marblewhite",
       "source_name": "marblewhite",
-      "category": null,
+      "category": "other",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2148,7 +2148,7 @@
       "id": "mg4",
       "name": "mg4",
       "source_name": "mg4",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2200,7 +2200,7 @@
       "id": "multiband",
       "name": "MultiBand",
       "source_name": "MultiBand",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2284,7 +2284,7 @@
       "id": "mvchorus",
       "name": "mvchorus",
       "source_name": "mvchorus",
-      "category": null,
+      "category": "modulation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2333,7 +2333,7 @@
       "id": "neumann_pev",
       "name": "neumann_pev",
       "source_name": "neumann_pev",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2382,7 +2382,7 @@
       "id": "neumann_w492",
       "name": "neumann_w492",
       "source_name": "neumann_w492",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2440,7 +2440,7 @@
       "id": "neumann_w495",
       "name": "neumann_w495",
       "source_name": "neumann_w495",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2492,7 +2492,7 @@
       "id": "neve_1023",
       "name": "neve_1023",
       "source_name": "neve_1023",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2545,7 +2545,7 @@
       "id": "neve_1073",
       "name": "neve_1073",
       "source_name": "neve_1073",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2597,7 +2597,7 @@
       "id": "neve_1073_mp",
       "name": "neve_1073_mp",
       "source_name": "neve_1073_mp",
-      "category": null,
+      "category": "preamp",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2644,7 +2644,7 @@
       "id": "neve_1084",
       "name": "neve_1084",
       "source_name": "neve_1084",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2699,7 +2699,7 @@
       "id": "opto2a",
       "name": "opto2a",
       "source_name": "opto2a",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2747,7 +2747,7 @@
       "id": "pitch_shifter",
       "name": "pitch_shifter",
       "source_name": "pitch_shifter",
-      "category": null,
+      "category": "pitch",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2794,7 +2794,7 @@
       "id": "powerex",
       "name": "powerex",
       "source_name": "powerex",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2844,7 +2844,7 @@
       "id": "powergate",
       "name": "powergate",
       "source_name": "powergate",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2894,7 +2894,7 @@
       "id": "pultec_eqp",
       "name": "pultec_eqp",
       "source_name": "pultec_eqp",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2946,7 +2946,7 @@
       "id": "pultec_hlf",
       "name": "pultec_hlf",
       "source_name": "pultec_hlf",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -2992,7 +2992,7 @@
       "id": "pultec_meq",
       "name": "pultec_meq",
       "source_name": "pultec_meq",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3042,7 +3042,7 @@
       "id": "rd_47",
       "name": "rd_47",
       "source_name": "rd_47",
-      "category": null,
+      "category": "preamp",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3088,7 +3088,7 @@
       "id": "reel_to_reel",
       "name": "reel_to_reel",
       "source_name": "reel_to_reel",
-      "category": null,
+      "category": "saturation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3142,7 +3142,7 @@
       "id": "space_flanger",
       "name": "space_flanger",
       "source_name": "space_flanger",
-      "category": null,
+      "category": "modulation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3193,7 +3193,7 @@
       "id": "ssl4kbus",
       "name": "ssl4kbus",
       "source_name": "ssl4kbus",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3247,7 +3247,7 @@
       "id": "ssl4kstrip",
       "name": "ssl4kstrip",
       "source_name": "ssl4kstrip",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3305,7 +3305,7 @@
       "id": "ssl_black",
       "name": "ssl_black",
       "source_name": "ssl_black",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3364,7 +3364,7 @@
       "id": "ssl_brown",
       "name": "ssl_brown",
       "source_name": "ssl_brown",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3423,7 +3423,7 @@
       "id": "ssl_orange",
       "name": "ssl_orange",
       "source_name": "ssl_orange",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3482,7 +3482,7 @@
       "id": "ssl_pink",
       "name": "ssl_pink",
       "source_name": "ssl_pink",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3541,7 +3541,7 @@
       "id": "staylevin",
       "name": "staylevin",
       "source_name": "staylevin",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3589,7 +3589,7 @@
       "id": "summit_100a",
       "name": "summit_100a",
       "source_name": "summit_100a",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3637,7 +3637,7 @@
       "id": "telefunken_v76",
       "name": "telefunken_v76",
       "source_name": "telefunken_v76",
-      "category": null,
+      "category": "preamp",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3685,7 +3685,7 @@
       "id": "tube_176",
       "name": "tube_176",
       "source_name": "tube_176",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3734,7 +3734,7 @@
       "id": "tubechild670",
       "name": "tubechild670",
       "source_name": "tubechild670",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3842,7 +3842,7 @@
       "id": "u473a",
       "name": "u473a",
       "source_name": "u473a",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3896,7 +3896,7 @@
       "id": "uad_1176",
       "name": "uad_1176",
       "source_name": "uad_1176",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3945,7 +3945,7 @@
       "id": "uad_1178",
       "name": "uad_1178",
       "source_name": "uad_1178",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -3994,7 +3994,7 @@
       "id": "vca160",
       "name": "VCA160",
       "source_name": "VCA160",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4041,7 +4041,7 @@
       "id": "veq56",
       "name": "veq56",
       "source_name": "veq56",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4096,7 +4096,7 @@
       "id": "veq_432c",
       "name": "VEQ-432C",
       "source_name": "VEQ-432C",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4153,7 +4153,7 @@
       "id": "veq_stu_089",
       "name": "VEQ-STU 089",
       "source_name": "VEQ-STU 089",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4204,7 +4204,7 @@
       "id": "veq_stu_169",
       "name": "VEQ-STU 169",
       "source_name": "VEQ-STU 169",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4254,7 +4254,7 @@
       "id": "veq_stu_900",
       "name": "VEQ-STU 900",
       "source_name": "VEQ-STU 900",
-      "category": null,
+      "category": "eq",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4313,7 +4313,7 @@
       "id": "vibrato",
       "name": "vibrato",
       "source_name": "vibrato",
-      "category": null,
+      "category": "modulation",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4366,7 +4366,7 @@
       "id": "vp_440",
       "name": "VP-440",
       "source_name": "VP-440",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4425,7 +4425,7 @@
       "id": "vp_610",
       "name": "VP-610",
       "source_name": "VP-610",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
@@ -4483,7 +4483,7 @@
       "id": "x903",
       "name": "X903",
       "source_name": "X903",
-      "category": null,
+      "category": "dynamics",
       "description": null,
       "status": "reference-only",
       "evidence": [
