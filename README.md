@@ -22,7 +22,7 @@ used; the device firmware is not touched.
 | **`docs/profile-labeling.md`** | the cross-client labels and feature-manifest contract — how to add a device and keep shared parameter vocabulary consistent |
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
-| **`docs/orion-afx-workflow.md`** | current AFX evidence, Linux readback recording, ordered effect implementation and minimal vendor captures |
+| **`docs/orion-afx-workflow.md`** | current AFX evidence, existing tools, proposed Launcher batch automation and effect completion criteria |
 | **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` and the shared `afx_effects.json` reference catalog |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
@@ -170,9 +170,9 @@ establish absence of a separate parameter-readback protocol; the new restart
 capture identifies it. That older restoration trial remains send-only evidence.
 See [PROTOCOL.md §12a](PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls)
 for the effect IDs, complete device-test findings and remaining evidence limits.
-The [Orion AFX workflow](docs/orion-afx-workflow.md) sets the next implementation
-order and documents Linux readback recording, reuse of existing captures and
-the minimal vendor-session fallback.
+The [Orion AFX workflow](docs/orion-afx-workflow.md) documents Linux readback
+recording, reuse of existing captures and proposed Launcher batch automation,
+with completion criteria for each available effect.
 
 **Local preview** explicitly switches to drafts; **Connect device rack**
 returns to device slots. Opening the rack or changing channels sends no
