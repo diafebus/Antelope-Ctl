@@ -15,12 +15,15 @@ ignored `AUDIT.md` holds the current work order.
 | Memory Cat Brigade | 73 | Eight fields, fresh parameter/processing reads for instances0–2, Launcher-restart retention, owner-confirmed switch labels |
 | Instinct | 75 | Load/chain, 93 parameter writes in the linked-control capture, opcode`0x7c`, paired writes, observed query75/1; control labels/scales unresolved |
 | Master De-Esser | 27 | Load/chain, 126 parameter writes in the linked-control capture, opcode`0x20`, paired writes, observed query27/1; control labels/scales unresolved |
-| V12 Chorus | 70 | Load/reorder and a parameter block, without changing control bytes in that capture |
-| BBD Chorus | 78 | Demo load/reorder and parameter blocks, without changing control bytes in that capture; query78/0 observed separately |
+| V12 Chorus | 70 | Labelled modulation capture: eleven changed fields and245 mirrored pairs; reader/restoration still unverified |
+| BBD Chorus | 78 | Demo modulation capture: five changed fields and85 mirrored pairs; stereo-mode mapping and reader/restoration still unverified |
 
 Instinct and De-Esser changes can reduce new capture work, but their individual
 control order was not labelled. Do not assign names from catalog declaration
-order. V12 and BBD still need isolated labelled changes. Exact frames, wire maps
+order. V12/BBD's isolated labelled gestures are now mapped in
+[the modulation findings](orion-afx-modulation.md); their remaining gaps are
+fresh parameter readback, bounded restoration and BBD stereo-mode polarity.
+Exact frames, wire maps
 and confirmation limits belong in
 [PROTOCOL.md §12a](../PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls)
 and the [Orion profile](../profiles/orion_studio_sc.json).

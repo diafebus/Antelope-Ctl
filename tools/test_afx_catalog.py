@@ -17,8 +17,8 @@ class AfxCatalogTests(unittest.TestCase):
         result = preview_catalog(self.catalog, "orion_studio_sc.json")
         self.assertEqual(result["mode"], "preview")
         self.assertFalse(result["device_writes"])
-        self.assertEqual(len(result["effects"]), 1)
-        effect = result["effects"][0]
+        self.assertEqual(len(result["effects"]), 3)
+        effect = next(e for e in result["effects"] if e['id'] == 'memory_brigade')
         self.assertEqual(effect["id"], "memory_brigade")
         self.assertEqual(len(effect["controls"]), 8)
         self.assertEqual(sum(c["kind"] == "continuous" for c in effect["controls"]), 6)
@@ -43,7 +43,39 @@ class AfxCatalogTests(unittest.TestCase):
         implementation = next(i for i in effect["implementations"]
                               if i["profile"] == "orion_studio_sc.json")
         del implementation["control_encodings"]["size"]
-        self.assertEqual(preview_catalog(catalog, "orion_studio_sc.json")["effects"], [])
+        self.assertNotIn('memory_brigade', {e['id'] for e in preview_catalog(catalog, "orion_studio_sc.json")["effects"]})
+
+    def test_modulation_panels_exclude_opaque_bytes_and_keep_unknown_modes_display_only(self):
+        result = preview_catalog(self.catalog, 'orion_studio_sc.json')
+        panels = {e['id']: e for e in result['effects']}
+        v12 = panels['turboensembler']
+        self.assertEqual(v12['panel']['rows'][0], ['voices', 'delay', 'depth', 'feedback', 'gain'])
+        self.assertNotIn('presetIndex', {c['id'] for c in v12['controls']})
+        controls = {c['id']: c for c in v12['controls']}
+        self.assertEqual(controls['gain']['range'], [0, 255])
+        self.assertEqual(controls['colorShifter']['range'], [0, 255])
+        bbd = {c['id']: c for c in panels['bbdchorus']['controls']}
+        self.assertEqual(bbd['chvibrato']['options'], {'0': 'Vibrato', '1': 'Chorus'})
+        self.assertFalse(bbd['type']['device_available'])
+        self.assertEqual(set(bbd), {'level', 'intensity', 'depth', 'rate', 'type', 'chvibrato'})
+        for effect in (v12, panels['bbdchorus']):
+            self.assertNotIn('commands', effect)
+            for field in effect['controls']:
+                self.assertNotIn('offset', field)
+                self.assertNotIn('wire_enum', field)
+
+    def test_missing_modulation_knob_does_not_make_a_partial_panel(self):
+        catalog = copy.deepcopy(self.catalog)
+        v12 = next(e for e in catalog['effects'] if e['id'] == 'turboensembler')
+        implementation = next(i for i in v12['implementations'] if i['profile'] == 'orion_studio_sc.json')
+        implementation['control_encodings'].pop('gain')
+        self.assertNotIn('turboensembler', {e['id'] for e in preview_catalog(catalog, 'orion_studio_sc.json')['effects']})
+
+    def test_modulation_browser_fixture_matches_the_catalog(self):
+        fixture = json.loads((Path(__file__).resolve().parents[1] / 'tools/fixtures/afx_modulation_presentations.json').read_text())
+        actual = preview_catalog(self.catalog, 'orion_studio_sc.json')
+        actual['effects'] = [e for e in actual['effects'] if e['id'] in ('bbdchorus', 'turboensembler')]
+        self.assertEqual(fixture, actual)
 
 
     def test_picker_enables_only_independently_captured_orion_types(self):

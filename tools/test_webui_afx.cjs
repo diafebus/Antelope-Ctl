@@ -60,7 +60,10 @@ const context = vm.createContext({
 // Capacity-only behavior must stay request-free when no device pilot is enabled.
 context.PROFILE.runtime_contracts.afx_memorycat_test.enabled = false;
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-controls.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-memorycat.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-v12.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-bbd.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-test.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-live.js'), 'utf8'), context);
 

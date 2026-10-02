@@ -13,7 +13,7 @@
 .afx-effect-control { position:relative; display:flex; flex-direction:column; align-items:center; min-width:0; gap:8px; }
 .afx-control-label { font-size:11px; color:#c8c6d3; }
 .afx-knob { position:relative; display:grid; place-items:center; width:58px; height:58px; border-radius:50%;
-  background:conic-gradient(from 225deg,#b78aef var(--afx-fill),#41434d 0 270deg,transparent 0);
+  background:conic-gradient(from 225deg,#b78aef 270deg,transparent 0);
   touch-action:none; cursor:ns-resize; }
 .afx-knob-cap { position:relative; width:46px; height:46px; border-radius:50%;
   border:1px solid #585763; background:radial-gradient(circle at 35% 25%,#484753,#24232b 75%);

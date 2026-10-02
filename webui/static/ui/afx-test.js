@@ -172,7 +172,13 @@ async function afxTestRequest(path, body) {
 function afxTestDraft(channel, slot) {
   if (!afxTestActive(channel)) return null;
   const record = afxTestSlots(channel)?.[slot];
-  if (record?.type !== 73) return null;
+  if (record?.type !== 73) {
+    const choice = AFX_TEST_CHOICES.find(effect => effect.type_id === record?.type);
+    if (!choice?.panel || !AFX_PANELS.has(choice.id)) return null;
+    // No parameter defaults, caches, requests or new writer for these effects.
+    return {live: true, parameterAvailable: false, instance: record.instance,
+      effect: choice.panel, values: Object.fromEntries(choice.panel.controls.map(c => [c.id, null]))};
+  }
   if (!AFX_TEST_DRAFTS.has(record.instance)) {
     const fields = PROFILE.runtime_contracts.afx_memorycat_test.parameter_offsets;
     const stateFields = PROFILE.frame.afx_slot.instance_state_readback.effects.memory_brigade.fields;

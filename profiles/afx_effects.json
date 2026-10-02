@@ -686,14 +686,170 @@
             "recall": null,
             "parameters": null
           },
-          "control_encodings": {},
+          "control_encodings": {
+            "level": {
+              "offset": 20,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Level Control",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 210447-215783; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "intensity": {
+              "offset": 21,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Chorus Intensity",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 216443-221735; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "rate": {
+              "offset": 22,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Vibrato Rate",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 224185-224403, 228819-229529; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "depth": {
+              "offset": 23,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Vibrato Depth",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 222393-222667, 227191-228009, 230593-232091; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "chvibrato": {
+              "offset": 24,
+              "range": [
+                0,
+                1
+              ],
+              "display_range": [
+                0,
+                1
+              ],
+              "kind": "enum",
+              "label": "Chorus / Vibrato",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 190895, 191805, 225671; labelled gesture and isolated byte changes agree with the existing declaration. Owner initial Chorus; initial block is 1, isolated switch is 0. Do not inherit Memory Cat polarity."
+              ],
+              "options": {
+                "0": "Vibrato",
+                "1": "Chorus"
+              },
+              "wire_enum": {
+                "0": "Vibrato",
+                "1": "Chorus"
+              }
+            }
+          },
           "evidence": [
-            "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng"
+            "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng",
+            "antelope-orion-afx-modulation-tab.pcapng"
           ],
-          "notes": "Owner-labelled Orion loading sequence identifies this type in full-chain assignments. Linked channels use distinct instance indices; no parameter encoding or full-license status is inferred from loadability. No runtime writer supports this effect.",
-          "type_id_write_status": "unconfirmed"
+          "notes": "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. 170 writes, 85 right-1/left-0 mirrored pairs. Owner identifies demo use; no ownership claim. No state query/reply in this capture. UNVERIFIED: fresh readback, bounded write/verify/restore, restart and power-cycle retention. Opaque bytes remain preserved; no runtime parameter reader/writer enabled.",
+          "type_id_write_status": "unconfirmed",
+          "parameter_observation": {
+            "prefix_hex": "700000001c0000000000000000000000d50a",
+            "frame_length": 28,
+            "selector": "0xd5",
+            "payload_id": 21,
+            "data_bytes": 10,
+            "type_offset": 18,
+            "instance_offset": 19,
+            "data_offset": 20,
+            "write_complete_block": true,
+            "preserve_other_controls": true,
+            "preserved_fields": {
+              "type": {
+                "offset": 25,
+                "readback_offset": null,
+                "evidence": "Constant 0; no change isolates Basic/Wide/Split/Cross. Wire polarity is UNVERIFIED."
+              },
+              "bypass": {
+                "offset": 26,
+                "readback_offset": null,
+                "evidence": "Constant 0; not the separate selector-0x98 PWR gesture. Field semantics UNVERIFIED."
+              },
+              "peakmeter": {
+                "offset": 27,
+                "readback_offset": null,
+                "evidence": "Constant 96 (0x60); meter meaning and scale UNVERIFIED. Preserve, never zero-fill or expose as a knob."
+              }
+            },
+            "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults."
+          },
+          "state_readback": null,
+          "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c"
         }
-      ]
+      ],
+      "panel": {
+        "rows": [
+          [
+            "level",
+            "intensity",
+            "depth",
+            "rate"
+          ]
+        ],
+        "switches": [
+          "type",
+          "chvibrato"
+        ],
+        "dependencies": {},
+        "evidence": "https://en.antelopeaudio.com/products/bbd-chorus/ and official product panel image; original Gazelle controls follow grouping without copying vendor artwork.",
+        "display_only_controls": {
+          "type": {
+            "label": "Stereo Type",
+            "kind": "enum",
+            "options": {
+              "basic": "Basic",
+              "wide": "Wide",
+              "split": "Split",
+              "cross": "Cross"
+            },
+            "evidence": "Public product modes; no measured wire mapping. Local preview choices only."
+          }
+        }
+      }
     },
     {
       "id": "brainiac",
@@ -3885,14 +4041,260 @@
             "recall": null,
             "parameters": null
           },
-          "control_encodings": {},
+          "control_encodings": {
+            "humanize": {
+              "offset": 20,
+              "range": [
+                0,
+                1
+              ],
+              "display_range": [
+                0,
+                1
+              ],
+              "kind": "enum",
+              "label": "Humanize",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 96657/98883; labelled gesture and isolated byte changes agree with the existing declaration."
+              ],
+              "options": {
+                "0": "Off",
+                "1": "On"
+              },
+              "wire_enum": {
+                "0": "Off",
+                "1": "On"
+              }
+            },
+            "voices": {
+              "offset": 21,
+              "range": [
+                1,
+                12
+              ],
+              "display_range": [
+                1,
+                12
+              ],
+              "kind": "continuous",
+              "label": "Voices",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 39951-42061; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "delay": {
+              "offset": 22,
+              "range": [
+                1,
+                100
+              ],
+              "display_range": [
+                1,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Delay",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 43075-47137; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "depth": {
+              "offset": 23,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Detune",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 47899-53453; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "color": {
+              "offset": 24,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Colorize",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 76705-76979, 84549-84659; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "colorShifter": {
+              "offset": 25,
+              "range": [
+                0,
+                255
+              ],
+              "display_range": [
+                0,
+                255
+              ],
+              "kind": "continuous",
+              "label": "Clr Shifter",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 79863-84041; labelled gesture and isolated byte changes agree with the existing declaration. Raw sweep crosses 127 continuously and reaches 255; unsigned byte, physical scale UNVERIFIED."
+              ]
+            },
+            "space": {
+              "offset": 26,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Space",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 68745-75539, 85777-85883; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "feedback": {
+              "offset": 27,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Feedback",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 54211-57947; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "pan": {
+              "offset": 29,
+              "display_center": 90,
+              "range": [
+                0,
+                180
+              ],
+              "display_range": [
+                0,
+                180
+              ],
+              "kind": "continuous",
+              "label": "Pan",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 86595-92303; labelled gesture and isolated byte changes agree with the existing declaration. Owner display -90..+90 with centre 0 corresponds to wire 0..180 with centre 90."
+              ]
+            },
+            "mix": {
+              "offset": 30,
+              "range": [
+                0,
+                100
+              ],
+              "display_range": [
+                0,
+                100
+              ],
+              "kind": "continuous",
+              "label": "Dry/Wet",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 92861-95793; labelled gesture and isolated byte changes agree with the existing declaration."
+              ]
+            },
+            "gain": {
+              "offset": 31,
+              "range": [
+                0,
+                255
+              ],
+              "display_range": [
+                0,
+                255
+              ],
+              "kind": "continuous",
+              "label": "Gain",
+              "status": "capture-observed",
+              "evidence": [
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 58959-64553; labelled gesture and isolated byte changes agree with the existing declaration. Raw sweep crosses 127 continuously and reaches 255; unsigned byte, physical scale UNVERIFIED."
+              ]
+            }
+          },
           "evidence": [
-            "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng"
+            "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng",
+            "antelope-orion-afx-modulation-tab.pcapng"
           ],
-          "notes": "Owner-labelled Orion loading sequence identifies this type in full-chain assignments. Linked channels use distinct instance indices; no parameter encoding or full-license status is inferred from loadability. No runtime writer supports this effect.",
-          "type_id_write_status": "unconfirmed"
+          "notes": "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. 490 writes, 245 right-1/left-0 mirrored pairs. No state query/reply in this capture. UNVERIFIED: fresh readback, bounded write/verify/restore, restart and power-cycle retention. Opaque bytes remain preserved; no runtime parameter reader/writer enabled.",
+          "type_id_write_status": "unconfirmed",
+          "parameter_observation": {
+            "prefix_hex": "70000000200000000000000000000000d50e",
+            "frame_length": 32,
+            "selector": "0xd5",
+            "payload_id": 21,
+            "data_bytes": 14,
+            "type_offset": 18,
+            "instance_offset": 19,
+            "data_offset": 20,
+            "write_complete_block": true,
+            "preserve_other_controls": true,
+            "preserved_fields": {
+              "presetIndex": {
+                "offset": 28,
+                "readback_offset": null,
+                "evidence": "Constant 0 throughout 490 writes; declaration name only, not a swept preset control."
+              }
+            },
+            "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults."
+          },
+          "state_readback": null,
+          "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c"
         }
-      ]
+      ],
+      "panel": {
+        "rows": [
+          [
+            "voices",
+            "delay",
+            "depth",
+            "feedback",
+            "gain"
+          ],
+          [
+            "color",
+            "colorShifter",
+            "space",
+            "pan",
+            "mix"
+          ]
+        ],
+        "switches": [
+          "humanize"
+        ],
+        "dependencies": {
+          "color": "space",
+          "colorShifter": "space"
+        },
+        "evidence": "https://en.antelopeaudio.com/products/v12-chorus/ and official product panel image; original Gazelle controls follow grouping without copying vendor artwork."
+      }
     },
     {
       "id": "u473a",

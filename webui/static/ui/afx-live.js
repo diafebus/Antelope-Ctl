@@ -6,7 +6,7 @@ let AFX_LIVE_TIMER = null;
 let AFX_LIVE_INFLIGHT = false;
 
 function afxLiveChanged(draft) {
-  if (!draft.parameterAvailable) return;
+  if (draft.effect.id !== 'memory_brigade' || !draft.parameterAvailable) return;
   if (draft.livePaused) {
     if (afxWindowIsOpen()) AFX_WINDOW.document.getElementById('afx-preview-status').textContent =
       'Live controls paused after a failed send. Click Retry live controls to send the displayed settings.';

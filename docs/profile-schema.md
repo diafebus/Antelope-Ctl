@@ -273,7 +273,15 @@ the two switches carry owner-confirmed display `options` and raw-to-option
 `wire_enum` mappings:0=550ms/Chorus,1=1100ms/Tremolo. The canonical Orion
 instance-state fields supply the corresponding raw-keyed options to the live
 WebUI. `chrs_vibr` remains the compatibility field ID.
-The shared control declarations remain unchanged, so Orion observations
+V12 and BBD now have Orion `capture-observed` control encodings and
+`parameter_observation.preserved_fields`, with `state_readback: null` and no
+runtime parameter commands. Shared `panel.rows`, `panel.switches` and
+`panel.dependencies` select display controls without turning opaque fields into
+knobs. `panel.display_only_controls` supplies BBD stereo-mode names for local
+preview without a wire mapping. Model-local captured membership must be complete
+before a preview is exposed; other models inherit no Orion parameter evidence.
+Details and source frames: [modulation findings](orion-afx-modulation.md).
+The shared control declarations retain their identifiers, so Orion observations
 do not become another model's contract. All three command definitions
 remain `null` for every implementation. A declared control name carries neither an inferred range
 nor an inferred byte width/offset. `source_name` preserves Gazelle's effect

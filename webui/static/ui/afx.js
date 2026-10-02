@@ -39,7 +39,7 @@ async function previewAfxEffect(slot, effectId) {
     const effect = AFX_PREVIEW_CATALOG.effects.find(item => item.id === effectId);
     if (!effect) throw new Error('Effect controls are not mapped for this device profile.');
     const key = afxDraftKey(channel, slot);
-    if (!AFX_DRAFTS.has(key)) {
+    if (AFX_DRAFTS.get(key)?.effect.id !== effectId) {
       AFX_DRAFTS.set(key, {effect, values: Object.fromEntries(effect.controls.map(control =>
         [control.id, control.kind === 'continuous' ? control.range[0] : null]))});
     }
@@ -228,7 +228,7 @@ function openAfxWindow() {
     + '<title>AFX — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css?v=routing-mix-colors-v1">'
     + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-channel-rack-v8">'
-    + Array.from(AFX_PANELS.values(), panel => `<link rel="stylesheet" href="${afxEscape(panel.stylesheet)}">`).join('')
+    + Array.from(new Set(Array.from(AFX_PANELS.values(), panel => panel.stylesheet)), stylesheet => `<link rel="stylesheet" href="${afxEscape(stylesheet)}">`).join('')
     + '</head><body class="afx-window-body" role="dialog" aria-label="AFX"></body></html>');
   d.close();
   d.body.innerHTML = afxWindowHTML(capacity);
