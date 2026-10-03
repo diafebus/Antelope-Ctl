@@ -45,6 +45,11 @@ compatibility.
   - `inputs.js`, `settings.js`, and `preamp.js` -- input and device settings;
   - `meters.js` and `buses.js` -- meter and output-bus rendering;
   - `routing.js` and `mixer.js` -- routing and mixer surfaces;
+  - `afx.js` -- detachable AFX window sized from the profile's capacity;
+  - `afx-memorycat.js` / `afx-memorycat.css` -- the Memory Cat panel's own
+    presentation and control interactions;
+  - `afx-test.js` -- effect selectors, pair buttons and device-rack pilot;
+  - `afx-live.js` -- throttled/coalesced Memory Cat edits without repainting knobs;
   - `surround.js` -- profile-driven Surround monitor and EQ readback;
   - `readback.js` and `boot.js` -- diagnostics, state fan-out, and startup.
 
@@ -53,7 +58,47 @@ compatibility.
     (drag / wheel), mode select, 48V + Ø buttons, vertical meter;
   - output buses (device-confirmed attenuation: raw 0 = 0 dB maximum,
     raw 96 = -inf/silent), screen brightness;
-  - a **Routing** panel with `Routing | Mix 1 | Mix 2 | Mix 3 | Mix 4 | Surround` tabs;
+  - a **Routing** panel with `Routing | AFX | Mix 1 | Mix 2 | Mix 3 | Mix 4 | Surround`;
+    **AFX** opens a separate resizable window and keeps the current main
+    tab selected. Profiles declaring AFX capacity expose the button; Orion
+    offers a 32-channel selector and a single channel strip on the left,
+    with that channel's eight rack units together on the right. Selection
+    persists across popup close/reopen while the main page is open. Orion supports device racks on AFX 1–32.
+    Categorized effect selectors sit in the left slot list; its compact pair-link
+    button sits in the channel header. Device link readbacks mark linked channel
+    partners. Linked add/replace/remove/reorder updates and verifies both chains
+    with distinct instances; conflicting slots remain unchanged. Parameter
+    editing supports Memory Cat's bounded linked candidate, with same-slot
+    partner writes and captured readback verification. Other linked pairs
+    do not block that rack. Both the left list and rack support drag reordering, including
+    dragging between them. Refresh reads the link table and selected slots,
+    including the partner chain and settings when linked.
+    An empty linked selection automatically shows its populated partner. Local
+    preview is an explicit alternative; missing device reads remain unavailable.
+    Memory Cat has six draggable knobs with fixed bodies and moving pointers,
+    plus two mode selectors. Sliders are hidden; keyboard adjustment remains
+    available with a visible focus ring. Edits send live from the first
+    adjustment through the throttled afx-live.js module, with no Apply step;
+    previews and device slot state are separate. The pilot exposes guarded
+    load/replace/remove/reorder and full-state parameter initialization, with slot readback
+    verification. Switch labels are owner-confirmed:0=550ms/Chorus,
+    1=1100ms/Tremolo, sourced from Orion JSON. Parameter settings come from
+    device readback for captured Memory Cat instances0–2. Opening, changing
+    channel, loading and reconnect query current settings and bypass state;
+    unknown fields stay unavailable without a starting preset. Opening/refresh
+    sends no parameter writes. Post-write parameter readback verifies live
+    edits for these instances. Failed live sends pause until an
+    explicit Retry live controls click. Mono load/remove verification covers
+    AFX 3–32, plus earlier owner testing on AFX 1; AFX 2 mono writes were not
+    exercised while 1–2 were linked. All 16 pair flags have verified readback.
+    Failed slot verification disables writes for the server session; Refresh
+    stays read-only. Reconnect clears old AFX inventory, flags and initialized
+    drafts. Other effect parameters and bypass writes remain guarded.
+    See the main README's AFX section and [the API/state contract](DEVICE_UI.md#orion-afx-rack).
+    The channel dropdown adds a loaded-effect count only for occupied channels,
+    alongside their link markers; empty and unavailable channels have no count.
+    Closing the
+    window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with
     fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
     input strips additionally expose the Gazelle Reverb send; Mix 2-4 and all

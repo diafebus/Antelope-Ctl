@@ -239,7 +239,7 @@ function applySettings(s) {
 // device. The Orion IGNORES both writes while the host holds the USB audio
 // interface streaming, and ignores the sample rate while the clock source is
 // USB. When a change doesn't land within CLOCK_STUCK_MS we flag the select
-// and show the release-audio instructions (see webui/NEXT.md, Linux quirk).
+// and show the release-audio instructions (see README.md, global controls).
 const CLOCK_STUCK_MS = 3500;
 const CLK = { rate: null, src: null };   // { want, t } while a write is in flight
 

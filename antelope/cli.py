@@ -17,9 +17,9 @@ Per-input-channel controls (physical inputs 1-12, addressed 0-11):
                                                                             # `status` can show it --
                                                                             # see cmd_set_link's docstring;
                                                                             # category 0x0b is available for
-                                                                            # structured link readback, but
-                                                                            # on/off transition correlation is
-                                                                            # still capture-pending)
+                                                                            # confirmed Orion input-link
+                                                                            # readback; this status view
+                                                                            # displays the CLI cache)
 
 ADAT input controls (16 ADAT channels, addressed 0-15 -- a separate space
 from the physical inputs; gain + link only, no mode/phantom/phase):
@@ -30,10 +30,8 @@ from the physical inputs; gain + link only, no mode/phantom/phase):
                                                                             # (mirrors gain to the
                                                                             # partner while linked,
                                                                             # exactly like set-link;
-                                                                            # for pairs 0-5 the frame
-                                                                            # is identical to the
-                                                                            # physical link -- see
-                                                                            # set-adat-link help)
+                                                                            # profile selects the
+                                                                            # ADAT address space)
 
 S/PDIF input controls (2 channels, 0 = L / 1 = R; gain + link only):
 
@@ -234,7 +232,7 @@ def _link_bracket(profile, link_state, ch):
     sent a set-link command for its pair, e.g.:
 
         0  mic   0dB  ...  -.
-        1  mic   0dB  ...  -'   (linked, pair 0 -- CLI-tracked, not device-confirmed)
+        1  mic   0dB  ...  -'   (linked, pair 0 -- CLI cache)
 
     Returns ('', '') if the pair has never been touched by this CLI (link_state
     has no entry) or is cached as off. This is NOT a device readback -- see the
@@ -251,7 +249,7 @@ def _link_bracket(profile, link_state, ch):
     if ch == lo:
         return ' -.', ''
     if ch == hi:
-        return " -'", f'  (linked, pair {pair} -- CLI-tracked, not device-confirmed)'
+        return " -'", f'  (linked, pair {pair} -- CLI cache)'
     return '', ''
 
 
@@ -291,14 +289,12 @@ def cmd_status(args, profile):
         print(f'note: only channels {confirmed} are explicitly verified for this device.')
     if link_state:
         print("note: the '-.'/\"-'\" markers above reflect the last `set-link` command THIS CLI has "
-              "sent (cached locally). The profile maps readback category 0x0b link tables, "
-              "but their on/off transitions are not capture-confirmed yet (see "
-              "params.channel_link.notes), so these markers remain the control fallback and "
-              "can go stale if link state changes outside this CLI.")
+              "sent (cached locally). This status view does not query link flags; "
+              "its cache can go stale if link state changes outside this CLI. "
+              "See the active profile's link readback mapping for device flags.")
     else:
-        print("note: channel-link state is not transition-confirmed yet -- readback category "
-              "0x0b is available with `readback 0x0b <index>`, but this status view uses the "
-              "local cache until a controlled capture correlates its bytes.")
+        print("note: this status view uses the local link cache, which has no entries. "
+              "See the active profile's link readback mapping for device flags.")
 
 
 def _partner_channel(profile, ch):
@@ -435,21 +431,14 @@ def cmd_set_invert(args, profile):
 
 # ---- channel-link: CLI-side state tracking (NOT a device readback) ----
 #
-# The protocol has no confirmed "link enabled" bit anywhere in the 0x73 state
-# report (see profile params.channel_link.notes -- re-verified independently
-# against the raw ch-link-gain-ph-inv-test.tsv capture: the state report is
-# byte-for-byte identical immediately before/after all 4 link/unlink commands
-# in that session). The extracted Orion schema does define candidate link
-# tables at readback category 0x0b, but their transition behavior has not been
-# captured yet. Until then, link state is inferred from live side effects
-# (gain/phantom/phase mirroring) or from remembering what this CLI sent.
+# Orion's 0x73 state report has no dedicated input-link bit. The confirmed
+# input flags instead come from category 0x0b: index 0 = Preamp, index 1 =
+# ADAT, index 2 = S/PDIF. The WebUI uses these device readbacks.
 #
-# What follows is the latter: a small on-disk cache of "what did *this CLI*
-# last tell the device", used only to paint an indicator in `status`. It is
-# NOT a substitute for transition-confirmed device readback, can drift from
-# truth (the official Launcher, or another instance of this CLI, can change
-# link state without this cache knowing), and is labeled as such everywhere
-# it's shown.
+# This CLI retains a small on-disk cache of "what did *this CLI* last tell
+# the device" for linked-control mirroring and status markers. These status
+# views do not query device link flags. The cache can drift if another
+# controller changes links and is labeled separately from device state.
 
 def _link_state_path(profile, kind=''):
     """Where to cache CLI-issued link state for this device (by vid/pid).
@@ -486,10 +475,8 @@ def _load_link_state(profile, kind=''):
 
 def _is_pair_linked(profile, link_state, ch):
     """True if THIS CLI's cache (see _load_link_state) thinks ch's pair is
-    linked. Not yet a transition-confirmed device fact -- the profile's
-    category-0x0b table is still a candidate (see the big comment above this
-    section) -- just the last `set-link`/`mark-link`
-    this CLI has issued for that pair. Works for both physical and ADAT
+    linked, based on the last `set-link`/`mark-link` this CLI issued for that
+    pair. This helper does not query device flags. Works for both physical and ADAT
     channels (pair_index = ch // 2 in both spaces); pass the matching
     link_state from _load_link_state(profile, kind)."""
     return bool(link_state.get(str(ch // 2)))
@@ -587,11 +574,9 @@ def cmd_set_link(args, profile):
     the linked partner for as long as this CLI's cache says the pair is
     linked -- see those commands and _is_pair_linked.
 
-    Category 0x0b now has profile-declared link tables, but a controlled
-    link-on/link-off capture has not yet correlated their values with the
-    physical link flag. This command therefore keeps the existing gain/
-    phantom/phase snapshot and local cache behavior; `status` must continue to
-    label its link indicator as CLI-tracked until that capture is done.
+    Orion's category-0x0b tables are correlated with each input bank.
+    This command retains the CLI's local link cache for gain mirroring;
+    status labels that cache separately from raw device readback.
     """
     pair = proto.pair_index_for_channel(args.channel)
     max_pair = profile['channels'].get('link_pairs', {}).get('count', 0) - 1
@@ -609,7 +594,8 @@ def cmd_set_link(args, profile):
     before_lo, before_hi = _pair_channel_snapshot(transport, profile, lo, hi, args.timeout)
     before_match = _synced_fields_match(before_lo, before_hi)
 
-    pkt = proto.build_link_command(profile, pair, on)
+    pkt = proto.build_link_command(
+        profile, pair, on, space=proto.input_link_space(profile, 'preamp'))
     send_and_wait(transport, pkt, delay=0.3)
 
     if on:
@@ -696,7 +682,7 @@ def _adat_link_bracket(profile, link_state, ch):
     if ch == lo:
         return ' -.', ''
     if ch == hi:
-        return " -'", f'  (linked, ADAT pair {pair} -- CLI-tracked, not device-confirmed)'
+        return " -'", f'  (linked, ADAT pair {pair} -- CLI cache)'
     return '', ''
 
 
@@ -732,9 +718,9 @@ def cmd_adat_status(args, profile):
         print(f"{ch:>4}  {g:>4}dB{glyph}{tail}")
     if link_state:
         print("note: the '-.'/\"-'\" markers reflect the last `set-adat-link` command THIS CLI has "
-              "sent (cached locally). The profile maps ADAT link bytes in readback category "
-              "0x0b, but their transitions are not capture-confirmed yet, so the cache remains "
-              "the safe fallback and can go stale outside this CLI.")
+              "sent (cached locally). This status view does not query link flags; "
+              "its cache can go stale outside this CLI. See the active profile's "
+              "link readback mapping for device flags.")
 
 
 def cmd_set_adat_gain(args, profile):
@@ -771,12 +757,8 @@ def cmd_set_adat_link(args, profile):
     """Engage/disengage the link for the ADAT pair `channel` belongs to
     (pair_index = channel // 2 over the 16-channel ADAT space, 8 pairs).
 
-    Uses build_link_command() -- the SAME frame the physical channel link
-    uses (frame.link_command, opcode 0x14 / param 0xa2). NOTE: that frame is
-    byte-for-byte identical between the two spaces and pair_index 0-5 is
-    shared, so for ADAT pairs 0-5 this command may also toggle the matching
-    PHYSICAL link -- see params.adat_channel_link.notes. Pairs 6-7 are
-    ADAT-only.
+    Uses build_link_command() with the profile's ADAT selector. Orion's
+    space 1 controls eight ADAT flags, read back through category 0x0b/index 1.
 
     On link-ON, pushes the higher-numbered ADAT channel's gain to match the
     lower one's (the device doesn't do this itself), then set-adat-gain will
@@ -790,14 +772,17 @@ def cmd_set_adat_link(args, profile):
     lo, hi = pair * 2, pair * 2 + 1
     on = args.state == 'on'
     print(f'note: this links ADAT channels {lo} and {hi} (pair {pair}).')
-    if pair <= 5:
+    preamp_pairs = profile['channels'].get('link_pairs', {}).get('count', 0)
+    if (pair < preamp_pairs
+            and proto.input_link_space(profile, 'adat') == proto.input_link_space(profile, 'preamp')):
         print(f'note: the ADAT and physical link frames are identical -- pair {pair} may also '
               f'toggle the physical ch{lo + 1}&ch{hi + 1} link. See params.adat_channel_link.notes.')
 
     transport = get_transport(profile)
     before_lo, before_hi = _adat_pair_gains(transport, profile, lo, hi, args.timeout)
 
-    send_and_wait(transport, proto.build_link_command(profile, pair, on), delay=0.3)
+    send_and_wait(transport, proto.build_link_command(
+        profile, pair, on, space=proto.input_link_space(profile, 'adat')), delay=0.3)
 
     if on and before_lo is not None and before_hi is not None and before_lo != before_hi:
         print(f'pushing ADAT ch {hi} gain to match ch {lo} ({before_lo}dB) -- the device does '
@@ -812,8 +797,8 @@ def cmd_set_adat_link(args, profile):
         else:
             print('warning: ADAT ch gains still differ after syncing -- check the Launcher UI.')
     else:
-        print('sent. disengaging has no known observable readback -- the practical effect is that '
-              'this CLI stops mirroring set-adat-gain to the partner.')
+        print('sent. CLI gain mirroring follows the requested link state; '
+              'device flags are available through the profile-declared link readback.')
 
     _save_link_state(profile, pair, on, 'adat')
 
@@ -837,14 +822,10 @@ def cmd_mark_adat_link(args, profile):
 # ---- subcommands: S/PDIF input (2 channels L/R, gain + link) ----
 #
 # S/PDIF is a 2-channel space (0 = L, 1 = R), gain + link only. The link
-# frame carries space byte 0x01 (frame.link_command.space_offset), so unlike
-# the ADAT link it is NOT ambiguous with the physical link. Gain mirroring
+# frame uses the profile's S/PDIF selector (space 2 on Orion). Gain mirroring
 # while linked works exactly like set-gain/set-adat-gain -- the device does
 # not propagate, this CLI sends the second SET_PARAM. Separate link cache
 # (kind='spdif').
-
-_SPDIF_LINK_SPACE = 1  # frame.link_command space value for S/PDIF; physical/ADAT use 0
-
 
 def _spdif_partner(ch):
     return 1 - ch if ch in (0, 1) else None
@@ -856,7 +837,7 @@ def _spdif_link_bracket(profile, link_state, ch):
     if ch == 0:
         return ' -.', ''
     if ch == 1:
-        return " -'", '  (linked -- CLI-tracked, not device-confirmed)'
+        return " -'", '  (linked -- CLI cache)'
     return '', ''
 
 
@@ -888,7 +869,7 @@ def cmd_spdif_status(args, profile):
         print(f"{ch} ({name})  {g:>4}dB{glyph}{tail}")
     if link_state:
         print("note: link marker reflects the last `set-spdif-link` from THIS CLI (cached) -- "
-              "no device-side readback.")
+              "this status view does not query device link flags.")
 
 
 def cmd_set_spdif_gain(args, profile):
@@ -912,8 +893,7 @@ def cmd_set_spdif_gain(args, profile):
 
 def cmd_set_spdif_link(args, profile):
     """Engage/disengage the S/PDIF L/R link. Uses frame.link_command with
-    space byte 0x01 (frame.link_command.space_offset) -- distinct from the
-    physical/ADAT link (space 0x00), so no cross-space ambiguity. On link-ON
+    the profile's S/PDIF space (2 on Orion). On link-ON
     pushes ch1's gain to match ch0's; from then on set-spdif-gain mirrors to
     the partner while this CLI's cache says the pair is linked."""
     on = args.state == 'on'
@@ -929,7 +909,8 @@ def cmd_set_spdif_link(args, profile):
             return None, None
 
     before_l, before_r = gains()
-    send_and_wait(transport, proto.build_link_command(profile, 0, on, space=_SPDIF_LINK_SPACE), delay=0.3)
+    send_and_wait(transport, proto.build_link_command(
+        profile, 0, on, space=proto.input_link_space(profile, 'spdif')), delay=0.3)
 
     if on and before_l is not None and before_r is not None and before_l != before_r:
         print(f'pushing S/PDIF ch1 (R) gain to match ch0 (L) ({before_l}dB) -- the device does not do this itself.')
@@ -942,7 +923,8 @@ def cmd_set_spdif_link(args, profile):
         else:
             print('warning: S/PDIF L/R gains still differ after syncing -- check the Launcher UI.')
     else:
-        print('sent. disengaging has no known readback -- this CLI just stops mirroring set-spdif-gain.')
+        print('sent. CLI gain mirroring follows the requested link state; device flags are '
+              'available through the profile-declared link readback.')
 
     _save_link_state(profile, 0, on, 'spdif')
 

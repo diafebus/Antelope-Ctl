@@ -63,6 +63,7 @@ evidence.
 | `buses` | if the device has output buses | output-bus address space + names |
 | `adat`, `spdif` | if present on the device | extra input address spaces |
 | `mixer` | if decoded | virtual-mixer summary (human-facing; the frame is in `frame.mix_command`), plus optional profile-driven surface/link metadata. `has_master` defaults to true; set false for devices whose channel space starts at 0 with no master strip. |
+| `afx` | optional | device AFX channel/slot capacity and reference to the shared effect catalog; descriptive metadata, not a runtime write contract |
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
@@ -111,6 +112,191 @@ evidence.
 
 ---
 
+## `afx` and the shared effect catalog
+
+AFX capacity is device-specific. An optional top-level block records it:
+
+```json
+"afx": {
+  "channel_count": 32,
+  "slots_per_channel": 8,
+  "capacity_status": "documented",
+  "catalog": "afx_effects.json",
+  "evidence": "Public device documentation or model-local capture reference",
+  "notes": "Capacity and protocol-addressing limitations"
+}
+```
+
+`channel_count` counts mono processing channels; `slots_per_channel` counts
+insert positions in each channel's chain. Both are positive integers when
+known, or `null` when unknown. Missing `afx` means undeclared capability, not
+zero channels. `catalog` resolves relative to the device profile's directory.
+Capacity and catalog metadata do not authorize writes; explicit runtime contracts govern the operator test path.
+The WebUI uses positive integer counts to expose the AFX popup and size its
+channel selector and selected channel's rack layout. Undeclared capacity
+hides the launcher; the popup does not infer slot contents, account ownership,
+or channel-to-readback mappings.
+Each device needs its own capacity evidence; another profile's counts are
+not defaults.
+
+Orion declares 32 channels and eight slots from
+[Antelope's November 2019 demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
+The existing `0x19` layout also describes eight slots per strip. Its 64 outer
+records are protocol storage. Direct mono load/remove tests verified indices
+2–31 against the same write-channel indices on 2026-10-01, restoring every
+chain; index 0 was owner-tested earlier. Index 1 mono writes and storage
+indices 32–63 remain unexercised by that test. Capacity metadata never changes the safety
+bounds in `frame.readback.category_counts`. Channel count times slot count
+is the number of insert positions, not a guaranteed simultaneous instance
+budget. DSP resources, stereo use, and per-effect instance limits are
+separate facts.
+
+`profiles/afx_effects.json` is a shared catalog, separate from device
+profiles and `mic_models.json`. Its first reference set contains 80 named
+effect types from Gazelle's Discrete 4 read-only measurements dated
+2026-09-13, with 729 declaration-derived control names. The source profile
+is pinned in `provenance`; unnamed device types are omitted. These entries
+are not an Orion effect list or a list of installed/licensed effects.
+`catalog_schema` identifies the catalog format and version. Each future
+entry has a stable application ID, a presentation category, an original description, controls, and
+device-specific implementations. The following is an entry template,
+not a decoded effect:
+
+```json
+{
+  "id": "effect_key",
+  "name": "Effect display name",
+  "category": "delay",
+  "description": "Original description of the effect's purpose.",
+  "status": "unconfirmed",
+  "evidence": [],
+  "controls": [
+    {
+      "id": "control_key",
+      "label": "Control display name",
+      "description": "What this control changes.",
+      "kind": "continuous",
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "unconfirmed",
+      "evidence": []
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": null,
+      "status": "unconfirmed",
+      "commands": {"load": null, "recall": null, "parameters": null},
+      "control_encodings": {},
+      "evidence": []
+    }
+  ]
+}
+```
+
+Catalog IDs are stable names chosen by the project. `type_id` is the device's
+effect-type identifier once established; it is distinct from the runtime
+instance handle, channel index, and insert-slot index. Never infer a type
+ID from a handle observed in a previous session. Names and descriptive
+controls may be shared; wire IDs and encodings belong to the implementation
+for a particular profile. Do not assume another device uses the same map.
+
+A control's `kind` is `continuous`, `integer`, `boolean`, or `enum`, or
+`null` while its semantics remain unknown.
+`range` is a display-value `[min, max]`, `step` and `default` use those same
+units, and `enum` maps stable option keys to display labels. Use `null` for
+unknown values. `control_encodings` is keyed by control ID and records the
+byte offset/width, signedness, endian order, scale, bit masks or
+wire enum, together with status and evidence. A `capture-observed` mapping
+must carry `writable: false`; it records an observed field, not a verified
+write contract. Each populated command
+definition must describe its frame or ordered frame sequence, runtime
+inputs, verification/restoration evidence, and whether it is writable.
+
+`load` denotes assigning an effect to a channel/slot. `recall` denotes
+restoring settings on an existing instance; if recall also loads an effect,
+document that explicitly. Both remain `null` until the operation is decoded.
+Catalog definitions do not enable writes. Generic assignment and parameter
+opcode guards remain in force. The separate `runtime_contracts.afx_rack_test`
+declares the five captured Orion load types and measured instance indices on
+operator-selected mono channel indices 0–31. `verified_channel_indices`
+records which channels have completed device trials. `link_pair_records`
+maps the 16 pair flags to `0x0b:4` records 0–15 only after direct transition
+confirmation; trailing records 16–31 remain unmapped.
+`afx_rack_test.linked_chain_edits` records the captured adjacent-pair behavior:
+left/right writes with distinct instances, two remaining resources for load,
+fresh preflight and both post-write readbacks. Linked slot edits are allowed;
+conflicting slots preserve both chains for independent editing. This does not
+change the bare link-toggle contract. Memory Cat sharing uses its separate
+`afx_memorycat_test.linked_parameters` candidate: same-slot type73 partners,
+captured instance frames, fresh flags/chains, right/left writes and captured
+post-write reads. Missing/different partners are preserved.
+
+`runtime_contracts.afx_memorycat_test` additionally governs
+type 73 parameters on a selected channel: complete blocks from the first
+operator edit, then throttled live edits. Its `parameter_readback_contract`
+references `frame.afx_slot.instance_state_readback`: request magic/opcode/kind,
+tagged effect selector, instance field, reply header, enabled flag and per-effect
+parameter offsets/ranges are data. Captured Memory Cat instances0–2 initialize
+from fresh device state and verify writes; unknown reads remain guarded.
+The shared AFX catalog's Orion implementation links to this layout and records
+read offsets and restart evidence without claiming another model's support.
+Opening the rack never sends parameters or forces defaults. Failed live sends
+require explicit retry; an instance-query timeout blocks more such reads until
+reconnect because the reply omits instance identity. Slot writes
+start from fresh selected-channel whole-chain reads and verify their results.
+A missing or mismatching result disables further AFX writes for that server
+session without a blind corrective write; read-only refresh remains available.
+Allocation requires all 64 safely bounded `0x19` storage records and a fresh
+`0x15:0` resource count, retaining globally distinct captured instances. Link
+and slot caches are invalidated on reconnect. The API labels confirmed parameter
+readbacks separately from last-sent fallback blocks. Link flags are device
+readbacks. No other device
+or other-effect stereo parameter writer is enabled. The catalog contains neither
+installed-effect state nor account entitlements; licensing/activation traffic is outside its purpose. Gazelle
+Reverb retains its separate existing command/readback contract.
+
+The seed entries use `status: reference-only`. The Discrete 4 implementation
+records a `readback-observed` type ID, with `type_id_write_status:
+unconfirmed`. Owner-labelled loading captures now establish five Orion
+type IDs independently of the Discrete 4 observations. Memory Cat Brigade's Orion
+implementation contains eight `capture-observed` control encodings, with
+local capture and owner-action provenance. Its `parameter_observation`
+records the observed header, type/instance addressing and packet span; it is not a
+builder template. Offsets exclude the USB capture header. The six knob
+fields carry endpoint ranges, with unknown intermediate `scale`/`step`;
+the two switches carry owner-confirmed display `options` and raw-to-option
+`wire_enum` mappings:0=550ms/Chorus,1=1100ms/Tremolo. The canonical Orion
+instance-state fields supply the corresponding raw-keyed options to the live
+WebUI. `chrs_vibr` remains the compatibility field ID.
+V12 and BBD now have Orion `capture-observed` control encodings and
+`parameter_observation.preserved_fields`, with `state_readback: null` and no
+runtime parameter commands. Shared `panel.rows`, `panel.switches` and
+`panel.dependencies` select display controls without turning opaque fields into
+knobs. `panel.display_only_controls` supplies BBD stereo-mode names for local
+preview without a wire mapping. Model-local captured membership must be complete
+before a preview is exposed; other models inherit no Orion parameter evidence.
+Details and source frames: [modulation findings](orion-afx-modulation.md).
+The shared control declarations retain their identifiers, so Orion observations
+do not become another model's contract. All three command definitions
+remain `null` for every implementation. A declared control name carries neither an inferred range
+nor an inferred byte width/offset. `source_name` preserves Gazelle's effect
+key; `name` uses a public product name only when one has been matched.
+Descriptions otherwise remain `null`. Categories now group the menu by
+purpose: Dynamics, EQ & Filters, Modulation, Delay & Reverb, Pitch & Tuning,
+Amps & Cabinets, Preamps, Saturation & Distortion, and Other. Most were
+classified from the existing effect/control names; uncertain purposes remain
+Other. This presentation metadata carries no write permission, device-ID
+mapping or license evidence. A `#plugins...` or
+`#params...` suffix in an evidence URL is a JSON key path within the linked
+source document, not an HTML anchor.
+
+---
+
 ## `frame`
 
 The heart of the profile. Each sub-key is one **frame shape**. Outgoing
@@ -127,7 +313,7 @@ frame carries a fixed one). Then frame-specific offsets:
 |---|---|---|---|
 | `command` | SET_PARAM (`0x13`) | `channel_offset`, `value_offset` | `build_command(profile, param_name, channel, value)` |
 | `global_command` | SET_GLOBAL (`0x12`) | `value_offset` (no channel) | `build_global_command(profile, param, value)` |
-| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=physical/ADAT, `1`=S/PDIF, `3`=mixer, `4`=AFX stereo-link); optional `readback` distinguishes diagnostic post-write queries from authoritative link-button mappings | `build_link_command(profile, pair, enabled, space)` |
+| `link_command` | SET_LINK (`0x14`) | `space_offset`, `pair_index_offset`, `enabled_offset`, `space_values` (`0`=Preamp, `1`=ADAT, `2`=S/PDIF, `3`=mixer, `4`=AFX stereo-link); optional `readback` distinguishes diagnostic post-write queries from authoritative link-button mappings | `build_link_command(profile, pair, enabled, space)` |
 | `mix_command` | SET_MIX (`0x17` Orion / `0x16` Zen Go) | `subcmd_offset`+`subcmd`, `mix_offset`, `channel_offset`, `fader_offset`, `pan_flags_offset`, optional `send_offset`, `pan_center`, `pan_mask`, `mute_bit`, `solo_bit` | `build_mix_command(...)` |
 | `auraverb_command` | profile-defined Gazelle Reverb setter (AuraVerb protocol) | `subcmd`, `mix_offset`, `enabled_offset`, `param_offsets{}`, `param_range`, `defaults{}`, `mix_wet_offset`+`mix_wet_constant`, confirmed `contract{readback_category, readback_index, fields[]}` | `build_auraverb_command(profile, params, enabled)`; the WebUI/CLI use the contract's bounded readback target and `parse_auraverb_record` |
 | `micmodeling_command` | SET_MIC_MODELING (`0x17`/`0xe5`) | `channel_offset`+`channel_bias`, `enabled_offset`, `model_offset`, `swap_offset`, `pattern_offset`, `pattern_range` | `build_micmodeling_command(...)` |
@@ -145,7 +331,7 @@ masked bits in the source record, so the phase/invert probe cannot disturb the
 level or delay bits. The separate `speaker_mask_write` contract describes the
 speaker-monitor Bypass button, whose logical `true` value clears the device's
 active-processing bit.
-| `afx_slot` | *(AFX Real-Time effect slot)* `0x23`/`0xd7` assign + `0x14`/`0x98` bypass | `assign{}` (`channel_offset`, `handle_offset`), `bypass{}` (`handle_offset`, `value_offset`), `readback` (cat `0x19` strip order; cats `0x0c`/`0x15` instance counts) | **no builder — observation only.** `0x23` remains blocked because slot assignment is bucket E (`SCOPE.md`). Parameter control (`0x1c`/`0xd5`) is in scope (bucket D), but no field map or builder exists yet; the opcode guard stays until safe-write verification. Bypass (`0x14`/`0x98`) is bucket B but ships no builder (needs a runtime handle). See `PROTOCOL.md` §12a |
+| `afx_slot` | `0x23`/`0xd7` whole-chain assignment + `0x14`/`0x98` bypass | `assign{}` (channel and eight type/instance pairs), `bypass{}` (state/type/instance), `readback` (cat `0x19` slots; cats `0x0c`/`0x15` counts), `instance_state_readback{}` (tagged query, response and per-effect fields) | Generic AFX writes blocked. Separate runtime contracts permit bounded Orion operator tests. Memory Cat parameter and processing-state reads are confirmed for instances0–2; bypass writes remain disabled. See `PROTOCOL.md` §12a. |
 | `routing_command` | SET_ROUTE (`0x53`) | `subcmd`, `destination_offset`, `channel_list_offset`, `channel_stride`, + `addressable_destinations{}`, optional `destination_labels{}`, `stereo_destinations[]`, `destination_channels{}`, `mute_source[]`, `source_banks{}`, `source_semantics{}` | `build_route_command(profile, dest, channels)` |
 | `readback` | in-band query (`0x74` request / `0x75` response) | `request_magic`, `response_magic`, `subcmd`, `response_discriminator_offset`+`response_discriminator`, `magic_offset`, `subcmd_offset`, `category_offset`, `index_offset`, `data_offset`, **`category_counts{}`** (read by the code), optional capture-confirmed `layouts[]`, optional nested `record_layouts[]`, + `categories{}` / `hazard` / `liveness` (doc) | `build_readback_query(profile, cat, idx, force=False)`; bounded by `check_readback_index` or an explicitly confirmed feature layout; parsed by `is_readback_response` / `readback_body` / `parse_routing_record` (cat `0x03`) / `parse_mixer_record` (cat `0x04`) / `parse_preamp_gain_record` (cat `0x05`) / `parse_channel_status_record` (cat `0x06`) / `parse_auraverb_record` (cat `0x0a`) / `parse_identity_record` (cat `0x01`) / `parse_firmware_record` (cat `0x00`) / `parse_readback_records` and its profile-specific wrappers; driven by `transport.HidTransport.query` |
 
@@ -171,7 +357,7 @@ Declare those in the optional `frame.readback.record_layouts` list:
   "kind": "link_table",
   "category": "0x0b",
   "index": 0,
-  "name": "unassigned space-0 flags",
+  "name": "preamp",
   "record_count": 6,
   "record_stride": 1,
   "fields": [{"name": "linked", "offset": 0, "type": "u8"}],
@@ -209,16 +395,19 @@ the returned table is complete, and
 `pair_counts.preamp` / `.adat` stay within both the layout and the declared
 channel counts. Only mapped pairs replace browser-cached link icons; an
 absent, incomplete, or provisional mapping leaves the cache alone. On Orion,
-both input controls send space 0; tested pair 0 and pair 3 transitions changed
-bytes in the six-record `0x0b:0` table.
-This table has `post_write_pair_counts` and `authoritative: false` because a
-flag does not identify which domain is linked; it remains diagnostic and
-cannot overwrite either set of buttons. Direct ADAT pair 5 ON/OFF changed
-`0x0b:0` record 4, while pairs 7 and 8 changed none of the five safe link
-tables on a short read. `0x0b:1` has eight response bytes, but only record 0
-is mapped: a controlled S/PDIF OFF/ON changed it 1 → 0 → 1 while ADAT was
-held fixed. S/PDIF has one link pair. `0x0b:2` stayed zero in that test and
-remains unassigned.
+`0x0b:0` maps six Preamp pairs, `0x0b:1` maps all eight ADAT pairs, and
+`0x0b:2` maps the S/PDIF L/R pair. Direct device transitions and Windows VM
+checks confirmed these domains on 2026-09-30; the user also verified corrected
+WebUI writes/readbacks and link retention across controller restarts.
+The primary `pair_counts` contains only Preamp; `additional_tables` uses transition-confirmed
+`pair_mappings` for ADAT and S/PDIF. `cache_revision` requests a one-time
+browser cache reset after an address correction, followed by device readback.
+
+`channels.link_pairs.space`, `adat.link_pairs.space`, and
+`spdif.link_pairs.space` select input write addresses. `input_link_space()`
+resolves these fields for CLI and WebUI writers; profiles without the fields
+retain their previous selectors. Do not infer one device's selectors for
+another device. The corrected Orion values are 0, 1 and 2 respectively.
 
 `opcode` is checked against `constraints.allowed_opcodes` by every build
 function (unless `force`). If your device shares an opcode for two

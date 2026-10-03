@@ -46,7 +46,7 @@ real discriminator (§14).
 
 ## 2. Outgoing command frames (magic `0x70`)
 
-Ten command opcodes are known. **Six are emitted** by this CLI
+The ordinary and bounded AFX command families are listed below. **Six are emitted** by this CLI
 (`constraints.allowed_opcodes`: `0x12`, `0x13`, `0x14`, `0x17`, `0x1d`,
 `0x53`). The WebUI also emits the profile-guarded `0xab` global surround
 read-modify-write, including the confirmed EQ PRE/POST bit, the speaker
@@ -56,15 +56,15 @@ Management fields are exposed for the 2.0 L/R strips and 2.1 L/R/LFE strips.
 The WebUI also has a bounded `0x87` per-speaker path: delay/level/phase and EQ
 controls write one field, while Reset writes
 the profile-defined frequency/Q/gain preset for one speaker after a fresh
-readback. The remaining two are **not emitted by normal CLI/WebUI paths** —
-`0x23` (AFX slot assign, out of scope) and `0x1c` (AFX Real-Time
-parameters, in scope but not yet decoded or write-verified; currently
-blocked by `constraints.forbidden_opcodes` as an implementation guard). The dedicated
+readback. Generic AFX `0x23` and `0x1c` writes remain blocked; the
+explicit Orion captured-effect rack and Memory Cat parameter pilot is their typed exception
+(§12a). Newly observed Instinct/Master De-Esser parameter opcodes `0x7c`
+and `0x20` are blocked and have no writer. The dedicated
 `tools/surround_eq_selftest.py` may emit one explicitly selected `0x87` probe
 after the user acknowledges the write test; it always reads and restores a
 complete speaker record.
 
-**`0x1a` is not one of these ten.** It has never been observed as a write
+**`0x1a` is not an observed Orion write family.** It has never been observed as a write
 opcode on this device at all — it is not the surround EQ's write opcode
 either (that's `0x87`/`0xea`, see §11). `constraints.forbidden_opcodes`
 blocks it anyway, purely as an unconfirmed precaution — see the note after
@@ -78,15 +78,17 @@ single most important thing to get right.
 |---|---|---|---|---|
 | `0x13` | SET_PARAM | param | `channel` @17, `value` @18 | gain, input_mode, phantom, phase_invert, adat_gain, bus_level/dim/mute/mono, output_trim, talkback_dest_assign |
 | `0x12` | SET_GLOBAL | param | `value` @17 (no channel byte; @18 unused) | talkback_button, talkback_source, talkback_gain, screen_brightness (`0x0e`), sample_rate (`0x03`), **clock_source (`0x04`)**, oscillator panel (`0x0a`, packed byte), **pan_law (`0x24`)**, DC-coupling (`0x26`) |
-| `0x14` | SET_LINK | `0xa2` (links) / `0x98` (AFX slot bypass, §12a) | `space` @17 (0 = physical+ADAT, 1 = S/PDIF, **3 = mixer**), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
+| `0x14` | SET_LINK | `0xa2` (links) / `0x98` (AFX slot bypass, §12a) | `space` @17 (0 = Preamp, 1 = ADAT, 2 = S/PDIF, **3 = mixer**, 4 = AFX), `pair_index` @18, `enabled` @19 | channel_link, adat_channel_link, spdif_channel_link, mix_channel_link |
 | `0x17` | SET_MIX | `0xd4` | `0x05` @17 (const), `mix` @18, `channel` @19, `fader` @20, `pan+flags` @21, `send` @22 -- see §12 | virtual mixer (Mix 1-4) |
 | `0x17` | SET_MIC_MODELING | `0xe5` | `0x05` @17 (const), `channel` @18 (0-based idx − 4), `enabled` @19, `model` @20, `swap` @21, `pattern` @22 -- see §12 | mic modeling / emuMic (preamps 5-12) |
 | `0x1d` | SET_AURAVERB | `0xda` | 8 DSP params (Room Size @19, Color @20, Pre-Delay @21, Early Ref Gain @23, Late Ref Delay @24, Richness @25, Reverb Time @26, Reverb Level @27, each 0-100), `enabled` @28 | AuraVerb (Mix 1) |
 | `0x53` | SET_ROUTE | `0xd3` | `0x41` @17 (const), `destination` @18, then a `(bank,index)` pair per output channel from @19 (stride 2) -- see §7 | routing matrix |
 | `0xab` | SET_SURROUND (global) | `0xeb` | whole-state: `[18]` bit 7 = EQ pre/post, `[18]`/`[19]` = format, `[20]` = delay, `[22-23]` = level, `[25-30]` = bypass/mute/dim, `[43+]` = Bass Management channel blocks -- §11 | surround tab global; WebUI uses fresh read-modify-write for 2.0/2.1 global fields, the speaker bypass mask, and confirmed 2.0/2.1 Bass Management fields |
 | `0x87` | SET_SURROUND_SPEAKER | `0xea` | per-speaker: `[18]` = speaker 0-15, `[19-20]` delay, `[21-22]` level (+`[22]` bit7 invert), then 16 EQ bands (2 UI pages of 8) -- §11 | Launcher; bounded one-field/reset writes in WebUI, including confirmed delay/level/phase head fields and one-field EQ probes in `tools/surround_eq_selftest.py` |
-| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, plugin-instance `handle` @19 (`0x00` = clear) -- §12a | **observed only, never emitted** -- slot assignment is out of scope (bucket E) |
-| `0x1c` | *(AFX Real-Time parameters)* | `0xd5` | frame-identified only (§12a) -- payload not yet decoded | **not emitted** -- bucket D is in scope; the current forbidden-opcode guard remains until the payload and safe write behavior are established |
+| `0x23` | *(AFX slot assign)* | `0xd7` | `0x11` @17 const, `channel` @18, eight `{type,instance}` pairs @19–34 -- §12a | Generic writes blocked; typed captured-effect Orion rack test only |
+| `0x1c` | *(Memory Cat / BBD parameters)* | `0xd5` | `0x0a` @17, type @18, instance @19, eight-byte block @20–27 (§12a) | Generic writes blocked; Memory Cat full-state operator test only, BBD observation-only |
+| `0x20` | *(AFX parameters)* | `0xd5` | Master De-Esser subcommand `0x0e`, type @18, instance @19 (§12a); V12 also observed | Observation only; blocked |
+| `0x7c` | *(Instinct parameters)* | `0xd5` | subcommand `0x6a`, type @18, instance @19 (§12a) | Observation only; blocked |
 
 Notes:
 - **`0x17` is overloaded** -- the param_id at @16 is the real discriminator:
@@ -187,9 +189,9 @@ read the counts off against the Launcher's routing-tab labels.
 | # | category | indices | count | notes |
 |---|---|---|---|---|
 | 1 | `0x11` | 0-1 | 2 | **assignment status / feature mask** -- index 0 is status; index 1 is a 200-byte feature mask |
-| 2 | `0x0b` | 1, 2 | (2) | **ADAT and S/PDIF link tables** -- the same category is multiplexed by index; see below |
+| 2 | `0x0b` | 1, 2 | (2) | **Digital input-link tables** -- index 1 has eight ADAT flags; index 2 has one S/PDIF flag |
 | 3 | `0x1b` | 0 | 1 | **surround GLOBAL state** (§4a, §11) -- not a digital-input entry, despite sitting here in the walk |
-| 4 | `0x1a` | 0-15 | 16 | **surround per-speaker EQ** (16 speakers) — *not* ADAT; the old "ADAT" label was a 16==16 count guess, corrected 2026-09-04 by a live read (§4a). ADAT has no readback category (its gain/link is `0x73` @75-90) |
+| 4 | `0x1a` | 0-15 | 16 | **surround per-speaker EQ** (16 speakers) — *not* ADAT; the old "ADAT" label was a 16==16 count guess, corrected 2026-09-04 by a live read (§4a). ADAT gain reads at `0x73` @75-90; ADAT link readback is `0x0b:1` |
 | 5 | `0x03` | 0-14 | 15 | unmapped -- see candidates below |
 | 6 | `0x04` | 0-3 | 4 | virtual mixer -- each entry is followed by the 64-entry `0x0b` index-3 mixer-link table |
 | 7 | `0x0a` | 0 | 1 | singleton |
@@ -200,45 +202,31 @@ read the counts off against the Launcher's routing-tab labels.
 
 ### `0x0b` is a multiplexed link-table category
 
-Its eight requests carry index values `1, 2, 3, 3, 3, 3, 0, 4`. The
-outer index selects the link table: index 0 has 6 shared space-0 input-pair
-bytes, index 1 has 8 bytes with S/PDIF at record 0, index 2 has one
-unassigned byte, index 3 has 64 mixer-pair bytes, and index 4 has 32 AFX
-channel-link bytes. The extracted panel schema labels indices 1 and 2 as
-ADAT and S/PDIF respectively, but controlled device transitions contradict
-those labels. The Launcher
-repeats index 3 around each mixer record as a sequencing marker, but its
-response is still a real link table. The profile's `record_layouts` and
-`protocol.parse_link_table` decode these nested bytes.
+Five outer selectors 0–4 return 6/8/1/64/32 nested flags: Preamp, ADAT,
+S/PDIF, mixer and AFX. Input spaces 0/1/2 write matching tables 0/1/2.
+Direct AFX trials on 2026-10-01 verified space-4 pairs 0–15 against
+`0x0b:4` bytes 0–15, with every original flag restored and all other tables
+unchanged. Trailing bytes 16–31 are not mapped to the 32 user-facing
+channels. See §12a for channel and parameter verification.
+Direct 2026-09-30 ADAT trials toggled/restored all eight space-1 pairs with
+other tables unchanged. Subsequent all-ON and space-2/pair-0 writes were
+retained at the user's request and confirmed in the Windows VM Launcher.
+Earlier ADAT-button space-0 and S/PDIF-button space-1 captures used wrong
+write selectors, which caused the old domain attribution. The schema's
+Preamp/ADAT/S/PDIF table order is correct. Readback query bounds remain 0–4.
 
-The 2026-09-23 live WebUI probe captured `SET_LINK` space 0, pair 3, on at
-HID OUT `0x01`; the next bounded `0x0b:0` response at HID IN `0x82`
-returned record 3 = 1. After the user turned the pair off, a fresh response
-returned record 3 = 0. The `0x0b:1` record 3 stayed 0 throughout. Earlier
-preamp pair 0 on/off observations also tracked `0x0b:0` record 0. Index 0
-therefore reports the shared space-0 command state, but cannot distinguish
-the Preamp and ADAT input domains. The WebUI displays these bytes only as
-diagnostics and keeps their buttons separate. A controlled 2026-09-23 ADAT
-pair-6 ON write completed a fresh index-1 query, but all eight records
-including record 6 remained 0. On 2026-09-26, with ADAT links held, a live
-S/PDIF OFF→ON round trip changed index-1 record 0 from 1→0→1. Indices 0
-and 2 did not change. The WebUI now maps only index-1 record 0 to the
-S/PDIF button. Index 2 remains raw diagnostic data, and ADAT pairs 6/7
-remain command-backed without a confirmed device-state byte. An ADAT pair-7
-OFF write changed none of the three returned tables.
+| Input bank | Write selector at offset 17 | Pair indices at offset 18 | Readback |
+|---|---|---|---|
+| Preamp | `0` | 0–5 | `0x0b:0`, six bytes |
+| ADAT | `1` | 0–7 | `0x0b:1`, eight bytes |
+| S/PDIF | `2` | 0 | `0x0b:2`, one byte |
 
-The same live session later sent ADAT pair-index 6 and 7 ON, then OFF
-commands. Pair 6's successful fresh readback stayed zero while ON, and the
-user-visible device gains were restored after a one-sided +1 dB API write to
-ADAT 13 left ADAT 14 unchanged. The browser's paired-write path remains a
-separate behavior to verify through its controls.
-
-The user verified the browser behavior against that device state: after a
-hard reload the ADAT 7/8 icon showed ON; after clicking it OFF, the server's
-link-readback version advanced, index-0 record 3 returned 0, and both the
-ADAT 7/8 and physical preamp 7/8 icons showed OFF. This completes the WebUI
-indicator check in both directions; it confirms the shared flag display,
-not whether both signal paths are linked.
+The enabled flag is 0/1 at offset 19 of SET_LINK (`0x14`, parameter `0xa2`).
+The WebUI initializes buttons from complete device tables and refreshes the
+matching table after writes. The CLI and WebUI resolve each selector from
+the input bank's `link_pairs.space`. Browser `cache_revision` invalidates
+old entries once. Input flags survived the tested Windows VM reconnect;
+device power-cycle retention and firmware gain propagation were not tested.
 
 ### What the categories are (resolved 2026-08-31 via §4a)
 
@@ -396,14 +384,14 @@ sweep to the declared count unless `--unsafe`.
 | `0x06` | **channel status** -- 1 byte/channel, same packing as `0x73` @61: `(phase<<6)\|(phantom<<4)\|(mode&3)`. | **decoded + differential-write confirmed 2026-09-03** (phantom bit inferred from the shared encoding) |
 | `0x07` | EQ/filter band data — same `<freq><Q><gain><mode>` stride as `0x1a`. 8 records; live-read 2026-09-04: idx 0/1 = 8× a flat 5-band EQ (30/200/1k/5k/15k Hz), idx 2 = 16× a 19-byte range/capability record. Purpose unresolved (monitor/phones EQ? a capability table?). **Not** a per-input-channel EQ — the SC has none | undecoded |
 | **`0x0a`** | **AuraVerb** -- 1 record (idx 0), a `0x00` header then 4 × 11-byte blocks (Mix 1..4; block 4 truncated to 9 B). Block = `0x1d` payload minus the mix byte: `[0]room_size [1]color [2]pre_delay [3]0x64 [4]early_ref_gain [5]late_ref_delay [6]richness [7]reverb_time [8]reverb_level [9]enabled [10]0xff`. | **decoded + hardware round-trip verified 2026-09-03** (differential readback) |
-| `0x0b` | **multiplexed link tables** -- outer index 0 = 6 shared space-0 flags, 1 = 8 space-1 bytes, 2 = 1 unassigned byte, 3 = 64 mixer pairs, 4 = 32 AFX channel links. Index 3 is repeated around mixer reads. | **Index-0 flags cannot distinguish Preamp from ADAT. Controlled S/PDIF OFF/ON changed index-1 record 0 from 1→0→1 while index 2 stayed zero. Only index-1 record 0 is a confirmed domain-specific input-link readback.** |
+| `0x0b` | **Multiplexed link tables**: 0 = six Preamp pairs, 1 = eight ADAT pairs, 2 = one S/PDIF pair, 3 = 64 mixer pairs, 4 = 32 AFX channel links. | **Input selectors/tables 0/1/2 verified 2026-09-30**, including ADAT restoration and Windows VM indicator checks. AFX space-4 pairs 0–15 were independently verified against index-4 records 0–15 and restored on 2026-10-01. Trailing AFX records 16–31 remain unmapped; mixer transitions remain pending. |
 | `0x0c` | AFX available/max instance counts -- index 0 and index 1 each contain 90 `{type_id, inst_count}` records according to the panel schema. The outer index bounds are not established by the connect walk. | schema-decoded; outer query bounds capture-required |
 | `0x0d` | scalar `0x18` (=24), stable across re-reads. Meaning unknown | undecoded |
 | `0x11` | assignment status at index 0 (one byte) and feature mask at index 1 (200 bytes) | decoded from panel schema and response log |
 | `0x12` | **UNKNOWN**, empty body on 2026-09-04. The old "clock source or sample-rate index?" guess is **ruled out** -- both live in `0x73` instead (clock source @19, rate index @18, rate in Hz @21-23) | undecoded |
 | `0x15` | one outer record at index 0 containing 91 `{type_id, inst_count}` remaining-featured-instance records | decoded from panel schema and response log |
 | `0x16` | one outer record at index 0 containing eight `{target, emu_model, ch_swap, pattern}` mic-emulation records | **decoded from the extracted panel schema and response logs; read-only parser** |
-| `0x19` | 64 indexed AFX strip records; each response contains eight `{type, inst}` slots, with `{0,0}` observed for empty slots | **decoded from the extracted panel schema and response logs; read-only parser** |
+| `0x19` | 64 indexed AFX strip records; each response contains eight `{type, inst}` slots, with `{0,0}` observed for empty slots | **Decoded parser; typed mono writes verified against matching indices 2–31 on 2026-10-01, plus earlier owner testing on index 0. Index 1 mono writes and storage 32–63 remain unexercised by these trials.** |
 | `0x1a` | **surround per-speaker EQ readback** — 16 records (one per speaker), 116 meaningful B = a 4-byte head plus 16 EQ bands (`<freq LE16><Q LE16 ×100><gain LE16 signed><mode raw>`). **Correction:** EQ begins at response byte 20, not 16. The head is decoded as delay (0.1 ms units plus the 0.6 ms UI floor), level (0.1 dB units around raw 600), and phase-invert bit according to the profile contract; dynamic head writes are confirmed for speakers 0 and 1. L/R held the non-flat 2.0 Room Correction curve; mode labels remain unproven. | decoded runtime readback; bounded WebUI/self-test one-field EQ, delay, level, and phase read-modify-write probes; unknown modes stay raw |
 | **`0x1b`** | **surround GLOBAL readback** -- the readback for the `0xab`/`0xeb` frame. 1 record; **`body[N]` == frame byte `[18+N]`**. Gives format, global delay, level, the bypass/mute masks, and the whole 2.0/2.1 bass-management block. See the alignment proof below | **decoded + wired 2026-09-04** — `protocol.parse_surround_global_record`, CLI `surround-status`; confirmed speaker-bypass and Bass Management writes use fresh complete records |
 | `0x1c`-`0x60` | answer, empty bodies | — |
@@ -423,9 +411,9 @@ sweep to the declared count unless `--unsafe`.
 > | `0x17` | SET_MIX / SET_MIC_MODELING | not queried |
 > | `0x1a` | **blocked as a precaution -- never actually observed as a write opcode on this device** (see below) | **surround per-speaker EQ** (decoded, in scope) |
 > | `0x1b` | — | **surround global** |
-> | `0x1c` | AFX Real-Time parameter stream (bucket D; in scope, but currently blocked pending decoding and write verification) | answers empty |
+> | `0x1c` | Memory Cat Real-Time parameters; generic builder blocked, explicit full-state Orion operator path (§12a) | answers empty |
 > | `0x1d` | SET_AURAVERB (bundled, no activation — in scope) | answers empty |
-> | `0x23` | **out of scope** (AFX slot assign — bucket E, assigns/clears a plugin) | answers empty |
+> | `0x23` | AFX whole-chain assignment; generic builder blocked, five captured Orion types permitted by the operator exception (§12a, `SCOPE.md`) | answers empty |
 >
 > This table exists because of a real, already-documented bug: category
 > `0x1a` was mislabelled "ADAT" for weeks from a count coincidence (16
@@ -449,9 +437,10 @@ sweep to the declared count unless `--unsafe`.
 > blocked defensively" — not "known DSP, therefore off-limits." Under
 > `SCOPE.md` §4, control of an AFX Real-Time effect already available under
 > a license assigned to the device is in scope. This is distinct from
-> Native/Cosmos DAW plugins. Plugin assignment/loading and license or
-> activation traffic remain out of scope; the `0x1c` command stays blocked
-> in the implementation until its payload and safe write path are verified.
+> Native/Cosmos DAW plugins. General plugin loading and all license or
+> activation traffic remain excluded. The owner-requested Orion operator
+> exception permits five captured load types and complete Memory Cat
+> parameter blocks, while generic raw AFX builders remain blocked (§12a).
 
 ### Reading routing back
 
@@ -731,52 +720,38 @@ pair 1 = ch3&ch4, ... pair 5 = ch11&ch12. 6 pairs (index 0-5).
 
 | space @17 | domain | pair_index range |
 |---|---|---|
-| `0x00` | physical inputs **and** ADAT (shared) | physical 0-5, ADAT 0-7 |
-| `0x01` | S/PDIF | 0 only (the L/R pair) |
+| `0x00` | Preamp physical-input links | 0-5, six pairs |
+| `0x01` | ADAT | 0-7, eight pairs |
+| `0x02` | S/PDIF | 0 only (the L/R pair) |
 | `0x03` | virtual mixer (Mix 1-4 strips) | `channel // 2` (§12) |
 | `0x04` | **AFX-tab channel stereo-link** | `channel // 2`, 16 pairs over 32 ch |
 
-`0x01` discovered from `spdif-gain-link`, `0x03` from
+The input spaces 0/1/2 were corrected by direct device tests and Windows VM
+validation on 2026-09-30. The historical `spdif-gain-link` UI capture sent
+space 1 and therefore wrote ADAT pair 0. `0x03` comes from
 `macos-mix1-send-pan-fader-mute-solo-link` (both 2026-08). `0x04` from
 `macos-afx-stereolink-1-2_3-4_5-6_27-28_29-30_31-32` (2026-09-04): the AFX
 tab's per-channel stereo-link buttons — each toggle is one bare
 `a2 04 <pair> <en>` frame, nothing after `[19]`, **no** partner gain-sync
 frame (there is no per-channel gain in this space, just the flag) and no
 transition-correlated readback in that capture. The extracted Orion schema
-maps category `0x0b` index 4 to 32 AFX-link bytes, but a controlled toggle is
-still required to confirm their polarity and update behavior. It's a plain
+maps category `0x0b` index 4 to 32 AFX-link bytes. Owner-authorized direct
+HID tests on 2026-10-01 independently toggled all 16 pairs: pair N changed
+only record N from 0 to 1, then restored the original flag with all five
+link tables unchanged. Thus the 32 user-facing channels use records 0–15;
+records 16–31 remain unmapped. The WebUI reads and verifies these flags. It's a plain
 channel-pairing toggle — bucket A/B, not plugin-internal — buildable with
 `build_link_command(…, space=4)`; no CLI command. Previously offset 17 was
-thought unused/always-0. `0x02` unseen.
+thought unused/always-0. Space 2 now controls the confirmed S/PDIF flag.
 
-### ADAT link pairs
+### ADAT and S/PDIF link controls
 
-`pair_index = channel_index // 2` over the 16-channel ADAT space: 8 pairs
-(0-7). Pairs 6 and 7 have no physical-channel equivalent.
-
-**Behaviour is identical to the preamp link** (user-confirmed on hardware):
-linked channels' gains move together, and -- as with the preamp -- the
-*device* doesn't do that, the software sends a second `SET_PARAM(adat_gain)`
-for the partner. `set-adat-gain` / `set-adat-link` replicate this.
-
-**Still ambiguous with physical link.** Physical link and ADAT link *both*
-use space `0x00`, and the physical-pair-0-ON and ADAT-pair-0-ON frames are
-byte-for-byte identical across all 320 bytes + USB metadata. S/PDIF (space
-`0x01`) is now unambiguous, but physical-vs-ADAT is not. Unknown: whether
-one `SET_LINK(space=0, pair_index=N)` links pair N in *both* spaces. To
-settle it: link a physical and an ADAT pair in one session with different
-per-channel gains, or test on hardware.
-
-The 2026-09-23 WebUI ADAT 7/8 (pair 3) transition changed the `0x0b:0`
-record for pair 3, while the separate `0x0b:1` ADAT record stayed zero.
-That confirms which returned flag tracks the space-0 command for this pair;
-it does not establish whether both physical and ADAT signal paths are linked.
-
-### S/PDIF link pair
-
-One L/R pair, `SET_LINK` with `space=0x01` / `pair_index=0x00`. Same
-gain-mirroring behaviour as the preamp link; the CLI's `set-spdif-gain` /
-`set-spdif-link` handle it. No cross-space ambiguity (distinct `space`).
+ADAT uses space 1, eight pairs (indices 0–7) across 16 channels. Readback
+`0x0b:1` has one byte per pair. S/PDIF uses space 2/pair 0 and `0x0b:2`
+byte 0. These selectors were directly tested on 2026-09-30; the user then
+confirmed all eight ADAT flags and the S/PDIF flag in the Windows Launcher
+after reconnecting the VM. See §4 for evidence and the earlier UI address bug.
+Controllers mirror linked gain edits by sending separate per-channel writes.
 
 ### Routing matrix (frame model decoded, 2026-08)
 
@@ -1028,13 +1003,21 @@ panel. But:
     mode's range) -> re-link.
 - **The state report has no dedicated channel-link bit, but category `0x0b`
   contains five nested link tables.** The extracted Orion panel schema and
-  manager-server log identify preamp, ADAT, S/PDIF, mixer, and AFX tables
-  at indices 0..4. The earlier live whole-report diff did not query `0x0b`.
-  The 2026-09-23 space-0 pair-3 write and readback confirm index-0 on/off
-  polarity for record 3; index 1 did not track the ADAT
-  action. Index 0 is not an authoritative Preamp or ADAT state mapping: the
-  same command selector from both controls changed it. Clients display its
-  bytes as raw diagnostics and keep independent controller-side button state.
+  manager-server log previously assigned indices to preamp, ADAT, S/PDIF,
+  mixer, and AFX. Controlled readback identifies index 0 as the six Preamp
+  pairs across 12 physical inputs; it cannot be ADAT's eight-pair table. The
+  earlier ADAT mapping was incorrect. The 2026-09-23 space-0 pair-3 write and
+  readback confirm index-0 on/off polarity for the Preamp 7/8 pair. Later
+  direct input link tests on 2026-09-30 mapped tables 0/1/2 to Preamp,
+  ADAT and S/PDIF. The earlier S/PDIF-at-index-1 label came from the
+  Launcher's incorrect space-1 write. Correct input write spaces are 0/1/2.
+
+The user confirmed on 2026-09-30 that the corrected WebUI writes and reads
+ADAT and S/PDIF link flags correctly, with the intended links retained
+across controller restarts. The vendor Launcher's incorrect write selectors
+caused the earlier wrong-bank readbacks and restart symptoms. Input-link
+addressing and readback are fixed; this confirmation covers controller
+restarts, without extending the claim to a physical device power cycle.
 
 Any non-Launcher controller must replicate the two-commands-per-change
 behaviour itself if it wants Launcher-equivalent results.
@@ -1275,9 +1258,9 @@ No separate solid-red band below clip -- orange runs straight to 0 dB.
 | bus_mono | `0x69` | `0x13` | bus id | 0/1 | bus status bit 4 |
 | output_trim | `0x4b` | `0x13` | target 0-2 | 0-6 | offsets 24-25 (section 6) |
 | spdif_gain | `0x5c` | `0x13` | S/PDIF ch (0=L, 1=R) | int8 dB, -6..+12 | offset `91` (L) / `92` (R) |
-| channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | `0x0b:0` (6 nested `linked` bytes) tracks space-0 commands but is not a domain-specific link state |
-| adat_channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-7) | enabled @19 | pairs 0-5 change shared `0x0b:0`, which cannot distinguish ADAT from Preamp. Pairs 6/7 have no confirmed readback byte; an ADAT pair-7 OFF write changed none of indices 0–2. |
-| spdif_channel_link | `0xa2` | `0x14` | **space=1** @17, pair_index @18 (0) | enabled @19 | `0x0b:1` record 0 follows controlled OFF/ON (1→0→1); `0x0b:2` stayed zero. L/R gain mirroring is software-side. |
+| channel_link | `0xa2` | `0x14` | space=0 @17, pair_index @18 (0-5) | enabled @19 | `0x0b:0` (6 nested `linked` bytes) is confirmed Preamp-pair readback |
+| adat_channel_link | `0xa2` | `0x14` | **space=1** @17, pair index 0-7 @18 | enabled @19 | Directly verified 2026-09-30; readback `0x0b:1` byte per pair; Windows VM confirmed all eight ON. |
+| spdif_channel_link | `0xa2` | `0x14` | **space=2** @17, pair index 0 @18 | enabled @19 | Directly verified 2026-09-30; readback `0x0b:2` byte 0; Windows VM confirmed ON. |
 | mix_channel_link | `0xa2` | `0x14` | **space=3** @17, logical `(mix,pair)`; pair selector @18 is profile/surface-specific | enabled @19 | candidate table `0x0b:3` (64 nested `linked` bytes); transition capture pending (software-mirrored, §12) |
 | mix_fader / mix_pan / mix_send / mix_mute / mix_solo | `0xd4` | `0x17` | `mix` @18, `channel` @19 (1-32) | fader @20 (0-90 dB), pan @21 bits 0-5 (0x20=centre), mute @21 bit 6, solo @21 bit 7, send @22 (0-96) | none (§12) |
 | talkback_button | `0x1f` | `0x12` | - | 1=press, 0=release @17 | offset 73 bit 6 |
@@ -1660,7 +1643,7 @@ the Launcher re-send a `mix_command` for **all 32 channels** of that mix
 (a handy channel-count probe -- that's how we know it's 32).
 
 **Mix channel link** = `SET_LINK` with a **new `space` byte `0x03`**
-(0 = physical/ADAT, 1 = S/PDIF, 3 = mixer). The logical link identity is
+(0 = Preamp, 1 = ADAT, 2 = S/PDIF, 3 = mixer). The logical link identity is
 `(mix, pair_index)`, with `pair_index = channel // 2` within that mix; it is
 not one global pair shared by every mixer surface. `SET_LINK` has no separate
 mix byte, so a profile may declare a per-mix wire-selector stride when the
@@ -1845,57 +1828,320 @@ verified read-modify-write (cache kept only as an offline fallback);
 for **all four mixes**, so each mix has its own AuraVerb instance (only
 Mix 1 has been written).
 
-### 12a. AFX Real-Time effect slot control (`0x23` / `0xd7`) -- observation only
+### 12a. AFX Real-Time chain and parameter controls
 
-**Bucket boundary (`SCOPE.md`).** This subsection documents the slot
-assignment frame for **observation** and readback decoding. Assignment or
-loading remains out of scope (bucket E), so `0x23` stays in
-`constraints.forbidden_opcodes` and no builder emits it. Device-side AFX
-Real-Time parameter control (`0x1c` / `0xd5`, bucket D) is in scope, but its
-payload remains undecoded and the current profile guard blocks writes until
-the control fields and safe write behavior are established. License,
-entitlement, and activation traffic (bucket F) remains out of scope.
+**Capacity/catalog.** Orion documents 32 mono AFX channels with eight slots
+per channel in [Antelope's November 2019 demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
+The 64 outer `0x19` storage records are distinct from those user-facing
+channels. Owner-authorized Memory Cat load/remove trials on 2026-10-01
+verified write channels 2–31 against matching `0x19` indices, with exact
+restoration and other channel chains unchanged. Index 0 was owner-tested
+earlier; index 1 mono writes and storage indices 32–63 remain unexercised
+by those trials. Capacity does not establish a DSP instance budget. The shared catalog records owner-observed
+Orion types independently of sibling-device IDs; its command definitions
+remain null. The profile's explicit `afx_memorycat_test` runtime contract
+supplies a separate, experimental operator test path.
 
-The slot-frame evidence is from macOS Launcher captures (a "Tuner" utility
-on ch1/ch4 and "MemoryCat Brigade" delay on ch1), dated 2026-09-04. Those
-captures identify slot assignment only. The `0x1c`/`0xd5` parameter stream
-was frame-counted but its payload was not read.
+**Scope/write boundary.** The owner requested loading, removal, reordering
+and parameter controls in our WebUI and supplied the captures below.
+`SCOPE.md` permits the five captured Orion load types on operator-selected
+insert channels 0–31, plus Memory Cat parameters. Generic `0x23` and `0x1c`
+guards stay enabled; only typed builders may emit these bounded frames.
+Other effect types, other devices and stereo parameter writes have no runtime
+writer. The 2026-10-01 authorized hardware trials verified link flags and
+mono channel slot round trips, with original state restored. Catalog
+observations are not a verified production-write contract. Licensing and
+activation traffic remain excluded.
 
-**Slot assign** -- `70 … 23 … d7 11 <ch> <handle> 00` (opcode `0x23`):
+**Whole-chain assignment (`0x23` / `0xd7`).** The old single-handle
+interpretation is superseded by
+`antelope-orion-afx-remove-fx-load-memorycat-load-8-memorycat-move-memorycat.pcapng`.
+The owner removed an accidental effect, loaded one Memory Cat, cleared it,
+loaded eight, reordered them and changed one instance's Level to zero.
 
-| byte | field | encoding |
+| Report byte | Field | Observed encoding |
 |---|---|---|
-| 16 | `0xd7` param | |
-| 17 | `0x11` const | sub-command = slot assign |
-| 18 | insert channel | 0-based (`0x00` = ch1, `0x03` = ch4 seen) |
-| 19 | plugin-instance **handle** | `0x48` = Tuner, `0x49` = MemoryCat Brigade; `0x00` = clear this channel's insert |
-| 20 | `0x00` | |
+| 0 / 4 | magic / opcode | `0x70` / `0x23` |
+| 16 / 17 | selector / subcommand | `0xd7` / `0x11` |
+| 18 | insert-strip index | `0` in the original Preamp 1 capture; operator path accepts 0–31, direct mono readback trials cover 2–31 |
+| 19–34 | complete eight-slot chain | eight `{type, instance}` byte pairs |
+| 35–319 | tail | zero in the measured reports |
 
-The handle also keys the bypass frame and the parameter frame. Plausibly
-`0x40 | slot_index` (→ AFX slots 8, 9) or a sequential instance id -- only
-two data points. The handles pre-existed at capture start (plugins were
-loaded in a prior Launcher session); this frame only moves an existing
-instance onto/off a channel -- it was **not** seen to instantiate one.
-Placing/clearing is bucket **E** regardless, hence `0x23` stays forbidden.
+Empty slots are `{0,0}`. Memory Cat is type **73 (`0x49`)**, not an instance
+handle. Its eight loaded instances are numbered **0–7**. The initial empty
+chain is frame 23127; the full chain is frame 44873. Reordering sends the
+whole chain, preserving instance identities. Frame 48043 puts instance 4
+first; 51665 moves it last; 53701 puts it second. Frames 49667/49719 address
+type 73, instance 4 and change Level from raw 35 to 0. Thus controls belong
+to the `{type,instance}` identity, independently of current slot position.
+The matching `0x15:0` counters decrease as instances are added; counts are
+remaining resources, not proof of account ownership.
 
-**Slot bypass** -- `70 … 14 … 98 00 <handle> <0|1>` (reuses the `SET_LINK`
-opcode `0x14`, param `0x98`, sub-cmd `0x00`): `[18]` = handle, `[19]` =
-bypass toggle. Polarity not certain -- in the MemoryCat capture `[19]=1`
-was held all through parameter editing, so likely **1 = active / 0 =
-bypassed**. This is bucket **B** (a mixer-level insert mute, cf. AuraVerb
-`enabled@28`) and `0x14` is not forbidden, but a builder needs a handle
-from the readback, so none ships yet.
+**Memory Cat parameter fields (`0x1c` / `0xd5`).** The owner clarified
+`macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng`:
+Level, Blend, Feedback, Delay, Depth and Filter were swept across displayed
+0–100, followed by the VIB/CH and delay-range switches. The
+[official faceplate](https://es.antelopeaudio.com/wp-content/uploads/2020/11/Memory-Cat-Brigade.jpg)
+confirms six knobs and two switches. This yields 106 parameter reports.
+Offsets are zero-based within the 320-byte report, excluding USB headers.
+The header is magic `0x70` at 0, opcode `0x1c` at 4, selector `0xd5` at 16,
+subcommand `0x0a` at 17, **type at 18 and instance at 19**. The old capture
+addresses instance 0; the new level-zero capture addresses instance 4.
 
-**Readback.** The extracted panel schema and manager-server log identify
-three useful AFX-related readbacks. Category **`0x19`** has 64 safe outer
-indices (one per strip), each containing eight `{type, inst}` slot records;
-`{0,0}` is the observed empty value. Category **`0x15`** index 0 contains 91
-remaining-featured-instance counters. Category **`0x0c`** has schema entries
-for 90 available and 90 maximum type/count records, but its outer query bound
-was not present in the captured enumeration, so the profile deliberately
-marks those queries capture-required. Slot assignment remains out of scope.
-Parameter writes are in scope under `SCOPE.md` §4, but this protocol
-reference does not yet decode them or authorize a write builder.
+| Control (owner's action order) | Report byte | Observed raw values | First/last changed frame |
+|---|---|---|---|
+| Level | 21 | 0–100 | 9594 / 15718 |
+| Blend | 20 | 0–100 | 16557 / 21420 |
+| Feedback | 22 | 0–100 | 22491 / 27078 |
+| Delay | 25 | 0–100 | 27996 / 35298 |
+| Depth | 24 | 0–100 | 35931 / 40426 |
+| Filter | 26 | 0–100 | 40945 / 45965 |
+| Chorus / Tremolo (`chrs_vibr`) | 23 | 0=Chorus, 1=Tremolo | 47145 / 49074 |
+| Delay range | 27 | 0=550 ms, 1=1100 ms | 49842 / 52163 |
+
+Every knob reaches both raw endpoints; intermediate display scaling,
+physical units and quantization remain unverified. Switches alternate
+`1,0,1,0`; the owner confirmed WebUI A0=550ms/Chorus and
+B1=1100ms/Tremolo on2026-10-01. Successive reports change one
+byte in 20–27; bytes 28–319 remain zero. The final state differs from the
+starting state. No effect-parameter readback or automatic restoration was
+established by that older capture. The later Launcher-restart capture below
+identifies parameter readback. The pilot sends complete eight-field blocks
+on knob/switch edits, initialized from device state. Switch labels now come
+from the confirmed Orion JSON enums. The wire/API identifier `chrs_vibr` is
+retained for compatibility; the owner labels its1position Tremolo. No old capture is used as current device state.
+
+**Linked pairs and Launcher unlink behavior.**
+`antelope-orion-afx-link-1-to-32-channels-16links-total-ononon-offffoff.pcapng`
+contains 34 bare `SET_LINK` writes: space 4, pair 0–15 ON in ascending
+order, then OFF in descending order, with an extra 0/1/0 toggle on pair 5.
+It contains no link readback or parameter-sharing evidence.
+
+`antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng`
+shows the Launcher assigning **distinct** instances to linked strips 0/1:
+Memory Cat type 73 instances 0/1, V12 Chorus type 70 instances 0/1, and
+BBD-Chorus type 78 instances 0/1. The owner identifies BBD-Chorus as a demo;
+loadability does not imply a full license. On unlink, frame 15999 sends
+link-OFF, then 16003/16007 explicitly rewrite the right chain and leave
+Memory Cat instance 1. This repeats after later unlink operations.
+`antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng`
+repeats that behavior on strips 2/3 (unlink 6447, partial right-chain rewrite
+6501). The extra assignments are host commands, not an effect created by
+the link-OFF frame alone. Our **Unlink only** sends the bare flag change,
+preserving existing effects on both channels.
+
+`antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng`
+identifies Instinct type 75 and Master De-Esser type 27. It contains 46
+identical Instinct right-to-left parameter pairs and 63 identical
+Master De-Esser pairs. The Launcher mirrors separate instances, sending
+instance 1 then 0. Instinct uses opcode `0x7c`, selector `0xd5`, subcommand
+`0x6a`; Master De-Esser uses `0x20` / `0xd5` / `0x0e`. These unlabelled
+parameter sweeps establish neither control-name maps nor display scales.
+Memory Cat's byte layout must not be reused for them. V12 also has observed
+`0x20` / `0xd5` traffic. Stereo writes remain outside the pilot.
+
+**Linked chain editing.** The owner requested linked rack editing on2026-10-01.
+The1/2 capture pairs load writes3427/3431,4997/5001,7505/7509 and reorder
+writes11947/11951,13671/13675, left then right with distinct instances.
+The3/4 capture likewise pairs loads3063/3067 and5185/5189, and removes
+slots in paired updates12531/12535 and12539/12543. The backend reads fresh
+link flags and both chains, preflights both mutations and allocations, then
+writes left and right and verifies both readbacks. Two free captured instances
+are required for linked loading/replacement. Conflicting target/source effect
+types or occupied load targets abort before either write; other slots and
+unknown effects are preserved. Any write/verification failure latches further
+writes without automatic repair. Link/unlink itself still sends only its flag.
+Memory Cat parameter mirroring is an explicit bounded operator candidate
+described below; other-effect parameter writers remain unsupported.
+
+**Bypass observation.** The 3/4 capture's Bypass All actions emit 16 reports
+using opcode `0x14`, selector `0x98`, **state at 17, type at 18, instance at
+19**. Each affected instance receives 1 then 0 only 3–5 ms apart; the
+same sequence repeats on later actions. The new
+`antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng` contains a single
+Bypass All write at31313: `0x14/0x98`, byte17=0, type73/instance0. Earlier
+instance-state reply17097 reports processing1; the following restart capture
+reports processing0 for this instance. Thus Memory Cat's processing flag is
+0=bypassed,1=active. The earlier duplicated1→0 actions remain a Launcher
+observation; an isolated enable write and other types' bypass transitions
+remain untested. At36233 the chain gains Memory Cat73/1, without any parameter
+or bypass initialization writes. The owner confirms this new effect is
+unbypassed after Bypass All. Loading preserves the device-assigned state;
+there is no forced default or inherited global bypass command.
+This supersedes the old subcommand /
+handle / value map. Delete All emits successive whole-chain updates until
+both chains are empty. No bypass or general Delete All writer is enabled.
+
+**Readback/test verification.** Category `0x19` provides 64 safely bounded
+outer records, each with eight `{type,inst}` pairs. The original single-channel
+capture's index-0 replies (9885/12579) contain the owner's accidental type-6
+instance and no post-load reply. Subsequent evidence is stronger: the owner
+reported Memory Cat working on AFX 1, and authorized direct mono load/remove
+trials on AFX 3–32 on 2026-10-01. Those 30 trials verified write channels
+2–31 against the same readback indices, restored each original chain exactly,
+and preserved the other user-facing channels. Reordering additionally
+verified on channels 2 and 31. The existing AFX 1–2 link and effects were
+left untouched; index 1 mono writes were not exercised while linked.
+
+Every operator mutation starts from a fresh read of the selected channel and
+checks its resulting chain. A missing or mismatching post-write reply disables
+further writes for that server session; read-only refresh remains available.
+No blind corrective write follows a failed verification. Allocation requires
+the complete 64-record inventory plus a fresh `0x15:0` remaining counter,
+avoids instances present on other storage records, and accepts only the
+captured ranges in the effect table below. Unknown effects are preserved.
+
+All 16 space-4 link pairs were independently tested ON/OFF against all five
+safe link tables. Pair N changed only `0x0b:4` byte N, 0=OFF and 1=ON; each
+trial restored all five tables exactly. `link_pair_records` records this
+mapping for bytes 0–15, leaving bytes 16–31 unmapped. The WebUI uses device
+readback for pair buttons and channel partner labels. Linked add/replace/remove/reorder is supported through paired whole-chain
+writes. Memory Cat parameter edits are enabled while linked, as described below. Other linked
+pairs do not block it. A link write
+sends only the flag and checks a fresh reply, without modifying either chain.
+
+Local evidence, intentionally excluded from Git:
+
+- `captures/afx-link-readback-transitions-20261001.json`: direct HID requests,
+  replies and before/after/restored values for all 16 pairs.
+- `captures/afx-channel-slot-roundtrips-20261001.json`: 30 mono chain trials,
+  verified restoration and raw HID IN `0x0b`/`0x19` reports.
+
+These trials verify the listed mappings and chain restoration, not switch
+polarity, all effect controls, stereo sharing, or device power-cycle retention.
+
+Category `0x15:0` contains 91 instance counters. `0x0c` declares 90 available
+and 90 maximum records, but its outer count is unknown and runtime queries
+remain capture-required. The old parameter capture includes `0x15:0`
+query/reply 2043/2046 and `0x0c:0` 2049/2051, with 53/78 positive counts.
+The new loading capture adds repeated `0x0c:0` witnesses. No runtime bounds
+were expanded and `0x0c:1` remains unconfirmed. Device resource counts,
+enabled/greyed-out picker entries, demo access and full ownership are
+separate observations.
+
+**Labelled V12/BBD modulation findings (2026-10-02).** The new owned modulation
+capture establishes V12's eleven parameter fields and BBD's five changed fields,
+including unsigned255 endpoints and BBD0=Vibrato/1=Chorus. Full offsets, ranges,
+frame spans and limitations are in [the modulation findings](docs/orion-afx-modulation.md).
+V12 presetIndex and BBD stereo/bypass/meter bytes are preserved opaque fields.
+Neither effect has a measured parameter reader or verified restoration contract;
+their loaded WebUI panels stay unknown and parameter writes remain disabled.
+No runtime query or capacity bound changes.
+
+**Operator picker and live controls (2026-10-01).** The bounded Orion path
+accepts mono channel indices 0–31 and these five independently captured types:
+
+| Effect | Orion type ID | Accepted instance indices | Runtime controls |
+|---|---|---|---|
+| Memory Cat Brigade | 73 (`0x49`) | 0–7 | Complete eight-field parameter block |
+| Instinct | 75 (`0x4b`) | 0, 1 | Load/replace/remove/reorder; parameters observation-only |
+| Master De-Esser | 27 (`0x1b`) | 0, 1 | Load/replace/remove/reorder; parameters observation-only |
+| V12 Chorus | 70 (`0x46`) | 0, 1 | Load/replace/remove/reorder; parameters observation-only |
+| BBD-Chorus | 78 (`0x4e`) | 0, 1 | Load/replace/remove/reorder; owner identifies demo access |
+
+These are measured instance ranges, not the full hardware instance limits or
+an entitlement list. The shared catalog's command definitions remain null;
+only the separate typed runtime contracts enable these operator actions.
+
+The popup keeps categorized effect selectors in the left slot list, a compact
+pair button in its channel header, and eight rack panels on the right. Both
+surfaces support drag reordering, including drops between them. Unsupported
+catalog choices remain disabled. Menu categories describe effect purpose and
+do not establish device IDs, parameter encodings or license ownership. Per-effect
+panels stay in separate modules; the selected channel accompanies every chain
+and parameter request.
+
+Memory Cat knob and switch changes send complete blocks from the first edit
+through a 60 ms coalescing queue, with one request in
+flight. Live acknowledgements do not repaint the rack during a drag. Errors
+pause live sending until an explicit Retry live controls click, without
+automatic retries; pending edits are discarded when their channel/session/draft
+no longer matches. Link changes are resolved from fresh device flags at send time. Drafts follow instance identities
+through reordering. Opening, selection, load and Refresh read the selected
+chain, link table and captured Memory Cat instance states. Reconnect invalidates
+old caches/drafts and triggers a fresh selected-rack query from the main state
+stream. Unknown controls remain unavailable, with no hardcoded starting preset.
+Parameter writes for captured instances0–2 verify the complete block afterward;
+a mismatch disables further AFX writes. Instance-query timeouts stop more such
+queries until reconnect. Neither loading nor refreshing writes parameter or
+bypass defaults.
+**Linked Memory Cat parameter controls.** The owner reported that music kept
+playing but knobs had no audible effect while linked. Both browser and API
+were rejecting those sends. The bounded fix reads the selected chain and
+fresh link flags, locates the selected instance's slot and reads the linked
+partner. A same-slot type73 partner receives the complete same block, right
+then left, with separate instance addressing. An absent or different effect
+receives no write; a knob turn does not load a partner. Each captured read
+instance0–2 is queried and compared after writing; instances3–7 remain
+last-sent only without expanding query bounds. Responses list `updated_instances`
+and per-instance verification; aggregate verification requires all targets.
+Processing flags are read, never forced. This reuses the captured Memory Cat
+frame and the other captured effects' host-mirroring pattern; a Memory Cat-
+specific vendor stereo parameter capture is still pending.
+
+Refresh reads both linked chains and their captured Memory Cat states. If the
+selected rack is empty and its partner populated, the popup selects the actual
+populated channel. This avoids displaying an empty rack while hiding the
+linked partner's controls. Link toggles themselves still preserve both racks.
+
+
+**Tagged effect-instance state readback and Launcher-restart retention.**
+The second capture,
+`antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng`,
+contains75 Memory Cat writes before closing/reopening the Launcher. Final
+instance0 at5633 has all six knobs0, switches0/1; instance1 at8435 has all
+six knobs100, switches0/0; instance2 at22343 has the eight-byte vector
+`[50,50,49,0,49,48,49,0]`. Display positions near50% are approximate, while
+the captured raw bytes are exact. After reopen there are no parameter replay
+writes. Replies34397/34427/34481 and37613/37639/37695 return those exact
+blocks. This establishes device-side retention across Launcher restart;
+power-cycle retention remains untested.
+
+This uses a different read namespace from category queries: request magic
+`0x74`, opcode`0x11` at4, kind`0x07` at8, tagged effect selector
+`0x80000000 | type_id` as LE32 at12, instance as LE32 at16. Memory Cat
+requests34373/34401/34457 select type73, instances0/1/2. Replies start
+`75 00 00 00 40 01 00 00 07 00 00 00 49 00 00 80`, then processing-enabled
+byte16 followed by the eight parameters at17–24 in write-field order;
+padding starts25. The reply echoes the type selector, **not the instance**.
+Serialize these requests, drain queued reports, disable retries and stop
+after a timeout until device reconnect. Do not pass this tagged selector to
+the opcode`0x10` category-index builder or expand category7 bounds.
+
+The runtime reader queries only fresh loaded Memory Cat instances0–2,
+the exact captured tuples. Other Memory Cat instance reads3–7 remain guarded.
+Instinct75/1, Master De-Esser27/1 and BBD78/0 also have observed requests/replies
+in the first capture, but their individual response fields are unlabelled and
+runtime queries remain disabled. These are not license/account readbacks.
+The reusable request/response layout, per-effect offsets, observed indices,
+correlation limits and evidence live in
+`profiles/orion_studio_sc.json#frame.afx_slot.instance_state_readback`;
+the shared AFX catalog references it from the Memory Cat Orion implementation.
+
+Read-only live API checks on2026-10-01 returned the exact captured minimum,
+maximum and half-value vectors for instances0/1/2 on AFX1/2, with processing
+flags0/1/1 and no read errors. The owner confirmed correct readback. These
+checks made no parameter, bypass, chain or link mutations.
+
+The owner authorized a Level self-test after applying the full settings.
+The test sent Level 100→99 while a raw HID listener observed incoming
+traffic, then resent the full original settings with Level 100. That restore
+command was acknowledged; restoration could not be independently checked
+without parameter readback. Baseline/changed/restored phases contained
+75/154/79 state `0x73` reports and 76/153/79 diagnostic `0x75` reports;
+changed/restored also contained queried `0x0b:4` and `0x19:0` replies. No stable reversible byte
+change was found in the observed free-running state/diagnostic streams;
+no parameter echo was identified. This is a limited observation, not proof
+that every undiscovered query lacks parameter readback. No unknown category
+or out-of-bounds query was sent. The local raw evidence is
+`captures/afx-parameter-readback-selftest-20261001.json`, intentionally
+excluded from Git. This parameter trial is separate from the verified slot
+and link round trips above.
+
+`tools/scan_afx_capture.py` automates offline slot/action ordering, parameter
+byte changes and identical mirrored-write comparisons for these captures.
+It filters verified Orion HID traffic and exports neither identity nor
+account traffic. It never queries or writes a device.
 ---
 
 ## 13. Evidence boundaries
@@ -1909,22 +2155,22 @@ ignored `AUDIT.md`.
 | Routing frame (`0x53` / `0xd3`) | §7: destination map (0-14), all 12 source banks, all 15 destination channel counts, and the `(bank,index)`-per-channel array model all confirmed. **Readback = §4a category `0x03`** (verified byte-identical against CLI writes). CLI `matrix-status` = live read of all 15 groups; `route <dest> <chan> <source>` covers line out (16 ch) + HP1/HP2/Mon A/Mon B/Reamp (2 ch) and self-verifies. The other 9 destination write paths are not implemented. |
 | Virtual mixer (`0x17` / `0xd4`) | §12: frame decoded 2026-08 (`macos-mix1-...`) -- `mix`/`channel`(1-32)/`fader`(0-90)/`pan`(signed `-30..30`, raw `0x20`=centre)/`mute`(@21 bit6)/`solo`(@21 bit7)/`send`(0-96), plus mix link via `SET_LINK` space `0x03`. Readback = §4a category `0x04` (idx = mix number), decoded + hardware-verified; `mix-status` / `mix-set` in the CLI. Restore-guaranteed live round-trip 2026-09-14 changed Mix 4 channel 32 to -30 dB and restored it. (`0x1b` was once thought to be its bus-level table -- it is the surround global readback instead, §11; bus levels are `0x73` `bus_block`.) |
 | Mic modeling / emuMic (`0x17` / `0xe5`) | §12: enable / model id `[20]` / polar-pattern `[22]` / channel-order swap all decoded (`macos-ch7-8-micmodeling-*`, `emumic-model-select-…`, `macos-emumic-polar-patterns`). `[22]` is a polar-pattern **index** for selected models too (0 / 0-2 / 0-8 by model); model select presets it to the model default. 18 emulation models in `profiles/mic_models.json` (account-bound list). `build_micmodeling_command`; not in CLI. Current state readback is category `0x16`, index 0: eight `{target, emu_model, ch_swap, pattern}` records. The write frame still has no verified write/readback round-trip. Preamps 5-6 CAPTURED 2026-09-03 (webUI usbmon, `webui-emumic-preamp56-...`): `[18]=0x00`/`0x01` on the wire, pair = link pair 2, disable reverses phantom+gain+link. Open: whether models 1/12/16/18 have a 3rd pattern (only 0-1 swept); whether model ids are global or list-position. |
-| ADAT vs physical `SET_LINK` | both use `space` byte `0x00` -- byte-identical frames (§7). S/PDIF (space `0x01`) is now distinguishable. Whether one space-0 command links pair N in *both* physical and ADAT is unverified; differing per-channel gains are required to distinguish the result. |
+| ADAT link control/readback | **Verified 2026-09-30:** space 1/pairs 0-7, `0x0b:1` records 0-7; per-pair restoration and Windows VM indicators confirmed. Earlier UI writes used space 0 incorrectly. |
 | ~~Pan law~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x24` / 0-3 = -6/-3/-4.5/0 dB (`panning-law-6-3-45-0`). No readback. CLI `pan-law`. |
 | ~~Clock source~~ | **DECODED 2026-09-03** — `SET_GLOBAL 0x12` / param `0x04` / 0-6 (Oven / WC / ADAT / ADATx2 / ADATx4 / S/PDIF / USB). Readback `0x73` @19 — which also explains the `0x73` @19 startup blip (USB→saved source re-lock). CLI `clock-source`. |
-| S/PDIF gain + link | **confirmed** (`spdif-gain-link`, 2026-08): gain param `0x5c`, readback `91`/`92`, link via `space=1`. In the CLI. |
+| S/PDIF gain + link | Gain param `0x5c`, state offsets 91/92. Link corrected and VM-confirmed 2026-09-30: space 2/pair 0, readback `0x0b:2`. |
 | Oscillator | **resolved** -- matrix insert = routing bank `0x0c` (§7); settings panel = `0x12`/`0x0a` packed byte (§11). Whether the level field is shared or per-oscillator is unverified. |
 | Screen brightness | **resolved (native macOS)** -- opcode `0x12` / param `0x0e` / value 0-100 @17, readback @26 (`macos-scrbrght-0-100-50-multvalue`). VM had no traffic only because the VM Launcher no-ops the slider. Restore-guaranteed live round-trip 2026-09-14: `17 -> 40 -> 17`. |
 | Sample rate | **resolved + hardware round-trip 2026-09-04.** Opcode `0x12` / param `0x03` / index 0-6 @17; readback: index @18, **rate in Hz @21-23 (24-bit big-endian), rate family @27** (`0x10>>[21]`) -- all confirmed by a live OVEN-clock sweep of every rate. CLI `sample-rate` (now shows both index and measured Hz) / `set-sample-rate`; `protocol.state_clock_rate_hz`; selftest `clock rate Hz`. **Two preconditions for writing:** (1) host must release the USB audio interface (Linux: `pactl set-card-profile <orion> off`); (2) `set-sample-rate` is ignored while clock source = USB -- go via OVEN. Still open: whether @21-23 shows the *measured* rate under an external clock (a true lock indicator); 32k not swept this pass. |
 | Surround tab (`0xab`/`0xeb` global + `0x87`/`0xea` per-speaker ×16) | Global flags/channel order, level, delay, masks, and 2.0/2.1 Bass Management; per-speaker OUT geometry includes level (+invert), delay, and 16 EQ bands. **Both frames read back:** per-speaker EQ = category `0x1a` (16 records), global = `0x1b`. The finite `0x1a` decoder begins EQ at response byte 20 and decodes the four-byte delay/level/phase head while keeping modes raw. The WebUI allows normal global format writes only for 2.0/2.1, confirmed Bass Management/filter-type/Link/Solo fields, confirmed speaker bypass, and confirmed per-speaker delay/level/phase fields; `tools/surround_format_selftest.py` directly round-trips and restores the selected state. |
 | DC-coupling | **confirmed 2026-09-14** -- `0x12`/`0x26`, value 0/1 (§11), read back at `0x73` byte 93 bit 0 with `0x00 -> 0x01 -> 0x00`. Talkback fast/normal/safe latency modes send nothing (host-side). |
-| AFX Real-Time effects | Slot assignment (`0x23`/`0xd7`) is field-mapped from 2026-09-04 Launcher captures, but remains out of scope and blocked. Parameter control (`0x1c`/`0xd5`) is in scope under `SCOPE.md` §4 but its payload has not been decoded; the implementation guard stays until field mapping and safe-write verification. Readback category `0x19` maps 64 strip records × 8 `{type, inst}` slots; `0x15` is a 91-entry remaining-instance table; `0x0c` available/max tables remain outer-index capture-required. Open: handle encoding and bypass polarity. Parameter-control research is documented here in `antelope-ctl` per project scope. |
-| AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. The category `0x0b` index-4 table is the profile-mapped readback candidate, but transition correlation is still capture-pending. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
+| AFX Real-Time effects | §12a: whole eight-slot chain decoded, separate type/instance addressing, Memory Cat parameter/processing-state readbacks confirmed for instances0–2, Launcher-restart retention confirmed, and linked host mirroring observed for Instinct/Master De-Esser. Mono slot writes require fresh readback and post-write verification. Direct slot round trips cover channels2–31, plus earlier owner testing on0. Isolated bypass-enable writes, channel1 direct mono round trip, storage32–63 and other effect parameter maps remain unverified. Generic opcode guards and classic readback bounds remain unchanged. |
+| AFX channel stereo-link | **DECODED 2026-09-04** (`macos-afx-stereolink-...`) -- `SET_LINK` space `0x04`, `pair_index = channel // 2` (16 pairs / 32 ch). Bare flag, no gain-sync. Direct trials on 2026-10-01 verified pair0–15 against category `0x0b` index4 records0–15 and restored original flags. Records16–31 remain unmapped. §7 space table; `build_link_command(space=4)`. Bucket A/B. |
 | Thunderbolt / latency | **UNPROVEN.** The only evidence is `settigs-thunderb-lat-dccp.pcapng` showing zero outgoing frames — but DC-coupling, which that file is named for, is now known to emit a frame, so the file either never exercised it or was not recording the OUT endpoint. Plausible (TB is inactive over USB; buffer size is a host concept) but needs a recapture with the OUT endpoint verified present (§11) |
 | Offsets 17 / 19 blip | ~3.0 s after the Launcher starts, in every capture **including the no-user-interaction INIT capture** -- Launcher handshake event, not user- or feature-related. Ignore. |
 | Offsets 139-140 ramp (129-136 in INIT) | first ~0.12 s of every capture -- device/connection startup settling. Ignore. |
 | Shared meter banks / selectors | Physical inputs use `0x73 [221..232]`. Mixer-window selection is `0x49 / target 1 / value 0..3`, echoed at `[122]`. Meters-window selection is `0x49 / target 0 / value 0..25`, echoed at `[121]`; values 19/20 are unnamed in the capture filename. Shared lane ownership beyond the gated Mix 2 block remains unresolved. |
-| Channel-link readback bit | State-report bit still absent. Space-0 pair 3 confirms `0x0b:0` polarity for six shared flags. ADAT tail pairs have no confirmed byte. S/PDIF uses `0x0b:1` record 0 (controlled OFF/ON); `0x0b:2` is unassigned. Mixer and AFX still need transition correlation. |
+| Channel-link readback bit | Input flags are verified: `0x0b:0` Preamp six pairs; `0x0b:1` ADAT eight pairs; `0x0b:2` S/PDIF one pair. AFX space-4 pairs 0–15 were independently verified against index-4 records 0–15 and restored on 2026-10-01. Trailing AFX records 16–31 remain unmapped; mixer transitions remain pending. |
 | dB curve past -60 dB, and per-channel | only channel 0, only to -60 dB |
 | `0x74` groups `0x19`(64)/`0x03`(15)/`0x04`(4) + singletons | counts + order known (section 4); **names are in no capture on file** -- need a fresh string-descriptor capture or the Launcher routing-tab labels. Category `0x19` is now identified as AFX strip order (64 outer records × 8 slots), not the USB/TB channel stream. |
 | `bus_block` reserved byte (`30+3N`) | never changed -- padding or unexercised |

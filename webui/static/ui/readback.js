@@ -49,7 +49,7 @@ function rbLinkBody(layout, entries) {
   if (mixerMapped) {
     note = 'ON means the returned selector byte is non-zero; a complete bitmap seeds the visible mixer-pair links.';
   } else if (inputTable?.authoritative === false) {
-    note = 'Raw flags changed after both Preamp and ADAT writes. Their input-domain meaning is unresolved; they do not drive either set of link buttons.';
+    note = 'The active profile marks this table as diagnostic only; it does not drive input-link indicators.';
   } else if (inputMapped && inputTransitionConfirmed) {
     note = 'ON means the returned pair byte is non-zero; this transition-confirmed table drives its mapped input-link indicators.';
   } else if (inputMapped) {
@@ -153,6 +153,7 @@ async function reloadReadback() {
 
 // ---- state fan-out ---------------------------------------------------
 function applyState(s) {
+  AFX_DEVICE_RACK?.deviceState?.(s);
   const wasOnline = ONLINE;
   ONLINE = !!s.online;
   const st = $('#status');

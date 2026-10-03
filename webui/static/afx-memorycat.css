@@ -1,0 +1,53 @@
+/* Original Gazelle rack styling for the Memory Cat Brigade preview. */
+.afx-rack-effect { border-color:#665381; }
+.afx-effect-face { padding:15px 20px 12px; border-left:1px solid #343741; border-right:1px solid #343741;
+  background:linear-gradient(120deg,#252131,#1d252b); }
+.afx-effect-heading { display:flex; align-items:center; gap:12px; padding-bottom:13px; border-bottom:1px solid #ffffff13; }
+.afx-effect-family { color:#72c7be; font:10px ui-monospace,monospace; letter-spacing:.12em; }
+.afx-effect-heading h3 { margin:4px 0 0; font-size:17px; font-weight:600; letter-spacing:.02em; }
+.afx-preview-badge { margin-left:auto; padding:4px 8px; border:1px solid #645277; border-radius:20px;
+  color:#c8afdF; font-size:10px; white-space:nowrap; }
+.afx-preview-close { border:0; background:transparent; color:var(--dim); font-size:24px; cursor:pointer; }
+.afx-effect-controls { display:grid; grid-template-columns:minmax(0,1fr) 172px; gap:22px; padding-top:15px; }
+.afx-knob-bank { display:grid; grid-template-columns:repeat(6,minmax(60px,1fr)); gap:10px; }
+.afx-effect-control { position:relative; display:flex; flex-direction:column; align-items:center; min-width:0; gap:8px; }
+.afx-control-label { font-size:11px; color:#c8c6d3; }
+.afx-knob { position:relative; display:grid; place-items:center; width:58px; height:58px; border-radius:50%;
+  background:conic-gradient(from 225deg,#b78aef 270deg,transparent 0);
+  touch-action:none; cursor:ns-resize; }
+.afx-knob-cap { position:relative; width:46px; height:46px; border-radius:50%;
+  border:1px solid #585763; background:radial-gradient(circle at 35% 25%,#484753,#24232b 75%);
+  box-shadow:0 3px 5px #0008; }
+.afx-knob-pointer { position:absolute; inset:0; transform:rotate(var(--afx-turn)); }
+.afx-effect-control.unknown .afx-knob-pointer { visibility:hidden; }
+.afx-effect-control.unknown .afx-knob { opacity:.5; cursor:default; }
+.afx-knob-pointer::after { content:""; position:absolute; width:3px; height:13px;
+  left:calc(50% - 1.5px); top:4px; background:#ded3f3; border-radius:2px; }
+/* Keep native keyboard and screen-reader control without a visible slider. */
+.afx-knob-input { position:absolute; width:1px; height:1px; padding:0; margin:0;
+  border:0; overflow:hidden; clip-path:inset(50%); }
+.afx-effect-control:focus-within .afx-knob { outline:2px solid #b78aef; outline-offset:2px; }
+.afx-control-value { color:#777d8c; font:10px ui-monospace,monospace; }
+.afx-control-value output { color:#e1dcef; font-size:13px; }
+.afx-mode-bank { display:grid; align-content:center; gap:16px; padding-left:18px; border-left:1px solid #ffffff13; }
+.afx-mode-control { display:grid; gap:8px; }
+.afx-mode-options { display:flex; gap:3px; padding:3px; border-radius:5px; background:#11171c; }
+.afx-mode-button { flex:1; border:1px solid transparent; border-radius:3px; background:transparent;
+  color:#8f98a5; padding:6px 4px; font:11px system-ui,sans-serif; cursor:pointer; white-space:nowrap; }
+.afx-mode-button[aria-pressed=true] { background:#24423f; color:#90dbd1; border-color:#427b72; }
+.afx-preview-note { margin:12px 0 0; color:#9894a5; font-size:10px; }
+.afx-live-status { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+.afx-live-status span { color:#9894a5; font-size:10px; }
+.afx-preview-open:focus-visible, .afx-preview-close:focus-visible, .afx-mode-button:focus-visible {
+  outline:2px solid #b78aef; outline-offset:2px; }
+@media (max-width:1150px) {
+  .afx-effect-controls { grid-template-columns:minmax(0,1fr); gap:16px; }
+  .afx-mode-bank { grid-template-columns:1fr 1fr; padding:12px 0 0; border-left:0; border-top:1px solid #ffffff13; }
+}
+@media (max-width:480px) {
+  .afx-effect-face { padding:12px; }
+  .afx-effect-heading { flex-wrap:wrap; gap:8px; }
+  .afx-effect-heading h3 { font-size:15px; }
+  .afx-knob-bank { grid-template-columns:repeat(3,minmax(60px,1fr)); gap:16px 10px; }
+  .afx-mode-bank { grid-template-columns:1fr; }
+}

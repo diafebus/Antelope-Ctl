@@ -19,6 +19,10 @@ PYTHON_MODULES = (
     "tools.test_readback_records",
     "tools.test_orion_startup",
     "tools.test_orion_profile_audit",
+    "tools.test_afx_catalog",
+    "tools.test_afx_test",
+    "tools.test_afx_state_capture",
+    "tools.test_scan_afx_capture",
     "tools.test_link_transition_capture",
     "tools.test_surround",
     "tools.test_meter_sources",
@@ -28,6 +32,8 @@ NODE_CHECKS = (
     "tools/test_webui_meters.cjs",
     "tools/test_webui_mixer_links.cjs",
     "tools/test_webui_input_links.cjs",
+    "tools/test_webui_afx.cjs",
+    "tools/test_webui_afx_modulation.cjs",
     "tools/webui_sources.cjs",
 )
 

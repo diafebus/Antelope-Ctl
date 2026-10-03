@@ -10,7 +10,7 @@ const busSource = fs.readFileSync(path.join(root, 'webui/static/ui/buses.js'), '
 const sourceFiles = [...html.matchAll(/<script src="\/webui\/static\/([^"]+)"><\/script>/g)]
   .map(match => match[1].split('?')[0]);
 assert.deepEqual(sourceFiles, JS_FILES);
-assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/app\.css">/);
+assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/app\.css(?:\?v=[^"]+)?">/);
 assert.match(html, /<link rel="stylesheet" href="\/webui\/static\/surround\.css\?v=[^"]+">/);
 assert.match(html, /data-rtab="surround"/);
 assert.match(html, /data-rpane="surround"/);

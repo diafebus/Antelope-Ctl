@@ -16,12 +16,14 @@ used; the device firmware is not touched.
 | file | what's in it |
 |---|---|
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
+| **`AGENTS.md`** | sole project instruction entry point; local handoff and open tasks have separate roles |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
 | **`docs/profile-labeling.md`** | the cross-client labels and feature-manifest contract — how to add a device and keep shared parameter vocabulary consistent |
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
-| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` |
+| **`docs/orion-afx-workflow.md`** | current AFX evidence, existing tools, proposed Launcher batch automation and effect completion criteria |
+| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` and the shared `afx_effects.json` reference catalog |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
 ### Naming
@@ -33,7 +35,7 @@ existing CLI subcommand, profile key, and API path (`auraverb`) remain as
 compatibility identifiers.
 
 **Roughly what's decoded** (2026-09): preamp gain/mode/phantom/phase +
-link, ADAT & S/PDIF I/O, output buses (monitor/HP/line/reamp) with
+link, ADAT/S/PDIF gain and device link controls, output buses (monitor/HP/line/reamp) with
 dim/mute/mono, the full **routing matrix** (15 dests, 12 source banks, read
 + write, self-verifying), the **virtual mixer** (4 mixes, read + write),
 **Gazelle Reverb** (read/write, hw-verified), **mic modeling / emuMic** (frame
@@ -48,28 +50,140 @@ Orion nested records: category `0x0b` link tables, `0x15` AFX instance counts,
 `0x16` mic-emulation state, and `0x19` AFX strip order. The CLI and WebUI
 display those profile-declared records. There is **no built-in
 per-input-channel EQ** on this device: input EQ uses an AFX Real-Time
-effect; its parameter controls are in scope but not yet decoded or
-implemented (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited to 2.0 and
+effect; AFX EQ parameter controls have no verified implementation (`SCOPE.md`, `PROTOCOL.md`). Normal WebUI format writes are limited to 2.0 and
 2.1. The global format wire path was directly round-trip tested through 9.1.6
-with `tools/surround_format_selftest.py`. The `0x07` category, the outer query
-bounds for `0x0c`, and
-the `0x74` channel-group names. A controlled 2026-09-23 space-0 link
-transition confirmed category `0x0b` index 0 for six shared space-0 pair
-flags; it cannot separate Preamp from ADAT state. A controlled S/PDIF OFF/ON
-transition mapped its single pair to `0x0b:1` record 0; the other seven bytes
-and `0x0b:2` remain unassigned. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
+with `tools/surround_format_selftest.py`. The meaning of classic category `0x07`,
+the outer query bounds for `0x0c`, and some `0x74` channel-group names remain
+unresolved. Tagged AFX instance-state queries use a separate namespace.
+Category `0x0b` index 0 contains six link
+flags for the device's 12 physical preamps, paired as 1/2 through 11/12.
+ADAT uses the eight records at `0x0b:1`; S/PDIF uses the single record at
+`0x0b:2`. Direct device transitions and subsequent Windows VM Launcher
+checks on 2026-09-30 confirmed input link selectors `0`=Preamp, `1`=ADAT,
+`2`=S/PDIF. Earlier Launcher button captures used incorrect digital selectors;
+the old project interpretation was corrected. The **AFX plugin-chain slot** frame (`0x23`/`0xd7`,
 which channel holds which plugin instance) is field-mapped for *observation*
-in `PROTOCOL.md` §12a but never emitted — assigning/loading a plugin is out
-of scope (`SCOPE.md`). AFX Real-Time parameter control is in scope, but its
-parameter stream is not yet decoded or emitted. The AFX-tab channel
+in `PROTOCOL.md` §12a. General loading remains outside scope; the owner's
+explicitly requested Orion captured-effect rack pilot is a bounded exception
+(`SCOPE.md`). Its operator-driven test interface supports whole-chain
+loading/removal/reordering and live complete parameter blocks. The AFX-tab channel
 stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 `PROTOCOL.md` §13 for the live open list.
+
+### AFX profile preparation
+
+AFX preparation separates device capacity from effect definitions. Orion's
+`afx` metadata declares 32 mono channels and eight insert slots per channel,
+as described in [Antelope's public demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
+The shared `profiles/afx_effects.json` catalog contains 80 reference effect
+entries and 729 declared control names from Gazelle's Discrete 4 findings,
+with pinned source provenance. The first three descriptions are drawn from
+public effect pages. The Orion Memory Cat Brigade implementation records
+six observed 0–100 knob fields and two binary switch fields from an
+owner-labelled capture. Switch labels are owner-confirmed: raw0=550ms/Chorus,
+raw1=1100ms/Tremolo. Parameter/processing-state readbacks are captured for
+instances0–2; intermediate physical scaling remains unresolved. The typed operator path separately records
+verified chain/link round trips and owner-reported parameter operation. Owner-labelled load captures establish
+Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
+Master De-Esser; catalog commands stay null. This metadata does not enable
+a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
+
+The WebUI's **AFX** button, between Routing and Mix 1, opens a detachable
+window with a channel selector and one channel overview on the left, and
+the selected channel's effects rack on the right. Orion offers 32 channels;
+the rack shows all eight slot panels together and remembers the selected
+channel while the main page remains open.
+Each effect's presentation has its own JavaScript and CSS module. Memory Cat
+provides six draggable knobs and two mode selectors in an original Gazelle
+rack design. Local previews retain settings per channel/slot and support
+drag-and-drop or keyboard-button reordering.
+
+The AFX channel dropdown shows a loaded-effect count (for example, `AFX 1 · 2 FX`)
+from slot readbacks only when at least one effect occupies that channel. Empty
+and unavailable channels have no count; existing link markers remain visible.
+
+Opening **AFX** shows the device rack. Select any of AFX 1–32; each slot
+in the left channel frame has an effect selector grouped into Dynamics,
+EQ & Filters, Modulation, Delay & Reverb, Pitch & Tuning, Amps & Cabinets,
+Preamps, Saturation & Distortion, and Other. These are presentation categories,
+not device capabilities. Memory Cat, Instinct, Master De-Esser, V12 Chorus
+and BBD-Chorus have independently captured Orion load IDs; unmapped entries
+are greyed out.
+Selecting a different effect replaces a supported insert; selecting Empty
+removes it. Loading uses fresh instance counters and the complete slot
+inventory, measured instance indices, and verified whole-chain writes.
+Counts describe resources, not license ownership. Direct load/remove tests
+on AFX 3–32 verified matching slot readbacks and exact restoration; AFX 1
+was owner-tested earlier. AFX 2 was not part of those mono trials. Only Memory Cat has parameter controls so far. Drag effects within
+or between the left slot list and the rack to reorder the selected chain.
+
+The compact pair button sits inside the left channel header and follows
+the selection: AFX 1 or 2 shows 1–2, AFX 3 or 4 shows 3–4, through 31–32.
+Its glow and accessible label identify the current link state. Linked
+channel-menu entries show their partner. Link indicators use device readback: all 16 space-4 flags were
+independently verified against `0x0b:4` records 0–15 on 2026-10-01. Records
+16–31 remain unmapped. Opening or refreshing reads link flags and selected
+chain/settings, including the partner when linked.
+The button sends only the flag, preserving both chains. Stereo parameter
+sharing is enabled for Memory Cat's bounded operator pilot: edits update the existing selected
+instance and a same-slot Memory Cat partner when present, using fresh chain
+readbacks. Audible confirmation and a Memory Cat-specific vendor stereo
+capture remain pending. Other-effect parameter controls remain unavailable.
+Adding, replacing, removing and reordering effects works while linked: the
+controller reads both adjacent chains, preflights both edits, allocates distinct
+instances and writes left then right, matching the captures. Both resulting
+chains must verify. Loads require two available instances and empty target slots
+on both sides; removal/replacement/reordering requires matching effect types at
+the edited slot. Conflicting chains remain unchanged for independent editing.
+If the selected linked rack is empty and the partner has effects, the popup
+selects that populated channel so its actual controls remain visible. Links
+on other pairs do not block that channel.
+
+Memory Cat instances0–2 now initialize from real device readback on opening,
+channel selection, loading and reconnect. The JSON profiles describe a separate
+tagged instance-state query, its eight parameter offsets and processing flag.
+The owner's Launcher-restart capture returns the exact minimum/maximum/near-50%
+values without replaying parameter writes. New effects were also confirmed
+active after Bypass All; loading preserves the device-assigned state.
+Power-cycle persistence remains untested. Other instance reads/effect fields
+remain guarded; unknown settings stay unavailable. No hardcoded starting
+preset is sent. Knob and switch edits send automatically from the first edit;
+there is no Apply step. Opening or refreshing never sends settings.
+Requests are throttled
+and coalesced to the latest settings, with one in flight and no rack repaint
+during a drag. Failed writes pause live sending until an explicit Retry live
+controls click; they are not retried automatically. A missing or mismatching
+post-write slot reply, or mismatching parameter reply, disables further AFX writes
+for the server session; Refresh remains read-only and does not clear that failure.
+An instance-query timeout blocks further captured instance reads and edits until
+the device reconnects, because a late reply carries no instance identity.
+Reconnect clears old slot inventory, link flags and initialized parameter
+drafts. Wait for the full inventory before loading. After loading or reconnect,
+the selected rack queries fresh settings before its first edit.
+The owner confirmed both switches:0=550ms/Chorus,1=1100ms/Tremolo. The
+WebUI labels them from the Orion JSON. The owner reports the effect and
+applied parameter settings work. A 2026-10-01 Level 100→99→100 self-test
+found no stable parameter readback in the observed HID streams; the original
+settings were resent to restore the baseline, with the command acknowledged
+but no parameter readback to independently verify restoration. This does not
+establish absence of a separate parameter-readback protocol; the new restart
+capture identifies it. That older restoration trial remains send-only evidence.
+See [PROTOCOL.md §12a](PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls)
+for the effect IDs, complete device-test findings and remaining evidence limits.
+The [Orion AFX workflow](docs/orion-afx-workflow.md) documents Linux readback
+recording, reuse of existing captures and proposed Launcher batch automation,
+with completion criteria for each available effect.
+
+**Local preview** explicitly switches to drafts; **Connect device rack**
+returns to device slots. Opening the rack or changing channels sends no
+hardware mutations.
 
 ### Evidence rule for write claims
 
 For profile-audit purposes, a writable parameter may be marked `confirmed` only
 when its evidence records a dated, model-local write, a device-side readback
-showing the before/after value, and restoration of the original value. Vendor
+showing the before/after value, and restoration of the original value (or an
+explicit user request to retain the state for cross-controller validation). Vendor
 software traffic, UI or audio behaviour, and an undifferentiated moving byte do
 not by themselves constitute a readback witness. Observed channel indices may
 confirm membership, but the maximum safe index remains derived until an
@@ -215,54 +329,42 @@ replicates. See "Channel link is real, but the syncing you see isn't the
 device doing it" below before assuming any other tool will behave the same
 way against this hardware.
 
-ADAT inputs -- a separate 16-channel space (ADAT ch 0-15), gain + link
-only (no mode/phantom/phase):
+ADAT inputs -- a separate 16-channel space (ADAT ch 0-15), gain plus a
+confirmed eight-pair link control (no mode/phantom/phase):
 
 ```
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json adat-status
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-gain 0 6      # ADAT ch1, +6 dB
-python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-link 0 on     # links ADAT ch1+ch2
+python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-adat-link 0 on     # links ADAT ch1+ch2 using space 1
 ```
 
-ADAT link behaves exactly like the preamp link (user-confirmed on
-hardware): linked channels move gain together, and -- as with the preamp
--- that's the *software* sending a second command, not the device, so
-`set-adat-gain` mirrors to the linked partner itself. **Caveat:** the ADAT
-and physical `SET_LINK` frames are byte-identical (both `space` byte
-`0x00`), so `set-adat-link` on pairs 0-5 may also toggle the matching
-*physical* link (ch1&2 ... ch11&12). Pairs 6-7 are ADAT-only. See
-`params.adat_channel_link` in the profile.
+ADAT links use `SET_LINK space=1`, pair indices 0–7, with device flags at
+category `0x0b`, index 1, bytes 0–7. Each selector was independently toggled
+and restored on 2026-09-30 while all other link tables stayed unchanged.
+All eight flags were then left ON at the user's request; after reconnecting
+the Windows VM, the Launcher displayed all eight ADAT links ON.
 
-The WebUI displays the first six unassigned space-0 flags from the device's
-`0x0b:0` table as raw diagnostics. Both Preamp and ADAT commands changed that
-table in controlled checks, so it cannot identify which input domain is
-linked and no longer drives either set of buttons. Their button state records
-the last command made in this browser. On first load after this correction,
-the browser clears old pair-0..5 link cache entries that may have been filled
-from the ambiguous table; it does not send a device command. ADAT pair
-indices 6/7 have no confirmed readback byte; their buttons also retain the
-browser's last command. Direct ADAT pair-7 and pair-8 ON/OFF tests changed
-none of the five known link tables; pair 8 also stayed on for 40 seconds
-without a table change. An earlier ADAT 13/14 ON write left the eight-byte
-`0x0b:1` table at zero. A controlled 2026-09-26 S/PDIF OFF/ON test then
-showed that **record 0 of that same table follows S/PDIF**, changing
-`1 → 0 → 1` while ADAT links stayed fixed. The WebUI now refreshes
-`0x0b:1` after S/PDIF writes and uses only record 0 for its S/PDIF button.
-The one-byte `0x0b:2` table stayed zero during that test and remains an
-unassigned diagnostic. None of these flags proves that both
-physical and ADAT signal paths are linked by the shared space-0 command.
+The WebUI reads Preamp, ADAT, and S/PDIF flags from their separate tables
+and refreshes the relevant table after a link write. A one-time browser
+cache migration discards saved link entries from the old incorrect mapping;
+complete device readback repopulates the buttons. CLI link commands use the
+same corrected selectors but retain their separately labeled local cache
+for gain mirroring; `mark-adat-link` only changes that CLI cache.
 
-The 2026-09-23 UI check showed the bug: after the ADAT 7/8 OFF command,
-`0x0b:0` went low and the old WebUI also switched off physical Preamp 7/8.
-That UI behavior did not establish the physical pair's actual link state.
+The user confirmed on 2026-09-30 that corrected WebUI ADAT and S/PDIF link
+writes and readbacks work, and the intended links survive controller
+restarts. These input-link mappings are confirmed.
 
-ADAT 13/14 was toggled ON through the WebUI API on 2026-09-23; the server's
-fresh index-1 query succeeded (`link_rb_ver` advanced), but all eight records
-remained zero. It was returned to OFF and its gain restored to 0 dB after a
-one-sided +1 dB probe; ADAT 14 stayed at 0 dB during that single API write.
-This confirms that one gain write is not device-propagated to its partner;
-the browser must issue both writes when its link control is active. ADAT
-15/16 still needs the same exact live readback check.
+Earlier ADAT-button captures sent space 0, which targets Preamp flags.
+Earlier S/PDIF-button captures sent space 1, which targets ADAT. These UI
+commands explained both the Preamp changes and the misleading historical
+S/PDIF attribution of ADAT byte 0, as well as the apparent failure to retain
+the intended digital-input links across Launcher restarts. ADAT pairs 7/8
+failed the old tests because they were sent to the six-pair Preamp space.
+Gain coupling remains software
+behavior: controllers send a separate gain command to each linked channel.
+These link-flag trials did not test firmware gain propagation or retention
+through a physical device power cycle.
 
 S/PDIF input -- a 2-channel space (0 = L, 1 = R), gain + link only:
 
@@ -272,11 +374,11 @@ python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-spdif-gain 0
 python3 -m antelope.cli --profile profiles/orion_studio_sc.json set-spdif-link on    # links L+R
 ```
 
-Same gain-mirroring behaviour as the other links. The S/PDIF `SET_LINK`
-frame carries a distinct `space` byte (`0x01` vs `0x00` for physical/ADAT),
-so it has **no** cross-space ambiguity -- `set-spdif-link` only touches
-S/PDIF. Confirmed from `spdif-gain-link.pcapng` (gain param `0x5c`,
-readback at state-report offsets 91/92).
+S/PDIF links use `SET_LINK space=2`, pair index 0, and read back at `0x0b:2`
+byte 0. A direct OFF→ON write on 2026-09-30 changed only that byte, with
+Preamp links OFF and all ADAT links ON. The state was deliberately left ON
+for a Windows VM reconnect; the user confirmed the S/PDIF indicator ON.
+S/PDIF gain remains parameter `0x5c`, state-report offsets 91/92.
 
 Output buses -- monitor A/B, headphone 1/2, plus the settings-tab Line and
 Reamp outputs. These are a *different* address space from the input
@@ -378,7 +480,7 @@ python3 -m antelope.cli ... route lineout 6 mute             # mute one channel
 python3 -m antelope.cli ... matrix-status                    # LIVE read of the whole matrix from the device
 python3 -m antelope.cli ... mix-status 1                     # LIVE read of virtual Mix 1 (cat 0x04)
 python3 -m antelope.cli ... readback 0x03 0                  # raw: routing record for dest 0 (line out)
-python3 -m antelope.cli ... readback 0x0b 0                  # six shared space-0 link flags
+python3 -m antelope.cli ... readback 0x0b 0                  # six Preamp-pair link flags
 python3 -m antelope.cli ... readback 0x16 0                  # structured mic-emulation state
 python3 -m antelope.cli ... readback 0x19 0                  # structured AFX strip order
 python3 -m antelope.cli ... readback                         # list the readback categories
@@ -437,7 +539,7 @@ matrix (`mix1L` … `mix4R`). Decoded 2026-08 from
 - soloing a channel makes the Launcher re-send all 32 strips (that's how
   we know each mix has 32 inputs).
 - **mix channel link** = `SET_LINK` with a new `space` byte `0x03`
-  (0 = physical/ADAT, 1 = S/PDIF, 3 = mixer); software-mirrored and scoped
+  (0 = Preamp, 1 = ADAT, 2 = S/PDIF, 3 = mixer); software-mirrored and scoped
   independently per mix. A link in Mix 1 never mirrors a Mix 2-4 pair.
 - not in the passive `0x73` stream, but mixer state **is** readable via
   the `0x74`/`0x75` query protocol -- **category `0x04`, index = mix
@@ -756,15 +858,11 @@ As of the follow-up 2026-08 mona/monb/hp1/hp2/chlink captures:
   everything observed changing there is explained as a side effect of the
   gain/status sync above, not a standalone flag. The extracted Orion panel
   schema and manager-server log do identify readback category `0x0b` as five
-  nested link tables (shared space-0, an eight-byte table with S/PDIF at
-  record 0, one unassigned byte, mixer, AFX). Their returned bytes
-  are now exposed by `readback 0x0b <index>` and the WebUI. A controlled
-  2026-09-23 space-0 pair-3 transition correlated index 0 with the flag.
-  Index 0 carries six shared pairs and does not drive Preamp or ADAT buttons.
-  A controlled pair-6 ADAT ON write left index-1 record 6 zero, while a
-  controlled S/PDIF OFF/ON changed index-1 record 0 from `1→0→1`. Only that
-  record drives the S/PDIF indicator. Index 2 stayed zero during S/PDIF
-  transitions and has no assigned control mapping.
+  nested link tables: six Preamp pairs at index 0, eight ADAT pairs at
+  index 1, one S/PDIF pair at index 2, mixer at index 3 and AFX at index 4.
+  Input flags were independently correlated on 2026-09-30 and now drive
+  their own WebUI buttons. Historical digital-button traffic used incorrect
+  selectors; those writes did not establish the intended domain.
 
   **Re-verified independently (2026-08) against the raw
   `all_reports_ch-link-gain-ph-inv-test.tsv`**: every report in that capture
@@ -874,46 +972,39 @@ As of the 2026-08 ADAT test (adat-ch1-2-3-12-link12 capture):
   `adat_gain_base_offset = 75`, one byte per channel (confirmed for
   channels 1, 2, 3, and 12 in this capture). `params.adat_gain.id` is now
   `0x5b` -- distinct from physical-channel gain's `0x50`, as suspected.
-- **ADAT channel link is confirmed**, including the outgoing pair_index
-  encoding: `pair_index = adat_channel_index // 2`, same formula as
-  physical channels but over the 16-channel ADAT space, giving 8 pairs
-  (pair_index 0-7) instead of physical's 6. Linked ADAT channels' gain
-  bytes track together the same way physical-channel pairs do. The
-  outgoing frame reuses the *exact same* opcode/param_id as physical
-  channel_link (`0x70`/`0x14`/`0xa2`) -- see the important open caveat
-  about this below.
+- **ADAT UI link frames were captured**, with pair indices encoded as
+  `adat_channel_index // 2` over the 16-channel space (eight pairs, indices
+  0-7). This confirms what the UI sent, not that the device engaged an ADAT
+  link. The old interpretation of the six Preamp readback records as ADAT
+  state was incorrect. The UI's paired gain writes show software mirroring,
+  not device-side ADAT link behavior.
 
 As of the follow-up 2026-08 ADAT-link1-2-7-8 capture (activate link1,
 link2, link7, link8 in order; sweep gain on ch1/ch3/ch13/ch15; deactivate
 link8, link7, link2, link1):
 
-- **Confirms the pair_index formula across the full range, not just
-  pair_index 0.** link1/2/7/8 sent pair_index `0x00`/`0x01`/`0x06`/`0x07`
-  respectively, each immediately followed by gain-sync behavior on the
-  matching pair (ch1&2, ch3&4, ch13&14, ch15&16) -- including pair_index
-  6 and 7, which have no physical-channel equivalent (physical only goes
-  up to pair_index 5). Full round-trip (link then unlink, in the stated
-  order) confirmed for all four pairs.
+- **Confirms the UI's pair-index encoding**, not device ADAT link state.
+  link1/2/7/8 sent pair_index `0x00`/`0x01`/`0x06`/`0x07` respectively,
+  each followed by software gain-sync writes for the matching pair. ADAT
+  has eight pairs; the six `0x0b:0` records belong to the six physical
+  Preamp pairs and cannot confirm any ADAT pair. The captured ON/OFF frames
+  show command traffic only; they do not verify an ADAT link took effect.
 - **A momentary missed-sync frame was observed and is noted but not
   investigated further** (per instruction): while sweeping ch1's gain
   down, one step (ch1 -> -6dB) has no matching mirrored command for ch2,
   which stayed at -4dB. Looked like a one-off dropped command on the
   wire rather than a parsing artifact. Worth another look if it recurs
   during real use.
-- **Open question, partly answered (2026-08, raw pcapng).** The
+- **Historical ADAT link mapping error (superseded 2026-09-30).** The
   physical-pair-0-ON frame (`ch-link-on-off.pcapng`) and the
   ADAT-pair-0-ON frame (`ADAT-link1-2-7-8.pcapng`) were compared
   byte-for-byte across **all 320 bytes plus the USB metadata** (endpoint
   `0x01`, device address 2, interface, direction): **zero differences.**
-  So `SET_LINK(pair_index, enabled)` is genuinely ambiguous at the wire
-  level -- there is no disambiguating byte or USB field, confirmed. What's
-  still unknown: whether one command links pair N in **both** the physical
-  and ADAT spaces at once (the Launcher just sending gain/mode sync for
-  whichever you're looking at). The two captures couldn't show this
-  because both channels of each pair already had equal gain. To settle it:
-  link a physical pair and an ADAT pair in one session with *different*
-  gains per channel, or test on hardware. Until then, if the CLI ever
-  sends `SET_LINK` it should assume it may affect both spaces.
+  The six `0x0b:0` records are the six physical Preamp pairs, covering the
+  device's 12 physical inputs. ADAT has eight pairs and is not reported by
+  that table. The earlier project mapping treated the Preamp table as ADAT
+  readback and was incorrect. Identical wire frames alone do not establish
+  that an ADAT link was engaged or that one command affects both domains.
 
 ### Talkback (confirmed, 2026-08 -- not yet in the CLI)
 

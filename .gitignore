@@ -19,13 +19,10 @@ __pycache__/
 # Local CLI cache (link state) lives in ~/.cache/antelope-ctl, not here, but just in case
 *.cache
 
-# Session/working docs -- local only, not part of the public project
-CLAUDE.md
-CLAUDE.archive.md
-KERNEL.md
+# Local handoff, open-task queue and optional plans
 SUMMARY.md
-# Local, working audit checklist/state -- keep out of the public project
 AUDIT.md
+KERNEL.md
 APPIMAGE-PLAN.md
 
 # Local Unity analytics and account session token

@@ -1,0 +1,217 @@
+{
+  "mode": "preview",
+  "device_writes": false,
+  "effects": [
+    {
+      "id": "bbdchorus",
+      "name": "BBD-Chorus",
+      "description": "Bucket-brigade chorus and vibrato with selectable stereo modes.",
+      "controls": [
+        {
+          "id": "level",
+          "label": "Level Control",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "intensity",
+          "label": "Chorus Intensity",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "depth",
+          "label": "Vibrato Depth",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "rate",
+          "label": "Vibrato Rate",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "type",
+          "label": "Stereo Type",
+          "kind": "enum",
+          "options": {
+            "basic": "Basic",
+            "wide": "Wide",
+            "split": "Split",
+            "cross": "Cross"
+          },
+          "device_available": false
+        },
+        {
+          "id": "chvibrato",
+          "label": "Chorus / Vibrato",
+          "kind": "enum",
+          "options": {
+            "0": "Vibrato",
+            "1": "Chorus"
+          }
+        }
+      ],
+      "panel": {
+        "rows": [
+          [
+            "level",
+            "intensity",
+            "depth",
+            "rate"
+          ]
+        ],
+        "switches": [
+          "type",
+          "chvibrato"
+        ],
+        "dependencies": {}
+      }
+    },
+    {
+      "id": "turboensembler",
+      "name": "V12 Chorus",
+      "description": "Multi-voice chorus with up to twelve generated voices.",
+      "controls": [
+        {
+          "id": "voices",
+          "label": "Voices",
+          "kind": "continuous",
+          "range": [
+            1,
+            12
+          ]
+        },
+        {
+          "id": "delay",
+          "label": "Delay",
+          "kind": "continuous",
+          "range": [
+            1,
+            100
+          ]
+        },
+        {
+          "id": "depth",
+          "label": "Detune",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "feedback",
+          "label": "Feedback",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "gain",
+          "label": "Gain",
+          "kind": "continuous",
+          "range": [
+            0,
+            255
+          ]
+        },
+        {
+          "id": "color",
+          "label": "Colorize",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "colorShifter",
+          "label": "Clr Shifter",
+          "kind": "continuous",
+          "range": [
+            0,
+            255
+          ]
+        },
+        {
+          "id": "space",
+          "label": "Space",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "pan",
+          "label": "Pan",
+          "kind": "continuous",
+          "range": [
+            0,
+            180
+          ],
+          "display_center": 90
+        },
+        {
+          "id": "mix",
+          "label": "Dry/Wet",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ]
+        },
+        {
+          "id": "humanize",
+          "label": "Humanize",
+          "kind": "enum",
+          "options": {
+            "0": "Off",
+            "1": "On"
+          }
+        }
+      ],
+      "panel": {
+        "rows": [
+          [
+            "voices",
+            "delay",
+            "depth",
+            "feedback",
+            "gain"
+          ],
+          [
+            "color",
+            "colorShifter",
+            "space",
+            "pan",
+            "mix"
+          ]
+        ],
+        "switches": [
+          "humanize"
+        ],
+        "dependencies": {
+          "color": "space",
+          "colorShifter": "space"
+        }
+      }
+    }
+  ]
+}

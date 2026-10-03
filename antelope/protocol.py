@@ -261,13 +261,31 @@ def build_raw_command(profile: dict, param_id: int, channel: int, value: int) ->
     return bytes(pkt)
 
 
+def input_link_space(profile: dict, domain: str) -> int:
+    """Return the profile's selector for one physical or digital input bank.
+
+    Profiles predating link-pair selectors retain their existing addresses.
+    Orion declares all three selectors explicitly after hardware validation.
+    """
+    sections = {'preamp': 'channels', 'adat': 'adat', 'spdif': 'spdif'}
+    if domain not in sections:
+        raise ValueError(f'unknown input link domain {domain!r}')
+    legacy_spaces = {'preamp': 0, 'adat': 0, 'spdif': 1}
+    pairs = profile.get(sections[domain], {}).get('link_pairs', {})
+    space = _as_int(pairs.get('space', legacy_spaces[domain]))
+    if not 0 <= space <= 255:
+        raise ConstraintError(f'{domain} link space is outside 0..255')
+    return space
+
+
 def build_link_command(profile: dict, pair_index: int, enabled: bool, space: int = 0) -> bytes:
     """Build a SET_LINK frame (profile['frame']['link_command']) to engage/disengage
     one channel-link pair. This is NOT the SET_PARAM shape -- param_id still lives
     at param_id_offset; pair_index and enabled live at their own offsets a byte
     further along. `space` is the domain selector at frame.link_command.space_offset
-    (offset 17): 0 for physical + ADAT (see frame.link_command.space_values), 1 for
-    S/PDIF. Default 0 keeps physical/ADAT callers unchanged. If the profile has no
+    (offset 17). Input callers resolve it with input_link_space(); Orion uses
+    0 for Preamp, 1 for ADAT, and 2 for S/PDIF. Default 0 selects Preamp.
+    If the profile has no
     space_offset, `space` is ignored (older profiles)."""
     if 'link_command' not in profile['frame']:
         raise KeyError('this profile has no frame.link_command -- channel link is not available')

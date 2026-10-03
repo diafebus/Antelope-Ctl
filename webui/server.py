@@ -21,12 +21,9 @@ Two kinds of state:
              snapshot carries a monotonic `rb_ver`; the browser refetches the
              slow APIs when it bumps.
 
-⚠ HARDWARE RULE (see ../antelope-ctl/CLAUDE.md "STANDING HARDWARE RULE"):
-never query a readback index past a category's record count -- it BusFaults
-the Orion (physical power cycle). Every query here goes through
-protocol.build_readback_query. Orion uses its enumerated category counts;
-profiles without those counts can only use explicitly capture-confirmed
-feature layouts, such as the Zen Go mixer records.
+Readback queries use protocol.build_readback_query and the active profile's
+authorized bounds. See PROTOCOL.md §4a for the firmware behavior and AGENTS.md
+for device-transaction instructions.
 
 Run:  pip install -r requirements.txt  &&  python3 server.py
 Then: http://127.0.0.1:8714
@@ -45,11 +42,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antelope import protocol as proto
 from antelope.transport import list_connected_hid, open_transport
 from webui.device_ui import features_for
+from webui.afx_catalog import preview_catalog, effect_choices
+from webui.afx_test import MemoryCatTest
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictInt
 import uvicorn
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -435,6 +434,7 @@ class Device:
         self._t = None
         self._stop = threading.Event()
         self._transport = None
+        self.connection_generation = 0
 
     def start(self):
         if self._t is not None and self._t.is_alive():
@@ -485,7 +485,7 @@ class Device:
 
     def get(self):
         with self._lock:
-            return dict(self.snapshot), self.version
+            return {**self.snapshot, 'connection_generation': self.connection_generation}, self.version
 
     def routing_json(self):
         with self._lock:
@@ -1209,6 +1209,11 @@ class Device:
                     break
                 with self._lock:
                     self._transport = transport
+                    self.connection_generation += 1
+                    # AFX inventory and link flags belong to this connection.
+                    self.structured = {key: value for key, value in self.structured.items()
+                                       if key[0] != 0x19 and key != (0x0b, 4)}
+                    self.rb_ver += 1
                 last_readback = time.time()
                 readback_plan = self._readback_plan()
                 readback_changed = False
@@ -1746,6 +1751,8 @@ except (KeyError, ValueError, TypeError) as _e:
     PROFILE = proto.load_profile(PROFILE_PATH)
     DEV = Device(PROFILE)
 
+AFX_TEST = MemoryCatTest(DEV)
+
 # ---------------------------------------------------------------- HTTP / SSE
 
 app = FastAPI(title="antelope-ctl webui")
@@ -1994,7 +2001,8 @@ def _surround_eq_reset_values(profile):
 
 @app.get("/")
 def index():
-    return FileResponse(os.path.join(HERE, "static", "index.html"))
+    return FileResponse(os.path.join(HERE, "static", "index.html"),
+                        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/profile")
@@ -2038,6 +2046,87 @@ def api_readbacks():
     the UI can explain why a new capture is still required.
     """
     return DEV.structured_readbacks_json()
+
+
+@app.get("/api/afx/catalog")
+def api_afx_catalog():
+    """Local control previews, independent of loaded slots or device ownership."""
+    if PROFILE.get("afx", {}).get("catalog") != "afx_effects.json":
+        return preview_catalog({}, os.path.basename(PROFILE_PATH))
+    try:
+        with open(os.path.join(PROFILE_DIR, "afx_effects.json")) as source:
+            catalog = json.load(source)
+    except (OSError, ValueError):
+        catalog = {}
+    return preview_catalog(catalog, os.path.basename(PROFILE_PATH))
+
+
+class AfxChainTestChange(BaseModel):
+    channel: StrictInt = 0
+    operation: str
+    slot: StrictInt
+    source: StrictInt | None = None
+    effect_id: str = 'memory_brigade'
+
+
+class AfxLinkTestChange(BaseModel):
+    pair: StrictInt
+    enabled: bool
+
+
+class AfxParameterTestChange(BaseModel):
+    channel: StrictInt = 0
+    instance: StrictInt
+    values: dict[str, StrictInt]
+
+
+@app.get("/api/afx/memorycat-test")
+def api_afx_memorycat_test(channel: int = 0, refresh: bool = False):
+    state = AFX_TEST.state()
+    if refresh and state.get('available') and state.get('online'):
+        try:
+            state = AFX_TEST.refresh(channel)
+        except (ValueError, RuntimeError) as error:
+            return _bad(str(error))
+    try:
+        with open(os.path.join(PROFILE_DIR, 'afx_effects.json')) as source:
+            catalog = json.load(source)
+    except (OSError, ValueError):
+        catalog = {}
+    return {**state, 'effects': effect_choices(catalog, os.path.basename(PROFILE_PATH), PROFILE)}
+
+
+@app.post("/api/afx/memorycat-test/chain")
+def api_afx_memorycat_chain(change: AfxChainTestChange):
+    try:
+        return AFX_TEST.change_chain(change.operation, change.slot, change.source, change.effect_id,
+                                     channel=change.channel)
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
+
+
+@app.post("/api/afx/memorycat-test/parameters")
+def api_afx_memorycat_parameters(change: AfxParameterTestChange):
+    try:
+        return AFX_TEST.change_parameters(change.instance, change.values, channel=change.channel)
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
+
+
+@app.post("/api/afx/memorycat-test/unlink")
+def api_afx_memorycat_unlink():
+    try:
+        return AFX_TEST.unlink_pilot()
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
+
+
+@app.post('/api/afx/link')
+def api_afx_link(change: AfxLinkTestChange):
+    try:
+        return AFX_TEST.set_link(change.pair, change.enabled)
+    except (ValueError, RuntimeError) as error:
+        return _bad(str(error))
 
 
 @app.get("/api/surround")
@@ -2474,7 +2563,7 @@ def _input_link_readback_target(profile, domain, pair):
         return None
 
     # A post-write diagnostic target need not be an authoritative mapping
-    # from a returned byte to one input domain (Orion space 0 is ambiguous).
+    # from a returned byte to one input domain. Confirmed mappings are separate.
     pair_counts = spec.get("post_write_pair_counts", spec.get("pair_counts"))
     if not isinstance(pair_counts, dict):
         return None
@@ -2555,7 +2644,8 @@ def api_link(l: Link):
     if not (0 <= l.pair < npairs):
         return _bad(f"pair {l.pair} out of range 0..{npairs - 1}")
     try:
-        pkt = proto.build_link_command(PROFILE, l.pair, l.enabled)
+        pkt = proto.build_link_command(
+            PROFILE, l.pair, l.enabled, space=proto.input_link_space(PROFILE, "preamp"))
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
     _queue_input_link_write(pkt, "preamp", l.pair)
@@ -2587,12 +2677,13 @@ def api_spdif_gain(g: DigGain):
     return _dig_gain("spdif", "spdif_gain", rng, g)
 
 
-def _dig_link(space_name, space_byte, npairs, l: "DigLink"):
+def _dig_link(space_name, npairs, l: "DigLink"):
     """SET_LINK for ADAT/S-PDIF, refreshing a confirmed readback when mapped."""
     if not (0 <= l.pair < npairs):
         return _bad(f"{space_name} pair {l.pair} out of range 0..{npairs - 1}")
     try:
-        pkt = proto.build_link_command(PROFILE, l.pair, l.enabled, space=space_byte)
+        pkt = proto.build_link_command(
+            PROFILE, l.pair, l.enabled, space=proto.input_link_space(PROFILE, space_name))
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
     _queue_input_link_write(pkt, space_name, l.pair)
@@ -2602,13 +2693,13 @@ def _dig_link(space_name, space_byte, npairs, l: "DigLink"):
 @app.post("/api/adat-link")
 def api_adat_link(l: DigLink):
     n = int(PROFILE.get("adat", {}).get("link_pairs", {}).get("count", 0))
-    return _dig_link("adat", 0, n, l)
+    return _dig_link("adat", n, l)
 
 
 @app.post("/api/spdif-link")
 def api_spdif_link(l: DigLink):
     n = int(PROFILE.get("spdif", {}).get("link_pairs", {}).get("count", 0))
-    return _dig_link("spdif", 1, n, l)
+    return _dig_link("spdif", n, l)
 
 
 @app.post("/api/output-trim")

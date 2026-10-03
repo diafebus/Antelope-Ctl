@@ -4,27 +4,32 @@ This project's discipline (see README's "Adding a new param") depends on
 getting a **full, untruncated** 320-byte hex dump of a state report from
 before and after a single, isolated change in the official Launcher.
 This doc is that method, referred to elsewhere as "the Phase 1 doc's method."
+Several isolated changes can share a recording when each action is labelled;
+the [Orion AFX workflow](docs/orion-afx-workflow.md) describes proposed batch
+automation with a synchronized action log.
 
 Setup used for this project: Antelope Launcher runs in a Windows VM (on a
-Linux host), where USBPcap + Wireshark capture the traffic. The control
-script itself runs on the Linux host against the passed-through hardware.
-tshark ships with Wireshark, so no separate install is needed on the VM.
+Linux host), where USBPcap + Wireshark capture the traffic. While the Launcher
+owns the device, Linux recording is passive; `antelope-ctl` device reads/writes
+resume after the device is returned to Linux. tshark ships with Wireshark,
+so no separate install is needed on the VM.
 
 ## Capturing from LINUX with usbmon (the "CAPTURE E'" method)
 
-**This is usually the best option**, and it is how the `0x74`/`0x75`
+This is how the `0x74`/`0x75`
 readback protocol and the mixer master-fader mapping were both found. You
 run the capture on the **Linux host** while the **Launcher drives the
-device from a VM** over QEMU USB passthrough. `usbmon` sits on the host's
-USB bus, so it sees every URB regardless of which guest owns the device --
-you get both directions, all endpoints, no VM-side tooling at all.
+device from a VM** over QEMU USB-device passthrough. `usbmon` observes host
+USB requests, including both control directions, without VM-side capture tools.
+This does not apply to a whole USB controller assigned to the guest. Verify
+a full OUT command witness on the current setup before a longer session.
 
-Why it beats USBPcap/macOS captures:
+What the earlier host captures established:
 
 - **Both directions in one file**, correctly interleaved. Several of our
   macOS captures caught only the IN endpoint and were unusable.
-- It is **already device-filtered by bus**, and nothing else on that bus
-  speaks 320-byte HID frames with our magics.
+- Capture can be limited to the **device's USB bus**; identify the actual Orion
+  by VID/PID and device address before analyzing its HID endpoints.
 - Request and response land in the same stream, which is what made the
   `0x74` -> `0x75` pairing visible at all (offline captures split them
   across two endpoints and two magic bytes -- see PROTOCOL.md §4a).
@@ -61,13 +66,14 @@ The user is in the `wireshark` group, so `dumpcap` needs no `sudo`; only
 - **Nothing on the Linux side may hold the device** while it is passed
   through to a VM -- stop any `antelope-ctl` command or watcher first.
   (N/A for the webUI-on-Linux variant above.)
-- **Move exactly one control**, deliberately, and leave everything else
-  alone. Brushing a neighbouring fader puts extra frames in the file that
-  have to be disentangled afterwards.
-- **Keep it short (~1 min).** If audio is streaming, the isochronous
+- **Move one control at a time**, deliberately, and leave other controls
+  alone. For an AFX batch, record the name, action and timing of each sequential
+  change so offline analysis can isolate it.
+- **Keep ad hoc captures short (~1 min) and automated batches bounded.** If
+  audio is streaming, the isochronous
   endpoints flood `usbmon` -- our 68 useful frames arrived inside a 23 MB
-  file with 20 080 packets. Filtering offline is easy, but a long capture
-  is needlessly large.
+  file with 20 080 packets. Filtering offline is easy; preserve full report
+  lengths and check for dropped packets before using a batch as evidence.
 - The device state you changed **persists**, so you can hand the device
   back to Linux and read it with `mix-status` / `matrix-status` /
   `readback` to confirm what the capture showed.
@@ -91,9 +97,9 @@ endpoint: `-Y 'usbhid.data && usb.endpoint_address == 0x01'`.
 
 **A raw usbmon `.pcapng` contains USB string descriptors, including the
 device SERIAL** (and any control transfers from a fresh enumerate). Keep
-the raw file local only (`captures/` is gitignored), extract the HID
-command payloads to a text file, and delete the raw when done -- never
-commit or paste a raw capture.
+the raw file and action log local only (`captures/` is gitignored). Retain useful
+evidence for later checks; publish only reviewed, sanitized protocol facts,
+never a raw capture.
 
 ## Capturing on native macOS instead of the VM
 
@@ -155,9 +161,10 @@ full path every time.
 
 ## 2. Capture, then save the whole session
 
-Capture with USBPcap + the Wireshark GUI as usual, changing **only** the
-one thing you're investigating in the Launcher. Then **File -> Save As** the
-whole capture as `.pcapng` (e.g. `C:\captures\gain_test.pcapng`).
+Capture with USBPcap + the Wireshark GUI as usual, changing **one control at a
+time** in the Launcher. A batch needs labelled actions as described above.
+Then **File -> Save As** the whole capture as `.pcapng`
+(e.g. `C:\captures\gain_test.pcapng`).
 
 Do NOT use the GUI's *Copy -> ...as text* on individual packets -- that's
 Wireshark's plain-text export, and it truncates around ~110 of the 320

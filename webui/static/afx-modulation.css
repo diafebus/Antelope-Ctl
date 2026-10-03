@@ -1,0 +1,25 @@
+/* Original modulation panels, following public control grouping. */
+.afx-modulation { background:linear-gradient(110deg,#242e33,#20262d); }
+.afx-v12 { border-inline:5px solid #647078; }
+.afx-bbd { background:linear-gradient(110deg,#29302f,#202724); border-radius:12px; }
+.afx-modulation-body { display:grid; grid-template-columns:minmax(0,1fr) 160px; gap:20px; padding-top:18px; }
+.afx-modulation-knobs { display:grid; gap:20px; }
+.afx-modulation-row { display:grid; grid-template-columns:repeat(5,minmax(60px,1fr)); gap:12px; }
+.afx-bbd .afx-modulation-row { grid-template-columns:repeat(4,minmax(60px,1fr)); }
+.afx-modulation-switches { display:grid; align-content:center; gap:18px; min-width:0; }
+.afx-modulation .afx-mode-options { flex-wrap:wrap; }
+.afx-modulation .afx-control-label { text-align:center; }
+/* Knob bodies and illuminated rings are static; only pointers turn. */
+.afx-modulation .afx-knob { background:conic-gradient(from 225deg,#76b49d 270deg,transparent 0); }
+.afx-modulation .afx-knob-cap { background:radial-gradient(circle at 35% 25%,#444d4c,#202a28 75%); }
+.afx-modulation .afx-knob-pointer::after { background:#ddebe5; }
+.afx-modulation .afx-effect-control.blocked .afx-knob { cursor:default; opacity:.6; }
+.afx-modulation-meter { margin-top:16px; border-left:4px solid #62766d; padding-left:8px; color:#a4b5ac; font-size:11px; }
+@media (max-width:1150px) {
+  .afx-modulation-body { grid-template-columns:minmax(0,1fr); }
+  .afx-modulation-switches { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width:480px) {
+  .afx-modulation-row, .afx-bbd .afx-modulation-row { grid-template-columns:repeat(2,minmax(60px,1fr)); gap:18px; }
+  .afx-modulation-switches { grid-template-columns:minmax(0,1fr); }
+}

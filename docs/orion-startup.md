@@ -23,7 +23,7 @@ All control payloads are 320 bytes. Requests use endpoint `0x01` OUT; responses 
 | Step | Category | Indices |
 | --- | --- | --- |
 | Assignment status / feature mask | `0x11` | 0, 1 |
-| Link tables with S/PDIF record 0 and an unassigned byte | `0x0b` | 1, 2 |
+| ADAT and S/PDIF link tables | `0x0b` | 1, 2 |
 | Observed startup command | Not a query | See below |
 | Surround global | `0x1b` | 0 |
 | Surround speaker EQ | `0x1a` | 0 through 15 |
@@ -31,7 +31,7 @@ All control payloads are 320 bytes. Requests use endpoint `0x01` OUT; responses 
 | Mixers | `0x04` | 0 through 3, each followed by the mixer-link table `0x0b:3` |
 | Gazelle Reverb (`0x0a`, AuraVerb protocol) | `0x0a` | 0 |
 | Remaining featured AFX instances | `0x15` | 0 |
-| Shared space-0 link flags | `0x0b` | 0 |
+| Preamp link flags (six pairs) | `0x0b` | 0 |
 | Mic-emulation state | `0x16` | 0 |
 | AFX strip order | `0x19` | 0 through 63 |
 | AFX link table / closing marker | `0x0b` | 4 |
@@ -43,36 +43,67 @@ the official-Launcher transition and the correction to the earlier flags-A
 probe are documented in `PROTOCOL.md` and
 `tools/surround_eq_position_selftest.py`.
 
-Category `0x0b` occurs eight times, with indices `1,2,3,3,3,3,0,4`. These are five link-table selectors, not eight records: index 0 returns six shared space-0 input-pair flags; index 1 returns eight bytes, of which record 0 tracks the single S/PDIF pair; index 2 returns one unassigned byte; index 3 returns 64 mixer-pair states; and index 4 returns 32 AFX-link states. The Launcher repeats index 3 four times around mixer reads as a sequencing marker, but the response is still a real link table. Its `category_counts` value is therefore 5, the exclusive upper bound for observed outer indices 0 through 4. Indices 5 through 7 were absent from all five captures. The existing query validator rejects those indices.
+Category `0x0b` occurs eight times with indices `1,2,3,3,3,3,0,4`.
+These are five selectors, not eight records. Index 0 has six Preamp flags,
+index 1 eight ADAT flags, index 2 one S/PDIF flag, index 3 64 mixer flags,
+and index 4 32 AFX table entries. The 16 channel-pair selectors for Orion's
+32 user-facing AFX channels map to entries 0–15; entries 16–31 remain
+unmapped. Repeated mixer reads do not expand query bounds:
+`category_counts` remains 5, permitting outer indices 0–4 only.
 
-A later controlled WebUI probe on 2026-09-23 captured `SET_LINK` space 0,
-pair 3 on, followed by a bounded index-0 response whose record 3 changed to
-1; a fresh response after off returned 0. Index-1 record 3 stayed 0 in both
-states. The WebUI therefore displays the first six shared space-0 pair flags
-from index 0 as diagnostics, without assigning them to either input domain.
-ADAT pair indices 6 and 7 have no identified readback byte. Controlled
-direct-HID ON/OFF tests on 2026-09-26 changed none of the five known tables
-for those pairs on a short read. ADAT pair 4 did change index-0 record 4
-from 0 to 1 and back, confirming that lower ADAT pairs use the shared
-space-0 flags. This evidence does not change the startup query bounds or
-establish whether the physical and ADAT signal paths are both linked.
-The user also verified the old WebUI after a hard reload: ADAT 7/8 showed ON,
-then both ADAT 7/8 and physical preamp 7/8 indicators showed OFF after the
-OFF click and matching index-0 readback. That cross-domain UI update was a
-false inference from the shared flag; the physical link state was not proven.
-ADAT 13/14 and 15/16 were also toggled ON and OFF. Their `SET_LINK` writes
-use pair indices 6 and 7; neither direct test changed an index-1 record.
-The table remains available in readback diagnostics but is not treated as
-the link indicator for those pairs. A controlled S/PDIF OFF/ON test, with
-ADAT held fixed, changed index-1 record 0 from 1 to 0 to 1. Index 2 stayed
-zero, so it must not drive the S/PDIF button.
+Direct device tests and Windows VM checks on 2026-09-30 confirmed input
+write spaces 0=Preamp, 1=ADAT, 2=S/PDIF and matching link-table indices.
+All eight ADAT selectors were individually toggled/restored; all-ON ADAT
+and S/PDIF ON states were deliberately retained for VM confirmation. Earlier
+Launcher digital buttons emitted incorrect write spaces; their old tests
+and the old WebUI mapped those replies to the wrong domains. The corrected
+profile supplies separate authoritative mappings for all three input banks.
+These results do not alter the startup walk, bounds, or establish retention
+through a device power cycle. See [PROTOCOL.md](../PROTOCOL.md) §4/§7.
+
+Direct AFX trials on 2026-10-01 toggled each space-4 pair 0–15 ON/OFF,
+comparing all five safe link tables and restoring their original values after
+every trial. Only the corresponding `0x0b:4` byte changed. The WebUI uses
+this confirmed mapping for the pair button and linked-channel menu labels.
+Reconnect clears the cached AFX flags and slot inventory before polling the
+new connection; opening/refreshing the rack requests fresh selected-channel
+slots and link flags. This changes neither the startup query order nor its
+bounds and does not introduce default link or effect writes.
 
 The other nested response shapes are also recorded in
 `frame.readback.record_layouts`: category `0x16` index 0 contains eight
 mic-emulation records; category `0x19` contains eight AFX slots per strip;
-category `0x15` contains 91 remaining-instance counters. Category `0x0c`
+category `0x15` contains 91 remaining-instance counters. Mono load/remove
+trials verified write-channel/readback-index correspondence on indices 2–31,
+with original chains restored; index 0 was owner-tested earlier. Index 1 mono
+writes and storage indices 32–63 were not exercised by those trials. The
+loader waits for the complete 64-record inventory before allocating an
+instance, and counters describe remaining resources rather than licenses. Category `0x0c`
 has a schema-defined available/max table shape, but its outer query bounds
 are intentionally not added until a device capture confirms them.
+
+## Loaded-effect state on Launcher reconnect
+
+The later owner capture
+`antelope-orion-afx-load-fx-min-max-loadfxch2-50-closelauncher-reopenlauncher.pcapng`
+adds a separate query namespace: magic `0x74`, opcode `0x11`, kind `0x07`,
+LE32 tagged effect selector `0x80000049` at byte12 and LE32 instance at byte16.
+Memory Cat queries34373/34401/34457 and replies34397/34427/34481 recover
+instances0/1/2 after Launcher restart, repeated in the later startup pass.
+Reply byte16 is processing enabled; bytes17–24 are the eight parameters.
+Minimum/maximum/approximately-half knob values exactly match the last writes;
+no parameter writes replay those values on reconnect. Power-cycle retention
+was not tested. Other effect query selectors observed in the companion
+Bypass All/load capture have unlabelled fields and remain runtime-disabled.
+
+This namespace is recorded under `frame.afx_slot.instance_state_readback`,
+separate from classic opcode`0x10` category enumeration. It does not add bounds
+to classic category`0x07`. The WebUI requests captured loaded Memory Cat
+instances0–2 when the rack opens, its selected channel changes, or the main
+state stream reconnects. A linked refresh reads both actual chains and their
+captured instances; it does not assume the racks match. Replies omit the instance: serialize requests and
+stop these reads after a timeout until reconnect. Instances3–7 remain guarded.
+Opening/reconnecting sends no parameter or bypass defaults.
 
 ## Observed startup command
 
@@ -86,7 +117,10 @@ macOS additionally queries firmware/identity categories `0x00` and `0x01`, plus 
 
 The profile preserves the Windows query sequence, not a merged or deduplicated sequence. These observations do not prove that every macOS request is required. Capture-specific gain restoration writes are not startup defaults and must not be replayed blindly.
 
-Capture analysis does not establish Linux hidraw report-ID handling, minimum delays, or the cause of a reported HID write timeout. No hardware writes were performed for this change.
+The original startup-capture analysis did not establish Linux hidraw report-ID
+handling, minimum delays, or the cause of a reported HID write timeout. It
+performed no hardware writes. The later authorized link/chain trials above
+are separate evidence; see [PROTOCOL.md §12a](../PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls).
 
 ## Offline regression checks
 
