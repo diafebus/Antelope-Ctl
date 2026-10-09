@@ -6,11 +6,21 @@ read-only. It does not load effects, click buttons, query HID or change settings
 
 Copy this directory into the existing shared folder as `antelope-afx-tools`.
 In Windows, open the desired plugin panel, then double-click
-`Z:\antelope-afx-tools\Inspect-AfxPanel.cmd`. During the ten-second delay,
+`Z:\antelope-afx-tools\Inspect-AfxPanel.cmd`.
+The script first asks which plugin/panel you will inspect; enter its name.
+Then, during the ten-second delay,
 focus the plugin panel and keep it unobscured until inspection completes.
-The inspector writes `results/panel-TIMESTAMP/controls.json` and `panel.png`
+The console minimizes during the delay. Click the plugin's own title bar (not
+the rack); keep other windows away from it. The screenshot is taken before
+control enumeration, with DPI awareness enabled. Controls outside the captured
+window are skipped even when the provider incorrectly marks them onscreen.
+The inspector writes, for example,
+`results/panel-Instinct-TIMESTAMP/Instinct-controls.json` and `Instinct-panel.png`
 beside the scripts. Linux reads those same files directly; there is no export,
 packet selection or transfer step. Each run uses a new results directory.
+The original name is also stored as `panel_name` in the JSON; characters invalid
+in Windows filenames are replaced in filenames. The entered label does not
+prove the selected window's identity: verify the captured title and image.
 
 Inspect Instinct first: its existing Orion capture has parameter changes but
 unresolved labels. Memory Cat remains useful as an optional known-map pilot;
