@@ -5,11 +5,20 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from tools.afx_vm_pilot import device_location, labelled_actions, validate_request, wait_file, verify_action_events
+from tools.afx_vm_pilot import device_location, labelled_actions, planned_actions, validate_request, wait_file, verify_action_events
 from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def test_range_plan_requires_all_three_reviewed_phases(self):
+        request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',
+                   'channel': 2, 'controls': ['SpeedPot'], 'actions': 3}
+        plan = validate_request(request)
+        self.assertEqual([phase for _, phase in planned_actions(plan)], ['minimum', 'maximum', 'restore'])
+        for changes in [{'actions': 2}, {'controls': ['VolumePot']}, {'channel': 1}]:
+            with self.assertRaises(ValueError):
+                validate_request({**request, **changes})
+
     def test_batch_requests_are_data_driven_and_cannot_substitute_controls(self):
         request = {'version': 2, 'plan_id': 'instinct-filters', 'panel': 'Instinct',
                    'channel': 2, 'controls': ['FilterEnableButton', 'PostFilterEnable'], 'actions': 4}

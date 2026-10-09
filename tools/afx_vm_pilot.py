@@ -18,6 +18,12 @@ from tools.scan_afx_capture import analyze_reports, PARAMETER_OPCODES
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def planned_actions(plan):
+    return [(control, phase) for control in plan['controls']
+            for phase in (('minimum', 'maximum', 'restore') if control['kind'] == 'knob_range'
+                          else ('click', 'click back'))]
+
+
 def write_json(path, value):
     temporary = path.with_suffix(path.suffix + '.tmp')
     temporary.write_text(json.dumps(value, indent=2) + '\n')
@@ -49,7 +55,7 @@ def load_plans():
         if (plan['channel'] != 2 or not 1 <= len(controls) <= 3 or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
-                any(c['kind'] != 'binary_button' or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
+                any(c['kind'] not in ('binary_button', 'knob_range') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
     return {plan['id']: plan for plan in plans}
 
@@ -63,7 +69,7 @@ def validate_request(request):
     plan = plans.get(request.get('plan_id'))
     if plan is None or request != {'version': 2, 'plan_id': plan['id'],
         'panel': plan['panel'], 'channel': plan['channel'],
-        'controls': [c['id'] for c in plan['controls']], 'actions': 2 * len(plan['controls'])}:
+        'controls': [c['id'] for c in plan['controls']], 'actions': len(planned_actions(plan))}:
         raise ValueError('Guest request must match a reviewed host GUI plan exactly')
     return plan
 
@@ -187,9 +193,11 @@ def run_job(job, profile):
         raise RuntimeError('Refusing to overwrite an existing capture')
     windows = []
     expected_target = None
+    actions = planned_actions(plan)
+    has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
         process = subprocess.Popen(['dumpcap', '-i', interface, '-s', '0',
-            '-a', 'duration:60', '-a', 'filesize:100000', '-w', str(capture)],
+            '-a', 'duration:240' if has_knobs else 'duration:60', '-a', 'filesize:100000', '-w', str(capture)],
             stdout=log, stderr=log)
         try:
             # Prove that full matching IN reports reach the capture before
@@ -208,8 +216,7 @@ def run_job(job, profile):
                     raise RuntimeError('No complete Orion IN reports; guest gestures remain blocked')
                 time.sleep(.3)
             write_json(job/'ready.json', {'version': 1, 'capture_ready': True})
-            for index in range(1, 2 * len(plan['controls']) + 1):
-                control = plan['controls'][(index - 1)//2]
+            for index, (control, phase) in enumerate(actions, 1):
                 action_request = wait_file(job/f'action-{index}-request.json', 15, process)
                 expected_request = {'action': index, 'control': control['id']}
                 if request['version'] == 1:
@@ -224,9 +231,9 @@ def run_job(job, profile):
                 first_frame = max(row[0] for row in before_reports)
                 start = time.time()
                 write_json(job/f'action-{index}-go.json', {'action': index})
-                completed = wait_file(job/f'action-{index}-done.json', 10, process)
+                completed = wait_file(job/f'action-{index}-done.json', 60 if has_knobs else 10, process)
                 window = {'action': index, 'control': control['id'], 'label': control['label'],
-                          'gesture': 'click' if index % 2 == 1 else 'click back',
+                          'gesture': phase,
                           'start_epoch': start, 'end_epoch': time.time(),
                           'start_frame_exclusive': first_frame,
                           'matching_method': 'recording frame boundaries; host times are metadata only',

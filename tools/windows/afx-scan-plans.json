@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "Reviewed GUI gesture data, not wire contracts. Model selection, power and knobs remain outside these binary-button plans.",
+  "notes": "Reviewed GUI gesture data, not wire contracts. Knob range gesture is a candidate requiring its first bounded trial. Model selection and power excluded.",
   "plans": [
     {
       "id": "instinct-altmorph",
@@ -51,6 +51,25 @@
               0.6
             ]
           }
+        }
+      ]
+    },
+    {
+      "id": "instinct-speed-range",
+      "panel": "Instinct",
+      "panel_class": "Instinct",
+      "effect_id": "instinct",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "candidate; first gesture trial pending",
+      "evidence": "Owner confirms held vertical mouse drag. Successful hover inspection exposes SPEED numeric percent; no gesture/range/restoration trial yet.",
+      "controls": [
+        {
+          "id": "SpeedPot",
+          "label": "Speed",
+          "class_name": "SpeedPot",
+          "kind": "knob_range",
+          "status_pattern": "^SPEED:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
         }
       ]
     }

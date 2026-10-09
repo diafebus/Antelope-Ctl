@@ -1,5 +1,21 @@
 # Windows AFX panel inspection
 
+## First held-drag range trial
+
+`Run-AfxScan.cmd` now offers `instinct-speed-range`, a candidate shared gesture
+for the Speed knob on unlinked AFX2. Start the Linux listener first. The runner
+reads the numeric status, holds the mouse while moving vertically in bounded
+segments to each endpoint, then steers back to the starting displayed value.
+Each phase has its own host-gated recording window and full-panel screenshot.
+Buttons and drags use the same runner and reviewed JSON plans.
+
+This first gesture trial is not a full knob scan. Endpoints require three
+unchanged readings after continued drag; direction mismatch, unreadable status,
+focus change, timeout or failed restoration stop the trial. The mouse button is
+released even on an error. Displayed restoration can hide rounding differences;
+inspect raw parameter blocks before claiming exact device restoration or
+enabling the full knob batch. No guessed ranges or direct HID writes are used.
+
 ## Automatic knob hover inspection
 
 Double-click `Z:\antelope-afx-tools\Inspect-AfxKnobs.cmd`, enter `Instinct`,
