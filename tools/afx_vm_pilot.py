@@ -93,14 +93,24 @@ def labelled_actions(reports, windows, out_endpoint=1):
     result = []
     previous = {}
     last_end = -math.inf
+    last_frame = -1
     for window in windows:
         start, end = window['start_epoch'], window['end_epoch']
-        if not (math.isfinite(start) and math.isfinite(end) and last_end < start < end):
-            raise ValueError('Invalid action timing')
-        last_end = end
+        frame_bound = 'start_frame_exclusive' in window or 'end_frame_inclusive' in window
+        if frame_bound:
+            first, final = window['start_frame_exclusive'], window['end_frame_inclusive']
+            if (type(first) is not int or type(final) is not int or
+                    not 0 <= first < final or first < last_frame):
+                raise ValueError('Invalid or overlapping frame window')
+            last_frame = final
+        else:
+            if not (math.isfinite(start) and math.isfinite(end) and last_end < start < end):
+                raise ValueError('Invalid action timing')
+            last_end = end
         events = []
         for number, epoch, endpoint, data in reports:
-            if not start <= epoch <= end or endpoint != out_endpoint or data[0] != 0x70:
+            in_window = first < number <= final if frame_bound else start <= epoch <= end
+            if not in_window or endpoint != out_endpoint or data[0] != 0x70:
                 continue
             if data[16] != 0xd5 or data[4] not in PARAMETER_OPCODES:
                 events.append({'frame': number, 'opcode': hex(data[4]),
@@ -173,23 +183,35 @@ def run_job(job, profile):
                 wait_file(job/f'action-{index}-request.json', 15, process)
                 if device_location(profile) != location:
                     raise RuntimeError('Orion connection changed; no further gestures')
+                before_reports = read_reports(capture, location, transport, allow_incomplete=True)
+                if not before_reports:
+                    raise RuntimeError('No current capture boundary; no click permitted')
+                first_frame = max(row[0] for row in before_reports)
                 start = time.time()
                 write_json(job/f'action-{index}-go.json', {'action': index})
                 completed = wait_file(job/f'action-{index}-done.json', 10, process)
                 window = {'action': index, 'control': 'AltMorphButton',
                           'gesture': 'click' if index == 1 else 'click back',
                           'start_epoch': start, 'end_epoch': time.time(),
+                          'start_frame_exclusive': first_frame,
+                          'matching_method': 'recording frame boundaries; host times are metadata only',
                           'guest_visual_result': completed}
-                windows.append(window)
-                write_json(job/'action-windows.json', windows)
                 # dumpcap can buffer output briefly after the guest completes.
                 deadline = time.monotonic() + 3
                 while True:
                     reports = read_reports(capture, location, transport, allow_incomplete=True)
+                    window['end_frame_inclusive'] = max((row[0] for row in reports), default=first_frame)
+                    if window['end_frame_inclusive'] <= first_frame:
+                        if time.monotonic() >= deadline:
+                            raise RuntimeError('Capture did not advance after the action; stop for review')
+                        time.sleep(.2)
+                        continue
                     events = labelled_actions(reports, [window], out_ep)[0]['events']
                     if events or time.monotonic() >= deadline:
                         break
                     time.sleep(.2)
+                windows.append(window)
+                write_json(job/'action-windows.json', windows)
                 expected_target = verify_action_events(events, expected_target)
                 if completed.get('status') != 'ok':
                     raise RuntimeError('Guest visual verification failed; stop for review')

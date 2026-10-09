@@ -38,6 +38,25 @@ class VmPilotTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 labelled_actions([], windows)
 
+    def test_frame_boundaries_work_when_packet_and_host_clocks_differ(self):
+        reports = [(10, 9.7, 1, frame(0x7c, [0xd5, 0x6a, 75, 1, 1])),
+                   (20, 10.5, 1, frame(0x7c, [0xd5, 0x6a, 75, 1, 0]))]
+        windows = [{'start_epoch': 10, 'end_epoch': 11,
+                    'start_frame_exclusive': 9, 'end_frame_inclusive': 15},
+                   {'start_epoch': 12, 'end_epoch': 13,
+                    'start_frame_exclusive': 15, 'end_frame_inclusive': 25}]
+        result = labelled_actions(reports, windows)
+        self.assertEqual(result[0]['events'][0]['frame'], 10)
+        self.assertEqual(result[1]['events'][0]['changed_bytes'], {'20': [1, 0]})
+
+    def test_overlapping_recording_boundaries_are_rejected(self):
+        windows = [{'start_epoch': 1, 'end_epoch': 2,
+                    'start_frame_exclusive': 9, 'end_frame_inclusive': 15},
+                   {'start_epoch': 3, 'end_epoch': 4,
+                    'start_frame_exclusive': 14, 'end_frame_inclusive': 25}]
+        with self.assertRaises(ValueError):
+            labelled_actions([], windows)
+
     def test_other_out_is_reported_without_exporting_its_payload(self):
         data = bytearray(frame(0x12, [0x33]))
         data[50:57] = b'PRIVATE'

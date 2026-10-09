@@ -83,8 +83,10 @@ round trip, not verified device parameter readback or audible confirmation.
 If a verification fails, it stops without another click or blind repair; inspect
 the current button state and retained evidence before deciding what to restore.
 
-The host gates actions through shared-folder files and timestamps their windows
-on Linux, avoiding an assumption that Windows and Linux clocks agree. Analysis
+The host gates actions through shared-folder files and bounds each action using
+recording frame numbers sampled before permission and after completion. Host
+timestamps are metadata only: packet timestamps may differ even from the host's
+wall clock. This also avoids assuming Windows and Linux clocks agree. Analysis
 reuses `scan_afx_capture.py` and records per-action frame witnesses and changed
 bytes. The first write has no prior parameter baseline; comparison with the
 second write produces candidates. Analysis does not promote writable profiles,
