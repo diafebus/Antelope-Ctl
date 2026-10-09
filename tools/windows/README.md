@@ -21,6 +21,22 @@ reused, with no repeated INIT. Power/bypass remains outside this plan.
 Humanize is clicked twice to restore its starting state; range knobs stay
 at maximum. Physical values displayed inside V12 knobs are saved in screenshots.
 
+## Next capture: BBD Chorus
+
+V12 completed all ten knob endpoint pairs and the Humanize round trip.
+Its power/bypass remains outside the capture; this does not enable runtime writes.
+
+BBD's first two runs were read-only inventories, so hovering without changing
+values was expected. Its reviewed next batch captures four knob ranges and the
+Chorus/Vibrato round trip in ten phases. Open BBD Chorus on unlinked AFX channel2,
+run the same launcher, enter `BBD Chorus`, press Enter and focus its title bar
+within ten seconds. Linux must be waiting. Leave mouse and keyboard alone.
+Knobs remain at maximum; Chorus/Vibrato is restored.
+
+Stereo Type has four positions (Basic/Wide/Split/Cross). Its wire mapping and
+selector gesture still need capture; power is also excluded. This batch does
+not claim those controls are mapped. Demo use does not establish ownership.
+
 ## Capture stages
 
 Inventory is read-only: no clicks, drags, value edits or HID commands.

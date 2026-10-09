@@ -811,7 +811,7 @@
       "effect_id": "turboensembler",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "reviewed UI inventory and captured one-byte wire fields; feedback gesture first trial pending",
+      "status": "Windows batch completed: ten knob endpoints and Humanize round trip; power excluded",
       "evidence": "panel-V12-Chorus-20261009T181946845Z has ten visible knob classes, TurboEnsemblerSwitch Humanize, hidden PresetIndex excluded. Known Orion catalogue raw fields reused. Space first enables color controls. No new INIT or direct HID queries/writes.",
       "controls": [
         {
@@ -969,6 +969,90 @@
           "label": "Humanize",
           "class_name": "TurboEnsemblerSwitch",
           "kind": "binary_button"
+        }
+      ]
+    },
+    {
+      "id": "bbd-controls",
+      "panel": "BBD-Chorus",
+      "panel_class": "BBDChorus",
+      "effect_id": "bbdchorus",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed inventory and existing captured fields; first action batch pending",
+      "evidence": "panel-BBD-Chorus-20261009T184609823Z: four visible knobs and Chorus/Vibrato button. Reuse owner-labelled Orion modulation byte mappings. Stereo Type is a four-position selector requiring a separate reviewed gesture; power excluded. Demo use does not establish ownership.",
+      "controls": [
+        {
+          "id": "BBDChorusLevelPot",
+          "label": "Level Control",
+          "class_name": "BBDChorusLevelPot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "level",
+            "offset": 20,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "BBDChorusIntensityPot",
+          "label": "Chorus Intensity",
+          "class_name": "BBDChorusIntensityPot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "intensity",
+            "offset": 21,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "BBDChorusDepthPot",
+          "label": "Vibrato Depth",
+          "class_name": "BBDChorusDepthPot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "depth",
+            "offset": 23,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "BBDChorusRatePot",
+          "label": "Vibrato Rate",
+          "class_name": "BBDChorusRatePot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "rate",
+            "offset": 22,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "ChorusVibrato",
+          "label": "Chorus / Vibrato",
+          "class_name": "BBDChorusVibratoButton",
+          "kind": "binary_button",
+          "visual_region": {
+            "x": 293,
+            "y": 54,
+            "width": 68,
+            "height": 120
+          }
         }
       ]
     }

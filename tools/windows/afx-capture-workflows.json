@@ -14,6 +14,13 @@
       "range_plan": "v12-controls",
       "next_step": "ranges",
       "panel_class": "TurboEnsembler"
+    },
+    {
+      "name": "BBD Chorus",
+      "effect_id": "bbdchorus",
+      "range_plan": "bbd-controls",
+      "next_step": "ranges",
+      "panel_class": "BBDChorus"
     }
   ]
 }

@@ -360,6 +360,18 @@ try {
         if ($control.feedback -eq 'captured_wire') { Run-WireKnobRange } else { Run-KnobRange }
         continue
     }
+    if ($null -ne $control.visual_region) {
+        # Some switches indicate their state in a separate LED above the button.
+        $region = $control.visual_region
+        $visualBounds = [System.Windows.Rect]::new(
+            $windowBounds.X + [double]$region.x, $windowBounds.Y + [double]$region.y,
+            [double]$region.width, [double]$region.height)
+        if (-not $windowBounds.Contains($visualBounds) -or -not $visualBounds.Contains($buttonBounds)) {
+            throw 'Reviewed visual region must contain the button and stay inside the window.'
+        }
+        $crop = [System.Drawing.Rectangle]::new([int]$visualBounds.X, [int]$visualBounds.Y,
+            [int]$visualBounds.Width, [int]$visualBounds.Height)
+    }
     $baseline = Save-Button ($filePrefix + '-before.png')
     foreach ($phase in @(1, 2)) {
         $index++

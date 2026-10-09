@@ -4972,7 +4972,90 @@
                 "evidence": "Constant 0 throughout 490 writes; declaration name only, not a swept preset control."
               }
             },
-            "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults."
+            "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults.",
+            "automated_gui_capture": {
+              "source": "scan-V12-Chorus-20261009T184118945Z",
+              "status": "ten knob endpoint ranges and Humanize round trip captured",
+              "channel": 2,
+              "packet_count": 138835,
+              "dropped_packets": 0,
+              "device_readback_verified": false,
+              "range_knobs_left_at": "maximum",
+              "power_bypass_captured": false,
+              "knob_endpoints": [
+                {
+                  "label": "Space",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 2508,
+                  "maximum_frame": 8824
+                },
+                {
+                  "label": "Colorize",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 13682,
+                  "maximum_frame": 20250
+                },
+                {
+                  "label": "Clr Shifter",
+                  "minimum": 0,
+                  "maximum": 255,
+                  "minimum_frame": 25172,
+                  "maximum_frame": 34620
+                },
+                {
+                  "label": "Voices",
+                  "minimum": 1,
+                  "maximum": 12,
+                  "minimum_frame": 39550,
+                  "maximum_frame": 46352
+                },
+                {
+                  "label": "Delay",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "minimum_frame": 51058,
+                  "maximum_frame": 59160
+                },
+                {
+                  "label": "Detune",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 63966,
+                  "maximum_frame": 72264
+                },
+                {
+                  "label": "Feedback",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 77232,
+                  "maximum_frame": 85814
+                },
+                {
+                  "label": "Gain",
+                  "minimum": 0,
+                  "maximum": 255,
+                  "minimum_frame": 90822,
+                  "maximum_frame": 102832
+                },
+                {
+                  "label": "Pan",
+                  "minimum": 0,
+                  "maximum": 180,
+                  "minimum_frame": 108836,
+                  "maximum_frame": 117706
+                },
+                {
+                  "label": "Dry/Wet",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 123958,
+                  "maximum_frame": 131752
+                }
+              ],
+              "notes": "Fresh action-local OUT endpoints equal existing catalog bounds; repeated sweeps and complete block stability checked. Screenshots retained locally. No physical interpolation law, runtime writer or device readback established."
+            }
           },
           "state_readback": null,
           "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c"

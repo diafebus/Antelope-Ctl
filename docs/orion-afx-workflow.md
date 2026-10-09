@@ -292,3 +292,11 @@ For every effect available on this Orion, reviewed JSON knowledge should cover:
 - Capture/owner provenance and separate observed, verified and audible status.
 
 The full reference catalog and unsupported devices are separate coverage targets.
+
+V12 batch `scan-V12-Chorus-20261009T184118945Z` completed ten knob endpoint
+pairs and Humanize (byte20,0→1→0),138835 packets with zero drops. Captured
+write feedback confirms existing raw bounds; power/bypass and device readback
+remain unverified. BBD inventories `panel-BBD-Chorus-20261009T184528924Z`
+and `panel-BBD-Chorus-20261009T184609823Z` only hovered controls. Reviewed
+`bbd-controls` now covers four knob ranges and Chorus/Vibrato via the same
+launcher. Stereo Type's four-position gesture/mapping and power remain open.
