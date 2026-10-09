@@ -302,6 +302,14 @@ UI control has not been associated with a compatible declaration ID. Each such
 entry records absolute report offset/width, observed values, visual states,
 frame provenance and verification limits. Visual restoration is distinct from
 device readback; `writable: false` observations do not enable runtime controls.
+Float observations may additionally record `encoding: float32-le`,
+`observed_wire_range`, `observed_display_range` and `display_unit`. These are
+captured endpoints, not interpolation laws or defaults. Infinite displayed
+endpoints use the string `-Infinity` or `Infinity`, never nonstandard numeric
+JSON tokens. `minimum_has_action_write: false` distinguishes an unchanged
+minimum from a fresh write; its prior full-block source is recorded explicitly.
+`parameter_observation.range_capture_summary` reports inventory completion and
+remaining controls without enabling runtime parameter commands.
 The shared control declarations retain their identifiers, so Orion observations
 do not become another model's contract. All three command definitions
 remain `null` for every implementation. A declared control name carries neither an inferred range

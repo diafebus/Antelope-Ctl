@@ -1960,6 +1960,21 @@ region is distinct from the identically named panel-power widget. These are
 two further GUI-to-write observations with visual restoration, retaining the
 same readback/runtime-writer limits as ALT Morph.
 
+Subsequent action-labelled GUI range captures establish21 Instinct knob fields
+as float32-le: Punch20, Body24, Speed28, Character32, BoostFreq36, BoostGain40,
+Gain44, GainMod48, FilterFreq52, FilterQ56, FilterMix60, MorphAmount80,
+MorphMod84, BiasAmount88, BiasMod92, PostFreq96, PostMod100, PostQ104,
+PostMix108, Mix116 and Volume120. These are absolute report offsets, not
+declaration-ID aliases or runtime writers. Each observed physical and raw
+endpoint pair and its source frames lives in the shared catalog. Scales differ:
+Character wire0..3, Gain0..100, frequencies0..100, Q approximately0.01..1,
+and many normalized fields0..1. Do not infer interpolation from endpoints.
+The final Volume scan shows−inf/+1dB; its minimum wire0 comes from the prior
+scan's frame174973, and maximum1 from final scan9833. The final scan emits no
+minimum change because it starts there;12878packets/zero drops. Owner permits
+leaving range knobs at maximum. Model selection/power and changed-state
+readback remain unverified; preserve all unknown bytes.
+
 **Linked chain editing.** The owner requested linked rack editing on2026-10-01.
 The1/2 capture pairs load writes3427/3431,4997/5001,7505/7509 and reorder
 writes11947/11951,13671/13675, left then right with distinct instances.

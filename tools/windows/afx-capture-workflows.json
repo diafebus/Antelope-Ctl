@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "channel": 2,
+  "plugins": [
+    {"name": "Instinct", "effect_id": "instinct", "range_plan": "instinct-knob-ranges", "next_step": "ranges"},
+    {"name": "V12 Chorus", "effect_id": "turboensembler", "range_plan": null, "next_step": "inventory"}
+  ]
+}

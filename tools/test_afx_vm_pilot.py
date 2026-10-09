@@ -10,6 +10,19 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def test_single_launcher_workflows_reference_existing_reviewed_plans(self):
+        from tools.afx_vm_pilot import load_plans
+        workflows = json.loads((Path(__file__).resolve().parents[1] / 'tools/windows/afx-capture-workflows.json').read_text())
+        self.assertEqual(workflows['channel'], 2)
+        plans = load_plans()
+        for workflow in workflows['plugins']:
+            if workflow['next_step'] == 'ranges':
+                self.assertIn(workflow['range_plan'], plans)
+            else:
+                self.assertEqual(workflow['next_step'], 'inventory')
+        v12 = next(w for w in workflows['plugins'] if w['name'] == 'V12 Chorus')
+        self.assertEqual(v12['effect_id'], 'turboensembler')
+        self.assertIsNone(v12['range_plan'])
     def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',
                    'channel': 2, 'controls': ['SpeedPot'], 'actions': 2}

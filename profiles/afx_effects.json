@@ -1868,7 +1868,7 @@
               0,
               1
             ],
-            "notes": "Older linked parameter movements remain unlabelled. Linked UI sends identical blocks to instance1 then0. Separate 2026-10-09 labelled ALT Morph and filter trials establish three byte associations and visual restoration; they do not establish device readback or runtime writers.",
+            "notes": "Owner-labelled GUI captures establish all21 knob endpoint associations and three switches. Model selection, power, interpolation laws, imported declaration-ID correspondence and runtime readback/write verification remain unresolved. Unknown bytes are preserved; no runtime writer enabled.",
             "labelled_gui_observations": {
               "alt_morph": {
                 "label": "ALT Morph",
@@ -2506,6 +2506,36 @@
                   "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
                 ],
                 "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+              },
+              "knob_volume": {
+                "label": "Volume",
+                "ui_class": "VolumePot",
+                "offset": 120,
+                "width": 4,
+                "encoding": "float32-le",
+                "observed_wire_range": [
+                  0.0,
+                  1.0
+                ],
+                "observed_display_range": [
+                  "-Infinity",
+                  1
+                ],
+                "display_unit": "dB",
+                "status": "capture-observed endpoints; scale law unverified",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "minimum_source_capture": "scan-Instinct-20261009T175536310Z",
+                  "minimum": 174973,
+                  "maximum_source_capture": "scan-Instinct-20261009T180405603Z",
+                  "maximum": 9833
+                },
+                "minimum_has_action_write": false,
+                "evidence": [
+                  "Volume-only scan-Instinct-20261009T180405603Z completed both phases. Screens show VOLUME: -inf DB and VOLUME: 1 DB. It starts at minimum and emits no minimum change. Previous continuous sweep ends float32-le@120=0, frame174973; new maximum ends1 at9833. Nine maximum-sweep writes vary only120..123,12878packets/zero drops."
+                ],
+                "notes": "Displayed minimum is negative infinity, stored as a string for valid JSON. Unknown dB interpolation; do not substitute a guessed linear physical scale. Owner authorizes leaving maximum."
               }
             },
             "startup_readback_observation": {
@@ -2531,6 +2561,22 @@
               "changed_state_readback_verified": false,
               "runtime_query_enabled": false,
               "evidence": "Local instinct-init-current-20261009/init.pcapng: both instance1 startup payloads match last restored filter-scan write3527 over write offsets20..123. Instance0 differs. 56763 packets, zero drops. No Linux device commands sent."
+            },
+            "range_capture_summary": {
+              "status": "capture-observed; endpoint inventory complete",
+              "knob_count": 21,
+              "mapped_switch_count": 3,
+              "unmapped_visible_controls": [
+                "ModelSwitchButton",
+                "PFEnable (power region)"
+              ],
+              "runtime_writable": false,
+              "runtime_state_reader_enabled": false,
+              "interpolation_laws_verified": false,
+              "unknown_parameter_bytes": "Preserve every byte outside an individually observed field. Constant bytes do not establish defaults or padding.",
+              "declaration_id_correspondence": "UI class names identify observed Orion controls; correspondence to imported declaration IDs remains unverified.",
+              "device_scope": "Orion Studio Synergy Core only",
+              "capture_process": "Shared name-driven Windows inventory and reviewed range/button batches; GUI writes with passive Linux USB recording."
             }
           }
         }

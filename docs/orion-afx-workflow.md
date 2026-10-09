@@ -13,7 +13,7 @@ ignored `AUDIT.md` holds the current work order.
 | Effect | Orion type | Existing evidence |
 | --- | --- | --- |
 | Memory Cat Brigade | 73 | Eight fields, fresh parameter/processing reads for instances0–2, Launcher-restart retention, owner-confirmed switch labels |
-| Instinct | 75 | Load/chain,93older linked parameter writes, opcode`0x7c`, observed query75/1; automated GUI trials map three switches and20 knob endpoint associations; Volume maximum, interpolation laws and runtime readback remain unresolved |
+| Instinct | 75 | Load/chain,93older linked parameter writes, opcode`0x7c`, observed query75/1; automated GUI trials map three switches and all21 knob endpoints; model selection, power, interpolation laws and runtime readback remain unresolved |
 | Master De-Esser | 27 | Load/chain, 126 parameter writes in the linked-control capture, opcode`0x20`, paired writes, observed query27/1; control labels/scales unresolved |
 | V12 Chorus | 70 | Labelled modulation capture: eleven changed fields and245 mirrored pairs; reader/restoration still unverified |
 | BBD Chorus | 78 | Demo modulation capture: five changed fields and85 mirrored pairs; stereo-mode mapping and reader/restoration still unverified |
@@ -44,7 +44,7 @@ An Instinct run now exposes 21 knob classes and five switch-like entries with
 positions but blank accessibility values. The inspector is not a gesture
 runner or USB batch recorder.
 
-The same [Windows tooling guide](../tools/windows/README.md#first-automated-button-pilot)
+The same [Windows tooling guide](../tools/windows/README.md#capture-stages)
 documents the bounded ALT Morph two-click pilot on unlinked AFX channel 2 and
 its Linux listener, `tools/afx_vm_pilot.py`. It coordinates passive capture,
 visual before/change/restore evidence and labelled frame analysis through a
@@ -55,6 +55,15 @@ reviewed JSON plans; `instinct-filters` now also completed both switches' visual
 round trips in one recording, associating filter/post-filter enable with bytes
 76/112. A new plugin needs reviewed data rather than a new script. Knob and
 multi-position selector gestures remain pending.
+
+The standard entry point is now `Run-AfxCapture.cmd`: name the plugin and
+its reviewed workflow selects inventory or a prepared batch. V12's next stage
+is inventory on unlinked AFX2 with Space above zero. Selector metadata covers
+cabinet/speaker/model candidates; enumerated-option gestures remain pending.
+Legacy pilot launchers are removed. Instinct's catalog now records all21 knob
+endpoint associations and three switches; Volume displays−infinity..+1dB,
+with observed float32-le0..1 at offset120. Unknown interpolation laws and
+declaration-ID correspondence keep runtime parameter writes disabled.
 
 Fresh startup capture on 2026-10-09 matches Instinct instance1 reply body@17
 to the last restored filter-scan write body@20 over write offsets20–123.

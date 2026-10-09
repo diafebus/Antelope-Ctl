@@ -84,7 +84,7 @@ foreach ($element in $elements) {
             $rect.Bottom -le $bounds.Top -or $rect.Top -ge $bounds.Bottom) { continue }
         $patterns = @($element.GetSupportedPatterns() | ForEach-Object { $_.ProgrammaticName })
         $values = [ordered]@{}
-        foreach ($name in @('Value', 'RangeValue', 'Toggle', 'SelectionItem', 'ExpandCollapse')) {
+        foreach ($name in @('Value', 'RangeValue', 'Toggle', 'Selection', 'SelectionItem', 'ExpandCollapse')) {
             $patternType = 'System.Windows.Automation.' + $name + 'Pattern'
             $patternId = ([type]$patternType)::Pattern
             $pattern = $null
@@ -98,6 +98,10 @@ foreach ($element in $elements) {
                             large_change = $state.LargeChange; read_only = $state.IsReadOnly }
                     }
                     'Toggle' { $values.toggle = $state.ToggleState.ToString() }
+                    'Selection' {
+                        $values.selection = @($pattern.GetCurrentSelection() | ForEach-Object { $_.Current.Name })
+                        $values.can_select_multiple = $state.CanSelectMultiple
+                    }
                     'SelectionItem' { $values.selected = $state.IsSelected }
                     'ExpandCollapse' { $values.expansion = $state.ExpandCollapseState.ToString() }
                 }
@@ -122,6 +126,15 @@ $result = [ordered]@{ version = 2; panel_name = $PanelName; created_utc = [DateT
     window_size = @{ width = $bounds.Width; height = $bounds.Height };
     controls = @($rows.ToArray()) }
 $result | ConvertTo-Json -Depth 12 | Set-Content -Encoding UTF8 (Join-Path $folder ($label + '-controls.json'))
+$selectors = @($rows.ToArray() | Where-Object {
+    $_.control_type -eq 'ControlType.ComboBox' -or
+    $_.patterns -contains 'SelectionPatternIdentifiers.Pattern' -or
+    $_.patterns -contains 'ExpandCollapsePatternIdentifiers.Pattern' -or
+    $_.class_name -match '(Select|Combo|Model|Cabinet|Speaker|Switch)'
+})
+[ordered]@{ panel_name = $PanelName; source = 'visible UI metadata; options not exercised';
+    controls = $selectors; option_writes_verified = $false } |
+    ConvertTo-Json -Depth 12 | Set-Content -Encoding UTF8 (Join-Path $folder ($label + '-selector-inventory.json'))
 if ($InspectKnobHover) {
     $cursor = New-Object AfxPanelWindow+Point
     if (-not [AfxPanelWindow]::GetCursorPos([ref]$cursor)) { throw 'Cannot save cursor position.' }
@@ -135,7 +148,37 @@ if ($InspectKnobHover) {
             $_.Current.BoundingRectangle.Top -ge $bounds.Top -and
             $_.Current.BoundingRectangle.Bottom -le $bounds.Bottom
         })
-        if ($panels.Count -ne 1) { throw 'Cannot identify one visible plugin by its panel class. No hover performed.' }
+        if ($panels.Count -eq 0) {
+            # Read-only discovery for panels whose internal class differs from
+            # the user-facing name. Use the lowest common ancestor of the
+            # fully visible Pot controls; never infer a gesture/write plan.
+            $allKnobs = @($elements | Where-Object {
+                $_.Current.ClassName -match 'Pot$' -and -not $_.Current.IsOffscreen -and
+                -not $_.Current.IsPassword -and $bounds.Contains($_.Current.BoundingRectangle)
+            })
+            if ($allKnobs.Count -gt 0 -and $allKnobs.Count -le 64) {
+                $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+                $ancestor = $walker.GetParent($allKnobs[0])
+                for ($depth = 0; $depth -lt 16 -and $null -ne $ancestor; $depth++) {
+                    if ([System.Windows.Automation.Automation]::Compare($ancestor, $root)) { break }
+                    $descendants = @($ancestor.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                        [System.Windows.Automation.Condition]::TrueCondition))
+                    $containsAll = $true
+                    foreach ($knob in $allKnobs) {
+                        $found = $false
+                        foreach ($child in $descendants) {
+                            if ([System.Windows.Automation.Automation]::Compare($child, $knob)) { $found = $true; break }
+                        }
+                        if (-not $found) { $containsAll = $false; break }
+                    }
+                    if ($containsAll -and $bounds.Contains($ancestor.Current.BoundingRectangle)) {
+                        $panels = @($ancestor); break
+                    }
+                    $ancestor = $walker.GetParent($ancestor)
+                }
+            }
+        }
+        if ($panels.Count -ne 1) { throw 'Cannot identify one visible plugin. No hover performed; base control inventory was saved.' }
         $panel = $panels[0]
         $knobs = @($panel.FindAll([System.Windows.Automation.TreeScope]::Descendants,
             [System.Windows.Automation.Condition]::TrueCondition) | Where-Object {
@@ -201,7 +244,9 @@ if ($InspectKnobHover) {
         if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 9) }
         # The first shared result was malformed after repeated rewrites.
         # Save one complete object to a new file instead.
-        $hoverResult = [ordered]@{ version = 2; panel_name = $PanelName;
+        $detectedClass = $null
+        if ($null -ne $panel) { $detectedClass = $panel.Current.ClassName }
+        $hoverResult = [ordered]@{ version = 2; panel_name = $PanelName; panel_class = $detectedClass;
             count = $hoverRows.Count; expected_count = $knobs.Count;
             complete = ($hoverRows.Count -eq $knobs.Count -and $knobs.Count -gt 0);
             controls = @($hoverRows.ToArray()) }

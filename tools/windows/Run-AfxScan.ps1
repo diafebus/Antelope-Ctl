@@ -97,6 +97,13 @@ public static class AfxScanInput {
 '@
 
 function Write-Record($Path, $Value) {
+    # JSON has no numeric infinity. Preserve the displayed endpoint explicitly
+    # as a string instead of PowerShell's nonstandard -Infinity token.
+    foreach ($key in @($Value.Keys)) {
+        if ($Value[$key] -is [double] -and [double]::IsInfinity($Value[$key])) {
+            if ($Value[$key] -lt 0) { $Value[$key] = '-Infinity' } else { $Value[$key] = 'Infinity' }
+        }
+    }
     $temporary = $Path + '.tmp'
     $Value | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 $temporary
     Move-Item -LiteralPath $temporary -Destination $Path

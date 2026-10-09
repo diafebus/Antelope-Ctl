@@ -32,6 +32,20 @@ class AfxCatalogTests(unittest.TestCase):
         self.assertNotIn("commands", effect)
         self.assertNotIn("instance_handle", effect)
 
+    def test_instinct_endpoint_inventory_is_complete_without_enabling_runtime_writes(self):
+        effect = next(e for e in self.catalog['effects'] if e['id'] == 'instinct')
+        implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+        observation = implementation['parameter_observation']
+        knobs = [f for f in observation['labelled_gui_observations'].values() if f.get('encoding') == 'float32-le']
+        self.assertEqual(len(knobs), 21)
+        occupied = [byte for f in knobs for byte in range(f['offset'], f['offset'] + f['width'])]
+        self.assertEqual(len(occupied), len(set(occupied)))
+        self.assertTrue(all(f['writable'] is False and f['readback_verified'] is False for f in knobs))
+        self.assertEqual(observation['labelled_gui_observations']['knob_volume']['observed_display_range'], ['-Infinity', 1])
+        self.assertFalse(observation['writable'])
+        self.assertFalse(observation['range_capture_summary']['interpolation_laws_verified'])
+        self.assertNotIn('instinct', {e['id'] for e in preview_catalog(self.catalog, 'orion_studio_sc.json')['effects']})
+
     def test_other_profiles_do_not_inherit_orion_observations(self):
         for profile in ("discrete_4_sc.json", "zen_go_sc.json", "missing.json"):
             with self.subTest(profile=profile):
