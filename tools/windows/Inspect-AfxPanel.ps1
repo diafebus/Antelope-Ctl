@@ -154,10 +154,16 @@ if ($InspectKnobHover) {
             if ($rect.IsEmpty -or $rect.Width -le 0 -or $rect.Height -le 0 -or
                 $rect.Left -lt $pb.Left -or $rect.Right -gt $pb.Right -or
                 $rect.Top -lt $pb.Top -or $rect.Bottom -gt $pb.Bottom) { throw 'Knob bounds are not inside the plugin.' }
+            # Clear the preceding hover first. The vendor status strip may lag
+            # behind pointer motion, especially through the VM display.
+            if (-not [AfxPanelWindow]::SetCursorPos([int]($bounds.Left + 8), [int]($bounds.Bottom - 8))) {
+                throw 'Pointer movement failed.'
+            }
+            Start-Sleep -Milliseconds 500
             if (-not [AfxPanelWindow]::SetCursorPos([int]($rect.X + $rect.Width / 2), [int]($rect.Y + $rect.Height / 2))) {
                 throw 'Pointer movement failed.'
             }
-            Start-Sleep -Milliseconds 1200
+            Start-Sleep -Milliseconds 2200
             if ([AfxPanelWindow]::GetForegroundWindow() -ne $handle -or $root.Current.BoundingRectangle -ne $bounds) {
                 throw 'Panel changed while hovering; stopped.'
             }
@@ -188,12 +194,20 @@ if ($InspectKnobHover) {
                 } catch { }
             }
             $hoverRows.Add(@{ class_name = $knob.Current.ClassName; screenshot = $name + '-hover.png'; visible_text = @($texts.ToArray()) })
-            @($hoverRows.ToArray()) | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 (Join-Path $folder ($label + '-knob-hover.json'))
         }
         Write-Host "Saved $($hoverRows.Count) automatic knob hover inspections."
     } finally {
         [void][AfxPanelWindow]::SetCursorPos($cursor.X, $cursor.Y)
         if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 9) }
+        # The first shared result was malformed after repeated rewrites.
+        # Save one complete object to a new file instead.
+        $hoverResult = [ordered]@{ version = 2; panel_name = $PanelName;
+            count = $hoverRows.Count; expected_count = $knobs.Count;
+            complete = ($hoverRows.Count -eq $knobs.Count -and $knobs.Count -gt 0);
+            controls = @($hoverRows.ToArray()) }
+        $temporary = Join-Path $folder ($label + '-knob-hover.json.tmp')
+        $hoverResult | ConvertTo-Json -Depth 10 | Set-Content -Encoding UTF8 $temporary
+        Move-Item -LiteralPath $temporary -Destination (Join-Path $folder ($label + '-knob-hover.json'))
     }
 }
 Write-Host "Saved $($rows.Count) control records and $label-panel.png to $folder"

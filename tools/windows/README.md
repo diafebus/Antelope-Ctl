@@ -4,7 +4,7 @@
 
 Double-click `Z:\antelope-afx-tools\Inspect-AfxKnobs.cmd`, enter `Instinct`,
 then focus the plugin title bar during the ten-second delay. Leave the mouse
-alone for about 30 seconds. The inspector hovers every visible `Pot` control
+alone for about one minute. The inspector hovers every visible `Pot` control
 within the uniquely identified plugin, saves a screenshot and visible value
 text per knob, and restores the pointer. It sends no clicks, drags, wheel
 events or value edits. Escape stops it; changed focus or window bounds also
@@ -18,6 +18,11 @@ captured window may be absent. The same launcher is reusable for plugins whose
 visible class matches the entered name and whose knobs have `Pot` classes.
 PowerShell execution must be checked in Windows; no PowerShell runtime is
 available on the Linux host.
+It clears the preceding hover and waits for the status strip before each
+screenshot. The final JSON object contains `controls`, `count`,
+`expected_count` and `complete`; it is saved once through a temporary file.
+Screenshots still need review for blank or mismatched status labels; completion
+alone does not prove that every knob value was captured correctly.
 The launcher writes `results/AFX-knob-inspection-launch-TIMESTAMP.log` before
 loading the inspector, catches startup failures, and restores the console on
 exit. Keep this private launch log local with the other inspection evidence.
