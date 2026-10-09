@@ -5,6 +5,7 @@ captures/
 
 # Local reference images (Launcher UI screenshots, terminal grabs) -- local only
 screenshots/
+/tools/windows/results/
 
 # Bulky tshark exports -- regenerate from the pcapng when needed
 *.tsv

@@ -44,3 +44,61 @@ session. The `.cmd` launcher bypasses execution policy for this invocation only;
 it does not change the machine's execution policy.
 
 API reference: Microsoft's [UI Automation element inspection](https://learn.microsoft.com/en-us/dotnet/framework/ui-automation/obtaining-ui-automation-elements).
+
+## First automated button pilot
+
+`Run-InstinctPilot.cmd` is a fixed two-click trial for **ALT Morph** on
+**unlinked AFX channel 2**. It uses the inspected live `Instinct`/`AltMorphButton`
+UI classes and current bounds; it does not load an effect, change the selected
+channel, operate a preset or guess a raw HID command. Start with Instinct open
+on channel 2. The pilot fails before any click if that selection or the target
+control is missing. Knobs and the remaining buttons are not included yet.
+
+Linux must first run the listener from the repository:
+
+```sh
+python3 tools/afx_vm_pilot.py --shared '/path/to/shared/antelope-afx-tools'
+```
+
+Load `usbmon` once with `sudo modprobe usbmon` if necessary, and use a user with
+dumpcap permissions. The listener waits up to 15 minutes for one new guest job.
+Then double-click `Z:\antelope-afx-tools\Run-InstinctPilot.cmd` in Windows and
+focus the Instinct panel during the ten-second countdown. Leave the mouse and
+keyboard alone until completion; Escape or loss of focus stops subsequent
+actions. Closing Windows, restarting the host listener or retrying a completed
+job does not replay its gestures. Start a fresh run for a new trial.
+
+Each trial creates `results/pilot-Instinct-TIMESTAMP/` in the shared folder.
+Linux starts a bounded passive usbmon capture and proves complete matching
+Orion IN reports before allowing a click. After each click it requires an
+Instinct parameter OUT witness for one instance. Missing traffic, linked
+mirroring, another command or a changed instance stops the pilot for review.
+Capture limits are 60 seconds or 100 MB. Check `dumpcap.log` for dropped packets.
+
+The guest saves button crops before, changed, before restoration and restored.
+It requires a visible change, checks that nobody changed the button since the
+trial, clicks back once, and compares the final image with the original. Pixel
+thresholds are provisional and require the first real run. This is a visual
+round trip, not verified device parameter readback or audible confirmation.
+If a verification fails, it stops without another click or blind repair; inspect
+the current button state and retained evidence before deciding what to restore.
+
+The host gates actions through shared-folder files and timestamps their windows
+on Linux, avoiding an assumption that Windows and Linux clocks agree. Analysis
+reuses `scan_afx_capture.py` and records per-action frame witnesses and changed
+bytes. The first write has no prior parameter baseline; comparison with the
+second write produces candidates. Analysis does not promote writable profiles,
+assign button polarity or certify loss-free capture. An IN-only preflight is
+not proof that OUT will be recorded; the trial checks actual OUT separately.
+
+For a passive three-second setup check without gestures:
+
+```sh
+python3 tools/afx_vm_pilot.py --preflight captures/new-pilot-preflight
+```
+
+The output directory must be new. The tool matches the active Orion profile's
+VID/PID to the live sysfs USB bus/address and verifies the same connection at
+completion. It reads no serial values and opens no HID controller. Endpoints
+and report length come from the profile. Shared results and raw traffic remain
+local; reviewed protocol facts are a separate step.

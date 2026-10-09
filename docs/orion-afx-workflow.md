@@ -40,8 +40,17 @@ plugin's UI Automation controls and saves a window screenshot directly beside
 the script in a shared folder. Use it on Instinct to determine whether named
 selectors are available before building the gesture runner. It changes no
 settings and requires no individual packet exports or manual file transfers.
-It has not yet been exercised against the vendor panel; it is not a gesture
-runner or a USB batch recorder.
+An Instinct run now exposes 21 knob classes and five switch-like entries with
+positions but blank accessibility values. The inspector is not a gesture
+runner or USB batch recorder.
+
+The same [Windows tooling guide](../tools/windows/README.md#first-automated-button-pilot)
+documents the bounded ALT Morph two-click pilot on unlinked AFX channel 2 and
+its Linux listener, `tools/afx_vm_pilot.py`. It coordinates passive capture,
+visual before/change/restore evidence and labelled frame analysis through a
+shared folder. Gesture execution remains unverified until the first real run;
+an IN-only passive setup check does not establish OUT capture or a writable
+parameter contract. This small pilot precedes full panel/batch automation.
 
 Run the WebUI as the sole HID controller. The recorder polls its bounded read
 API and saves changed chains, link flags and Memory Cat parameter/processing

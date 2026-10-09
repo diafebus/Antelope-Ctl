@@ -7,6 +7,9 @@ This doc is that method, referred to elsewhere as "the Phase 1 doc's method."
 Several isolated changes can share a recording when each action is labelled;
 the [Orion AFX workflow](docs/orion-afx-workflow.md) describes proposed batch
 automation with a synchronized action log.
+The [Windows tools](tools/windows/README.md) now provide shared-folder panel
+inspection and a small Instinct ALT Morph/channel2 gesture pilot coordinated
+with passive Linux capture. Full-panel batch gestures remain follow-up work.
 
 Setup used for this project: Antelope Launcher runs in a Windows VM (on a
 Linux host), where USBPcap + Wireshark capture the traffic. While the Launcher

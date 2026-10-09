@@ -23,6 +23,7 @@ PYTHON_MODULES = (
     "tools.test_afx_test",
     "tools.test_afx_state_capture",
     "tools.test_scan_afx_capture",
+    "tools.test_afx_vm_pilot",
     "tools.test_link_transition_capture",
     "tools.test_surround",
     "tools.test_meter_sources",
