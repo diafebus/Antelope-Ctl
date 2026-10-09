@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Drawing
-Add-Type @'
+Add-Type -ReferencedAssemblies 'System.Drawing.dll' -TypeDefinition @'
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
