@@ -859,7 +859,24 @@
               "evidence": "Final instance0/1/2 writes5633/8435/22343 exactly match replies34397/34427/34481 and37613/37639/37695 after Launcher restart. No parameter writes occur during reconnect. Raw knob vectors are minimum, maximum and[50,50,49,0,49,48,49,0]; effect identities persist in q19."
             }
           },
-          "instinct": {"type_id": 75, "observed_instance_indices": [1], "parameter_encoding": "unlabelled float-like block", "runtime_query_enabled": false},
+          "instinct": {
+            "type_id": 75, "observed_instance_indices": [1],
+            "parameter_encoding": "unlabelled float-like block", "runtime_query_enabled": false,
+            "initialization_observation": {
+              "status": "capture-observed",
+              "trigger": "Orion control panel startup",
+              "trigger_confirmation": "owner-confirmed 2026-10-09; vendor query timing, not a device query restriction",
+              "reply_header_hex": "7500000040010000070000004b000080",
+              "parameter_data_offset": 17, "instance_echo": false,
+              "query_reply_pairs": [
+                {"capture": "antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng", "query_frame": 17133, "reply_frame": 17157, "instance": 1},
+                {"capture": "antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng", "query_frame": 20341, "reply_frame": 20365, "instance": 1},
+                {"capture": "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng", "query_frame": 5189, "reply_frame": 5217, "instance": 1}
+              ],
+              "parameter_payloads_identical": true, "field_map_verified": false,
+              "notes": "Shared tagged envelope with an opaque parameter block. No individual field offsets/scales or new query indices established; no runtime reader enabled."
+            }
+          },
           "deesser": {"type_id": 27, "observed_instance_indices": [1], "parameter_encoding": "unlabelled byte block", "runtime_query_enabled": false},
           "bbdchorus": {"type_id": 78, "observed_instance_indices": [0], "parameter_encoding": "unlabelled byte block", "runtime_query_enabled": false}
         },

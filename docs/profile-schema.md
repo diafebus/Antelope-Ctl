@@ -260,6 +260,13 @@ or other-effect stereo parameter writer is enabled. The catalog contains neither
 installed-effect state nor account entitlements; licensing/activation traffic is outside its purpose. Gazelle
 Reverb retains its separate existing command/readback contract.
 
+Model-local `frame.afx_slot.instance_state_readback.effects` entries may carry
+`initialization_observation` with an owner-confirmed trigger, captured query/
+reply frame pairs, reply header and opaque payload start. Identical observed
+payloads support reusing the envelope; `field_map_verified: false` and
+`runtime_query_enabled: false` retain the field-decoding/runtime limits. This
+metadata does not add safe query indices or establish initialization-only reads.
+
 The seed entries use `status: reference-only`. The Discrete 4 implementation
 records a `readback-observed` type ID, with `type_id_write_status:
 unconfirmed`. Owner-labelled loading captures now establish five Orion

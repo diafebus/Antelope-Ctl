@@ -2133,6 +2133,16 @@ the exact captured tuples. Other Memory Cat instance reads3–7 remain guarded.
 Instinct75/1, Master De-Esser27/1 and BBD78/0 also have observed requests/replies
 in the first capture, but their individual response fields are unlabelled and
 runtime queries remain disabled. These are not license/account readbacks.
+The owner confirms that the vendor's INIT requests occur when starting the
+Orion control panel. Reuse those recordings before asking for more captures.
+Offline review on2026-10-09 identifies Instinct75/1 pairs17133/17157 and
+20341/20365 in the first capture, plus5189/5217 in the older Instinct/De-Esser
+load capture. All three parameter payloads are identical. They use the same
+tagged envelope, with reply header`7500000040010000070000004b000080` and opaque
+data beginning17. This supports shared query/reply machinery; individual
+Instinct field positions/scales and a runtime reader remain unverified. The
+vendor's startup timing does not establish an initialization-only restriction
+on the device; Memory Cat's explicit Linux reads are already verified.
 The reusable request/response layout, per-effect offsets, observed indices,
 correlation limits and evidence live in
 `profiles/orion_studio_sc.json#frame.afx_slot.instance_state_readback`;
