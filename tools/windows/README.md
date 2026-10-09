@@ -13,10 +13,40 @@ a decoder offset mistake; offline review with the measured BBD packet layout
 confirms the same instance across both Power actions. No rerun is required.
 Entering `BBD Chorus` now reports completion without moving controls.
 
-Run the same launcher with the next plugin name. Unknown plugins still get
-read-only inventory and require a reviewed control plan; automatic plan
-preparation is not implemented. Generic methods now include knob endpoints,
-measured mode switches, cycles, direct row selectors and Power round trips.
+Run the same launcher with the next plugin name. With the Linux recorder
+running, unfamiliar plugins now proceed from inventory to an automatically
+generated batch in the same launch. Supported controls are uniquely identified,
+enabled Pot knobs and binary CheckBox TogglePattern switches inside a matching
+Orion effect panel. No per-plugin numeric label parser or guessed wire offset
+is needed. The inventory, generated plan, screenshots and USB evidence stay in
+`results/`; there are no manual image transfers.
+
+Keep the recorder available between plugins with:
+
+```sh
+python3 tools/afx_vm_pilot.py --shared '/run/media/diafebus/4TB Linux/VirtualBox/SharedFolder/antelope-afx-tools' --serve --wait-seconds 1800
+```
+
+Enter the catalog plugin name, focus its title bar during the ten-second delay
+and leave the mouse alone. Discovery continues into the scan without another
+Enter or launch. Knobs remain at maximum; binary switches return to their
+starting GUI state. The recorder stops on scan failure so evidence can be
+reviewed, and expires after the configured idle period.
+
+Discovery produces endpoint **candidates**, not numerical range or readback
+proof. It requires captured movement after priming, then two further completed
+sweeps without parameter-block changes while capture continues advancing.
+Evidence distinguishes fresh unchanged writes from suppressed OUT reports.
+The complete executed plan must match the host-generated plan before capture
+readiness is granted.
+
+Disabled or ambiguous controls, unrecognized panel identities, dropdowns,
+presets, cabinet/speaker/model selectors and nonstandard switches remain
+pending. Presets can replace many parameters and are never swept automatically.
+Effects without a captured Orion type retain inventory for review. The pending
+list prevents a successful supported-control batch from claiming a full plugin
+mapping. Reviewed plans remain available for measured switches, finite selector
+positions and Power round trips.
 Reviewed resume plans retain successful controls rather than repeating them.
 
 The BBD Power override is instance17/type18/state19 for opcode0x14/selector0x98.

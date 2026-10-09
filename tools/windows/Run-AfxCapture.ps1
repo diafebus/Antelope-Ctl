@@ -57,7 +57,7 @@ try {
         Write-Host "Open it on unlinked AFX $($workflows.channel)."
         if ($name -eq 'V12 Chorus') { Write-Host 'Set Space above zero so its color controls are available.' }
         Write-Host 'Focus its title bar during the ten-second delay, then leave mouse and keyboard alone.'
-        Write-Host 'Knob hovers and selector metadata are saved automatically. No Linux recorder is needed for inventory.'
+        Write-Host 'Controls and screenshots are saved automatically. Automatic discovery needs the Linux recorder waiting.'
         $panelClass = $name
         if ($matches.Count -eq 1 -and -not [string]::IsNullOrWhiteSpace($matches[0].panel_class)) {
             $panelClass = $matches[0].panel_class
@@ -67,9 +67,24 @@ try {
             & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -InspectMenuClasses $matches[0].menu_classes
             Write-Host 'Dropdown lists saved automatically. Parameter ranges and filter choices have not been scanned yet.'
         } else {
-            & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -InspectKnobHover
-            Write-Host 'Inventory only: this plugin has no reviewed action plan yet. Its values and switches have not been scanned.'
-            Write-Host 'Linux can read the saved inventory and prepare the knob/switch/selector batch.'
+            Write-Host 'The Linux recorder prepares supported knob actions from the inventory automatically.'
+            $directory = & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -DiscoverForScan
+            if (@($directory).Count -ne 1 -or -not (Test-Path (Join-Path $directory 'inventory.json'))) {
+                throw 'No scoped discovery inventory was saved.'
+            }
+            # Publish only after the complete inventory exists.
+            @{ version = 1 } | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $directory 'discovery-request.json')
+            $deadline = [DateTime]::UtcNow.AddSeconds(30)
+            while (-not (Test-Path (Join-Path $directory 'generated-plan.json'))) {
+                if (Test-Path (Join-Path $directory 'host-error.json')) {
+                    throw (Get-Content -Raw (Join-Path $directory 'host-error.json'))
+                }
+                if ([DateTime]::UtcNow -ge $deadline) { throw 'Linux recorder did not prepare a plan. Inventory retained; no settings changed.' }
+                Start-Sleep -Milliseconds 200
+            }
+            Stop-Transcript | Out-Null
+            $recording = $false
+            & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -DiscoveryDirectory $directory -Prepared
         }
     }
 } catch {

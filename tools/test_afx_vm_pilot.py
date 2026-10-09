@@ -10,6 +10,138 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def discovery_inventory(self):
+        return {'version': 1, 'panel_name': 'Master De-Esser', 'panel_class': 'Deesser',
+                'process_name': 'orionstudioiii', 'window_size': {'width': 1000, 'height': 400},
+                'panel_bounds': {'x': 20, 'y': 20, 'width': 900, 'height': 200},
+                'controls': [
+                    {'class_name': 'DeesserThresholdPot', 'enabled': True, 'offscreen': False,
+                     'window_relative_bounds': {'x': 40, 'y': 40, 'width': 30, 'height': 30}},
+                    {'class_name': 'DeesserQPot', 'enabled': False, 'offscreen': False,
+                     'window_relative_bounds': {'x': 80, 'y': 40, 'width': 30, 'height': 30}},
+                    {'class_name': 'DeesserPresetsCombobox', 'enabled': True, 'offscreen': False,
+                     'control_type': 'ControlType.ComboBox',
+                     'window_relative_bounds': {'x': 120, 'y': 40, 'width': 30, 'height': 30}},
+                    {'class_name': 'DeesserMonitorButton', 'enabled': True, 'offscreen': False,
+                     'control_type': 'ControlType.CheckBox', 'patterns': ['TogglePatternIdentifiers.Pattern'],
+                     'values': {'toggle': 'Off'},
+                     'window_relative_bounds': {'x': 160, 'y': 40, 'width': 30, 'height': 30}}]}
+
+    def test_discovery_prepares_knobs_and_binary_toggles_without_wire_guesses(self):
+        from tools.afx_scan_discovery import discovery_plan
+        from tools.afx_vm_pilot import ROOT
+        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        plan = discovery_plan(self.discovery_inventory(), catalog)
+        self.assertEqual([c['feedback'] for c in plan['controls']], ['captured_block', 'gui_toggle'])
+        self.assertTrue(all('wire' not in c for c in plan['controls']))
+        self.assertEqual(len(plan['coverage']['pending']), 2)
+        request = {'version': 3, 'plan_id': plan['id'], 'panel': plan['panel'], 'channel': 2,
+                   'controls': [c['id'] for c in plan['controls']], 'actions': 4, 'executed_plan': plan}
+        self.assertEqual(validate_request(request, plan), plan)
+        request['controls'].append('UnreviewedButton')
+        with self.assertRaises(ValueError): validate_request(request, plan)
+
+    def test_discovery_rejects_wrong_panel_and_never_moves_ambiguous_knobs(self):
+        from tools.afx_scan_discovery import discovery_plan
+        from tools.afx_vm_pilot import ROOT
+        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        for field, value in [('process_name', 'other'), ('panel_class', 'Mixer'), ('panel_name', 'unknown')]:
+            inventory = self.discovery_inventory(); inventory[field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError): discovery_plan(inventory, catalog)
+        inventory = self.discovery_inventory()
+        inventory['controls'].append(dict(inventory['controls'][0]))
+        plan = discovery_plan(inventory, catalog)
+        self.assertEqual([c['id'] for c in plan['controls']], ['DeesserMonitorButton'])
+        inventory['panel_bounds']['x'] = float('nan')
+        with self.assertRaises(ValueError): discovery_plan(inventory, catalog)
+        for invalid in ([], None, {'version': 1, 'process_name': 'orionstudioiii', 'panel_name': 9}):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError): discovery_plan(invalid, catalog)
+        for rows in ([None], [self.discovery_inventory()['controls'][0], None]):
+            inventory = self.discovery_inventory(); inventory['controls'] = rows
+            with self.assertRaises(ValueError): discovery_plan(inventory, catalog)
+
+    def test_discovery_plateau_is_candidate_and_requires_a_matching_block(self):
+        from tools.afx_scan_discovery import block_feedback
+        def sample(n, value, instance=0, ep=1):
+            data = bytearray(frame(0x20, [0xd5, 0x0e, 27, instance])); data[20] = value
+            return n, 0, ep, bytes(data)
+        first = block_feedback([sample(2, 10)], 27, 0, 1)
+        self.assertTrue(first['continue'])
+        stable = block_feedback([sample(2, 10)], 27, 0, 1, first['parameter_payload_hex'])
+        self.assertTrue(stable['plateau_observed']); self.assertFalse(stable['endpoint_verified'])
+        for reports in ([], [sample(1, 10)], [sample(2, 10, 1)], [sample(2, 10, ep=0x82)], [sample(2, 11)]):
+            with self.subTest(reports=reports):
+                self.assertTrue(block_feedback(reports, 27, 0, 1, first['parameter_payload_hex'])['continue'])
+
+    def test_discovery_host_binds_complete_plan_before_readiness(self):
+        import copy
+        from tools.afx_scan_discovery import discovery_plan
+        from tools.afx_vm_pilot import ROOT, run_job
+        plan = discovery_plan(self.discovery_inventory(), json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+        request = {'version': 3, 'plan_id': plan['id'], 'panel': plan['panel'], 'channel': 2,
+                   'controls': [c['id'] for c in plan['controls']], 'actions': 4, 'executed_plan': plan}
+        alterations = [('class_name', 'AnotherPot'), ('kind', 'binary_button'), ('feedback', 'numeric')]
+        with tempfile.TemporaryDirectory() as directory:
+            for field, value in alterations:
+                changed = copy.deepcopy(request); changed['executed_plan']['controls'][0][field] = value
+                job = Path(directory)/field; job.mkdir()
+                (job/'request.json').write_text(json.dumps(changed))
+                (job/'discovery-inventory.json').write_text(json.dumps(self.discovery_inventory()))
+                with self.subTest(field=field), patch('tools.afx_vm_pilot.subprocess.Popen') as capture:
+                    with self.assertRaises(ValueError): run_job(job, {})
+                    capture.assert_not_called(); self.assertFalse((job/'ready.json').exists())
+
+    def test_discovery_run_tracks_priming_and_silent_sweeps_without_promoting_range(self):
+        from tools.afx_vm_pilot import ROOT, run_job
+        from tools.afx_scan_discovery import discovery_plan
+        inventory = self.discovery_inventory(); inventory['controls'] = inventory['controls'][:1]
+        plan = discovery_plan(inventory, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+        current = []; mode = {'wrong': False}
+        def add_parameter(value, instance=0):
+            data = bytearray(frame(0x20, [0xd5, 0x0e, 27, instance])); data[20] = value
+            current.append((len(current)+1, 0, 1, bytes(data)))
+        def read(*args, **kwargs):
+            current.append((len(current)+1, 0, 0x82, bytes([0x73]).ljust(320, b'\0')))
+            return list(current)
+        def wait(path, seconds, process=None):
+            name = path.name
+            if name == 'completed.json': return {'status': 'ok'}
+            index = int(name.split('-')[1])
+            if name.endswith('-request.json'): return {'action': index, 'control': 'DeesserThresholdPot'}
+            if name.endswith('-primed.json'):
+                if index == 1: add_parameter(50)
+                return {'status': 'ok'}
+            if '-sweep-' in name:
+                sweep = int(name.split('-')[3])
+                if sweep == 1: add_parameter(0 if index == 1 else 100, 1 if mode['wrong'] else 0)
+                return {'status': 'ok'}
+            if name.endswith('-done.json'): return {'status': 'ok'}
+            raise AssertionError(name)
+        location = {'bus': 5, 'address': 15, 'sysfs': 'fixture'}
+        process = Mock(); process.poll.return_value = None
+        with tempfile.TemporaryDirectory() as directory:
+            for wrong in (False, True):
+                mode['wrong'] = wrong; current.clear()
+                job = Path(directory)/str(wrong); job.mkdir()
+                request = {'version': 3, 'plan_id': plan['id'], 'panel': plan['panel'], 'channel': 2,
+                           'controls': [c['id'] for c in plan['controls']], 'actions': 2, 'executed_plan': plan}
+                (job/'request.json').write_text(json.dumps(request))
+                (job/'discovery-inventory.json').write_text(json.dumps(inventory))
+                with patch('tools.afx_vm_pilot.device_location', return_value=location), \
+                     patch('tools.afx_vm_pilot.Path.exists', side_effect=[True, False]), \
+                     patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                     patch('tools.afx_vm_pilot.read_reports', side_effect=read), \
+                     patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
+                    if wrong:
+                        with self.assertRaises(RuntimeError): run_job(job, {'transport': {'in_endpoint': '0x82', 'out_endpoint': '0x01'}})
+                    else: run_job(job, {'transport': {'in_endpoint': '0x82', 'out_endpoint': '0x01'}})
+                if wrong: self.assertFalse((job/'action-1-ack.json').is_file())
+                else:
+                    windows = json.loads((job/'action-windows.json').read_text())
+                    self.assertFalse(windows[0]['candidate_block_feedback']['endpoint_verified'])
+                    self.assertFalse(windows[0]['wire_feedback'][-1]['new_target_report'])
+                    self.assertEqual(windows[0]['wire_feedback'][-1]['unchanged_sweeps'], 2)
+
     def test_single_launcher_workflows_reference_existing_reviewed_plans(self):
         from tools.afx_vm_pilot import load_plans
         workflows = json.loads((Path(__file__).resolve().parents[1] / 'tools/windows/afx-capture-workflows.json').read_text())
@@ -342,6 +474,41 @@ class VmPilotTests(unittest.TestCase):
                     else:
                         failed=1 if outcome in ('unchanged','bad_label') else 2
                         self.assertFalse((job/f'action-{failed}-ack.json').exists())
+
+    def test_gui_toggle_requires_binary_change_restore_and_same_instance(self):
+        from tools.afx_vm_pilot import run_job
+        plan = {'id': 'test-toggle', 'panel': 'deesser', 'effect_id': 'deesser', 'channel': 2,
+                'controls': [{'id': 'Monitor', 'label': 'Monitor', 'kind': 'binary_button', 'feedback': 'gui_toggle'}]}
+        current = []; mode = {'value': 'ok'}
+        def wait(path, seconds, process=None):
+            if path.name == 'completed.json': return {'status': 'ok'}
+            index = int(path.name.split('-')[1])
+            if path.name.endswith('-request.json'): return {'action': index, 'control': 'Monitor'}
+            selection = 'On' if index == 1 else 'Off'
+            if mode['value'] == 'unchanged': selection = 'Off'
+            if mode['value'] == 'no_restore' and index == 2: selection = 'On'
+            if mode['value'] == 'indeterminate': selection = 'Indeterminate'
+            instance = 1 if mode['value'] == 'other_instance' and index == 2 else 0
+            current.append((index*10, 0, 1, frame(0x20, [0xd5, 0x0e, 27, instance, index])))
+            return {'status': 'ok', 'starting_selection': 'Off', 'selection': selection}
+        process = Mock(); process.poll.return_value = None
+        with tempfile.TemporaryDirectory() as directory:
+            for outcome in ('ok', 'unchanged', 'no_restore', 'indeterminate', 'other_instance'):
+                mode['value'] = outcome; current[:] = [(1, 0, 0x82, bytes([0x73]).ljust(320, b'\0'))]
+                job = Path(directory)/outcome; job.mkdir(); (job/'request.json').write_text('{"version":2}')
+                with patch('tools.afx_vm_pilot.validate_request', return_value=plan), \
+                     patch('tools.afx_vm_pilot.device_location', return_value={'bus':5,'address':15}), \
+                     patch('tools.afx_vm_pilot.Path.exists', side_effect=[True,False]), \
+                     patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                     patch('tools.afx_vm_pilot.read_reports', side_effect=lambda *a,**kw:list(current)), \
+                     patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
+                    if outcome == 'ok': run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
+                    else:
+                        with self.assertRaises(RuntimeError): run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
+                if outcome == 'ok': self.assertTrue((job/'host-completed.json').exists())
+                else:
+                    failed = 1 if outcome in ('unchanged', 'indeterminate') else 2
+                    self.assertFalse((job/f'action-{failed}-ack.json').exists())
 
     def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',

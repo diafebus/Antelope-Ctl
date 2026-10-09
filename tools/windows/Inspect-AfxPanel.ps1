@@ -5,6 +5,7 @@ param(
     [string]$PanelName = '',
     [string]$PanelClass = '',
     [switch]$InspectKnobHover,
+    [switch]$DiscoverForScan,
     [string[]]$InspectMenuClasses = @()
 )
 $ErrorActionPreference = 'Stop'
@@ -51,6 +52,7 @@ if ($InspectKnobHover) {
     Write-Host 'After focusing the panel, leave the mouse alone. Knobs will be hovered automatically.'
     Write-Host 'No clicks, drags, wheel events or value edits are sent. Escape stops the inspection.'
 }
+if ($DiscoverForScan) { Write-Host 'Leave the panel focused. Supported controls will be scanned after Linux prepares the plan.' }
 $console = [AfxPanelWindow]::GetConsoleWindow()
 if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 6) }
 Start-Sleep -Seconds $DelaySeconds
@@ -144,7 +146,7 @@ $selectors = @($rows.ToArray() | Where-Object {
 [ordered]@{ panel_name = $PanelName; source = 'visible UI metadata; options not exercised';
     controls = $selectors; option_writes_verified = $false } |
     ConvertTo-Json -Depth 12 | Set-Content -Encoding UTF8 (Join-Path $folder ($label + '-selector-inventory.json'))
-if ($InspectKnobHover) {
+if ($InspectKnobHover -or $DiscoverForScan) {
     $cursor = New-Object AfxPanelWindow+Point
     if (-not [AfxPanelWindow]::GetCursorPos([ref]$cursor)) { throw 'Cannot save cursor position.' }
     $hoverRows = [System.Collections.Generic.List[object]]::new()
@@ -191,6 +193,23 @@ if ($InspectKnobHover) {
         }
         if ($panels.Count -ne 1) { throw 'Cannot identify one visible plugin. No hover performed; base control inventory was saved.' }
         $panel = $panels[0]
+        if ($DiscoverForScan) {
+            $pb = $panel.Current.BoundingRectangle
+            $scoped = @($rows.ToArray() | Where-Object {
+                $r = $_.window_relative_bounds
+                $null -ne $r -and $r.x -ge ($pb.X - $bounds.X) -and
+                $r.y -ge ($pb.Y - $bounds.Y) -and
+                ($r.x + $r.width) -le ($pb.Right - $bounds.X) -and
+                ($r.y + $r.height) -le ($pb.Bottom - $bounds.Y)
+            })
+            $inventory = @{ version = 1; panel_name = $PanelName; panel_class = $panel.Current.ClassName;
+                panel_identity_status = $identityStatus; process_name = $process.ProcessName;
+                panel_bounds = @{ x = $pb.X - $bounds.X; y = $pb.Y - $bounds.Y; width = $pb.Width; height = $pb.Height };
+                window_size = @{ width = $bounds.Width; height = $bounds.Height }; controls = $scoped }
+            $inventory | ConvertTo-Json -Depth 12 | Set-Content -Encoding UTF8 (Join-Path $folder 'inventory.json')
+            Write-Output $folder
+            return
+        }
         $knobs = @($panel.FindAll([System.Windows.Automation.TreeScope]::Descendants,
             [System.Windows.Automation.Condition]::TrueCondition) | Where-Object {
                 $_.Current.ClassName -match 'Pot' -and -not $_.Current.IsOffscreen -and
@@ -252,7 +271,7 @@ if ($InspectKnobHover) {
         Write-Host "Saved $($hoverRows.Count) automatic knob hover inspections."
     } finally {
         [void][AfxPanelWindow]::SetCursorPos($cursor.X, $cursor.Y)
-        if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 9) }
+        if (-not $DiscoverForScan -and $console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 9) }
         # The first shared result was malformed after repeated rewrites.
         # Save one complete object to a new file instead.
         $detectedClass = $null

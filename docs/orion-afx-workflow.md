@@ -8,6 +8,20 @@ pilot in [SCOPE.md](../SCOPE.md#orion-captured-effect-pilot).
 This document describes the capture method and completion criteria. The local,
 ignored `AUDIT.md` holds the current work order.
 
+The Windows kit now supports inventory-to-scan discovery through the same
+`Run-AfxCapture.cmd` launch. The Linux passive coordinator's `--serve` mode
+remains available for successive plugins. For effects with an observed Orion
+type and an identified panel, the host generates bounded plans for uniquely
+identified enabled Pot knobs and binary UI Automation checkboxes. The complete
+plan Windows executes is checked before any host readiness/gesture gate.
+Generic knob discovery records stable-block endpoint candidates without guessing
+field offsets or parsing plugin-specific numeric labels. It distinguishes fresh
+unchanged writes from suppressed writes after further completed sweeps; neither
+establishes a physical endpoint, interpolation law or device readback. Controls
+with unresolved identity, selectors, presets and disabled dependencies remain
+listed as pending. Known measured plans retain their existing behavior. See
+[the Windows instructions](../tools/windows/README.md) for operation and limits.
+
 ## Evidence already available
 
 | Effect | Orion type | Existing evidence |

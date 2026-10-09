@@ -1,5 +1,5 @@
 # Reusable GUI knob, binary switch and finite selector capture from reviewed plans.
-param([string]$PlanId = '')
+param([string]$PlanId = '', [string]$DiscoveryDirectory = '', [switch]$Prepared)
 $ErrorActionPreference = 'Stop'
 $results = Join-Path $PSScriptRoot 'results'
 New-Item -ItemType Directory -Path $results -Force | Out-Null
@@ -7,6 +7,10 @@ $launchLog = Join-Path $results ('AFX-scan-launch-' + [DateTime]::UtcNow.ToStrin
 Start-Transcript -Path $launchLog | Out-Null
 try {
 $plans = (Get-Content -Raw (Join-Path $PSScriptRoot 'afx-scan-plans.json') | ConvertFrom-Json).plans
+if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
+    $plans = @((Get-Content -Raw (Join-Path $DiscoveryDirectory 'generated-plan.json') | ConvertFrom-Json))
+    $PlanId = $plans[0].id
+}
 if ([string]::IsNullOrWhiteSpace($PlanId)) {
     Write-Host 'Available reviewed control plans:'
     foreach ($candidate in $plans) {
@@ -215,6 +219,10 @@ function Run-WireKnobRange {
         # Prime away from the lower clamp so the minimum has a fresh captured
         # parameter block even when this knob starts at its minimum.
         if ($phase -eq 'minimum') { Drag-Knob -800 $false }
+        if ($control.feedback -eq 'captured_block') {
+            Write-Record (Join-Path $job "action-$index-primed.json") @{ status = 'ok' }
+            $null = Wait-HostFile "action-$index-primed-ack.json" 10
+        }
         $finished = $false
         for ($sweep = 1; $sweep -le 12; $sweep++) {
             $delta = 800
@@ -223,7 +231,9 @@ function Run-WireKnobRange {
             Write-Record (Join-Path $job "action-$index-sweep-$sweep-done.json") @{ status = 'ok'; sweep = $sweep }
             $feedback = Wait-HostFile "action-$index-sweep-$sweep-feedback.json" 10
             if (-not $feedback.continue) {
-                if (-not $feedback.endpoint_verified) { throw 'Host did not verify the captured endpoint.' }
+                if ($control.feedback -eq 'captured_block') {
+                    if (-not $feedback.plateau_observed) { throw 'Host did not observe a stable captured block.' }
+                } elseif (-not $feedback.endpoint_verified) { throw 'Host did not verify the captured endpoint.' }
                 $finished = $true; break
             }
         }
@@ -232,7 +242,8 @@ function Run-WireKnobRange {
         $image.Dispose()
         Write-Record (Join-Path $job "action-$index-done.json") @{
             status = 'ok'; phase = $phase; observed_raw = $feedback.observed_raw;
-            source = 'captured write endpoint; physical value in screenshot; not device readback'; restored = $false
+            source = $feedback.source; restored = $false
+            endpoint_verified = $feedback.endpoint_verified; plateau_observed = $feedback.plateau_observed
         }
         $null = Wait-HostFile "action-$index-ack.json" 10
     }
@@ -294,7 +305,7 @@ if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) {
     Write-Host 'Range-only test: knobs are left at maximum. Starting values will not be restored.'
 }
 Write-Host "Launch log saved automatically: $launchLog"
-$null = Read-Host 'Press Enter when the panel is ready'
+if (-not $Prepared) { $null = Read-Host 'Press Enter when the panel is ready' }
 $console = [AfxScanInput]::GetConsoleWindow()
 if ($console -ne [IntPtr]::Zero) { [void][AfxScanInput]::ShowWindow($console, 6) }
 $job = $null
@@ -302,7 +313,7 @@ $baseline = $null
 $changed = $null
 $restored = $null
 try {
-    Start-Sleep -Seconds 10
+    if (-not $Prepared) { Start-Sleep -Seconds 10 }
     $handle = [AfxScanInput]::GetForegroundWindow()
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
     if ((Get-Process -Id $root.Current.ProcessId).ProcessName -ne $plan.process_name) {
@@ -346,14 +357,22 @@ try {
     Assert-Panel
     $job = Join-Path $PSScriptRoot ('results\scan-' + $panelLabel + '-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'))
     New-Item -ItemType Directory -Path $job | Out-Null
+    if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
+        Copy-Item -LiteralPath (Join-Path $DiscoveryDirectory 'inventory.json') -Destination (Join-Path $job 'discovery-inventory.json')
+    }
     # Move away from the target so hover highlighting cannot impersonate a state change.
     [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
     Start-Sleep -Milliseconds 500
-    Write-Record (Join-Path $job 'request.json') @{
+    $jobRequest = @{
         version = 2; plan_id = $plan.id; panel = $plan.panel; channel = $plan.channel;
         controls = @($plan.controls | ForEach-Object { $_.id });
         actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } elseif ($_.kind -eq 'selector_positions') { [int]$_.positions + 1 } else { 2 } } | Measure-Object -Sum).Sum)
     }
+    if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
+        $jobRequest.version = 3
+        $jobRequest.executed_plan = $plan
+    }
+    Write-Record (Join-Path $job 'request.json') $jobRequest
     $null = Wait-HostFile 'ready.json' 25
     $index = 0
     foreach ($target in $targets) {
@@ -371,7 +390,43 @@ try {
     if ($control.kind -eq 'knob_range') {
         $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
             [int]$windowBounds.Width, [int]$windowBounds.Height)
-        if ($control.feedback -eq 'captured_wire') { Run-WireKnobRange } else { Run-KnobRange }
+        if ($control.feedback -in @('captured_wire', 'captured_block')) { Run-WireKnobRange } else { Run-KnobRange }
+        continue
+    }
+    if ($control.feedback -eq 'gui_toggle') {
+        $toggle = $null
+        if (-not $button.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref]$toggle)) {
+            throw 'Binary TogglePattern is unavailable.'
+        }
+        $initialToggle = $toggle.Current.ToggleState.ToString()
+        if ($initialToggle -notin @('On', 'Off')) { throw 'Toggle is not binary.' }
+        $acceptedToggle = $initialToggle
+        foreach ($togglePhase in @(1, 2)) {
+            $index++
+            Assert-Panel
+            if ($toggle.Current.ToggleState.ToString() -cne $acceptedToggle) { throw 'Toggle changed outside trial.' }
+            Write-Record (Join-Path $job "action-$index-request.json") @{ action = $index; control = $control.id }
+            $null = Wait-HostFile "action-$index-go.json" 10
+            Assert-Panel
+            if ($toggle.Current.ToggleState.ToString() -cne $acceptedToggle) { throw 'Toggle changed while waiting; no click sent.' }
+            if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
+                [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Cannot position toggle pointer.' }
+            [AfxScanInput]::Click()
+            [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
+            Start-Sleep -Milliseconds 700
+            Assert-Panel
+            $nowToggle = $toggle.Current.ToggleState.ToString()
+            $expectedToggle = $initialToggle
+            if ($togglePhase -eq 1) { if ($initialToggle -eq 'On') { $expectedToggle = 'Off' } else { $expectedToggle = 'On' } }
+            $image = Save-Button ($filePrefix + '-toggle-' + $togglePhase + '.png'); $image.Dispose()
+            if ($nowToggle -cne $expectedToggle) { throw 'Toggle did not change/restore; no further click.' }
+            Write-Record (Join-Path $job "action-$index-done.json") @{
+                status = 'ok'; starting_selection = $initialToggle; selection = $nowToggle;
+                source = 'binary GUI TogglePattern round trip; not device readback'
+            }
+            $null = Wait-HostFile "action-$index-ack.json" 10
+            $acceptedToggle = $nowToggle
+        }
         continue
     }
     if ($control.kind -eq 'wheel_button') {
@@ -538,7 +593,7 @@ try {
     $changed = $null
     }
     Write-Record (Join-Path $job 'completed.json') @{
-        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' -or $_.kind -eq 'wheel_button' -or $_.feedback -eq 'captured_toggle' }).Count -eq 0);
+        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' -or $_.kind -eq 'wheel_button' -or $_.feedback -in @('captured_toggle', 'gui_toggle') }).Count -eq 0);
         device_readback_verified = $false; range_knobs_left_at = 'maximum';
         restoration_source = 'images, measured toggle writes or GUI selection checks; range knobs intentionally not restored'
     }

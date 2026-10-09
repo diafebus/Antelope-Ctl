@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Coordinate one reviewed Windows GUI scan with passive Linux USB capture.
+"""Coordinate Windows GUI scans and metadata discovery with passive Linux USB capture.
 
-Never opens HID or sends device commands. Shared-folder requests must match reviewed JSON plans on channel2. Evidence remains local.
+Never opens HID or sends device commands. Requests match reviewed plans or
+bounded metadata-generated plans on channel2. Evidence remains local.
 """
 import argparse
 import json
@@ -15,6 +16,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.scan_afx_capture import analyze_reports, PARAMETER_OPCODES
+from tools.afx_scan_discovery import discovery_plan, block_feedback
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -153,16 +155,23 @@ def verify_wire_changes(reports, boundary, control, effect_type, instance, out_e
         previous = data
 
 
-def validate_request(request):
+def validate_request(request, discovery=None):
+    if not isinstance(request, dict):
+        raise ValueError('Malformed guest request')
     plans = load_plans()
     legacy = {'version': 1, 'panel': 'Instinct', 'channel': 2,
               'control': 'AltMorphButton', 'actions': 2}
-    if request == legacy:
+    if discovery is None and request == legacy:
         return plans['instinct-altmorph']
     plan = plans.get(request.get('plan_id'))
-    if plan is None or request != {'version': 2, 'plan_id': plan['id'],
+    if discovery is not None:
+        plan = discovery
+    expected = None if plan is None else {'version': 2, 'plan_id': plan['id'],
         'panel': plan['panel'], 'channel': plan['channel'],
-        'controls': [c['id'] for c in plan['controls']], 'actions': len(planned_actions(plan))}:
+        'controls': [c['id'] for c in plan['controls']], 'actions': len(planned_actions(plan))}
+    if discovery is not None:
+        expected.update(version=3, executed_plan=plan)
+    if plan is None or request != expected:
         raise ValueError('Guest request must match a reviewed host GUI plan exactly')
     return plan
 
@@ -279,7 +288,11 @@ def wait_file(path, seconds, process=None):
 
 def run_job(job, profile):
     request = json.loads((job/'request.json').read_text(encoding='utf-8-sig'))
-    plan = validate_request(request)
+    generated = None
+    if (job/'discovery-inventory.json').is_file():
+        inventory = json.loads((job/'discovery-inventory.json').read_text(encoding='utf-8-sig'))
+        generated = discovery_plan(inventory, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+    plan = validate_request(request, generated)
     effect_type = plan_effect_type(plan)
     catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
     validate_wire_controls(plan, catalog)
@@ -301,6 +314,7 @@ def run_job(job, profile):
     selector_baselines = {}
     toggle_baselines = {}
     wheel_baselines = {}
+    block_minima = {}
     actions = planned_actions(plan)
     has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
@@ -361,7 +375,29 @@ def run_job(job, profile):
                 start = time.time()
                 write_json(job/f'action-{index}-go.json', {'action': index})
                 feedback_history = []
-                if control.get('feedback') == 'captured_wire':
+                discovery_baseline = None
+                unchanged_sweeps = 0
+                last_sweep_frame = first_frame
+                if control.get('feedback') == 'captured_block':
+                    wait_file(job/f'action-{index}-primed.json', 10, process)
+                    time.sleep(.3)
+                    primed_reports = read_reports(capture, location, transport, allow_incomplete=True)
+                    primed_events = labelled_actions(primed_reports, [{'start_frame_exclusive': first_frame,
+                        'end_frame_inclusive': max(r[0] for r in primed_reports),
+                        'start_epoch': start, 'end_epoch': time.time()}], out_ep, bypass_layout)[0]['events']
+                    if primed_events:
+                        expected_target = verify_action_events(primed_events, expected_target, effect_type)
+                    if expected_target is None:
+                        raise RuntimeError('Discovery priming did not establish a captured target')
+                    prior = [data[20:].hex() for _, _, ep, data in primed_reports if ep == out_ep
+                        and data[0] == 0x70 and data[4] in PARAMETER_OPCODES and data[16] == 0xd5
+                        and data[18] == effect_type and data[19] == expected_target[3]]
+                    if not prior:
+                        raise RuntimeError('No primed parameter block; discovery remains unresolved')
+                    discovery_baseline = prior[-1]
+                    first_frame = last_sweep_frame = max(r[0] for r in primed_reports)
+                    write_json(job/f'action-{index}-primed-ack.json', {'status': 'ok'})
+                if control.get('feedback') in ('captured_wire', 'captured_block'):
                     for sweep in range(1, 13):
                         wait_file(job/f'action-{index}-sweep-{sweep}-done.json', 10, process)
                         time.sleep(.3)
@@ -372,9 +408,32 @@ def run_job(job, profile):
                         events = labelled_actions(current_reports, [sweep_window], out_ep, bypass_layout)[0]['events']
                         if events:
                             expected_target = verify_action_events(events, expected_target, effect_type)
-                            verify_wire_changes(current_reports, first_frame, control, effect_type,
-                                                expected_target[3], out_ep)
-                        feedback = wire_feedback(current_reports, control, effect_type, phase, out_ep,
+                            if control.get('feedback') == 'captured_wire':
+                                verify_wire_changes(current_reports, first_frame, control, effect_type,
+                                                    expected_target[3], out_ep)
+                        if control.get('feedback') == 'captured_block':
+                            current_frame = max(r[0] for r in current_reports)
+                            if current_frame <= last_sweep_frame:
+                                raise RuntimeError('Capture stalled during discovery sweep')
+                            feedback = block_feedback(current_reports, effect_type,
+                                expected_target[3] if expected_target else None, first_frame,
+                                feedback_history[-1].get('parameter_payload_hex') if feedback_history else None,
+                                out_ep, PARAMETER_OPCODES)
+                            unchanged_sweeps = unchanged_sweeps + 1 if feedback['plateau_observed'] else 0
+                            payload = feedback['parameter_payload_hex']
+                            candidate = unchanged_sweeps >= 2 and payload != discovery_baseline and payload is not None
+                            fresh = any(n > last_sweep_frame and ep == out_ep and data[0] == 0x70
+                                and data[4] in PARAMETER_OPCODES and data[16] == 0xd5
+                                and data[18] == effect_type and data[19] == expected_target[3]
+                                for n, _, ep, data in current_reports)
+                            feedback['continue'] = not candidate
+                            feedback['plateau_observed'] = candidate
+                            feedback['new_target_report'] = fresh
+                            feedback['basis'] = 'two completed sweeps without further target changes; capture advances'
+                            feedback['unchanged_sweeps'] = unchanged_sweeps
+                            last_sweep_frame = current_frame
+                        else:
+                            feedback = wire_feedback(current_reports, control, effect_type, phase, out_ep,
                                                  expected_target[3] if expected_target else None,
                                                  feedback_history[-1].get('parameter_payload_hex') if feedback_history else None,
                                                  first_frame)
@@ -411,7 +470,7 @@ def run_job(job, profile):
                 unchanged_endpoint = (control['kind'] == 'knob_range'
                                      and completed.get('starting_value') == completed.get('displayed_value')
                                      and 'displayed_value' in completed)
-                if control.get('feedback') == 'captured_wire' and feedback_history:
+                if control.get('feedback') in ('captured_wire', 'captured_block') and feedback_history:
                     unchanged_endpoint = False
                 if events or not unchanged_endpoint:
                     if control.get('command_family') == 'bypass':
@@ -473,15 +532,28 @@ def run_job(job, profile):
                     if not final_feedback['endpoint_verified']:
                         raise RuntimeError('Final captured block changed after endpoint feedback; no ACK')
                     window['final_wire_feedback'] = final_feedback
+                if control.get('feedback') == 'captured_block':
+                    final = block_feedback(reports, effect_type, expected_target[3], first_frame,
+                        feedback_history[-1]['parameter_payload_hex'], out_ep, PARAMETER_OPCODES)
+                    if not final['plateau_observed']:
+                        raise RuntimeError('Captured block changed after plateau; no ACK')
+                    payload = final['parameter_payload_hex']
+                    if phase == 'minimum':
+                        block_minima[control['id']] = payload
+                    elif payload == block_minima[control['id']]:
+                        raise RuntimeError('Knob sweeps yielded identical blocks; range is unresolved')
+                    window['candidate_block_feedback'] = final
                 window['wire_events_observed'] = bool(events)
                 window['endpoint_range_verified'] = False
                 write_json(job/'action-windows.json', windows)
-                if control['kind'] == 'wheel_button':
+                if control['kind'] == 'wheel_button' or control.get('feedback') == 'gui_toggle':
                     initial = completed.get('starting_selection')
                     selection = completed.get('selection')
                     if not isinstance(initial, str) or not initial.strip() or not isinstance(selection, str) or not selection.strip():
                         raise RuntimeError('Wheel trial requires known GUI selection labels')
-                    if phase == 'wheel forward':
+                    if control.get('feedback') == 'gui_toggle' and {initial, selection} - {'On', 'Off'}:
+                        raise RuntimeError('GUI toggle must report binary labels')
+                    if phase in ('wheel forward', 'click'):
                         if initial == selection:
                             raise RuntimeError('Wheel did not change the GUI selection')
                         wheel_baselines[control['id']] = initial
@@ -521,6 +593,7 @@ def main():
     parser.add_argument('--shared', type=Path, help='antelope-afx-tools directory')
     parser.add_argument('--preflight', type=Path, help='new local directory for a three-second passive capture')
     parser.add_argument('--wait-seconds', type=int, default=900, choices=range(1, 3601))
+    parser.add_argument('--serve', action='store_true', help='remain available for successive plugin launches; stop on scan failure')
     args = parser.parse_args()
     profile = json.loads((ROOT/'profiles/orion_studio_sc.json').read_text())
     location = device_location(profile)
@@ -546,27 +619,47 @@ def main():
                         for _, _, ep, data in reports) else 1
     if args.shared is None:
         parser.error('--shared or --preflight is required')
-    print(f"Ready for one reviewed scan request; Orion on usbmon{location['bus']}. No HID controller opened.", flush=True)
+    print(f"Ready for GUI scan/discovery requests; Orion on usbmon{location['bus']}. No HID controller opened.", flush=True)
     results = args.shared/'results'
     results.mkdir(exist_ok=True)
     def jobs():
         return set(results.glob('scan-*')) | set(results.glob('pilot-Instinct-*'))
     existing = jobs()
+    discovered = set(results.glob('panel-*'))
+    completed_jobs = 0
     deadline = time.monotonic() + args.wait_seconds
     while time.monotonic() < deadline:
+        for folder in sorted(set(results.glob('panel-*')) - discovered):
+            if folder.is_symlink() or not (folder/'discovery-request.json').is_file():
+                continue
+            discovered.add(folder)
+            try:
+                inventory = json.loads((folder/'inventory.json').read_text(encoding='utf-8-sig'))
+                plan = discovery_plan(inventory, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+                write_json(folder/'generated-plan.json', plan)
+                deadline = time.monotonic() + args.wait_seconds
+                print(f"Prepared {plan['panel']}: {len(plan['controls'])} knobs; other controls listed as pending.", flush=True)
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                write_json(folder/'host-error.json', {'error': str(error), 'stop': True})
+                print(f'Discovery retained for review: {error}', flush=True)
         for job in sorted(jobs() - existing):
             if job.is_symlink() or not (job/'request.json').is_file():
                 continue
             try:
                 run_job(job, profile)
                 print(f'Pilot finished: {job}', flush=True)
-                return 0
-            except (OSError, ValueError, RuntimeError, TimeoutError) as error:
+                existing.add(job)
+                completed_jobs += 1
+                if not args.serve:
+                    return 0
+                deadline = time.monotonic() + args.wait_seconds
+                print('Ready for the next plugin through the same launcher.', flush=True)
+            except (OSError, ValueError, KeyError, TypeError, RuntimeError, TimeoutError) as error:
                 write_json(job/'host-error.json', {'error': str(error), 'stop': True})
                 print(f'Pilot stopped: {error}. Evidence retained at {job}', file=sys.stderr, flush=True)
                 return 1
         time.sleep(.2)
-    print('No guest request arrived; nothing captured or changed.', flush=True)
+    print(f'Recorder idle timeout; {completed_jobs} scan batch(es) completed.', flush=True)
     return 0
 
 
