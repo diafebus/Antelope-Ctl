@@ -1,5 +1,6 @@
 @echo off
 cd /d "%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Inspect-AfxPanel.ps1" -InspectKnobHover
+echo Starting automatic knob inspection...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Inspect-AfxKnobs.ps1"
 if errorlevel 1 echo Knob inspection stopped. Leave this message visible for troubleshooting.
 pause

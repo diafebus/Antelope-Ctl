@@ -18,6 +18,9 @@ captured window may be absent. The same launcher is reusable for plugins whose
 visible class matches the entered name and whose knobs have `Pot` classes.
 PowerShell execution must be checked in Windows; no PowerShell runtime is
 available on the Linux host.
+The launcher writes `results/AFX-knob-inspection-launch-TIMESTAMP.log` before
+loading the inspector, catches startup failures, and restores the console on
+exit. Keep this private launch log local with the other inspection evidence.
 
 First stage of the VM gesture runner: inspect actual UI Automation support
 before choosing semantic selectors or calibrated panel coordinates. This is
