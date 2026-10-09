@@ -2,6 +2,17 @@
 
 ## First held-drag range trial
 
+The fast Speed trial completed successfully in about six seconds of endpoint
+phases:0%/100%, float32-le0/1@28,5914packets/zero drops. The same runner now
+offers `instinct-knob-ranges`: all21 knobs from the reviewed hover inventory,
+42 minimum/maximum phases in one recording. Start the Linux listener, launch
+`Run-AfxScan.cmd`, enter `instinct-knob-ranges`, press Enter, and focus the
+plugin title bar within ten seconds. Leave mouse/keyboard alone until the
+console returns. Knobs stay at maximum. Other knobs' units and field offsets
+remain observations to review after this batch; Speed does not prove them.
+The full batch has a600-second/100MB passive capture limit. Status or target
+verification failure stops the batch and preserves its partial evidence.
+
 `Run-AfxScan.cmd` now offers `instinct-speed-range`, a candidate shared gesture
 for the Speed knob on unlinked AFX2. Start the Linux listener first. The runner
 reads the numeric status and holds the mouse during a large vertical movement

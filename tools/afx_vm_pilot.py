@@ -52,7 +52,8 @@ def load_plans():
     plans = json.loads((ROOT/'tools/windows/afx-scan-plans.json').read_text())['plans']
     for plan in plans:
         controls = plan['controls']
-        if (plan['channel'] != 2 or not 1 <= len(controls) <= 3 or
+        limit = 24 if all(c['kind'] == 'knob_range' for c in controls) else 3
+        if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
                 any(c['kind'] not in ('binary_button', 'knob_range') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
@@ -197,7 +198,8 @@ def run_job(job, profile):
     has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
         process = subprocess.Popen(['dumpcap', '-i', interface, '-s', '0',
-            '-a', 'duration:240' if has_knobs else 'duration:60', '-a', 'filesize:100000', '-w', str(capture)],
+            '-a', ('duration:600' if len(plan['controls']) > 3 else 'duration:240') if has_knobs else 'duration:60',
+            '-a', 'filesize:100000', '-w', str(capture)],
             stdout=log, stderr=log)
         try:
             # Prove that full matching IN reports reach the capture before

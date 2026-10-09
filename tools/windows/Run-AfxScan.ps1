@@ -17,7 +17,9 @@ if ([string]::IsNullOrWhiteSpace($PlanId)) {
 $matchingPlans = @($plans | Where-Object { $_.id -eq $PlanId })
 if ($matchingPlans.Count -ne 1) { throw 'Choose one of the listed reviewed plans.' }
 $plan = $matchingPlans[0]
-if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt 3 -or
+$controlLimit = 3
+if (@($plan.controls | Where-Object { $_.kind -ne 'knob_range' }).Count -eq 0) { $controlLimit = 24 }
+if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
     @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
 }

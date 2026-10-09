@@ -61,8 +61,8 @@
       "effect_id": "instinct",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "endpoint ranges observed; large-sweep replacement pending trial",
-      "evidence": "First held-drag trial captures SPEED0..100%, float32-le@28 range0..1, failed restoration. Owner authorizes range-only larger swings and leaving final endpoint. New large-sweep gesture untested.",
+      "status": "large-sweep endpoints capture-and-owner-confirmed",
+      "evidence": "scan-Instinct-20261009T172307200Z: two endpoint phases SPEED0/100%, captured float32le@28 values0/1; 5914 packets/zero drops. Owner confirms fast gesture. Leaves maximum as authorized.",
       "controls": [
         {
           "id": "SpeedPot",
@@ -70,6 +70,165 @@
           "class_name": "SpeedPot",
           "kind": "knob_range",
           "status_pattern": "^SPEED:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        }
+      ]
+    },
+    {
+      "id": "instinct-knob-ranges",
+      "panel": "Instinct",
+      "panel_class": "Instinct",
+      "effect_id": "instinct",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed visible inventory; per-knob ranges pending",
+      "evidence": "Valid21-knob hover inventory panel-Instinct-20261009T165845087Z. Shared large-sweep gesture verified on Speed only; each remaining control evaluated independently by numeric status and captured writes. Owner authorizes range-only leaving each at maximum.",
+      "controls": [
+        {
+          "id": "PunchPot",
+          "label": "Punch",
+          "class_name": "PunchPot",
+          "kind": "knob_range",
+          "status_pattern": "^PUNCH:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "BodyPot",
+          "label": "Body",
+          "class_name": "BodyPot",
+          "kind": "knob_range",
+          "status_pattern": "^BODY:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "SpeedPot",
+          "label": "Speed",
+          "class_name": "SpeedPot",
+          "kind": "knob_range",
+          "status_pattern": "^SPEED:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "CharacterPot",
+          "label": "Character",
+          "class_name": "CharacterPot",
+          "kind": "knob_range",
+          "status_pattern": "^Character:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "BoostFreqPot",
+          "label": "BoostFreq",
+          "class_name": "BoostFreqPot",
+          "kind": "knob_range",
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+        },
+        {
+          "id": "BoostGainPot",
+          "label": "BoostGain",
+          "class_name": "BoostGainPot",
+          "kind": "knob_range",
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
+        },
+        {
+          "id": "GainPot",
+          "label": "Gain",
+          "class_name": "GainPot",
+          "kind": "knob_range",
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "GainModPot",
+          "label": "GainMod",
+          "class_name": "GainModPot",
+          "kind": "knob_range",
+          "status_pattern": "^GAIN\\ MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "FilterFreqPot",
+          "label": "FilterFreq",
+          "class_name": "FilterFreqPot",
+          "kind": "knob_range",
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+        },
+        {
+          "id": "FilterQPot",
+          "label": "FilterQ",
+          "class_name": "FilterQPot",
+          "kind": "knob_range",
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "FilterMixPot",
+          "label": "FilterMix",
+          "class_name": "FilterMixPot",
+          "kind": "knob_range",
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "MorphModPot",
+          "label": "MorphMod",
+          "class_name": "MorphModPot",
+          "kind": "knob_range",
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "MorphAmountPot",
+          "label": "MorphAmount",
+          "class_name": "MorphAmountPot",
+          "kind": "knob_range",
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "BiasModPot",
+          "label": "BiasMod",
+          "class_name": "BiasModPot",
+          "kind": "knob_range",
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "BiasAmountPot",
+          "label": "BiasAmount",
+          "class_name": "BiasAmountPot",
+          "kind": "knob_range",
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "PFFreqPot",
+          "label": "PFFreq",
+          "class_name": "PFFreqPot",
+          "kind": "knob_range",
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+        },
+        {
+          "id": "PFModPot",
+          "label": "PFMod",
+          "class_name": "PFModPot",
+          "kind": "knob_range",
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "PFQPot",
+          "label": "PFQ",
+          "class_name": "PFQPot",
+          "kind": "knob_range",
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "PFMixPot",
+          "label": "PFMix",
+          "class_name": "PFMixPot",
+          "kind": "knob_range",
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "MixPot",
+          "label": "Mix",
+          "class_name": "MixPot",
+          "kind": "knob_range",
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "VolumePot",
+          "label": "Volume",
+          "class_name": "VolumePot",
+          "kind": "knob_range",
+          "status_pattern": "^VOLUME:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
         }
       ]
     }

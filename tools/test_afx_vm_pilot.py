@@ -19,6 +19,18 @@ class VmPilotTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_request({**request, **changes})
 
+    def test_full_knob_batch_preserves_reviewed_inventory_and_order(self):
+        from tools.afx_vm_pilot import load_plans
+        plan = load_plans()['instinct-knob-ranges']
+        controls = [c['id'] for c in plan['controls']]
+        self.assertEqual(len(controls), 21)
+        request = {'version': 2, 'plan_id': plan['id'], 'panel': 'Instinct',
+                   'channel': 2, 'controls': controls, 'actions': 42}
+        self.assertEqual(len(planned_actions(validate_request(request))), 42)
+        for changes in [{'controls': controls[::-1]}, {'actions': 63}, {'controls': controls[:-1]}]:
+            with self.assertRaises(ValueError):
+                validate_request({**request, **changes})
+
     def test_batch_requests_are_data_driven_and_cannot_substitute_controls(self):
         request = {'version': 2, 'plan_id': 'instinct-filters', 'panel': 'Instinct',
                    'channel': 2, 'controls': ['FilterEnableButton', 'PostFilterEnable'], 'actions': 4}
