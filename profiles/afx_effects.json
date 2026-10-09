@@ -1252,7 +1252,24 @@
               0,
               1
             ],
-            "notes": "Unlabelled parameter movements. Linked UI sends identical state blocks to instance 1 then instance 0. No per-control names/scales or readback were established; do not reuse the Memory Cat byte encoding."
+            "notes": "Older parameter movements were unlabelled; linked UI sends identical state blocks to instance 1 then instance 0. A later GUI trial identifies two Filter Type values at byte26; remaining field maps/scales and readback are unverified. Do not reuse the Memory Cat byte encoding.",
+            "automated_gui_capture": {
+              "source": "scan-Master-De-Esser-20261009T211457387Z",
+              "status": "Filter Type GUI round trip completed; partial selector mapping only",
+              "type_id": 27,
+              "instance": 0,
+              "selector_observations": [
+                {"control_id": "filter_type", "label": "BandPass 1", "offset": 26, "raw": 3, "frame": 447},
+                {"control_id": "filter_type", "label": "HighPass 3", "offset": 26, "raw": 2, "frame": 1209}
+              ],
+              "restored_gui_selection": "HighPass 3",
+              "changed_parameter_offsets": [26],
+              "packet_count": 1754,
+              "dropped_packets": 0,
+              "device_readback_verified": false,
+              "pending": ["Remaining filter options", "Q dependency", "Knob ranges", "Monitor/Out", "Bypass", "Preset inventory"],
+              "notes": "No complete menu, field range, option order or runtime writer inferred. Subsequent partial-notch pacing needs Windows verification."
+            }
           }
         }
       ]

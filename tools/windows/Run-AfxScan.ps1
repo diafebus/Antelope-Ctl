@@ -6,7 +6,9 @@ New-Item -ItemType Directory -Path $results -Force | Out-Null
 $launchLog = Join-Path $results ('AFX-scan-launch-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '.log')
 Start-Transcript -Path $launchLog | Out-Null
 try {
-$plans = (Get-Content -Raw (Join-Path $PSScriptRoot 'afx-scan-plans.json') | ConvertFrom-Json).plans
+$planData = Get-Content -Raw (Join-Path $PSScriptRoot 'afx-scan-plans.json') | ConvertFrom-Json
+$plans = $planData.plans
+$wheelPolicy = $planData.wheel_policy
 if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
     $plans = @((Get-Content -Raw (Join-Path $DiscoveryDirectory 'generated-plan.json') | ConvertFrom-Json))
     $PlanId = $plans[0].id
@@ -66,7 +68,7 @@ public static class AfxScanInput {
         }
     }
     public static void Wheel(int delta) {
-        if (delta != 120 && delta != -120) throw new Exception("Only one reviewed wheel notch is allowed.");
+        if (delta == 0 || Math.Abs(delta) > 30) throw new Exception("Only a bounded partial wheel notch is allowed.");
         Input[] inputs = new Input[1];
         inputs[0].mouse.flags = 0x0800;
         inputs[0].mouse.data = unchecked((uint)delta);
@@ -430,12 +432,22 @@ try {
         continue
     }
     if ($control.kind -eq 'wheel_button') {
+        if ($null -eq $wheelPolicy -or
+            ($wheelPolicy.step_delta -isnot [int] -and $wheelPolicy.step_delta -isnot [long]) -or
+            ($wheelPolicy.pause_ms -isnot [int] -and $wheelPolicy.pause_ms -isnot [long]) -or
+            ($wheelPolicy.max_pulses -isnot [int] -and $wheelPolicy.max_pulses -isnot [long]) -or
+            $wheelPolicy.step_delta -lt 1 -or $wheelPolicy.step_delta -gt 30 -or
+            $wheelPolicy.pause_ms -lt 1000 -or $wheelPolicy.pause_ms -gt 3000 -or
+            $wheelPolicy.max_pulses -lt 1 -or $wheelPolicy.max_pulses -gt 12 -or
+            ($wheelPolicy.step_delta * $wheelPolicy.max_pulses) -gt 120 -or
+            ($wheelPolicy.pause_ms * $wheelPolicy.max_pulses) -gt 20000) { throw 'Wheel pacing policy is invalid.' }
         if ($button.Current.ControlType -ne [System.Windows.Automation.ControlType]::ComboBox) { throw 'Wheel target must be a reviewed ComboBox.' }
         $selection = $null
         if (-not $button.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$selection)) { throw 'Dropdown selection is unavailable.' }
         $initialSelection = $selection.Current.Value
         if ([string]::IsNullOrWhiteSpace($initialSelection)) { throw 'Dropdown starting selection is unknown.' }
         $acceptedSelection = $initialSelection
+        $forwardPulses = 0
         $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
             [int]$windowBounds.Width, [int]$windowBounds.Height)
         foreach ($wheelPhase in @(1, 2)) {
@@ -446,15 +458,34 @@ try {
             $null = Wait-HostFile "action-$index-go.json" 10
             Assert-Panel
             if ($selection.Current.Value -cne $acceptedSelection) { throw 'Dropdown changed while waiting; no wheel sent.' }
-            if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
-                [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Cannot hover dropdown.' }
-            $wheelDelta = -120
-            if ($wheelPhase -eq 2) { $wheelDelta = 120 }
-            [AfxScanInput]::Wheel($wheelDelta)
+            $wheelDelta = -[int]$wheelPolicy.step_delta
+            $pulseLimit = [int]$wheelPolicy.max_pulses
+            if ($wheelPhase -eq 2) { $wheelDelta = [int]$wheelPolicy.step_delta; $pulseLimit = $forwardPulses }
+            $pulseRows = @()
+            $nowSelection = $acceptedSelection
+            for ($pulse = 1; $pulse -le $pulseLimit; $pulse++) {
+                Assert-Panel
+                if ($selection.Current.Value -cne $acceptedSelection) { throw 'Dropdown changed between pulses; no further wheel sent.' }
+                if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
+                    [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Cannot hover dropdown.' }
+                [AfxScanInput]::Wheel($wheelDelta)
+                Start-Sleep -Milliseconds ([int]$wheelPolicy.pause_ms)
+                Assert-Panel
+                $nowSelection = $selection.Current.Value
+                $pulseRow = @{ delta = $wheelDelta; pause_ms = [int]$wheelPolicy.pause_ms;
+                    starting_selection = $acceptedSelection; selection = $nowSelection }
+                $pulseRows += $pulseRow
+                Write-Record (Join-Path $job "action-$index-wheel-pulse-$pulse.json") $pulseRow
+                $image = Save-Button ($filePrefix + '-wheel-' + $wheelPhase + '-pulse-' + $pulse + '.png')
+                $image.Dispose()
+                if ([string]::IsNullOrWhiteSpace($nowSelection)) { throw 'Dropdown selection became unknown; no further wheel sent.' }
+                # Do not queue more input once the first visible change occurs.
+                if ($nowSelection -cne $acceptedSelection) { break }
+            }
+            if ($wheelPhase -eq 1) { $forwardPulses = $pulseRows.Count }
             [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
-            Start-Sleep -Milliseconds 700
             Assert-Panel
-            $nowSelection = $selection.Current.Value
+            if ($selection.Current.Value -cne $nowSelection) { throw 'Dropdown changed after the paced wheel; stopped.' }
             $ok = -not [string]::IsNullOrWhiteSpace($nowSelection)
             if ($wheelPhase -eq 1) { $ok = $ok -and $nowSelection -cne $initialSelection }
             else { $ok = $ok -and $nowSelection -ceq $initialSelection }
@@ -463,7 +494,8 @@ try {
             $status = 'failed'; if ($ok) { $status = 'ok' }
             Write-Record (Join-Path $job "action-$index-done.json") @{
                 status = $status; starting_selection = $initialSelection; selection = $nowSelection;
-                source = 'GUI ValuePattern round trip; not device readback'; wheel_delta = $wheelDelta
+                source = 'paced partial wheel and GUI ValuePattern round trip; not device readback';
+                wheel_delta = $wheelDelta; wheel_pulses = $pulseRows
             }
             if (-not $ok) { throw 'Wheel did not change/restore dropdown; no retry or blind repair.' }
             $null = Wait-HostFile "action-$index-ack.json" 10

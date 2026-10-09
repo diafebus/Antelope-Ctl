@@ -63,12 +63,17 @@ Open Master De-Esser on unlinked AFX channel2. Run the same launcher and
 enter `Master De-Esser`; press Enter and focus its title bar during the ten-second
 countdown. Linux must be waiting. Leave mouse and keyboard alone.
 
-This short trial hovers Filter Type, sends one downward wheel notch, then one
-upward notch. It saves panel screenshots and passive USB evidence for both
+This short trial hovers Filter Type and sends downward increments of one eighth
+of a wheel notch, pausing 1.5 seconds and checking selection after each increment.
+It stops at the first change, within eight increments. The return uses upward
+increments bounded by the forward count and requires the original selection.
+It saves a screenshot and pulse record after every increment, plus USB evidence for both
 selections. GUI ValuePattern must show a changed selection and exact restoration
 of its starting name; the host independently checks these labels and one effect
-instance. No popup is opened and no Escape is sent. First Windows wheel execution
-is pending. If it clamps, changes focus or fails restoration, it stops without
+instance and the bounded pulse sequence. No popup is opened and no Escape is sent.
+The earlier full-notch trial completed HighPass3 → BandPass1 → HighPass3;
+the new partial-notch pace still needs Windows verification.
+If it clamps, changes focus or fails restoration, it stops without
 retries or repair writes. This tests the reusable wheel method, not all options.
 
 Presets remain untouched: scrolling them replaces many parameter values.

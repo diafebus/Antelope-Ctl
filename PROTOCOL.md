@@ -1940,6 +1940,15 @@ parameter sweeps establish neither control-name maps nor display scales.
 Memory Cat's byte layout must not be reused for them. V12 also has observed
 `0x20` / `0xd5` traffic. Stereo writes remain outside the pilot.
 
+**Master De-Esser Filter Type GUI trial (2026-10-09).** The local
+`scan-Master-De-Esser-20261009T211457387Z/Master-De-Esser-channel2.pcapng`
+records type27/instance0 at frames447/1209. GUI selection changes from
+HighPass3 to BandPass1 and returns to HighPass3. Absolute report byte26 is3
+for BandPass1 and2 for HighPass3; no other parameter bytes differ across these
+two OUT blocks. Guest and host completion checks pass,1754packets/zero drops.
+This is a partial labelled mapping: remaining options, Q dependencies, other
+controls, device readback and runtime writes remain unverified.
+
 **Instinct ALT Morph GUI pilot (2026-10-09).** A labelled automated trial on
 unlinked AFX2 captures type75/instance1 parameter writes at frames537/1567 in
 the local `pilot-Instinct-20261009T161102564Z/Instinct-channel2.pcapng` recording.

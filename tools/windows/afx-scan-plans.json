@@ -1,5 +1,10 @@
 {
   "version": 1,
+  "wheel_policy": {
+    "step_delta": 15,
+    "pause_ms": 1500,
+    "max_pulses": 8
+  },
   "notes": "Reviewed GUI gesture data, not wire contracts. Knob range gesture is a candidate requiring its first bounded trial. Model selection and power excluded.",
   "plans": [
     {

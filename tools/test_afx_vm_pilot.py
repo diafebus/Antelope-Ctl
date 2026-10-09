@@ -475,7 +475,10 @@ except RuntimeError:
                 if mode['value']=='no_restore' and index==2:selection='HighPass 2'
                 if mode['value']=='changed_initial' and index==2:initial='Different'
                 if mode['value']=='bad_label':selection=None
-                return {'status':'ok','starting_selection':initial,'selection':selection}
+                before = initial if index == 1 else 'HighPass 2'
+                pulses = [{'delta': -15 if index == 1 else 15, 'pause_ms': 1500,
+                           'starting_selection': before, 'selection': selection}]
+                return {'status':'ok','starting_selection':initial,'selection':selection,'wheel_pulses':pulses}
             if path.name=='completed.json':return {'status':'ok'}
             raise AssertionError(path.name)
         process=Mock();process.poll.return_value=None
@@ -534,6 +537,28 @@ except RuntimeError:
                 else:
                     failed = 1 if outcome in ('unchanged', 'indeterminate') else 2
                     self.assertFalse((job/f'action-{failed}-ack.json').exists())
+
+    def test_paced_wheel_stops_at_first_change_and_bounds_reverse_pulses(self):
+        import copy
+        from tools.afx_vm_pilot import verify_wheel_pulses, load_plans
+        policy = load_plans()['deesser-filter-wheel']['wheel_policy']
+        pulses = [{'delta': -15, 'pause_ms': 1500, 'starting_selection': 'A', 'selection': 'A'},
+                  {'delta': -15, 'pause_ms': 1500, 'starting_selection': 'A', 'selection': 'B'}]
+        result = {'selection': 'B', 'wheel_pulses': pulses}
+        self.assertEqual(verify_wheel_pulses(result, policy, 'wheel forward', 'A'), 2)
+        reverse = {'selection': 'A', 'wheel_pulses': [
+            {'delta': 15, 'pause_ms': 1500, 'starting_selection': 'B', 'selection': 'A'}]}
+        self.assertEqual(verify_wheel_pulses(reverse, policy, 'wheel back', 'B', 2), 1)
+        for alteration in ('too_fast', 'full_notch', 'unknown_label', 'continued_after_change', 'missing'):
+            bad = copy.deepcopy(result)
+            if alteration == 'too_fast': bad['wheel_pulses'][0]['pause_ms'] = 10
+            elif alteration == 'full_notch': bad['wheel_pulses'][0]['delta'] = -120
+            elif alteration == 'unknown_label': bad['wheel_pulses'][0]['selection'] = None
+            elif alteration == 'continued_after_change': bad['wheel_pulses'].append(dict(pulses[-1]))
+            else: del bad['wheel_pulses']
+            with self.subTest(alteration=alteration), self.assertRaises(RuntimeError):
+                verify_wheel_pulses(bad, policy, 'wheel forward', 'A')
+        with self.assertRaises(RuntimeError): verify_wheel_pulses(reverse, policy, 'wheel back', 'B', 0)
 
     def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',

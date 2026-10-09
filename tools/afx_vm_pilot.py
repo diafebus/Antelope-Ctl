@@ -88,9 +88,20 @@ def device_location(profile, sysfs=Path('/sys/bus/usb/devices')):
 
 
 def load_plans():
-    plans = json.loads((ROOT/'tools/windows/afx-scan-plans.json').read_text())['plans']
+    document = json.loads((ROOT/'tools/windows/afx-scan-plans.json').read_text())
+    plans = document['plans']
+    policy = document['wheel_policy']
+    if (set(policy) != {'step_delta', 'pause_ms', 'max_pulses'}
+            or any(type(v) is not int for v in policy.values())
+            or not 1 <= policy['step_delta'] <= 30 or not 1000 <= policy['pause_ms'] <= 3000
+            or not 1 <= policy['max_pulses'] <= 12
+            or policy['step_delta'] * policy['max_pulses'] > 120
+            or policy['pause_ms'] * policy['max_pulses'] > 20000):
+        raise ValueError('Invalid bounded wheel pacing policy')
     for plan in plans:
         controls = plan['controls']
+        if any(c['kind'] == 'wheel_button' for c in controls):
+            plan['wheel_policy'] = policy
         limit = 24 if any(c['kind'] == 'knob_range' for c in controls) else 3
         if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
@@ -206,6 +217,26 @@ def plan_effect_type(plan):
     effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
     implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
     return implementation['type_id']
+
+
+def verify_wheel_pulses(completed, policy, phase, expected_start, forward_count=None):
+    pulses = completed.get('wheel_pulses')
+    limit = policy['max_pulses'] if phase == 'wheel forward' else forward_count
+    if type(limit) is not int or not isinstance(pulses, list) or not 1 <= len(pulses) <= limit:
+        raise RuntimeError('Wheel pulse sequence exceeds its reviewed bound')
+    delta = policy['step_delta'] * (-1 if phase == 'wheel forward' else 1)
+    for index, pulse in enumerate(pulses):
+        if (not isinstance(pulse, dict) or pulse.get('delta') != delta
+                or pulse.get('pause_ms') != policy['pause_ms']
+                or pulse.get('starting_selection') != expected_start
+                or not isinstance(pulse.get('selection'), str) or not pulse['selection'].strip()):
+            raise RuntimeError('Wheel pulse differs from reviewed pacing or GUI state')
+        changed = pulse['selection'] != expected_start
+        if changed != (index == len(pulses) - 1):
+            raise RuntimeError('Wheel continued after a selection change or never changed')
+    if pulses[-1]['selection'] != completed.get('selection'):
+        raise RuntimeError('Wheel final selection differs from its pulse evidence')
+    return len(pulses)
 
 
 def verify_action_events(events, expected=None, effect_type=75):
@@ -339,12 +370,15 @@ def run_job(job, profile):
     selector_baselines = {}
     toggle_baselines = {}
     wheel_baselines = {}
+    wheel_counts = {}
+    wheel_selections = {}
     block_minima = {}
     actions = planned_actions(plan)
     has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
+    has_wheel = any(c['kind'] == 'wheel_button' for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
         process = subprocess.Popen(['dumpcap', '-i', interface, '-s', '0',
-            '-a', ('duration:600' if len(plan['controls']) > 3 else 'duration:240') if has_knobs else 'duration:60',
+            '-a', ('duration:600' if len(plan['controls']) > 3 else 'duration:240') if has_knobs else ('duration:180' if has_wheel else 'duration:60'),
             '-a', 'filesize:100000', '-w', str(capture)],
             stdout=log, stderr=log)
         try:
@@ -468,7 +502,10 @@ def run_job(job, profile):
                             break
                     else:
                         raise RuntimeError('Captured endpoint was not reached in twelve continuous sweeps')
-                completed = wait_file(job/f'action-{index}-done.json', 60 if has_knobs else 10, process)
+                action_timeout = 60 if has_knobs else 10
+                if control['kind'] == 'wheel_button':
+                    action_timeout = 10 + math.ceil(plan['wheel_policy']['pause_ms'] * plan['wheel_policy']['max_pulses'] / 1000)
+                completed = wait_file(job/f'action-{index}-done.json', action_timeout, process)
                 window = {'action': index, 'control': control['id'], 'label': control['label'],
                           'gesture': phase,
                           'start_epoch': start, 'end_epoch': time.time(),
@@ -578,6 +615,13 @@ def run_job(job, profile):
                         raise RuntimeError('Wheel trial requires known GUI selection labels')
                     if control.get('feedback') == 'gui_toggle' and {initial, selection} - {'On', 'Off'}:
                         raise RuntimeError('GUI toggle must report binary labels')
+                    if control['kind'] == 'wheel_button':
+                        start_selection = initial if phase == 'wheel forward' else wheel_selections[control['id']]
+                        count = verify_wheel_pulses(completed, plan['wheel_policy'], phase, start_selection,
+                            wheel_counts.get(control['id']))
+                        if phase == 'wheel forward':
+                            wheel_counts[control['id']] = count
+                        wheel_selections[control['id']] = selection
                     if phase in ('wheel forward', 'click'):
                         if initial == selection:
                             raise RuntimeError('Wheel did not change the GUI selection')

@@ -359,3 +359,13 @@ options. Owner proposes hover+wheel; next same-name launcher runs the reviewed
 with GUI selection and captured single-instance checks. No popup/Escape or
 preset selection is used. Full option enumeration, Q dependency and parameter
 field maps remain pending. No raw offsets/scales were assigned from declarations.
+
+The full-notch trial `scan-Master-De-Esser-20261009T211457387Z` completed
+HighPass3 → BandPass1 → HighPass3 with type27/instance0 OUT frames447/1209,
+byte26 values3/2 and no other changed parameter bytes. Both guest and host
+completed;1754packets/zero drops. This establishes two labelled filter values,
+not the entire menu or physical range. At the owner's request, the shared wheel
+policy now uses15-unit partial notches, a1500ms pause and at most8increments,
+stopping at the first GUI selection change. The reverse is bounded by the
+forward count and must restore the initial label. Each increment retains a PNG
+and metadata; the slower Windows gesture is pending verification.
