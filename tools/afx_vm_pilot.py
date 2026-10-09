@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def planned_actions(plan):
     return [(control, phase) for control in plan['controls']
-            for phase in (('minimum', 'maximum', 'restore') if control['kind'] == 'knob_range'
+            for phase in (('minimum', 'maximum') if control['kind'] == 'knob_range'
                           else ('click', 'click back'))]
 
 
@@ -254,7 +254,11 @@ def run_job(job, profile):
                     time.sleep(.2)
                 windows.append(window)
                 write_json(job/'action-windows.json', windows)
-                expected_target = verify_action_events(events, expected_target, effect_type)
+                unchanged_minimum = (control['kind'] == 'knob_range' and phase == 'minimum'
+                                     and completed.get('starting_value') == completed.get('displayed_value')
+                                     and 'displayed_value' in completed)
+                if events or not unchanged_minimum:
+                    expected_target = verify_action_events(events, expected_target, effect_type)
                 if completed.get('status') != 'ok':
                     raise RuntimeError('Guest visual verification failed; stop for review')
                 write_json(job/f'action-{index}-ack.json', {'status': 'ok'})

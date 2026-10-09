@@ -10,7 +10,7 @@ $plans = (Get-Content -Raw (Join-Path $PSScriptRoot 'afx-scan-plans.json') | Con
 if ([string]::IsNullOrWhiteSpace($PlanId)) {
     Write-Host 'Available reviewed control plans:'
     foreach ($candidate in $plans) {
-        Write-Host "$($candidate.id): $($candidate.panel), $($candidate.controls.Count) button(s), AFX $($candidate.channel)"
+        Write-Host "$($candidate.id): $($candidate.panel), $($candidate.controls.Count) control(s), AFX $($candidate.channel)"
     }
     $PlanId = Read-Host 'Enter the plan ID to scan (for example instinct-filters)'
 }
@@ -142,57 +142,56 @@ function Drag-Knob([int]$Delta) {
     if (-not [AfxScanInput]::SetCursorPos($x, $y)) { throw 'Cannot position pointer.' }
     try {
         [AfxScanInput]::Held($true)
-        for ($n = 1; $n -le [Math]::Abs($Delta); $n++) {
-            Assert-Panel
-            if (-not [AfxScanInput]::SetCursorPos($x, ($y + [Math]::Sign($Delta) * $n))) { throw 'Drag failed.' }
-            Start-Sleep -Milliseconds 8
-        }
+        Start-Sleep -Milliseconds 100
+        Assert-Panel
+        if (-not [AfxScanInput]::SetCursorPos($x, ($y + $Delta))) { throw 'Drag failed.' }
+        Start-Sleep -Milliseconds 150
     } finally { [AfxScanInput]::Held($false) }
-    Start-Sleep -Milliseconds 250
-    return Read-Knob
+    # Re-enter the knob after the large sweep so its numeric status is visible.
+    [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Left + 8), [int]($windowBounds.Bottom - 8))
+    Start-Sleep -Milliseconds 200
+    [void][AfxScanInput]::SetCursorPos($x, $y)
+    for ($retry = 0; $retry -lt 6; $retry++) {
+        Start-Sleep -Milliseconds 300
+        Assert-Panel
+        try { return Read-Knob } catch {
+            if ($retry -eq 5) { throw }
+        }
+    }
 }
 function Run-KnobRange {
-    # Repeated short held drags remain within the knob/window. Every step uses
-    # the displayed value; restoration does not assume inverse drag symmetry.
+    # Range-only scan: owner authorized leaving knobs at the final endpoint.
     [void][AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2), [int]($buttonBounds.Y + $buttonBounds.Height/2))
     Start-Sleep -Milliseconds 2200
     $startValue = Read-Knob
     $currentValue = $startValue
     $rangeValues = @()
-    foreach ($phase in @('minimum', 'maximum', 'restore')) {
+    foreach ($phase in @('minimum', 'maximum')) {
         $script:index++
         Assert-Panel
         if ((Read-Knob) -ne $currentValue) { throw 'Knob changed outside the trial; stopped.' }
         Write-Record (Join-Path $job "action-$index-request.json") @{ action = $index; control = $control.id }
         $null = Wait-HostFile "action-$index-go.json" 10
         $stable = 0; $finished = $false
-        $stepLimit = 96
-        if ($phase -eq 'restore') { $stepLimit = 192 }
+        $stepLimit = 4
         for ($step = 0; $step -lt $stepLimit; $step++) {
-            if ($phase -eq 'restore' -and $currentValue -eq $startValue) { $finished = $true; break }
-            $delta = 8
-            if ($phase -eq 'maximum') { $delta = -8 }
-            if ($phase -eq 'restore') {
-                $delta = [Math]::Sign($currentValue - $startValue)
-            }
+            $delta = 800
+            if ($phase -eq 'maximum') { $delta = -800 }
             $next = Drag-Knob $delta
-            if ($phase -ne 'restore') {
-                if (($phase -eq 'minimum' -and $next -gt $currentValue) -or
-                    ($phase -eq 'maximum' -and $next -lt $currentValue)) { throw 'Drag direction differs from the reviewed gesture.' }
-                if ($next -eq $currentValue) { $stable++ } else { $stable = 0 }
-                if ($stable -ge 3) { $finished = $true; $currentValue = $next; break }
-            }
+            if (($phase -eq 'minimum' -and $next -gt $currentValue) -or
+                ($phase -eq 'maximum' -and $next -lt $currentValue)) { throw 'Drag direction differs from the reviewed gesture.' }
+            if ($next -eq $currentValue) { $stable++ } else { $stable = 0 }
+            if ($stable -ge 1) { $finished = $true; $currentValue = $next; break }
             $currentValue = $next
         }
-        if ($phase -eq 'restore' -and $currentValue -eq $startValue) { $finished = $true }
-        if (-not $finished) { throw 'Bounded sweep or precise displayed-value restoration did not finish; stopped.' }
+        if (-not $finished) { throw 'Large sweeps did not establish a stable endpoint; stopped.' }
         if ($phase -eq 'maximum' -and $currentValue -le $rangeValues[0]) { throw 'Knob range did not change.' }
         $rangeValues += $currentValue
         $image = Save-Button ($filePrefix + '-' + $phase + '.png')
         $image.Dispose()
         Write-Record (Join-Path $job "action-$index-done.json") @{
             status = 'ok'; phase = $phase; starting_value = $startValue; displayed_value = $currentValue;
-            source = 'numeric vendor status; rounded display, not device readback'
+            source = 'numeric vendor status; rounded display, not device readback'; restored = $false
         }
         $null = Wait-HostFile "action-$index-ack.json" 10
     }
@@ -204,6 +203,9 @@ Write-Host "Prepare $($plan.panel) on unlinked AFX $($plan.channel). Linux recor
 Write-Host 'The runner operates the selected controls automatically; do not click plugin buttons yourself.'
 Write-Host 'After pressing Enter, the terminal minimizes. Focus the plugin using its title bar within 10 seconds.'
 Write-Host 'Then leave mouse and keyboard alone. The terminal returns when finished or stopped.'
+if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) {
+    Write-Host 'Range-only test: knobs are left at maximum. Starting values will not be restored.'
+}
 Write-Host "Launch log saved automatically: $launchLog"
 $null = Read-Host 'Press Enter when the panel is ready'
 $console = [AfxScanInput]::GetConsoleWindow()
@@ -262,7 +264,7 @@ try {
     Start-Sleep -Milliseconds 500
     Write-Record (Join-Path $job 'request.json') @{
         version = 2; plan_id = $plan.id; panel = $plan.panel; channel = $plan.channel;
-        controls = @($plan.controls | ForEach-Object { $_.id }); actions = (@($plan.controls | Where-Object { $_.kind -eq 'binary_button' }).Count * 2 + @($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count * 3)
+        controls = @($plan.controls | ForEach-Object { $_.id }); actions = 2 * $plan.controls.Count
     }
     $null = Wait-HostFile 'ready.json' 25
     $index = 0
@@ -324,8 +326,9 @@ try {
     }
     }
     Write-Record (Join-Path $job 'completed.json') @{
-        status = 'ok'; visual_restoration = $true; device_readback_verified = $false;
-        restoration_source = 'button images or rounded numeric vendor status; inspect wire evidence'
+        status = 'ok'; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -eq 0);
+        device_readback_verified = $false; range_knobs_left_at = 'maximum';
+        restoration_source = 'button images only; range knobs intentionally not restored'
     }
     $null = Wait-HostFile 'host-completed.json' 15
     Write-Host "Pilot completed; evidence saved to $job"

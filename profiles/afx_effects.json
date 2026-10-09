@@ -1947,6 +1947,34 @@
                 ],
                 "notes": "Observed UI-to-write association; no inferred declaration ID, parameter state reader, audible behavior or runtime writer. PFEnable refers to the post-filter, not panel power.",
                 "startup_reply_offset": 109
+              },
+              "speed": {
+                "label": "Speed",
+                "ui_class": "SpeedPot",
+                "offset": 28,
+                "width": 4,
+                "encoding": "float32-le",
+                "observed_wire_range": [
+                  0.0,
+                  1.0
+                ],
+                "observed_display_range": [
+                  0,
+                  100
+                ],
+                "display_unit": "%",
+                "status": "capture-observed endpoints; restoration failed",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "minimum": 26583,
+                  "maximum": 55845,
+                  "last_observed": 83475
+                },
+                "evidence": [
+                  "Local scan-Instinct-20261009T170904069Z/Instinct-channel2.pcapng: 192 type75 parameter writes vary only bytes28..31, float32-le min0.0/max1.0. Numeric phase results0%/100%, starting90%; last float0.5 after interrupted restoration. 83942 packets/zero drops."
+                ],
+                "notes": "No runtime writer, complete scale law or readback field inferred. Owner subsequently authorizes range-only scans leaving final endpoint."
               }
             },
             "startup_readback_observation": {

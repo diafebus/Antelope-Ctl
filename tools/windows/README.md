@@ -4,17 +4,20 @@
 
 `Run-AfxScan.cmd` now offers `instinct-speed-range`, a candidate shared gesture
 for the Speed knob on unlinked AFX2. Start the Linux listener first. The runner
-reads the numeric status, holds the mouse while moving vertically in bounded
-segments to each endpoint, then steers back to the starting displayed value.
+reads the numeric status and holds the mouse during a large vertical movement
+to each endpoint. A second large movement confirms saturation (at most four
+attempts per endpoint). The pointer then re-enters the knob to show its label.
+The owner authorizes leaving range-test knobs at maximum; no restoration phase
+is run. First Speed capture established0–100% with float32-le0–1 at bytes28–31;
+the larger replacement gesture still needs its first Windows run.
 Each phase has its own host-gated recording window and full-panel screenshot.
 Buttons and drags use the same runner and reviewed JSON plans.
 
-This first gesture trial is not a full knob scan. Endpoints require three
-unchanged readings after continued drag; direction mismatch, unreadable status,
-focus change, timeout or failed restoration stop the trial. The mouse button is
-released even on an error. Displayed restoration can hide rounding differences;
-inspect raw parameter blocks before claiming exact device restoration or
-enabling the full knob batch. No guessed ranges or direct HID writes are used.
+This first gesture trial is not a full knob scan. Endpoints require a second
+unchanged reading after continued drag; direction mismatch, unreadable status,
+focus change or timeout stop the trial. The mouse button is
+released even on an error. Inspect endpoint wire blocks before enabling the
+full knob batch. No guessed ranges or direct HID writes are used.
 
 ## Automatic knob hover inspection
 

@@ -10,12 +10,12 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
-    def test_range_plan_requires_all_three_reviewed_phases(self):
+    def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',
-                   'channel': 2, 'controls': ['SpeedPot'], 'actions': 3}
+                   'channel': 2, 'controls': ['SpeedPot'], 'actions': 2}
         plan = validate_request(request)
-        self.assertEqual([phase for _, phase in planned_actions(plan)], ['minimum', 'maximum', 'restore'])
-        for changes in [{'actions': 2}, {'controls': ['VolumePot']}, {'channel': 1}]:
+        self.assertEqual([phase for _, phase in planned_actions(plan)], ['minimum', 'maximum'])
+        for changes in [{'actions': 3}, {'controls': ['VolumePot']}, {'channel': 1}]:
             with self.assertRaises(ValueError):
                 validate_request({**request, **changes})
 

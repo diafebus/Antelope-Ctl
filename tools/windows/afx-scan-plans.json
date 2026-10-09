@@ -61,8 +61,8 @@
       "effect_id": "instinct",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "candidate; first gesture trial pending",
-      "evidence": "Owner confirms held vertical mouse drag. Successful hover inspection exposes SPEED numeric percent; no gesture/range/restoration trial yet.",
+      "status": "endpoint ranges observed; large-sweep replacement pending trial",
+      "evidence": "First held-drag trial captures SPEED0..100%, float32-le@28 range0..1, failed restoration. Owner authorizes range-only larger swings and leaving final endpoint. New large-sweep gesture untested.",
       "controls": [
         {
           "id": "SpeedPot",
