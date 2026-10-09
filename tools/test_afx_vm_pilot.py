@@ -40,6 +40,18 @@ class VmPilotTests(unittest.TestCase):
                    'controls': [c['id'] for c in remaining['controls']], 'actions': 32}
         self.assertEqual(len(planned_actions(validate_request(request))), 32)
 
+    def test_volume_only_plan_accepts_finite_and_infinite_labels(self):
+        import re
+        from tools.afx_vm_pilot import load_plans
+        plan = load_plans()['instinct-volume-range']
+        pattern = plan['controls'][0]['status_pattern']
+        for label in ['VOLUME: -12 DB', 'VOLUME: -inf DB', 'VOLUME: -Infinity DB']:
+            self.assertIsNotNone(re.fullmatch(pattern, label, re.IGNORECASE))
+        self.assertIsNone(re.fullmatch(pattern, 'GAIN: -12 DB'))
+        request = {'version':2, 'plan_id':plan['id'], 'panel':'Instinct', 'channel':2,
+                   'controls':['VolumePot'], 'actions':2}
+        self.assertEqual(len(planned_actions(validate_request(request))), 2)
+
     def test_batch_requests_are_data_driven_and_cannot_substitute_controls(self):
         request = {'version': 2, 'plan_id': 'instinct-filters', 'panel': 'Instinct',
                    'channel': 2, 'controls': ['FilterEnableButton', 'PostFilterEnable'], 'actions': 4}

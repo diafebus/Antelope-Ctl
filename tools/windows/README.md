@@ -30,6 +30,13 @@ the sweep rather than at every motion sample. This replacement still needs
 its first Windows trial. No Boost Gain endpoint range is claimed from those
 four intermediate values.
 
+The continuous sweep completed15 of the16 remaining controls; the final
+Volume minimum reached wire float@120 zero, then its numeric label was not
+recognized. `instinct-volume-range` scans only this last knob. Its selector
+accepts finite dB values and infinity text; failed status reads now log the
+actual observed label. The minimum display text remains unconfirmed until
+that trial. Completed20 knob captures are retained without repeating them.
+
 `Run-AfxScan.cmd` now offers `instinct-speed-range`, a candidate shared gesture
 for the Speed knob on unlinked AFX2. Start the Linux listener first. The runner
 reads the numeric status and holds the mouse during a large vertical movement

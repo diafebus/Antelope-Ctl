@@ -228,7 +228,7 @@
           "label": "Volume",
           "class_name": "VolumePot",
           "kind": "knob_range",
-          "status_pattern": "^VOLUME:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
+          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$"
         }
       ]
     },
@@ -352,7 +352,26 @@
           "label": "Volume",
           "class_name": "VolumePot",
           "kind": "knob_range",
-          "status_pattern": "^VOLUME:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
+          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$"
+        }
+      ]
+    },
+    {
+      "id": "instinct-volume-range",
+      "panel": "Instinct",
+      "panel_class": "Instinct",
+      "effect_id": "instinct",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "last knob only; nonfinite label support pending trial",
+      "evidence": "Remaining16 scan completed15 controls. Last Volume drag reached wire float@120 zero but numeric label was not recognized. Accept finite or infinity labels without assuming the minimum display value.",
+      "controls": [
+        {
+          "id": "VolumePot",
+          "label": "Volume",
+          "class_name": "VolumePot",
+          "kind": "knob_range",
+          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$"
         }
       ]
     }

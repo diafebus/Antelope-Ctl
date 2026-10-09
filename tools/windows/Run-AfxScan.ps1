@@ -154,10 +154,16 @@ function Read-Knob {
         [System.Windows.Automation.PropertyCondition]::new(
             [System.Windows.Automation.AutomationElement]::ClassNameProperty, 'NameLabel'))
     $texts = @($labels | Where-Object { -not $_.Current.IsOffscreen -and $_.Current.Name -match $control.status_pattern })
-    if ($texts.Count -ne 1) { throw 'Expected numeric knob status is missing or ambiguous.' }
+    if ($texts.Count -ne 1) {
+        $observed = @($labels | ForEach-Object { $_.Current.Name }) -join '; '
+        throw "Expected knob status is missing or ambiguous. Observed: $observed"
+    }
     $text = $texts[0].Current.Name
     if ($text -notmatch $control.status_pattern) { throw 'Numeric knob label changed.' }
-    return [double]::Parse($Matches[1], [System.Globalization.CultureInfo]::InvariantCulture)
+    $token = $Matches[1]
+    if ($token -match '^-(inf(?:inity)?|\u221e)$') { return [double]::NegativeInfinity }
+    if ($token -match '^(inf(?:inity)?|\u221e)$') { return [double]::PositiveInfinity }
+    return [double]::Parse($token, [System.Globalization.CultureInfo]::InvariantCulture)
 }
 function Drag-Knob([int]$Delta) {
     Assert-Panel
