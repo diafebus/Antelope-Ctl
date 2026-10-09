@@ -139,6 +139,14 @@ def analyze_reports(reports):
     readback_queries = Counter()
     instance_queries, instance_states, pending_instances = [], [], {}
     profile = json.loads((Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json').read_text())
+    catalog = json.loads((Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json').read_text())
+    bypass_layouts = {i['type_id']: i['bypass_observation'] for e in catalog['effects']
+                      for i in e['implementations'] if i['profile'] == 'orion_studio_sc.json'
+                      and 'bypass_observation' in i}
+    for layout in bypass_layouts.values():
+        if (layout['status'] != 'capture-observed' or layout['opcode'] != '0x14' or layout['selector'] != '0x98'
+                or sorted(layout[key] for key in ('instance_offset', 'type_offset', 'state_offset')) != [17,18,19]):
+            raise ValueError('Invalid captured model-local bypass layout')
     from antelope import afx
     for number, timestamp, endpoint, payload in reports:
         if len(payload) != 320:
@@ -174,8 +182,12 @@ def analyze_reports(reports):
         elif opcode == 0x14 and selector == 0xa2 and payload[17] == 4:
             operations.append({**base, 'kind': 'link', 'pair_index': payload[18], 'value': payload[19]})
         elif opcode == 0x14 and selector == 0x98:
-            operations.append({**base, 'kind': 'bypass', 'state': payload[17],
-                               'type': payload[18], 'instance': payload[19], 'polarity_confirmed': False})
+            layout = bypass_layouts.get(payload[18])
+            operations.append({**base, 'kind': 'bypass',
+                               'state': payload[layout['state_offset']] if layout else payload[17],
+                               'type': payload[18],
+                               'instance': payload[layout['instance_offset']] if layout else payload[19],
+                               'polarity_confirmed': False})
         elif opcode in PARAMETER_OPCODES and selector == 0xd5:
             parameters[(opcode, payload[17], payload[18])].append(
                 (number, timestamp, payload[19], payload[20:]))
@@ -209,7 +221,6 @@ def analyze_reports(reports):
                                                              max(s[3][offset-20] for s in samples)] for offset in varying},
                        'mirrored_writes': [{'from_instance': a, 'to_instance': b, 'pairs': count}
                                            for (a, b), count in sorted(mirrored.items())], 'targets': targets})
-    catalog = json.loads((Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json').read_text())
     observed = observed_instance_readbacks(reports, profile, catalog)
     return {'report_offsets_exclude_usb_header': True, 'device_commands_sent': False,
             'ownership_inferred': False, 'operations': operations, 'parameter_groups': groups,

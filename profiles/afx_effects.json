@@ -651,14 +651,126 @@
         "https://en.antelopeaudio.com/products/bbd-chorus/"
       ],
       "controls": [
-        {"id": "level", "label": "Level", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
-        {"id": "intensity", "label": "Intensity", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
-        {"id": "rate", "label": "Rate", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
-        {"id": "depth", "label": "Depth", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
-        {"id": "chvibrato", "label": "Chvibrato", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
-        {"id": "type", "label": "Type", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
-        {"id": "bypass", "label": "Bypass", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]},
-        {"id": "peakmeter", "label": "Peakmeter", "description": null, "kind": null, "unit": null, "range": null, "step": null, "default": null, "enum": null, "status": "declared", "evidence": ["https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"]}
+        {
+          "id": "level",
+          "label": "Level",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        },
+        {
+          "id": "intensity",
+          "label": "Intensity",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        },
+        {
+          "id": "rate",
+          "label": "Rate",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        },
+        {
+          "id": "depth",
+          "label": "Depth",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        },
+        {
+          "id": "chvibrato",
+          "label": "Chvibrato",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        },
+        {
+          "id": "type",
+          "label": "Type",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        },
+        {
+          "id": "bypass",
+          "label": "Bypass",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        },
+        {
+          "id": "peakmeter",
+          "label": "Peakmeter",
+          "description": null,
+          "kind": null,
+          "unit": null,
+          "range": null,
+          "step": null,
+          "default": null,
+          "enum": null,
+          "status": "declared",
+          "evidence": [
+            "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+          ]
+        }
       ],
       "implementations": [
         {
@@ -779,6 +891,31 @@
                 "0": "Vibrato",
                 "1": "Chorus"
               }
+            },
+            "type": {
+              "offset": 25,
+              "range": [
+                0,
+                3
+              ],
+              "kind": "enum",
+              "label": "Stereo Type",
+              "status": "capture-observed",
+              "options": {
+                "0": "Basic",
+                "1": "Wide",
+                "2": "Split",
+                "3": "Cross"
+              },
+              "wire_enum": {
+                "0": "basic",
+                "1": "wide",
+                "2": "split",
+                "3": "cross"
+              },
+              "evidence": [
+                "scan-BBD-Chorus-20261009T193326058Z actions1..4: direct labelled row screenshots and isolated byte25 changes; action5 restores Basic0. Runtime writer/readback remain disabled."
+              ]
             }
           },
           "evidence": [
@@ -802,7 +939,7 @@
               "type": {
                 "offset": 25,
                 "readback_offset": null,
-                "evidence": "Constant 0; no change isolates Basic/Wide/Split/Cross. Wire polarity is UNVERIFIED."
+                "evidence": "Stereo Type now capture-mapped at byte25; see control_encodings.type. Preserve untouched state in complete parameter blocks; no runtime writer enabled."
               },
               "bypass": {
                 "offset": 26,
@@ -860,14 +997,16 @@
                 {
                   "label": "Basic",
                   "raw": 0,
-                  "offset": 25, "frame": 52399,
-                "status": "before screenshot matches preceding mode parameter block"
+                  "offset": 25,
+                  "frame": 52399,
+                  "status": "before screenshot matches preceding mode parameter block"
                 },
                 {
                   "label": "Split",
                   "raw": 2,
-                  "offset": 25, "frame": 53691,
-                "status": "first centre-click screenshot and parameter block agree"
+                  "offset": 25,
+                  "frame": 53691,
+                  "status": "first centre-click screenshot and parameter block agree"
                 }
               ],
               "pending": [
@@ -875,11 +1014,50 @@
                 "Direct-position selector traversal/restoration",
                 "Power round trip"
               ],
-              "notes": "Centre clicks select Split repeatedly, not a four-state cycle. No guessed enum order or runtime writer enabled."
+              "notes": "Centre clicks select Split repeatedly, not a four-state cycle. No guessed enum order or runtime writer enabled.",
+              "completion_review": {
+                "source": "scan-BBD-Chorus-20261009T193326058Z",
+                "status": "all visible editable controls captured across original and resume runs",
+                "selector_raw_values": {
+                  "Basic": 0,
+                  "Wide": 1,
+                  "Split": 2,
+                  "Cross": 3
+                },
+                "selector_restored_to": "Basic",
+                "power_visual_restoration": true,
+                "power_states_observed": [
+                  0,
+                  1
+                ],
+                "packet_count": 8646,
+                "dropped_packets": 0,
+                "coordinator_status": "original final ACK rejected because decoder swapped state/instance offsets; original errors preserved; reviewed offline",
+                "device_readback_verified": false
+              }
             }
           },
           "state_readback": null,
-          "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c"
+          "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c",
+          "bypass_observation": {
+            "status": "capture-observed",
+            "opcode": "0x14",
+            "selector": "0x98",
+            "instance_offset": 17,
+            "type_offset": 18,
+            "state_offset": 19,
+            "state_values": [
+              0,
+              1
+            ],
+            "processing_polarity_verified": false,
+            "readback_verified": false,
+            "writable": false,
+            "evidence": [
+              "scan-BBD-Chorus-20261009T193326058Z:7063/7067 instance0 state0;7999/8007 instance0 state1, visual Power round trip restored.",
+              "antelope-orion-afx-modulation-tab.pcapng:232899-232913 instance17=1,1,0,0/state19=0;234191-234203 same instance sequence/state19=1. BBD model-local correction; other-effect global-profile offsets remain unresolved."
+            ]
+          }
         }
       ],
       "panel": {
@@ -907,7 +1085,7 @@
               "split": "Split",
               "cross": "Cross"
             },
-            "evidence": "Public product modes; no measured wire mapping. Local preview choices only."
+            "evidence": "Orion raw values now captured in the implementation; preview choices remain local until runtime verification."
           }
         }
       }

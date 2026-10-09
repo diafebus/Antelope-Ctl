@@ -41,7 +41,10 @@ try {
     $workflows = Get-Content -Raw (Join-Path $PSScriptRoot 'afx-capture-workflows.json') | ConvertFrom-Json
     $matches = @($workflows.plugins | Where-Object { $_.name -eq $name })
     if ($matches.Count -gt 1) { throw 'Ambiguous plugin workflow.' }
-    if ($matches.Count -eq 1 -and $matches[0].next_step -eq 'ranges') {
+    if ($matches.Count -eq 1 -and $matches[0].next_step -eq 'complete') {
+        Write-Host "${name}: all visible editable controls have been captured and reviewed. No rescan needed."
+        Write-Host 'Device readback and runtime writes remain unverified. Run the launcher with the next plugin name.'
+    } elseif ($matches.Count -eq 1 -and $matches[0].next_step -eq 'ranges') {
         if ([string]::IsNullOrWhiteSpace($matches[0].range_plan)) { throw 'No reviewed range plan is ready.' }
         Write-Host "${name}: automatic control batch, AFX $($workflows.channel)."
         Write-Host 'Linux recorder must be waiting. Range tests leave knobs at maximum.'

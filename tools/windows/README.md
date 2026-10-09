@@ -4,54 +4,25 @@ Use one launcher: `Z:\antelope-afx-tools\Run-AfxCapture.cmd`.
 Enter the plugin name. It chooses the prepared stage from
 `afx-capture-workflows.json`; no script names or plan IDs need to be remembered.
 
-## Next capture: V12 Chorus
+## BBD Chorus capture completed
 
-1. Open V12 Chorus on unlinked AFX channel2 in the Orion control panel.
-2. Leave its panel open; the batch scans Space first to enable the color controls.
-3. Double-click `Run-AfxCapture.cmd` and enter `V12 Chorus`.
-4. Press Enter when ready, then focus its title bar during the ten-second countdown.
-5. Leave mouse and keyboard alone until the console returns, then report done.
+The original range scan and short resume cover four knob ranges, the
+Chorus/Vibrato footswitch, Basic/Wide/Split/Cross and Power. The selector and
+Power returned to their starting appearance. The resume's final host error was
+a decoder offset mistake; offline review with the measured BBD packet layout
+confirms the same instance across both Power actions. No rerun is required.
+Entering `BBD Chorus` now reports completion without moving controls.
 
-The prepared V12 stage captures ten knob ranges and Humanize in22 labelled
-phases. The Linux listener must be waiting. Files are saved automatically in
-`results/scan-V12-Chorus-TIMESTAMP/`, shared directly with Linux. The actual
-`TurboEnsembler` panel and ten visible knob classes were reviewed from the
-inventory; hidden PresetIndex is excluded. Existing type70 raw mappings are
-reused, with no repeated INIT. Power/bypass remains outside this plan.
-Humanize is clicked twice to restore its starting state; range knobs stay
-at maximum. Physical values displayed inside V12 knobs are saved in screenshots.
+Run the same launcher with the next plugin name. Unknown plugins still get
+read-only inventory and require a reviewed control plan; automatic plan
+preparation is not implemented. Generic methods now include knob endpoints,
+measured mode switches, cycles, direct row selectors and Power round trips.
+Reviewed resume plans retain successful controls rather than repeating them.
 
-## Next capture: resume BBD Chorus
-
-The capture `scan-BBD-Chorus-20261009T192357505Z` completed the four knob
-ranges and Chorus/Vibrato. These results are retained. Stereo Type stopped:
-centre clicks select Split repeatedly, rather than cycling. Power was not reached.
-
-Open BBD Chorus on unlinked AFX channel2, run the same launcher, enter
-`BBD Chorus`, press Enter and focus its title bar within ten seconds. Linux
-must be waiting. This resume captures only Stereo Type and Power in seven
-phases; no knob or mode rescans. Leave mouse and keyboard alone.
-
-The direct-position method clicks the four visible rows separately. Each phase
-primes a different row before selecting its target to establish fresh OUT even
-when the target was already selected. It saves four distinct labelled screenshots
-and learns the raw values; it does not assume numeric enum order. After the
-four rows, the initial screenshot must match exactly one captured position.
-That learned visual/raw correspondence selects the restore row. If a preceding
-parameter block exists, it must agree. Newer edits, repeated/ambiguous positions,
-wrong bytes or failed restoration stop the run without blind repair clicks.
-Direct row-hit execution is still pending this first Windows run.
-
-The complete `bbd-controls` JSON plan remains available: four knob endpoint
-pairs, Chorus/Vibrato round trip, four Stereo Type positions plus restoration,
-and Power round trip (17phases). The workflow currently selects its reviewed
-`bbd-remaining` resume plan. Successful partial evidence is kept; adding a new
-gesture does not require repeating the completed controls.
-
-Power records opcode0x14/selector0x98 for the same effect instance and all0/1
-events; persistent state and polarity are unverified. Chorus/Vibrato uses measured
-byte24 feedback because the nearby red indicator is animated. Clip/meters are
-read-only. V12's older plan still excludes power/bypass and remains partial.
+The BBD Power override is instance17/type18/state19 for opcode0x14/selector0x98.
+Processing polarity/readback and runtime writes remain unverified. The indicator
+above Chorus/Vibrato shows vibrato speed, per owner, and is excluded from
+mode/power verification. V12's older plan remains partial (power not captured).
 
 ## Capture stages
 

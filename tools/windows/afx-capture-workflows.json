@@ -18,8 +18,8 @@
     {
       "name": "BBD Chorus",
       "effect_id": "bbdchorus",
-      "range_plan": "bbd-remaining",
-      "next_step": "ranges",
+      "range_plan": "bbd-controls",
+      "next_step": "complete",
       "panel_class": "BBDChorus"
     }
   ]

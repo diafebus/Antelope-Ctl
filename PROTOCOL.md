@@ -2054,11 +2054,23 @@ were expanded and `0x0c:1` remains unconfirmed. Device resource counts,
 enabled/greyed-out picker entries, demo access and full ownership are
 separate observations.
 
+**BBD directed capture correction (2026-10-09).** All four Stereo Type positions
+are captured at parameter byte25:0=Basic,1=Wide,2=Split,3=Cross. The original
+scan and resume cover four knob ranges, Chorus/Vibrato, Stereo Type and Power.
+For Orion BBD type78, `0x14/0x98` addresses instance at17 and type at18, with
+state at19. Fresh instance0 Power frames7063/7067 carry state0 and7999/8007
+carry state1; older modulation frames232899–232913 and234191–234203 support
+instance17 values1/0 with state19 fixed0 then1. This corrects the BBD decoder,
+not the unresolved legacy layout for other effects. Processing polarity and
+readback remain unverified; runtime writers stay disabled. The red indicator
+above the footswitch shows vibrato speed (owner confirmation), not mode/power.
+
 **Labelled V12/BBD modulation findings (2026-10-02).** The new owned modulation
 capture establishes V12's eleven parameter fields and BBD's five changed fields,
 including unsigned255 endpoints and BBD0=Vibrato/1=Chorus. Full offsets, ranges,
 frame spans and limitations are in [the modulation findings](docs/orion-afx-modulation.md).
-V12 presetIndex and BBD stereo/bypass/meter bytes are preserved opaque fields.
+V12 presetIndex and BBD bypass/meter bytes remain opaque. BBD Stereo Type was
+subsequently mapped by the directed capture above.
 Neither effect has a measured parameter reader or verified restoration contract;
 their loaded WebUI panels stay unknown and parameter writes remain disabled.
 No runtime query or capacity bound changes.

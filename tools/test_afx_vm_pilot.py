@@ -18,6 +18,8 @@ class VmPilotTests(unittest.TestCase):
         for workflow in workflows['plugins']:
             if workflow['next_step'] == 'ranges':
                 self.assertIn(workflow['range_plan'], plans)
+            elif workflow['next_step'] == 'complete':
+                self.assertEqual(workflow['effect_id'], 'bbdchorus')
             else:
                 self.assertEqual(workflow['next_step'], 'inventory')
         v12 = next(w for w in workflows['plugins'] if w['name'] == 'V12 Chorus')
@@ -147,7 +149,7 @@ class VmPilotTests(unittest.TestCase):
         location = {'bus':5, 'address':15, 'sysfs':'fixture'}
         def report(number, value, power=False, instance=0):
             data = bytearray(frame(0x14 if power else 0x1c,
-                                   [0x98,value,78,instance] if power else [0xd5,0x0a,78,instance]))
+                                   [0x98,instance,78,value] if power else [0xd5,0x0a,78,instance]))
             if not power: data[25] = value
             return (number, float(number), 1, bytes(data))
         inbox = (1,0,0x82,bytes([0x73]).ljust(320,b'\0'))
@@ -217,7 +219,7 @@ class VmPilotTests(unittest.TestCase):
         current=[]; outcome={'value':'ok'}
         def report(number,value,power=False,instance=0):
             data=bytearray(frame(0x14 if power else 0x1c,
-                [0x98,value,78,instance] if power else [0xd5,0x0a,78,instance]))
+                [0x98,instance,78,value] if power else [0xd5,0x0a,78,instance]))
             if not power: data[25]=value
             return (number,float(number),1,bytes(data))
         def guest_wait(path,seconds,process=None):
@@ -268,6 +270,30 @@ class VmPilotTests(unittest.TestCase):
                     else:
                         failed={'repeat':2,'wrong_restore':5,'other_field':2,'newer_edit':2,'ambiguous_start':4,'disagreeing_start':4}[mode]
                         self.assertFalse((job/f'action-{failed}-ack.json').exists())
+
+    def test_bbd_power_layout_is_model_local_and_decodes_literal_capture_frames(self):
+        from tools.afx_vm_pilot import bypass_layout_for, load_plans
+        catalog=json.loads((Path(__file__).resolve().parents[1]/'profiles/afx_effects.json').read_text())
+        layout=bypass_layout_for(load_plans()['bbd-remaining'],catalog)
+        reports=[]
+        for number,tail in ((7063,'98004e00'),(7999,'98004e01')):
+            data=bytes.fromhex('70000000140000000000000000000000'+tail).ljust(320,b'\0')
+            reports.append((number,float(number),1,data))
+        windows=[{'start_epoch':0,'end_epoch':1,'start_frame_exclusive':0,'end_frame_inclusive':7063},
+                 {'start_epoch':2,'end_epoch':3,'start_frame_exclusive':7063,'end_frame_inclusive':7999}]
+        decoded=labelled_actions(reports,windows,bypass_layout=layout)
+        self.assertEqual([w['events'][0]['instance'] for w in decoded],[0,0])
+        self.assertEqual([w['events'][0]['state'] for w in decoded],[0,1])
+        from tools.scan_afx_capture import analyze_reports
+        summary=analyze_reports(reports)
+        self.assertEqual([(o['instance'],o['state']) for o in summary['operations']],[(0,0),(0,1)])
+        self.assertIsNone(bypass_layout_for({'effect_id':'memory_brigade'},catalog))
+        import copy
+        changed=copy.deepcopy(catalog)
+        implementation=next(i for e in changed['effects'] if e['id']=='bbdchorus'
+                            for i in e['implementations'] if i['profile']=='orion_studio_sc.json')
+        implementation['bypass_observation']['state_offset']=18
+        with self.assertRaises(ValueError):bypass_layout_for(load_plans()['bbd-remaining'],changed)
 
     def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',

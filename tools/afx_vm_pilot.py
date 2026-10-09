@@ -123,6 +123,19 @@ def validate_wire_controls(plan, catalog):
             raise ValueError('Wire endpoint feedback must match the captured catalog field')
 
 
+def bypass_layout_for(plan, catalog):
+    effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
+    implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+    layout = implementation.get('bypass_observation')
+    if layout is None:
+        return None
+    offsets = [layout[key] for key in ('instance_offset', 'type_offset', 'state_offset')]
+    if (layout['status'] != 'capture-observed' or layout['opcode'] != '0x14'
+            or layout['selector'] != '0x98' or sorted(offsets) != [17, 18, 19]):
+        raise ValueError('Bypass capture layout must match model-local observed fields')
+    return layout
+
+
 def verify_wire_changes(reports, boundary, control, effect_type, instance, out_endpoint=1):
     samples = [(number, data) for number, _, ep, data in reports
                if ep == out_endpoint and data[0] == 0x70 and data[4] in PARAMETER_OPCODES
@@ -199,7 +212,7 @@ def read_reports(capture, location, transport, allow_incomplete=False):
     return reports
 
 
-def labelled_actions(reports, windows, out_endpoint=1):
+def labelled_actions(reports, windows, out_endpoint=1, bypass_layout=None):
     """Report captured byte differences without promoting a writable map."""
     result = []
     previous = {}
@@ -225,7 +238,10 @@ def labelled_actions(reports, windows, out_endpoint=1):
                 continue
             if data[4] == 0x14 and data[16] == 0x98:
                 events.append({'frame': number, 'opcode': '0x14', 'subcommand': '0x98',
-                               'type': data[18], 'instance': data[19], 'state': data[17],
+                               'type': data[bypass_layout['type_offset']] if bypass_layout else data[18],
+                               'instance': data[bypass_layout['instance_offset']] if bypass_layout else data[19],
+                               'state': data[bypass_layout['state_offset']] if bypass_layout else data[17],
+                               'layout_source': 'model-local captured catalog' if bypass_layout else 'legacy unverified layout',
                                'status': 'captured bypass gesture; polarity unverified'})
                 continue
             if data[16] != 0xd5 or data[4] not in PARAMETER_OPCODES:
@@ -263,7 +279,9 @@ def run_job(job, profile):
     request = json.loads((job/'request.json').read_text(encoding='utf-8-sig'))
     plan = validate_request(request)
     effect_type = plan_effect_type(plan)
-    validate_wire_controls(plan, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+    catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+    validate_wire_controls(plan, catalog)
+    bypass_layout = bypass_layout_for(plan, catalog)
     location = device_location(profile)
     transport = profile['transport']
     in_ep, out_ep = (int(transport[key], 0) for key in ('in_endpoint', 'out_endpoint'))
@@ -348,7 +366,7 @@ def run_job(job, profile):
                         sweep_window = {'start_epoch': start, 'end_epoch': time.time(),
                                         'start_frame_exclusive': first_frame,
                                         'end_frame_inclusive': max(row[0] for row in current_reports)}
-                        events = labelled_actions(current_reports, [sweep_window], out_ep)[0]['events']
+                        events = labelled_actions(current_reports, [sweep_window], out_ep, bypass_layout)[0]['events']
                         if events:
                             expected_target = verify_action_events(events, expected_target, effect_type)
                             verify_wire_changes(current_reports, first_frame, control, effect_type,
@@ -381,7 +399,7 @@ def run_job(job, profile):
                             raise RuntimeError('Capture did not advance after the action; stop for review')
                         time.sleep(.2)
                         continue
-                    events = labelled_actions(reports, [window], out_ep)[0]['events']
+                    events = labelled_actions(reports, [window], out_ep, bypass_layout)[0]['events']
                     if events or time.monotonic() >= deadline:
                         break
                     time.sleep(.2)
@@ -479,7 +497,7 @@ def run_job(job, profile):
     write_json(job/f"{plan['panel']}-analysis.json", {'status': 'candidate; review required', 'plan_id': plan['id'],
         'device_readback_verified': False, 'visual_restoration': 'see completed.json',
         'packet_loss': 'review dumpcap.log; not automatically certified',
-        'labelled_actions': labelled_actions(reports, windows, out_ep),
+        'labelled_actions': labelled_actions(reports, windows, out_ep, bypass_layout),
         'capture_summary': analyze_reports(reports)})
     write_json(job/'host-completed.json', {'status': 'ok', 'coverage': plan.get('coverage', {'status': 'partial; controls outside plan unknown'})})
 

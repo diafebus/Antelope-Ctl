@@ -67,3 +67,19 @@ uses the same identifiers, raw ranges, polarity and display grouping for every
 Synergy Core profile. Each repository keeps its own runtime contract and
 independently authored implementation. Shared definitions are discoverable on
 all models; Orion capture evidence does not confirm another model's writes.
+
+## BBD completed GUI capture, 2026-10-09
+
+The original range scan plus `scan-BBD-Chorus-20261009T193326058Z` cover
+all visible editable controls. Stereo Type byte25 is0=Basic,1=Wide,2=Split,
+3=Cross; the selector restored Basic. Power visually restored its starting
+state. Its observed Orion BBD0x14/0x98 layout is instance17/type18/state19,
+not the old decoder's swapped instance/state fields. Frames7063/7067 and
+7999/8007 confirm instance0 states0 then1; the older linked-instance frames
+232899–232913 and234191–234203 independently support this layout.
+
+The coordinator's original final error is preserved. Offline replay with the
+model-local catalog layout passes; no new device actions or rerun were needed.
+The resume has8646 packets and zero drops. Device readback, processing polarity
+and runtime writer remain unverified. The LED above Chorus/Vibrato shows
+vibrato speed, per owner; it is excluded from mode and power verification.
