@@ -1191,6 +1191,27 @@
         "retained_capture": "scan-BBD-Chorus-20261009T192357505Z",
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "deesser-filter-wheel",
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "one-notch forward/back Filter Type wheel trial; first execution pending",
+      "evidence": "panel-Master-De-esser-20261009T194702842Z exact ComboBox ValuePattern. Owner proposes hover+wheel. Existing Orion type27 parameter family20/d5/0e reused; no guessed field offsets or scales. Presets excluded because selecting them replaces multiple settings.",
+      "coverage": {
+        "status": "wheel method trial only; full filter choices, knobs, Q dependency, Monitor and Bypass pending"
+      },
+      "controls": [
+        {
+          "id": "FilterTypeWheel",
+          "label": "Filter Type",
+          "class_name": "DeesserComboBoxFilterType",
+          "kind": "wheel_button"
+        }
+      ]
     }
   ]
 }

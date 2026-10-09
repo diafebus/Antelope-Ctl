@@ -336,3 +336,12 @@ no knob encodings are inferred. The next same-launcher `menus` stage invokes
 those reviewed ComboBoxes to record popup controls/images, closes with Escape
 and verifies unchanged selected values. First Windows execution remains pending.
 Review filter choices/Q dependencies before enabling a complete parameter plan.
+
+Master De-Esser menu attempt `panel-Master-De-esser-20261009T203954906Z`
+stopped before menu evidence because a whole-UI descendant count exceeded512.
+Menu inspection now queries only ListItem/MenuItem roles, bounding visible
+options. Owner proposes hover+wheel; next same-name launcher runs the reviewed
+`deesser-filter-wheel` two-action trial, one notch forward/back on Filter Type
+with GUI selection and captured single-instance checks. No popup/Escape or
+preset selection is used. Full option enumeration, Q dependency and parameter
+field maps remain pending. No raw offsets/scales were assigned from declarations.

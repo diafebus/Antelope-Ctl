@@ -24,25 +24,26 @@ Processing polarity/readback and runtime writes remain unverified. The indicator
 above Chorus/Vibrato shows vibrato speed, per owner, and is excluded from
 mode/power verification. V12's older plan remains partial (power not captured).
 
-## Next preparation: Master De-Esser dropdowns
+## Next capture: Master De-Esser Filter Type wheel trial
 
-Existing inventory is retained: seven enabled knobs, a Q knob disabled under
-HighPass1, Monitor/Out, Bypass, Presets and Filter Type. Open Master De-Esser
-on unlinked AFX channel2. Run the same launcher and enter `Master De-Esser`;
-focus its title bar during the ten-second delay, then leave mouse and keyboard
-alone. This short pass opens Presets and Filter Type separately, saves their
-popup screenshots/control records, and closes each with Escape. It does not
-select options or sweep knobs; no Linux recorder is required for inventory.
-New visible option items must prove opening; disappearance of popup/items must
-prove closure. Selected menu values must remain unchanged. Visible option lists
-are recorded; hidden/virtualized entries remain unknown. Files save automatically under
-`results/panel-Master-De-Esser-TIMESTAMP/`, including `*-menus.json`.
+Open Master De-Esser on unlinked AFX channel2. Run the same launcher and
+enter `Master De-Esser`; press Enter and focus its title bar during the ten-second
+countdown. Linux must be waiting. Leave mouse and keyboard alone.
 
-The full parameter plan follows review of Filter Type options and Q dependency.
-Preset lists are inventoried separately because selecting a preset replaces many
-settings. Current menu invocation is unverified until the first Windows run;
-focus/selection failures stop without repair writes. No manual screenshot or
-file transfer is required. The same menu inspection method is reusable.
+This short trial hovers Filter Type, sends one downward wheel notch, then one
+upward notch. It saves panel screenshots and passive USB evidence for both
+selections. GUI ValuePattern must show a changed selection and exact restoration
+of its starting name; the host independently checks these labels and one effect
+instance. No popup is opened and no Escape is sent. First Windows wheel execution
+is pending. If it clamps, changes focus or fails restoration, it stops without
+retries or repair writes. This tests the reusable wheel method, not all options.
+
+Presets remain untouched: scrolling them replaces many parameter values.
+The previous popup attempt stopped because the entire UI tree exceeded512nodes;
+inspection now filters menu/list items and caps visible options instead. Escape
+is only sent when a popup/options prove opening, to avoid closing the panel after
+a failed Invoke. The full parameter plan still needs Filter Type choices and
+Q dependency review; known knob inventory is retained.
 
 ## Capture stages
 

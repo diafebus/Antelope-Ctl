@@ -303,12 +303,14 @@ if ($InspectMenuClasses.Count -gt 0) {
             $oldIds = @($desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition) |
                 Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty } |
                 ForEach-Object { $_.GetRuntimeId() -join ':' })
-            $oldOptionIds = @($root.FindAll([System.Windows.Automation.TreeScope]::Descendants,
-                [System.Windows.Automation.Condition]::TrueCondition) | Where-Object {
+            $optionCondition = [System.Windows.Automation.OrCondition]::new(
+                [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem),
+                [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
+            $oldOptionIds = @($root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $optionCondition) | Where-Object {
                     -not $_.Current.IsPassword -and -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty -and
                     $_.Current.ControlType -in @([System.Windows.Automation.ControlType]::ListItem, [System.Windows.Automation.ControlType]::MenuItem)
                 } | ForEach-Object { $_.GetRuntimeId() -join ':' })
-            $openedOptionIds = @(); $popupIds = @()
+            $openedOptionIds = @(); $popupIds = @(); $popupRoots = @()
             $openAttempted = $false
             try {
                 $openAttempted = $true
@@ -333,12 +335,15 @@ if ($InspectMenuClasses.Count -gt 0) {
                             [System.Drawing.Rectangle]::new([int]$pr.X, [int]$pr.Y,
                                 [int][Math]::Ceiling($pr.Width), [int][Math]::Ceiling($pr.Height)))
                     }
-                    $children = $popup.FindAll([System.Windows.Automation.TreeScope]::Descendants,
-                        [System.Windows.Automation.Condition]::TrueCondition)
-                    if ($children.Count -gt 512) { throw 'Dropdown tree exceeds inventory bound.' }
+                    $children = $popup.FindAll([System.Windows.Automation.TreeScope]::Descendants, $optionCondition)
                     foreach ($child in $children) {
                         $c = $child.Current; $r = $c.BoundingRectangle
-                        if ($c.IsPassword -or $c.IsOffscreen -or $r.IsEmpty -or $c.ProcessId -ne $process.Id) { continue }
+                        if ($c.IsPassword -or $c.IsOffscreen -or $r.IsEmpty -or $c.ProcessId -ne $process.Id -or
+                            $r.Right -le [System.Windows.Forms.SystemInformation]::VirtualScreen.Left -or
+                            $r.Left -ge [System.Windows.Forms.SystemInformation]::VirtualScreen.Right -or
+                            $r.Bottom -le [System.Windows.Forms.SystemInformation]::VirtualScreen.Top -or
+                            $r.Top -ge [System.Windows.Forms.SystemInformation]::VirtualScreen.Bottom) { continue }
+                        if ($nodes.Count -ge 512) { throw 'Visible dropdown options exceed inventory bound.' }
                         $nodes.Add(@{ class_name = $c.ClassName; name = $c.Name; control_type = $c.ControlType.ProgrammaticName;
                             runtime_id = ($child.GetRuntimeId() -join ':');
                             bounds = @{ x = $r.X - $bounds.X; y = $r.Y - $bounds.Y; width = $r.Width; height = $r.Height } })
@@ -363,7 +368,7 @@ if ($InspectMenuClasses.Count -gt 0) {
                     options = $options; option_visibility = 'visible options only; hidden or virtualized entries remain unknown'; controls = @($nodes.ToArray()) })
                 if ($options.Count -eq 0) { throw 'No newly visible dropdown options; opening was not verified. Screenshot and tree retained.' }
             } finally {
-                if ($openAttempted) {
+                if ($openAttempted -and ($popupRoots.Count -gt 0 -or $openedOptionIds.Count -gt 0)) {
                     $foreground = [System.Windows.Automation.AutomationElement]::FromHandle([AfxPanelWindow]::GetForegroundWindow())
                     if ($null -ne $foreground -and $foreground.Current.ProcessId -eq $process.Id) {
                         [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
@@ -377,9 +382,7 @@ if ($InspectMenuClasses.Count -gt 0) {
                 Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty })
             foreach ($window in (@($root) + $afterWindows)) {
                 if (($window.GetRuntimeId() -join ':') -in $popupIds) { throw 'Dropdown popup remained visible after Escape.' }
-                $afterNodes = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants,
-                    [System.Windows.Automation.Condition]::TrueCondition)
-                if ($afterNodes.Count -gt 512) { throw 'Closure check exceeds inventory bound.' }
+                $afterNodes = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $optionCondition)
                 foreach ($node in $afterNodes) {
                     if (-not $node.Current.IsOffscreen -and -not $node.Current.BoundingRectangle.IsEmpty -and
                         ($node.GetRuntimeId() -join ':') -in $openedOptionIds) { throw 'Dropdown options remained visible after Escape.' }

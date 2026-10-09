@@ -24,6 +24,8 @@ def planned_actions(plan):
     for control in plan['controls']:
         if control['kind'] == 'knob_range':
             phases = ['minimum', 'maximum']
+        elif control['kind'] == 'wheel_button':
+            phases = ['wheel forward', 'wheel back']
         elif control['kind'] in ('selector_cycle', 'selector_positions'):
             phases = [f'position-{n}' for n in range(1, control['positions'] + 1)]
             if control['kind'] == 'selector_positions':
@@ -66,7 +68,7 @@ def load_plans():
         if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
-                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
+                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
             if control['kind'] in ('selector_cycle', 'selector_positions') and (type(control.get('positions')) is not int or not 2 <= control['positions'] <= 8 or not control.get('visual_region')):
@@ -298,6 +300,7 @@ def run_job(job, profile):
     selector_values = {}
     selector_baselines = {}
     toggle_baselines = {}
+    wheel_baselines = {}
     actions = planned_actions(plan)
     has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
@@ -473,6 +476,17 @@ def run_job(job, profile):
                 window['wire_events_observed'] = bool(events)
                 window['endpoint_range_verified'] = False
                 write_json(job/'action-windows.json', windows)
+                if control['kind'] == 'wheel_button':
+                    initial = completed.get('starting_selection')
+                    selection = completed.get('selection')
+                    if not isinstance(initial, str) or not initial.strip() or not isinstance(selection, str) or not selection.strip():
+                        raise RuntimeError('Wheel trial requires known GUI selection labels')
+                    if phase == 'wheel forward':
+                        if initial == selection:
+                            raise RuntimeError('Wheel did not change the GUI selection')
+                        wheel_baselines[control['id']] = initial
+                    elif initial != wheel_baselines[control['id']] or selection != initial:
+                        raise RuntimeError('Wheel did not restore the starting GUI selection')
                 if completed.get('status') != 'ok':
                     raise RuntimeError('Guest visual verification failed; stop for review')
                 ack = {'status': 'ok'}

@@ -20,7 +20,7 @@ $plan = $matchingPlans[0]
 $controlLimit = 3
 if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) { $controlLimit = 24 }
 if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
-    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions') }).Count -ne 0) {
+    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
 }
 $panelLabel = $plan.panel -replace '[^a-zA-Z0-9_-]', '_'
@@ -60,6 +60,14 @@ public static class AfxScanInput {
                 throw new Exception("Mouse injection failed; release attempted, no retry permitted.");
             }
         }
+    }
+    public static void Wheel(int delta) {
+        if (delta != 120 && delta != -120) throw new Exception("Only one reviewed wheel notch is allowed.");
+        Input[] inputs = new Input[1];
+        inputs[0].mouse.flags = 0x0800;
+        inputs[0].mouse.data = unchecked((uint)delta);
+        if (SendInput(1, inputs, Marshal.SizeOf(typeof(Input))) != 1)
+            throw new Exception("Wheel injection failed; no retry permitted.");
     }
     public static void Held(bool down) {
         Input[] inputs = new Input[1];
@@ -366,6 +374,48 @@ try {
         if ($control.feedback -eq 'captured_wire') { Run-WireKnobRange } else { Run-KnobRange }
         continue
     }
+    if ($control.kind -eq 'wheel_button') {
+        if ($button.Current.ControlType -ne [System.Windows.Automation.ControlType]::ComboBox) { throw 'Wheel target must be a reviewed ComboBox.' }
+        $selection = $null
+        if (-not $button.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$selection)) { throw 'Dropdown selection is unavailable.' }
+        $initialSelection = $selection.Current.Value
+        if ([string]::IsNullOrWhiteSpace($initialSelection)) { throw 'Dropdown starting selection is unknown.' }
+        $acceptedSelection = $initialSelection
+        $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
+            [int]$windowBounds.Width, [int]$windowBounds.Height)
+        foreach ($wheelPhase in @(1, 2)) {
+            $index++
+            Assert-Panel
+            if ($selection.Current.Value -cne $acceptedSelection) { throw 'Dropdown changed outside trial; no wheel sent.' }
+            Write-Record (Join-Path $job "action-$index-request.json") @{ action = $index; control = $control.id }
+            $null = Wait-HostFile "action-$index-go.json" 10
+            Assert-Panel
+            if ($selection.Current.Value -cne $acceptedSelection) { throw 'Dropdown changed while waiting; no wheel sent.' }
+            if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
+                [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Cannot hover dropdown.' }
+            $wheelDelta = -120
+            if ($wheelPhase -eq 2) { $wheelDelta = 120 }
+            [AfxScanInput]::Wheel($wheelDelta)
+            [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
+            Start-Sleep -Milliseconds 700
+            Assert-Panel
+            $nowSelection = $selection.Current.Value
+            $ok = -not [string]::IsNullOrWhiteSpace($nowSelection)
+            if ($wheelPhase -eq 1) { $ok = $ok -and $nowSelection -cne $initialSelection }
+            else { $ok = $ok -and $nowSelection -ceq $initialSelection }
+            $image = Save-Button ($filePrefix + '-wheel-' + $wheelPhase + '.png')
+            $image.Dispose()
+            $status = 'failed'; if ($ok) { $status = 'ok' }
+            Write-Record (Join-Path $job "action-$index-done.json") @{
+                status = $status; starting_selection = $initialSelection; selection = $nowSelection;
+                source = 'GUI ValuePattern round trip; not device readback'; wheel_delta = $wheelDelta
+            }
+            if (-not $ok) { throw 'Wheel did not change/restore dropdown; no retry or blind repair.' }
+            $null = Wait-HostFile "action-$index-ack.json" 10
+            $acceptedSelection = $nowSelection
+        }
+        continue
+    }
     if ($null -ne $control.visual_region) {
         # Some switches indicate their state in a separate LED above the button.
         $region = $control.visual_region
@@ -488,9 +538,9 @@ try {
     $changed = $null
     }
     Write-Record (Join-Path $job 'completed.json') @{
-        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' -or $_.feedback -eq 'captured_toggle' }).Count -eq 0);
+        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' -or $_.kind -eq 'wheel_button' -or $_.feedback -eq 'captured_toggle' }).Count -eq 0);
         device_readback_verified = $false; range_knobs_left_at = 'maximum';
-        restoration_source = 'images or measured toggle write feedback; range knobs intentionally not restored'
+        restoration_source = 'images, measured toggle writes or GUI selection checks; range knobs intentionally not restored'
     }
     $null = Wait-HostFile 'host-completed.json' 15
     Write-Host "Planned controls completed; check coverage for remaining controls. Evidence saved to $job"

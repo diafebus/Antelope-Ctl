@@ -299,6 +299,50 @@ class VmPilotTests(unittest.TestCase):
         implementation['bypass_observation']['state_offset']=18
         with self.assertRaises(ValueError):bypass_layout_for(load_plans()['bbd-remaining'],changed)
 
+    def test_filter_wheel_trial_verifies_labels_and_single_instance_before_ack(self):
+        from tools.afx_vm_pilot import run_job, load_plans
+        plan=load_plans()['deesser-filter-wheel']
+        self.assertEqual([phase for _,phase in planned_actions(plan)],['wheel forward','wheel back'])
+        profile={'transport':{'in_endpoint':'0x82','out_endpoint':'0x01'},'device':{}}
+        location={'bus':5,'address':15,'sysfs':'fixture'}
+        current=[]; mode={'value':'ok'}
+        def guest_wait(path,seconds,process=None):
+            index=int(path.name.split('-')[1]) if path.name.startswith('action-') else 0
+            if path.name.endswith('-request.json'):return {'action':index,'control':'FilterTypeWheel'}
+            if path.name.startswith('action-') and path.name.endswith('-done.json'):
+                instance=1 if mode['value']=='other_instance' and index==2 else 0
+                data=bytearray(frame(0x20,[0xd5,0x0e,27,instance]));data[20]=index
+                current.append((index*10,float(index),1,bytes(data)))
+                initial='HighPass 1'; selection='HighPass 2' if index==1 else initial
+                if mode['value']=='unchanged' and index==1:selection=initial
+                if mode['value']=='no_restore' and index==2:selection='HighPass 2'
+                if mode['value']=='changed_initial' and index==2:initial='Different'
+                if mode['value']=='bad_label':selection=None
+                return {'status':'ok','starting_selection':initial,'selection':selection}
+            if path.name=='completed.json':return {'status':'ok'}
+            raise AssertionError(path.name)
+        process=Mock();process.poll.return_value=None
+        with tempfile.TemporaryDirectory() as directory:
+            for outcome in ('ok','unchanged','no_restore','other_instance','changed_initial','bad_label'):
+                with self.subTest(outcome=outcome):
+                    mode['value']=outcome;current[:]=[(1,0,0x82,bytes([0x73]).ljust(320,b'\0'))]
+                    job=Path(directory)/outcome;job.mkdir();(job/'request.json').write_text(json.dumps({'version':2}))
+                    with patch('tools.afx_vm_pilot.validate_request',return_value=plan), \
+                         patch('tools.afx_vm_pilot.plan_effect_type',return_value=27), \
+                         patch('tools.afx_vm_pilot.device_location',return_value=location), \
+                         patch('tools.afx_vm_pilot.Path.exists',side_effect=[True,False]), \
+                         patch('tools.afx_vm_pilot.subprocess.Popen',return_value=process), \
+                         patch('tools.afx_vm_pilot.read_reports',side_effect=lambda *a,**kw:list(current)), \
+                         patch('tools.afx_vm_pilot.wait_file',side_effect=guest_wait), \
+                         patch('tools.afx_vm_pilot.time.sleep'):
+                        if outcome=='ok':run_job(job,profile)
+                        else:
+                            with self.assertRaises(RuntimeError):run_job(job,profile)
+                    if outcome=='ok':self.assertTrue((job/'host-completed.json').is_file())
+                    else:
+                        failed=1 if outcome in ('unchanged','bad_label') else 2
+                        self.assertFalse((job/f'action-{failed}-ack.json').exists())
+
     def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',
                    'channel': 2, 'controls': ['SpeedPot'], 'actions': 2}

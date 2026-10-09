@@ -48,7 +48,7 @@ try {
     } elseif ($matches.Count -eq 1 -and $matches[0].next_step -eq 'ranges') {
         if ([string]::IsNullOrWhiteSpace($matches[0].range_plan)) { throw 'No reviewed range plan is ready.' }
         Write-Host "${name}: automatic control batch, AFX $($workflows.channel)."
-        Write-Host 'Linux recorder must be waiting. Range tests leave knobs at maximum.'
+        Write-Host 'Linux recorder must be waiting. The next screen lists this batch and its coverage.'
         Stop-Transcript | Out-Null
         $recording = $false
         & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -PlanId $matches[0].range_plan

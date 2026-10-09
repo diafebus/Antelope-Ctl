@@ -25,12 +25,13 @@
     {
       "name": "Master De-Esser",
       "effect_id": "deesser",
-      "next_step": "menus",
+      "next_step": "ranges",
       "panel_class": "Deesser",
       "menu_classes": [
         "DeesserPresetsCombobox",
         "DeesserComboBoxFilterType"
-      ]
+      ],
+      "range_plan": "deesser-filter-wheel"
     }
   ]
 }
