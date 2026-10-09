@@ -1868,7 +1868,7 @@
               0,
               1
             ],
-            "notes": "Older linked parameter movements remain unlabelled. Linked UI sends identical blocks to instance1 then0. A separate 2026-10-09 labelled ALT Morph pilot establishes one byte association and visual restoration; it does not establish device readback or a runtime writer.",
+            "notes": "Older linked parameter movements remain unlabelled. Linked UI sends identical blocks to instance1 then0. Separate 2026-10-09 labelled ALT Morph and filter trials establish three byte associations and visual restoration; they do not establish device readback or runtime writers.",
             "labelled_gui_observations": {
               "alt_morph": {
                 "label": "ALT Morph",
@@ -1894,6 +1894,56 @@
                   "Local Orion AFX2 automated GUI pilot, 2026-10-09, pilot-Instinct-20261009T161102564Z/Instinct-channel2.pcapng. Same type75/instance1 block, isolated byte72 change1->0; before/restored images match exactly; zero drops. Owner confirms starting buttons disengaged."
                 ],
                 "notes": "Observed UI-to-write association. No catalog declaration ID, device state reader, audible behavior or general runtime writer is established."
+              },
+              "filter_enable": {
+                "label": "Filter enable",
+                "ui_class": "FilterEnableButton",
+                "offset": 76,
+                "width": 1,
+                "observed_values": [
+                  0,
+                  1
+                ],
+                "visual_states": {
+                  "0": "disengaged",
+                  "1": "engaged"
+                },
+                "status": "capture-observed; visual roundtrip observed",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "engaged": 579,
+                  "disengaged": 1603
+                },
+                "evidence": [
+                  "Local Orion AFX2 automated GUI batch, 2026-10-09, scan-Instinct-20261009T162320099Z/Instinct-channel2.pcapng. Type75/instance1; isolated byte76 change1->0; before/restored crops match exactly;4092packets/0drops."
+                ],
+                "notes": "Observed UI-to-write association; no inferred declaration ID, parameter state reader, audible behavior or runtime writer."
+              },
+              "post_filter_enable": {
+                "label": "Post-filter enable",
+                "ui_class": "PFEnable (post-filter region)",
+                "offset": 112,
+                "width": 1,
+                "observed_values": [
+                  0,
+                  1
+                ],
+                "visual_states": {
+                  "0": "disengaged",
+                  "1": "engaged"
+                },
+                "status": "capture-observed; visual roundtrip observed",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "engaged": 2495,
+                  "disengaged": 3527
+                },
+                "evidence": [
+                  "Local Orion AFX2 automated GUI batch, 2026-10-09, scan-Instinct-20261009T162320099Z/Instinct-channel2.pcapng. Type75/instance1; isolated byte112 change1->0; before/restored crops match exactly;4092packets/0drops."
+                ],
+                "notes": "Observed UI-to-write association; no inferred declaration ID, parameter state reader, audible behavior or runtime writer. PFEnable refers to the post-filter, not panel power."
               }
             }
           }

@@ -12,7 +12,12 @@
       "status": "visual-roundtrip-observed",
       "evidence": "Instinct UI inspection and successful ALT Morph pilot, 2026-10-09; frames537/1567, visual restoration, no device readback.",
       "controls": [
-        {"id": "AltMorphButton", "label": "ALT Morph", "class_name": "AltMorphButton", "kind": "binary_button"}
+        {
+          "id": "AltMorphButton",
+          "label": "ALT Morph",
+          "class_name": "AltMorphButton",
+          "kind": "binary_button"
+        }
       ]
     },
     {
@@ -22,11 +27,31 @@
       "effect_id": "instinct",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "gui-observed; roundtrip-pending",
-      "evidence": "Instinct UI inspection, 2026-10-09; owner confirms default disengaged buttons. Fresh baseline required. Post-filter region separates PFEnable from panel power.",
+      "status": "visual-roundtrip-observed",
+      "evidence": "Instinct UI inspection and automated filter batch, 2026-10-09; frames579/1603 and2495/3527; both visual round trips restored exactly, zero drops. Device readback unverified. Post-filter region separates PFEnable from panel power.",
       "controls": [
-        {"id": "FilterEnableButton", "label": "Filter enable", "class_name": "FilterEnableButton", "kind": "binary_button"},
-        {"id": "PostFilterEnable", "label": "Post-filter enable", "class_name": "PFEnable", "kind": "binary_button", "region": {"x": [0.5, 1.0], "y": [0.0, 0.6]}}
+        {
+          "id": "FilterEnableButton",
+          "label": "Filter enable",
+          "class_name": "FilterEnableButton",
+          "kind": "binary_button"
+        },
+        {
+          "id": "PostFilterEnable",
+          "label": "Post-filter enable",
+          "class_name": "PFEnable",
+          "kind": "binary_button",
+          "region": {
+            "x": [
+              0.5,
+              1.0
+            ],
+            "y": [
+              0.0,
+              0.6
+            ]
+          }
+        }
       ]
     }
   ]

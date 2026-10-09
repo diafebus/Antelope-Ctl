@@ -13,7 +13,7 @@ ignored `AUDIT.md` holds the current work order.
 | Effect | Orion type | Existing evidence |
 | --- | --- | --- |
 | Memory Cat Brigade | 73 | Eight fields, fresh parameter/processing reads for instances0–2, Launcher-restart retention, owner-confirmed switch labels |
-| Instinct | 75 | Load/chain, 93 parameter writes in the linked-control capture, opcode`0x7c`, paired writes, observed query75/1; control labels/scales unresolved |
+| Instinct | 75 | Load/chain,93older linked parameter writes, opcode`0x7c`, observed query75/1; automated GUI trials map ALT Morph and both filter switches with visual restoration; other labels/scales/readbacks unresolved |
 | Master De-Esser | 27 | Load/chain, 126 parameter writes in the linked-control capture, opcode`0x20`, paired writes, observed query27/1; control labels/scales unresolved |
 | V12 Chorus | 70 | Labelled modulation capture: eleven changed fields and245 mirrored pairs; reader/restoration still unverified |
 | BBD Chorus | 78 | Demo modulation capture: five changed fields and85 mirrored pairs; stereo-mode mapping and reader/restoration still unverified |
@@ -51,8 +51,10 @@ visual before/change/restore evidence and labelled frame analysis through a
 shared folder. The ALT Morph pilot now has both OUT witnesses and exact visual
 restoration, associating the button with byte72. Device parameter readback and
 a runtime writer remain unverified. The reusable `Run-AfxScan.ps1` executes
-reviewed JSON plans; `instinct-filters` prepares a two-button batch without a
-new per-plugin script. Knob and multi-position selector gestures remain pending.
+reviewed JSON plans; `instinct-filters` now also completed both switches' visual
+round trips in one recording, associating filter/post-filter enable with bytes
+76/112. A new plugin needs reviewed data rather than a new script. Knob and
+multi-position selector gestures remain pending.
 
 Run the WebUI as the sole HID controller. The recorder polls its bounded read
 API and saves changed chains, link flags and Memory Cat parameter/processing

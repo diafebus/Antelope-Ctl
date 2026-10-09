@@ -59,6 +59,10 @@ For the next batch, double-click `Run-AfxScan.cmd`, enter `instinct-filters`,
 then press Enter when Instinct is open on unlinked AFX2. This exercises Filter
 enable and Post-filter enable in one recording, restoring each visually before
 moving to the next. Model selection and power are excluded from that batch.
+The first filter batch completed both automatic round trips with exact visual
+restoration and zero dropped packets. Filter/Post-filter writes changed bytes
+76/112; device readback remains unverified. ALT Morph's earlier trial changed
+byte72. These observations are recorded in the catalog and protocol document.
 
 `Run-InstinctPilot.cmd` is a fixed two-click trial for **ALT Morph** on
 **unlinked AFX channel 2**. It uses the inspected live `Instinct`/`AltMorphButton`

@@ -1950,6 +1950,16 @@ and a visual round trip, not device parameter readback, audible behavior or a
 runtime writer. The catalog records it under model-local
 `parameter_observation.labelled_gui_observations`; declaration IDs remain intact.
 
+The subsequent two-filter batch in local
+`scan-Instinct-20261009T162320099Z/Instinct-channel2.pcapng` uses the same
+type75/instance1 family. Filter enable changes only byte76 at frames579/1603
+(engaged1→disengaged0); post-filter enable changes only byte112 at
+frames2495/3527 (engaged1→disengaged0). Each button's before/restored crops
+match exactly;4092packets/0drops. The `PFEnable` selector in the post-filter
+region is distinct from the identically named panel-power widget. These are
+two further GUI-to-write observations with visual restoration, retaining the
+same readback/runtime-writer limits as ALT Morph.
+
 **Linked chain editing.** The owner requested linked rack editing on2026-10-01.
 The1/2 capture pairs load writes3427/3431,4997/5001,7505/7509 and reorder
 writes11947/11951,13671/13675, left then right with distinct instances.
