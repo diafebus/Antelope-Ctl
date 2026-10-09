@@ -19,6 +19,7 @@ if ($ValidateOnly) {
         }
         Add-Type -AssemblyName UIAutomationClient
         Add-Type -AssemblyName UIAutomationTypes
+        Add-Type -AssemblyName System.Windows.Forms
         Write-Host 'Windows preflight passed: PowerShell syntax, native helper compilation and UI Automation assemblies.'
         exit 0
     } catch {
@@ -61,9 +62,15 @@ try {
         if ($matches.Count -eq 1 -and -not [string]::IsNullOrWhiteSpace($matches[0].panel_class)) {
             $panelClass = $matches[0].panel_class
         }
-        & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -InspectKnobHover
-        Write-Host 'Inventory only: this plugin has no reviewed action plan yet. Its values and switches have not been scanned.'
-        Write-Host 'Linux can read the saved inventory and prepare the knob/switch/selector batch.'
+        if ($matches.Count -eq 1 -and $matches[0].next_step -eq 'menus') {
+            Write-Host 'Existing knob inventory retained. This pass opens and closes the two reviewed dropdowns without selecting options.'
+            & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -InspectMenuClasses $matches[0].menu_classes
+            Write-Host 'Dropdown lists saved automatically. Parameter ranges and filter choices have not been scanned yet.'
+        } else {
+            & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -InspectKnobHover
+            Write-Host 'Inventory only: this plugin has no reviewed action plan yet. Its values and switches have not been scanned.'
+            Write-Host 'Linux can read the saved inventory and prepare the knob/switch/selector batch.'
+        }
     }
 } catch {
     Write-Host 'Capture stopped:' -ForegroundColor Red

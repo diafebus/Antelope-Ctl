@@ -20,6 +20,10 @@ class VmPilotTests(unittest.TestCase):
                 self.assertIn(workflow['range_plan'], plans)
             elif workflow['next_step'] == 'complete':
                 self.assertEqual(workflow['effect_id'], 'bbdchorus')
+            elif workflow['next_step'] == 'menus':
+                self.assertEqual(workflow['effect_id'], 'deesser')
+                self.assertEqual(workflow['panel_class'], 'Deesser')
+                self.assertEqual(workflow['menu_classes'], ['DeesserPresetsCombobox', 'DeesserComboBoxFilterType'])
             else:
                 self.assertEqual(workflow['next_step'], 'inventory')
         v12 = next(w for w in workflows['plugins'] if w['name'] == 'V12 Chorus')

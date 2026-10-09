@@ -327,3 +327,12 @@ initial appearance must uniquely match one captured position, and any preceding
 raw baseline must agree. Each target is primed through another row for fresh
 OUT. Retain completed knob/mode evidence rather than repeating those gestures.
 The complete plan remains available with17phases; row-hit execution is pending.
+
+Master De-Esser inventory `panel-Master-De-esser-20261009T194702842Z`
+establishes actual classDeesser, seven enabled knobs and disabled Q under
+HighPass1, Monitor/Out, Bypass, and two dropdowns:DeesserPresetsCombobox
+andDeesserComboBoxFilterType. Existing type27 writes have unlabelled fields;
+no knob encodings are inferred. The next same-launcher `menus` stage invokes
+those reviewed ComboBoxes to record popup controls/images, closes with Escape
+and verifies unchanged selected values. First Windows execution remains pending.
+Review filter choices/Q dependencies before enabling a complete parameter plan.

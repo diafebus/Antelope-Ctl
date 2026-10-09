@@ -21,6 +21,16 @@
       "range_plan": "bbd-controls",
       "next_step": "complete",
       "panel_class": "BBDChorus"
+    },
+    {
+      "name": "Master De-Esser",
+      "effect_id": "deesser",
+      "next_step": "menus",
+      "panel_class": "Deesser",
+      "menu_classes": [
+        "DeesserPresetsCombobox",
+        "DeesserComboBoxFilterType"
+      ]
     }
   ]
 }

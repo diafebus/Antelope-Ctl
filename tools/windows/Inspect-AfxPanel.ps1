@@ -4,7 +4,8 @@ param(
     [ValidateRange(3, 60)][int]$DelaySeconds = 10,
     [string]$PanelName = '',
     [string]$PanelClass = '',
-    [switch]$InspectKnobHover
+    [switch]$InspectKnobHover,
+    [string[]]$InspectMenuClasses = @()
 )
 $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($PanelName)) {
@@ -21,6 +22,7 @@ if ([string]::IsNullOrWhiteSpace($label)) { throw 'Use a panel name with letters
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Drawing
+if ($InspectMenuClasses.Count -gt 0) { Add-Type -AssemblyName System.Windows.Forms }
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -38,7 +40,12 @@ public static class AfxPanelWindow {
 
 [void][AfxPanelWindow]::SetProcessDPIAware()
 Write-Host "Focus the $PanelName panel within $DelaySeconds seconds."
-Write-Host 'This reads controls and saves a screenshot. It does not click or change settings.'
+Write-Host 'This reads controls and saves a screenshot.'
+if ($InspectMenuClasses.Count -gt 0) {
+    Write-Host 'Reviewed dropdowns will be opened, photographed and closed with Escape. No options are selected.'
+} else {
+    Write-Host 'It does not click or change settings.'
+}
 Write-Host 'The inspection console will minimize so it cannot cover the panel.'
 if ($InspectKnobHover) {
     Write-Host 'After focusing the panel, leave the mouse alone. Knobs will be hovered automatically.'
@@ -258,6 +265,137 @@ if ($InspectKnobHover) {
         $temporary = Join-Path $folder ($label + '-knob-hover.json.tmp')
         $hoverResult | ConvertTo-Json -Depth 10 | Set-Content -Encoding UTF8 $temporary
         Move-Item -LiteralPath $temporary -Destination (Join-Path $folder ($label + '-knob-hover.json'))
+    }
+}
+if ($InspectMenuClasses.Count -gt 0) {
+    if ($process.ProcessName -ne 'orionstudioiii' -or $InspectMenuClasses.Count -gt 4) {
+        throw 'Menu inspection requires the Orion panel and at most four reviewed classes.'
+    }
+    $menuPanels = @($root.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::ClassNameProperty, $PanelClass)) | Where-Object {
+                -not $_.Current.IsOffscreen -and $bounds.Contains($_.Current.BoundingRectangle)
+            })
+    if ($menuPanels.Count -ne 1) { throw 'Menu inspection requires one exact reviewed panel.' }
+    $menuRows = [System.Collections.Generic.List[object]]::new()
+    try {
+        foreach ($menuClass in $InspectMenuClasses) {
+            if ([AfxPanelWindow]::GetForegroundWindow() -ne $handle -or $root.Current.BoundingRectangle -ne $bounds -or
+                [AfxPanelWindow]::GetAsyncKeyState(27) -lt 0) { throw 'Focus/bounds changed or Escape pressed.' }
+            $menus = @($menuPanels[0].FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                [System.Windows.Automation.PropertyCondition]::new(
+                    [System.Windows.Automation.AutomationElement]::ClassNameProperty, $menuClass)) | Where-Object {
+                        $_.Current.IsEnabled -and -not $_.Current.IsOffscreen -and
+                        $_.Current.ControlType -eq [System.Windows.Automation.ControlType]::ComboBox -and
+                        $menuPanels[0].Current.BoundingRectangle.Contains($_.Current.BoundingRectangle)
+                    })
+            if ($menus.Count -ne 1) { throw "Missing or ambiguous reviewed dropdown: $menuClass" }
+            $menu = $menus[0]
+            $valuePattern = $null; $invokePattern = $null
+            if (-not $menu.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valuePattern) -or
+                -not $menu.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invokePattern)) {
+                throw 'Dropdown lacks reviewed Value/Invoke patterns; no guessed clicks.'
+            }
+            $initialValue = $valuePattern.Current.Value
+            $desktop = [System.Windows.Automation.AutomationElement]::RootElement
+            $ownerCondition = [System.Windows.Automation.PropertyCondition]::new(
+                [System.Windows.Automation.AutomationElement]::ProcessIdProperty, [int]$process.Id)
+            $oldIds = @($desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition) |
+                Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty } |
+                ForEach-Object { $_.GetRuntimeId() -join ':' })
+            $oldOptionIds = @($root.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                [System.Windows.Automation.Condition]::TrueCondition) | Where-Object {
+                    -not $_.Current.IsPassword -and -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty -and
+                    $_.Current.ControlType -in @([System.Windows.Automation.ControlType]::ListItem, [System.Windows.Automation.ControlType]::MenuItem)
+                } | ForEach-Object { $_.GetRuntimeId() -join ':' })
+            $openedOptionIds = @(); $popupIds = @()
+            $openAttempted = $false
+            try {
+                $openAttempted = $true
+                $invokePattern.Invoke()
+                Start-Sleep -Milliseconds 700
+                $foreground = [System.Windows.Automation.AutomationElement]::FromHandle([AfxPanelWindow]::GetForegroundWindow())
+                if ($null -eq $foreground -or $foreground.Current.ProcessId -ne $process.Id -or
+                    $root.Current.BoundingRectangle -ne $bounds -or [AfxPanelWindow]::GetAsyncKeyState(27) -lt 0) {
+                    throw 'Owner focus changed while opening dropdown.'
+                }
+                $popupRoots = @($desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition) |
+                    Where-Object { -not $_.Current.IsOffscreen -and (($_.GetRuntimeId() -join ':') -notin $oldIds) })
+                $popupIds = @($popupRoots | ForEach-Object { $_.GetRuntimeId() -join ':' })
+                if ($popupRoots.Count -gt 4) { throw 'Too many popup windows; stopped.' }
+                $nodes = [System.Collections.Generic.List[object]]::new()
+                $captureRect = [System.Drawing.Rectangle]::new([int]$bounds.X, [int]$bounds.Y,
+                    [int][Math]::Ceiling($bounds.Width), [int][Math]::Ceiling($bounds.Height))
+                foreach ($popup in (@($root) + $popupRoots)) {
+                    $pr = $popup.Current.BoundingRectangle
+                    if (-not $pr.IsEmpty) {
+                        $captureRect = [System.Drawing.Rectangle]::Union($captureRect,
+                            [System.Drawing.Rectangle]::new([int]$pr.X, [int]$pr.Y,
+                                [int][Math]::Ceiling($pr.Width), [int][Math]::Ceiling($pr.Height)))
+                    }
+                    $children = $popup.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                        [System.Windows.Automation.Condition]::TrueCondition)
+                    if ($children.Count -gt 512) { throw 'Dropdown tree exceeds inventory bound.' }
+                    foreach ($child in $children) {
+                        $c = $child.Current; $r = $c.BoundingRectangle
+                        if ($c.IsPassword -or $c.IsOffscreen -or $r.IsEmpty -or $c.ProcessId -ne $process.Id) { continue }
+                        $nodes.Add(@{ class_name = $c.ClassName; name = $c.Name; control_type = $c.ControlType.ProgrammaticName;
+                            runtime_id = ($child.GetRuntimeId() -join ':');
+                            bounds = @{ x = $r.X - $bounds.X; y = $r.Y - $bounds.Y; width = $r.Width; height = $r.Height } })
+                    }
+                }
+                $options = @($nodes | Where-Object {
+                    $_.control_type -in @('ControlType.ListItem', 'ControlType.MenuItem') -and
+                    -not [string]::IsNullOrWhiteSpace($_.name) -and $_.runtime_id -notin $oldOptionIds
+                })
+                $openedOptionIds = @($options | ForEach-Object { $_.runtime_id })
+                $captureRect = [System.Drawing.Rectangle]::Intersect($captureRect, [System.Windows.Forms.SystemInformation]::VirtualScreen)
+                if ($captureRect.Width -le 0 -or $captureRect.Height -le 0) { throw 'Popup screenshot bounds are empty.' }
+                $menuFile = ($menuClass -replace '[^a-zA-Z0-9_-]', '_') + '-open.png'
+                $bitmap = [System.Drawing.Bitmap]::new($captureRect.Width, $captureRect.Height)
+                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                try {
+                    $graphics.CopyFromScreen($captureRect.X, $captureRect.Y, 0, 0, $bitmap.Size)
+                    $bitmap.Save((Join-Path $folder $menuFile), [System.Drawing.Imaging.ImageFormat]::Png)
+                } finally { $graphics.Dispose(); $bitmap.Dispose() }
+                $menuRows.Add(@{ class_name = $menuClass; selected_before = $initialValue;
+                    screenshot = $menuFile; popup_windows = $popupRoots.Count; opening_verified = ($options.Count -gt 0);
+                    options = $options; option_visibility = 'visible options only; hidden or virtualized entries remain unknown'; controls = @($nodes.ToArray()) })
+                if ($options.Count -eq 0) { throw 'No newly visible dropdown options; opening was not verified. Screenshot and tree retained.' }
+            } finally {
+                if ($openAttempted) {
+                    $foreground = [System.Windows.Automation.AutomationElement]::FromHandle([AfxPanelWindow]::GetForegroundWindow())
+                    if ($null -ne $foreground -and $foreground.Current.ProcessId -eq $process.Id) {
+                        [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+                        Start-Sleep -Milliseconds 300
+                    } else { throw 'Owner focus lost; Escape was not sent to another application.' }
+                }
+            }
+            if ([AfxPanelWindow]::GetForegroundWindow() -ne $handle -or $root.Current.BoundingRectangle -ne $bounds -or
+                $valuePattern.Current.Value -ne $initialValue) { throw 'Dropdown changed selection/focus; stopped without repair writes.' }
+            $afterWindows = @($desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition) |
+                Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty })
+            foreach ($window in (@($root) + $afterWindows)) {
+                if (($window.GetRuntimeId() -join ':') -in $popupIds) { throw 'Dropdown popup remained visible after Escape.' }
+                $afterNodes = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                    [System.Windows.Automation.Condition]::TrueCondition)
+                if ($afterNodes.Count -gt 512) { throw 'Closure check exceeds inventory bound.' }
+                foreach ($node in $afterNodes) {
+                    if (-not $node.Current.IsOffscreen -and -not $node.Current.BoundingRectangle.IsEmpty -and
+                        ($node.GetRuntimeId() -join ':') -in $openedOptionIds) { throw 'Dropdown options remained visible after Escape.' }
+                }
+            }
+            $menuRows[$menuRows.Count - 1].closure_verified = $true
+            $menuRows[$menuRows.Count - 1].selected_after = $valuePattern.Current.Value
+            $menuRows[$menuRows.Count - 1].selection_unchanged = $true
+        }
+    } finally {
+        @{ version = 1; panel_name = $PanelName; panel_class = $PanelClass;
+            status = 'dropdown inventory only; no options selected'; expected_count = $InspectMenuClasses.Count;
+            count = $menuRows.Count; complete = ($menuRows.Count -eq $InspectMenuClasses.Count -and
+                @($menuRows | Where-Object { $_.selection_unchanged -ne $true -or $_.opening_verified -ne $true -or $_.closure_verified -ne $true }).Count -eq 0); menus = @($menuRows.ToArray()) } | ConvertTo-Json -Depth 12 |
+            Set-Content -Encoding UTF8 (Join-Path $folder ($label + '-menus.json'))
+        if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 9) }
     }
 }
 Write-Host "Saved $($rows.Count) control records and $label-panel.png to $folder"

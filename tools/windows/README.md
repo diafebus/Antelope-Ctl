@@ -24,6 +24,26 @@ Processing polarity/readback and runtime writes remain unverified. The indicator
 above Chorus/Vibrato shows vibrato speed, per owner, and is excluded from
 mode/power verification. V12's older plan remains partial (power not captured).
 
+## Next preparation: Master De-Esser dropdowns
+
+Existing inventory is retained: seven enabled knobs, a Q knob disabled under
+HighPass1, Monitor/Out, Bypass, Presets and Filter Type. Open Master De-Esser
+on unlinked AFX channel2. Run the same launcher and enter `Master De-Esser`;
+focus its title bar during the ten-second delay, then leave mouse and keyboard
+alone. This short pass opens Presets and Filter Type separately, saves their
+popup screenshots/control records, and closes each with Escape. It does not
+select options or sweep knobs; no Linux recorder is required for inventory.
+New visible option items must prove opening; disappearance of popup/items must
+prove closure. Selected menu values must remain unchanged. Visible option lists
+are recorded; hidden/virtualized entries remain unknown. Files save automatically under
+`results/panel-Master-De-Esser-TIMESTAMP/`, including `*-menus.json`.
+
+The full parameter plan follows review of Filter Type options and Q dependency.
+Preset lists are inventoried separately because selecting a preset replaces many
+settings. Current menu invocation is unverified until the first Windows run;
+focus/selection failures stop without repair writes. No manual screenshot or
+file transfer is required. The same menu inspection method is reusable.
+
 ## Capture stages
 
 Inventory is read-only: no clicks, drags, value edits or HID commands.
