@@ -379,5 +379,13 @@ visible names and row bounds identify six direct selections, each held5000ms,
 followed by restoration of the initial named choice. No labels or raw enum
 order are guessed. The host verifies six distinct raw byte26 values, stable
 names, selected labels, popup closure and restoration. Input accepts only the
-original panel or this opening's verified popup handles. First named-selection
-execution remains pending; other plugin controls and presets are excluded.
+original panel or this opening's verified popup handles. The first attempt,
+`scan-Master-De-Esser-20261009T213945408Z`, stopped at the64-row discovery cap;
+its514packets contained257complete IN reports, zero OUT reports and zero drops.
+The corrected discovery scopes candidates to the active effect panel and nearby
+separate popup windows, applying dropdown geometry before counting. It compares
+visible rows across opening even when Qt reuses a popup container. Baseline and
+open-menu screenshots/metadata are saved before validation, without pointer or
+focus changes. Parameter screenshots follow verified selection and closure.
+Corrected Windows execution remains pending; other plugin controls and presets
+are excluded.

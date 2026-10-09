@@ -77,7 +77,15 @@ The host checks isolated byte26 changes and six distinct raw values before
 allowing the final restore. Labels/raw order are learned from evidence, not
 guessed. Input is allowed only with the original panel or its verified popup
 in the foreground. Failure stops the batch; an unverified popup may remain open.
-The first Windows execution of named menu selection is pending.
+The first named-selection attempt stopped during discovery: unrelated vendor
+menu rows reached the64-item limit. Its capture contains no outbound HID reports.
+Discovery now searches the active effect panel and nearby separate popup windows,
+filters rows by the live dropdown bounds before counting, and accepts reused Qt
+popup containers only when their options become visible in this opening.
+Before/open screenshots and discovery metadata survive validation failures.
+Open-menu screenshots use screen copying without moving the pointer or changing
+focus; parameter screenshots follow selection and verified popup closure.
+The corrected Windows discovery and six-choice batch still need verification.
 
 This captures Filter Type only. Knobs and the remaining plugin controls are
 outside this focused batch.

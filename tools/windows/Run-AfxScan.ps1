@@ -145,6 +145,10 @@ function Assert-Panel {
     if ([AfxScanInput]::GetForegroundWindow() -ne $handle) { throw 'Panel focus changed; stopped.' }
     $now = $root.Current.BoundingRectangle
     if ($now -ne $windowBounds) { throw 'Panel moved or resized; stopped.' }
+    Assert-AfxChannel
+    if ($button.Current.BoundingRectangle -ne $buttonBounds) { throw 'Control moved; stopped.' }
+}
+function Assert-AfxChannel {
     $tabs = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new(
             [System.Windows.Automation.AutomationElement]::ClassNameProperty, 'AfxTabButton'))
@@ -159,7 +163,6 @@ function Assert-Panel {
     if ($selected.Count -ne 1 -or $selected[0] -ne [string]$plan.channel) {
         throw "Select unlinked AFX channel $($plan.channel) with $($plan.panel) open."
     }
-    if ($button.Current.BoundingRectangle -ne $buttonBounds) { throw 'Control moved; stopped.' }
 }
 function Save-Button($Name) {
     Assert-Panel
@@ -181,6 +184,7 @@ function Assert-MenuOwner([switch]$Discovering) {
         $button.Current.BoundingRectangle -ne $buttonBounds -or [AfxScanInput]::GetAsyncKeyState(27) -lt 0) {
         throw 'Menu owner, bounds or focus changed; stopped.'
     }
+    Assert-AfxChannel
     if (-not $Discovering -and $foregroundHandle -ne $handle -and
         $foregroundHandle.ToInt64() -notin $script:menuPopupHandles) {
         throw 'Foreground is neither the original panel nor its verified menu popup.'
@@ -195,6 +199,8 @@ function Visible-MenuRows($Windows) {
             if ($c.ProcessId -ne $root.Current.ProcessId -or $c.IsPassword -or $c.IsOffscreen -or
                 -not $c.IsEnabled -or $r.IsEmpty -or $r.Width -le 0 -or $r.Height -le 0 -or
                 -not $menuScreen.Contains([System.Drawing.Rectangle]::new([int]$r.X, [int]$r.Y, [int][Math]::Ceiling($r.Width), [int][Math]::Ceiling($r.Height))) -or
+                [Math]::Abs($r.X - $buttonBounds.X) -gt 32 -or $r.Width -gt 400 -or $r.Height -gt 80 -or
+                -not $menuSearchBounds.Contains($r) -or
                 $seen.ContainsKey($id)) { continue }
             $seen[$id] = $true
             if ($found.Count -ge 64) { throw 'Menu item discovery exceeds the bounded tree.' }
@@ -205,14 +211,46 @@ function Visible-MenuRows($Windows) {
 }
 function Menu-Windows {
     return @($menuDesktop.FindAll([System.Windows.Automation.TreeScope]::Children, $menuOwnerCondition) |
-        Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty })
+        Where-Object {
+            $r = $_.Current.BoundingRectangle
+            -not $_.Current.IsOffscreen -and -not $r.IsEmpty -and
+                ($_.GetRuntimeId() -join ':') -ne $menuRootId -and
+                [long]$_.Current.NativeWindowHandle -ne $handle.ToInt64() -and
+                $menuSearchBounds.IntersectsWith($r)
+        })
+}
+function Save-MenuDiscovery([string]$Suffix, [string]$Stage, $Windows, $Rows) {
+    # Save before validation so unsupported accessibility leaves useful evidence.
+    Write-Record (Join-Path $job ($filePrefix + '-' + $Suffix + '-menu.json')) @{
+        stage = $Stage; selected = $menuValue.Current.Value;
+        popup_windows = @($Windows | ForEach-Object {
+            $r = $_.Current.BoundingRectangle
+            @{ runtime_id = ($_.GetRuntimeId() -join ':'); handle = [long]$_.Current.NativeWindowHandle;
+                x = $r.X - $windowBounds.X; y = $r.Y - $windowBounds.Y; width = $r.Width; height = $r.Height }
+        });
+        options = @($Rows | ForEach-Object { @{ name = $_.name; runtime_id = $_.id;
+            x = $_.rect.X - $windowBounds.X; y = $_.rect.Y - $windowBounds.Y;
+            width = $_.rect.Width; height = $_.rect.Height } })
+    }
+    $capture = [System.Drawing.Rectangle]::FromLTRB(
+        [int][Math]::Floor([Math]::Min($windowBounds.Left, $menuSearchBounds.Left)),
+        [int][Math]::Floor([Math]::Min($windowBounds.Top, $menuSearchBounds.Top)),
+        [int][Math]::Ceiling([Math]::Max($windowBounds.Right, $menuSearchBounds.Right)),
+        [int][Math]::Ceiling([Math]::Max($windowBounds.Bottom, $menuSearchBounds.Bottom)))
+    $capture = [System.Drawing.Rectangle]::Intersect($capture, $menuScreen)
+    $bitmap = [System.Drawing.Bitmap]::new($capture.Width, $capture.Height)
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $graphics.CopyFromScreen($capture.X, $capture.Y, 0, 0, $bitmap.Size)
+        $bitmap.Save((Join-Path $job ($filePrefix + '-' + $Suffix + '-menu.png')), [System.Drawing.Imaging.ImageFormat]::Png)
+    } finally { $graphics.Dispose(); $bitmap.Dispose() }
 }
 function Close-ConfirmedMenu {
     if ($script:menuOpened) {
         Assert-MenuOwner
         $windows = Menu-Windows
         $stillOpen = @($windows | Where-Object { ($_.GetRuntimeId() -join ':') -in $script:menuPopupIds }).Count -gt 0 -or
-            @(Visible-MenuRows (@($root) + $windows) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0
+            @(Visible-MenuRows (@($visible[0]) + $windows) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0
         if (-not $stillOpen) { $script:menuOpened = $false; return }
         Assert-MenuOwner
         [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
@@ -222,17 +260,21 @@ function Close-ConfirmedMenu {
 }
 function Open-NamedMenu([string]$Suffix) {
     Assert-Panel
+    $beforeSelection = $menuValue.Current.Value
     $script:menuOpened = $false
     $script:menuPopupIds = @(); $script:menuOptionIds = @(); $script:menuPopupHandles = @()
     $beforeWindows = Menu-Windows
-    $beforeIds = @($beforeWindows | ForEach-Object { $_.GetRuntimeId() -join ':' })
-    $beforeRows = @(Visible-MenuRows (@($root) + $beforeWindows))
+    Save-MenuDiscovery ($Suffix + '-before-scan') 'before row discovery; menu not invoked' $beforeWindows @()
+    $beforeRows = @(Visible-MenuRows (@($visible[0]) + $beforeWindows))
+    Save-MenuDiscovery ($Suffix + '-before') 'before invocation' $beforeWindows $beforeRows
+    if ($beforeRows.Count -ne 0) { throw 'Adjacent menu rows already visible before invocation; no menu opened.' }
     $beforeOptionIds = @($beforeRows | ForEach-Object { $_.id })
     $invoke = $null
     if (-not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
         throw 'Menu lacks an Invoke pattern; no guessed click.'
     }
-    $beforeSelection = $menuValue.Current.Value
+    Assert-Panel
+    if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Menu changed during discovery; no menu opened.' }
     $invoke.Invoke()
     Start-Sleep -Milliseconds 1500
     # This process-only check permits metadata discovery, never input delivery.
@@ -240,29 +282,13 @@ function Open-NamedMenu([string]$Suffix) {
     Assert-MenuOwner -Discovering
     if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Menu changed selection merely by opening.' }
     $afterWindows = Menu-Windows
-    $newWindows = @($afterWindows | Where-Object { ($_.GetRuntimeId() -join ':') -notin $beforeIds })
-    if ($newWindows.Count -gt 4) { throw 'Too many new menu windows.' }
-    $rows = @(Visible-MenuRows (@($root) + $newWindows) | Where-Object { $_.id -notin $beforeOptionIds } |
+    Save-MenuDiscovery ($Suffix + '-after-scan') 'after invocation; before row discovery' $afterWindows @()
+    if ($afterWindows.Count -gt 4) { throw 'Too many adjacent menu windows; inventory saved.' }
+    # Qt can reuse a popup container. Its rows must become visible this opening;
+    # the container itself need not have a new runtime ID.
+    $rows = @(Visible-MenuRows (@($visible[0]) + $afterWindows) | Where-Object { $_.id -notin $beforeOptionIds } |
         Sort-Object { $_.rect.Y }, { $_.rect.X })
-    $capture = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
-        [int][Math]::Ceiling($windowBounds.Width), [int][Math]::Ceiling($windowBounds.Height))
-    foreach ($row in $rows) {
-        $r = $row.rect
-        $capture = [System.Drawing.Rectangle]::Union($capture, [System.Drawing.Rectangle]::new(
-            [int]$r.X, [int]$r.Y, [int][Math]::Ceiling($r.Width), [int][Math]::Ceiling($r.Height)))
-    }
-    $capture = [System.Drawing.Rectangle]::Intersect($capture, $menuScreen)
-    $bitmap = [System.Drawing.Bitmap]::new($capture.Width, $capture.Height)
-    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-    try {
-        $graphics.CopyFromScreen($capture.X, $capture.Y, 0, 0, $bitmap.Size)
-        $bitmap.Save((Join-Path $job ($filePrefix + '-' + $Suffix + '-menu.png')), [System.Drawing.Imaging.ImageFormat]::Png)
-    } finally { $graphics.Dispose(); $bitmap.Dispose() }
-    Write-Record (Join-Path $job ($filePrefix + '-' + $Suffix + '-menu.json')) @{
-        options = @($rows | ForEach-Object { @{ name = $_.name; runtime_id = $_.id;
-            x = $_.rect.X - $windowBounds.X; y = $_.rect.Y - $windowBounds.Y;
-            width = $_.rect.Width; height = $_.rect.Height } })
-    }
+    Save-MenuDiscovery $Suffix 'after scoped row discovery' $afterWindows $rows
     if ($rows.Count -ne [int]$control.positions -or
         @($rows | Where-Object { [string]::IsNullOrWhiteSpace($_.name) }).Count -ne 0 -or
         @($rows | ForEach-Object { $_.name } | Select-Object -Unique).Count -ne $rows.Count) {
@@ -275,7 +301,7 @@ function Open-NamedMenu([string]$Suffix) {
     }
     if ([Math]::Min([Math]::Abs($rows[0].rect.Top - $buttonBounds.Bottom),
         [Math]::Abs($rows[-1].rect.Bottom - $buttonBounds.Top)) -gt 32) { throw 'Menu list is not adjacent to the reviewed dropdown.' }
-    $verifiedWindows = @($newWindows | Where-Object {
+    $verifiedWindows = @($afterWindows | Where-Object {
         $pr = $_.Current.BoundingRectangle
         @($rows | Where-Object { -not $pr.Contains($_.rect) }).Count -eq 0
     })
@@ -302,7 +328,7 @@ function Select-NamedMenu($Rows, [int]$Position) {
     if ($menuValue.Current.Value -cne $row.name) { throw 'Menu selected a different name; stopped.' }
     $after = Menu-Windows
     if (@($after | Where-Object { ($_.GetRuntimeId() -join ':') -in $script:menuPopupIds }).Count -gt 0 -or
-        @(Visible-MenuRows (@($root) + $after) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0) {
+        @(Visible-MenuRows (@($visible[0]) + $after) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0) {
         throw 'Menu remained open after selection.'
     }
     $script:menuOpened = $false
@@ -544,6 +570,10 @@ try {
             [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem),
             [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
         $menuScreen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+        $menuRootId = $root.GetRuntimeId() -join ':'
+        $menuExtent = [int]$control.positions * 80 + 32
+        $menuSearchBounds = [System.Windows.Rect]::new($buttonBounds.X - 32,
+            $buttonBounds.Top - $menuExtent, 464, $buttonBounds.Height + 2 * $menuExtent)
         $optionNames = @(); $startingPosition = -1; $acceptedSelection = $startingSelection
         $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
             [int]$windowBounds.Width, [int]$windowBounds.Height)
