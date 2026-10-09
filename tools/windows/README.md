@@ -21,30 +21,37 @@ reused, with no repeated INIT. Power/bypass remains outside this plan.
 Humanize is clicked twice to restore its starting state; range knobs stay
 at maximum. Physical values displayed inside V12 knobs are saved in screenshots.
 
-## Next capture: BBD Chorus
+## Next capture: resume BBD Chorus
+
+The capture `scan-BBD-Chorus-20261009T192357505Z` completed the four knob
+ranges and Chorus/Vibrato. These results are retained. Stereo Type stopped:
+centre clicks select Split repeatedly, rather than cycling. Power was not reached.
 
 Open BBD Chorus on unlinked AFX channel2, run the same launcher, enter
 `BBD Chorus`, press Enter and focus its title bar within ten seconds. Linux
-must be waiting. Leave mouse and keyboard alone. One launch runs sixteen phases:
-four knob endpoint pairs, Chorus/Vibrato round trip, four Stereo Type centre
-clicks, and Power round trip. Knobs remain at maximum; selectors and Power must
-return to their starting appearance. Chorus/Vibrato uses its measured byte24
-for change/restoration because the adjacent red indicator is animated.
-Screenshots are retained, but they do not verify that mode switch. Demo use does not establish ownership.
+must be waiting. This resume captures only Stereo Type and Power in seven
+phases; no knob or mode rescans. Leave mouse and keyboard alone.
 
-Stereo Type's four-position cycle is a bounded discovery trial. Each position
-gets a separate screenshot and fresh captured parameter block; four distinct
-visual/raw positions and return to the starting state are required. Its byte25
-candidate comes from the catalog's preserved type field. Basic/Wide/Split/Cross
-labels are reviewed from screenshots, never assigned by guessed numeric order.
-If centre clicks do not cycle all four positions, the batch stops with evidence.
-Power records the measured opcode0x14/selector0x98 family for the same effect
-instance, keeping all0/1 events; no persistent state or polarity is inferred.
-Clip/meter indicators are read-only. Windows execution of these new gestures
-still needs the first run; parser/compiler preflight happens before actions.
+The direct-position method clicks the four visible rows separately. Each phase
+primes a different row before selecting its target to establish fresh OUT even
+when the target was already selected. It saves four distinct labelled screenshots
+and learns the raw values; it does not assume numeric enum order. After the
+four rows, the initial screenshot must match exactly one captured position.
+That learned visual/raw correspondence selects the restore row. If a preceding
+parameter block exists, it must agree. Newer edits, repeated/ambiguous positions,
+wrong bytes or failed restoration stop the run without blind repair clicks.
+Direct row-hit execution is still pending this first Windows run.
 
-V12 previously captured ten knob endpoint pairs and Humanize. Its older plan
-still excludes power/bypass; it is not a complete plugin capture.
+The complete `bbd-controls` JSON plan remains available: four knob endpoint
+pairs, Chorus/Vibrato round trip, four Stereo Type positions plus restoration,
+and Power round trip (17phases). The workflow currently selects its reviewed
+`bbd-remaining` resume plan. Successful partial evidence is kept; adding a new
+gesture does not require repeating the completed controls.
+
+Power records opcode0x14/selector0x98 for the same effect instance and all0/1
+events; persistent state and polarity are unverified. Chorus/Vibrato uses measured
+byte24 feedback because the nearby red indicator is animated. Clip/meters are
+read-only. V12's older plan still excludes power/bypass and remains partial.
 
 ## Capture stages
 
@@ -80,8 +87,8 @@ stop the capture, retain evidence and release the mouse button.
 Cabinet/speaker/model selectors are included in inventory. The generic
 `selector_cycle` gesture supports reviewed finite cycles of2–8positions, with
 separate images, fresh wire evidence, uniqueness and starting-state checks.
-Plans declare their candidate field and visual region. Controls using menus or
-direct-position hits need a reviewed gesture before capture. Unknown plugins
+Plans declare their candidate field and visual region. Reviewed `selector_positions` plans support direct row hits and learned
+restoration. Menu controls still need a reviewed gesture before capture. Unknown plugins
 still run inventory only and explicitly report that no values were scanned.
 Completed jobs carry declared coverage; completing a plan does not prove
 unplanned controls or device readback. No plugin-specific script is needed.

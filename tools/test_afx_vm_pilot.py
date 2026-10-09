@@ -141,7 +141,7 @@ class VmPilotTests(unittest.TestCase):
     def test_selector_cycle_and_power_handshake_reject_incomplete_or_other_target(self):
         from tools.afx_vm_pilot import run_job, load_plans
         base = load_plans()['bbd-controls']
-        controls = base['controls'][-2:] + [next(c for c in base['controls'] if c['id']=='ChorusVibrato')]
+        controls = [{**base['controls'][-2], 'kind':'selector_cycle'}, base['controls'][-1], next(c for c in base['controls'] if c['id']=='ChorusVibrato')]
         plan = {**base, 'controls': controls}
         profile = {'transport': {'in_endpoint':'0x82', 'out_endpoint':'0x01'}, 'device':{}}
         location = {'bus':5, 'address':15, 'sysfs':'fixture'}
@@ -207,6 +207,67 @@ class VmPilotTests(unittest.TestCase):
                     else:
                         failed_index={'repeat':2,'no_restore':4,'other_field':2,'other_instance':5,'newer_edit':2,'toggle_no_change':7,'toggle_no_restore':8}[outcome]
                         self.assertFalse((job/f'action-{failed_index}-ack.json').exists())
+
+    def test_direct_selector_resume_learns_restore_without_a_prior_out_block(self):
+        from tools.afx_vm_pilot import run_job, load_plans
+        plan=load_plans()['bbd-remaining']
+        self.assertEqual(len(planned_actions(plan)),7)
+        profile={'transport':{'in_endpoint':'0x82','out_endpoint':'0x01'},'device':{}}
+        location={'bus':5,'address':15,'sysfs':'fixture'}
+        current=[]; outcome={'value':'ok'}
+        def report(number,value,power=False,instance=0):
+            data=bytearray(frame(0x14 if power else 0x1c,
+                [0x98,value,78,instance] if power else [0xd5,0x0a,78,instance]))
+            if not power: data[25]=value
+            return (number,float(number),1,bytes(data))
+        def guest_wait(path,seconds,process=None):
+            index=int(path.name.split('-')[1]) if path.name.startswith('action-') else 0
+            if path.name.endswith('-request.json'):
+                if outcome['value']=='newer_edit' and index==2: current.append(report(19,9))
+                return {'action':index,'control':'StereoType' if index<=5 else 'Power'}
+            if path.name.startswith('action-') and path.name.endswith('-done.json'):
+                if index<=5:
+                    raw=[7,3,9,5,9][index-1]
+                    if outcome['value']=='repeat' and index==2: raw=7
+                    if outcome['value']=='wrong_restore' and index==5: raw=7
+                    current.append(report(index*10,3 if raw!=3 else 9))
+                    row=report(index*10+1,raw)
+                    if outcome['value']=='other_field' and index==2:
+                        data=bytearray(row[3]);data[26]=1;row=(*row[:3],bytes(data))
+                    current.append(row)
+                else:
+                    current.extend([report(index*10,1,True),report(index*10+1,0,True)])
+                return {'status':'ok','starting_position': None if outcome['value']=='ambiguous_start' else 2}
+            if path.name=='completed.json':return {'status':'ok'}
+            raise AssertionError(path.name)
+        process=Mock();process.poll.return_value=None
+        with tempfile.TemporaryDirectory() as directory:
+            for mode in ('ok','repeat','wrong_restore','other_field','newer_edit','ambiguous_start','disagreeing_start'):
+                with self.subTest(mode=mode):
+                    outcome['value']=mode
+                    current[:]=[(1,0,0x82,bytes([0x73]).ljust(320,b'\0'))]
+                    if mode=='disagreeing_start':current.append(report(2,7))
+                    job=Path(directory)/mode;job.mkdir();(job/'request.json').write_text(json.dumps({'version':2}))
+                    with patch('tools.afx_vm_pilot.validate_request',return_value=plan), \
+                         patch('tools.afx_vm_pilot.plan_effect_type',return_value=78), \
+                         patch('tools.afx_vm_pilot.device_location',return_value=location), \
+                         patch('tools.afx_vm_pilot.Path.exists',side_effect=[True,False]), \
+                         patch('tools.afx_vm_pilot.subprocess.Popen',return_value=process), \
+                         patch('tools.afx_vm_pilot.read_reports',side_effect=lambda *a,**kw:list(current)), \
+                         patch('tools.afx_vm_pilot.wait_file',side_effect=guest_wait), \
+                         patch('tools.afx_vm_pilot.time.sleep'):
+                        if mode=='ok':run_job(job,profile)
+                        else:
+                            with self.assertRaises(RuntimeError):run_job(job,profile)
+                    if mode=='ok':
+                        ack=json.loads((job/'action-4-ack.json').read_text())
+                        self.assertEqual(ack['restore_position'],2)
+                        windows=json.loads((job/'action-windows.json').read_text())
+                        self.assertEqual([w['observed_selector_raw'] for w in windows[:5]],[7,3,9,5,9])
+                        self.assertTrue((job/'host-completed.json').is_file())
+                    else:
+                        failed={'repeat':2,'wrong_restore':5,'other_field':2,'newer_edit':2,'ambiguous_start':4,'disagreeing_start':4}[mode]
+                        self.assertFalse((job/f'action-{failed}-ack.json').exists())
 
     def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',

@@ -20,10 +20,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def planned_actions(plan):
-    return [(control, phase) for control in plan['controls']
-            for phase in (('minimum', 'maximum') if control['kind'] == 'knob_range'
-                          else tuple(f'position-{n}' for n in range(1, control['positions'] + 1))
-                          if control['kind'] == 'selector_cycle' else ('click', 'click back'))]
+    actions = []
+    for control in plan['controls']:
+        if control['kind'] == 'knob_range':
+            phases = ['minimum', 'maximum']
+        elif control['kind'] in ('selector_cycle', 'selector_positions'):
+            phases = [f'position-{n}' for n in range(1, control['positions'] + 1)]
+            if control['kind'] == 'selector_positions':
+                phases.append('restore')
+        else:
+            phases = ['click', 'click back']
+        actions.extend((control, phase) for phase in phases)
+    return actions
 
 
 def write_json(path, value):
@@ -58,11 +66,15 @@ def load_plans():
         if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
-                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
+                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
-            if control['kind'] == 'selector_cycle' and (type(control.get('positions')) is not int or not 2 <= control['positions'] <= 8 or not control.get('visual_region')):
-                raise ValueError('Selector cycle requires a reviewed finite count and visual region')
+            if control['kind'] in ('selector_cycle', 'selector_positions') and (type(control.get('positions')) is not int or not 2 <= control['positions'] <= 8 or not control.get('visual_region')):
+                raise ValueError('Selector requires a reviewed finite count and visual region')
+            if control['kind'] == 'selector_positions':
+                points = control.get('position_points', [])
+                if len(points) != control['positions'] or any(not all(type(p.get(k)) in (int, float) and math.isfinite(p[k]) and 0 < p[k] < 1 for k in ('x', 'y')) for p in points):
+                    raise ValueError('Direct selector needs reviewed points inside its control')
     return {plan['id']: plan for plan in plans}
 
 
@@ -91,7 +103,7 @@ def validate_wire_controls(plan, catalog):
     effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
     implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
     for control in plan['controls']:
-        if control['kind'] == 'selector_cycle':
+        if control['kind'] in ('selector_cycle', 'selector_positions'):
             candidate = implementation['parameter_observation']['preserved_fields'][control['candidate_field']]
             if control['observed_field_offset'] != candidate['offset']:
                 raise ValueError('Selector candidate must match its catalog preserved field')
@@ -305,11 +317,11 @@ def run_job(job, profile):
                 if not before_reports:
                     raise RuntimeError('No current capture boundary; no click permitted')
                 first_frame = max(row[0] for row in before_reports)
-                if control['kind'] == 'selector_cycle':
+                if control['kind'] in ('selector_cycle', 'selector_positions'):
                     prior = [data for _, _, ep, data in before_reports if ep == out_ep and data[0] == 0x70 and data[4] in PARAMETER_OPCODES and data[16] == 0xd5 and data[18] == effect_type and (expected_target is None or data[19] == expected_target[3])]
-                    if not prior:
+                    if not prior and control['kind'] == 'selector_cycle':
                         raise RuntimeError('Selector cycle requires a fresh preceding parameter block')
-                    raw = prior[-1][control['observed_field_offset']]
+                    raw = prior[-1][control['observed_field_offset']] if prior else None
                     if control['id'] not in selector_baselines:
                         selector_baselines[control['id']] = raw
                     elif raw != selector_values[control['id']][-1]:
@@ -404,19 +416,31 @@ def run_job(job, profile):
                         raise RuntimeError('Measured toggle did not change/restore its captured value')
                     window['observed_toggle_raw'] = expected
                     window['toggle_restoration_source'] = 'captured parameter writes; not device readback'
-                if control['kind'] == 'selector_cycle':
+                if control['kind'] in ('selector_cycle', 'selector_positions'):
                     offset = control['observed_field_offset']
                     verify_wire_changes(reports, first_frame, {'wire': {'offset': offset}}, effect_type, expected_target[3], out_ep)
                     samples = [data for number, _, ep, data in reports if number > first_frame and ep == out_ep and data[0] == 0x70 and data[16] == 0xd5 and data[18] == effect_type and data[19] == expected_target[3]]
                     values = {data[offset] for data in samples}
-                    if len(values) != 1:
+                    if control['kind'] == 'selector_cycle' and len(values) != 1:
                         raise RuntimeError('Selector click did not establish one captured position')
-                    value = next(iter(values))
+                    if not samples or len(values) > 2:
+                        raise RuntimeError('Direct selector did not establish a bounded priming/target sequence')
+                    value = samples[-1][offset]
                     seen = selector_values.setdefault(control['id'], [])
-                    if value in seen:
-                        raise RuntimeError('Selector repeated a position before its full cycle')
+                    if phase != 'restore' and value in seen:
+                        raise RuntimeError('Selector repeated a position before its full traversal')
+                    if phase == 'restore' and value != selector_baselines[control['id']]:
+                        raise RuntimeError('Direct selector did not restore starting raw value')
                     seen.append(value)
-                    if len(seen) == control['positions'] and value != selector_baselines[control['id']]:
+                    if control['kind'] == 'selector_positions' and len(seen) == control['positions']:
+                        starting_position = completed.get('starting_position')
+                        if type(starting_position) is not int or not 0 <= starting_position < control['positions']:
+                            raise RuntimeError('Starting selector appearance did not match exactly one captured position')
+                        visual_start = seen[starting_position]
+                        if selector_baselines[control['id']] is not None and selector_baselines[control['id']] != visual_start:
+                            raise RuntimeError('Starting visual position disagrees with preceding captured state')
+                        selector_baselines[control['id']] = visual_start
+                    if control['kind'] == 'selector_cycle' and len(seen) == control['positions'] and value != selector_baselines[control['id']]:
                         raise RuntimeError('Selector cycle did not restore its captured starting state')
                     window['observed_selector_raw'] = value
                     window['selector_mapping_status'] = 'position screenshot requires label review; no ordinal polarity inferred'
@@ -433,7 +457,13 @@ def run_job(job, profile):
                 write_json(job/'action-windows.json', windows)
                 if completed.get('status') != 'ok':
                     raise RuntimeError('Guest visual verification failed; stop for review')
-                write_json(job/f'action-{index}-ack.json', {'status': 'ok'})
+                ack = {'status': 'ok'}
+                if control['kind'] == 'selector_positions' and phase == f"position-{control['positions']}":
+                    baseline = selector_baselines[control['id']]
+                    if baseline not in selector_values[control['id']]:
+                        raise RuntimeError('Starting selector state absent from captured positions; no restore guess')
+                    ack['restore_position'] = selector_values[control['id']].index(baseline)
+                write_json(job/f'action-{index}-ack.json', ack)
             wait_file(job/'completed.json', 5, process)
         finally:
             if process.poll() is None:

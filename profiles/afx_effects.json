@@ -815,7 +815,68 @@
                 "evidence": "Constant 96 (0x60); meter meaning and scale UNVERIFIED. Preserve, never zero-fill or expose as a knob."
               }
             },
-            "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults."
+            "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults.",
+            "automated_gui_capture": {
+              "source": "scan-BBD-Chorus-20261009T192357505Z",
+              "status": "four knob endpoint pairs and Chorus/Vibrato round trip completed; Stereo Type partial, power not reached",
+              "device_readback_verified": false,
+              "range_knobs_left_at": "maximum",
+              "knob_endpoints": [
+                {
+                  "label": "Level Control",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 2309,
+                  "maximum_frame": 9663
+                },
+                {
+                  "label": "Chorus Intensity",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 14505,
+                  "maximum_frame": 22111
+                },
+                {
+                  "label": "Vibrato Depth",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 26917,
+                  "maximum_frame": 34673
+                },
+                {
+                  "label": "Vibrato Rate",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "minimum_frame": 39807,
+                  "maximum_frame": 47575
+                }
+              ],
+              "chorus_vibrato_raw_sequence": [
+                1,
+                0,
+                1
+              ],
+              "selector_observations": [
+                {
+                  "label": "Basic",
+                  "raw": 0,
+                  "offset": 25, "frame": 52399,
+                "status": "before screenshot matches preceding mode parameter block"
+                },
+                {
+                  "label": "Split",
+                  "raw": 2,
+                  "offset": 25, "frame": 53691,
+                "status": "first centre-click screenshot and parameter block agree"
+                }
+              ],
+              "pending": [
+                "Wide and Cross wire values",
+                "Direct-position selector traversal/restoration",
+                "Power round trip"
+              ],
+              "notes": "Centre clicks select Split repeatedly, not a four-state cycle. No guessed enum order or runtime writer enabled."
+            }
           },
           "state_readback": null,
           "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c"

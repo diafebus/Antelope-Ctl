@@ -20,7 +20,7 @@ $plan = $matchingPlans[0]
 $controlLimit = 3
 if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) { $controlLimit = 24 }
 if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
-    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle') }).Count -ne 0) {
+    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
 }
 $panelLabel = $plan.panel -replace '[^a-zA-Z0-9_-]', '_'
@@ -344,7 +344,7 @@ try {
     Write-Record (Join-Path $job 'request.json') @{
         version = 2; plan_id = $plan.id; panel = $plan.panel; channel = $plan.channel;
         controls = @($plan.controls | ForEach-Object { $_.id });
-        actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } else { 2 } } | Measure-Object -Sum).Sum)
+        actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } elseif ($_.kind -eq 'selector_positions') { [int]$_.positions + 1 } else { 2 } } | Measure-Object -Sum).Sum)
     }
     $null = Wait-HostFile 'ready.json' 25
     $index = 0
@@ -380,10 +380,17 @@ try {
     }
     $baseline = Save-Button ($filePrefix + '-before.png')
     $phaseCount = 2
-    if ($control.kind -eq 'selector_cycle') {
+    if ($control.kind -in @('selector_cycle', 'selector_positions')) {
         $phaseCount = [int]$control.positions
         if ($phaseCount -lt 2 -or $phaseCount -gt 8) { throw 'Selector needs a reviewed finite cycle.' }
     }
+    $positionCount = $phaseCount
+    if ($control.kind -eq 'selector_positions') {
+        if (@($control.position_points).Count -ne $positionCount) { throw 'Direct selector points are missing.' }
+        $phaseCount++
+    }
+    $restorePosition = -1
+    $startingPosition = -1
     $minimumChange = .05
     if ($null -ne $control.minimum_visual_change) {
         $minimumChange = [double]$control.minimum_visual_change
@@ -393,10 +400,12 @@ try {
     foreach ($phase in @(1..$phaseCount)) {
         $index++
         Assert-Panel
-        if ($phase -gt 1 -and $control.feedback -ne 'captured_toggle') {
+        if ($control.feedback -ne 'captured_toggle') {
             $current = Save-Button ($filePrefix + '-before-restore.png')
             try {
-                if ([AfxScanInput]::Difference($changed, $current) -gt [Math]::Min(.02, $minimumChange)) {
+                $reference = $changed
+                if ($phase -eq 1) { $reference = $baseline }
+                if ([AfxScanInput]::Difference($reference, $current) -gt [Math]::Min(.02, $minimumChange)) {
                     throw 'Button changed since trial; restoration blocked to preserve newer edits.'
                 }
             } finally { $current.Dispose() }
@@ -404,18 +413,37 @@ try {
         Write-Record (Join-Path $job "action-$index-request.json") @{ action = $index; control = $control.id }
         $null = Wait-HostFile "action-$index-go.json" 10
         Assert-Panel
-        if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
-            [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Could not position mouse; stopped.' }
-        [AfxScanInput]::Click()
+        if ($control.kind -eq 'selector_positions') {
+            $position = $phase - 1
+            if ($phase -eq $phaseCount) { $position = $restorePosition }
+            if ($position -lt 0 -or $position -ge $positionCount) { throw 'No verified restore position.' }
+            # Prime another position first so an already-selected target has fresh OUT evidence.
+            foreach ($pointIndex in @((($position + 1) % $positionCount), $position)) {
+                $point = $control.position_points[$pointIndex]
+                if ([double]$point.x -le 0 -or [double]$point.x -ge 1 -or [double]$point.y -le 0 -or [double]$point.y -ge 1) {
+                    throw 'Direct selector point must stay inside its control.'
+                }
+                Assert-Panel
+                if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width * [double]$point.x),
+                    [int]($buttonBounds.Y + $buttonBounds.Height * [double]$point.y))) { throw 'Could not position selector mouse.' }
+                [AfxScanInput]::Click()
+                Start-Sleep -Milliseconds 200
+            }
+        } else {
+            if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
+                [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Could not position mouse; stopped.' }
+            [AfxScanInput]::Click()
+        }
         [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
         Start-Sleep -Milliseconds 700
         if ($phase -lt $phaseCount) {
             $stateFile = $filePrefix + '-changed.png'
-            if ($control.kind -eq 'selector_cycle') { $stateFile = $filePrefix + '-position-' + $phase + '.png' }
+            if ($control.kind -in @('selector_cycle', 'selector_positions')) { $stateFile = $filePrefix + '-position-' + $phase + '.png' }
             $changed = Save-Button $stateFile
             $difference = [AfxScanInput]::Difference($baseline, $changed)
             $ok = $difference -gt $minimumChange
-            if ($control.kind -eq 'selector_cycle') {
+            if ($control.kind -eq 'selector_positions') { $ok = $true }
+            if ($control.kind -in @('selector_cycle', 'selector_positions')) {
                 foreach ($image in $cycleImages) {
                     if ([AfxScanInput]::Difference($image, $changed) -le $minimumChange) { $ok = $false }
                 }
@@ -423,10 +451,18 @@ try {
             }
         } else {
             $stateFile = $filePrefix + '-restored.png'
-            if ($control.kind -eq 'selector_cycle') { $stateFile = $filePrefix + '-position-' + $phase + '.png' }
+            if ($control.kind -in @('selector_cycle', 'selector_positions')) { $stateFile = $filePrefix + '-position-' + $phase + '.png' }
             $restored = Save-Button $stateFile
             $difference = [AfxScanInput]::Difference($baseline, $restored)
             $ok = $difference -le [Math]::Min(.02, $minimumChange)
+        }
+        if ($control.kind -eq 'selector_positions' -and $phase -eq $positionCount) {
+            $matches = @()
+            for ($positionIndex = 0; $positionIndex -lt $cycleImages.Count; $positionIndex++) {
+                if ([AfxScanInput]::Difference($baseline, $cycleImages[$positionIndex]) -le $minimumChange) { $matches += $positionIndex }
+            }
+            if ($matches.Count -ne 1) { throw 'Starting appearance does not match exactly one captured position.' }
+            $startingPosition = $matches[0]
         }
         if ($control.feedback -eq 'captured_toggle') { $ok = $true }
         $status = 'failed'
@@ -437,14 +473,18 @@ try {
         }
         Write-Record (Join-Path $job "action-$index-done.json") @{
             status = $status; changed_pixel_fraction = $difference;
-            cycle_position = $phase;
+            cycle_position = $phase; starting_position = $startingPosition;
             source = $verificationSource; guest_utc = [DateTime]::UtcNow.ToString('o')
         }
         if (-not $ok) { throw 'Visual verification failed; no further clicks.' }
-        $null = Wait-HostFile "action-$index-ack.json" 10
+        $ack = Wait-HostFile "action-$index-ack.json" 10
+        if ($control.kind -eq 'selector_positions' -and $phase -eq $positionCount) {
+            if ($null -eq $ack.restore_position) { throw 'Host did not verify restore position.' }
+            $restorePosition = [int]$ack.restore_position
+        }
     }
     foreach ($image in $cycleImages) { $image.Dispose() }
-    if ($control.kind -ne 'selector_cycle' -and $null -ne $changed) { $changed.Dispose() }
+    if ($control.kind -notin @('selector_cycle', 'selector_positions') -and $null -ne $changed) { $changed.Dispose() }
     $changed = $null
     }
     Write-Record (Join-Path $job 'completed.json') @{

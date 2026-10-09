@@ -995,8 +995,8 @@
       "effect_id": "bbdchorus",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "four knobs, Chorus/Vibrato, four-position Stereo Type cycle and Power; first complete batch pending",
-      "evidence": "panel-BBD-Chorus-20261009T184609823Z: four visible knobs and Chorus/Vibrato button. Reuse owner-labelled Orion modulation byte mappings. Stereo Type is a four-position selector included in this bounded discovery cycle; power is captured as a separate command family. Demo use does not establish ownership. Selector field25 is an unverified candidate from preserved type field; gesture must isolate it and establish four distinct captured states, then restore starting state. Power uses captured opcode0x14/selector0x98; no polarity inferred.",
+      "status": "all editable controls planned; direct-position selector gesture first trial pending",
+      "evidence": "panel-BBD-Chorus-20261009T184609823Z: four visible knobs and Chorus/Vibrato button. Reuse owner-labelled Orion modulation byte mappings. Stereo Type is a four-position selector included in this bounded discovery cycle; power is captured as a separate command family. Demo use does not establish ownership. Selector field25 is an unverified candidate from preserved type field; gesture must isolate it and establish four distinct captured states, then restore starting state. Power uses captured opcode0x14/selector0x98; no polarity inferred. scan-BBD-Chorus-20261009T192357505Z completed knobs and mode; centre click selects Split byte25=2 repeatedly, not a cycle. Four label rows establish bounded direct hit coordinates; all raw values learned from captured writes, never assigned by row order.",
       "controls": [
         {
           "id": "BBDChorusLevelPot",
@@ -1077,7 +1077,7 @@
           "id": "StereoType",
           "label": "Stereo Type (four positions)",
           "class_name": "BBDChorusStereoTypeButton",
-          "kind": "selector_cycle",
+          "kind": "selector_positions",
           "positions": 4,
           "observed_field_offset": 25,
           "visual_region": {
@@ -1087,7 +1087,29 @@
             "height": 74
           },
           "minimum_visual_change": 0.005,
-          "candidate_field": "type"
+          "candidate_field": "type",
+          "position_points": [
+            {
+              "label": "Basic",
+              "x": 0.5,
+              "y": 0.125
+            },
+            {
+              "label": "Wide",
+              "x": 0.5,
+              "y": 0.375
+            },
+            {
+              "label": "Split",
+              "x": 0.5,
+              "y": 0.625
+            },
+            {
+              "label": "Cross",
+              "x": 0.5,
+              "y": 0.875
+            }
+          ]
         },
         {
           "id": "Power",
@@ -1098,13 +1120,75 @@
         }
       ],
       "coverage": {
-        "status": "all visible editable controls planned; selector cycle gesture first trial pending",
+        "status": "all visible editable controls planned; direct selector first trial pending",
         "knobs": 4,
         "binary_switches": 2,
         "selector_positions": 4,
         "excluded": [
           "Clip and meter indicators are read-only"
         ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "bbd-remaining",
+      "panel": "BBD-Chorus",
+      "panel_class": "BBDChorus",
+      "effect_id": "bbdchorus",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "resume only unfinished controls, no repeated knobs",
+      "evidence": "panel-BBD-Chorus-20261009T184609823Z: four visible knobs and Chorus/Vibrato button. Reuse owner-labelled Orion modulation byte mappings. Stereo Type is a four-position selector included in this bounded discovery cycle; power is captured as a separate command family. Demo use does not establish ownership. Selector field25 is an unverified candidate from preserved type field; gesture must isolate it and establish four distinct captured states, then restore starting state. Power uses captured opcode0x14/selector0x98; no polarity inferred. scan-BBD-Chorus-20261009T192357505Z completed knobs and mode; centre click selects Split byte25=2 repeatedly, not a cycle. Four label rows establish bounded direct hit coordinates; all raw values learned from captured writes, never assigned by row order.",
+      "controls": [
+        {
+          "id": "StereoType",
+          "label": "Stereo Type (four positions)",
+          "class_name": "BBDChorusStereoTypeButton",
+          "kind": "selector_positions",
+          "positions": 4,
+          "observed_field_offset": 25,
+          "visual_region": {
+            "x": 400,
+            "y": 94,
+            "width": 68,
+            "height": 74
+          },
+          "minimum_visual_change": 0.005,
+          "candidate_field": "type",
+          "position_points": [
+            {
+              "label": "Basic",
+              "x": 0.5,
+              "y": 0.125
+            },
+            {
+              "label": "Wide",
+              "x": 0.5,
+              "y": 0.375
+            },
+            {
+              "label": "Split",
+              "x": 0.5,
+              "y": 0.625
+            },
+            {
+              "label": "Cross",
+              "x": 0.5,
+              "y": 0.875
+            }
+          ]
+        },
+        {
+          "id": "Power",
+          "label": "Power",
+          "class_name": "BBDChorusBypassButton",
+          "kind": "binary_button",
+          "command_family": "bypass"
+        }
+      ],
+      "coverage": {
+        "status": "resume unfinished Stereo Type and Power; earlier four knob ranges and Chorus/Vibrato retained",
+        "retained_capture": "scan-BBD-Chorus-20261009T192357505Z",
         "device_readback_verified": false
       }
     }

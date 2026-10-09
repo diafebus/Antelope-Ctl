@@ -316,3 +316,14 @@ BBD Chorus/Vibrato now uses measured byte24 change/restoration feedback;
 its adjacent animated GainReduction LED caused a false visual guard failure
 in `scan-BBD-Chorus-20261009T191323291Z`. Keep phase screenshots, but do
 not claim mode image equality or device readback from that feedback.
+
+`scan-BBD-Chorus-20261009T192357505Z` completed eight knob phases and the
+mode round trip,57828 packets with zero drops. Selector centre click changed
+Basic (raw25=0) to Split (raw25=2,frame53691); repeating the same centre click
+produced no OUT and the same picture. Power was not reached. The next same-name
+launcher run selects `bbd-remaining`, seven phases for selector and Power only.
+`selector_positions` supports four direct row targets plus learned restoration;
+initial appearance must uniquely match one captured position, and any preceding
+raw baseline must agree. Each target is primed through another row for fresh
+OUT. Retain completed knob/mode evidence rather than repeating those gestures.
+The complete plan remains available with17phases; row-hit execution is pending.
