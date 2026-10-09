@@ -1219,6 +1219,28 @@
       }]
     },
     {
+      "id": "deesser-filter-keys",
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "clicked activation and one Page Down/Page Up round trip; first execution pending",
+      "evidence": "Owner reports Page keys work after clicking the dropdown open and closed. Scan214921898Z exposes five visible named rows, HP1/2/3 and BP1/2; total menu count remains disputed. Measured candidate byte26; no raw enum order guessed.",
+      "coverage": {"status": "keyboard activation and adjacent-choice round trip only; full choice inventory and other plugin controls pending"},
+      "controls": [{
+        "id": "FilterTypeKeys",
+        "label": "Filter Type",
+        "class_name": "DeesserComboBoxFilterType",
+        "kind": "key_button",
+        "activation": "click_open_escape_close",
+        "positions": 5,
+        "dwell_ms": 5000,
+        "candidate_field": "filter_type",
+        "observed_field_offset": 26
+      }]
+    },
+    {
       "id": "deesser-filter-wheel",
       "panel": "Master-De-Esser",
       "panel_class": "Deesser",

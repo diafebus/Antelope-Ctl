@@ -503,6 +503,72 @@ except RuntimeError:
                         failed=1 if outcome in ('unchanged','bad_label') else 2
                         self.assertFalse((job/f'action-{failed}-ack.json').exists())
 
+    def test_page_key_trial_checks_activation_adjacency_wire_and_restore_before_ack(self):
+        from tools.afx_vm_pilot import run_job, load_plans
+        plan = load_plans()['deesser-filter-keys']; control = plan['controls'][0]
+        self.assertEqual([p for _, p in planned_actions(plan)], ['PageDown', 'PageUp'])
+        names = ['HighPass 1', 'HighPass 2', 'HighPass 3', 'BandPass 1', 'BandPass 2']
+        current = []; mode = {'value': 'ok'}
+        def wait(path, seconds, process=None):
+            if path.name == 'completed.json': return {'status': 'ok'}
+            index = int(path.name.split('-')[1])
+            if path.name.endswith('-request.json'):
+                if index == 1:
+                    data = bytes([0x73]).ljust(320, b'\0'); ep = 0x82
+                    if mode['value'] == 'activation_out': data = frame(0x20, [0xd5, 0x0e, 27, 0]); ep = 1
+                    current.append((2, 0, ep, data))
+                if index == 2 and mode['value'] == 'newer_edit':
+                    data = bytearray(frame(0x20, [0xd5, 0x0e, 27, 0])); data[26] = 2
+                    current.append((15, 0, 1, bytes(data)))
+                return {'action': index, 'control': control['id']}
+            instance = 1 if mode['value'] == 'wrong_instance' and index == 2 else 0
+            data = bytearray(frame(0x20, [0xd5, 0x0e, 27, instance])); data[26] = 1 if index == 1 else 0
+            if mode['value'] == 'other_field' and index == 2: data[25] = 1
+            if mode['value'] == 'same_raw' and index == 2: data[26] = 1
+            if mode['value'] == 'unstable_block' and index == 1:
+                other = bytearray(data); other[26] = 2
+                current.append((9, 0, 1, bytes(other)))
+            if mode['value'] != 'missing_out': current.append((index*10, 0, 1, bytes(data)))
+            else: current.append((index*10, 0, 0x82, bytes([0x73]).ljust(320, b'\0')))
+            result = {'status': 'ok', 'starting_selection': names[0],
+                'selection': names[1] if index == 1 else names[0],
+                'option_names': list(names), 'key': 'PageDown' if index == 1 else 'PageUp',
+                'keypresses': 1, 'dwell_ms': 5000, 'keyboard_focus_verified': True,
+                'activation_verified': True}
+            if mode['value'] == 'skip' and index == 1: result['selection'] = names[3]
+            if mode['value'] == 'wrong_restore' and index == 2: result['selection'] = names[1]
+            if mode['value'] == 'no_activation': result['activation_verified'] = False
+            if mode['value'] == 'no_focus': result['keyboard_focus_verified'] = False
+            if mode['value'] == 'repeat_key': result['keypresses'] = 2
+            if mode['value'] == 'wrong_key': result['key'] = 'End'
+            if mode['value'] == 'too_fast': result['dwell_ms'] = 100
+            if mode['value'] == 'changed_names' and index == 2: result['option_names'][-1] = 'changed'
+            return result
+        process = Mock(); process.poll.return_value = None
+        outcomes = ('ok', 'activation_out', 'newer_edit', 'wrong_instance', 'other_field', 'same_raw',
+                    'missing_out', 'skip', 'wrong_restore', 'no_activation', 'no_focus', 'repeat_key',
+                    'wrong_key', 'too_fast', 'changed_names', 'unstable_block')
+        with tempfile.TemporaryDirectory() as directory:
+            for outcome in outcomes:
+                with self.subTest(outcome=outcome):
+                    mode['value'] = outcome; current[:] = [(1, 0, 0x82, bytes([0x73]).ljust(320, b'\0'))]
+                    job = Path(directory)/outcome; job.mkdir(); (job/'request.json').write_text('{"version":2}')
+                    with patch('tools.afx_vm_pilot.validate_request', return_value=plan), \
+                         patch('tools.afx_vm_pilot.device_location', return_value={'bus':5,'address':15}), \
+                         patch('tools.afx_vm_pilot.Path.exists', side_effect=[True,False]), \
+                         patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                         patch('tools.afx_vm_pilot.read_reports', side_effect=lambda *a,**kw:list(current)), \
+                         patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
+                        if outcome == 'ok': run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
+                        else:
+                            with self.assertRaises(RuntimeError): run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
+                    if outcome == 'ok': self.assertTrue((job/'host-completed.json').is_file())
+                    else:
+                        failed = 2 if outcome in ('newer_edit','wrong_instance','other_field','same_raw','wrong_restore','changed_names') else 1
+                        self.assertFalse((job/f'action-{failed}-ack.json').exists())
+                    if outcome == 'activation_out': self.assertFalse((job/'action-1-go.json').exists())
+                    if outcome == 'newer_edit': self.assertFalse((job/'action-2-go.json').exists())
+
     def test_gui_toggle_requires_binary_change_restore_and_same_instance(self):
         from tools.afx_vm_pilot import run_job
         plan = {'id': 'test-toggle', 'panel': 'deesser', 'effect_id': 'deesser', 'channel': 2,

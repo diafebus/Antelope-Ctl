@@ -57,14 +57,35 @@ Processing polarity/readback and runtime writes remain unverified. The indicator
 above Chorus/Vibrato shows vibrato speed, per owner, and is excluded from
 mode/power verification. V12's older plan remains partial (power not captured).
 
-## Next capture: six Master De-Esser Filter Type choices
+## Next capture: Master De-Esser Page key trial
+
+Open Master De-Esser on unlinked AFX channel2 with the dropdown closed.
+Run `Run-AfxCapture.cmd`, enter `Master De-Esser`, press Enter and focus its
+title bar during the ten-second countdown. Linux must be waiting.
+
+The runner clicks Filter Type open, verifies the five visible named rows from
+the latest inventory, closes it with Escape without changing its selection,
+and verifies keyboard focus on that exact ComboBox. It sends one Page Down,
+waits **five seconds**, saves the selected value and screenshot, then waits for
+host verification before one Page Up returns to the starting value. No wheel
+events or preset changes are used. Start at a choice with a following row,
+such as HighPass1; starting at the last visible choice stops before any key.
+
+Host checks reject activation writes, skipped choices, unexpected effect or
+instance, parameter changes outside byte26, unstable blocks and newer edits
+before restoration. This is an adjacent-choice method trial; the total count
+discrepancy and full parameter coverage remain unresolved. The owner reports
+that keys require clicking the dropdown first. Windows activation, native key
+injection and the captured round trip still need execution verification.
+
+## Previous direct menu attempt
 
 Open Master De-Esser on unlinked AFX channel2. Run the same launcher and
 enter `Master De-Esser`; press Enter and focus its title bar during the ten-second
 countdown. Linux must be waiting. Leave mouse and keyboard alone.
 
 The wheel trials completed HighPass3 → BandPass1 → HighPass3, but the owner
-reports skipped entries even with partial notches. The next run uses no wheel.
+reports skipped entries even with partial notches. The direct-selection plan uses no wheel.
 It opens Filter Type, reads the six visible named entries, clicks each entry
 explicitly and holds each selected value for **five seconds**. Menu and panel
 screenshots plus passive USB evidence are saved. The final step restores the
@@ -85,7 +106,10 @@ popup containers only when their options become visible in this opening.
 Before/open screenshots and discovery metadata survive validation failures.
 Open-menu screenshots use screen copying without moving the pointer or changing
 focus; parameter screenshots follow selection and verified popup closure.
-The corrected Windows discovery and six-choice batch still need verification.
+The corrected discovery opened the menu in scan214921898Z but stopped before
+selection: screenshot and UIA both exposed five distinct choices against the
+plan's expected six. No OUT reports were captured. This plan is retained for
+reference; the current launcher uses the Page key method trial above.
 
 This captures Filter Type only. Knobs and the remaining plugin controls are
 outside this focused batch.

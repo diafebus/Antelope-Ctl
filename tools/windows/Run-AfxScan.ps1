@@ -26,7 +26,7 @@ $plan = $matchingPlans[0]
 $controlLimit = 3
 if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) { $controlLimit = 24 }
 if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
-    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions') }).Count -ne 0) {
+    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions', 'key_button') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
 }
 $panelLabel = $plan.panel -replace '[^a-zA-Z0-9_-]', '_'
@@ -52,16 +52,25 @@ public static class AfxScanInput {
         public uint data, flags, time;
         public UIntPtr extra;
     }
+    [StructLayout(LayoutKind.Sequential)] public struct Keyboard {
+        public ushort key, scan;
+        public uint flags, time;
+        public UIntPtr extra;
+    }
+    [StructLayout(LayoutKind.Explicit)] public struct Payload {
+        [FieldOffset(0)] public Mouse mouse;
+        [FieldOffset(0)] public Keyboard keyboard;
+    }
     [StructLayout(LayoutKind.Sequential)] public struct Input {
         public uint type;
-        public Mouse mouse;
+        public Payload payload;
     }
     [DllImport("user32.dll", SetLastError=true)]
     public static extern uint SendInput(uint count, Input[] inputs, int size);
     public static void Click() {
         Input[] inputs = new Input[2];
-        inputs[0].mouse.flags = 2;
-        inputs[1].mouse.flags = 4;
+        inputs[0].payload.mouse.flags = 2;
+        inputs[1].payload.mouse.flags = 4;
         if (SendInput(2, inputs, Marshal.SizeOf(typeof(Input))) != 2) {
             try { Held(false); } finally {
                 throw new Exception("Mouse injection failed; release attempted, no retry permitted.");
@@ -71,16 +80,34 @@ public static class AfxScanInput {
     public static void Wheel(int delta) {
         if (delta == 0 || Math.Abs(delta) > 30) throw new Exception("Only a bounded partial wheel notch is allowed.");
         Input[] inputs = new Input[1];
-        inputs[0].mouse.flags = 0x0800;
-        inputs[0].mouse.data = unchecked((uint)delta);
+        inputs[0].payload.mouse.flags = 0x0800;
+        inputs[0].payload.mouse.data = unchecked((uint)delta);
         if (SendInput(1, inputs, Marshal.SizeOf(typeof(Input))) != 1)
             throw new Exception("Wheel injection failed; no retry permitted.");
     }
     public static void Held(bool down) {
         Input[] inputs = new Input[1];
-        inputs[0].mouse.flags = down ? 2u : 4u;
+        inputs[0].payload.mouse.flags = down ? 2u : 4u;
         if (SendInput(1, inputs, Marshal.SizeOf(typeof(Input))) != 1)
             throw new Exception("Mouse button injection failed.");
+    }
+    public static void PageKey(int key, IntPtr window) {
+        if (key != 0x21 && key != 0x22) throw new Exception("Only Page Up/Down are permitted.");
+        if (GetForegroundWindow() != window || GetAsyncKeyState(27) < 0 ||
+            GetAsyncKeyState(0x21) < 0 || GetAsyncKeyState(0x22) < 0 ||
+            GetAsyncKeyState(0x10) < 0 || GetAsyncKeyState(0x11) < 0 || GetAsyncKeyState(0x12) < 0)
+            throw new Exception("Focus changed or a navigation/modifier key is held; no key sent.");
+        Input[] inputs = new Input[2];
+        inputs[0].type = inputs[1].type = 1;
+        inputs[0].payload.keyboard.key = inputs[1].payload.keyboard.key = (ushort)key;
+        // These are extended navigation keys. The second event releases it.
+        inputs[0].payload.keyboard.flags = 1;
+        inputs[1].payload.keyboard.flags = 3;
+        if (SendInput(2, inputs, Marshal.SizeOf(typeof(Input))) != 2) {
+            Input[] release = new Input[] { inputs[1] };
+            SendInput(1, release, Marshal.SizeOf(typeof(Input)));
+            throw new Exception("Page key injection failed; release attempted, no retry permitted.");
+        }
     }
     public static void Sweep(int x, int y, int delta, IntPtr window) {
         int top = GetSystemMetrics(77), height = GetSystemMetrics(79);
@@ -258,7 +285,7 @@ function Close-ConfirmedMenu {
         $script:menuOpened = $false
     }
 }
-function Open-NamedMenu([string]$Suffix) {
+function Open-NamedMenu([string]$Suffix, [switch]$ActivationClick) {
     Assert-Panel
     $beforeSelection = $menuValue.Current.Value
     $script:menuOpened = $false
@@ -270,12 +297,18 @@ function Open-NamedMenu([string]$Suffix) {
     if ($beforeRows.Count -ne 0) { throw 'Adjacent menu rows already visible before invocation; no menu opened.' }
     $beforeOptionIds = @($beforeRows | ForEach-Object { $_.id })
     $invoke = $null
-    if (-not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
+    if (-not $ActivationClick -and -not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
         throw 'Menu lacks an Invoke pattern; no guessed click.'
     }
     Assert-Panel
     if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Menu changed during discovery; no menu opened.' }
-    $invoke.Invoke()
+    if ($ActivationClick) {
+        if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
+            [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Cannot position dropdown activation pointer.' }
+        Assert-Panel
+        if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Selection changed before activation click.' }
+        [AfxScanInput]::Click()
+    } else { $invoke.Invoke() }
     Start-Sleep -Milliseconds 1500
     # This process-only check permits metadata discovery, never input delivery.
     # Popup handles are accepted only after the named/anchored list is verified.
@@ -551,6 +584,19 @@ try {
     $crop = [System.Drawing.Rectangle]::new([int]$buttonBounds.X - 2, [int]$buttonBounds.Y - 2,
         [int]$buttonBounds.Width + 4, [int]$buttonBounds.Height + 4)
     $filePrefix = $panelLabel + '-' + $control.id
+    if ($control.kind -in @('menu_positions', 'key_button')) {
+        $menuDesktop = [System.Windows.Automation.AutomationElement]::RootElement
+        $menuOwnerCondition = [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::ProcessIdProperty, [int]$root.Current.ProcessId)
+        $menuOptionCondition = [System.Windows.Automation.OrCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem),
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
+        $menuScreen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+        $menuRootId = $root.GetRuntimeId() -join ':'
+        $menuExtent = [int]$control.positions * 80 + 32
+        $menuSearchBounds = [System.Windows.Rect]::new($buttonBounds.X - 32,
+            $buttonBounds.Top - $menuExtent, 464, $buttonBounds.Height + 2 * $menuExtent)
+    }
     if ($control.kind -eq 'menu_positions') {
         if ([int]$control.positions -lt 2 -or [int]$control.positions -gt 8 -or
             [int]$control.dwell_ms -lt 3000 -or [int]$control.dwell_ms -gt 10000 -or
@@ -563,17 +609,6 @@ try {
         }
         $startingSelection = $menuValue.Current.Value
         if ([string]::IsNullOrWhiteSpace($startingSelection)) { throw 'Starting menu choice is unknown.' }
-        $menuDesktop = [System.Windows.Automation.AutomationElement]::RootElement
-        $menuOwnerCondition = [System.Windows.Automation.PropertyCondition]::new(
-            [System.Windows.Automation.AutomationElement]::ProcessIdProperty, [int]$root.Current.ProcessId)
-        $menuOptionCondition = [System.Windows.Automation.OrCondition]::new(
-            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem),
-            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
-        $menuScreen = [System.Windows.Forms.SystemInformation]::VirtualScreen
-        $menuRootId = $root.GetRuntimeId() -join ':'
-        $menuExtent = [int]$control.positions * 80 + 32
-        $menuSearchBounds = [System.Windows.Rect]::new($buttonBounds.X - 32,
-            $buttonBounds.Top - $menuExtent, 464, $buttonBounds.Height + 2 * $menuExtent)
         $optionNames = @(); $startingPosition = -1; $acceptedSelection = $startingSelection
         $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
             [int]$windowBounds.Width, [int]$windowBounds.Height)
@@ -672,6 +707,74 @@ try {
             }
             $null = Wait-HostFile "action-$index-ack.json" 10
             $acceptedToggle = $nowToggle
+        }
+        continue
+    }
+    if ($control.kind -eq 'key_button') {
+        if ($control.dwell_ms -ne 5000 -or
+            $button.Current.ControlType -ne [System.Windows.Automation.ControlType]::ComboBox) {
+            throw 'Page key trial requires an exact reviewed ComboBox and five-second dwell.'
+        }
+        $selection = $null
+        if (-not $button.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$selection)) {
+            throw 'Key target selected value is unavailable.'
+        }
+        $initialSelection = $selection.Current.Value
+        if ([string]::IsNullOrWhiteSpace($initialSelection)) { throw 'Starting key selection is unknown.' }
+        $acceptedSelection = $initialSelection
+        $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
+            [int]$windowBounds.Width, [int]$windowBounds.Height)
+        $menuValue = $selection
+        $activationRows = @(Open-NamedMenu 'key-activation' -ActivationClick)
+        $activationNames = @($activationRows | ForEach-Object { $_.name })
+        Close-ConfirmedMenu
+        Assert-Panel
+        if ($selection.Current.Value -cne $initialSelection -or
+            @(Visible-MenuRows (@($visible[0]) + (Menu-Windows))).Count -ne 0) {
+            throw 'Activation did not close the dropdown without changing selection; no key sent.'
+        }
+        $initialPositions = @(0..($activationNames.Count - 1) | Where-Object { $activationNames[$_] -ceq $initialSelection })
+        if ($initialPositions.Count -ne 1 -or $initialPositions[0] -eq $activationNames.Count - 1) {
+            throw 'Page Down needs a known starting choice with a following visible option; no key sent.'
+        }
+        foreach ($keyPhase in @(1, 2)) {
+            $index++
+            Assert-Panel
+            if ($selection.Current.Value -cne $acceptedSelection) { throw 'Selection changed outside key trial.' }
+            Write-Record (Join-Path $job "action-$index-request.json") @{ action = $index; control = $control.id }
+            $null = Wait-HostFile "action-$index-go.json" 10
+            Assert-Panel
+            if ($selection.Current.Value -cne $acceptedSelection) { throw 'Selection changed while waiting; no key sent.' }
+            if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
+                [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Cannot hover key target.' }
+            $button.SetFocus()
+            Assert-Panel
+            if (-not $button.Current.HasKeyboardFocus -or $selection.Current.Value -cne $acceptedSelection) {
+                throw 'Exact ComboBox keyboard focus/value was not preserved; no key sent.'
+            }
+            $keyName = 'PageDown'; $keyCode = 0x22
+            if ($keyPhase -eq 2) { $keyName = 'PageUp'; $keyCode = 0x21 }
+            [AfxScanInput]::PageKey($keyCode, $handle)
+            Start-Sleep -Milliseconds 5000
+            Assert-Panel
+            if (-not $button.Current.HasKeyboardFocus) { throw 'Key target lost keyboard focus during dwell.' }
+            $nowSelection = $selection.Current.Value
+            $expectedSelection = $activationNames[$initialPositions[0] + 1]
+            if ($keyPhase -eq 2) { $expectedSelection = $initialSelection }
+            if ([string]::IsNullOrWhiteSpace($nowSelection) -or
+                $nowSelection -cne $expectedSelection) {
+                throw 'Page key did not change/restore selection; no further key sent.'
+            }
+            $image = Save-Button ($filePrefix + '-' + $keyName + '.png'); $image.Dispose()
+            if ($selection.Current.Value -cne $nowSelection) { throw 'Selection changed during key screenshot.' }
+            Write-Record (Join-Path $job "action-$index-done.json") @{
+                status = 'ok'; starting_selection = $initialSelection; selection = $nowSelection;
+                key = $keyName; keypresses = 1; dwell_ms = 5000; keyboard_focus_verified = $true;
+                activation_verified = $true; option_names = $activationNames;
+                source = 'clicked open/close activation and focused Page key GUI round trip; not device readback'
+            }
+            $null = Wait-HostFile "action-$index-ack.json" 10
+            $acceptedSelection = $nowSelection
         }
         continue
     }
@@ -869,7 +972,7 @@ try {
     $changed = $null
     }
     Write-Record (Join-Path $job 'completed.json') @{
-        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -in @('knob_range', 'wheel_button', 'menu_positions') -or $_.feedback -in @('captured_toggle', 'gui_toggle') }).Count -eq 0);
+        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -in @('knob_range', 'wheel_button', 'menu_positions', 'key_button') -or $_.feedback -in @('captured_toggle', 'gui_toggle') }).Count -eq 0);
         device_readback_verified = $false; range_knobs_left_at = 'maximum';
         restoration_source = 'images, measured toggle writes or GUI selection checks; range knobs intentionally not restored'
     }

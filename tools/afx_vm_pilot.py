@@ -53,6 +53,8 @@ def planned_actions(plan):
             phases = ['minimum', 'maximum']
         elif control['kind'] == 'wheel_button':
             phases = ['wheel forward', 'wheel back']
+        elif control['kind'] == 'key_button':
+            phases = ['PageDown', 'PageUp']
         elif control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
             phases = [f'position-{n}' for n in range(1, control['positions'] + 1)]
             if control['kind'] in ('selector_positions', 'menu_positions'):
@@ -106,9 +108,13 @@ def load_plans():
         if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
-                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
+                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions', 'key_button') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
+            if control['kind'] == 'key_button' and (control.get('dwell_ms') != 5000
+                    or type(control.get('positions')) is not int or not 2 <= control['positions'] <= 8
+                    or control.get('activation') != 'click_open_escape_close'):
+                raise ValueError('Key trial requires reviewed finite activation and five-second dwell')
             if control['kind'] == 'menu_positions' and (type(control.get('positions')) is not int
                     or not 2 <= control['positions'] <= 8 or type(control.get('dwell_ms')) is not int
                     or not 3000 <= control['dwell_ms'] <= 10000):
@@ -147,7 +153,7 @@ def validate_wire_controls(plan, catalog):
     effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
     implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
     for control in plan['controls']:
-        if control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
+        if control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions', 'key_button'):
             candidate = implementation['parameter_observation']['preserved_fields'][control['candidate_field']]
             if control['observed_field_offset'] != candidate['offset']:
                 raise ValueError('Selector candidate must match its catalog preserved field')
@@ -259,6 +265,30 @@ def verify_wheel_pulses(completed, policy, phase, expected_start, forward_count=
     if pulses[-1]['selection'] != completed.get('selection'):
         raise RuntimeError('Wheel final selection differs from its pulse evidence')
     return len(pulses)
+
+
+def verify_key_result(completed, control, phase, initial=None, changed=None, previous_names=None):
+    start, selected = completed.get('starting_selection'), completed.get('selection')
+    names = completed.get('option_names')
+    if (completed.get('key') != phase or type(completed.get('keypresses')) is not int
+            or completed['keypresses'] != 1 or completed.get('dwell_ms') != 5000
+            or completed.get('keyboard_focus_verified') is not True
+            or completed.get('activation_verified') is not True
+            or not isinstance(start, str) or not start.strip()
+            or not isinstance(selected, str) or not selected.strip()):
+        raise RuntimeError('Key trial lacks exact key, focus, activation or paced GUI evidence')
+    if (not isinstance(names, list) or len(names) != control['positions']
+            or any(not isinstance(n, str) or not n.strip() for n in names)
+            or len(set(names)) != len(names) or start not in names
+            or (previous_names is not None and names != previous_names)):
+        raise RuntimeError('Key activation choices are missing or changed')
+    if phase == 'PageDown':
+        position = names.index(start)
+        if position + 1 >= len(names) or selected != names[position + 1]:
+            raise RuntimeError('Page Down did not select the next observed choice')
+    elif phase != 'PageUp' or start != initial or selected != initial or changed == selected:
+        raise RuntimeError('Page Up did not restore the starting choice')
+    return start, selected
 
 
 def verify_action_events(events, expected=None, effect_type=75):
@@ -396,10 +426,11 @@ def run_job(job, profile):
     wheel_selections = {}
     menu_names = {}
     menu_starts = {}
+    key_states = {}
     block_minima = {}
     actions = planned_actions(plan)
     has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
-    has_wheel = any(c['kind'] in ('wheel_button', 'menu_positions') for c in plan['controls'])
+    has_wheel = any(c['kind'] in ('wheel_button', 'menu_positions', 'key_button') for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
         process = subprocess.Popen(['dumpcap', '-i', interface, '-s', '0',
             '-a', ('duration:600' if len(plan['controls']) > 3 else 'duration:240') if has_knobs else ('duration:180' if has_wheel else 'duration:60'),
@@ -421,9 +452,12 @@ def run_job(job, profile):
                 if time.monotonic() >= deadline:
                     raise RuntimeError('No complete Orion IN reports; guest gestures remain blocked')
                 time.sleep(.3)
+            ready_frame = max(r[0] for r in reports)
+            start_ready = time.time()
             write_json(job/'ready.json', {'version': 1, 'capture_ready': True})
             for index, (control, phase) in enumerate(actions, 1):
-                action_request = wait_file(job/f'action-{index}-request.json', 15, process)
+                action_request = wait_file(job/f'action-{index}-request.json',
+                    45 if control['kind'] == 'key_button' and index == 1 else 15, process)
                 expected_request = {'action': index, 'control': control['id']}
                 if request['version'] == 1:
                     expected_request = {'action': index}
@@ -435,6 +469,18 @@ def run_job(job, profile):
                 if not before_reports:
                     raise RuntimeError('No current capture boundary; no click permitted')
                 first_frame = max(row[0] for row in before_reports)
+                if control['kind'] == 'key_button' and index == 1:
+                    setup = {'start_frame_exclusive': ready_frame, 'end_frame_inclusive': first_frame,
+                             'start_epoch': start_ready, 'end_epoch': time.time()}
+                    setup_events = labelled_actions(before_reports, [setup], out_ep, bypass_layout)[0]['events']
+                    write_json(job/'key-activation-window.json', {**setup, 'events': setup_events})
+                    if setup_events:
+                        raise RuntimeError('Dropdown activation sent OUT controls; no key permitted')
+                if control['kind'] == 'key_button' and control['id'] in key_states:
+                    previous_key = key_states[control['id']]
+                    if any(number > previous_key['boundary'] and ep == out_ep and data[0] == 0x70
+                           for number, _, ep, data in before_reports):
+                        raise RuntimeError('New OUT since accepted key choice; no restoration key permitted')
                 if control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
                     prior = [data for _, _, ep, data in before_reports if ep == out_ep and data[0] == 0x70 and data[4] in PARAMETER_OPCODES and data[16] == 0xd5 and data[18] == effect_type and (expected_target is None or data[19] == expected_target[3])]
                     if not prior and control['kind'] == 'selector_cycle':
@@ -531,6 +577,8 @@ def run_job(job, profile):
                     action_timeout = 10 + math.ceil(plan['wheel_policy']['pause_ms'] * plan['wheel_policy']['max_pulses'] / 1000)
                 if control['kind'] == 'menu_positions':
                     action_timeout = 15 + math.ceil(control['dwell_ms'] / 1000)
+                if control['kind'] == 'key_button':
+                    action_timeout = 15
                 completed = wait_file(job/f'action-{index}-done.json', action_timeout, process)
                 window = {'action': index, 'control': control['id'], 'label': control['label'],
                           'gesture': phase,
@@ -590,6 +638,30 @@ def run_job(job, profile):
                     if control['id'] in menu_starts and menu_starts[control['id']] != initial:
                         raise RuntimeError('Starting menu choice changed during capture')
                     menu_starts[control['id']] = initial
+                if control['kind'] == 'key_button':
+                    prior = key_states.get(control['id'])
+                    initial, selection = verify_key_result(completed, control, phase,
+                        prior['initial'] if prior else None, prior['changed'] if prior else None,
+                        prior['names'] if prior else None)
+                    offset = control['observed_field_offset']
+                    verify_wire_changes(reports, first_frame, {'wire': {'offset': offset}},
+                        effect_type, expected_target[3], out_ep)
+                    samples = [data[20:] for number, _, ep, data in reports if number > first_frame
+                        and ep == out_ep and data[0] == 0x70 and data[4] in PARAMETER_OPCODES
+                        and data[16] == 0xd5 and data[18] == effect_type and data[19] == expected_target[3]]
+                    if not samples or len(set(samples)) != 1:
+                        raise RuntimeError('One Page key did not establish one stable captured parameter block')
+                    payload = samples[-1]
+                    if phase == 'PageDown':
+                        key_states[control['id']] = {'initial': initial, 'changed': selection,
+                            'payload': payload, 'names': completed['option_names'],
+                            'boundary': window['end_frame_inclusive']}
+                    else:
+                        differences = {20 + n for n, (a, b) in enumerate(zip(prior['payload'], payload)) if a != b}
+                        if differences != {offset}:
+                            raise RuntimeError('Key round trip changed another field or no captured selector value')
+                    window['observed_key_raw'] = payload[offset - 20]
+                    window['key_state_source'] = 'labelled captured writes and GUI return; no independent initial readback'
                 if control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
                     offset = control['observed_field_offset']
                     verify_wire_changes(reports, first_frame, {'wire': {'offset': offset}}, effect_type, expected_target[3], out_ep)

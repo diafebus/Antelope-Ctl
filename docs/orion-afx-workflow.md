@@ -387,5 +387,22 @@ separate popup windows, applying dropdown geometry before counting. It compares
 visible rows across opening even when Qt reuses a popup container. Baseline and
 open-menu screenshots/metadata are saved before validation, without pointer or
 focus changes. Parameter screenshots follow verified selection and closure.
-Corrected Windows execution remains pending; other plugin controls and presets
-are excluded.
+Other plugin controls and presets are excluded from this selector batch.
+
+The corrected discovery run `scan-Master-De-Esser-20261009T214921898Z`
+opened Filter Type and stopped before selection because only five named rows
+were exposed: HighPass1/2/3 and BandPass1/2. The screenshot shows the same five
+choices; the selected HighPass1 header is separate. This does not resolve the
+earlier owner-confirmed total of six. The1570packets contained785complete IN
+reports, no OUT reports and zero drops.
+
+The owner now reports Page Up/Down move one value after clicking the dropdown
+open and closed; hovering alone applies to the wheel. Next is the bounded
+`deesser-filter-keys` trial: click open, verify the five currently visible named
+rows, Escape-close unchanged, verify exact ComboBox keyboard focus, Page Down
+to the next observed name,5000ms dwell/screenshot/host verification, then one
+Page Up back to the initial name. The passive host rejects activation OUT,
+wrong/skipped labels, other fields or instances, unstable blocks and newer edits
+before the restore key. It observes byte26 writes without an independent
+initial state readback. First Windows key execution and full inventory remain
+pending; no menu count, raw ordering or runtime control contract is promoted.
