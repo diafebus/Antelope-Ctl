@@ -5,8 +5,11 @@ Never opens HID or sends device commands. Requests match reviewed plans or
 bounded metadata-generated plans on channel2. Evidence remains local.
 """
 import argparse
+from contextlib import contextmanager
+import fcntl
 import json
 import math
+import os
 import re
 from pathlib import Path
 import subprocess
@@ -19,6 +22,28 @@ from tools.scan_afx_capture import analyze_reports, PARAMETER_OPCODES
 from tools.afx_scan_discovery import discovery_plan, block_feedback
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@contextmanager
+def recorder_lock(results):
+    """One coordinator per shared folder; kernel releases locks after exit.
+
+    Keep the inode after releasing: unlinking it could let another process
+    lock a different inode while a listener still owns the old one.
+    """
+    with (results/'.linux-recorder.lock').open('a+') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError('A recorder is already waiting for this shared folder; use that recorder') from None
+        try:
+            lock.seek(0)
+            lock.truncate()
+            lock.write(json.dumps({'pid': os.getpid()}))
+            lock.flush()
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
 
 
 def planned_actions(plan):
@@ -619,9 +644,19 @@ def main():
                         for _, _, ep, data in reports) else 1
     if args.shared is None:
         parser.error('--shared or --preflight is required')
-    print(f"Ready for GUI scan/discovery requests; Orion on usbmon{location['bus']}. No HID controller opened.", flush=True)
     results = args.shared/'results'
     results.mkdir(exist_ok=True)
+    try:
+        with recorder_lock(results):
+            return listen(args, profile, location, results)
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr, flush=True)
+        return 1
+
+
+def listen(args, profile, location, results):
+    # Hold the exclusive lock before observing or serving any jobs.
+    print(f"Ready for GUI scan/discovery requests; Orion on usbmon{location['bus']}. No HID controller opened.", flush=True)
     def jobs():
         return set(results.glob('scan-*')) | set(results.glob('pilot-Instinct-*'))
     existing = jobs()

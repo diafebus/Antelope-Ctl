@@ -10,6 +10,31 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def test_recorder_lock_excludes_another_process_and_releases_after_error(self):
+        import subprocess
+        import sys
+        from tools.afx_vm_pilot import recorder_lock
+        child = '''
+import sys
+from pathlib import Path
+from tools.afx_vm_pilot import recorder_lock
+try:
+    with recorder_lock(Path(sys.argv[1])): pass
+except RuntimeError:
+    sys.exit(7)
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory)
+            with self.assertRaisesRegex(ValueError, 'trial failure'):
+                with recorder_lock(results):
+                    before = (results/'.linux-recorder.lock').read_bytes()
+                    other = subprocess.run([sys.executable, '-c', child, directory], capture_output=True, timeout=5)
+                    self.assertEqual(other.returncode, 7, other.stderr)
+                    self.assertEqual((results/'.linux-recorder.lock').read_bytes(), before)
+                    raise ValueError('trial failure')
+            other = subprocess.run([sys.executable, '-c', child, directory], capture_output=True, timeout=5)
+            self.assertEqual(other.returncode, 0, other.stderr)
+
     def discovery_inventory(self):
         return {'version': 1, 'panel_name': 'Master De-Esser', 'panel_class': 'Deesser',
                 'process_name': 'orionstudioiii', 'window_size': {'width': 1000, 'height': 400},

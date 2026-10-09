@@ -32,6 +32,9 @@ and leave the mouse alone. Discovery continues into the scan without another
 Enter or launch. Knobs remain at maximum; binary switches return to their
 starting GUI state. The recorder stops on scan failure so evidence can be
 reviewed, and expires after the configured idle period.
+Only one Linux recorder can serve a shared folder. A second listener exits
+before reading jobs or writing their capture/handshake files. Its exclusive
+lock releases automatically when the owning process exits.
 
 Discovery produces endpoint **candidates**, not numerical range or readback
 proof. It requires captured movement after priming, then two further completed
