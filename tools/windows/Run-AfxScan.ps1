@@ -31,6 +31,7 @@ Add-Type -ReferencedAssemblies 'System.Drawing.dll' -TypeDefinition @'
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading;
 public static class AfxScanInput {
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
@@ -38,6 +39,7 @@ public static class AfxScanInput {
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
+    [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
     [StructLayout(LayoutKind.Sequential)] public struct Mouse {
         public int dx, dy;
         public uint data, flags, time;
@@ -61,6 +63,26 @@ public static class AfxScanInput {
         inputs[0].mouse.flags = down ? 2u : 4u;
         if (SendInput(1, inputs, Marshal.SizeOf(typeof(Input))) != 1)
             throw new Exception("Mouse button injection failed.");
+    }
+    public static void Sweep(int x, int y, int delta, IntPtr window) {
+        int top = GetSystemMetrics(77), height = GetSystemMetrics(79);
+        if (height <= 8) throw new Exception("Cannot determine desktop bounds.");
+        int end = Math.Max(top + 4, Math.Min(top + height - 5, y + delta));
+        int distance = end - y;
+        if (Math.Abs(distance) < 16) throw new Exception("Insufficient screen room for drag.");
+        int samples = Math.Max(2, (int)Math.Ceiling(Math.Abs(distance) / 4.0));
+        try {
+            Held(true);
+            Thread.Sleep(100);
+            for (int i=1; i<=samples; i++) {
+                if (GetForegroundWindow() != window || GetAsyncKeyState(27) < 0)
+                    throw new Exception("Focus changed or Escape pressed during sweep.");
+                if (!SetCursorPos(x, y + (int)Math.Round(distance * (double)i / samples)))
+                    throw new Exception("Pointer sweep failed.");
+                Thread.Sleep(12);
+            }
+            Thread.Sleep(100);
+        } finally { Held(false); }
     }
     public static double Difference(Bitmap a, Bitmap b) {
         if (a.Size != b.Size) return 1;
@@ -142,13 +164,11 @@ function Drag-Knob([int]$Delta) {
     $x = [int]($buttonBounds.X + $buttonBounds.Width / 2)
     $y = [int]($buttonBounds.Y + $buttonBounds.Height / 2)
     if (-not [AfxScanInput]::SetCursorPos($x, $y)) { throw 'Cannot position pointer.' }
-    try {
-        [AfxScanInput]::Held($true)
-        Start-Sleep -Milliseconds 100
-        Assert-Panel
-        if (-not [AfxScanInput]::SetCursorPos($x, ($y + $Delta))) { throw 'Drag failed.' }
-        Start-Sleep -Milliseconds 150
-    } finally { [AfxScanInput]::Held($false) }
+    # One continuous held sweep. Some controls limit each move event, so a
+    # single pointer jump is insufficient even when its distance is large.
+    # Native motion avoids expensive UI Automation traversal at every point.
+    [AfxScanInput]::Sweep($x, $y, $Delta, $handle)
+    Assert-Panel
     # Re-enter the knob after the large sweep so its numeric status is visible.
     [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Left + 8), [int]($windowBounds.Bottom - 8))
     Start-Sleep -Milliseconds 200

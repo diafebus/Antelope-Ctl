@@ -21,6 +21,14 @@ large sweeps; wire events and field ranges need independent offline review.
 `instinct-knob-ranges-remaining` resumes with Boost Gain and the remaining15
 controls, avoiding a repeat of the five completed controls. It leaves maximum
 values as authorized. Missing numeric labels or unrelated writes still stop.
+The first resume stopped on Boost Gain: each single large pointer jump changed
+its wire float by only1 (−0.5,−1.5,−2.5,−3.5), so four jumps did not establish
+an endpoint. The runner now emits a continuous held trajectory across the
+available desktop height, with motion samples inside one press/release. Native
+focus/Escape checks run during movement; UI Automation checks run before/after
+the sweep rather than at every motion sample. This replacement still needs
+its first Windows trial. No Boost Gain endpoint range is claimed from those
+four intermediate values.
 
 `Run-AfxScan.cmd` now offers `instinct-speed-range`, a candidate shared gesture
 for the Speed knob on unlinked AFX2. Start the Linux listener first. The runner
