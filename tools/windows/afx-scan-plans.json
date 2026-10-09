@@ -231,6 +231,130 @@
           "status_pattern": "^VOLUME:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
         }
       ]
+    },
+    {
+      "id": "instinct-knob-ranges-remaining",
+      "panel": "Instinct",
+      "panel_class": "Instinct",
+      "effect_id": "instinct",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "resume after five completed controls; ambiguous labels retained",
+      "evidence": "First full batch completed Punch/Body/Speed/Character/BoostFreq. BoostGain wire float@40 changes -0.5/+0.5 despite GAIN0DB status. Resume remaining16 controls; mark unchanged display labels for wire review.",
+      "controls": [
+        {
+          "id": "BoostGainPot",
+          "label": "BoostGain",
+          "class_name": "BoostGainPot",
+          "kind": "knob_range",
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
+        },
+        {
+          "id": "GainPot",
+          "label": "Gain",
+          "class_name": "GainPot",
+          "kind": "knob_range",
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "GainModPot",
+          "label": "GainMod",
+          "class_name": "GainModPot",
+          "kind": "knob_range",
+          "status_pattern": "^GAIN\\ MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "FilterFreqPot",
+          "label": "FilterFreq",
+          "class_name": "FilterFreqPot",
+          "kind": "knob_range",
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+        },
+        {
+          "id": "FilterQPot",
+          "label": "FilterQ",
+          "class_name": "FilterQPot",
+          "kind": "knob_range",
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "FilterMixPot",
+          "label": "FilterMix",
+          "class_name": "FilterMixPot",
+          "kind": "knob_range",
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "MorphModPot",
+          "label": "MorphMod",
+          "class_name": "MorphModPot",
+          "kind": "knob_range",
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "MorphAmountPot",
+          "label": "MorphAmount",
+          "class_name": "MorphAmountPot",
+          "kind": "knob_range",
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "BiasModPot",
+          "label": "BiasMod",
+          "class_name": "BiasModPot",
+          "kind": "knob_range",
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "BiasAmountPot",
+          "label": "BiasAmount",
+          "class_name": "BiasAmountPot",
+          "kind": "knob_range",
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "PFFreqPot",
+          "label": "PFFreq",
+          "class_name": "PFFreqPot",
+          "kind": "knob_range",
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+        },
+        {
+          "id": "PFModPot",
+          "label": "PFMod",
+          "class_name": "PFModPot",
+          "kind": "knob_range",
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "PFQPot",
+          "label": "PFQ",
+          "class_name": "PFQPot",
+          "kind": "knob_range",
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "PFMixPot",
+          "label": "PFMix",
+          "class_name": "PFMixPot",
+          "kind": "knob_range",
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "MixPot",
+          "label": "Mix",
+          "class_name": "MixPot",
+          "kind": "knob_range",
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+        },
+        {
+          "id": "VolumePot",
+          "label": "Volume",
+          "class_name": "VolumePot",
+          "kind": "knob_range",
+          "status_pattern": "^VOLUME:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
+        }
+      ]
     }
   ]
 }

@@ -1982,6 +1982,110 @@
                   "endpoint_phase_seconds": 5.812,
                   "evidence": "Local scan-Instinct-20261009T172307200Z/Instinct-channel2.pcapng: Speed numeric0/100%, float32-le@28 values0/1, intermediate0.96 frame3925. Only bytes28..31 vary, type75/instance1;5914packets/zero drops. Owner confirms fast movement."
                 }
+              },
+              "punch": {
+                "label": "Punch",
+                "ui_class": "PunchPot",
+                "offset": 20,
+                "width": 4,
+                "encoding": "float32-le",
+                "observed_wire_range": [
+                  0.0,
+                  1.0
+                ],
+                "observed_display_range": [
+                  -100,
+                  100
+                ],
+                "display_unit": "%",
+                "status": "capture-observed endpoints; scale law unverified",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "minimum": 2260,
+                  "maximum": 4592
+                },
+                "evidence": [
+                  "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+                ]
+              },
+              "body": {
+                "label": "Body",
+                "ui_class": "BodyPot",
+                "offset": 24,
+                "width": 4,
+                "encoding": "float32-le",
+                "observed_wire_range": [
+                  0.0,
+                  1.0
+                ],
+                "observed_display_range": [
+                  -100,
+                  100
+                ],
+                "display_unit": "%",
+                "status": "capture-observed endpoints; scale law unverified",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "minimum": 7794,
+                  "maximum": 10222
+                },
+                "evidence": [
+                  "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+                ]
+              },
+              "character": {
+                "label": "Character",
+                "ui_class": "CharacterPot",
+                "offset": 32,
+                "width": 4,
+                "encoding": "float32-le",
+                "observed_wire_range": [
+                  0.0,
+                  3.0
+                ],
+                "observed_display_range": [
+                  0,
+                  100
+                ],
+                "display_unit": "%",
+                "status": "capture-observed endpoints; scale law unverified",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "minimum": 19202,
+                  "maximum": 20870
+                },
+                "evidence": [
+                  "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+                ]
+              },
+              "boost_frequency": {
+                "label": "Boost frequency",
+                "ui_class": "BoostFreqPot",
+                "offset": 36,
+                "width": 4,
+                "encoding": "float32-le",
+                "observed_wire_range": [
+                  0.0,
+                  100.0
+                ],
+                "observed_display_range": [
+                  60,
+                  12000
+                ],
+                "display_unit": "Hz",
+                "status": "capture-observed endpoints; scale law unverified",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "minimum": 24232,
+                  "maximum": 26160
+                },
+                "evidence": [
+                  "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+                ]
               }
             },
             "startup_readback_observation": {

@@ -256,11 +256,14 @@ def run_job(job, profile):
                     time.sleep(.2)
                 windows.append(window)
                 write_json(job/'action-windows.json', windows)
-                unchanged_minimum = (control['kind'] == 'knob_range' and phase == 'minimum'
+                unchanged_endpoint = (control['kind'] == 'knob_range'
                                      and completed.get('starting_value') == completed.get('displayed_value')
                                      and 'displayed_value' in completed)
-                if events or not unchanged_minimum:
+                if events or not unchanged_endpoint:
                     expected_target = verify_action_events(events, expected_target, effect_type)
+                window['wire_events_observed'] = bool(events)
+                window['endpoint_range_verified'] = False
+                write_json(job/'action-windows.json', windows)
                 if completed.get('status') != 'ok':
                     raise RuntimeError('Guest visual verification failed; stop for review')
                 write_json(job/f'action-{index}-ack.json', {'status': 'ok'})

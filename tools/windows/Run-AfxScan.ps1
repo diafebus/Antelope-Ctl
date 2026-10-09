@@ -183,17 +183,21 @@ function Run-KnobRange {
             if (($phase -eq 'minimum' -and $next -gt $currentValue) -or
                 ($phase -eq 'maximum' -and $next -lt $currentValue)) { throw 'Drag direction differs from the reviewed gesture.' }
             if ($next -eq $currentValue) { $stable++ } else { $stable = 0 }
-            if ($stable -ge 1) { $finished = $true; $currentValue = $next; break }
+            if ($stable -ge 1 -and $step -ge 1) { $finished = $true; $currentValue = $next; break }
             $currentValue = $next
         }
         if (-not $finished) { throw 'Large sweeps did not establish a stable endpoint; stopped.' }
-        if ($phase -eq 'maximum' -and $currentValue -le $rangeValues[0]) { throw 'Knob range did not change.' }
+        $labelStatus = 'endpoint label observed'
+        if ($phase -eq 'maximum' -and $currentValue -eq $rangeValues[0]) {
+            $labelStatus = 'unchanged label; wire range needs review'
+        }
         $rangeValues += $currentValue
         $image = Save-Button ($filePrefix + '-' + $phase + '.png')
         $image.Dispose()
         Write-Record (Join-Path $job "action-$index-done.json") @{
             status = 'ok'; phase = $phase; starting_value = $startValue; displayed_value = $currentValue;
-            source = 'numeric vendor status; rounded display, not device readback'; restored = $false
+            source = 'numeric vendor status; rounded display, not device readback'; restored = $false;
+            range_label_status = $labelStatus
         }
         $null = Wait-HostFile "action-$index-ack.json" 10
     }

@@ -13,6 +13,15 @@ remain observations to review after this batch; Speed does not prove them.
 The full batch has a600-second/100MB passive capture limit. Status or target
 verification failure stops the batch and preserves its partial evidence.
 
+The first full batch completed Punch, Body, Speed, Character and Boost Freq,
+then stopped because Boost Gain's label stayed `GAIN: 0 DB` while its captured
+float moved between−0.5/+0.5. Unchanged labels now remain explicitly unresolved
+instead of stopping a valid capture. Every endpoint still receives at least two
+large sweeps; wire events and field ranges need independent offline review.
+`instinct-knob-ranges-remaining` resumes with Boost Gain and the remaining15
+controls, avoiding a repeat of the five completed controls. It leaves maximum
+values as authorized. Missing numeric labels or unrelated writes still stop.
+
 `Run-AfxScan.cmd` now offers `instinct-speed-range`, a candidate shared gesture
 for the Speed knob on unlinked AFX2. Start the Linux listener first. The runner
 reads the numeric status and holds the mouse during a large vertical movement

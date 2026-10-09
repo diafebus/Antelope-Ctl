@@ -31,6 +31,15 @@ class VmPilotTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_request({**request, **changes})
 
+    def test_resume_plan_excludes_completed_controls(self):
+        from tools.afx_vm_pilot import load_plans
+        plans = load_plans()
+        remaining = plans['instinct-knob-ranges-remaining']
+        self.assertEqual(remaining['controls'], plans['instinct-knob-ranges']['controls'][5:])
+        request = {'version': 2, 'plan_id': remaining['id'], 'panel': 'Instinct', 'channel': 2,
+                   'controls': [c['id'] for c in remaining['controls']], 'actions': 32}
+        self.assertEqual(len(planned_actions(validate_request(request))), 32)
+
     def test_batch_requests_are_data_driven_and_cannot_substitute_controls(self):
         request = {'version': 2, 'plan_id': 'instinct-filters', 'panel': 'Instinct',
                    'channel': 2, 'controls': ['FilterEnableButton', 'PostFilterEnable'], 'actions': 4}
