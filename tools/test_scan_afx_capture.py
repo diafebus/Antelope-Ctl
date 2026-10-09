@@ -47,6 +47,29 @@ class ScanAfxCaptureTests(unittest.TestCase):
         self.assertEqual(result['memorycat_readbacks'][0]['values']['level'], 50)
         self.assertFalse(result['memorycat_readbacks'][0]['bypassed'])
 
+    def test_instinct_startup_decodes_only_observed_switch_baseline(self):
+        request = bytes.fromhex('7400000011000000070000004b00008001000000').ljust(320, b'\x00')
+        reply = bytearray(bytes.fromhex('7500000040010000070000004b000080').ljust(320, b'\x00'))
+        reply[69], reply[73], reply[109] = 0, 1, 2
+        result = analyze_reports([(1, 1, 1, request), (2, 1.05, 0x82, bytes(reply))])['observed_instance_readbacks']
+        state = result['states'][0]
+        self.assertEqual(state['instance_from_query'], 1)
+        self.assertEqual(state['values']['alt_morph']['state'], 'disengaged')
+        self.assertEqual(state['values']['filter_enable']['state'], 'engaged')
+        self.assertEqual(state['values']['post_filter_enable']['state'], 'unknown')
+        self.assertFalse(state['runtime_query_enabled'])
+        self.assertEqual(bytes.fromhex(state['parameter_payload_hex']), bytes(reply[17:]))
+
+    def test_overlapping_or_late_tagged_replies_do_not_guess_instance(self):
+        request = bytes.fromhex('7400000011000000070000004b00008001000000').ljust(320, b'\x00')
+        reply = bytes.fromhex('7500000040010000070000004b000080').ljust(320, b'\x00')
+        for reports in ([(1,1,1,request),(2,1.01,1,request),(3,1.05,0x82,reply)],
+                        [(1,1,1,request),(2,3,0x82,reply),(3,4,1,request),(4,4.05,0x82,reply)]):
+            with self.subTest(reports=reports):
+                result = analyze_reports(reports)['observed_instance_readbacks']
+                self.assertEqual(result['states'], [])
+                self.assertTrue(result['correlation_blocked'])
+
 
 if __name__ == '__main__':
     unittest.main()

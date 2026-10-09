@@ -56,6 +56,16 @@ round trips in one recording, associating filter/post-filter enable with bytes
 76/112. A new plugin needs reviewed data rather than a new script. Knob and
 multi-position selector gestures remain pending.
 
+Fresh startup capture on 2026-10-09 matches Instinct instance1 reply body@17
+to the last restored filter-scan write body@20 over write offsets20–123.
+The shared offline analyzer now correlates serialized tagged replies, retains
+the opaque parameter body, and decodes the three observed switch baselines at
+reply offsets69/73/109. Overlapping requests or late replies stop correlation
+for that capture. This establishes a restored baseline association; changed
+switch readbacks, knob labels/scales and a runtime reader remain unverified.
+It sends no queries or writes. Knob automation still requires an exact restore
+method; inverse mouse movement alone does not establish restoration.
+
 Run the WebUI as the sole HID controller. The recorder polls its bounded read
 API and saves changed chains, link flags and Memory Cat parameter/processing
 state. It does not discover unknown commands or effect licenses.

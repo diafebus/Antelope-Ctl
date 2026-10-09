@@ -288,6 +288,14 @@ knobs. `panel.display_only_controls` supplies BBD stereo-mode names for local
 preview without a wire mapping. Model-local captured membership must be complete
 before a preview is exposed; other models inherit no Orion parameter evidence.
 Details and source frames: [modulation findings](orion-afx-modulation.md).
+`parameter_observation.startup_readback_observation` may record a captured
+comparison between a restored parameter write and an initialization reply.
+It identifies the compared byte range, instance and query/reply frames.
+An optional `startup_reply_offset` on a GUI observation associates that field
+with the matching baseline. This does not verify changed-state readback,
+authorize runtime queries, or establish unlabelled knob units. Offline tools
+preserve the opaque payload and reject ambiguous instance correlation.
+
 Orion observations may also live in
 `parameter_observation.labelled_gui_observations` when a named
 UI control has not been associated with a compatible declaration ID. Each such

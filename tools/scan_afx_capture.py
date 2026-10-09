@@ -65,7 +65,76 @@ def extract_reports(path):
     return reports
 
 
+def observed_instance_readbacks(reports, profile, catalog, max_gap=1.0):
+    """Offline only: correlate serialized tagged replies and decode observed fields.
+
+    Replies omit instance IDs. Overlap or a late reply invalidates correlation
+    for the remainder of this capture; a time window alone is insufficient.
+    max_gap is an analysis limit, never a device query timeout or authorization.
+    """
+    layout = profile['frame']['afx_slot']['instance_state_readback']
+    request, response = layout['request'], layout['response']
+    transport = profile['transport']
+    size = transport['report_size']
+    out_ep, in_ep = (int(transport[k], 0) for k in ('out_endpoint', 'in_endpoint'))
+    header = bytes.fromhex(response['header_prefix_hex'])
+    definitions = {}
+    for effect in catalog['effects']:
+        for implementation in effect['implementations']:
+            if implementation['profile'] == 'orion_studio_sc.json':
+                observation = implementation.get('parameter_observation', {})
+                alignment = observation.get('startup_readback_observation')
+                if alignment:
+                    definitions[implementation['type_id']] = (observation, alignment)
+    pending, blocked, states = None, False, []
+    for frame, seconds, endpoint, data in reports:
+        if len(data) != size or blocked:
+            continue
+        if endpoint == out_ep and all(data[request[k + '_offset']] == int(request[k], 0)
+                                      for k in ('magic', 'opcode', 'kind')):
+            offset, width = request['effect_selector_offset'], request['effect_selector_width']
+            selector = int.from_bytes(data[offset:offset + width], request['effect_selector_endian'])
+            tag = int(request['effect_selector_tag'], 0)
+            if not selector & tag:
+                continue
+            if pending is not None:
+                blocked = True
+                continue
+            offset, width = request['instance_offset'], request['instance_width']
+            pending = (frame, seconds, selector, int.from_bytes(data[offset:offset + width], request['instance_endian']))
+        elif endpoint == in_ep and data.startswith(header):
+            offset, width = response['effect_selector_offset'], response['effect_selector_width']
+            selector = int.from_bytes(data[offset:offset + width], request['effect_selector_endian'])
+            if pending is None or pending[2] != selector:
+                blocked = True
+                continue
+            query_frame, query_seconds, _, instance = pending
+            pending = None
+            if not 0 <= seconds - query_seconds <= max_gap:
+                blocked = True
+                continue
+            effect_type = selector & ~int(request['effect_selector_tag'], 0)
+            if effect_type not in definitions:
+                continue
+            observation, alignment = definitions[effect_type]
+            values = {}
+            fields = observation.get('labelled_gui_observations', {}) if instance == alignment['instance'] else {}
+            for name, field in fields.items():
+                offset = field.get('startup_reply_offset')
+                if offset is not None:
+                    raw = data[offset:offset + field['width']]
+                    value = int.from_bytes(raw, 'little')
+                    values[name] = {'raw': value, 'state': field['visual_states'].get(str(value), 'unknown'),
+                                    'status': 'startup baseline association; changed-state readback untested'}
+            states.append({'query_frame': query_frame, 'frame': frame, 'type': effect_type,
+                           'instance_from_query': instance, 'values': values,
+                           'parameter_payload_hex': data[response['parameter_data_offset']:].hex(),
+                           'runtime_query_enabled': False, 'alignment_status': alignment['status']})
+    return {'states': states, 'correlation_blocked': blocked}
+
+
 def analyze_reports(reports):
+    reports = list(reports)
     operations, parameters = [], defaultdict(list)
     readback_queries = Counter()
     instance_queries, instance_states, pending_instances = [], [], {}
@@ -140,9 +209,12 @@ def analyze_reports(reports):
                                                              max(s[3][offset-20] for s in samples)] for offset in varying},
                        'mirrored_writes': [{'from_instance': a, 'to_instance': b, 'pairs': count}
                                            for (a, b), count in sorted(mirrored.items())], 'targets': targets})
+    catalog = json.loads((Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json').read_text())
+    observed = observed_instance_readbacks(reports, profile, catalog)
     return {'report_offsets_exclude_usb_header': True, 'device_commands_sent': False,
             'ownership_inferred': False, 'operations': operations, 'parameter_groups': groups,
             'instance_state_queries': instance_queries, 'memorycat_readbacks': instance_states,
+            'observed_instance_readbacks': observed,
             'readback_queries': [{'category': hex(category), 'index': index, 'count': count}
                                  for (category, index), count in sorted(readback_queries.items())]}
 
