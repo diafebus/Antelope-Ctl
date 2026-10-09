@@ -43,7 +43,7 @@ try {
     if ($matches.Count -gt 1) { throw 'Ambiguous plugin workflow.' }
     if ($matches.Count -eq 1 -and $matches[0].next_step -eq 'ranges') {
         if ([string]::IsNullOrWhiteSpace($matches[0].range_plan)) { throw 'No reviewed range plan is ready.' }
-        Write-Host "${name}: automatic range batch, AFX $($workflows.channel)."
+        Write-Host "${name}: automatic control batch, AFX $($workflows.channel)."
         Write-Host 'Linux recorder must be waiting. Range tests leave knobs at maximum.'
         Stop-Transcript | Out-Null
         $recording = $false
@@ -59,7 +59,8 @@ try {
             $panelClass = $matches[0].panel_class
         }
         & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -InspectKnobHover
-        Write-Host 'Inventory saved. Linux can read it and prepare the reviewed sweep/selector plan.'
+        Write-Host 'Inventory only: this plugin has no reviewed action plan yet. Its values and switches have not been scanned.'
+        Write-Host 'Linux can read the saved inventory and prepare the knob/switch/selector batch.'
     }
 } catch {
     Write-Host 'Capture stopped:' -ForegroundColor Red

@@ -23,19 +23,28 @@ at maximum. Physical values displayed inside V12 knobs are saved in screenshots.
 
 ## Next capture: BBD Chorus
 
-V12 completed all ten knob endpoint pairs and the Humanize round trip.
-Its power/bypass remains outside the capture; this does not enable runtime writes.
+Open BBD Chorus on unlinked AFX channel2, run the same launcher, enter
+`BBD Chorus`, press Enter and focus its title bar within ten seconds. Linux
+must be waiting. Leave mouse and keyboard alone. One launch runs sixteen phases:
+four knob endpoint pairs, Chorus/Vibrato round trip, four Stereo Type centre
+clicks, and Power round trip. Knobs remain at maximum; selectors and Power must
+return to their starting appearance. Chorus/Vibrato uses its measured byte24
+for change/restoration because the adjacent red indicator is animated.
+Screenshots are retained, but they do not verify that mode switch. Demo use does not establish ownership.
 
-BBD's first two runs were read-only inventories, so hovering without changing
-values was expected. Its reviewed next batch captures four knob ranges and the
-Chorus/Vibrato round trip in ten phases. Open BBD Chorus on unlinked AFX channel2,
-run the same launcher, enter `BBD Chorus`, press Enter and focus its title bar
-within ten seconds. Linux must be waiting. Leave mouse and keyboard alone.
-Knobs remain at maximum; Chorus/Vibrato is restored.
+Stereo Type's four-position cycle is a bounded discovery trial. Each position
+gets a separate screenshot and fresh captured parameter block; four distinct
+visual/raw positions and return to the starting state are required. Its byte25
+candidate comes from the catalog's preserved type field. Basic/Wide/Split/Cross
+labels are reviewed from screenshots, never assigned by guessed numeric order.
+If centre clicks do not cycle all four positions, the batch stops with evidence.
+Power records the measured opcode0x14/selector0x98 family for the same effect
+instance, keeping all0/1 events; no persistent state or polarity is inferred.
+Clip/meter indicators are read-only. Windows execution of these new gestures
+still needs the first run; parser/compiler preflight happens before actions.
 
-Stereo Type has four positions (Basic/Wide/Split/Cross). Its wire mapping and
-selector gesture still need capture; power is also excluded. This batch does
-not claim those controls are mapped. Demo use does not establish ownership.
+V12 previously captured ten knob endpoint pairs and Humanize. Its older plan
+still excludes power/bypass; it is not a complete plugin capture.
 
 ## Capture stages
 
@@ -68,11 +77,14 @@ Infinity labels are stored as JSON strings. Button round trips are also
 supported. Wrong targets, unrelated writes, missing labels or changed focus
 stop the capture, retain evidence and release the mouse button.
 
-Cabinet/speaker/model selectors are included in inventory. Enumerated-option
-gestures are not implemented yet: each needs a reviewed option list and wire
-changes per choice. Custom cycling controls need a known finite cycle. The
-inspector does not click selector options. Knob ranges alone do not complete
-a plugin with selectors or switches.
+Cabinet/speaker/model selectors are included in inventory. The generic
+`selector_cycle` gesture supports reviewed finite cycles of2–8positions, with
+separate images, fresh wire evidence, uniqueness and starting-state checks.
+Plans declare their candidate field and visual region. Controls using menus or
+direct-position hits need a reviewed gesture before capture. Unknown plugins
+still run inventory only and explicitly report that no values were scanned.
+Completed jobs carry declared coverage; completing a plan does not prove
+unplanned controls or device readback. No plugin-specific script is needed.
 
 Instinct has all21 knob endpoint observations and three mapped switches.
 Its model selector, power, interpolation laws and runtime reader/writer remain

@@ -472,7 +472,16 @@
             ]
           }
         }
-      ]
+      ],
+      "coverage": {
+        "status": "partial",
+        "pending": [
+          "Model selector",
+          "Power/bypass",
+          "Separate switch batch"
+        ],
+        "device_readback_verified": false
+      }
     },
     {
       "id": "instinct-knob-ranges-remaining",
@@ -970,7 +979,14 @@
           "class_name": "TurboEnsemblerSwitch",
           "kind": "binary_button"
         }
-      ]
+      ],
+      "coverage": {
+        "status": "partial",
+        "pending": [
+          "Power/bypass"
+        ],
+        "device_readback_verified": false
+      }
     },
     {
       "id": "bbd-controls",
@@ -979,8 +995,8 @@
       "effect_id": "bbdchorus",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "reviewed inventory and existing captured fields; first action batch pending",
-      "evidence": "panel-BBD-Chorus-20261009T184609823Z: four visible knobs and Chorus/Vibrato button. Reuse owner-labelled Orion modulation byte mappings. Stereo Type is a four-position selector requiring a separate reviewed gesture; power excluded. Demo use does not establish ownership.",
+      "status": "four knobs, Chorus/Vibrato, four-position Stereo Type cycle and Power; first complete batch pending",
+      "evidence": "panel-BBD-Chorus-20261009T184609823Z: four visible knobs and Chorus/Vibrato button. Reuse owner-labelled Orion modulation byte mappings. Stereo Type is a four-position selector included in this bounded discovery cycle; power is captured as a separate command family. Demo use does not establish ownership. Selector field25 is an unverified candidate from preserved type field; gesture must isolate it and establish four distinct captured states, then restore starting state. Power uses captured opcode0x14/selector0x98; no polarity inferred.",
       "controls": [
         {
           "id": "BBDChorusLevelPot",
@@ -1047,14 +1063,50 @@
           "label": "Chorus / Vibrato",
           "class_name": "BBDChorusVibratoButton",
           "kind": "binary_button",
-          "visual_region": {
-            "x": 293,
-            "y": 54,
-            "width": 68,
-            "height": 120
+          "feedback": "captured_toggle",
+          "wire": {
+            "control_id": "chvibrato",
+            "offset": 24,
+            "range": [
+              0,
+              1
+            ]
           }
+        },
+        {
+          "id": "StereoType",
+          "label": "Stereo Type (four positions)",
+          "class_name": "BBDChorusStereoTypeButton",
+          "kind": "selector_cycle",
+          "positions": 4,
+          "observed_field_offset": 25,
+          "visual_region": {
+            "x": 400,
+            "y": 94,
+            "width": 68,
+            "height": 74
+          },
+          "minimum_visual_change": 0.005,
+          "candidate_field": "type"
+        },
+        {
+          "id": "Power",
+          "label": "Power",
+          "class_name": "BBDChorusBypassButton",
+          "kind": "binary_button",
+          "command_family": "bypass"
         }
-      ]
+      ],
+      "coverage": {
+        "status": "all visible editable controls planned; selector cycle gesture first trial pending",
+        "knobs": 4,
+        "binary_switches": 2,
+        "selector_positions": 4,
+        "excluded": [
+          "Clip and meter indicators are read-only"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

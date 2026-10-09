@@ -299,4 +299,20 @@ write feedback confirms existing raw bounds; power/bypass and device readback
 remain unverified. BBD inventories `panel-BBD-Chorus-20261009T184528924Z`
 and `panel-BBD-Chorus-20261009T184609823Z` only hovered controls. Reviewed
 `bbd-controls` now covers four knob ranges and Chorus/Vibrato via the same
-launcher. Stereo Type's four-position gesture/mapping and power remain open.
+launcher. The next plan now adds a bounded four-position Stereo Type cycle and Power
+round trip in the same launch; actual gesture execution and mode labels remain
+pending the first complete Windows batch.
+
+Generic selector cycles require a reviewed finite count, bounded visual region
+and catalog-preserved candidate field. Before GO the host checks the last
+accepted selector value; after each click it checks isolated candidate-byte
+changes and distinct positions. The last click must restore starting raw and
+visual state. Separate screenshots retain each position. BBD Power accepts
+only captured0x14/0x98 events for the same type/instance, preserving event
+sequences without persistent-state or polarity claims. Unknown-plugin inventory
+explicitly reports partial coverage; existing V12/Instinct plans remain partial.
+
+BBD Chorus/Vibrato now uses measured byte24 change/restoration feedback;
+its adjacent animated GainReduction LED caused a false visual guard failure
+in `scan-BBD-Chorus-20261009T191323291Z`. Keep phase screenshots, but do
+not claim mode image equality or device readback from that feedback.

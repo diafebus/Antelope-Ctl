@@ -1,4 +1,4 @@
-# Reusable GUI button round trips driven by reviewed JSON plans.
+# Reusable GUI knob, binary switch and finite selector capture from reviewed plans.
 param([string]$PlanId = '')
 $ErrorActionPreference = 'Stop'
 $results = Join-Path $PSScriptRoot 'results'
@@ -20,7 +20,7 @@ $plan = $matchingPlans[0]
 $controlLimit = 3
 if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) { $controlLimit = 24 }
 if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
-    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range') }).Count -ne 0) {
+    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
 }
 $panelLabel = $plan.panel -replace '[^a-zA-Z0-9_-]', '_'
@@ -273,6 +273,11 @@ function Run-KnobRange {
 
 [void][AfxScanInput]::SetProcessDPIAware()
 Write-Host "$($plan.panel): AFX $($plan.channel), $($plan.controls.Count) reviewed control(s)."
+if ($null -eq $plan.coverage) {
+    $plan | Add-Member -NotePropertyName coverage -NotePropertyValue @{ status = 'partial; controls outside plan unknown' }
+}
+Write-Host "Coverage: $($plan.coverage.status)"
+foreach ($pending in $plan.coverage.pending) { Write-Host "Pending outside this batch: $pending" }
 Write-Host "Prepare $($plan.panel) on unlinked AFX $($plan.channel). Linux recorder must already be waiting."
 Write-Host 'The runner operates the selected controls automatically; do not click plugin buttons yourself.'
 Write-Host 'After pressing Enter, the terminal minimizes. Focus the plugin using its title bar within 10 seconds.'
@@ -338,7 +343,8 @@ try {
     Start-Sleep -Milliseconds 500
     Write-Record (Join-Path $job 'request.json') @{
         version = 2; plan_id = $plan.id; panel = $plan.panel; channel = $plan.channel;
-        controls = @($plan.controls | ForEach-Object { $_.id }); actions = 2 * $plan.controls.Count
+        controls = @($plan.controls | ForEach-Object { $_.id });
+        actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } else { 2 } } | Measure-Object -Sum).Sum)
     }
     $null = Wait-HostFile 'ready.json' 25
     $index = 0
@@ -373,13 +379,24 @@ try {
             [int]$visualBounds.Width, [int]$visualBounds.Height)
     }
     $baseline = Save-Button ($filePrefix + '-before.png')
-    foreach ($phase in @(1, 2)) {
+    $phaseCount = 2
+    if ($control.kind -eq 'selector_cycle') {
+        $phaseCount = [int]$control.positions
+        if ($phaseCount -lt 2 -or $phaseCount -gt 8) { throw 'Selector needs a reviewed finite cycle.' }
+    }
+    $minimumChange = .05
+    if ($null -ne $control.minimum_visual_change) {
+        $minimumChange = [double]$control.minimum_visual_change
+        if ($minimumChange -le 0 -or $minimumChange -gt .05) { throw 'Invalid visual comparison threshold.' }
+    }
+    $cycleImages = @()
+    foreach ($phase in @(1..$phaseCount)) {
         $index++
         Assert-Panel
-        if ($phase -eq 2) {
+        if ($phase -gt 1 -and $control.feedback -ne 'captured_toggle') {
             $current = Save-Button ($filePrefix + '-before-restore.png')
             try {
-                if ([AfxScanInput]::Difference($changed, $current) -gt .02) {
+                if ([AfxScanInput]::Difference($changed, $current) -gt [Math]::Min(.02, $minimumChange)) {
                     throw 'Button changed since trial; restoration blocked to preserve newer edits.'
                 }
             } finally { $current.Dispose() }
@@ -392,32 +409,51 @@ try {
         [AfxScanInput]::Click()
         [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
         Start-Sleep -Milliseconds 700
-        if ($phase -eq 1) {
-            $changed = Save-Button ($filePrefix + '-changed.png')
+        if ($phase -lt $phaseCount) {
+            $stateFile = $filePrefix + '-changed.png'
+            if ($control.kind -eq 'selector_cycle') { $stateFile = $filePrefix + '-position-' + $phase + '.png' }
+            $changed = Save-Button $stateFile
             $difference = [AfxScanInput]::Difference($baseline, $changed)
-            $ok = $difference -gt .05
+            $ok = $difference -gt $minimumChange
+            if ($control.kind -eq 'selector_cycle') {
+                foreach ($image in $cycleImages) {
+                    if ([AfxScanInput]::Difference($image, $changed) -le $minimumChange) { $ok = $false }
+                }
+                $cycleImages += $changed
+            }
         } else {
-            $restored = Save-Button ($filePrefix + '-restored.png')
+            $stateFile = $filePrefix + '-restored.png'
+            if ($control.kind -eq 'selector_cycle') { $stateFile = $filePrefix + '-position-' + $phase + '.png' }
+            $restored = Save-Button $stateFile
             $difference = [AfxScanInput]::Difference($baseline, $restored)
-            $ok = $difference -le .02
+            $ok = $difference -le [Math]::Min(.02, $minimumChange)
         }
+        if ($control.feedback -eq 'captured_toggle') { $ok = $true }
         $status = 'failed'
         if ($ok) { $status = 'ok' }
+        $verificationSource = 'screen comparison; not device readback'
+        if ($control.feedback -eq 'captured_toggle') {
+            $verificationSource = 'screenshots only; host must verify measured toggle writes before ACK'
+        }
         Write-Record (Join-Path $job "action-$index-done.json") @{
             status = $status; changed_pixel_fraction = $difference;
-            source = 'screen comparison; not device readback'; guest_utc = [DateTime]::UtcNow.ToString('o')
+            cycle_position = $phase;
+            source = $verificationSource; guest_utc = [DateTime]::UtcNow.ToString('o')
         }
         if (-not $ok) { throw 'Visual verification failed; no further clicks.' }
         $null = Wait-HostFile "action-$index-ack.json" 10
     }
+    foreach ($image in $cycleImages) { $image.Dispose() }
+    if ($control.kind -ne 'selector_cycle' -and $null -ne $changed) { $changed.Dispose() }
+    $changed = $null
     }
     Write-Record (Join-Path $job 'completed.json') @{
-        status = 'ok'; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -eq 0);
+        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' -or $_.feedback -eq 'captured_toggle' }).Count -eq 0);
         device_readback_verified = $false; range_knobs_left_at = 'maximum';
-        restoration_source = 'button images only; range knobs intentionally not restored'
+        restoration_source = 'images or measured toggle write feedback; range knobs intentionally not restored'
     }
     $null = Wait-HostFile 'host-completed.json' 15
-    Write-Host "Pilot completed; evidence saved to $job"
+    Write-Host "Planned controls completed; check coverage for remaining controls. Evidence saved to $job"
 } catch {
     if ($null -ne $job) {
         Write-Record (Join-Path $job 'guest-error.json') @{

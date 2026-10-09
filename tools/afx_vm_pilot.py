@@ -22,7 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def planned_actions(plan):
     return [(control, phase) for control in plan['controls']
             for phase in (('minimum', 'maximum') if control['kind'] == 'knob_range'
-                          else ('click', 'click back'))]
+                          else tuple(f'position-{n}' for n in range(1, control['positions'] + 1))
+                          if control['kind'] == 'selector_cycle' else ('click', 'click back'))]
 
 
 def write_json(path, value):
@@ -57,8 +58,11 @@ def load_plans():
         if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
-                any(c['kind'] not in ('binary_button', 'knob_range') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
+                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
+        for control in controls:
+            if control['kind'] == 'selector_cycle' and (type(control.get('positions')) is not int or not 2 <= control['positions'] <= 8 or not control.get('visual_region')):
+                raise ValueError('Selector cycle requires a reviewed finite count and visual region')
     return {plan['id']: plan for plan in plans}
 
 
@@ -87,7 +91,11 @@ def validate_wire_controls(plan, catalog):
     effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
     implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
     for control in plan['controls']:
-        if control.get('feedback') != 'captured_wire':
+        if control['kind'] == 'selector_cycle':
+            candidate = implementation['parameter_observation']['preserved_fields'][control['candidate_field']]
+            if control['observed_field_offset'] != candidate['offset']:
+                raise ValueError('Selector candidate must match its catalog preserved field')
+        if control.get('feedback') not in ('captured_wire', 'captured_toggle'):
             continue
         wire = control['wire']
         if wire.get('source') == 'labelled_gui_observations':
@@ -203,6 +211,11 @@ def labelled_actions(reports, windows, out_endpoint=1):
             in_window = first < number <= final if frame_bound else start <= epoch <= end
             if not in_window or endpoint != out_endpoint or data[0] != 0x70:
                 continue
+            if data[4] == 0x14 and data[16] == 0x98:
+                events.append({'frame': number, 'opcode': '0x14', 'subcommand': '0x98',
+                               'type': data[18], 'instance': data[19], 'state': data[17],
+                               'status': 'captured bypass gesture; polarity unverified'})
+                continue
             if data[16] != 0xd5 or data[4] not in PARAMETER_OPCODES:
                 events.append({'frame': number, 'opcode': hex(data[4]),
                                'selector': hex(data[16]), 'status': 'other OUT command'})
@@ -252,6 +265,9 @@ def run_job(job, profile):
         raise RuntimeError('Refusing to overwrite an existing capture')
     windows = []
     expected_target = None
+    selector_values = {}
+    selector_baselines = {}
+    toggle_baselines = {}
     actions = planned_actions(plan)
     has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
@@ -289,6 +305,26 @@ def run_job(job, profile):
                 if not before_reports:
                     raise RuntimeError('No current capture boundary; no click permitted')
                 first_frame = max(row[0] for row in before_reports)
+                if control['kind'] == 'selector_cycle':
+                    prior = [data for _, _, ep, data in before_reports if ep == out_ep and data[0] == 0x70 and data[4] in PARAMETER_OPCODES and data[16] == 0xd5 and data[18] == effect_type and (expected_target is None or data[19] == expected_target[3])]
+                    if not prior:
+                        raise RuntimeError('Selector cycle requires a fresh preceding parameter block')
+                    raw = prior[-1][control['observed_field_offset']]
+                    if control['id'] not in selector_baselines:
+                        selector_baselines[control['id']] = raw
+                    elif raw != selector_values[control['id']][-1]:
+                        raise RuntimeError('Selector changed since accepted position; no further click')
+                if control.get('feedback') == 'captured_toggle':
+                    prior = [data for _, _, ep, data in before_reports if ep == out_ep and data[0] == 0x70 and data[4] in PARAMETER_OPCODES and data[16] == 0xd5 and data[18] == effect_type and (expected_target is None or data[19] == expected_target[3])]
+                    if not prior:
+                        raise RuntimeError('Measured toggle requires a preceding captured parameter block')
+                    raw = prior[-1][control['wire']['offset']]
+                    if raw not in control['wire']['range']:
+                        raise RuntimeError('Toggle baseline is outside its measured binary range')
+                    if control['id'] not in toggle_baselines:
+                        toggle_baselines[control['id']] = raw
+                    elif raw == toggle_baselines[control['id']]:
+                        raise RuntimeError('Toggle changed since accepted trial; no restore click')
                 start = time.time()
                 write_json(job/f'action-{index}-go.json', {'action': index})
                 feedback_history = []
@@ -345,7 +381,45 @@ def run_job(job, profile):
                 if control.get('feedback') == 'captured_wire' and feedback_history:
                     unchanged_endpoint = False
                 if events or not unchanged_endpoint:
-                    expected_target = verify_action_events(events, expected_target, effect_type)
+                    if control.get('command_family') == 'bypass':
+                        if any(e['opcode'] != '0x14' or e['subcommand'] != '0x98' for e in events):
+                            raise RuntimeError('Power gesture sent another command family')
+                        target = verify_action_events(events, None, effect_type)
+                        if expected_target is not None and target[2:] != expected_target[2:]:
+                            raise RuntimeError('Power gesture changed effect instance')
+                        if any(e['state'] not in (0, 1) for e in events):
+                            raise RuntimeError('Power gesture contains an unknown captured value')
+                        window['bypass_events'] = events
+                        window['bypass_state_status'] = 'event sequence only; persistent state and polarity unverified'
+                    else:
+                        expected_target = verify_action_events(events, expected_target, effect_type)
+                if control.get('feedback') == 'captured_toggle':
+                    verify_wire_changes(reports, first_frame, control, effect_type, expected_target[3], out_ep)
+                    samples = [data for number, _, ep, data in reports if number > first_frame and ep == out_ep and data[0] == 0x70 and data[4] in PARAMETER_OPCODES and data[16] == 0xd5 and data[18] == effect_type and data[19] == expected_target[3]]
+                    values = {data[control['wire']['offset']] for data in samples}
+                    expected = toggle_baselines[control['id']]
+                    if phase == 'click':
+                        expected = next(v for v in control['wire']['range'] if v != expected)
+                    if values != {expected}:
+                        raise RuntimeError('Measured toggle did not change/restore its captured value')
+                    window['observed_toggle_raw'] = expected
+                    window['toggle_restoration_source'] = 'captured parameter writes; not device readback'
+                if control['kind'] == 'selector_cycle':
+                    offset = control['observed_field_offset']
+                    verify_wire_changes(reports, first_frame, {'wire': {'offset': offset}}, effect_type, expected_target[3], out_ep)
+                    samples = [data for number, _, ep, data in reports if number > first_frame and ep == out_ep and data[0] == 0x70 and data[16] == 0xd5 and data[18] == effect_type and data[19] == expected_target[3]]
+                    values = {data[offset] for data in samples}
+                    if len(values) != 1:
+                        raise RuntimeError('Selector click did not establish one captured position')
+                    value = next(iter(values))
+                    seen = selector_values.setdefault(control['id'], [])
+                    if value in seen:
+                        raise RuntimeError('Selector repeated a position before its full cycle')
+                    seen.append(value)
+                    if len(seen) == control['positions'] and value != selector_baselines[control['id']]:
+                        raise RuntimeError('Selector cycle did not restore its captured starting state')
+                    window['observed_selector_raw'] = value
+                    window['selector_mapping_status'] = 'position screenshot requires label review; no ordinal polarity inferred'
                 if control.get('feedback') == 'captured_wire':
                     verify_wire_changes(reports, first_frame, control, effect_type, expected_target[3], out_ep)
                     final_feedback = wire_feedback(reports, control, effect_type, phase, out_ep,
@@ -377,7 +451,7 @@ def run_job(job, profile):
         'packet_loss': 'review dumpcap.log; not automatically certified',
         'labelled_actions': labelled_actions(reports, windows, out_ep),
         'capture_summary': analyze_reports(reports)})
-    write_json(job/'host-completed.json', {'status': 'ok'})
+    write_json(job/'host-completed.json', {'status': 'ok', 'coverage': plan.get('coverage', {'status': 'partial; controls outside plan unknown'})})
 
 
 def main():
