@@ -35,6 +35,14 @@ Preserve those limits while expanding the catalog.
 
 ## Automation available now
 
+The [Windows panel inspector](../tools/windows/README.md) reads the focused
+plugin's UI Automation controls and saves a window screenshot directly beside
+the script in a shared folder. Use it on Instinct to determine whether named
+selectors are available before building the gesture runner. It changes no
+settings and requires no individual packet exports or manual file transfers.
+It has not yet been exercised against the vendor panel; it is not a gesture
+runner or a USB batch recorder.
+
 Run the WebUI as the sole HID controller. The recorder polls its bounded read
 API and saves changed chains, link flags and Memory Cat parameter/processing
 state. It does not discover unknown commands or effect licenses.
