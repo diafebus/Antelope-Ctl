@@ -47,6 +47,19 @@ API reference: Microsoft's [UI Automation element inspection](https://learn.micr
 
 ## First automated button pilot
 
+The executor is now **one shared runner**, `Run-AfxScan.ps1`, reading
+`afx-scan-plans.json`. Panel name/class, channel, labels, selectors and optional
+panel-relative regions come from that JSON. Linux checks the selected plan
+against its repository copy before allowing gestures. A new plugin needs
+reviewed inspector data, not a new script. The current plans cover binary
+buttons only; knobs and multi-position selectors need additional shared methods
+and restoration evidence.
+
+For the next batch, double-click `Run-AfxScan.cmd`, enter `instinct-filters`,
+then press Enter when Instinct is open on unlinked AFX2. This exercises Filter
+enable and Post-filter enable in one recording, restoring each visually before
+moving to the next. Model selection and power are excluded from that batch.
+
 `Run-InstinctPilot.cmd` is a fixed two-click trial for **ALT Morph** on
 **unlinked AFX channel 2**. It uses the inspected live `Instinct`/`AltMorphButton`
 UI classes and current bounds; it does not load an effect, change the selected
@@ -72,6 +85,8 @@ job does not replay its gestures. Start a fresh run for a new trial.
 Every launch also saves `results/Instinct-pilot-launch-TIMESTAMP.log`, including
 startup/preflight errors that occur before a trial directory exists. Linux can
 read this directly, so there is no need to copy terminal messages manually.
+With the common runner, new launch logs use `AFX-scan-launch-TIMESTAMP.log`
+and new jobs use `results/scan-PANEL-TIMESTAMP/`. Earlier pilot files are retained.
 
 Each trial creates `results/pilot-Instinct-TIMESTAMP/` in the shared folder.
 Linux starts a bounded passive usbmon capture and proves complete matching

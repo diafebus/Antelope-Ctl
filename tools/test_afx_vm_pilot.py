@@ -10,6 +10,15 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def test_batch_requests_are_data_driven_and_cannot_substitute_controls(self):
+        request = {'version': 2, 'plan_id': 'instinct-filters', 'panel': 'Instinct',
+                   'channel': 2, 'controls': ['FilterEnableButton', 'PostFilterEnable'], 'actions': 4}
+        self.assertEqual(len(validate_request(request)['controls']), 2)
+        for changes in [{'controls': ['DelAll']}, {'actions': 6}, {'channel': 1},
+                        {'panel': 'Other'}, {'plan_id': 'unreviewed'}, {'command': 'arbitrary'}]:
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                validate_request({**request, **changes})
+
     def test_channel_and_gesture_scope_cannot_be_expanded_by_guest(self):
         request = {'version': 1, 'panel': 'Instinct', 'channel': 2,
                    'control': 'AltMorphButton', 'actions': 2}

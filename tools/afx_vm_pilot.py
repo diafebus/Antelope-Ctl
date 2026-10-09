@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Coordinate one Windows UI button trial with passive Linux USB capture.
+"""Coordinate one reviewed Windows GUI scan with passive Linux USB capture.
 
-Never opens HID or sends device commands. Shared-folder requests are limited
-to the Instinct ALT Morph pilot on channel2. Evidence remains local.
+Never opens HID or sends device commands. Shared-folder requests must match reviewed JSON plans on channel2. Evidence remains local.
 """
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -42,22 +42,49 @@ def device_location(profile, sysfs=Path('/sys/bus/usb/devices')):
     return matches[0]
 
 
+def load_plans():
+    plans = json.loads((ROOT/'tools/windows/afx-scan-plans.json').read_text())['plans']
+    for plan in plans:
+        controls = plan['controls']
+        if (plan['channel'] != 2 or not 1 <= len(controls) <= 3 or
+                not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
+                len({c['id'] for c in controls}) != len(controls) or
+                any(c['kind'] != 'binary_button' or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
+            raise ValueError('Invalid reviewed GUI plan or scope')
+    return {plan['id']: plan for plan in plans}
+
+
 def validate_request(request):
-    if request != {'version': 1, 'panel': 'Instinct', 'channel': 2,
-                   'control': 'AltMorphButton', 'actions': 2}:
-        raise ValueError('Only the two-click Instinct ALT Morph/channel2 pilot is supported')
+    plans = load_plans()
+    legacy = {'version': 1, 'panel': 'Instinct', 'channel': 2,
+              'control': 'AltMorphButton', 'actions': 2}
+    if request == legacy:
+        return plans['instinct-altmorph']
+    plan = plans.get(request.get('plan_id'))
+    if plan is None or request != {'version': 2, 'plan_id': plan['id'],
+        'panel': plan['panel'], 'channel': plan['channel'],
+        'controls': [c['id'] for c in plan['controls']], 'actions': 2 * len(plan['controls'])}:
+        raise ValueError('Guest request must match a reviewed host GUI plan exactly')
+    return plan
 
 
-def verify_action_events(events, expected=None):
+def plan_effect_type(plan):
+    catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+    effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
+    implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+    return implementation['type_id']
+
+
+def verify_action_events(events, expected=None, effect_type=75):
     targets = {(event['opcode'], event['subcommand'], event['type'], event['instance'])
                for event in events if 'type' in event}
-    if len(targets) != 1 or next(iter(targets))[2] != 75:
-        raise RuntimeError('Expected one Instinct instance; missing, linked or other OUT requires review')
+    if len(targets) != 1 or next(iter(targets))[2] != effect_type:
+        raise RuntimeError('Expected one target effect instance; missing, linked or other OUT requires review')
     if any('type' not in event for event in events):
         raise RuntimeError('Unexpected other OUT command during button trial; stop for review')
     target = next(iter(targets))
     if expected is not None and target != expected:
-        raise RuntimeError('Instinct instance or command family changed; stop for review')
+        raise RuntimeError('Target instance or command family changed; stop for review')
     return target
 
 
@@ -144,7 +171,9 @@ def wait_file(path, seconds, process=None):
 
 
 def run_job(job, profile):
-    validate_request(json.loads((job/'request.json').read_text(encoding='utf-8-sig')))
+    request = json.loads((job/'request.json').read_text(encoding='utf-8-sig'))
+    plan = validate_request(request)
+    effect_type = plan_effect_type(plan)
     location = device_location(profile)
     transport = profile['transport']
     in_ep, out_ep = (int(transport[key], 0) for key in ('in_endpoint', 'out_endpoint'))
@@ -153,7 +182,7 @@ def run_job(job, profile):
         raise RuntimeError('usbmon is not loaded; load it before starting the pilot')
     write_json(job/'host-device.json', {'profile': 'orion_studio_sc.json',
         'identity_source': 'profile VID/PID matched against live sysfs', **location})
-    capture = job/'Instinct-channel2.pcapng'
+    capture = job/f"{plan['panel']}-channel{plan['channel']}.pcapng"
     if capture.exists():
         raise RuntimeError('Refusing to overwrite an existing capture')
     windows = []
@@ -179,8 +208,14 @@ def run_job(job, profile):
                     raise RuntimeError('No complete Orion IN reports; guest gestures remain blocked')
                 time.sleep(.3)
             write_json(job/'ready.json', {'version': 1, 'capture_ready': True})
-            for index in (1, 2):
-                wait_file(job/f'action-{index}-request.json', 15, process)
+            for index in range(1, 2 * len(plan['controls']) + 1):
+                control = plan['controls'][(index - 1)//2]
+                action_request = wait_file(job/f'action-{index}-request.json', 15, process)
+                expected_request = {'action': index, 'control': control['id']}
+                if request['version'] == 1:
+                    expected_request = {'action': index}
+                if action_request != expected_request:
+                    raise RuntimeError('Guest action does not match the reviewed plan; no click permitted')
                 if device_location(profile) != location:
                     raise RuntimeError('Orion connection changed; no further gestures')
                 before_reports = read_reports(capture, location, transport, allow_incomplete=True)
@@ -190,8 +225,8 @@ def run_job(job, profile):
                 start = time.time()
                 write_json(job/f'action-{index}-go.json', {'action': index})
                 completed = wait_file(job/f'action-{index}-done.json', 10, process)
-                window = {'action': index, 'control': 'AltMorphButton',
-                          'gesture': 'click' if index == 1 else 'click back',
+                window = {'action': index, 'control': control['id'], 'label': control['label'],
+                          'gesture': 'click' if index % 2 == 1 else 'click back',
                           'start_epoch': start, 'end_epoch': time.time(),
                           'start_frame_exclusive': first_frame,
                           'matching_method': 'recording frame boundaries; host times are metadata only',
@@ -212,7 +247,7 @@ def run_job(job, profile):
                     time.sleep(.2)
                 windows.append(window)
                 write_json(job/'action-windows.json', windows)
-                expected_target = verify_action_events(events, expected_target)
+                expected_target = verify_action_events(events, expected_target, effect_type)
                 if completed.get('status') != 'ok':
                     raise RuntimeError('Guest visual verification failed; stop for review')
                 write_json(job/f'action-{index}-ack.json', {'status': 'ok'})
@@ -228,7 +263,7 @@ def run_job(job, profile):
     if device_location(profile) != location:
         raise RuntimeError('Device location changed; capture identity needs review')
     reports = read_reports(capture, location, transport)
-    write_json(job/'Instinct-analysis.json', {'status': 'candidate; review required',
+    write_json(job/f"{plan['panel']}-analysis.json", {'status': 'candidate; review required', 'plan_id': plan['id'],
         'device_readback_verified': False, 'visual_restoration': 'see completed.json',
         'packet_loss': 'review dumpcap.log; not automatically certified',
         'labelled_actions': labelled_actions(reports, windows, out_ep),
@@ -266,13 +301,15 @@ def main():
                         for _, _, ep, data in reports) else 1
     if args.shared is None:
         parser.error('--shared or --preflight is required')
-    print(f"Ready for one guest request; Orion on usbmon{location['bus']}. No HID controller opened.", flush=True)
+    print(f"Ready for one reviewed scan request; Orion on usbmon{location['bus']}. No HID controller opened.", flush=True)
     results = args.shared/'results'
     results.mkdir(exist_ok=True)
-    existing = set(results.glob('pilot-Instinct-*'))
+    def jobs():
+        return set(results.glob('scan-*')) | set(results.glob('pilot-Instinct-*'))
+    existing = jobs()
     deadline = time.monotonic() + args.wait_seconds
     while time.monotonic() < deadline:
-        for job in sorted(set(results.glob('pilot-Instinct-*')) - existing):
+        for job in sorted(jobs() - existing):
             if job.is_symlink() or not (job/'request.json').is_file():
                 continue
             try:

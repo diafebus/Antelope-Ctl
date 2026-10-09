@@ -281,6 +281,12 @@ knobs. `panel.display_only_controls` supplies BBD stereo-mode names for local
 preview without a wire mapping. Model-local captured membership must be complete
 before a preview is exposed; other models inherit no Orion parameter evidence.
 Details and source frames: [modulation findings](orion-afx-modulation.md).
+Orion observations may also live in
+`parameter_observation.labelled_gui_observations` when a named
+UI control has not been associated with a compatible declaration ID. Each such
+entry records absolute report offset/width, observed values, visual states,
+frame provenance and verification limits. Visual restoration is distinct from
+device readback; `writable: false` observations do not enable runtime controls.
 The shared control declarations retain their identifiers, so Orion observations
 do not become another model's contract. All three command definitions
 remain `null` for every implementation. A declared control name carries neither an inferred range

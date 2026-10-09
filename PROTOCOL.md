@@ -1940,6 +1940,16 @@ parameter sweeps establish neither control-name maps nor display scales.
 Memory Cat's byte layout must not be reused for them. V12 also has observed
 `0x20` / `0xd5` traffic. Stereo writes remain outside the pilot.
 
+**Instinct ALT Morph GUI pilot (2026-10-09).** A labelled automated trial on
+unlinked AFX2 captures type75/instance1 parameter writes at frames537/1567 in
+the local `pilot-Instinct-20261009T161102564Z/Instinct-channel2.pcapng` recording.
+Only absolute HID report byte72 differs, engaged1→disengaged0. Before/restored
+button images match exactly; capture reports zero drops. The owner confirms
+the initial buttons disengaged. This establishes a UI-to-write byte association
+and a visual round trip, not device parameter readback, audible behavior or a
+runtime writer. The catalog records it under model-local
+`parameter_observation.labelled_gui_observations`; declaration IDs remain intact.
+
 **Linked chain editing.** The owner requested linked rack editing on2026-10-01.
 The1/2 capture pairs load writes3427/3431,4997/5001,7505/7509 and reorder
 writes11947/11951,13671/13675, left then right with distinct instances.

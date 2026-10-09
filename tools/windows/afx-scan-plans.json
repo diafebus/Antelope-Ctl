@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "notes": "Reviewed GUI gesture data, not wire contracts. Model selection, power and knobs remain outside these binary-button plans.",
+  "plans": [
+    {
+      "id": "instinct-altmorph",
+      "panel": "Instinct",
+      "panel_class": "Instinct",
+      "effect_id": "instinct",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "visual-roundtrip-observed",
+      "evidence": "Instinct UI inspection and successful ALT Morph pilot, 2026-10-09; frames537/1567, visual restoration, no device readback.",
+      "controls": [
+        {"id": "AltMorphButton", "label": "ALT Morph", "class_name": "AltMorphButton", "kind": "binary_button"}
+      ]
+    },
+    {
+      "id": "instinct-filters",
+      "panel": "Instinct",
+      "panel_class": "Instinct",
+      "effect_id": "instinct",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "gui-observed; roundtrip-pending",
+      "evidence": "Instinct UI inspection, 2026-10-09; owner confirms default disengaged buttons. Fresh baseline required. Post-filter region separates PFEnable from panel power.",
+      "controls": [
+        {"id": "FilterEnableButton", "label": "Filter enable", "class_name": "FilterEnableButton", "kind": "binary_button"},
+        {"id": "PostFilterEnable", "label": "Post-filter enable", "class_name": "PFEnable", "kind": "binary_button", "region": {"x": [0.5, 1.0], "y": [0.0, 0.6]}}
+      ]
+    }
+  ]
+}

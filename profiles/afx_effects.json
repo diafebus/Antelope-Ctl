@@ -1868,7 +1868,34 @@
               0,
               1
             ],
-            "notes": "Unlabelled parameter movements. Linked UI sends identical state blocks to instance 1 then instance 0. No per-control names/scales or readback were established; do not reuse the Memory Cat byte encoding."
+            "notes": "Older linked parameter movements remain unlabelled. Linked UI sends identical blocks to instance1 then0. A separate 2026-10-09 labelled ALT Morph pilot establishes one byte association and visual restoration; it does not establish device readback or a runtime writer.",
+            "labelled_gui_observations": {
+              "alt_morph": {
+                "label": "ALT Morph",
+                "ui_class": "AltMorphButton",
+                "offset": 72,
+                "width": 1,
+                "observed_values": [
+                  0,
+                  1
+                ],
+                "visual_states": {
+                  "0": "disengaged",
+                  "1": "engaged"
+                },
+                "status": "capture-observed; visual roundtrip observed",
+                "writable": false,
+                "readback_verified": false,
+                "frames": {
+                  "engaged": 537,
+                  "disengaged": 1567
+                },
+                "evidence": [
+                  "Local Orion AFX2 automated GUI pilot, 2026-10-09, pilot-Instinct-20261009T161102564Z/Instinct-channel2.pcapng. Same type75/instance1 block, isolated byte72 change1->0; before/restored images match exactly; zero drops. Owner confirms starting buttons disengaged."
+                ],
+                "notes": "Observed UI-to-write association. No catalog declaration ID, device state reader, audible behavior or general runtime writer is established."
+              }
+            }
           }
         }
       ]

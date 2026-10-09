@@ -48,9 +48,11 @@ The same [Windows tooling guide](../tools/windows/README.md#first-automated-butt
 documents the bounded ALT Morph two-click pilot on unlinked AFX channel 2 and
 its Linux listener, `tools/afx_vm_pilot.py`. It coordinates passive capture,
 visual before/change/restore evidence and labelled frame analysis through a
-shared folder. Gesture execution remains unverified until the first real run;
-an IN-only passive setup check does not establish OUT capture or a writable
-parameter contract. This small pilot precedes full panel/batch automation.
+shared folder. The ALT Morph pilot now has both OUT witnesses and exact visual
+restoration, associating the button with byte72. Device parameter readback and
+a runtime writer remain unverified. The reusable `Run-AfxScan.ps1` executes
+reviewed JSON plans; `instinct-filters` prepares a two-button batch without a
+new per-plugin script. Knob and multi-position selector gestures remain pending.
 
 Run the WebUI as the sole HID controller. The recorder polls its bounded read
 API and saves changed chains, link flags and Memory Cat parameter/processing
