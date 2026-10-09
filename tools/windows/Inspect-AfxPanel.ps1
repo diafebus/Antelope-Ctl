@@ -2,7 +2,8 @@
 [CmdletBinding()]
 param(
     [ValidateRange(3, 60)][int]$DelaySeconds = 10,
-    [string]$PanelName = ''
+    [string]$PanelName = '',
+    [switch]$InspectKnobHover
 )
 $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($PanelName)) {
@@ -22,10 +23,14 @@ Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 public static class AfxPanelWindow {
+    [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
     [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
+    [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
 }
 '@
 
@@ -33,6 +38,10 @@ public static class AfxPanelWindow {
 Write-Host "Focus the $PanelName panel within $DelaySeconds seconds."
 Write-Host 'This reads controls and saves a screenshot. It does not click or change settings.'
 Write-Host 'The inspection console will minimize so it cannot cover the panel.'
+if ($InspectKnobHover) {
+    Write-Host 'After focusing the panel, leave the mouse alone. Knobs will be hovered automatically.'
+    Write-Host 'No clicks, drags, wheel events or value edits are sent. Escape stops the inspection.'
+}
 $console = [AfxPanelWindow]::GetConsoleWindow()
 if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 6) }
 Start-Sleep -Seconds $DelaySeconds
@@ -113,6 +122,80 @@ $result = [ordered]@{ version = 2; panel_name = $PanelName; created_utc = [DateT
     window_size = @{ width = $bounds.Width; height = $bounds.Height };
     controls = @($rows.ToArray()) }
 $result | ConvertTo-Json -Depth 12 | Set-Content -Encoding UTF8 (Join-Path $folder ($label + '-controls.json'))
+if ($InspectKnobHover) {
+    $cursor = New-Object AfxPanelWindow+Point
+    if (-not [AfxPanelWindow]::GetCursorPos([ref]$cursor)) { throw 'Cannot save cursor position.' }
+    $hoverRows = [System.Collections.Generic.List[object]]::new()
+    try {
+        if ($process.ProcessName -ne 'orionstudioiii') { throw 'Focus the Orion control panel.' }
+        $panels = @($elements | Where-Object {
+            -not $_.Current.IsOffscreen -and $_.Current.ClassName -eq $PanelName -and
+            $_.Current.BoundingRectangle.Left -ge $bounds.Left -and
+            $_.Current.BoundingRectangle.Right -le $bounds.Right -and
+            $_.Current.BoundingRectangle.Top -ge $bounds.Top -and
+            $_.Current.BoundingRectangle.Bottom -le $bounds.Bottom
+        })
+        if ($panels.Count -ne 1) { throw 'Cannot identify one visible plugin by its panel class. No hover performed.' }
+        $panel = $panels[0]
+        $knobs = @($panel.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+            [System.Windows.Automation.Condition]::TrueCondition) | Where-Object {
+                $_.Current.ClassName -match 'Pot$' -and -not $_.Current.IsOffscreen -and
+                $_.Current.IsEnabled -and -not $_.Current.IsPassword
+            })
+        if ($knobs.Count -eq 0 -or $knobs.Count -gt 64) { throw 'No bounded knob inventory found.' }
+        $index = 0
+        foreach ($knob in $knobs) {
+            if ([AfxPanelWindow]::GetAsyncKeyState(27) -lt 0) { throw 'Escape pressed.' }
+            if ([AfxPanelWindow]::GetForegroundWindow() -ne $handle -or $root.Current.BoundingRectangle -ne $bounds) {
+                throw 'Panel focus or position changed; stopped.'
+            }
+            $rect = $knob.Current.BoundingRectangle
+            $pb = $panel.Current.BoundingRectangle
+            if ($rect.IsEmpty -or $rect.Width -le 0 -or $rect.Height -le 0 -or
+                $rect.Left -lt $pb.Left -or $rect.Right -gt $pb.Right -or
+                $rect.Top -lt $pb.Top -or $rect.Bottom -gt $pb.Bottom) { throw 'Knob bounds are not inside the plugin.' }
+            if (-not [AfxPanelWindow]::SetCursorPos([int]($rect.X + $rect.Width / 2), [int]($rect.Y + $rect.Height / 2))) {
+                throw 'Pointer movement failed.'
+            }
+            Start-Sleep -Milliseconds 1200
+            if ([AfxPanelWindow]::GetForegroundWindow() -ne $handle -or $root.Current.BoundingRectangle -ne $bounds) {
+                throw 'Panel changed while hovering; stopped.'
+            }
+            $index++
+            $name = '{0:D2}-{1}' -f $index, ($knob.Current.ClassName -replace '[^a-zA-Z0-9_-]', '_')
+            $bitmap = New-Object System.Drawing.Bitmap ([int][Math]::Ceiling($bounds.Width)), ([int][Math]::Ceiling($bounds.Height))
+            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+            try {
+                $graphics.CopyFromScreen([int]$bounds.X, [int]$bounds.Y, 0, 0, $bitmap.Size)
+                $bitmap.Save((Join-Path $folder ($name + '-hover.png')), [System.Drawing.Imaging.ImageFormat]::Png)
+            } finally { $graphics.Dispose(); $bitmap.Dispose() }
+            $texts = [System.Collections.Generic.List[object]]::new()
+            $visible = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                [System.Windows.Automation.Condition]::TrueCondition)
+            foreach ($element in $visible) {
+                try {
+                    $c = $element.Current
+                    $r = $c.BoundingRectangle
+                    if ($c.IsPassword -or $c.IsOffscreen -or $r.IsEmpty -or $r.Right -le $bounds.Left -or
+                        $r.Left -ge $bounds.Right -or $r.Bottom -le $bounds.Top -or $r.Top -ge $bounds.Bottom) { continue }
+                    $value = $null; $pattern = $null
+                    if ($element.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$pattern)) {
+                        $value = $pattern.Current.Value
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace($c.Name) -or -not [string]::IsNullOrWhiteSpace($value)) {
+                        $texts.Add(@{ class_name = $c.ClassName; name = $c.Name; value = $value })
+                    }
+                } catch { }
+            }
+            $hoverRows.Add(@{ class_name = $knob.Current.ClassName; screenshot = $name + '-hover.png'; visible_text = @($texts.ToArray()) })
+            @($hoverRows.ToArray()) | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 (Join-Path $folder ($label + '-knob-hover.json'))
+        }
+        Write-Host "Saved $($hoverRows.Count) automatic knob hover inspections."
+    } finally {
+        [void][AfxPanelWindow]::SetCursorPos($cursor.X, $cursor.Y)
+        if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 9) }
+    }
+}
 Write-Host "Saved $($rows.Count) control records and $label-panel.png to $folder"
 Write-Host 'Leave the results here; Linux can read them directly.'
 if ($console -ne [IntPtr]::Zero) { [void][AfxPanelWindow]::ShowWindow($console, 9) }

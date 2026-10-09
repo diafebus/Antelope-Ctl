@@ -1,5 +1,24 @@
 # Windows AFX panel inspection
 
+## Automatic knob hover inspection
+
+Double-click `Z:\antelope-afx-tools\Inspect-AfxKnobs.cmd`, enter `Instinct`,
+then focus the plugin title bar during the ten-second delay. Leave the mouse
+alone for about 30 seconds. The inspector hovers every visible `Pot` control
+within the uniquely identified plugin, saves a screenshot and visible value
+text per knob, and restores the pointer. It sends no clicks, drags, wheel
+events or value edits. Escape stops it; changed focus or window bounds also
+stop it. The console stays open at completion or failure.
+
+Results are automatically saved beside the existing panel inspection under
+`results/panel-Instinct-TIMESTAMP/`; Linux reads them directly. This checks
+whether hovering exposes precise values. It does not yet establish an exact
+value-entry method or make the knob scan ready. Tooltip text outside the
+captured window may be absent. The same launcher is reusable for plugins whose
+visible class matches the entered name and whose knobs have `Pot` classes.
+PowerShell execution must be checked in Windows; no PowerShell runtime is
+available on the Linux host.
+
 First stage of the VM gesture runner: inspect actual UI Automation support
 before choosing semantic selectors or calibrated panel coordinates. This is
 read-only. It does not load effects, click buttons, query HID or change settings.
