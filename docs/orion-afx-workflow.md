@@ -57,8 +57,15 @@ round trips in one recording, associating filter/post-filter enable with bytes
 multi-position selector gestures remain pending.
 
 The standard entry point is now `Run-AfxCapture.cmd`: name the plugin and
-its reviewed workflow selects inventory or a prepared batch. V12's next stage
-is inventory on unlinked AFX2 with Space above zero. Selector metadata covers
+its reviewed workflow selects inventory or a prepared batch. V12's reviewed
+batch now covers ten knobs (Space first) and Humanize on unlinked AFX2.
+Captured byte feedback uses its existing raw ranges; full-panel screenshots
+record physical values. The same feedback supports Instinct float32 endpoints,
+requires phase-local writes and stable full blocks, and rechecks before ACK.
+The launcher preflights PowerShell syntax/native helpers in the Windows VM.
+Independent agent review plus a mocked host/guest handshake cover late writes
+and ambiguous labels; actual Windows execution remains a separate check.
+Selector metadata covers
 cabinet/speaker/model candidates; enumerated-option gestures remain pending.
 Legacy pilot launchers are removed. Instinct's catalog now records all21 knob
 endpoint associations and three switches; Volume displays−infinity..+1dB,

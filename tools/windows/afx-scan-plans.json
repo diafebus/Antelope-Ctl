@@ -69,7 +69,18 @@
           "label": "Speed",
           "class_name": "SpeedPot",
           "kind": "knob_range",
-          "status_pattern": "^SPEED:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^SPEED:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "speed",
+            "offset": 28,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         }
       ]
     },
@@ -88,147 +99,378 @@
           "label": "Punch",
           "class_name": "PunchPot",
           "kind": "knob_range",
-          "status_pattern": "^PUNCH:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^PUNCH:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "punch",
+            "offset": 20,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "BodyPot",
           "label": "Body",
           "class_name": "BodyPot",
           "kind": "knob_range",
-          "status_pattern": "^BODY:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^BODY:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "body",
+            "offset": 24,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "SpeedPot",
           "label": "Speed",
           "class_name": "SpeedPot",
           "kind": "knob_range",
-          "status_pattern": "^SPEED:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^SPEED:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "speed",
+            "offset": 28,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "CharacterPot",
           "label": "Character",
           "class_name": "CharacterPot",
           "kind": "knob_range",
-          "status_pattern": "^Character:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^Character:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "character",
+            "offset": 32,
+            "width": 4,
+            "range": [
+              0.0,
+              3.0
+            ]
+          }
         },
         {
           "id": "BoostFreqPot",
           "label": "BoostFreq",
           "class_name": "BoostFreqPot",
           "kind": "knob_range",
-          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "boost_frequency",
+            "offset": 36,
+            "width": 4,
+            "range": [
+              0.0,
+              100.0
+            ]
+          }
         },
         {
           "id": "BoostGainPot",
           "label": "BoostGain",
           "class_name": "BoostGainPot",
           "kind": "knob_range",
-          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_boostgain",
+            "offset": 40,
+            "width": 4,
+            "range": [
+              -24.0,
+              24.0
+            ]
+          }
         },
         {
           "id": "GainPot",
           "label": "Gain",
           "class_name": "GainPot",
           "kind": "knob_range",
-          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_gain",
+            "offset": 44,
+            "width": 4,
+            "range": [
+              0.0,
+              100.0
+            ]
+          }
         },
         {
           "id": "GainModPot",
           "label": "GainMod",
           "class_name": "GainModPot",
           "kind": "knob_range",
-          "status_pattern": "^GAIN\\ MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^GAIN\\ MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_gainmod",
+            "offset": 48,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "FilterFreqPot",
           "label": "FilterFreq",
           "class_name": "FilterFreqPot",
           "kind": "knob_range",
-          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_filterfreq",
+            "offset": 52,
+            "width": 4,
+            "range": [
+              0.0,
+              100.0
+            ]
+          }
         },
         {
           "id": "FilterQPot",
           "label": "FilterQ",
           "class_name": "FilterQPot",
           "kind": "knob_range",
-          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_filterq",
+            "offset": 56,
+            "width": 4,
+            "range": [
+              0.009999999776482582,
+              1.0
+            ]
+          }
         },
         {
           "id": "FilterMixPot",
           "label": "FilterMix",
           "class_name": "FilterMixPot",
           "kind": "knob_range",
-          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_filtermix",
+            "offset": 60,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "MorphModPot",
           "label": "MorphMod",
           "class_name": "MorphModPot",
           "kind": "knob_range",
-          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_morphmod",
+            "offset": 84,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "MorphAmountPot",
           "label": "MorphAmount",
           "class_name": "MorphAmountPot",
           "kind": "knob_range",
-          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_morphamount",
+            "offset": 80,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "BiasModPot",
           "label": "BiasMod",
           "class_name": "BiasModPot",
           "kind": "knob_range",
-          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_biasmod",
+            "offset": 92,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "BiasAmountPot",
           "label": "BiasAmount",
           "class_name": "BiasAmountPot",
           "kind": "knob_range",
-          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_biasamount",
+            "offset": 88,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "PFFreqPot",
           "label": "PFFreq",
           "class_name": "PFFreqPot",
           "kind": "knob_range",
-          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pffreq",
+            "offset": 96,
+            "width": 4,
+            "range": [
+              0.0,
+              100.0
+            ]
+          }
         },
         {
           "id": "PFModPot",
           "label": "PFMod",
           "class_name": "PFModPot",
           "kind": "knob_range",
-          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pfmod",
+            "offset": 100,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "PFQPot",
           "label": "PFQ",
           "class_name": "PFQPot",
           "kind": "knob_range",
-          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pfq",
+            "offset": 104,
+            "width": 4,
+            "range": [
+              0.009999999776482582,
+              1.0
+            ]
+          }
         },
         {
           "id": "PFMixPot",
           "label": "PFMix",
           "class_name": "PFMixPot",
           "kind": "knob_range",
-          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pfmix",
+            "offset": 108,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "MixPot",
           "label": "Mix",
           "class_name": "MixPot",
           "kind": "knob_range",
-          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_mix",
+            "offset": 116,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "VolumePot",
           "label": "Volume",
           "class_name": "VolumePot",
           "kind": "knob_range",
-          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$"
+          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_volume",
+            "offset": 120,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         }
       ]
     },
@@ -247,112 +489,288 @@
           "label": "BoostGain",
           "class_name": "BoostGainPot",
           "kind": "knob_range",
-          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$"
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*DB$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_boostgain",
+            "offset": 40,
+            "width": 4,
+            "range": [
+              -24.0,
+              24.0
+            ]
+          }
         },
         {
           "id": "GainPot",
           "label": "Gain",
           "class_name": "GainPot",
           "kind": "knob_range",
-          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^GAIN:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_gain",
+            "offset": 44,
+            "width": 4,
+            "range": [
+              0.0,
+              100.0
+            ]
+          }
         },
         {
           "id": "GainModPot",
           "label": "GainMod",
           "class_name": "GainModPot",
           "kind": "knob_range",
-          "status_pattern": "^GAIN\\ MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^GAIN\\ MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_gainmod",
+            "offset": 48,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "FilterFreqPot",
           "label": "FilterFreq",
           "class_name": "FilterFreqPot",
           "kind": "knob_range",
-          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_filterfreq",
+            "offset": 52,
+            "width": 4,
+            "range": [
+              0.0,
+              100.0
+            ]
+          }
         },
         {
           "id": "FilterQPot",
           "label": "FilterQ",
           "class_name": "FilterQPot",
           "kind": "knob_range",
-          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_filterq",
+            "offset": 56,
+            "width": 4,
+            "range": [
+              0.009999999776482582,
+              1.0
+            ]
+          }
         },
         {
           "id": "FilterMixPot",
           "label": "FilterMix",
           "class_name": "FilterMixPot",
           "kind": "knob_range",
-          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_filtermix",
+            "offset": 60,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "MorphModPot",
           "label": "MorphMod",
           "class_name": "MorphModPot",
           "kind": "knob_range",
-          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_morphmod",
+            "offset": 84,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "MorphAmountPot",
           "label": "MorphAmount",
           "class_name": "MorphAmountPot",
           "kind": "knob_range",
-          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_morphamount",
+            "offset": 80,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "BiasModPot",
           "label": "BiasMod",
           "class_name": "BiasModPot",
           "kind": "knob_range",
-          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_biasmod",
+            "offset": 92,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "BiasAmountPot",
           "label": "BiasAmount",
           "class_name": "BiasAmountPot",
           "kind": "knob_range",
-          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^AMOUNT:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_biasamount",
+            "offset": 88,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "PFFreqPot",
           "label": "PFFreq",
           "class_name": "PFFreqPot",
           "kind": "knob_range",
-          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$"
+          "status_pattern": "^FREQ:\\s*(-?\\d+(?:\\.\\d+)?)\\s*Hz$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pffreq",
+            "offset": 96,
+            "width": 4,
+            "range": [
+              0.0,
+              100.0
+            ]
+          }
         },
         {
           "id": "PFModPot",
           "label": "PFMod",
           "class_name": "PFModPot",
           "kind": "knob_range",
-          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MOD:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pfmod",
+            "offset": 100,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "PFQPot",
           "label": "PFQ",
           "class_name": "PFQPot",
           "kind": "knob_range",
-          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^RES:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pfq",
+            "offset": 104,
+            "width": 4,
+            "range": [
+              0.009999999776482582,
+              1.0
+            ]
+          }
         },
         {
           "id": "PFMixPot",
           "label": "PFMix",
           "class_name": "PFMixPot",
           "kind": "knob_range",
-          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_pfmix",
+            "offset": 108,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "MixPot",
           "label": "Mix",
           "class_name": "MixPot",
           "kind": "knob_range",
-          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$"
+          "status_pattern": "^MIX:\\s*(-?\\d+(?:\\.\\d+)?)\\s*%$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_mix",
+            "offset": 116,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         },
         {
           "id": "VolumePot",
           "label": "Volume",
           "class_name": "VolumePot",
           "kind": "knob_range",
-          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$"
+          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_volume",
+            "offset": 120,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
         }
       ]
     },
@@ -371,7 +789,186 @@
           "label": "Volume",
           "class_name": "VolumePot",
           "kind": "knob_range",
-          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$"
+          "status_pattern": "^VOLUME:\\s*(-?(?:\\d+(?:\\.\\d+)?|inf(?:inity)?|\\u221e))\\s*DB$",
+          "feedback": "captured_wire",
+          "wire": {
+            "source": "labelled_gui_observations",
+            "control_id": "knob_volume",
+            "offset": 120,
+            "width": 4,
+            "range": [
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "v12-controls",
+      "panel": "V12-Chorus",
+      "panel_class": "TurboEnsembler",
+      "effect_id": "turboensembler",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed UI inventory and captured one-byte wire fields; feedback gesture first trial pending",
+      "evidence": "panel-V12-Chorus-20261009T181946845Z has ten visible knob classes, TurboEnsemblerSwitch Humanize, hidden PresetIndex excluded. Known Orion catalogue raw fields reused. Space first enables color controls. No new INIT or direct HID queries/writes.",
+      "controls": [
+        {
+          "id": "TurboEnsemblerSpacePotNoInheritance",
+          "label": "Space",
+          "class_name": "TurboEnsemblerSpacePotNoInheritance",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "space",
+            "offset": 26,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerColorPotNoInheritance",
+          "label": "Colorize",
+          "class_name": "TurboEnsemblerColorPotNoInheritance",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "color",
+            "offset": 24,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerShifterPotNoInheritance",
+          "label": "Clr Shifter",
+          "class_name": "TurboEnsemblerShifterPotNoInheritance",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "colorShifter",
+            "offset": 25,
+            "range": [
+              0,
+              255
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerVoicesPot",
+          "label": "Voices",
+          "class_name": "TurboEnsemblerVoicesPot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "voices",
+            "offset": 21,
+            "range": [
+              1,
+              12
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerDelayPot",
+          "label": "Delay",
+          "class_name": "TurboEnsemblerDelayPot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "delay",
+            "offset": 22,
+            "range": [
+              1,
+              100
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerDetunePot",
+          "label": "Detune",
+          "class_name": "TurboEnsemblerDetunePot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "depth",
+            "offset": 23,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerPotFeedback",
+          "label": "Feedback",
+          "class_name": "TurboEnsemblerPotFeedback",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "feedback",
+            "offset": 27,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerPotGain",
+          "label": "Gain",
+          "class_name": "TurboEnsemblerPotGain",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "gain",
+            "offset": 31,
+            "range": [
+              0,
+              255
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerPanPot",
+          "label": "Pan",
+          "class_name": "TurboEnsemblerPanPot",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "pan",
+            "offset": 29,
+            "range": [
+              0,
+              180
+            ]
+          }
+        },
+        {
+          "id": "TurboEnsemblerPotMix",
+          "label": "Dry/Wet",
+          "class_name": "TurboEnsemblerPotMix",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "mix",
+            "offset": 30,
+            "range": [
+              0,
+              100
+            ]
+          }
+        },
+        {
+          "id": "Humanize",
+          "label": "Humanize",
+          "class_name": "TurboEnsemblerSwitch",
+          "kind": "binary_button"
         }
       ]
     }

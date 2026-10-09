@@ -1,11 +1,41 @@
 # One entry point; reviewed workflow data chooses the prepared capture stage.
+param([switch]$ValidateOnly)
 $ErrorActionPreference = 'Stop'
+if ($ValidateOnly) {
+    try {
+        $sources = @('Run-AfxCapture.ps1', 'Inspect-AfxPanel.ps1', 'Run-AfxScan.ps1')
+        foreach ($file in $sources) {
+            $tokens = $null; $parseErrors = $null
+            $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+                (Join-Path $PSScriptRoot $file), [ref]$tokens, [ref]$parseErrors)
+            if ($parseErrors.Count -gt 0) { throw "$file syntax: $($parseErrors.Message -join '; ')" }
+            $nativeSources = @($ast.FindAll({ param($node)
+                $node -is [System.Management.Automation.Language.StringConstantExpressionAst] -and
+                $node.Value -match 'public static class Afx(PanelWindow|ScanInput)'
+            }, $true))
+            foreach ($source in $nativeSources) {
+                Add-Type -ReferencedAssemblies 'System.Drawing.dll' -TypeDefinition $source.Value
+            }
+        }
+        Add-Type -AssemblyName UIAutomationClient
+        Add-Type -AssemblyName UIAutomationTypes
+        Write-Host 'Windows preflight passed: PowerShell syntax, native helper compilation and UI Automation assemblies.'
+        exit 0
+    } catch {
+        Write-Host ($_ | Out-String)
+        exit 1
+    }
+}
 $results = Join-Path $PSScriptRoot 'results'
 New-Item -ItemType Directory -Path $results -Force | Out-Null
 $log = Join-Path $results ('AFX-capture-launch-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '.log')
 Start-Transcript -Path $log | Out-Null
 $recording = $true
 try {
+    # A child process compiles helpers without moving the pointer and avoids
+    # loading their types twice in the actual capture process.
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -ValidateOnly
+    if ($LASTEXITCODE -ne 0) { throw 'Windows preflight failed; no capture actions started.' }
     $name = (Read-Host 'Plugin name (for example V12 Chorus)').Trim()
     if ([string]::IsNullOrWhiteSpace($name)) { throw 'A plugin name is required.' }
     $workflows = Get-Content -Raw (Join-Path $PSScriptRoot 'afx-capture-workflows.json') | ConvertFrom-Json
@@ -24,7 +54,11 @@ try {
         if ($name -eq 'V12 Chorus') { Write-Host 'Set Space above zero so its color controls are available.' }
         Write-Host 'Focus its title bar during the ten-second delay, then leave mouse and keyboard alone.'
         Write-Host 'Knob hovers and selector metadata are saved automatically. No Linux recorder is needed for inventory.'
-        & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -InspectKnobHover
+        $panelClass = $name
+        if ($matches.Count -eq 1 -and -not [string]::IsNullOrWhiteSpace($matches[0].panel_class)) {
+            $panelClass = $matches[0].panel_class
+        }
+        & (Join-Path $PSScriptRoot 'Inspect-AfxPanel.ps1') -PanelName $name -PanelClass $panelClass -InspectKnobHover
         Write-Host 'Inventory saved. Linux can read it and prepare the reviewed sweep/selector plan.'
     }
 } catch {

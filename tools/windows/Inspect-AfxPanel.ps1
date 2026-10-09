@@ -3,6 +3,7 @@
 param(
     [ValidateRange(3, 60)][int]$DelaySeconds = 10,
     [string]$PanelName = '',
+    [string]$PanelClass = '',
     [switch]$InspectKnobHover
 )
 $ErrorActionPreference = 'Stop'
@@ -10,6 +11,7 @@ if ([string]::IsNullOrWhiteSpace($PanelName)) {
     $PanelName = Read-Host 'Name of the plugin/panel to inspect (for example Instinct)'
 }
 $PanelName = $PanelName.Trim()
+if ([string]::IsNullOrWhiteSpace($PanelClass)) { $PanelClass = $PanelName }
 if ([string]::IsNullOrWhiteSpace($PanelName)) { throw 'A panel name is required.' }
 # A label names the evidence; it does not establish which window was focused.
 $label = [regex]::Replace($PanelName, '[<>:"/\\|?*\x00-\x1f]', '_')
@@ -142,18 +144,20 @@ if ($InspectKnobHover) {
     try {
         if ($process.ProcessName -ne 'orionstudioiii') { throw 'Focus the Orion control panel.' }
         $panels = @($elements | Where-Object {
-            -not $_.Current.IsOffscreen -and $_.Current.ClassName -eq $PanelName -and
+            -not $_.Current.IsOffscreen -and $_.Current.ClassName -eq $PanelClass -and
             $_.Current.BoundingRectangle.Left -ge $bounds.Left -and
             $_.Current.BoundingRectangle.Right -le $bounds.Right -and
             $_.Current.BoundingRectangle.Top -ge $bounds.Top -and
             $_.Current.BoundingRectangle.Bottom -le $bounds.Bottom
         })
+        $identityStatus = 'class-matched'
         if ($panels.Count -eq 0) {
+            $identityStatus = 'heuristic common ancestor; identity requires review'
             # Read-only discovery for panels whose internal class differs from
             # the user-facing name. Use the lowest common ancestor of the
             # fully visible Pot controls; never infer a gesture/write plan.
             $allKnobs = @($elements | Where-Object {
-                $_.Current.ClassName -match 'Pot$' -and -not $_.Current.IsOffscreen -and
+                $_.Current.ClassName -match 'Pot' -and -not $_.Current.IsOffscreen -and
                 -not $_.Current.IsPassword -and $bounds.Contains($_.Current.BoundingRectangle)
             })
             if ($allKnobs.Count -gt 0 -and $allKnobs.Count -le 64) {
@@ -182,7 +186,7 @@ if ($InspectKnobHover) {
         $panel = $panels[0]
         $knobs = @($panel.FindAll([System.Windows.Automation.TreeScope]::Descendants,
             [System.Windows.Automation.Condition]::TrueCondition) | Where-Object {
-                $_.Current.ClassName -match 'Pot$' -and -not $_.Current.IsOffscreen -and
+                $_.Current.ClassName -match 'Pot' -and -not $_.Current.IsOffscreen -and
                 $_.Current.IsEnabled -and -not $_.Current.IsPassword
             })
         if ($knobs.Count -eq 0 -or $knobs.Count -gt 64) { throw 'No bounded knob inventory found.' }
@@ -247,6 +251,7 @@ if ($InspectKnobHover) {
         $detectedClass = $null
         if ($null -ne $panel) { $detectedClass = $panel.Current.ClassName }
         $hoverResult = [ordered]@{ version = 2; panel_name = $PanelName; panel_class = $detectedClass;
+            panel_identity_status = $identityStatus;
             count = $hoverRows.Count; expected_count = $knobs.Count;
             complete = ($hoverRows.Count -eq $knobs.Count -and $knobs.Count -gt 0);
             controls = @($hoverRows.ToArray()) }

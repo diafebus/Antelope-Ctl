@@ -9,6 +9,7 @@ import math
 import re
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import time
 
@@ -52,13 +53,69 @@ def load_plans():
     plans = json.loads((ROOT/'tools/windows/afx-scan-plans.json').read_text())['plans']
     for plan in plans:
         controls = plan['controls']
-        limit = 24 if all(c['kind'] == 'knob_range' for c in controls) else 3
+        limit = 24 if any(c['kind'] == 'knob_range' for c in controls) else 3
         if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
                 any(c['kind'] not in ('binary_button', 'knob_range') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
     return {plan['id']: plan for plan in plans}
+
+
+def wire_feedback(reports, control, effect_type, phase, out_endpoint=1, instance=None, previous_payload_hex=None, after_frame=0):
+    """Read a captured write byte, never query the device or infer a UI scale."""
+    wire = control['wire']
+    samples = [(number, data) for number, _, ep, data in reports
+               if number > after_frame and ep == out_endpoint and data[0] == 0x70 and data[4] in PARAMETER_OPCODES
+               and data[16] == 0xd5 and data[18] == effect_type
+               and (instance is None or data[19] == instance)]
+    if not samples:
+        return {'observed_raw': None, 'endpoint_verified': False, 'continue': True,
+                'source': 'no captured parameter write; endpoint unverified'}
+    number, data = samples[-1]
+    offset = wire['offset']
+    value = struct.unpack('<f', data[offset:offset + 4])[0] if wire.get('width', 1) == 4 else data[offset]
+    expected = wire['range'][0 if phase == 'minimum' else 1]
+    payload_hex = data[20:].hex()
+    verified = value == expected and payload_hex == previous_payload_hex
+    return {'observed_raw': value, 'frame': number, 'endpoint_verified': verified,
+            'parameter_payload_hex': payload_hex, 'continue': not verified,
+            'source': 'captured parameter write and stable full block; not device readback'}
+
+
+def validate_wire_controls(plan, catalog):
+    effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
+    implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+    for control in plan['controls']:
+        if control.get('feedback') != 'captured_wire':
+            continue
+        wire = control['wire']
+        if wire.get('source') == 'labelled_gui_observations':
+            encoding = implementation['parameter_observation']['labelled_gui_observations'][wire['control_id']]
+            expected_range = encoding['observed_wire_range']
+            if encoding.get('encoding') != 'float32-le' or wire.get('width') != 4:
+                raise ValueError('Observed float fields require measured float32-le encoding')
+        else:
+            encoding = implementation['control_encodings'][wire['control_id']]
+            expected_range = encoding['range']
+        if (wire['offset'] != encoding['offset'] or wire['range'] != expected_range
+                or wire.get('width', 1) != encoding.get('width', 1)):
+            raise ValueError('Wire endpoint feedback must match the captured catalog field')
+
+
+def verify_wire_changes(reports, boundary, control, effect_type, instance, out_endpoint=1):
+    samples = [(number, data) for number, _, ep, data in reports
+               if ep == out_endpoint and data[0] == 0x70 and data[4] in PARAMETER_OPCODES
+               and data[16] == 0xd5 and data[18] == effect_type and data[19] == instance]
+    previous = None
+    for number, data in samples:
+        if number > boundary and previous is not None:
+            changed = {offset for offset in range(20, len(data)) if previous[offset] != data[offset]}
+            offset = control['wire']['offset']
+            allowed = set(range(offset, offset + control['wire'].get('width', 1)))
+            if changed - allowed:
+                raise RuntimeError('GUI gesture changed bytes outside its reviewed wire field')
+        previous = data
 
 
 def validate_request(request):
@@ -181,6 +238,7 @@ def run_job(job, profile):
     request = json.loads((job/'request.json').read_text(encoding='utf-8-sig'))
     plan = validate_request(request)
     effect_type = plan_effect_type(plan)
+    validate_wire_controls(plan, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
     location = device_location(profile)
     transport = profile['transport']
     in_ep, out_ep = (int(transport[key], 0) for key in ('in_endpoint', 'out_endpoint'))
@@ -233,12 +291,37 @@ def run_job(job, profile):
                 first_frame = max(row[0] for row in before_reports)
                 start = time.time()
                 write_json(job/f'action-{index}-go.json', {'action': index})
+                feedback_history = []
+                if control.get('feedback') == 'captured_wire':
+                    for sweep in range(1, 13):
+                        wait_file(job/f'action-{index}-sweep-{sweep}-done.json', 10, process)
+                        time.sleep(.3)
+                        current_reports = read_reports(capture, location, transport, allow_incomplete=True)
+                        sweep_window = {'start_epoch': start, 'end_epoch': time.time(),
+                                        'start_frame_exclusive': first_frame,
+                                        'end_frame_inclusive': max(row[0] for row in current_reports)}
+                        events = labelled_actions(current_reports, [sweep_window], out_ep)[0]['events']
+                        if events:
+                            expected_target = verify_action_events(events, expected_target, effect_type)
+                            verify_wire_changes(current_reports, first_frame, control, effect_type,
+                                                expected_target[3], out_ep)
+                        feedback = wire_feedback(current_reports, control, effect_type, phase, out_ep,
+                                                 expected_target[3] if expected_target else None,
+                                                 feedback_history[-1].get('parameter_payload_hex') if feedback_history else None,
+                                                 first_frame)
+                        feedback_history.append(feedback)
+                        write_json(job/f'action-{index}-sweep-{sweep}-feedback.json', feedback)
+                        if not feedback['continue']:
+                            break
+                    else:
+                        raise RuntimeError('Captured endpoint was not reached in twelve continuous sweeps')
                 completed = wait_file(job/f'action-{index}-done.json', 60 if has_knobs else 10, process)
                 window = {'action': index, 'control': control['id'], 'label': control['label'],
                           'gesture': phase,
                           'start_epoch': start, 'end_epoch': time.time(),
                           'start_frame_exclusive': first_frame,
                           'matching_method': 'recording frame boundaries; host times are metadata only',
+                          'wire_feedback': feedback_history,
                           'guest_visual_result': completed}
                 # dumpcap can buffer output briefly after the guest completes.
                 deadline = time.monotonic() + 3
@@ -259,8 +342,18 @@ def run_job(job, profile):
                 unchanged_endpoint = (control['kind'] == 'knob_range'
                                      and completed.get('starting_value') == completed.get('displayed_value')
                                      and 'displayed_value' in completed)
+                if control.get('feedback') == 'captured_wire' and feedback_history:
+                    unchanged_endpoint = False
                 if events or not unchanged_endpoint:
                     expected_target = verify_action_events(events, expected_target, effect_type)
+                if control.get('feedback') == 'captured_wire':
+                    verify_wire_changes(reports, first_frame, control, effect_type, expected_target[3], out_ep)
+                    final_feedback = wire_feedback(reports, control, effect_type, phase, out_ep,
+                                                   expected_target[3], feedback_history[-1]['parameter_payload_hex'],
+                                                   first_frame)
+                    if not final_feedback['endpoint_verified']:
+                        raise RuntimeError('Final captured block changed after endpoint feedback; no ACK')
+                    window['final_wire_feedback'] = final_feedback
                 window['wire_events_observed'] = bool(events)
                 window['endpoint_range_verified'] = False
                 write_json(job/'action-windows.json', windows)

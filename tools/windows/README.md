@@ -7,18 +7,19 @@ Enter the plugin name. It chooses the prepared stage from
 ## Next capture: V12 Chorus
 
 1. Open V12 Chorus on unlinked AFX channel2 in the Orion control panel.
-2. Set Space above zero so Colorize and Clr Shifter are available.
+2. Leave its panel open; the batch scans Space first to enable the color controls.
 3. Double-click `Run-AfxCapture.cmd` and enter `V12 Chorus`.
-4. During the ten-second countdown, focus the plugin's title bar.
+4. Press Enter when ready, then focus its title bar during the ten-second countdown.
 5. Leave mouse and keyboard alone until the console returns, then report done.
 
-The prepared V12 stage inventories control classes, knob hover labels and
-selector metadata. No Linux USB recorder is needed for this stage. Files are
-saved automatically in `results/panel-V12-Chorus-TIMESTAMP/`; Linux reads the
-same folder directly. There is no manual screenshot or transfer step.
-Existing type70 raw offsets/ranges are retained; no repeated INIT test is
-needed. After reviewing this inventory, the same launcher will select V12's
-range plan, with Space before the dependent color controls.
+The prepared V12 stage captures ten knob ranges and Humanize in22 labelled
+phases. The Linux listener must be waiting. Files are saved automatically in
+`results/scan-V12-Chorus-TIMESTAMP/`, shared directly with Linux. The actual
+`TurboEnsembler` panel and ten visible knob classes were reviewed from the
+inventory; hidden PresetIndex is excluded. Existing type70 raw mappings are
+reused, with no repeated INIT. Power/bypass remains outside this plan.
+Humanize is clicked twice to restore its starting state; range knobs stay
+at maximum. Physical values displayed inside V12 knobs are saved in screenshots.
 
 ## Capture stages
 
@@ -28,12 +29,23 @@ hover screenshots and selector candidates. When display and internal class
 names differ, a bounded search finds the lowest common ancestor of visible
 Pot controls. Panel identity and selectors still need review before a plan
 is enabled. Password/offscreen controls are skipped. Startup errors remain
-visible and are logged privately under `results/`.
+visible and are logged privately under `results/`. Before prompting, the
+launcher runs a Windows preflight in a separate PowerShell process: parse the
+three helpers, compile their native C# sources and load UI Automation
+assemblies. No mouse/device calls occur in that preflight. Actual capture
+execution is still checked on the first Windows run.
 
 Reviewed range batches use the same helper for every plugin. A Linux listener
 must be waiting before running a range stage. It records passive usbmon traffic
 and gates each GUI action. Continuous held vertical sweeps capture both
-endpoints; numeric status and full-panel screenshots label each phase. Range
+endpoints; full-panel screenshots label each phase. Known byte/float fields
+use captured-write feedback: reach the catalog's raw endpoint, repeat a
+sweep and require the complete parameter payload to remain identical.
+The host rejects stale prior-phase writes, wrong instances and changes outside
+the reviewed field, and rechecks the final block before acknowledging.
+Minimum is primed away from the clamp to establish fresh write evidence.
+Twelve sweeps per phase and600seconds/100MB bound a full batch. Captured
+writes are distinct from verified device readback. Range
 tests leave knobs at maximum, as requested. Repeated equal labels do not prove
 wire endpoints; offline review retains unknown fields and ambiguous labels.
 Infinity labels are stored as JSON strings. Button round trips are also

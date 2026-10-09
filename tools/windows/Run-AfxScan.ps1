@@ -18,7 +18,7 @@ $matchingPlans = @($plans | Where-Object { $_.id -eq $PlanId })
 if ($matchingPlans.Count -ne 1) { throw 'Choose one of the listed reviewed plans.' }
 $plan = $matchingPlans[0]
 $controlLimit = 3
-if (@($plan.controls | Where-Object { $_.kind -ne 'knob_range' }).Count -eq 0) { $controlLimit = 24 }
+if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) { $controlLimit = 24 }
 if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
     @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
@@ -55,8 +55,11 @@ public static class AfxScanInput {
         Input[] inputs = new Input[2];
         inputs[0].mouse.flags = 2;
         inputs[1].mouse.flags = 4;
-        if (SendInput(2, inputs, Marshal.SizeOf(typeof(Input))) != 2)
-            throw new Exception("Mouse injection failed; no retry permitted.");
+        if (SendInput(2, inputs, Marshal.SizeOf(typeof(Input))) != 2) {
+            try { Held(false); } finally {
+                throw new Exception("Mouse injection failed; release attempted, no retry permitted.");
+            }
+        }
     }
     public static void Held(bool down) {
         Input[] inputs = new Input[1];
@@ -172,7 +175,7 @@ function Read-Knob {
     if ($token -match '^(inf(?:inity)?|\u221e)$') { return [double]::PositiveInfinity }
     return [double]::Parse($token, [System.Globalization.CultureInfo]::InvariantCulture)
 }
-function Drag-Knob([int]$Delta) {
+function Drag-Knob([int]$Delta, [bool]$ReadStatus = $true) {
     Assert-Panel
     $x = [int]($buttonBounds.X + $buttonBounds.Width / 2)
     $y = [int]($buttonBounds.Y + $buttonBounds.Height / 2)
@@ -186,12 +189,44 @@ function Drag-Knob([int]$Delta) {
     [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Left + 8), [int]($windowBounds.Bottom - 8))
     Start-Sleep -Milliseconds 200
     [void][AfxScanInput]::SetCursorPos($x, $y)
+    if (-not $ReadStatus) { Start-Sleep -Milliseconds 300; return }
     for ($retry = 0; $retry -lt 6; $retry++) {
         Start-Sleep -Milliseconds 300
         Assert-Panel
         try { return Read-Knob } catch {
             if ($retry -eq 5) { throw }
         }
+    }
+}
+function Run-WireKnobRange {
+    foreach ($phase in @('minimum', 'maximum')) {
+        $script:index++
+        Assert-Panel
+        Write-Record (Join-Path $job "action-$index-request.json") @{ action = $index; control = $control.id }
+        $null = Wait-HostFile "action-$index-go.json" 10
+        # Prime away from the lower clamp so the minimum has a fresh captured
+        # parameter block even when this knob starts at its minimum.
+        if ($phase -eq 'minimum') { Drag-Knob -800 $false }
+        $finished = $false
+        for ($sweep = 1; $sweep -le 12; $sweep++) {
+            $delta = 800
+            if ($phase -eq 'maximum') { $delta = -800 }
+            Drag-Knob $delta $false
+            Write-Record (Join-Path $job "action-$index-sweep-$sweep-done.json") @{ status = 'ok'; sweep = $sweep }
+            $feedback = Wait-HostFile "action-$index-sweep-$sweep-feedback.json" 10
+            if (-not $feedback.continue) {
+                if (-not $feedback.endpoint_verified) { throw 'Host did not verify the captured endpoint.' }
+                $finished = $true; break
+            }
+        }
+        if (-not $finished) { throw 'Captured endpoint not reached within the bounded sweeps.' }
+        $image = Save-Button ($filePrefix + '-' + $phase + '.png')
+        $image.Dispose()
+        Write-Record (Join-Path $job "action-$index-done.json") @{
+            status = 'ok'; phase = $phase; observed_raw = $feedback.observed_raw;
+            source = 'captured write endpoint; physical value in screenshot; not device readback'; restored = $false
+        }
+        $null = Wait-HostFile "action-$index-ack.json" 10
     }
 }
 function Run-KnobRange {
@@ -322,7 +357,7 @@ try {
     if ($control.kind -eq 'knob_range') {
         $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
             [int]$windowBounds.Width, [int]$windowBounds.Height)
-        Run-KnobRange
+        if ($control.feedback -eq 'captured_wire') { Run-WireKnobRange } else { Run-KnobRange }
         continue
     }
     $baseline = Save-Button ($filePrefix + '-before.png')
