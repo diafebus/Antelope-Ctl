@@ -63,10 +63,15 @@ python3 tools/afx_vm_pilot.py --shared '/path/to/shared/antelope-afx-tools'
 Load `usbmon` once with `sudo modprobe usbmon` if necessary, and use a user with
 dumpcap permissions. The listener waits up to 15 minutes for one new guest job.
 Then double-click `Z:\antelope-afx-tools\Run-InstinctPilot.cmd` in Windows and
-focus the Instinct panel during the ten-second countdown. Leave the mouse and
+read the instructions and press Enter when the panel is ready. The console
+minimizes, rather than closing. Focus Instinct using its title bar during the
+ten-second countdown; do not manually click any plugin buttons. Leave the mouse and
 keyboard alone until completion; Escape or loss of focus stops subsequent
 actions. Closing Windows, restarting the host listener or retrying a completed
 job does not replay its gestures. Start a fresh run for a new trial.
+Every launch also saves `results/Instinct-pilot-launch-TIMESTAMP.log`, including
+startup/preflight errors that occur before a trial directory exists. Linux can
+read this directly, so there is no need to copy terminal messages manually.
 
 Each trial creates `results/pilot-Instinct-TIMESTAMP/` in the shared folder.
 Linux starts a bounded passive usbmon capture and proves complete matching

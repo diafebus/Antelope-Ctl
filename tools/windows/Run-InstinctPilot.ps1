@@ -1,5 +1,10 @@
 # One reversible vendor-UI button trial, with capture coordinated by Linux.
 $ErrorActionPreference = 'Stop'
+$results = Join-Path $PSScriptRoot 'results'
+New-Item -ItemType Directory -Path $results -Force | Out-Null
+$launchLog = Join-Path $results ('Instinct-pilot-launch-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '.log')
+Start-Transcript -Path $launchLog | Out-Null
+try {
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Drawing
@@ -98,8 +103,12 @@ function Save-Button($Name) {
 
 [void][InstinctPilotInput]::SetProcessDPIAware()
 Write-Host 'Instinct pilot: AFX channel 2, ALT Morph only, two clicks maximum.'
-Write-Host 'Linux recorder must already be waiting. Focus Instinct within 10 seconds.'
-Write-Host 'Leave mouse and keyboard alone during the trial. Escape stops before the next action.'
+Write-Host 'Prepare Instinct on unlinked AFX channel 2. Linux recorder must already be waiting.'
+Write-Host 'The runner clicks ALT Morph automatically; do not click plugin buttons yourself.'
+Write-Host 'After pressing Enter, the terminal minimizes. Focus Instinct using its title bar within 10 seconds.'
+Write-Host 'Then leave mouse and keyboard alone. The terminal returns when finished or stopped.'
+Write-Host "Launch log saved automatically: $launchLog"
+$null = Read-Host 'Press Enter when the panel is ready'
 $console = [InstinctPilotInput]::GetConsoleWindow()
 if ($console -ne [IntPtr]::Zero) { [void][InstinctPilotInput]::ShowWindow($console, 6) }
 $job = $null
@@ -198,4 +207,7 @@ try {
         if ($null -ne $bitmap) { $bitmap.Dispose() }
     }
     if ($console -ne [IntPtr]::Zero) { [void][InstinctPilotInput]::ShowWindow($console, 9) }
+}
+} finally {
+    Stop-Transcript | Out-Null
 }
