@@ -1253,6 +1253,13 @@
               1
             ],
             "notes": "Older parameter movements were unlabelled; linked UI sends identical state blocks to instance 1 then instance 0. A later GUI trial identifies two Filter Type values at byte26; remaining field maps/scales and readback are unverified. Do not reuse the Memory Cat byte encoding.",
+            "preserved_fields": {
+              "filter_type": {
+                "offset": 26,
+                "readback_offset": null,
+                "evidence": "Labelled HighPass3/BandPass1 round trip changes only byte26; automated_gui_capture gives frames and the two observed values. Remaining values and enum order unknown."
+              }
+            },
             "automated_gui_capture": {
               "source": "scan-Master-De-Esser-20261009T211457387Z",
               "status": "Filter Type GUI round trip completed; partial selector mapping only",

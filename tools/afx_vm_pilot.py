@@ -53,9 +53,9 @@ def planned_actions(plan):
             phases = ['minimum', 'maximum']
         elif control['kind'] == 'wheel_button':
             phases = ['wheel forward', 'wheel back']
-        elif control['kind'] in ('selector_cycle', 'selector_positions'):
+        elif control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
             phases = [f'position-{n}' for n in range(1, control['positions'] + 1)]
-            if control['kind'] == 'selector_positions':
+            if control['kind'] in ('selector_positions', 'menu_positions'):
                 phases.append('restore')
         else:
             phases = ['click', 'click back']
@@ -106,9 +106,13 @@ def load_plans():
         if (plan['channel'] != 2 or not 1 <= len(controls) <= limit or
                 not re.fullmatch(r'[A-Za-z0-9_-]+', plan['panel']) or
                 len({c['id'] for c in controls}) != len(controls) or
-                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
+                any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
+            if control['kind'] == 'menu_positions' and (type(control.get('positions')) is not int
+                    or not 2 <= control['positions'] <= 8 or type(control.get('dwell_ms')) is not int
+                    or not 3000 <= control['dwell_ms'] <= 10000):
+                raise ValueError('Menu requires a reviewed finite count and slow dwell')
             if control['kind'] in ('selector_cycle', 'selector_positions') and (type(control.get('positions')) is not int or not 2 <= control['positions'] <= 8 or not control.get('visual_region')):
                 raise ValueError('Selector requires a reviewed finite count and visual region')
             if control['kind'] == 'selector_positions':
@@ -143,7 +147,7 @@ def validate_wire_controls(plan, catalog):
     effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
     implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
     for control in plan['controls']:
-        if control['kind'] in ('selector_cycle', 'selector_positions'):
+        if control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
             candidate = implementation['parameter_observation']['preserved_fields'][control['candidate_field']]
             if control['observed_field_offset'] != candidate['offset']:
                 raise ValueError('Selector candidate must match its catalog preserved field')
@@ -217,6 +221,24 @@ def plan_effect_type(plan):
     effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
     implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
     return implementation['type_id']
+
+
+def verify_menu_labels(completed, control, phase, previous=None):
+    names = completed.get('option_names')
+    if (not isinstance(names, list) or len(names) != control['positions']
+            or any(not isinstance(n, str) or not n.strip() for n in names)
+            or len(set(names)) != len(names) or (previous is not None and names != previous)):
+        raise RuntimeError('Menu choices are missing, ambiguous or changed during capture')
+    initial = completed.get('starting_selection')
+    start = completed.get('starting_position')
+    if type(start) is not int or not 0 <= start < len(names) or names[start] != initial:
+        raise RuntimeError('Starting menu choice was not identified exactly')
+    selected = initial if phase == 'restore' else names[int(phase.split('-')[1]) - 1]
+    if completed.get('selection') != selected or completed.get('popup_closed') is not True:
+        raise RuntimeError('Menu did not select its named choice and close')
+    if completed.get('dwell_ms') != control['dwell_ms']:
+        raise RuntimeError('Menu choice was not held for the reviewed dwell')
+    return names
 
 
 def verify_wheel_pulses(completed, policy, phase, expected_start, forward_count=None):
@@ -372,10 +394,12 @@ def run_job(job, profile):
     wheel_baselines = {}
     wheel_counts = {}
     wheel_selections = {}
+    menu_names = {}
+    menu_starts = {}
     block_minima = {}
     actions = planned_actions(plan)
     has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
-    has_wheel = any(c['kind'] == 'wheel_button' for c in plan['controls'])
+    has_wheel = any(c['kind'] in ('wheel_button', 'menu_positions') for c in plan['controls'])
     with (job/'dumpcap.log').open('x') as log:
         process = subprocess.Popen(['dumpcap', '-i', interface, '-s', '0',
             '-a', ('duration:600' if len(plan['controls']) > 3 else 'duration:240') if has_knobs else ('duration:180' if has_wheel else 'duration:60'),
@@ -411,7 +435,7 @@ def run_job(job, profile):
                 if not before_reports:
                     raise RuntimeError('No current capture boundary; no click permitted')
                 first_frame = max(row[0] for row in before_reports)
-                if control['kind'] in ('selector_cycle', 'selector_positions'):
+                if control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
                     prior = [data for _, _, ep, data in before_reports if ep == out_ep and data[0] == 0x70 and data[4] in PARAMETER_OPCODES and data[16] == 0xd5 and data[18] == effect_type and (expected_target is None or data[19] == expected_target[3])]
                     if not prior and control['kind'] == 'selector_cycle':
                         raise RuntimeError('Selector cycle requires a fresh preceding parameter block')
@@ -505,6 +529,8 @@ def run_job(job, profile):
                 action_timeout = 60 if has_knobs else 10
                 if control['kind'] == 'wheel_button':
                     action_timeout = 10 + math.ceil(plan['wheel_policy']['pause_ms'] * plan['wheel_policy']['max_pulses'] / 1000)
+                if control['kind'] == 'menu_positions':
+                    action_timeout = 15 + math.ceil(control['dwell_ms'] / 1000)
                 completed = wait_file(job/f'action-{index}-done.json', action_timeout, process)
                 window = {'action': index, 'control': control['id'], 'label': control['label'],
                           'gesture': phase,
@@ -558,7 +584,13 @@ def run_job(job, profile):
                         raise RuntimeError('Measured toggle did not change/restore its captured value')
                     window['observed_toggle_raw'] = expected
                     window['toggle_restoration_source'] = 'captured parameter writes; not device readback'
-                if control['kind'] in ('selector_cycle', 'selector_positions'):
+                if control['kind'] == 'menu_positions':
+                    menu_names[control['id']] = verify_menu_labels(completed, control, phase, menu_names.get(control['id']))
+                    initial = completed['starting_selection']
+                    if control['id'] in menu_starts and menu_starts[control['id']] != initial:
+                        raise RuntimeError('Starting menu choice changed during capture')
+                    menu_starts[control['id']] = initial
+                if control['kind'] in ('selector_cycle', 'selector_positions', 'menu_positions'):
                     offset = control['observed_field_offset']
                     verify_wire_changes(reports, first_frame, {'wire': {'offset': offset}}, effect_type, expected_target[3], out_ep)
                     samples = [data for number, _, ep, data in reports if number > first_frame and ep == out_ep and data[0] == 0x70 and data[16] == 0xd5 and data[18] == effect_type and data[19] == expected_target[3]]
@@ -574,7 +606,7 @@ def run_job(job, profile):
                     if phase == 'restore' and value != selector_baselines[control['id']]:
                         raise RuntimeError('Direct selector did not restore starting raw value')
                     seen.append(value)
-                    if control['kind'] == 'selector_positions' and len(seen) == control['positions']:
+                    if control['kind'] in ('selector_positions', 'menu_positions') and len(seen) == control['positions']:
                         starting_position = completed.get('starting_position')
                         if type(starting_position) is not int or not 0 <= starting_position < control['positions']:
                             raise RuntimeError('Starting selector appearance did not match exactly one captured position')
@@ -631,7 +663,7 @@ def run_job(job, profile):
                 if completed.get('status') != 'ok':
                     raise RuntimeError('Guest visual verification failed; stop for review')
                 ack = {'status': 'ok'}
-                if control['kind'] == 'selector_positions' and phase == f"position-{control['positions']}":
+                if control['kind'] in ('selector_positions', 'menu_positions') and phase == f"position-{control['positions']}":
                     baseline = selector_baselines[control['id']]
                     if baseline not in selector_values[control['id']]:
                         raise RuntimeError('Starting selector state absent from captured positions; no restore guess')

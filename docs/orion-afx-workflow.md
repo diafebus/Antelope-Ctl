@@ -369,3 +369,15 @@ policy now uses15-unit partial notches, a1500ms pause and at most8increments,
 stopping at the first GUI selection change. The reverse is bounded by the
 forward count and must restore the initial label. Each increment retains a PNG
 and metadata; the slower Windows gesture is pending verification.
+
+The partial-notch run `scan-Master-De-Esser-20261009T212819731Z` also completed
+the same two GUI selections, with a single15-unit pulse per phase and1500ms
+pauses. The owner reports that wheel input still skips among six choices; the
+wheel trials therefore do not establish complete menu coverage. The next
+`deesser-filter-menu` plan uses the generic `menu_positions` method: live
+visible names and row bounds identify six direct selections, each held5000ms,
+followed by restoration of the initial named choice. No labels or raw enum
+order are guessed. The host verifies six distinct raw byte26 values, stable
+names, selected labels, popup closure and restoration. Input accepts only the
+original panel or this opening's verified popup handles. First named-selection
+execution remains pending; other plugin controls and presets are excluded.

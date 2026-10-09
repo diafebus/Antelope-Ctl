@@ -26,13 +26,14 @@ $plan = $matchingPlans[0]
 $controlLimit = 3
 if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) { $controlLimit = 24 }
 if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
-    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button') }).Count -ne 0) {
+    @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
 }
 $panelLabel = $plan.panel -replace '[^a-zA-Z0-9_-]', '_'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type -ReferencedAssemblies 'System.Drawing.dll' -TypeDefinition @'
 using System;
 using System.Drawing;
@@ -170,6 +171,141 @@ function Save-Button($Name) {
     } catch { $bitmap.Dispose(); throw }
     finally { $graphics.Dispose() }
     return $bitmap
+}
+
+function Assert-MenuOwner([switch]$Discovering) {
+    $foregroundHandle = [AfxScanInput]::GetForegroundWindow()
+    $foreground = [System.Windows.Automation.AutomationElement]::FromHandle($foregroundHandle)
+    if ($null -eq $foreground -or $foreground.Current.ProcessId -ne $root.Current.ProcessId -or
+        $root.Current.BoundingRectangle -ne $windowBounds -or
+        $button.Current.BoundingRectangle -ne $buttonBounds -or [AfxScanInput]::GetAsyncKeyState(27) -lt 0) {
+        throw 'Menu owner, bounds or focus changed; stopped.'
+    }
+    if (-not $Discovering -and $foregroundHandle -ne $handle -and
+        $foregroundHandle.ToInt64() -notin $script:menuPopupHandles) {
+        throw 'Foreground is neither the original panel nor its verified menu popup.'
+    }
+}
+function Visible-MenuRows($Windows) {
+    $seen = @{}
+    $found = @()
+    foreach ($window in $Windows) {
+        foreach ($node in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $menuOptionCondition)) {
+            $c = $node.Current; $r = $c.BoundingRectangle; $id = $node.GetRuntimeId() -join ':'
+            if ($c.ProcessId -ne $root.Current.ProcessId -or $c.IsPassword -or $c.IsOffscreen -or
+                -not $c.IsEnabled -or $r.IsEmpty -or $r.Width -le 0 -or $r.Height -le 0 -or
+                -not $menuScreen.Contains([System.Drawing.Rectangle]::new([int]$r.X, [int]$r.Y, [int][Math]::Ceiling($r.Width), [int][Math]::Ceiling($r.Height))) -or
+                $seen.ContainsKey($id)) { continue }
+            $seen[$id] = $true
+            if ($found.Count -ge 64) { throw 'Menu item discovery exceeds the bounded tree.' }
+            $found += @{ element = $node; id = $id; name = $c.Name; rect = $r }
+        }
+    }
+    return $found
+}
+function Menu-Windows {
+    return @($menuDesktop.FindAll([System.Windows.Automation.TreeScope]::Children, $menuOwnerCondition) |
+        Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty })
+}
+function Close-ConfirmedMenu {
+    if ($script:menuOpened) {
+        Assert-MenuOwner
+        $windows = Menu-Windows
+        $stillOpen = @($windows | Where-Object { ($_.GetRuntimeId() -join ':') -in $script:menuPopupIds }).Count -gt 0 -or
+            @(Visible-MenuRows (@($root) + $windows) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0
+        if (-not $stillOpen) { $script:menuOpened = $false; return }
+        Assert-MenuOwner
+        [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
+        Start-Sleep -Milliseconds 300
+        $script:menuOpened = $false
+    }
+}
+function Open-NamedMenu([string]$Suffix) {
+    Assert-Panel
+    $script:menuOpened = $false
+    $script:menuPopupIds = @(); $script:menuOptionIds = @(); $script:menuPopupHandles = @()
+    $beforeWindows = Menu-Windows
+    $beforeIds = @($beforeWindows | ForEach-Object { $_.GetRuntimeId() -join ':' })
+    $beforeRows = @(Visible-MenuRows (@($root) + $beforeWindows))
+    $beforeOptionIds = @($beforeRows | ForEach-Object { $_.id })
+    $invoke = $null
+    if (-not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
+        throw 'Menu lacks an Invoke pattern; no guessed click.'
+    }
+    $beforeSelection = $menuValue.Current.Value
+    $invoke.Invoke()
+    Start-Sleep -Milliseconds 1500
+    # This process-only check permits metadata discovery, never input delivery.
+    # Popup handles are accepted only after the named/anchored list is verified.
+    Assert-MenuOwner -Discovering
+    if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Menu changed selection merely by opening.' }
+    $afterWindows = Menu-Windows
+    $newWindows = @($afterWindows | Where-Object { ($_.GetRuntimeId() -join ':') -notin $beforeIds })
+    if ($newWindows.Count -gt 4) { throw 'Too many new menu windows.' }
+    $rows = @(Visible-MenuRows (@($root) + $newWindows) | Where-Object { $_.id -notin $beforeOptionIds } |
+        Sort-Object { $_.rect.Y }, { $_.rect.X })
+    $capture = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
+        [int][Math]::Ceiling($windowBounds.Width), [int][Math]::Ceiling($windowBounds.Height))
+    foreach ($row in $rows) {
+        $r = $row.rect
+        $capture = [System.Drawing.Rectangle]::Union($capture, [System.Drawing.Rectangle]::new(
+            [int]$r.X, [int]$r.Y, [int][Math]::Ceiling($r.Width), [int][Math]::Ceiling($r.Height)))
+    }
+    $capture = [System.Drawing.Rectangle]::Intersect($capture, $menuScreen)
+    $bitmap = [System.Drawing.Bitmap]::new($capture.Width, $capture.Height)
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $graphics.CopyFromScreen($capture.X, $capture.Y, 0, 0, $bitmap.Size)
+        $bitmap.Save((Join-Path $job ($filePrefix + '-' + $Suffix + '-menu.png')), [System.Drawing.Imaging.ImageFormat]::Png)
+    } finally { $graphics.Dispose(); $bitmap.Dispose() }
+    Write-Record (Join-Path $job ($filePrefix + '-' + $Suffix + '-menu.json')) @{
+        options = @($rows | ForEach-Object { @{ name = $_.name; runtime_id = $_.id;
+            x = $_.rect.X - $windowBounds.X; y = $_.rect.Y - $windowBounds.Y;
+            width = $_.rect.Width; height = $_.rect.Height } })
+    }
+    if ($rows.Count -ne [int]$control.positions -or
+        @($rows | Where-Object { [string]::IsNullOrWhiteSpace($_.name) }).Count -ne 0 -or
+        @($rows | ForEach-Object { $_.name } | Select-Object -Unique).Count -ne $rows.Count) {
+        throw 'Menu does not expose the reviewed number of unique named choices; inventory saved.'
+    }
+    for ($n = 0; $n -lt $rows.Count; $n++) {
+        $r = $rows[$n].rect
+        if ([Math]::Abs($r.X - $buttonBounds.X) -gt 32 -or $r.Width -gt 400 -or $r.Height -gt 80 -or
+            ($n -gt 0 -and $r.Top -lt $rows[$n - 1].rect.Bottom)) { throw 'Menu rows are not a clear list anchored to the dropdown.' }
+    }
+    if ([Math]::Min([Math]::Abs($rows[0].rect.Top - $buttonBounds.Bottom),
+        [Math]::Abs($rows[-1].rect.Bottom - $buttonBounds.Top)) -gt 32) { throw 'Menu list is not adjacent to the reviewed dropdown.' }
+    $verifiedWindows = @($newWindows | Where-Object {
+        $pr = $_.Current.BoundingRectangle
+        @($rows | Where-Object { -not $pr.Contains($_.rect) }).Count -eq 0
+    })
+    $script:menuPopupIds = @($verifiedWindows | ForEach-Object { $_.GetRuntimeId() -join ':' })
+    $script:menuPopupHandles = @($verifiedWindows | ForEach-Object { [long]$_.Current.NativeWindowHandle } | Where-Object { $_ -ne 0 })
+    $script:menuOptionIds = @($rows | ForEach-Object { $_.id })
+    $script:menuOpened = $true
+    Assert-MenuOwner
+    return $rows
+}
+function Select-NamedMenu($Rows, [int]$Position) {
+    Assert-MenuOwner
+    $row = $Rows[$Position]; $now = $row.element.Current
+    if ($now.Name -cne $row.name -or $now.BoundingRectangle -ne $row.rect -or
+        $now.IsOffscreen -or -not $now.IsEnabled -or $now.ProcessId -ne $root.Current.ProcessId) {
+        throw 'Named menu choice changed before selection.'
+    }
+    if (-not [AfxScanInput]::SetCursorPos([int]($row.rect.X + $row.rect.Width/2),
+        [int]($row.rect.Y + $row.rect.Height/2))) { throw 'Cannot position menu pointer.' }
+    Assert-MenuOwner
+    [AfxScanInput]::Click()
+    Start-Sleep -Milliseconds 1500
+    Assert-Panel
+    if ($menuValue.Current.Value -cne $row.name) { throw 'Menu selected a different name; stopped.' }
+    $after = Menu-Windows
+    if (@($after | Where-Object { ($_.GetRuntimeId() -join ':') -in $script:menuPopupIds }).Count -gt 0 -or
+        @(Visible-MenuRows (@($root) + $after) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0) {
+        throw 'Menu remained open after selection.'
+    }
+    $script:menuOpened = $false
 }
 
 function Read-Knob {
@@ -368,7 +504,7 @@ try {
     $jobRequest = @{
         version = 2; plan_id = $plan.id; panel = $plan.panel; channel = $plan.channel;
         controls = @($plan.controls | ForEach-Object { $_.id });
-        actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } elseif ($_.kind -eq 'selector_positions') { [int]$_.positions + 1 } else { 2 } } | Measure-Object -Sum).Sum)
+        actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } elseif ($_.kind -in @('selector_positions', 'menu_positions')) { [int]$_.positions + 1 } else { 2 } } | Measure-Object -Sum).Sum)
     }
     if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
         $jobRequest.version = 3
@@ -389,6 +525,84 @@ try {
     $crop = [System.Drawing.Rectangle]::new([int]$buttonBounds.X - 2, [int]$buttonBounds.Y - 2,
         [int]$buttonBounds.Width + 4, [int]$buttonBounds.Height + 4)
     $filePrefix = $panelLabel + '-' + $control.id
+    if ($control.kind -eq 'menu_positions') {
+        if ([int]$control.positions -lt 2 -or [int]$control.positions -gt 8 -or
+            [int]$control.dwell_ms -lt 3000 -or [int]$control.dwell_ms -gt 10000 -or
+            $button.Current.ControlType -ne [System.Windows.Automation.ControlType]::ComboBox) {
+            throw 'Named menu requires a reviewed finite count, slow dwell and ComboBox.'
+        }
+        $menuValue = $null
+        if (-not $button.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$menuValue)) {
+            throw 'Menu selected value is unavailable.'
+        }
+        $startingSelection = $menuValue.Current.Value
+        if ([string]::IsNullOrWhiteSpace($startingSelection)) { throw 'Starting menu choice is unknown.' }
+        $menuDesktop = [System.Windows.Automation.AutomationElement]::RootElement
+        $menuOwnerCondition = [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::ProcessIdProperty, [int]$root.Current.ProcessId)
+        $menuOptionCondition = [System.Windows.Automation.OrCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem),
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
+        $menuScreen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+        $optionNames = @(); $startingPosition = -1; $acceptedSelection = $startingSelection
+        $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
+            [int]$windowBounds.Width, [int]$windowBounds.Height)
+        try {
+            foreach ($menuPhase in @(1..([int]$control.positions + 1))) {
+                $index++
+                Assert-Panel
+                if ($menuValue.Current.Value -cne $acceptedSelection) { throw 'Menu changed outside scan; no further selection.' }
+                Write-Record (Join-Path $job "action-$index-request.json") @{ action = $index; control = $control.id }
+                $null = Wait-HostFile "action-$index-go.json" 10
+                Assert-Panel
+                if ($menuValue.Current.Value -cne $acceptedSelection) { throw 'Menu changed while waiting; no further selection.' }
+                $rows = @(Open-NamedMenu ('phase-' + $menuPhase))
+                $names = @($rows | ForEach-Object { $_.name })
+                if ($optionNames.Count -eq 0) {
+                    $optionNames = $names
+                    $matchingStart = @(0..($names.Count - 1) | Where-Object { $names[$_] -ceq $startingSelection })
+                    if ($matchingStart.Count -ne 1) { throw 'Starting choice is not exactly one visible menu entry.' }
+                    $startingPosition = $matchingStart[0]
+                } elseif (($names | ConvertTo-Json -Compress) -cne ($optionNames | ConvertTo-Json -Compress)) {
+                    throw 'Named menu choices changed during scan.'
+                }
+                $position = $menuPhase - 1
+                if ($menuPhase -gt [int]$control.positions) { $position = $startingPosition }
+                if ($menuValue.Current.Value -ceq $names[$position]) {
+                    # A selected entry can suppress OUT. Prime a different named
+                    # entry only when needed, then capture the requested target.
+                    Select-NamedMenu $rows (($position + 1) % $names.Count)
+                    $rows = @(Open-NamedMenu ('phase-' + $menuPhase + '-target'))
+                    $freshNames = @($rows | ForEach-Object { $_.name })
+                    if (($freshNames | ConvertTo-Json -Compress) -cne ($optionNames | ConvertTo-Json -Compress)) {
+                        throw 'Menu choices changed after priming.'
+                    }
+                }
+                Select-NamedMenu $rows $position
+                [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
+                Start-Sleep -Milliseconds ([int]$control.dwell_ms)
+                Assert-Panel
+                if ($menuValue.Current.Value -cne $optionNames[$position]) { throw 'Menu choice changed during dwell.' }
+                $image = Save-Button ($filePrefix + '-position-' + $menuPhase + '.png'); $image.Dispose()
+                Write-Record (Join-Path $job "action-$index-done.json") @{
+                    status = 'ok'; option_names = $optionNames; selection = $menuValue.Current.Value;
+                    starting_selection = $startingSelection; starting_position = $startingPosition;
+                    popup_closed = $true; dwell_ms = [int]$control.dwell_ms;
+                    source = 'explicit named GUI menu choices; not device readback'
+                }
+                $ack = Wait-HostFile "action-$index-ack.json" 10
+                if ($menuPhase -eq [int]$control.positions -and
+                    ($null -eq $ack.restore_position -or [int]$ack.restore_position -ne $startingPosition)) {
+                    throw 'Host restore position disagrees with starting menu name.'
+                }
+                $acceptedSelection = $optionNames[$position]
+            }
+        } catch {
+            Close-ConfirmedMenu
+            throw
+        }
+        continue
+    }
     if ($control.kind -eq 'knob_range') {
         $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
             [int]$windowBounds.Width, [int]$windowBounds.Height)
@@ -625,7 +839,7 @@ try {
     $changed = $null
     }
     Write-Record (Join-Path $job 'completed.json') @{
-        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' -or $_.kind -eq 'wheel_button' -or $_.feedback -in @('captured_toggle', 'gui_toggle') }).Count -eq 0);
+        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -in @('knob_range', 'wheel_button', 'menu_positions') -or $_.feedback -in @('captured_toggle', 'gui_toggle') }).Count -eq 0);
         device_readback_verified = $false; range_knobs_left_at = 'maximum';
         restoration_source = 'images, measured toggle writes or GUI selection checks; range knobs intentionally not restored'
     }

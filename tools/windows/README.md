@@ -57,24 +57,30 @@ Processing polarity/readback and runtime writes remain unverified. The indicator
 above Chorus/Vibrato shows vibrato speed, per owner, and is excluded from
 mode/power verification. V12's older plan remains partial (power not captured).
 
-## Next capture: Master De-Esser Filter Type wheel trial
+## Next capture: six Master De-Esser Filter Type choices
 
 Open Master De-Esser on unlinked AFX channel2. Run the same launcher and
 enter `Master De-Esser`; press Enter and focus its title bar during the ten-second
 countdown. Linux must be waiting. Leave mouse and keyboard alone.
 
-This short trial hovers Filter Type and sends downward increments of one eighth
-of a wheel notch, pausing 1.5 seconds and checking selection after each increment.
-It stops at the first change, within eight increments. The return uses upward
-increments bounded by the forward count and requires the original selection.
-It saves a screenshot and pulse record after every increment, plus USB evidence for both
-selections. GUI ValuePattern must show a changed selection and exact restoration
-of its starting name; the host independently checks these labels and one effect
-instance and the bounded pulse sequence. No popup is opened and no Escape is sent.
-The earlier full-notch trial completed HighPass3 → BandPass1 → HighPass3;
-the new partial-notch pace still needs Windows verification.
-If it clamps, changes focus or fails restoration, it stops without
-retries or repair writes. This tests the reusable wheel method, not all options.
+The wheel trials completed HighPass3 → BandPass1 → HighPass3, but the owner
+reports skipped entries even with partial notches. The next run uses no wheel.
+It opens Filter Type, reads the six visible named entries, clicks each entry
+explicitly and holds each selected value for **five seconds**. Menu and panel
+screenshots plus passive USB evidence are saved. The final step restores the
+starting menu choice. Only an already-selected target is primed through a
+different named entry to obtain fresh OUT evidence.
+
+The script requires six distinct names, clear visible rows beside the reviewed
+dropdown, exact selected labels, closed popups and one captured effect instance.
+The host checks isolated byte26 changes and six distinct raw values before
+allowing the final restore. Labels/raw order are learned from evidence, not
+guessed. Input is allowed only with the original panel or its verified popup
+in the foreground. Failure stops the batch; an unverified popup may remain open.
+The first Windows execution of named menu selection is pending.
+
+This captures Filter Type only. Knobs and the remaining plugin controls are
+outside this focused batch.
 
 Presets remain untouched: scrolling them replaces many parameter values.
 The previous popup attempt stopped because the entire UI tree exceeded512nodes;

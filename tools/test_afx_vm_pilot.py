@@ -560,6 +560,67 @@ except RuntimeError:
                 verify_wheel_pulses(bad, policy, 'wheel forward', 'A')
         with self.assertRaises(RuntimeError): verify_wheel_pulses(reverse, policy, 'wheel back', 'B', 0)
 
+    def test_named_menu_requires_all_six_stable_labels_and_exact_selection(self):
+        import copy
+        from tools.afx_vm_pilot import verify_menu_labels, load_plans
+        control = load_plans()['deesser-filter-menu']['controls'][0]
+        names = ['one', 'two', 'three', 'four', 'five', 'six']
+        completed = {'option_names': names, 'starting_selection': 'three', 'starting_position': 2,
+                     'selection': 'one', 'popup_closed': True, 'dwell_ms': 5000}
+        self.assertEqual(verify_menu_labels(completed, control, 'position-1'), names)
+        for field, value in [('option_names', names[:5]), ('selection', 'six'), ('popup_closed', False),
+                             ('dwell_ms', 0), ('starting_position', 0), ('option_names', ['one']*6)]:
+            bad = copy.deepcopy(completed); bad[field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(RuntimeError):
+                verify_menu_labels(bad, control, 'position-1')
+        bad = copy.deepcopy(completed); bad['option_names'] = names[::-1]
+        with self.assertRaises(RuntimeError): verify_menu_labels(bad, control, 'position-1', names)
+        completed['selection'] = 'three'
+        self.assertEqual(verify_menu_labels(completed, control, 'restore', names), names)
+
+    def test_named_menu_records_six_independent_values_and_guards_restoration(self):
+        from tools.afx_vm_pilot import load_plans, run_job
+        plan = load_plans()['deesser-filter-menu']; control = plan['controls'][0]
+        self.assertEqual(len(planned_actions(plan)), 7)
+        current = []; mode = {'value': 'ok'}
+        names = ['one', 'two', 'three', 'four', 'five', 'six']
+        values = [0, 1, 2, 3, 4, 5, 2]
+        def wait(path, seconds, process=None):
+            if path.name == 'completed.json': return {'status': 'ok'}
+            index = int(path.name.split('-')[1])
+            if path.name.endswith('-request.json'): return {'action': index, 'control': control['id']}
+            value = values[index-1]
+            if mode['value'] == 'repeat' and index == 2: value = 0
+            if mode['value'] == 'wrong_restore' and index == 7: value = 5
+            instance = 1 if mode['value'] == 'wrong_instance' and index == 2 else 0
+            data = bytearray(frame(0x20, [0xd5, 0x0e, 27, instance])); data[26] = value
+            if mode['value'] == 'other_field' and index == 2: data[25] = 1
+            current.append((index*10, 0, 1, bytes(data)))
+            labels = list(names)
+            if mode['value'] == 'changed_names' and index == 2: labels[-1] = 'changed'
+            selection = names[index-1] if index <= 6 else names[2]
+            if mode['value'] == 'skipped_choice' and index == 2: selection = names[5]
+            return {'status': 'ok', 'option_names': labels, 'selection': selection,
+                    'starting_selection': names[2], 'starting_position': 2, 'popup_closed': True, 'dwell_ms': 5000}
+        process = Mock(); process.poll.return_value = None
+        with tempfile.TemporaryDirectory() as directory:
+            for outcome in ('ok', 'repeat', 'wrong_restore', 'wrong_instance', 'other_field', 'changed_names', 'skipped_choice'):
+                mode['value'] = outcome; current[:] = [(1, 0, 0x82, bytes([0x73]).ljust(320, b'\0'))]
+                job = Path(directory)/outcome; job.mkdir(); (job/'request.json').write_text('{"version":2}')
+                with patch('tools.afx_vm_pilot.validate_request', return_value=plan), \
+                     patch('tools.afx_vm_pilot.device_location', return_value={'bus':5,'address':15}), \
+                     patch('tools.afx_vm_pilot.Path.exists', side_effect=[True,False]), \
+                     patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                     patch('tools.afx_vm_pilot.read_reports', side_effect=lambda *a,**kw:list(current)), \
+                     patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
+                    if outcome == 'ok': run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
+                    else:
+                        with self.assertRaises(RuntimeError): run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
+                if outcome == 'ok':
+                    self.assertEqual(json.loads((job/'action-6-ack.json').read_text())['restore_position'], 2)
+                    self.assertTrue((job/'host-completed.json').is_file())
+                else: self.assertFalse((job/f'action-{7 if outcome == "wrong_restore" else 2}-ack.json').exists())
+
     def test_range_plan_requires_only_two_endpoint_phases(self):
         request = {'version': 2, 'plan_id': 'instinct-speed-range', 'panel': 'Instinct',
                    'channel': 2, 'controls': ['SpeedPot'], 'actions': 2}

@@ -1198,6 +1198,27 @@
       }
     },
     {
+      "id": "deesser-filter-menu",
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "named menu selection trial; first Windows execution pending",
+      "evidence": "Owner confirms six Filter Type choices. Exact DeesserComboBoxFilterType inventory and measured byte26 partial mapping. Read live option labels and select each explicitly; no guessed label/raw enum order and no wheel events.",
+      "coverage": {"status": "six Filter Type choices and starting-choice restoration only; knobs, Q dependency, Monitor, Bypass and preset inventory pending"},
+      "controls": [{
+        "id": "FilterTypeMenu",
+        "label": "Filter Type",
+        "class_name": "DeesserComboBoxFilterType",
+        "kind": "menu_positions",
+        "positions": 6,
+        "dwell_ms": 5000,
+        "candidate_field": "filter_type",
+        "observed_field_offset": 26
+      }]
+    },
+    {
       "id": "deesser-filter-wheel",
       "panel": "Master-De-Esser",
       "panel_class": "Deesser",
