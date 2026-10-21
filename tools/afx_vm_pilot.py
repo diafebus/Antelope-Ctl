@@ -20,6 +20,9 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.scan_afx_capture import analyze_reports, PARAMETER_OPCODES
 from tools.afx_scan_discovery import discovery_plan, block_feedback
+from tools.afx_dropdown_options import key_control_options
+from tools.afx_capture_budget import capture_budget, phase_seconds
+from tools.afx_capture_progress import progress_snapshot, remaining_plan
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -111,9 +114,12 @@ def load_plans():
                 any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions', 'key_button') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
+            if control['kind'] == 'key_button':
+                control['option_names'] = key_control_options(plan['effect_id'], control)
+                control['positions'] = len(control['option_names'])
             if control['kind'] == 'key_button' and (control.get('dwell_ms') != 5000
                     or type(control.get('positions')) is not int or not 2 <= control['positions'] <= 8
-                    or control.get('activation') != 'click_open_escape_close'):
+                    or control.get('activation') != 'click_open_click_close'):
                 raise ValueError('Key trial requires reviewed finite activation and five-second dwell')
             if control['kind'] == 'menu_positions' and (type(control.get('positions')) is not int
                     or not 2 <= control['positions'] <= 8 or type(control.get('dwell_ms')) is not int
@@ -279,7 +285,7 @@ def verify_key_result(completed, control, phase, initial=None, changed=None, pre
         raise RuntimeError('Key trial lacks exact key, focus, activation or paced GUI evidence')
     if (not isinstance(names, list) or len(names) != control['positions']
             or any(not isinstance(n, str) or not n.strip() for n in names)
-            or len(set(names)) != len(names) or start not in names
+            or len(set(names)) != len(names) or names != control['option_names'] or start not in names
             or (previous_names is not None and names != previous_names)):
         raise RuntimeError('Key activation choices are missing or changed')
     if phase == 'PageDown':
@@ -311,9 +317,14 @@ def read_reports(capture, location, transport, allow_incomplete=False):
     out_ep, in_ep = (int(transport[key], 0) for key in ('out_endpoint', 'in_endpoint'))
     display = (f"usb.bus_id == {location['bus']} && usb.device_address == {location['address']}"
                f' && usb.data_len == {size} && (usb.endpoint_address == {out_ep} || usb.endpoint_address == {in_ep})')
-    result = subprocess.run(['tshark', '-r', str(capture), '-Y', display, '-T', 'fields',
-        '-e', 'frame.number', '-e', 'frame.time_epoch', '-e', 'usb.endpoint_address',
-        '-e', 'usbhid.data', '-e', 'usb.capdata'], capture_output=True, text=True)
+    try:
+        result = subprocess.run(['tshark', '-r', str(capture), '-Y', display, '-T', 'fields',
+            '-e', 'frame.number', '-e', 'frame.time_epoch', '-e', 'usb.endpoint_address',
+            '-e', 'usbhid.data', '-e', 'usb.capdata'], capture_output=True, text=True,
+            timeout=20)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError('Capture decoding exceeded twenty seconds; evidence retained, '
+                           'no further gestures permitted') from None
     if result.returncode and not (allow_incomplete and result.returncode == 2 and result.stdout):
         raise RuntimeError('tshark could not read the capture; inspect dumpcap.log')
     reports = []
@@ -389,23 +400,97 @@ def wait_file(path, seconds, process=None):
         if path.is_file():
             return json.loads(path.read_text(encoding='utf-8-sig'))
         if process is not None and process.poll() is not None:
-            raise RuntimeError('Capture ended before the guest completed its action')
+            raise RuntimeError('Capture ended before the guest completed its action; inspect '
+                               'capture-budget.json and dumpcap.log for time/size limits or USB errors')
         time.sleep(.1)
     raise TimeoutError(f'Timed out waiting for {path.name}; no further actions permitted')
 
 
-def run_job(job, profile):
+def resume_source(job):
+    source = json.loads((job/'resume-source.json').read_text(encoding='utf-8-sig'))
+    name = source.get('job') if isinstance(source, dict) else None
+    if (not isinstance(source, dict) or set(source) != {'job'} or not isinstance(name, str)
+            or not re.fullmatch(r'scan-[A-Za-z0-9_-]+', name) or name == job.name):
+        raise ValueError('Invalid resume source job')
+    return job.parent/name
+
+
+def resume_request(plan):
+    return {'version': 4, 'plan_id': plan['id'], 'panel': plan['panel'],
+            'channel': plan['channel'], 'controls': [c['id'] for c in plan['controls']],
+            'actions': len(planned_actions(plan)), 'executed_plan': plan, 'resume_reviewed': True}
+
+
+def checked_job_plan(job, depth=0):
+    """Recheck ancestry against today's reviewed plans/catalog, not saved intent."""
+    if depth > 8:
+        raise ValueError('Resume ancestry exceeds eight jobs; review a fresh inventory')
     request = json.loads((job/'request.json').read_text(encoding='utf-8-sig'))
+    if (job/'resume-source.json').is_file():
+        plan = resume_plan(resume_source(job), depth + 1)
+        if request != resume_request(plan):
+            raise ValueError('Reviewed resume must match the remaining host plan exactly')
+        return plan
     generated = None
     if (job/'discovery-inventory.json').is_file():
         inventory = json.loads((job/'discovery-inventory.json').read_text(encoding='utf-8-sig'))
         generated = discovery_plan(inventory, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
-    plan = validate_request(request, generated)
+    return validate_request(request, generated)
+
+
+def resume_plan(job, depth=0):
+    """Prepare remaining controls from host-accepted evidence, never auto-replay."""
+    if job.is_symlink() or not job.is_dir():
+        raise ValueError('Resume source must be an existing capture job directory')
+    plan = json.loads((job/'host-plan.json').read_text(encoding='utf-8-sig'))
+    if plan != checked_job_plan(job, depth):
+        raise ValueError('Source plan changed since capture; review a fresh plan before resuming')
+    progress = json.loads((job/'progress.json').read_text(encoding='utf-8-sig'))
+    # The progress preview must agree with the actual accepted action records.
+    windows = json.loads((job/'action-windows.json').read_text(encoding='utf-8-sig'))
+    actions = planned_actions(plan)
+    accepted = [w for w in windows if w.get('host_accepted') is True
+                and (job/f"action-{w['action']}-ack.json").is_file()]
+    expected = progress_snapshot(plan, actions, accepted)
+    if progress.get('accepted_actions') != expected['accepted_actions']:
+        raise ValueError('Resume progress disagrees with host-accepted evidence')
+    return remaining_plan(plan, progress)
+
+
+def save_progress(job, plan, actions, windows, current_action=None, completed=False):
+    accepted = [w for w in windows if w.get('host_accepted') is True]
+    write_json(job/'progress.json', progress_snapshot(
+        plan, actions, accepted, current_action=current_action, completed=completed))
+
+
+def run_job(job, profile):
+    if (job/'progress.json').is_file():
+        raise RuntimeError('This job already has progress; prepare a reviewed resume in a fresh job')
+    try:
+        return _run_job(job, profile)
+    except BaseException as error:
+        if (job/'progress.json').is_file():
+            progress = json.loads((job/'progress.json').read_text())
+            plan = json.loads((job/'host-plan.json').read_text())
+            write_json(job/'progress.json', progress_snapshot(plan, planned_actions(plan),
+                progress['accepted_actions'], current_action=progress['current_action'],
+                error=str(error)))
+        raise
+
+
+def _run_job(job, profile):
+    request = json.loads((job/'request.json').read_text(encoding='utf-8-sig'))
+    plan = checked_job_plan(job)
+    resumed = (job/'resume-source.json').is_file()
     effect_type = plan_effect_type(plan)
     catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
     validate_wire_controls(plan, catalog)
     bypass_layout = bypass_layout_for(plan, catalog)
     location = device_location(profile)
+    if resumed:
+        source_device = json.loads((resume_source(job)/'host-device.json').read_text())
+        if any(source_device.get(key) != value for key, value in location.items()):
+            raise RuntimeError('Device connection changed since interrupted capture; review a fresh batch')
     transport = profile['transport']
     in_ep, out_ep = (int(transport[key], 0) for key in ('in_endpoint', 'out_endpoint'))
     interface = f"usbmon{location['bus']}"
@@ -429,12 +514,15 @@ def run_job(job, profile):
     key_states = {}
     block_minima = {}
     actions = planned_actions(plan)
-    has_knobs = any(c['kind'] == 'knob_range' for c in plan['controls'])
-    has_wheel = any(c['kind'] in ('wheel_button', 'menu_positions', 'key_button') for c in plan['controls'])
+    budget = capture_budget(plan, reviewed_resume=resumed)
+    write_json(job/'host-plan.json', plan)
+    write_json(job/'capture-budget.json', budget)
+    write_json(job/'action-windows.json', windows)
+    save_progress(job, plan, actions, windows)
     with (job/'dumpcap.log').open('x') as log:
         process = subprocess.Popen(['dumpcap', '-i', interface, '-s', '0',
-            '-a', ('duration:600' if len(plan['controls']) > 3 else 'duration:240') if has_knobs else ('duration:180' if has_wheel else 'duration:60'),
-            '-a', 'filesize:100000', '-w', str(capture)],
+            '-a', f"duration:{budget['capture_seconds']}",
+            '-a', f"filesize:{budget['limit_kib']}", '-w', str(capture)],
             stdout=log, stderr=log)
         try:
             # Prove that full matching IN reports reach the capture before
@@ -454,10 +542,10 @@ def run_job(job, profile):
                 time.sleep(.3)
             ready_frame = max(r[0] for r in reports)
             start_ready = time.time()
-            write_json(job/'ready.json', {'version': 1, 'capture_ready': True})
+            write_json(job/'ready.json', {'version': 1, 'capture_ready': True, 'budget': budget})
             for index, (control, phase) in enumerate(actions, 1):
                 action_request = wait_file(job/f'action-{index}-request.json',
-                    45 if control['kind'] == 'key_button' and index == 1 else 15, process)
+                    budget['request_seconds'], process)
                 expected_request = {'action': index, 'control': control['id']}
                 if request['version'] == 1:
                     expected_request = {'action': index}
@@ -502,13 +590,14 @@ def run_job(job, profile):
                     elif raw == toggle_baselines[control['id']]:
                         raise RuntimeError('Toggle changed since accepted trial; no restore click')
                 start = time.time()
+                save_progress(job, plan, actions, windows, current_action=index)
                 write_json(job/f'action-{index}-go.json', {'action': index})
                 feedback_history = []
                 discovery_baseline = None
                 unchanged_sweeps = 0
                 last_sweep_frame = first_frame
                 if control.get('feedback') == 'captured_block':
-                    wait_file(job/f'action-{index}-primed.json', 10, process)
+                    wait_file(job/f'action-{index}-primed.json', budget['priming_seconds'], process)
                     time.sleep(.3)
                     primed_reports = read_reports(capture, location, transport, allow_incomplete=True)
                     primed_events = labelled_actions(primed_reports, [{'start_frame_exclusive': first_frame,
@@ -528,7 +617,7 @@ def run_job(job, profile):
                     write_json(job/f'action-{index}-primed-ack.json', {'status': 'ok'})
                 if control.get('feedback') in ('captured_wire', 'captured_block'):
                     for sweep in range(1, 13):
-                        wait_file(job/f'action-{index}-sweep-{sweep}-done.json', 10, process)
+                        wait_file(job/f'action-{index}-sweep-{sweep}-done.json', budget['sweep_seconds'], process)
                         time.sleep(.3)
                         current_reports = read_reports(capture, location, transport, allow_incomplete=True)
                         sweep_window = {'start_epoch': start, 'end_epoch': time.time(),
@@ -572,13 +661,7 @@ def run_job(job, profile):
                             break
                     else:
                         raise RuntimeError('Captured endpoint was not reached in twelve continuous sweeps')
-                action_timeout = 60 if has_knobs else 10
-                if control['kind'] == 'wheel_button':
-                    action_timeout = 10 + math.ceil(plan['wheel_policy']['pause_ms'] * plan['wheel_policy']['max_pulses'] / 1000)
-                if control['kind'] == 'menu_positions':
-                    action_timeout = 15 + math.ceil(control['dwell_ms'] / 1000)
-                if control['kind'] == 'key_button':
-                    action_timeout = 15
+                action_timeout = phase_seconds(control, plan)
                 completed = wait_file(job/f'action-{index}-done.json', action_timeout, process)
                 window = {'action': index, 'control': control['id'], 'label': control['label'],
                           'gesture': phase,
@@ -741,7 +824,10 @@ def run_job(job, profile):
                         raise RuntimeError('Starting selector state absent from captured positions; no restore guess')
                     ack['restore_position'] = selector_values[control['id']].index(baseline)
                 write_json(job/f'action-{index}-ack.json', ack)
-            wait_file(job/'completed.json', 5, process)
+                window['host_accepted'] = True
+                write_json(job/'action-windows.json', windows)
+                save_progress(job, plan, actions, windows)
+            wait_file(job/'completed.json', budget['completed_seconds'], process)
         finally:
             if process.poll() is None:
                 process.terminate()
@@ -759,6 +845,7 @@ def run_job(job, profile):
         'labelled_actions': labelled_actions(reports, windows, out_ep, bypass_layout),
         'capture_summary': analyze_reports(reports)})
     write_json(job/'host-completed.json', {'status': 'ok', 'coverage': plan.get('coverage', {'status': 'partial; controls outside plan unknown'})})
+    save_progress(job, plan, actions, windows, completed=True)
 
 
 def main():
@@ -766,8 +853,17 @@ def main():
     parser.add_argument('--shared', type=Path, help='antelope-afx-tools directory')
     parser.add_argument('--preflight', type=Path, help='new local directory for a three-second passive capture')
     parser.add_argument('--wait-seconds', type=int, default=900, choices=range(1, 3601))
-    parser.add_argument('--serve', action='store_true', help='remain available for successive plugin launches; stop on scan failure')
+    parser.add_argument('--serve', action='store_true',
+                        help='remain available after each job; failed jobs stop without replay and need a fresh reviewed launch')
+    parser.add_argument('--prepare-resume', type=Path,
+                        help='write a remaining-controls plan for review; no device or VM access')
     args = parser.parse_args()
+    if args.prepare_resume:
+        plan = resume_plan(args.prepare_resume)
+        write_json(args.prepare_resume/'remaining-plan.json', plan)
+        print(f"Remaining plan saved to {args.prepare_resume/'remaining-plan.json'}. "
+              'Review the interrupted control and current plugin state before resuming.', flush=True)
+        return 0
     profile = json.loads((ROOT/'profiles/orion_studio_sc.json').read_text())
     location = device_location(profile)
     if not Path('/dev', f"usbmon{location['bus']}").exists():
@@ -840,7 +936,11 @@ def listen(args, profile, location, results):
             except (OSError, ValueError, KeyError, TypeError, RuntimeError, TimeoutError) as error:
                 write_json(job/'host-error.json', {'error': str(error), 'stop': True})
                 print(f'Pilot stopped: {error}. Evidence retained at {job}', file=sys.stderr, flush=True)
-                return 1
+                existing.add(job)
+                if not args.serve:
+                    return 1
+                deadline = time.monotonic() + args.wait_seconds
+                print('Failed job stopped. Ready for a fresh reviewed launch; saved actions will not be replayed.', flush=True)
         time.sleep(.2)
     print(f'Recorder idle timeout; {completed_jobs} scan batch(es) completed.', flush=True)
     return 0

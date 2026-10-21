@@ -67,8 +67,9 @@ restoration, associating the button with byte72. Device parameter readback and
 a runtime writer remain unverified. The reusable `Run-AfxScan.ps1` executes
 reviewed JSON plans; `instinct-filters` now also completed both switches' visual
 round trips in one recording, associating filter/post-filter enable with bytes
-76/112. A new plugin needs reviewed data rather than a new script. Knob and
-multi-position selector gestures remain pending.
+76/112. A new plugin uses reviewed data or a bounded plan generated from its
+inventory. Knob endpoint candidates and finite selectors use separate evidence
+checks; unsupported controls remain explicitly pending.
 
 The standard entry point is now `Run-AfxCapture.cmd`: name the plugin and
 its reviewed workflow selects inventory or a prepared batch. V12's reviewed
@@ -77,10 +78,17 @@ Captured byte feedback uses its existing raw ranges; full-panel screenshots
 record physical values. The same feedback supports Instinct float32 endpoints,
 requires phase-local writes and stable full blocks, and rechecks before ACK.
 The launcher preflights PowerShell syntax/native helpers in the Windows VM.
-Independent agent review plus a mocked host/guest handshake cover late writes
-and ambiguous labels; actual Windows execution remains a separate check.
-Selector metadata covers
-cabinet/speaker/model candidates; enumerated-option gestures remain pending.
+Capture budgets now scale with the planned controls and bounded sweep count.
+The host saves accepted per-control progress and the current action before each
+gesture. An interrupted job can produce a reviewed remaining-control plan;
+partial controls need current-state reconciliation before a fresh full trial.
+See the [recovery instructions](../tools/windows/README.md#interrupted-batches-and-reviewed-resume).
+Independent review and mocked host/guest tests cover interruptions, stale plans,
+late writes and ambiguous labels. A Windows preflight on 2026-10-21 loaded the
+reviewed plans and compiled the native helpers without operating plugin controls.
+Live consecutive-plugin capture and the revised dropdown click-open/click-close
+activation still need verification. Selector metadata covers
+cabinet/speaker/model candidates; complete option enumeration remains pending.
 Legacy pilot launchers are removed. Instinct's catalog now records all21 knob
 endpoint associations and three switches; Volume displays−infinity..+1dB,
 with observed float32-le0..1 at offset120. Unknown interpolation laws and
@@ -398,11 +406,12 @@ reports, no OUT reports and zero drops.
 
 The owner now reports Page Up/Down move one value after clicking the dropdown
 open and closed; hovering alone applies to the wheel. Next is the bounded
-`deesser-filter-keys` trial: click open, verify the five currently visible named
-rows, Escape-close unchanged, verify exact ComboBox keyboard focus, Page Down
+`deesser-filter-keys` trial: click open, verify the owned native popup, click
+the same dropdown to close unchanged, verify exact ComboBox keyboard focus, Page Down
 to the next observed name,5000ms dwell/screenshot/host verification, then one
 Page Up back to the initial name. The passive host rejects activation OUT,
 wrong/skipped labels, other fields or instances, unstable blocks and newer edits
 before the restore key. It observes byte26 writes without an independent
-initial state readback. First Windows key execution and full inventory remain
+initial state readback. Activation uses the five capture-backed ordered labels;
+it does not traverse or screenshot popup rows. First Windows key execution and full inventory remain
 pending; no menu count, raw ordering or runtime control contract is promoted.

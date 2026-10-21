@@ -1,8 +1,12 @@
 # One entry point; reviewed workflow data chooses the prepared capture stage.
-param([switch]$ValidateOnly)
+param([switch]$ValidateOnly, [string]$PreflightReport = '')
 $ErrorActionPreference = 'Stop'
 if ($ValidateOnly) {
     try {
+        foreach ($file in @('afx-scan-plans.json', 'afx-capture-workflows.json', 'afx-dropdown-options.json')) {
+            $data = Get-Content -Raw (Join-Path $PSScriptRoot $file) | ConvertFrom-Json
+            if ($data.version -ne 1) { throw "$file has an unsupported version." }
+        }
         $sources = @('Run-AfxCapture.ps1', 'Inspect-AfxPanel.ps1', 'Run-AfxScan.ps1')
         foreach ($file in $sources) {
             $tokens = $null; $parseErrors = $null
@@ -17,12 +21,35 @@ if ($ValidateOnly) {
                 Add-Type -ReferencedAssemblies 'System.Drawing.dll' -TypeDefinition $source.Value
             }
         }
+        [AfxScanInput]::ValidateDropdownClassifier()
         Add-Type -AssemblyName UIAutomationClient
         Add-Type -AssemblyName UIAutomationTypes
         Add-Type -AssemblyName System.Windows.Forms
+        $reviewedPlans = (Get-Content -Raw (Join-Path $PSScriptRoot 'afx-scan-plans.json') | ConvertFrom-Json).plans
+        $checkedPlans = @()
+        foreach ($candidate in $reviewedPlans) {
+            $loaded = & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -PlanId $candidate.id -ValidatePlanOnly | ConvertFrom-Json
+            if ($loaded.id -cne $candidate.id -or @($loaded.controls).Count -ne @($candidate.controls).Count) {
+                throw "Plan metadata failed to load: $($candidate.id)"
+            }
+            $checkedPlans += $loaded
+        }
+        if (-not [string]::IsNullOrWhiteSpace($PreflightReport)) {
+            $hashes = @{}
+            foreach ($file in $sources + @('afx-scan-plans.json', 'afx-capture-workflows.json', 'afx-dropdown-options.json')) {
+                $hashes[$file] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $file)).Hash
+            }
+            @{ status = 'ok'; checked_utc = [DateTime]::UtcNow.ToString('o'); hashes = $hashes;
+                checked_plans = $checkedPlans; settings_written = $false } |
+                ConvertTo-Json -Depth 16 | Set-Content -Encoding UTF8 $PreflightReport
+        }
         Write-Host 'Windows preflight passed: PowerShell syntax, native helper compilation and UI Automation assemblies.'
         exit 0
     } catch {
+        if (-not [string]::IsNullOrWhiteSpace($PreflightReport)) {
+            @{ status = 'failed'; error = $_.Exception.Message; settings_written = $false } |
+                ConvertTo-Json | Set-Content -Encoding UTF8 $PreflightReport
+        }
         Write-Host ($_ | Out-String)
         exit 1
     }
@@ -37,10 +64,46 @@ try {
     # loading their types twice in the actual capture process.
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -ValidateOnly
     if ($LASTEXITCODE -ne 0) { throw 'Windows preflight failed; no capture actions started.' }
-    $name = (Read-Host 'Plugin name (for example V12 Chorus)').Trim()
+    $name = (Read-Host 'Plugin name (for example V12 Chorus), or resume scan-JOB').Trim()
     if ([string]::IsNullOrWhiteSpace($name)) { throw 'A plugin name is required.' }
+    if ($name -match '^resume\s+(scan-[A-Za-z0-9_-]+)$') {
+        $resumeDirectory = Join-Path $results $Matches[1]
+        $remainingFile = Join-Path $resumeDirectory 'remaining-plan.json'
+        if (-not (Test-Path -LiteralPath $remainingFile)) {
+            throw 'Ask the Linux coordinator to --prepare-resume this job first. No gestures sent.'
+        }
+        $remaining = Get-Content -Raw -LiteralPath $remainingFile | ConvertFrom-Json
+        Write-Host "Resume $($remaining.panel): $(@($remaining.controls).Count) remaining control(s)."
+        Write-Host 'Completed controls will be skipped. Interrupted controls start a new full trial from current state.'
+        Write-Host 'Review the saved failure and current plugin/effect instance, unlinked AFX channel and control state.'
+        Write-Host 'No old baseline will be restored. Knob trials intentionally leave knobs at maximum.'
+        if ((Read-Host 'Type REVIEWED after reconciling current state, or Enter to cancel') -cne 'REVIEWED') {
+            throw 'Resume cancelled; no gestures sent.'
+        }
+        Stop-Transcript | Out-Null
+        $recording = $false
+        & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -ResumeDirectory $resumeDirectory -ResumeReviewed
+        exit $LASTEXITCODE
+    }
+    $dropdownData = Get-Content -Raw (Join-Path $PSScriptRoot 'afx-dropdown-options.json') | ConvertFrom-Json
+    $lookup = ($name.ToLowerInvariant() -replace '[^a-z0-9]', '')
+    $definitions = @($dropdownData.plugins | Where-Object {
+        $keys = @($_.effect_id, $_.name) + @($_.aliases)
+        @($keys | Where-Object { ($_.ToLowerInvariant() -replace '[^a-z0-9]', '') -ceq $lookup }).Count -gt 0
+    })
+    if ($definitions.Count -gt 1) { throw 'Plugin name is ambiguous in the dropdown registry.' }
+    if ($definitions.Count -eq 1) {
+        if ($definitions[0].hardware_testing -eq 'excluded') { throw 'This plugin is excluded from capture.' }
+        $name = $definitions[0].name
+        foreach ($dropdown in $definitions[0].dropdowns) {
+            $labels = @($dropdown.options | ForEach-Object { $_.label })
+            if ($labels.Count -gt 0) { Write-Host "$($dropdown.label): $($labels -join ', ') [$($dropdown.status)]" }
+        }
+        foreach ($gap in $definitions[0].unresolved) { Write-Host "Pending dropdown evidence: $gap" }
+    }
     $workflows = Get-Content -Raw (Join-Path $PSScriptRoot 'afx-capture-workflows.json') | ConvertFrom-Json
-    $matches = @($workflows.plugins | Where-Object { $_.name -eq $name })
+    $canonical = ($name.ToLowerInvariant() -replace '[^a-z0-9]', '')
+    $matches = @($workflows.plugins | Where-Object { ($_.name.ToLowerInvariant() -replace '[^a-z0-9]', '') -ceq $canonical })
     if ($matches.Count -gt 1) { throw 'Ambiguous plugin workflow.' }
     if ($matches.Count -eq 1 -and $matches[0].next_step -eq 'complete') {
         Write-Host "${name}: all visible editable controls have been captured and reviewed. No rescan needed."

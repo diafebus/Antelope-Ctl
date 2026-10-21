@@ -1,6 +1,9 @@
 # Reusable GUI knob, binary switch and finite selector capture from reviewed plans.
-param([string]$PlanId = '', [string]$DiscoveryDirectory = '', [switch]$Prepared)
+param([string]$PlanId = '', [string]$DiscoveryDirectory = '',
+      [string]$ResumeDirectory = '', [switch]$ResumeReviewed, [switch]$Prepared,
+      [switch]$ValidatePlanOnly)
 $ErrorActionPreference = 'Stop'
+$script:captureBudget = $null
 $results = Join-Path $PSScriptRoot 'results'
 New-Item -ItemType Directory -Path $results -Force | Out-Null
 $launchLog = Join-Path $results ('AFX-scan-launch-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '.log')
@@ -13,6 +16,13 @@ if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
     $plans = @((Get-Content -Raw (Join-Path $DiscoveryDirectory 'generated-plan.json') | ConvertFrom-Json))
     $PlanId = $plans[0].id
 }
+if (-not [string]::IsNullOrWhiteSpace($ResumeDirectory)) {
+    if (-not $ResumeReviewed -or -not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
+        throw 'Resume requires explicit current-state review and cannot combine with discovery.'
+    }
+    $plans = @((Get-Content -Raw (Join-Path $ResumeDirectory 'remaining-plan.json') | ConvertFrom-Json))
+    $PlanId = $plans[0].id
+}
 if ([string]::IsNullOrWhiteSpace($PlanId)) {
     Write-Host 'Available reviewed control plans:'
     foreach ($candidate in $plans) {
@@ -23,11 +33,40 @@ if ([string]::IsNullOrWhiteSpace($PlanId)) {
 $matchingPlans = @($plans | Where-Object { $_.id -eq $PlanId })
 if ($matchingPlans.Count -ne 1) { throw 'Choose one of the listed reviewed plans.' }
 $plan = $matchingPlans[0]
+if (@($plan.controls | Where-Object { $_.kind -eq 'wheel_button' }).Count -gt 0) {
+    $plan | Add-Member -NotePropertyName wheel_policy -NotePropertyValue $wheelPolicy -Force
+}
+$dropdownData = Get-Content -Raw (Join-Path $PSScriptRoot 'afx-dropdown-options.json') | ConvertFrom-Json
+foreach ($keyControl in @($plan.controls | Where-Object { $_.kind -eq 'key_button' })) {
+    $definitions = @($dropdownData.plugins | Where-Object { $_.effect_id -eq $plan.effect_id })
+    if ($definitions.Count -ne 1 -or $definitions[0].hardware_testing -eq 'excluded') {
+        throw 'Key trial plugin is missing or excluded in the dropdown registry.'
+    }
+    $dropdowns = @($definitions[0].dropdowns | Where-Object { $_.id -eq $keyControl.dropdown_id })
+    if ($dropdowns.Count -ne 1 -or $dropdowns[0].class_name -cne $keyControl.class_name -or
+        $dropdowns[0].ordering -notin @('capture-observed', 'manual-listed')) {
+        throw 'Key target needs a measured GUI class and known ordered choices.'
+    }
+    $labels = @($dropdowns[0].options | ForEach-Object { $_.label })
+    if ($labels.Count -lt 2 -or $labels.Count -gt 8 -or
+        @($labels | Where-Object { [string]::IsNullOrWhiteSpace($_) }).Count -ne 0 -or
+        @($labels | Select-Object -Unique).Count -ne $labels.Count -or
+        $keyControl.activation -ne 'click_open_click_close') { throw 'Key activation/options are invalid.' }
+    $keyControl | Add-Member -NotePropertyName option_names -NotePropertyValue $labels -Force
+    $keyControl | Add-Member -NotePropertyName positions -NotePropertyValue $labels.Count -Force
+}
 $controlLimit = 3
 if (@($plan.controls | Where-Object { $_.kind -eq 'knob_range' }).Count -gt 0) { $controlLimit = 24 }
+if ($ResumeReviewed -and -not [string]::IsNullOrWhiteSpace($ResumeDirectory)) { $controlLimit = 24 }
 if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit -or
     @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions', 'key_button') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
+}
+if ($ValidatePlanOnly) {
+    # Used by Windows preflight to exercise real metadata loading without
+    # loading UIA, calling user32, starting a recorder or moving any control.
+    $plan | ConvertTo-Json -Depth 16
+    return
 }
 $panelLabel = $plan.panel -replace '[^a-zA-Z0-9_-]', '_'
 Add-Type -AssemblyName UIAutomationClient
@@ -47,6 +86,30 @@ public static class AfxScanInput {
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
+    [StructLayout(LayoutKind.Sequential)] public struct WindowRect {
+        public int left, top, right, bottom;
+    }
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out WindowRect rect);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint owner);
+    public static bool IsDropdownPopup(Rectangle rect, Rectangle button, long candidate,
+        long panel, uint owner, uint expectedOwner, bool visible) {
+        return visible && candidate != 0 && candidate != panel && owner == expectedOwner &&
+            rect.Width > 0 && rect.Height > 0 && rect.Width <= 464 && rect.Height <= 704 &&
+            Math.Abs(rect.Left - button.Left) <= 32 &&
+            Math.Min(Math.Abs(rect.Top - button.Bottom), Math.Abs(rect.Bottom - button.Top)) <= 32;
+    }
+    public static void ValidateDropdownClassifier() {
+        Rectangle button = new Rectangle(100, 100, 127, 11);
+        Rectangle popup = new Rectangle(100, 110, 127, 56);
+        Rectangle host = new Rectangle(0, 0, 1380, 853);
+        if (!IsDropdownPopup(popup, button, 2, 1, 7, 7, true) ||
+            IsDropdownPopup(popup, button, 2, 1, 7, 7, false) ||
+            IsDropdownPopup(host, button, 3, 1, 7, 7, true) ||
+            IsDropdownPopup(popup, button, 1, 1, 7, 7, true) ||
+            IsDropdownPopup(popup, button, 2, 1, 8, 7, true))
+            throw new Exception("Native dropdown state fixtures failed.");
+    }
     [StructLayout(LayoutKind.Sequential)] public struct Mouse {
         public int dx, dy;
         public uint data, flags, time;
@@ -154,6 +217,9 @@ function Write-Record($Path, $Value) {
     Move-Item -LiteralPath $temporary -Destination $Path
 }
 function Wait-HostFile($Name, $Seconds) {
+    if ($null -ne $script:captureBudget) {
+        $Seconds = [Math]::Max($Seconds, [int]$script:captureBudget.feedback_seconds)
+    }
     $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
     while ([DateTime]::UtcNow -lt $deadline) {
         if (Test-Path -LiteralPath (Join-Path $job 'host-error.json')) {
@@ -285,7 +351,7 @@ function Close-ConfirmedMenu {
         $script:menuOpened = $false
     }
 }
-function Open-NamedMenu([string]$Suffix, [switch]$ActivationClick) {
+function Open-NamedMenu([string]$Suffix) {
     Assert-Panel
     $beforeSelection = $menuValue.Current.Value
     $script:menuOpened = $false
@@ -297,18 +363,12 @@ function Open-NamedMenu([string]$Suffix, [switch]$ActivationClick) {
     if ($beforeRows.Count -ne 0) { throw 'Adjacent menu rows already visible before invocation; no menu opened.' }
     $beforeOptionIds = @($beforeRows | ForEach-Object { $_.id })
     $invoke = $null
-    if (-not $ActivationClick -and -not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
+    if (-not $button.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
         throw 'Menu lacks an Invoke pattern; no guessed click.'
     }
     Assert-Panel
     if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Menu changed during discovery; no menu opened.' }
-    if ($ActivationClick) {
-        if (-not [AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2),
-            [int]($buttonBounds.Y + $buttonBounds.Height/2))) { throw 'Cannot position dropdown activation pointer.' }
-        Assert-Panel
-        if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Selection changed before activation click.' }
-        [AfxScanInput]::Click()
-    } else { $invoke.Invoke() }
+    $invoke.Invoke()
     Start-Sleep -Milliseconds 1500
     # This process-only check permits metadata discovery, never input delivery.
     # Popup handles are accepted only after the named/anchored list is verified.
@@ -367,6 +427,94 @@ function Select-NamedMenu($Rows, [int]$Position) {
     $script:menuOpened = $false
 }
 
+function Get-KeyPopups {
+    $result = @()
+    foreach ($node in $keyDesktop.FindAll([System.Windows.Automation.TreeScope]::Children, $keyOwnerCondition)) {
+        $native = [IntPtr]::new([long]$node.Current.NativeWindowHandle)
+        if ($native -eq [IntPtr]::Zero) { continue }
+        $nativeRect = [AfxScanInput+WindowRect]::new(); [uint32]$nativeOwner = 0
+        if ([AfxScanInput]::GetWindowThreadProcessId($native, [ref]$nativeOwner) -eq 0 -or
+            -not [AfxScanInput]::GetWindowRect($native, [ref]$nativeRect)) { continue }
+        $rect = [System.Drawing.Rectangle]::FromLTRB($nativeRect.left, $nativeRect.top,
+            $nativeRect.right, $nativeRect.bottom)
+        if ([AfxScanInput]::IsDropdownPopup($rect, $keyButtonRect, $native.ToInt64(), $handle.ToInt64(),
+            $nativeOwner, [uint32]$root.Current.ProcessId, [AfxScanInput]::IsWindowVisible($native))) {
+            $result += @{ handle = $native.ToInt64(); rect = $rect }
+        }
+    }
+    if ($result.Count -gt 4) { throw 'Too many native dropdown windows; stopped before further input.' }
+    return $result
+}
+function Assert-KeyOwner($PopupHandles, [switch]$Discovering) {
+    $foreground = [AfxScanInput]::GetForegroundWindow(); [uint32]$foregroundOwner = 0
+    if ([AfxScanInput]::GetWindowThreadProcessId($foreground, [ref]$foregroundOwner) -eq 0 -or
+        $foregroundOwner -ne [uint32]$root.Current.ProcessId -or
+        $root.Current.BoundingRectangle -ne $windowBounds -or
+        $button.Current.BoundingRectangle -ne $buttonBounds -or
+        [AfxScanInput]::GetAsyncKeyState(27) -lt 0) { throw 'Key activation owner, bounds or focus changed.' }
+    Assert-AfxChannel
+    if (-not $Discovering -and $foreground -ne $handle -and $foreground.ToInt64() -notin $PopupHandles) {
+        throw 'Key activation focus is neither the panel nor its observed native dropdown.'
+    }
+}
+function Activate-KeyTarget {
+    Assert-Panel
+    $keyDesktop = [System.Windows.Automation.AutomationElement]::RootElement
+    $keyOwnerCondition = [System.Windows.Automation.PropertyCondition]::new(
+        [System.Windows.Automation.AutomationElement]::ProcessIdProperty, [int]$root.Current.ProcessId)
+    $keyButtonRect = [System.Drawing.Rectangle]::new([int]$buttonBounds.X, [int]$buttonBounds.Y,
+        [int][Math]::Ceiling($buttonBounds.Width), [int][Math]::Ceiling($buttonBounds.Height))
+    if (@(Get-KeyPopups).Count -ne 0) { throw 'A native dropdown is already open; no activation click sent.' }
+    $x = [int]($buttonBounds.X + $buttonBounds.Width/2)
+    $y = [int]($buttonBounds.Y + $buttonBounds.Height/2)
+    if (-not [AfxScanInput]::SetCursorPos($x, $y)) { throw 'Cannot position activation pointer.' }
+    Assert-Panel
+    if ($selection.Current.Value -cne $initialSelection) { throw 'Selection changed before activation.' }
+    [AfxScanInput]::Click()
+    $deadline = [DateTime]::UtcNow.AddSeconds(8)
+    $opened = @()
+    do {
+        Assert-KeyOwner @() -Discovering
+        if ($selection.Current.Value -cne $initialSelection) { throw 'Opening changed selection; no closing click sent.' }
+        $opened = @(Get-KeyPopups)
+        if ($opened.Count -ne 0) { break }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    if ($opened.Count -eq 0) { throw 'No native dropdown opening observed; no retry or closing click.' }
+    $openedHandles = @($opened | ForEach-Object { $_.handle })
+    Write-Record (Join-Path $job 'key-activation-open.json') @{
+        source = 'native popup visibility and bounds; no menu screenshot';
+        handles = $openedHandles; selected = $selection.Current.Value
+    }
+    # Recheck the actual open state after a short settling interval. No menu
+    # screenshot or UIA option traversal is used to decide opening/closure.
+    Start-Sleep -Milliseconds 300
+    $currentPopups = @(Get-KeyPopups)
+    Assert-KeyOwner $openedHandles
+    if ($selection.Current.Value -cne $initialSelection -or $currentPopups.Count -eq 0 -or
+        @($currentPopups | Where-Object { $_.handle -notin $openedHandles -or $_.rect.Contains($x, $y) }).Count -ne 0) {
+        throw 'Dropdown changed or covers its toggle point; no closing click sent.'
+    }
+    [AfxScanInput]::Click()
+    $deadline = [DateTime]::UtcNow.AddSeconds(8)
+    do {
+        Assert-KeyOwner $openedHandles -Discovering
+        if ($selection.Current.Value -cne $initialSelection) { throw 'Closing changed selection; no key sent.' }
+        $remaining = @(Get-KeyPopups)
+        $visibleOpened = @($openedHandles | Where-Object {
+            [AfxScanInput]::IsWindowVisible([IntPtr]::new([long]$_))
+        })
+        if ($remaining.Count -eq 0 -and $visibleOpened.Count -eq 0) { break }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    if ($remaining.Count -ne 0 -or $visibleOpened.Count -ne 0) { throw 'Dropdown closure was not observed; no key sent.' }
+    Assert-Panel
+    Write-Record (Join-Path $job 'key-activation-closed.json') @{
+        source = 'same-control closing click and native popup disappearance';
+        activation_verified = $true; selected = $selection.Current.Value; menu_screenshots = $false
+    }
+}
+
 function Read-Knob {
     Assert-Panel
     $labels = $visible[0].FindAll([System.Windows.Automation.TreeScope]::Descendants,
@@ -415,7 +563,12 @@ function Run-WireKnobRange {
         $null = Wait-HostFile "action-$index-go.json" 10
         # Prime away from the lower clamp so the minimum has a fresh captured
         # parameter block even when this knob starts at its minimum.
-        if ($phase -eq 'minimum') { Drag-Knob -800 $false }
+        if ($phase -eq 'minimum') {
+            # Exercise both directions: an initially maximum knob may suppress
+            # writes for an upward-only prime. Stay within the bounded sweep.
+            if ($control.feedback -eq 'captured_block') { Drag-Knob 800 $false }
+            Drag-Knob -800 $false
+        }
         if ($control.feedback -eq 'captured_block') {
             Write-Record (Join-Path $job "action-$index-primed.json") @{ status = 'ok' }
             $null = Wait-HostFile "action-$index-primed-ack.json" 10
@@ -489,11 +642,10 @@ function Run-KnobRange {
 
 [void][AfxScanInput]::SetProcessDPIAware()
 Write-Host "$($plan.panel): AFX $($plan.channel), $($plan.controls.Count) reviewed control(s)."
-if ($null -eq $plan.coverage) {
-    $plan | Add-Member -NotePropertyName coverage -NotePropertyValue @{ status = 'partial; controls outside plan unknown' }
-}
-Write-Host "Coverage: $($plan.coverage.status)"
-foreach ($pending in $plan.coverage.pending) { Write-Host "Pending outside this batch: $pending" }
+$coverage = $plan.coverage
+if ($null -eq $coverage) { $coverage = @{ status = 'partial; controls outside plan unknown' } }
+Write-Host "Coverage: $($coverage.status)"
+foreach ($pending in $coverage.pending) { Write-Host "Pending outside this batch: $pending" }
 Write-Host "Prepare $($plan.panel) on unlinked AFX $($plan.channel). Linux recorder must already be waiting."
 Write-Host 'The runner operates the selected controls automatically; do not click plugin buttons yourself.'
 Write-Host 'After pressing Enter, the terminal minimizes. Focus the plugin using its title bar within 10 seconds.'
@@ -542,6 +694,18 @@ try {
             $inside
         })
         if ($candidates.Count -ne 1) { throw "Missing or ambiguous control: $($control.label)" }
+        $candidateBounds = $candidates[0].Current.BoundingRectangle
+        if (-not $candidates[0].Current.IsEnabled -or $candidateBounds.IsEmpty -or
+            $candidateBounds.Width -le 0 -or $candidateBounds.Height -le 0) {
+            throw "Control is disabled or has empty bounds: $($control.label). No batch started."
+        }
+        if ($control.kind -eq 'knob_range') {
+            $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+            $centerY = [int]($candidateBounds.Y + $candidateBounds.Height / 2)
+            if ($centerY - $screen.Top -lt 24 -or $screen.Bottom - $centerY -lt 24) {
+                throw "Insufficient vertical drag room for $($control.label). Move the panel before capturing."
+            }
+        }
         $targets += @{ definition = $control; element = $candidates[0] }
     }
     $button = $targets[0].element
@@ -557,6 +721,9 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
         Copy-Item -LiteralPath (Join-Path $DiscoveryDirectory 'inventory.json') -Destination (Join-Path $job 'discovery-inventory.json')
     }
+    if (-not [string]::IsNullOrWhiteSpace($ResumeDirectory)) {
+        Write-Record (Join-Path $job 'resume-source.json') @{ job = (Split-Path -Leaf $ResumeDirectory) }
+    }
     # Move away from the target so hover highlighting cannot impersonate a state change.
     [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Right - 3), [int]($windowBounds.Bottom - 3))
     Start-Sleep -Milliseconds 500
@@ -569,8 +736,16 @@ try {
         $jobRequest.version = 3
         $jobRequest.executed_plan = $plan
     }
+    if (-not [string]::IsNullOrWhiteSpace($ResumeDirectory)) {
+        $jobRequest.version = 4
+        $jobRequest.executed_plan = $plan
+        $jobRequest.resume_reviewed = $true
+    }
     Write-Record (Join-Path $job 'request.json') $jobRequest
-    $null = Wait-HostFile 'ready.json' 25
+    $ready = Wait-HostFile 'ready.json' 45
+    $script:captureBudget = $ready.budget
+    if ($null -eq $script:captureBudget -or $script:captureBudget.feedback_seconds -lt 10 -or
+        $script:captureBudget.feedback_seconds -gt 60) { throw 'Host capture budget is missing or invalid.' }
     $index = 0
     foreach ($target in $targets) {
     foreach ($oldBitmap in @($baseline, $changed, $restored)) {
@@ -584,7 +759,7 @@ try {
     $crop = [System.Drawing.Rectangle]::new([int]$buttonBounds.X - 2, [int]$buttonBounds.Y - 2,
         [int]$buttonBounds.Width + 4, [int]$buttonBounds.Height + 4)
     $filePrefix = $panelLabel + '-' + $control.id
-    if ($control.kind -in @('menu_positions', 'key_button')) {
+    if ($control.kind -eq 'menu_positions') {
         $menuDesktop = [System.Windows.Automation.AutomationElement]::RootElement
         $menuOwnerCondition = [System.Windows.Automation.PropertyCondition]::new(
             [System.Windows.Automation.AutomationElement]::ProcessIdProperty, [int]$root.Current.ProcessId)
@@ -724,19 +899,12 @@ try {
         $acceptedSelection = $initialSelection
         $crop = [System.Drawing.Rectangle]::new([int]$windowBounds.X, [int]$windowBounds.Y,
             [int]$windowBounds.Width, [int]$windowBounds.Height)
-        $menuValue = $selection
-        $activationRows = @(Open-NamedMenu 'key-activation' -ActivationClick)
-        $activationNames = @($activationRows | ForEach-Object { $_.name })
-        Close-ConfirmedMenu
-        Assert-Panel
-        if ($selection.Current.Value -cne $initialSelection -or
-            @(Visible-MenuRows (@($visible[0]) + (Menu-Windows))).Count -ne 0) {
-            throw 'Activation did not close the dropdown without changing selection; no key sent.'
-        }
+        $activationNames = @($control.option_names)
         $initialPositions = @(0..($activationNames.Count - 1) | Where-Object { $activationNames[$_] -ceq $initialSelection })
         if ($initialPositions.Count -ne 1 -or $initialPositions[0] -eq $activationNames.Count - 1) {
             throw 'Page Down needs a known starting choice with a following visible option; no key sent.'
         }
+        Activate-KeyTarget
         foreach ($keyPhase in @(1, 2)) {
             $index++
             Assert-Panel
@@ -972,11 +1140,11 @@ try {
     $changed = $null
     }
     Write-Record (Join-Path $job 'completed.json') @{
-        status = 'ok'; coverage = $plan.coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -in @('knob_range', 'wheel_button', 'menu_positions', 'key_button') -or $_.feedback -in @('captured_toggle', 'gui_toggle') }).Count -eq 0);
+        status = 'ok'; coverage = $coverage; visual_restoration = (@($plan.controls | Where-Object { $_.kind -in @('knob_range', 'wheel_button', 'menu_positions', 'key_button') -or $_.feedback -in @('captured_toggle', 'gui_toggle') }).Count -eq 0);
         device_readback_verified = $false; range_knobs_left_at = 'maximum';
         restoration_source = 'images, measured toggle writes or GUI selection checks; range knobs intentionally not restored'
     }
-    $null = Wait-HostFile 'host-completed.json' 15
+    $null = Wait-HostFile 'host-completed.json' ([int]$script:captureBudget.finalization_seconds)
     Write-Host "Planned controls completed; check coverage for remaining controls. Evidence saved to $job"
 } catch {
     if ($null -ne $job) {

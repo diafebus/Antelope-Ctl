@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "profile": "orion_studio_sc.json",
+  "notes": "GUI metadata only. List position does not imply a device raw value. Allowed testing still requires a bounded reviewed plan; it does not establish license ownership.",
+  "sources": {
+    "deesser-menu-20261009": {
+      "kind": "capture-review",
+      "reference": "docs/orion-afx-workflow.md (scan-Master-De-Esser-20261009T214921898Z); local captures/deesser-five-visible-menu-review-20261009.json",
+      "notes": "Five visible rows in UI Automation and screenshot, in the listed order. Earlier owner count of six remains unresolved. 1570 packets, zero drops, 785 complete IN and zero OUT reports; no selections or raw enum mapping. Raw captures remain local."
+    },
+    "deesser-inventory-20261009": {
+      "kind": "capture-review",
+      "reference": "docs/orion-afx-workflow.md (panel-Master-De-esser-20261009T194702842Z)",
+      "notes": "Filter Type and Presets ComboBox classes observed. Preset labels and complete filter coverage remain unknown."
+    },
+    "owner-autotune-20261009": {
+      "kind": "owner-confirmation",
+      "reference": "Owner instruction, 2026-10-09; recorded in local capture handoff",
+      "notes": "Owner reports Auto-Tune not purchased and excludes it from scan plans and hardware testing. Catalog/resource entries are not ownership evidence."
+    }
+  },
+  "plugins": [
+    {
+      "effect_id": "deesser",
+      "name": "Master De-Esser",
+      "aliases": ["Deesser"],
+      "hardware_testing": "allowed",
+      "source_ids": ["deesser-menu-20261009", "deesser-inventory-20261009"],
+      "unresolved": [
+        "Only five Filter Type choices are visible; the earlier owner-reported count of six is unresolved.",
+        "No raw Filter Type ordering, complete coverage, or device readback contract is established.",
+        "Preset choices and Q enablement dependencies remain pending."
+      ],
+      "dropdowns": [
+        {
+          "id": "filter_type",
+          "label": "Filter Type",
+          "class_name": "DeesserComboBoxFilterType",
+          "ordering": "capture-observed",
+          "status": "five-visible-choices; full coverage unresolved",
+          "full_count": null,
+          "full_count_status": "unresolved: five visible choices versus earlier owner count of six",
+          "source_ids": ["deesser-menu-20261009"],
+          "options": [
+            {"label": "HighPass 1"},
+            {"label": "HighPass 2"},
+            {"label": "HighPass 3"},
+            {"label": "BandPass 1"},
+            {"label": "BandPass 2"}
+          ]
+        },
+        {
+          "id": "presets",
+          "label": "Presets",
+          "class_name": "DeesserPresetsCombobox",
+          "ordering": "unknown",
+          "status": "control inventoried; choices not established",
+          "full_count": null,
+          "full_count_status": "unknown",
+          "source_ids": ["deesser-inventory-20261009"],
+          "options": []
+        }
+      ]
+    },
+    {
+      "effect_id": "antares_autotune",
+      "name": "Auto-Tune",
+      "aliases": ["AutoTune", "Antares Auto-Tune"],
+      "hardware_testing": "excluded",
+      "source_ids": ["owner-autotune-20261009"],
+      "unresolved": [],
+      "dropdowns": []
+    }
+  ]
+}

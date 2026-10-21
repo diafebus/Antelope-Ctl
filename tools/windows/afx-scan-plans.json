@@ -1233,8 +1233,8 @@
         "label": "Filter Type",
         "class_name": "DeesserComboBoxFilterType",
         "kind": "key_button",
-        "activation": "click_open_escape_close",
-        "positions": 5,
+        "activation": "click_open_click_close",
+        "dropdown_id": "filter_type",
         "dwell_ms": 5000,
         "candidate_field": "filter_type",
         "observed_field_offset": 26
