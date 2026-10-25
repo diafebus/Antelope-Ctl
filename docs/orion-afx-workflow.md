@@ -38,6 +38,7 @@ listed as pending. Known measured plans retain their existing behavior. See
 | VEQ-HLF | 11 | Both eleven-position cut-off selectors and processing-switch GUI round trip captured; runtime/readback/units unverified |
 | BA-31 | 48 | Both knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 | Gyratec IX | 43 | Both continuous endpoint candidates, all Phase/Low-Cut detents and processing round trip captured; runtime/readback/scaling unverified |
+| VPA 76 | 44 | Warmth/Trim endpoint candidates, both filter detent maps and processing round trip captured; runtime/readback/scaling unverified |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash

@@ -143,6 +143,19 @@
         "unattended-20261025T195948Z-gyratecix-processing"
       ],
       "completion_limits": "Independently observed Orion Gyratec IX identity; compatibility ID gyratex_ix retained. Both Gain/Output knob endpoint candidates, Phase two-position and Low-Cut three-position maps and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "VPA 76",
+      "effect_id": "telefunken_v76",
+      "panel_class": "TelefunkenV76",
+      "next_step": "complete",
+      "range_plan": "telefunken_v76-knobs",
+      "completion_evidence": [
+        "scan-TelefunkenV76-20261025T203938997Z",
+        "unattended-20261025T195948Z-vpa76-rotary-map",
+        "unattended-20261025T195948Z-vpa76-processing"
+      ],
+      "completion_limits": "Independently observed Orion VPA 76 identity; compatibility ID telefunken_v76 and control gain retained, visible label Warmth. Warmth/Trim endpoint candidates, Shelf two-position and High-Pass four-position maps and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

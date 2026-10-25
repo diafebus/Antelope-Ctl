@@ -91,7 +91,7 @@ verified chain/link round trips and owner-reported parameter operation. Owner-la
 Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
 Master De-Esser. Directed GUI captures also identify Orion PowerGate (39),
 PowerEx (51), VEQ-1A (6), VMEQ-5 (5), VEQ-HLF (11), BA-31 (48) and
-Gyratec IX (43), with visible-control findings in the
+Gyratec IX (43) and VPA 76 (44), with visible-control findings in the
 [power dynamics](docs/orion-afx-power-dynamics.md), [EQ](docs/orion-afx-eq.md)
 and [preamp](docs/orion-afx-preamps.md) reports. Stepped selectors have individual detent maps. Catalog commands stay
 null. This metadata does not enable

@@ -70,3 +70,38 @@ carries `00 2b 01`. Switch, LED and all four control regions match their baselin
 RGB images exactly. These observations complete the visible-control pass;
 independent readback, physical scaling, audible/stereo behavior, processing
 polarity and runtime contracts remain unverified.
+
+## VPA 76
+
+The labelled load at frame2505 in
+`unattended-20261025T195948Z-load-vpa76/Orion.pcapng` establishes Orion type44,
+instance0, channel1 slot0, with seven empty slots. Native panel `TelefunkenV76`
+retains catalog compatibility ID `telefunken_v76`. The visible Warmth control
+retains field identifier `gain`; Trim retains `out_vol`.
+
+Job `scan-TelefunkenV76-20261025T203938997Z` accepted all eight endpoint phases,
+with63,444packets and zero drops. Blocks use `0x18 / 0xd5 / 0x06`, type byte18,
+instance byte19. Only the directed control's field changes.
+
+| Control | Byte | Raw endpoints | Source frames |
+|---|---|---|---|
+| Warmth (`gain`) | 20 | 0, 100 | 4143 / 13441 |
+| Shelf Filter | 21 | 0, 1 | 20263 / 27965 |
+| High-Pass Filter | 22 | 0, 3 | 35031 / 42917 |
+| Trim (`out_vol`) | 23 | 0, 100 | 50545 / 59927 |
+
+Warmth's displayed endpoint values are0%/100%; Trim has printed−12dB/+12dB
+marks. These do not establish intermediate physical scaling. Shelf Filter's
+raw0/1 positions are Off/3kHz. High-Pass raw0/1/2/3 positions are
+Off/120Hz/300Hz/120+300Hz. All positions have directed isolated observations
+and pointer images in `unattended-20261025T195948Z-vpa76-rotary-map`.
+Eight bounded four-pixel steps each change one detent, preserve the other fields
+and return the full parameter payload to its starting maximum block.
+
+The processing round trip in `unattended-20261025T195948Z-vpa76-processing`
+uses `0x14 / 0x98` and instance17/type18/state19: first frame3637 carries
+`00 2c 00`; return frame683 carries `00 2c 01`. Power lever, all four controls
+and Warmth display match their baseline RGB images exactly. Animated metering
+is excluded from that comparison. This completes the observed visible controls;
+independent readback, processing polarity, physical scaling, audible/stereo
+behavior and runtime contracts remain unverified.

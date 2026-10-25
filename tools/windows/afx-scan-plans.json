@@ -1912,6 +1912,56 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "telefunken_v76-knobs",
+      "panel": "TelefunkenV76",
+      "panel_class": "TelefunkenV76",
+      "effect_id": "telefunken_v76",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261025T195948Z-load-vpa76/raw-ui.json; visible rotary controls despite Switch class names, separate power lever; Warmth digital display starts0percent",
+      "controls": [
+        {
+          "id": "gain",
+          "class_name": "TelefunkenV76GainSwitch",
+          "label": "Warmth (compatibility gain)",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "shelf_filter",
+          "class_name": "TelefunkenV76ShelfFilterSwitch",
+          "label": "Shelf Filter endpoints; Off/3kHz selector",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "high_pass_filter",
+          "class_name": "TelefunkenV76HighPassFilterSwitch",
+          "label": "High-Pass endpoints; four printed positions",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "out_vol",
+          "class_name": "TelefunkenV76TrimSwitch",
+          "label": "Trim (compatibility out_vol)",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

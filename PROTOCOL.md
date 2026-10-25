@@ -2168,6 +2168,12 @@ candidates and complete Phase/Low-Cut two/three-position maps, plus an isolated
 processing-switch round trip. The [preamp findings](docs/orion-afx-preamps.md)
 record frames, calibration history and remaining limits; no runtime writes added.
 
+**VPA 76 (2026-10-25).** Independently observed Orion type44 also uses
+`0x18 / 0xd5 / 0x06` blocks. Warmth/Trim endpoint candidates, complete two/four
+position filter maps and an isolated processing round trip are recorded in
+[preamp findings](docs/orion-afx-preamps.md). Compatibility IDs are retained;
+physical scaling and runtime writes remain unverified.
+
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
 surfaces support drag reordering, including drops between them. Unsupported
