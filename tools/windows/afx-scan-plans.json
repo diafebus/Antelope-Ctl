@@ -1858,6 +1858,60 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "gyratex_ix-knobs",
+      "panel": "GyratecIX",
+      "panel_class": "GyratecIX",
+      "effect_id": "gyratex_ix",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261025T195948Z-load-gyratecix/raw-ui.json; Gain/Output UIA containers extend6pixels above panel, fully within window and center safe; rotary positions separate",
+      "controls": [
+        {
+          "id": "gain",
+          "class_name": "GyratecIXGainPot",
+          "label": "Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 6
+        },
+        {
+          "id": "output",
+          "class_name": "GyratecIXOutputPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 6
+        },
+        {
+          "id": "phase",
+          "class_name": "GyratecIXPhasePot",
+          "label": "Phase endpoints; two detents pending",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 6
+        },
+        {
+          "id": "low_cut",
+          "class_name": "GyratecIXLowCutPot",
+          "label": "Low-Cut endpoints; three detents pending",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 6
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

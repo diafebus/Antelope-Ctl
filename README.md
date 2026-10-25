@@ -90,9 +90,10 @@ instances0–2; intermediate physical scaling remains unresolved. The typed oper
 verified chain/link round trips and owner-reported parameter operation. Owner-labelled load captures establish
 Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
 Master De-Esser. Directed GUI captures also identify Orion PowerGate (39),
-PowerEx (51), VEQ-1A (6) and VMEQ-5 (5), with visible-control findings in the
-[power dynamics](docs/orion-afx-power-dynamics.md) and [EQ](docs/orion-afx-eq.md)
-reports. Stepped selectors have individual detent maps. Catalog commands stay
+PowerEx (51), VEQ-1A (6), VMEQ-5 (5), VEQ-HLF (11), BA-31 (48) and
+Gyratec IX (43), with visible-control findings in the
+[power dynamics](docs/orion-afx-power-dynamics.md), [EQ](docs/orion-afx-eq.md)
+and [preamp](docs/orion-afx-preamps.md) reports. Stepped selectors have individual detent maps. Catalog commands stay
 null. This metadata does not enable
 a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 

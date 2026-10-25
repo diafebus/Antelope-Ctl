@@ -2162,6 +2162,12 @@ endpoint candidates10/100, plus an isolated processing-switch round trip.
 See [preamp findings](docs/orion-afx-preamps.md) for source frames and limits.
 No runtime pilot or readback contract is expanded.
 
+**Gyratec IX (2026-10-25).** Directed load evidence independently establishes
+Orion type43. Its `0x18 / 0xd5 / 0x06` blocks have Gain/Output endpoint
+candidates and complete Phase/Low-Cut two/three-position maps, plus an isolated
+processing-switch round trip. The [preamp findings](docs/orion-afx-preamps.md)
+record frames, calibration history and remaining limits; no runtime writes added.
+
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
 surfaces support drag reordering, including drops between them. Unsupported

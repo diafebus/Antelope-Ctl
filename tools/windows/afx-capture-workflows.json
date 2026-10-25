@@ -129,6 +129,20 @@
         "unattended-20261025T195948Z-ba31-processing"
       ],
       "completion_limits": "Independently observed Orion BA-31 identity. Both Gain/Trim knob endpoint candidates and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "Gyratec IX",
+      "effect_id": "gyratex_ix",
+      "panel_class": "GyratecIX",
+      "next_step": "complete",
+      "range_plan": "gyratex_ix-knobs",
+      "completion_evidence": [
+        "scan-GyratecIX-20261025T203215463Z",
+        "unattended-20261025T195948Z-gyratecix-rotary-map",
+        "unattended-20261025T195948Z-gyratecix-rotary-map2",
+        "unattended-20261025T195948Z-gyratecix-processing"
+      ],
+      "completion_limits": "Independently observed Orion Gyratec IX identity; compatibility ID gyratex_ix retained. Both Gain/Output knob endpoint candidates, Phase two-position and Low-Cut three-position maps and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

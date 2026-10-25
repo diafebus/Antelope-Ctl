@@ -104,7 +104,7 @@ def discovery_plan(inventory, catalog):
                                              'pending': pending, 'device_readback_verified': False}}
 
 
-def block_feedback(reports, effect_type, instance, after_frame, previous=None, out_endpoint=1, opcodes=(0x16, 0x1a, 0x1c, 0x1d, 0x20, 0x7c)):
+def block_feedback(reports, effect_type, instance, after_frame, previous=None, out_endpoint=1, opcodes=(0x16, 0x18, 0x1a, 0x1c, 0x1d, 0x20, 0x7c)):
     samples = [(n, data) for n, _, ep, data in reports if n > after_frame
                and ep == out_endpoint and len(data) >= 20 and data[0] == 0x70
                and data[16] == 0xd5 and data[18] == effect_type and data[19] == instance
