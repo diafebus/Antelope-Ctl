@@ -93,6 +93,18 @@ public static class AfxScanInput {
     }
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out WindowRect rect);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint owner);
+    private delegate bool WindowVisitor(IntPtr window, IntPtr argument);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(WindowVisitor visitor, IntPtr argument);
+    public static IntPtr[] NativeVisibleWindows(uint owner) {
+        var windows = new System.Collections.Generic.List<IntPtr>();
+        EnumWindows(delegate(IntPtr window, IntPtr argument) {
+            uint actualOwner;
+            GetWindowThreadProcessId(window, out actualOwner);
+            if (actualOwner == owner && IsWindowVisible(window)) windows.Add(window);
+            return true;
+        }, IntPtr.Zero);
+        return windows.ToArray();
+    }
     public static bool IsDropdownPopup(Rectangle rect, Rectangle button, long candidate,
         long panel, uint owner, uint expectedOwner, bool visible, string accessibilityClass) {
         return accessibilityClass == "QComboBoxPrivateContainer" &&
@@ -293,7 +305,8 @@ function Visible-MenuRows($Windows) {
     foreach ($window in $Windows) {
         foreach ($node in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $menuOptionCondition)) {
             $c = $node.Current; $r = $c.BoundingRectangle; $id = $node.GetRuntimeId() -join ':'
-            if (-not $window.Current.BoundingRectangle.Contains($r) -or $c.ProcessId -ne $root.Current.ProcessId -or $c.IsPassword -or $c.IsOffscreen -or
+            if (-not [AfxScanInput]::IsWindowVisible([IntPtr]::new([long]$window.Current.NativeWindowHandle)) -or
+                -not $window.Current.BoundingRectangle.Contains($r) -or $c.ProcessId -ne $root.Current.ProcessId -or $c.IsPassword -or $c.IsOffscreen -or
                 -not $c.IsEnabled -or $r.IsEmpty -or $r.Width -le 0 -or $r.Height -le 0 -or
                 -not $menuScreen.Contains([System.Drawing.Rectangle]::new([int]$r.X, [int]$r.Y, [int][Math]::Ceiling($r.Width), [int][Math]::Ceiling($r.Height))) -or
                 [Math]::Abs($r.X - $buttonBounds.X) -gt 32 -or $r.Width -gt 400 -or $r.Height -gt 80 -or
@@ -312,8 +325,10 @@ function Menu-Windows {
     $buttonRect = [System.Drawing.Rectangle]::new([int]$buttonBounds.X, [int]$buttonBounds.Y,
         [int][Math]::Ceiling($buttonBounds.Width), [int][Math]::Ceiling($buttonBounds.Height))
     $result = @()
-    foreach ($node in $menuDesktop.FindAll([System.Windows.Automation.TreeScope]::Children, $menuOwnerCondition)) {
-        $native = [IntPtr]::new([long]$node.Current.NativeWindowHandle)
+    foreach ($native in [AfxScanInput]::NativeVisibleWindows([uint32]$root.Current.ProcessId)) {
+        # Anchor each popup directly: a UIA desktop-scoped proxy can omit
+        # owned submenu windows or truncate their accessible descendants.
+        $node = [System.Windows.Automation.AutomationElement]::FromHandle($native)
         $nativeRect = [AfxScanInput+WindowRect]::new(); [uint32]$owner = 0
         if ($native -eq [IntPtr]::Zero -or
             [AfxScanInput]::GetWindowThreadProcessId($native, [ref]$owner) -eq 0 -or
@@ -426,6 +441,11 @@ function Select-NamedMenu($Rows, [int]$Position) {
         $now.IsOffscreen -or -not $now.IsEnabled -or $now.ProcessId -ne $root.Current.ProcessId) {
         throw 'Named menu choice changed before selection.'
     }
+    $currentWindows = @(Menu-Windows | Where-Object {
+        [long]$_.Current.NativeWindowHandle -in $script:menuPopupHandles -and
+        $_.Current.BoundingRectangle.Contains($now.BoundingRectangle)
+    })
+    if ($currentWindows.Count -ne 1) { throw 'Named row has no unique native-visible popup; no click sent.' }
     if (-not [AfxScanInput]::SetCursorPos([int]($row.rect.X + $row.rect.Width/2),
         [int]($row.rect.Y + $row.rect.Height/2))) { throw 'Cannot position menu pointer.' }
     Assert-MenuOwner
@@ -443,8 +463,8 @@ function Select-NamedMenu($Rows, [int]$Position) {
 
 function Get-KeyPopups {
     $result = @()
-    foreach ($node in $keyDesktop.FindAll([System.Windows.Automation.TreeScope]::Children, $keyOwnerCondition)) {
-        $native = [IntPtr]::new([long]$node.Current.NativeWindowHandle)
+    foreach ($native in [AfxScanInput]::NativeVisibleWindows([uint32]$root.Current.ProcessId)) {
+        $node = [System.Windows.Automation.AutomationElement]::FromHandle($native)
         if ($native -eq [IntPtr]::Zero) { continue }
         $nativeRect = [AfxScanInput+WindowRect]::new(); [uint32]$nativeOwner = 0
         if ([AfxScanInput]::GetWindowThreadProcessId($native, [ref]$nativeOwner) -eq 0 -or
@@ -700,6 +720,21 @@ try {
         $candidates = @($buttons | Where-Object {
             $rect = $_.Current.BoundingRectangle
             $inside = -not $_.Current.IsOffscreen -and $panelBounds.Contains($rect)
+            # PowerGate's measured Pan containers extend 11px above / 1px
+            # below their parent, but the knob centres are inside the panel.
+            # Only explicit reviewed knob plans may allow this small overflow.
+            if ($null -ne $control.panel_overflow_px) {
+                $margin = $control.panel_overflow_px
+                if ($control.kind -ne 'knob_range' -or $margin -isnot [int] -or $margin -lt 1 -or $margin -gt 12) {
+                    throw 'Invalid reviewed knob overflow allowance.'
+                }
+                $expanded = [System.Windows.Rect]::new($panelBounds.X - $margin,
+                    $panelBounds.Y - $margin, $panelBounds.Width + 2*$margin, $panelBounds.Height + 2*$margin)
+                $centre = [System.Windows.Rect]::new($rect.X + $rect.Width/2 - 8,
+                    $rect.Y + $rect.Height/2 - 8, 16, 16)
+                $inside = -not $_.Current.IsOffscreen -and $windowBounds.Contains($rect) -and
+                    $expanded.Contains($rect) -and $panelBounds.Contains($centre)
+            }
             if ($null -ne $control.region) {
                 $rx = ($rect.X + $rect.Width/2 - $panelBounds.X)/$panelBounds.Width
                 $ry = ($rect.Y + $rect.Height/2 - $panelBounds.Y)/$panelBounds.Height

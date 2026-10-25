@@ -2125,6 +2125,14 @@ These are measured instance ranges, not the full hardware instance limits or
 an entitlement list. The shared catalog's command definitions remain null;
 only the separate typed runtime contracts enable these operator actions.
 
+**PowerGate vendor load (2026-10-25).** A directed native-menu load into the
+empty AFX2 rack emits frame2959 in local
+`unattended-20261025-load-powergate/Orion.pcapng`: `0x23 / 0xd7 / 0x11`,
+channel byte18=`1`, first slot type39/instance0, seven empty slots. The catalog
+records the capture hash. This establishes Orion type identity from a labelled
+vendor action; independent readback, parameter fields, bypass and runtime
+contracts remain unverified. PowerGate is outside the five-effect runtime pilot.
+
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
 surfaces support drag reordering, including drops between them. Unsupported

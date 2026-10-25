@@ -95,6 +95,32 @@ except RuntimeError:
         self.assertEqual([c['feedback'] for c in plan['controls']], ['captured_block'])
         self.assertTrue(any('multi-state selector' in p['reason'] for p in plan['coverage']['pending']))
 
+    def test_discovery_never_sweeps_processing_switches_named_pot(self):
+        from tools.afx_scan_discovery import discovery_plan
+        from tools.afx_vm_pilot import ROOT
+        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        for suffix in ('BypassPot', 'PowerPot'):
+            inventory = self.discovery_inventory()
+            switch = dict(inventory['controls'][0], class_name='Deesser' + suffix)
+            inventory['controls'].append(switch)
+            plan = discovery_plan(inventory, catalog)
+            self.assertNotIn(switch['class_name'], [c['class_name'] for c in plan['controls']])
+            self.assertTrue(any(p['control'] == switch['class_name'] and
+                                'processing switch' in p['reason'] for p in plan['coverage']['pending']))
+        # PowerGate's observed bypass uses a Pot suffix while its actual knobs
+        # use Pan. The effect-name prefix must not misclassify real knobs, and
+        # unsupported Pan controls must not leave a bypass-only sweep plan.
+        inventory = self.discovery_inventory()
+        inventory.update(panel_name='powergate', panel_class='PowerGate')
+        knob = dict(inventory['controls'][0], class_name='PowerGateThresholdPot')
+        switch = dict(knob, class_name='PowerGateBypassPot')
+        inventory['controls'] = [knob, switch]
+        plan = discovery_plan(inventory, catalog)
+        self.assertEqual([c['class_name'] for c in plan['controls']], ['PowerGateThresholdPot'])
+        inventory['controls'][0]['class_name'] = 'PowerGateThresholdPan'
+        with self.assertRaisesRegex(ValueError, 'No bounded set'):
+            discovery_plan(inventory, catalog)
+
     def test_uint16_endpoint_feedback_preserves_full_block_stability_requirement(self):
         control = {'wire': {'offset': 22, 'width': 2, 'range': [150, 20000]}}
         data = bytearray(frame(0x20, [0xd5, 0x0e, 27, 0]))

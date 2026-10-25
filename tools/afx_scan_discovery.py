@@ -72,6 +72,8 @@ def discovery_plan(inventory, catalog):
             reason = 'disabled or hidden; dependency unresolved'
         elif re.search(r'(preset|program|model|cabinet|speaker|select)', cls, re.I):
             reason = 'selection may change multiple parameters; inventory only'
+        elif re.search(r'(bypass|power)', cls[len(panel_class):] if cls.startswith(panel_class) else cls, re.I):
+            reason = 'processing switch requires a measured method; Pot class does not establish a knob'
         elif (row.get('control_type') == 'ControlType.CheckBox' and
               'TogglePatternIdentifiers.Pattern' in row.get('patterns', []) and
               row.get('values', {}).get('toggle') in ('On', 'Off') and
@@ -102,7 +104,7 @@ def discovery_plan(inventory, catalog):
                                              'pending': pending, 'device_readback_verified': False}}
 
 
-def block_feedback(reports, effect_type, instance, after_frame, previous=None, out_endpoint=1, opcodes=(0x1c, 0x20, 0x7c)):
+def block_feedback(reports, effect_type, instance, after_frame, previous=None, out_endpoint=1, opcodes=(0x1c, 0x1d, 0x20, 0x7c)):
     samples = [(n, data) for n, _, ep, data in reports if n > after_frame
                and ep == out_endpoint and len(data) >= 20 and data[0] == 0x70
                and data[16] == 0xd5 and data[18] == effect_type and data[19] == instance

@@ -106,6 +106,18 @@ controls are checked for visibility, enabled state and usable knob drag room
 before the first gesture. Linking remains an operator precondition: the GUI
 channel check establishes selection, not that the link flag is off.
 
+Keep the KVM viewer open during captures when it owns USB redirection. Leaving
+the VM running after closing that viewer can still disconnect the redirected
+Orion. Moving the viewer to another workspace is suitable for unattended work;
+leave the vendor AFX window open inside Windows.
+
+PowerGate's reviewed `powergate-knobs` plan targets six observed `Pan` controls.
+Their accessibility bounds extend up to11pixels beyond the parent panel, so the
+plan explicitly permits at most12pixels with `panel_overflow_px`. The entire
+control must remain inside the AFX window and its central16pixel square inside
+the panel. Other controls retain full parent containment. The processing lever
+`PowerGateBypassPot` is excluded from knob discovery and needs a separate trial.
+
 ## Master De-Esser capture completed
 
 The 2026-10-25 pass covers eight knob endpoint candidates, Q under both BandPass

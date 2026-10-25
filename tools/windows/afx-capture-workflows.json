@@ -47,6 +47,13 @@
         "unattended-20261025-deesser-bypass-first/return"
       ],
       "completion_limits": "Eight knob endpoint candidates, five visible filter choices, four monitoring states, bypass GUI round trip and preset inventory captured. Runtime readback/writes, scaling and audible/stereo behavior remain unverified; sixth-choice historical discrepancy remains open."
+    },
+    {
+      "name": "PowerGate",
+      "effect_id": "powergate",
+      "panel_class": "PowerGate",
+      "next_step": "ranges",
+      "range_plan": "powergate-knobs"
     }
   ]
 }

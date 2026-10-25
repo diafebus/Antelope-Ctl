@@ -31,6 +31,14 @@ listed as pending. Known measured plans retain their existing behavior. See
 | Master De-Esser | 27 | Load/chain and older linked writes; native capture now covers eight knob endpoint candidates, five filter choices, four monitoring states, processing-button round trip and preset inventory; runtime readback/scaling remain unverified |
 | V12 Chorus | 70 | Labelled modulation capture: eleven changed fields and245 mirrored pairs; reader/restoration still unverified |
 | BBD Chorus | 78 | Demo modulation capture: five changed fields and85 mirrored pairs; stereo-mode mapping and reader/restoration still unverified |
+| PowerGate | 39 | Directed vendor-menu load on AFX2, instance0; parameters, bypass and runtime contracts remain unverified |
+
+PowerGate's labelled load is frame2959 in the local
+`unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash
+and chain fields. Its six visible knob containers use `Pan` classes, while
+`PowerGateBypassPot` is a processing lever. Generic discovery excludes processing
+switches even when their class contains `Pot`; PowerGate needs reviewed knob
+targets before any sweep. This identity observation adds no runtime support.
 
 Instinct and De-Esser changes can reduce new capture work, but their individual
 control order was not labelled. Do not assign names from catalog declaration

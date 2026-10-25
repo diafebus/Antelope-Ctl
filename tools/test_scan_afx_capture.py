@@ -12,6 +12,16 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_powergate_parameter_family_is_passive_observation(self):
+        first = frame(0x1d, [0xd5, 0x0b, 39, 0, 90, 0, 100, 0, 50, 0])
+        second = frame(0x1d, [0xd5, 0x0b, 39, 0, 31, 0, 100, 0, 50, 0])
+        result = analyze_reports([(1, 1, 1, first), (2, 2, 1, second),
+                                  (3, 3, 1, frame(0x1e, [0xd5, 0x0b, 39, 0]))])
+        self.assertEqual(len(result['parameter_groups']), 1)
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']), ('0x1d', '0xb', 39))
+        self.assertEqual(group['varying_offsets'], [20])
+
     def test_stereo_mirroring_and_multibyte_parameter_changes_are_reported(self):
         first = frame(0x7c, [0xd5, 0x6a, 75, 1, 0, 0, 0, 63])
         second = frame(0x7c, [0xd5, 0x6a, 75, 0, 0, 0, 0, 63])

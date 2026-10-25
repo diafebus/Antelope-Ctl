@@ -1206,17 +1206,21 @@
       "channel": 2,
       "status": "named menu selection trial; first Windows execution pending",
       "evidence": "Owner confirms six Filter Type choices. Exact DeesserComboBoxFilterType inventory and measured byte26 partial mapping. Read live option labels and select each explicitly; no guessed label/raw enum order and no wheel events.",
-      "coverage": {"status": "six Filter Type choices and starting-choice restoration only; knobs, Q dependency, Monitor, Bypass and preset inventory pending"},
-      "controls": [{
-        "id": "FilterTypeMenu",
-        "label": "Filter Type",
-        "class_name": "DeesserComboBoxFilterType",
-        "kind": "menu_positions",
-        "positions": 6,
-        "dwell_ms": 5000,
-        "candidate_field": "filter_type",
-        "observed_field_offset": 26
-      }]
+      "coverage": {
+        "status": "six Filter Type choices and starting-choice restoration only; knobs, Q dependency, Monitor, Bypass and preset inventory pending"
+      },
+      "controls": [
+        {
+          "id": "FilterTypeMenu",
+          "label": "Filter Type",
+          "class_name": "DeesserComboBoxFilterType",
+          "kind": "menu_positions",
+          "positions": 6,
+          "dwell_ms": 5000,
+          "candidate_field": "filter_type",
+          "observed_field_offset": 26
+        }
+      ]
     },
     {
       "id": "deesser-filter-keys",
@@ -1492,6 +1496,76 @@
           "minimum_visual_change": 0.001
         }
       ]
+    },
+    {
+      "id": "powergate-knobs",
+      "panel": "PowerGate",
+      "panel_class": "PowerGate",
+      "effect_id": "powergate",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "Labelled Orion load frame2959 in unattended-20261025-load-powergate; direct HWND UIA report powergate-raw-ui.json and panel screenshot. Pan bounds extend11px above/1px below parent; centres inside. BypassPot is a lever and excluded.",
+      "controls": [
+        {
+          "id": "threshold",
+          "class_name": "PowerGateThresholdPan",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "attack",
+          "class_name": "PowerGateAttackPan",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "hold",
+          "class_name": "PowerGateHoldPan",
+          "label": "Hold",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "range",
+          "class_name": "PowerGateRangePan",
+          "label": "Range",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "decay",
+          "class_name": "PowerGateDecayPan",
+          "label": "Decay",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "gain",
+          "class_name": "PowerGateGainPan",
+          "label": "Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        }
+      ],
+      "coverage": {
+        "status": "six visible knob endpoint candidates; processing lever separate",
+        "pending": [
+          "Processing lever round trip",
+          "Independent parameter readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

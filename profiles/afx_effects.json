@@ -4612,16 +4612,31 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 39,
+          "status": "capture-observed",
+          "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "parameter_observation": {
+            "opcode": "0x1d",
+            "param_id": "0xd5",
+            "subcmd": "0x0b",
+            "type_id_offset": 18,
+            "instance_index_offset": 19,
+            "status": "capture-observed parameter family; endpoint capture pending",
+            "writable": false,
+            "evidence": [
+              "scan-PowerGate-20261025T093451547Z/PowerGate-channel2.pcapng: 33 directed threshold-priming OUT reports, frames520-3008, all opcode0x1d/d5/0b type39/instance0; only byte20 varies. Initial host decoder rejected this new family, so zero phases accepted. No runtime write or readback contract."
+            ]
+          },
+          "evidence": [
+            "unattended-20261025-load-powergate/Orion.pcapng: frame2959, labelled vendor-menu PowerGate load on AFX2; opcode0x23/d7/11, channel byte18=1, slot0 type39/instance0, remaining seven slots empty. SHA256 07f27c4bced93f1eeb2df5d63f73a1723445eeaa6d6deeb4dc3f8721445e907b. No independent readback."
+          ],
+          "notes": "Orion identity comes from the directed vendor load, independently of sibling-device metadata. Parameters, ranges, bypass encoding and runtime load/readback/write contracts remain unverified. Observed PowerGateBypassPot is a processing lever, not a knob; the six visible knob containers use Pan classes and require target review before gestures."
         }
       ]
     },

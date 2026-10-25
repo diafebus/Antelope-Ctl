@@ -40,13 +40,25 @@ public static class AfxPanelWindow {
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out Rect rect);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint owner);
+    private delegate bool WindowVisitor(IntPtr window, IntPtr argument);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(WindowVisitor visitor, IntPtr argument);
+    public static IntPtr[] NativeVisibleWindows(uint owner) {
+        var windows = new System.Collections.Generic.List<IntPtr>();
+        EnumWindows(delegate(IntPtr window, IntPtr argument) {
+            uint actualOwner;
+            GetWindowThreadProcessId(window, out actualOwner);
+            if (actualOwner == owner && IsWindowVisible(window)) windows.Add(window);
+            return true;
+        }, IntPtr.Zero);
+        return windows.ToArray();
+    }
 }
 '@
 
 function Visible-InspectionPopups($MenuBounds) {
     $found = @()
-    foreach ($node in $desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition)) {
-        $h = [IntPtr]::new([long]$node.Current.NativeWindowHandle)
+    foreach ($h in [AfxPanelWindow]::NativeVisibleWindows([uint32]$process.Id)) {
+        $node = [System.Windows.Automation.AutomationElement]::FromHandle($h)
         $r = [AfxPanelWindow+Rect]::new(); [uint32]$owner = 0
         if ($h -eq [IntPtr]::Zero -or $node.Current.ClassName -cne 'QComboBoxPrivateContainer' -or
             -not [AfxPanelWindow]::IsWindowVisible($h) -or
