@@ -2139,6 +2139,15 @@ PowerEx is independently loaded as type51/instance0 at frame4473 of
 and its processing-switch round trip are also captured in the findings above.
 Both effects remain outside the five-effect runtime pilot.
 
+**VEQ-1A and VMEQ-5 (2026-10-25).** Directed vendor loads establish Orion
+type6/instance0 for VEQ-1A and type5/instance0 for VMEQ-5, respectively at
+frames3703/3481 in local `unattended-20261025-load-veq-1a` /
+`unattended-20261025-load-vmeq-5`. VEQ-1A's `0x1c / 0xd5 / 0x0a` blocks now
+have five continuous endpoint candidates and three fully labelled rotary maps;
+its processing-switch round trip uses instance17/type18/state19. Exact fields,
+frames, calibration history and remaining limits are in [the EQ findings](docs/orion-afx-eq.md).
+VMEQ-5 controls are in progress. No runtime pilot or query bounds are expanded.
+
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
 surfaces support drag reordering, including drops between them. Unsupported

@@ -12,6 +12,14 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_vmeq_parameter_family_is_passive_observation(self):
+        first = frame(0x1a, [0xd5, 0x08, 5, 0, 0, 4, 0, 0, 0, 0])
+        second = frame(0x1a, [0xd5, 0x08, 5, 0, 0, 100, 0, 0, 0, 0])
+        result = analyze_reports([(1, 1, 1, first), (2, 2, 1, second)])
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']), ('0x1a', '0x8', 5))
+        self.assertEqual(group['varying_offsets'], [21])
+
     def test_powergate_parameter_family_is_passive_observation(self):
         first = frame(0x1d, [0xd5, 0x0b, 39, 0, 90, 0, 100, 0, 50, 0])
         second = frame(0x1d, [0xd5, 0x0b, 39, 0, 31, 0, 100, 0, 50, 0])

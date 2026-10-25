@@ -1722,6 +1722,70 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "pultec_meq-knobs",
+      "panel": "PultecMEQ",
+      "panel_class": "PultecMEQ",
+      "effect_id": "pultec_meq",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "Directed vendor load frame3481, direct native PultecMEQ tree and screenshot. Three gain knobs and three frequency rotaries; Dip shows eleven printed choices. All bounds within panel; processing switch excluded.",
+      "controls": [
+        {
+          "id": "low_gain",
+          "class_name": "PultecGain_low",
+          "label": "Low Peak Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "mid_gain",
+          "class_name": "PultecGain_mid",
+          "label": "Mid Dip Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "hi_gain",
+          "class_name": "PultecGain_hi",
+          "label": "High Peak Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "low_freq",
+          "class_name": "PultecFreqPeak_low",
+          "label": "Low Peak Frequency endpoints; detents pending",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "mid_freq",
+          "class_name": "PultecFreqDip",
+          "label": "Mid Dip Frequency endpoints; eleven visible labels pending",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "hi_freq",
+          "class_name": "PultecFreqPeak_hi",
+          "label": "High Peak Frequency endpoints; detents pending",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

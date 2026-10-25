@@ -15,9 +15,10 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+# 0x1a: directed VMEQ-5 GUI sweep, scan-PultecMEQ-20261025T101308607Z.
 # 0x1d: directed PowerGate GUI sweep, scan-PowerGate-20261025T093451547Z.
 # These are passive decoder families, not permission to send a command.
-PARAMETER_OPCODES = {0x1c, 0x1d, 0x20, 0x7c}
+PARAMETER_OPCODES = {0x1a, 0x1c, 0x1d, 0x20, 0x7c}
 
 
 def _tshark(path, *arguments):

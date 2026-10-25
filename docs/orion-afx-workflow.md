@@ -33,6 +33,8 @@ listed as pending. Known measured plans retain their existing behavior. See
 | BBD Chorus | 78 | Demo modulation capture: five changed fields and85 mirrored pairs; stereo-mode mapping and reader/restoration still unverified |
 | PowerGate | 39 | Six knob endpoint candidates and processing-lever GUI round trip captured; runtime/readback/scaling unverified |
 | PowerEx | 51 | Six knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
+| VEQ-1A | 6 | Five continuous knob endpoint candidates, all three rotary maps and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
+| VMEQ-5 | 5 | Directed vendor load and panel inventory; control capture in progress |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash
@@ -42,6 +44,10 @@ switches even when their class contains `Pot`. Its reviewed six-knob plan and
 separate lever trial are now captured; the launcher skips a redundant full
 rescan. See [the power dynamics findings](orion-afx-power-dynamics.md) for exact
 coverage and limitations. These observations add no runtime support.
+
+The [EQ findings](orion-afx-eq.md) record VEQ-1A's completed visible pass and
+the VMEQ-5 load observation. VEQ-1A's launcher workflow skips redundant full
+capture; its original range plan remains available for explicitly reviewed work.
 
 Instinct and De-Esser changes can reduce new capture work, but their individual
 control order was not labelled. Do not assign names from catalog declaration

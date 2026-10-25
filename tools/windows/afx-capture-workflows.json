@@ -79,8 +79,23 @@
       "name": "VEQ-1A",
       "effect_id": "pultec_eqp",
       "panel_class": "PultecEQP",
+      "next_step": "complete",
+      "range_plan": "pultec_eqp-knobs",
+      "completion_evidence": [
+        "scan-PultecEQP-20261025T095310973Z",
+        "unattended-20261025-veq1a-rotary-map (LowFrequency subset only)",
+        "unattended-20261025-veq1a-rotary-map2",
+        "unattended-20261025-veq1a-switch-first",
+        "unattended-20261025-veq1a-switch-return"
+      ],
+      "completion_limits": "Five continuous knob endpoint candidates, all three rotary detent maps and processing-switch GUI round trip captured; physical scaling, independent readback, audible/stereo behavior and runtime contracts unverified."
+    },
+    {
+      "name": "VMEQ-5",
+      "effect_id": "pultec_meq",
+      "panel_class": "PultecMEQ",
       "next_step": "ranges",
-      "range_plan": "pultec_eqp-knobs"
+      "range_plan": "pultec_meq-knobs"
     }
   ]
 }
