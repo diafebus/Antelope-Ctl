@@ -70,7 +70,7 @@ vm.runInContext(fs.readFileSync(path.join(ROOT, 'webui/static/ui/afx-live.js'), 
 // Orion dimensions come from its profile; slots are unknown, never fake empty.
 button.click();
 const first = lastPopup;
-assert.equal((first.document.body.innerHTML.match(/<option /g) || []).length, 32);
+assert.equal((first.document.body.innerHTML.match(/<select id="afx-channel">([^]*?)<\/select>/)[1].match(/<option /g) || []).length, 32);
 assert.equal((first.document.body.innerHTML.match(/class="afx-channel"/g) || []).length, 1);
 assert.equal((first.document.body.innerHTML.match(/class="afx-rack-unit"/g) || []).length, 8);
 assert.match(first.document.body.innerHTML, /state unavailable/);
@@ -123,7 +123,7 @@ context.PROFILE = {afx: {channel_count: 2, slots_per_channel: 3},
   device: {label: '<img src=x onerror=alert(1)>'}};
 button.click();
 assert.equal((lastPopup.document.body.innerHTML.match(/class="afx-rack-unit"/g) || []).length, 3);
-assert.equal((lastPopup.document.body.innerHTML.match(/<option /g) || []).length, 2);
+assert.equal((lastPopup.document.body.innerHTML.match(/<select id="afx-channel">([^]*?)<\/select>/)[1].match(/<option /g) || []).length, 2);
 assert.match(lastPopup.document.body.innerHTML, /<option value="0" selected>AFX 1<\/option>/);
 assert.doesNotMatch(lastPopup.document.body.innerHTML, /<img/);
 assert.equal(lastPopup.device.textContent, context.PROFILE.device.label);
@@ -179,7 +179,7 @@ async function checkEffectPreviews() {
 
   // Dragging a knob changes only the draft; another pointer cannot move it.
   const handlers = {};
-  const knobGroup = {querySelector: selector => selector === 'input' ? input : output,
+  const knobGroup = {querySelector: selector => selector === '[data-afx-control]' ? input : output,
     style: group.style};
   input.closest = () => knobGroup;
   const knob = {dataset: {afxSlot: '0'},
@@ -368,14 +368,14 @@ async function checkEffectPreviews() {
   assert.equal(writes.length, 2);
   const previewButton = {closest: selector => selector === '[data-afx-test-preview]' ? previewButton : null};
   vm.runInContext('afxTestClick', context)({target: previewButton});
-  assert.match(live.nodes['afx-rack'].innerHTML, /Preview Memory/);
+  assert.match(live.nodes['afx-slot-list'].innerHTML, /data-afx-local-select/);
   assert.match(live.nodes['afx-preview-status'].textContent, /do not load effects/);
   const refreshButton = {closest: selector => selector === '[data-afx-test-refresh]' ? refreshButton : null};
   vm.runInContext('afxTestClick', context)({target: refreshButton});
   await new Promise(resolve => setImmediate(resolve));
   assert.match(live.nodes['afx-slot-list'].innerHTML, /data-afx-effect-select/);
   assert.equal(writes.length, 2, 'Switching rack views only reads metadata');
-  const picker = {dataset: {afxEffectSelect: '0'}, value: 'unmapped', matches: () => true};
+  const picker = {dataset: {afxEffectSelect: '0'}, value: 'unmapped', matches: selector => selector === '[data-afx-effect-select]'};
   live.nodes['afx-slot-list'].change({target: picker});
   assert.equal(writes.length, 2, 'Unmapped effect choices must not produce writes');
   picker.value = 'instinct';

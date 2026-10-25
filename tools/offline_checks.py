@@ -39,6 +39,7 @@ NODE_CHECKS = (
     "tools/test_webui_input_links.cjs",
     "tools/test_webui_afx.cjs",
     "tools/test_webui_afx_modulation.cjs",
+    "tools/test_webui_afx_captured.cjs",
     "tools/webui_sources.cjs",
 )
 

@@ -1828,6 +1828,187 @@
               "unattended-20261025-deesser-bypass-first/Orion.pcapng frame2589 tuple@17..19=001b00",
               "unattended-20261025-deesser-bypass-return/Orion.pcapng frame751 tuple@17..19=001b01"
             ]
+          },
+          "presentation": {
+            "status": "local-preview",
+            "name": "Master De-Esser",
+            "category": "Dynamics",
+            "family": "DYNAMICS",
+            "rows": [
+              [
+                "threshold",
+                "crit_f",
+                "q_factor",
+                "wd_control"
+              ],
+              [
+                "ratio",
+                "attack",
+                "release",
+                "knee_width"
+              ]
+            ],
+            "switches": [
+              "filter_type",
+              "ctrl",
+              "processing"
+            ],
+            "controls": [
+              {
+                "id": "threshold",
+                "label": "Threshold",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  80
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 40,
+                "source_control": "threshold"
+              },
+              {
+                "id": "crit_f",
+                "label": "Frequency",
+                "kind": "continuous",
+                "range": [
+                  150,
+                  20000
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 6000,
+                "source_control": "crit_f"
+              },
+              {
+                "id": "q_factor",
+                "label": "Q",
+                "kind": "continuous",
+                "range": [
+                  0.01,
+                  4
+                ],
+                "step": 0.01,
+                "decimals": 2,
+                "default": 1,
+                "source_control": "q_factor"
+              },
+              {
+                "id": "wd_control",
+                "label": "Dry / Wet",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  100
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 100,
+                "source_control": "wd_control"
+              },
+              {
+                "id": "ratio",
+                "label": "Ratio",
+                "kind": "continuous",
+                "range": [
+                  1,
+                  20
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 4,
+                "source_control": "ratio"
+              },
+              {
+                "id": "attack",
+                "label": "Attack",
+                "kind": "continuous",
+                "range": [
+                  0.1,
+                  20
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 1,
+                "source_control": "attack"
+              },
+              {
+                "id": "release",
+                "label": "Release",
+                "kind": "continuous",
+                "range": [
+                  10,
+                  200
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 100,
+                "source_control": "release"
+              },
+              {
+                "id": "knee_width",
+                "label": "Soft Knee",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  30
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 6,
+                "source_control": "knee_width"
+              },
+              {
+                "id": "filter_type",
+                "label": "Filter",
+                "kind": "enum",
+                "options": {
+                  "0": "HighPass 1",
+                  "1": "HighPass 2",
+                  "2": "HighPass 3",
+                  "3": "BandPass 1",
+                  "4": "BandPass 2"
+                },
+                "default": "0",
+                "rotary": false,
+                "source_control": "filter_type"
+              },
+              {
+                "id": "ctrl",
+                "label": "Monitor / Out",
+                "kind": "enum",
+                "options": {
+                  "0": "Position 1",
+                  "1": "Position 2",
+                  "2": "Position 3",
+                  "3": "Position 4"
+                },
+                "default": "0",
+                "rotary": false,
+                "source_control": "ctrl"
+              },
+              {
+                "id": "processing",
+                "label": "Processing",
+                "kind": "enum",
+                "options": {
+                  "0": "Bypass",
+                  "1": "Active"
+                },
+                "default": "1",
+                "source": "processing"
+              }
+            ],
+            "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default.",
+            "dependencies": {
+              "q_factor": {
+                "control": "filter_type",
+                "values": [
+                  "3",
+                  "4"
+                ]
+              }
+            }
           }
         }
       ]
@@ -4744,6 +4925,119 @@
               "unattended-20261025-powerex-switch-first/Orion.pcapng frame2627 tuple@17..19=003300",
               "unattended-20261025-powerex-switch-return/Orion.pcapng frame1889 tuple@17..19=003301; endpoint displays unchanged"
             ]
+          },
+          "presentation": {
+            "status": "local-preview",
+            "name": "PowerEx",
+            "category": "Dynamics",
+            "family": "DYNAMICS",
+            "rows": [
+              [
+                "threshold",
+                "attack",
+                "ratio"
+              ],
+              [
+                "range",
+                "decay",
+                "gain"
+              ]
+            ],
+            "switches": [
+              "processing"
+            ],
+            "controls": [
+              {
+                "id": "threshold",
+                "label": "Threshold",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  80
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 20,
+                "source_control": "threshold"
+              },
+              {
+                "id": "attack",
+                "label": "Attack",
+                "kind": "continuous",
+                "range": [
+                  1,
+                  750
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 100,
+                "source_control": "attack"
+              },
+              {
+                "id": "ratio",
+                "label": "Ratio",
+                "kind": "continuous",
+                "range": [
+                  1,
+                  20
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 1,
+                "source_control": "ratio"
+              },
+              {
+                "id": "range",
+                "label": "Range",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  80
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 0,
+                "source_control": "range"
+              },
+              {
+                "id": "decay",
+                "label": "Decay",
+                "kind": "continuous",
+                "range": [
+                  1,
+                  1000
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 50,
+                "source_control": "decay"
+              },
+              {
+                "id": "gain",
+                "label": "Gain",
+                "kind": "continuous",
+                "range": [
+                  -24,
+                  12
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 0,
+                "source_control": "gain"
+              },
+              {
+                "id": "processing",
+                "label": "Processing",
+                "kind": "enum",
+                "options": {
+                  "0": "Bypass",
+                  "1": "Active"
+                },
+                "default": "1",
+                "source": "processing"
+              }
+            ],
+            "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
           }
         }
       ]
@@ -4976,6 +5270,119 @@
               "unattended-20261025-powergate-lever-first/Orion.pcapng frame2685 tuple@17..19=002700",
               "unattended-20261025-powergate-lever-return/Orion.pcapng frame1557 tuple@17..19=002701; all six knob displays unchanged"
             ]
+          },
+          "presentation": {
+            "status": "local-preview",
+            "name": "PowerGate",
+            "category": "Dynamics",
+            "family": "DYNAMICS",
+            "rows": [
+              [
+                "threshold",
+                "attack",
+                "hold"
+              ],
+              [
+                "range",
+                "decay",
+                "gain"
+              ]
+            ],
+            "switches": [
+              "processing"
+            ],
+            "controls": [
+              {
+                "id": "threshold",
+                "label": "Threshold",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  120
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 60,
+                "source_control": "threshold"
+              },
+              {
+                "id": "attack",
+                "label": "Attack",
+                "kind": "continuous",
+                "range": [
+                  0.1,
+                  75
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 10,
+                "source_control": "attack"
+              },
+              {
+                "id": "hold",
+                "label": "Hold",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  5000
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 0,
+                "source_control": "hold"
+              },
+              {
+                "id": "range",
+                "label": "Range",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  20
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 0,
+                "source_control": "range"
+              },
+              {
+                "id": "decay",
+                "label": "Decay",
+                "kind": "continuous",
+                "range": [
+                  1,
+                  1000
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 50,
+                "source_control": "decay"
+              },
+              {
+                "id": "gain",
+                "label": "Gain",
+                "kind": "continuous",
+                "range": [
+                  -24,
+                  12
+                ],
+                "step": 1,
+                "decimals": 0,
+                "default": 0,
+                "source_control": "gain"
+              },
+              {
+                "id": "processing",
+                "label": "Processing",
+                "kind": "enum",
+                "options": {
+                  "0": "Bypass",
+                  "1": "Active"
+                },
+                "default": "1",
+                "source": "processing"
+              }
+            ],
+            "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
           }
         }
       ]
@@ -5449,6 +5856,152 @@
               "unattended-20261025-veq1a-switch-first/Orion.pcapng frame2859 tuple@17..19=000600",
               "unattended-20261025-veq1a-switch-return/Orion.pcapng frame2773 tuple@17..19=000601; all eight control images unchanged"
             ]
+          },
+          "presentation": {
+            "status": "local-preview",
+            "name": "VEQ-1A",
+            "category": "EQ & Filters",
+            "family": "EQUALIZATION",
+            "rows": [
+              [
+                "low_boost",
+                "low_atten",
+                "high_boost",
+                "high_atten"
+              ],
+              [
+                "low_freq",
+                "bandwidth",
+                "high_freq",
+                "atten_sel"
+              ]
+            ],
+            "switches": [
+              "processing"
+            ],
+            "controls": [
+              {
+                "id": "low_boost",
+                "label": "Low Boost",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 0,
+                "source_control": "low_boost"
+              },
+              {
+                "id": "low_atten",
+                "label": "Low Atten",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 0,
+                "source_control": "low_atten"
+              },
+              {
+                "id": "high_boost",
+                "label": "High Boost",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 0,
+                "source_control": "high_boost"
+              },
+              {
+                "id": "high_atten",
+                "label": "High Atten",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 0,
+                "source_control": "high_atten"
+              },
+              {
+                "id": "low_freq",
+                "label": "Low Frequency",
+                "kind": "enum",
+                "options": {
+                  "0": "20",
+                  "1": "30",
+                  "2": "60",
+                  "3": "100"
+                },
+                "default": "0",
+                "rotary": true,
+                "source_control": "low_freq"
+              },
+              {
+                "id": "bandwidth",
+                "label": "Bandwidth",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 5,
+                "source_control": "bandwidth"
+              },
+              {
+                "id": "high_freq",
+                "label": "High Frequency",
+                "kind": "enum",
+                "options": {
+                  "0": "3",
+                  "1": "4",
+                  "2": "5",
+                  "3": "8",
+                  "4": "10",
+                  "5": "12",
+                  "6": "16"
+                },
+                "default": "0",
+                "rotary": true,
+                "source_control": "high_freq"
+              },
+              {
+                "id": "atten_sel",
+                "label": "Atten Select",
+                "kind": "enum",
+                "options": {
+                  "0": "5",
+                  "1": "10",
+                  "2": "20"
+                },
+                "default": "0",
+                "rotary": true,
+                "source_control": "atten_sel"
+              },
+              {
+                "id": "processing",
+                "label": "Processing",
+                "kind": "enum",
+                "options": {
+                  "0": "Bypass",
+                  "1": "Active"
+                },
+                "default": "1",
+                "source": "processing"
+              }
+            ],
+            "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
           }
         }
       ]
@@ -5994,6 +6547,131 @@
               "unattended-20261025-vmeq5-switch-first/Orion.pcapng frame5701 tuple@17..19=000500",
               "unattended-20261025-vmeq5-switch-return/Orion.pcapng frame3169 tuple@17..19=000501; all six control images unchanged"
             ]
+          },
+          "presentation": {
+            "status": "local-preview",
+            "name": "VMEQ-5",
+            "category": "EQ & Filters",
+            "family": "EQUALIZATION",
+            "rows": [
+              [
+                "low_gain",
+                "mid_gain",
+                "hi_gain"
+              ],
+              [
+                "low_freq",
+                "mid_freq",
+                "hi_freq"
+              ]
+            ],
+            "switches": [
+              "processing"
+            ],
+            "controls": [
+              {
+                "id": "low_gain",
+                "label": "Low Peak",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 0,
+                "source_control": "low_gain"
+              },
+              {
+                "id": "mid_gain",
+                "label": "Mid Dip",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 0,
+                "source_control": "mid_gain"
+              },
+              {
+                "id": "hi_gain",
+                "label": "High Peak",
+                "kind": "continuous",
+                "range": [
+                  0,
+                  10
+                ],
+                "step": 0.1,
+                "decimals": 1,
+                "default": 0,
+                "source_control": "hi_gain"
+              },
+              {
+                "id": "low_freq",
+                "label": "Low Frequency",
+                "kind": "enum",
+                "options": {
+                  "0": "200",
+                  "1": "300",
+                  "2": "500",
+                  "3": "700",
+                  "4": "1000"
+                },
+                "default": "0",
+                "rotary": true,
+                "source_control": "low_freq"
+              },
+              {
+                "id": "mid_freq",
+                "label": "Dip Frequency",
+                "kind": "enum",
+                "options": {
+                  "0": "200",
+                  "1": "300",
+                  "2": "500",
+                  "3": "700",
+                  "4": "1",
+                  "5": "1.5",
+                  "6": "2",
+                  "7": "3",
+                  "8": "4",
+                  "9": "5",
+                  "10": "7"
+                },
+                "default": "0",
+                "rotary": true,
+                "source_control": "mid_freq"
+              },
+              {
+                "id": "hi_freq",
+                "label": "High Frequency",
+                "kind": "enum",
+                "options": {
+                  "0": "1.5",
+                  "1": "2",
+                  "2": "3",
+                  "3": "4",
+                  "4": "5"
+                },
+                "default": "0",
+                "rotary": true,
+                "source_control": "hi_freq"
+              },
+              {
+                "id": "processing",
+                "label": "Processing",
+                "kind": "enum",
+                "options": {
+                  "0": "Bypass",
+                  "1": "Active"
+                },
+                "default": "1",
+                "source": "processing"
+              }
+            ],
+            "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
           }
         }
       ]

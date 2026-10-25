@@ -17,7 +17,9 @@ class AfxCatalogTests(unittest.TestCase):
         result = preview_catalog(self.catalog, "orion_studio_sc.json")
         self.assertEqual(result["mode"], "preview")
         self.assertFalse(result["device_writes"])
-        self.assertEqual(len(result["effects"]), 3)
+        self.assertEqual({e['id'] for e in result['effects']},
+                         {'memory_brigade', 'turboensembler', 'bbdchorus', 'deesser',
+                          'powergate', 'powerex', 'pultec_eqp', 'pultec_meq'})
         effect = next(e for e in result["effects"] if e['id'] == 'memory_brigade')
         self.assertEqual(effect["id"], "memory_brigade")
         self.assertEqual(len(effect["controls"]), 8)
@@ -45,6 +47,61 @@ class AfxCatalogTests(unittest.TestCase):
         self.assertFalse(observation['writable'])
         self.assertFalse(observation['range_capture_summary']['interpolation_laws_verified'])
         self.assertNotIn('instinct', {e['id'] for e in preview_catalog(self.catalog, 'orion_studio_sc.json')['effects']})
+
+    def test_captured_presentations_are_local_and_match_browser_fixture(self):
+        preview = preview_catalog(self.catalog, 'orion_studio_sc.json')
+        preview['effects'] = [e for e in preview['effects'] if e.get('local_presentation')]
+        fixture = json.loads((Path(__file__).resolve().parents[1] /
+                              'tools/fixtures/afx_captured_presentations.json').read_text())
+        self.assertEqual(preview, fixture)
+        self.assertEqual(len(preview['effects']), 5)
+        serialized = json.dumps(preview)
+        for key in ('offset', 'opcode', 'wire_enum', 'commands', 'instance_handle', 'source_control'):
+            self.assertNotIn('"' + key + '"', serialized)
+        controls = {e['id']: {c['id']: c for c in e['controls']} for e in preview['effects']}
+        self.assertEqual(controls['powergate']['attack']['range'], [0.1, 75])
+        self.assertEqual(controls['powerex']['attack']['range'], [1, 750])
+        self.assertEqual(controls['powergate']['gain']['range'], [-24, 12])
+        self.assertEqual(len(controls['pultec_meq']['mid_freq']['options']), 11)
+
+    def test_local_presentation_requires_its_own_model_capture_sources(self):
+        catalog = copy.deepcopy(self.catalog)
+        effect = next(e for e in catalog['effects'] if e['id'] == 'powergate')
+        orion = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+        del orion['parameter_observation']['labelled_gui_observations']['threshold']
+        self.assertNotIn('powergate', {e['id'] for e in preview_catalog(catalog, 'orion_studio_sc.json')['effects']})
+        sibling = next(i for i in effect['implementations'] if i['profile'] == 'discrete_4_sc.json')
+        sibling['presentation'] = copy.deepcopy(orion['presentation'])
+        self.assertNotIn('powergate', {e['id'] for e in preview_catalog(catalog, 'discrete_4_sc.json')['effects']})
+        catalog = copy.deepcopy(self.catalog)
+        effect = next(e for e in catalog['effects'] if e['id'] == 'powergate')
+        orion = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+        del orion['bypass_observation']
+        self.assertNotIn('powergate', {e['id'] for e in preview_catalog(catalog, 'orion_studio_sc.json')['effects']})
+
+    def test_invalid_local_presentations_fail_closed(self):
+        from webui.afx_catalog import panel_definition
+        effect = next(e for e in self.catalog['effects'] if e['id'] == 'deesser')
+        implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+        mutations = [
+            lambda p: p.update(controls=[None]),
+            lambda p: p['controls'][0].update(range=None),
+            lambda p: p['controls'][0].update(range=[80, 0]),
+            lambda p: p['controls'][0].update(step=0),
+            lambda p: p['controls'][0].update(default=float('nan')),
+            lambda p: p['controls'][0].update(decimals=100),
+            lambda p: p['controls'][0].update(source_control=['threshold']),
+            lambda p: p['controls'].append(copy.deepcopy(p['controls'][0])),
+            lambda p: p.update(rows=[None]),
+            lambda p: p.update(dependencies={'q_factor': 'filter_type'}),
+            lambda p: p.update(dependencies={'q_factor': {'control': 'filter_type', 'values': ['99']}}),
+            lambda p: p['controls'][-1].update(rotary='yes'),
+        ]
+        for index, mutate in enumerate(mutations):
+            invalid = copy.deepcopy(implementation)
+            mutate(invalid['presentation'])
+            with self.subTest(index=index):
+                self.assertIsNone(panel_definition(effect, invalid))
 
     def test_other_profiles_do_not_inherit_orion_observations(self):
         for profile in ("discrete_4_sc.json", "zen_go_sc.json", "missing.json"):

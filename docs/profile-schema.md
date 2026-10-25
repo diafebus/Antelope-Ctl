@@ -288,6 +288,20 @@ knobs. `panel.display_only_controls` supplies BBD stereo-mode names for local
 preview without a wire mapping. Model-local captured membership must be complete
 before a preview is exposed; other models inherit no Orion parameter evidence.
 Details and source frames: [modulation findings](orion-afx-modulation.md).
+
+An implementation may additionally define `presentation` with
+`status: local-preview`, a friendly name/category, rows/switches and explicit
+local control ranges, steps, defaults or rotary options. Each parameter control
+names the same captured `source_control`; processing controls require a captured
+`bypass_observation`. Presentation validation rejects missing model-local sources,
+ambiguous membership, invalid ranges and dependency conditions. This metadata is
+separate from `control_encodings` and never enables runtime loading or writes.
+Local intermediate dial motion and defaults are UI choices, not newly verified
+physical conversion laws or device state. The browser receives presentation
+fields without wire offsets, commands or instance handles. Model-local friendly
+names preserve compatibility effect IDs such as `pultec_eqp` / `pultec_meq`.
+Rotary enums retain captured labels and detents; De-Esser Q depends on the two
+BandPass choices without assuming a universal captured Q reset value.
 `parameter_observation.startup_readback_observation` may record a captured
 comparison between a restored parameter write and an initialization reply.
 It identifies the compared byte range, instance and query/reply frames.

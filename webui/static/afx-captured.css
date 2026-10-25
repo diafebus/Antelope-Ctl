@@ -1,0 +1,45 @@
+/* Original Gazelle faceplates. Rings and knob bodies stay fixed. */
+.afx-captured-panel { --face-accent:#d6b36a; background:linear-gradient(120deg,#25313a,#18222b); padding:19px 24px; }
+.afx-face-powergate { --face-accent:#edbd70; border-top:3px solid #a87634; }
+.afx-face-powerex { --face-accent:#91d8c3; background:linear-gradient(120deg,#193c39,#17292d); border-top:3px solid #4c9b89; }
+.afx-face-veq1a { --face-accent:#a6c8ed; background:linear-gradient(120deg,#293449,#1b2636); border-top:3px solid #7896bf; }
+.afx-face-vmeq5 { --face-accent:#e4bd9c; background:linear-gradient(120deg,#3c3031,#27252d); border-top:3px solid #af8060; }
+.afx-face-deesser { --face-accent:#c0aff2; background:linear-gradient(120deg,#34304a,#202938); border-top:3px solid #8f81b7; }
+.afx-captured-panel .afx-effect-heading { border-color:#ffffff18; gap:10px; }
+.afx-captured-panel .afx-effect-family { color:var(--face-accent); }
+.afx-captured-panel .afx-effect-heading h3 { font-size:20px; letter-spacing:.04em; }
+.afx-captured-panel .afx-preview-badge { color:var(--face-accent); border-color:#ffffff35; background:#0002; }
+.afx-captured-body { display:grid; grid-template-columns:135px minmax(0,1fr); gap:25px; padding:25px 0 20px; }
+.afx-face-brand { display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:16px; border-right:1px solid #ffffff15; }
+.afx-face-monogram { font:600 21px ui-monospace,monospace; letter-spacing:.12em; color:var(--face-accent); }
+.afx-face-subtitle { color:#a4acb6; font:9px ui-monospace,monospace; letter-spacing:.06em; }
+.afx-face-power { width:8px; height:8px; border-radius:50%; background:var(--face-accent); box-shadow:0 0 8px #fff2; }
+.afx-captured-panel.is-bypassed .afx-face-power, .afx-face-power.unknown { background:#5d6269; box-shadow:none; }
+.afx-captured-panel.is-bypassed .afx-captured-banks { opacity:.65; }
+.afx-captured-banks { display:grid; gap:26px; }
+.afx-captured-row { display:grid; grid-template-columns:repeat(var(--afx-columns),minmax(68px,1fr)); gap:18px; }
+.afx-captured-panel .afx-control-label { text-align:center; font-size:11px; letter-spacing:.02em; }
+.afx-captured-panel .afx-knob { width:65px; height:65px; background:conic-gradient(from 225deg,var(--face-accent) 270deg,transparent 0); box-shadow:0 0 0 4px #090e1555; }
+.afx-captured-panel .afx-knob-cap { width:51px; height:51px; background:radial-gradient(circle at 32% 23%,#55616b,#202934 70%); border-color:#7a879166; }
+.afx-captured-panel .afx-knob-pointer::after { background:var(--face-accent); top:5px; height:15px; }
+.afx-captured-panel .afx-effect-control.blocked { opacity:.45; }
+.afx-captured-panel .afx-effect-control.blocked .afx-knob { cursor:default; }
+.afx-detent-select { width:100%; max-width:105px; padding:5px 8px; color:#eee; background:#111c28; border:1px solid #ffffff30; border-radius:4px; font:12px ui-monospace,monospace; }
+.afx-detent-select:focus-visible { outline:2px solid var(--face-accent); outline-offset:2px; }
+.afx-captured-switches { display:flex; gap:24px; flex-wrap:wrap; border-top:1px solid #ffffff15; padding-top:16px; }
+.afx-captured-switches .afx-mode-control { min-width:145px; flex:1; }
+.afx-captured-switches .afx-mode-options { flex-wrap:wrap; }
+.afx-captured-panel .afx-mode-button[aria-pressed=true] { color:var(--face-accent); border-color:#ffffff35; background:#ffffff0d; }
+.afx-captured-panel .afx-preview-close:disabled { opacity:.3; cursor:default; }
+@media (max-width:1050px) {
+  .afx-captured-body { grid-template-columns:95px minmax(0,1fr); gap:15px; }
+  .afx-face-monogram { font-size:15px; }
+  .afx-captured-row { gap:12px; }
+}
+@media (max-width:600px) {
+  .afx-captured-panel { padding:14px 12px; }
+  .afx-captured-body { grid-template-columns:minmax(0,1fr); }
+  .afx-face-brand { flex-direction:row; align-items:center; justify-content:space-between; border:0; }
+  .afx-captured-row { grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px 12px; }
+  .afx-captured-panel .afx-preview-badge { margin-left:0; }
+}

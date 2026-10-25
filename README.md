@@ -96,6 +96,27 @@ reports. Stepped selectors have individual detent maps. Catalog commands stay
 null. This metadata does not enable
 a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
+The **Panel studio** link in the AFX window opens interactive PowerGate,
+PowerEx, VEQ-1A, VMEQ-5 and Master De-Esser panels. It is also available at
+`/webui/static/afx-preview.html`. Choose local effects in the categorized slot
+selectors, drag knobs, use Shift for fine adjustment, or choose a fixed rotary
+position with the keyboard or selector. Drafts stay separate per channel and
+slot and can be reordered from either rack view.
+
+These panels are local previews: they do not process audio or load these new
+effects onto hardware. Already-loaded device effects can show their panels with
+unknown values and disabled edits until verified runtime contracts are available.
+Preview dial ranges/defaults do not establish wire conversions or device defaults.
+
+To serve the panel studio without starting the HID worker:
+
+```bash
+ANTELOPE_PROFILE=profiles/orion_studio_sc.json .venv/bin/python -m uvicorn webui.server:app --host 127.0.0.1 --port 8715
+```
+
+Open `http://127.0.0.1:8715/webui/static/afx-preview.html`. This imports the WebUI
+app without calling `run_server()` / `DEV.start()`.
+
 The WebUI's **AFX** button, between Routing and Mix 1, opens a detachable
 window with a channel selector and one channel overview on the left, and
 the selected channel's effects rack on the right. Orion offers 32 channels;
