@@ -94,8 +94,15 @@
       "name": "VMEQ-5",
       "effect_id": "pultec_meq",
       "panel_class": "PultecMEQ",
-      "next_step": "ranges",
-      "range_plan": "pultec_meq-knobs"
+      "next_step": "complete",
+      "range_plan": "pultec_meq-knobs",
+      "completion_evidence": [
+        "scan-PultecMEQ-20261025T101459165Z",
+        "unattended-20261025-vmeq5-rotary-map",
+        "unattended-20261025-vmeq5-switch-first",
+        "unattended-20261025-vmeq5-switch-return"
+      ],
+      "completion_limits": "Three gain knob endpoint candidates, all5/11/5rotary detent maps and processing-switch GUI round trip captured; physical scaling, independent readback, audible/stereo behavior and runtime contracts unverified."
     }
   ]
 }

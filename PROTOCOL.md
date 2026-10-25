@@ -2130,7 +2130,7 @@ empty AFX2 rack emits frame2959 in local
 `unattended-20261025-load-powergate/Orion.pcapng`: `0x23 / 0xd7 / 0x11`,
 channel byte18=`1`, first slot type39/instance0, seven empty slots. The catalog
 records the capture hash. This establishes Orion type identity from a labelled
-vendor action; independent readback, parameter fields, bypass and runtime
+vendor action. Independent parameter/processing readback and runtime
 contracts remain unverified. Subsequent directed GUI trials captured six knob
 endpoint candidates and a processing-lever round trip; the field/frame table
 and reviewed-resume history are in [the power dynamics findings](docs/orion-afx-power-dynamics.md).
@@ -2146,7 +2146,9 @@ frames3703/3481 in local `unattended-20261025-load-veq-1a` /
 have five continuous endpoint candidates and three fully labelled rotary maps;
 its processing-switch round trip uses instance17/type18/state19. Exact fields,
 frames, calibration history and remaining limits are in [the EQ findings](docs/orion-afx-eq.md).
-VMEQ-5 controls are in progress. No runtime pilot or query bounds are expanded.
+VMEQ-5's `0x1a / 0xd5 / 0x08` blocks now have three gain endpoint candidates,
+all 5/11/5 frequency-selector maps and a separate processing-switch round trip.
+No runtime pilot or query bounds are expanded.
 
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both

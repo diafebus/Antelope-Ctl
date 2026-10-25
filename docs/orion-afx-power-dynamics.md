@@ -57,7 +57,7 @@ identity without inheriting the sibling-device type ID.
 The inspected panel exposes six distinct `Pan` knob targets: Threshold, Range,
 Attack, Decay, Ratio and Gain. Native launcher job
 `scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng` accepted all twelve
-knob phases in one batch, with110974 packets and zero drops. Parameter writes
+knob phases in one batch, with 110,974 packets and zero drops. Parameter writes
 use `0x1d / 0xd5 / 0x0b`, type51/instance0. Each endpoint pair changes only its
 listed field; runtime writers remain disabled.
 

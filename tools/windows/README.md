@@ -118,6 +118,14 @@ control must remain inside the AFX window and its central16pixel square inside
 the panel. Other controls retain full parent containment. The processing lever
 `PowerGateBypassPot` is excluded from knob discovery and needs a separate trial.
 
+## Further visible-control captures completed
+
+PowerGate, PowerEx, VEQ-1A and VMEQ-5 also have completed visible-control
+workflows as of 2026-10-25. The launcher reports completion without repeating
+them. Their [power dynamics](../../docs/orion-afx-power-dynamics.md) and
+[EQ findings](../../docs/orion-afx-eq.md) distinguish endpoint candidates from
+full stepped-selector maps and retain unverified readback/scaling/runtime limits.
+
 ## Master De-Esser capture completed
 
 The 2026-10-25 pass covers eight knob endpoint candidates, Q under both BandPass

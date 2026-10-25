@@ -89,7 +89,11 @@ raw1=1100ms/Tremolo. Parameter/processing-state readbacks are captured for
 instances0–2; intermediate physical scaling remains unresolved. The typed operator path separately records
 verified chain/link round trips and owner-reported parameter operation. Owner-labelled load captures establish
 Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
-Master De-Esser; catalog commands stay null. This metadata does not enable
+Master De-Esser. Directed GUI captures also identify Orion PowerGate (39),
+PowerEx (51), VEQ-1A (6) and VMEQ-5 (5), with visible-control findings in the
+[power dynamics](docs/orion-afx-power-dynamics.md) and [EQ](docs/orion-afx-eq.md)
+reports. Stepped selectors have individual detent maps. Catalog commands stay
+null. This metadata does not enable
 a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
 The WebUI's **AFX** button, between Routing and Mix 1, opens a detachable
@@ -111,8 +115,8 @@ in the left channel frame has an effect selector grouped into Dynamics,
 EQ & Filters, Modulation, Delay & Reverb, Pitch & Tuning, Amps & Cabinets,
 Preamps, Saturation & Distortion, and Other. These are presentation categories,
 not device capabilities. Memory Cat, Instinct, Master De-Esser, V12 Chorus
-and BBD-Chorus have independently captured Orion load IDs; unmapped entries
-are greyed out.
+and BBD-Chorus have measured runtime load contracts; other catalog entries
+remain disabled, including effects with newer capture-only observations.
 Selecting a different effect replaces a supported insert; selecting Empty
 removes it. Loading uses fresh instance counters and the complete slot
 inventory, measured instance indices, and verified whole-chain writes.

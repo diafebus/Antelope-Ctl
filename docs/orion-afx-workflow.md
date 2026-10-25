@@ -34,7 +34,7 @@ listed as pending. Known measured plans retain their existing behavior. See
 | PowerGate | 39 | Six knob endpoint candidates and processing-lever GUI round trip captured; runtime/readback/scaling unverified |
 | PowerEx | 51 | Six knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 | VEQ-1A | 6 | Five continuous knob endpoint candidates, all three rotary maps and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
-| VMEQ-5 | 5 | Directed vendor load and panel inventory; control capture in progress |
+| VMEQ-5 | 5 | Three gain knob endpoint candidates, all 5/11/5 rotary maps and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash
@@ -45,9 +45,9 @@ separate lever trial are now captured; the launcher skips a redundant full
 rescan. See [the power dynamics findings](orion-afx-power-dynamics.md) for exact
 coverage and limitations. These observations add no runtime support.
 
-The [EQ findings](orion-afx-eq.md) record VEQ-1A's completed visible pass and
-the VMEQ-5 load observation. VEQ-1A's launcher workflow skips redundant full
-capture; its original range plan remains available for explicitly reviewed work.
+The [EQ findings](orion-afx-eq.md) record the completed VEQ-1A/VMEQ-5 visible
+passes, including every rotary detent. Their launcher workflows skip redundant
+full captures; original range plans remain available for explicitly reviewed work.
 
 Instinct and De-Esser changes can reduce new capture work, but their individual
 control order was not labelled. Do not assign names from catalog declaration

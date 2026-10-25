@@ -13,7 +13,7 @@ type6/instance0, seven empty slots. The observed panel class is `PultecEQP`.
 
 Native launcher job `scan-PultecEQP-20261025T095310973Z` accepted all sixteen
 endpoint phases for five continuous knobs and three rotary selectors, with
-209758 packets and zero drops. Parameter writes use `0x1c / 0xd5 / 0x0a`,
+209,758 packets and zero drops. Parameter writes use `0x1c / 0xd5 / 0x0a`,
 type byte18 and instance byte19. Only each listed field differs between its
 minimum/maximum blocks.
 
@@ -28,7 +28,7 @@ minimum/maximum blocks.
 | High Frequency | 23 | 0, 6 | 165519/180417 |
 | Attenuation Frequency | 27 | 0, 2 | 193741/204717 |
 
-The five continuous dial pointers reach printed0/10. This does not establish
+The five continuous dial pointers reach printed 0/10. This does not establish
 physical gain units, intermediate laws or a linear raw-to-physical conversion.
 Knobs finish at their captured maximum as authorized.
 
@@ -41,12 +41,12 @@ image and an isolated one-byte parameter observation for each position:
 | High Frequency | 0, 1, 2, 3, 4, 5, 6 | 3, 4, 5, 8, 10, 12, 16; panel marked KCS |
 | Attenuation Frequency | 0, 1, 2 | 5, 10, 20 |
 
-The endpoint sweep had skipped Low Frequency raw1; it was captured in the
+The endpoint sweep had skipped Low Frequency raw 1; it was captured in the
 directed detent pass rather than inferred. Low Frequency mapping is the completed
 subset in `unattended-20261025-veq1a-rotary-map`. That whole mapper stopped for
-calibration after High Frequency8pixel drags produced no writes; it remains a
+calibration after High Frequency 8 pixel drags produced no writes; it remains a
 stopped job. `unattended-20261025-veq1a-rotary-map2` completes the remaining
-High Frequency/Attenuation Frequency maps with16/32pixel steps. Every action
+High Frequency/Attenuation Frequency maps with GUI steps of 16/32 pixels. Every action
 preserves the other parameter bytes, and the final captured parameter payload
 matches the pre-mapping maximum block exactly. This is captured-write
 restoration, not independent device readback.
@@ -67,6 +67,47 @@ The directed load at frame3481 in
 `unattended-20261025-load-vmeq-5/Orion.pcapng` independently establishes Orion
 type5/instance0 in channel1 slot0, with seven empty slots. The native panel is
 `PultecMEQ`: three gain knobs, three rotary frequency selectors and a separate
-processing switch. Its Dip dial visibly has eleven printed choices. Control
-capture is in progress; neither its mappings nor its runtime contracts are
-inherited from VEQ-1A or a sibling device.
+processing switch. Its Dip dial visibly has eleven printed choices.
+
+Native launcher job `scan-PultecMEQ-20261025T101459165Z` accepted all twelve
+endpoint phases with 135,320 packets and zero drops. Parameter writes use
+`0x1a / 0xd5 / 0x08`, type5/instance0. The earlier priming job stopped with
+zero accepted phases because that family was unrecognized; its nine observed
+writes remain evidence and its failed status is preserved.
+
+| Control | Byte | Raw endpoints | Source frames |
+|---|---|---|---|
+| Low Peak Gain | 21 | 0, 100 | 9291/27473 |
+| Mid Dip Gain | 23 | 0, 100 | 38711/53893 |
+| High Peak Gain | 25 | 0, 100 | 69869/78027 |
+| Low Peak Frequency | 20 | 0, 4 | 85829/95337 |
+| Mid Dip Frequency | 22 | 0, 10 | 104215/113193 |
+| High Peak Frequency | 24 | 0, 4 | 121571/130623 |
+
+The gain dial pointers reach printed 0/10; intermediate physical scaling remains
+unverified. All three frequency controls are stepped selectors. The separate
+`unattended-20261025-vmeq5-rotary-map` pass captures every printed position:
+
+| Selector | Raw values in order | Printed labels in order |
+|---|---|---|
+| Low Peak Frequency | 0–4 | 200, 300, 500, 700, 1000 |
+| Mid Dip Frequency | 0–10 | 200, 300, 500, 700, 1, 1.5, 2, 3, 4, 5, 7 |
+| High Peak Frequency | 0–4 | 1.5, 2, 3, 4, 5 |
+
+Each of the36 bounded16pixel GUI steps changes exactly one selector detent,
+with an isolated field observation and matching pointer image. All other
+parameter bytes are preserved. The final full parameter payload matches the
+pre-mapping maximum block exactly. Printed mixed notation is retained without
+guessing units or interpolating between detents.
+
+The separate processing-switch round trip is `0x14 / 0x98` with
+instance17/type18/state19. First-click frame5701 in
+`unattended-20261025-vmeq5-switch-first/Orion.pcapng` carries `00 05 00`;
+return frame3169 carries `00 05 01`. Switch, LED and all six control regions
+have exact RGB baseline matches after moving the pointer away.
+
+This completes the observed visible controls; no preset selector was observed.
+Physical scaling, independent readback, processing polarity, audible/stereo
+behavior and runtime contracts remain unverified. The final test insert was
+removed at frame2617 in `unattended-20261025-final-vmeq5-remove/Orion.pcapng`,
+leaving all eight AFX2 slots empty for the owner handoff.
