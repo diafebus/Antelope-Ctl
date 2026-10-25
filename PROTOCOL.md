@@ -2150,6 +2150,18 @@ VMEQ-5's `0x1a / 0xd5 / 0x08` blocks now have three gain endpoint candidates,
 all 5/11/5 frequency-selector maps and a separate processing-switch round trip.
 No runtime pilot or query bounds are expanded.
 
+**VEQ-HLF (2026-10-25).** The independently observed Orion type11 uses
+`0x16 / 0xd5 / 0x04` parameter blocks. Both eleven-position cut-off selectors
+(bytes20/21, raw0..10) have complete directed detent maps, and the processing
+switch has an isolated `0x14 / 0x98` round trip. The [EQ findings](docs/orion-afx-eq.md)
+record frames and remaining limits. Runtime writers and query bounds are unchanged.
+
+**BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
+type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
+endpoint candidates10/100, plus an isolated processing-switch round trip.
+See [preamp findings](docs/orion-afx-preamps.md) for source frames and limits.
+No runtime pilot or readback contract is expanded.
+
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
 surfaces support drag reordering, including drops between them. Unsupported

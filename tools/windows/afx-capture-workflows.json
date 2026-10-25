@@ -103,6 +103,32 @@
         "unattended-20261025-vmeq5-switch-return"
       ],
       "completion_limits": "Three gain knob endpoint candidates, all5/11/5rotary detent maps and processing-switch GUI round trip captured; physical scaling, independent readback, audible/stereo behavior and runtime contracts unverified."
+    },
+    {
+      "name": "VEQ-HLF",
+      "effect_id": "pultec_hlf",
+      "panel_class": "PultecHLF",
+      "next_step": "complete",
+      "range_plan": "pultec_hlf-knobs",
+      "completion_evidence": [
+        "scan-PultecHLF-20261025T200723927Z",
+        "unattended-20261025T195948Z-veqhlf-rotary-map",
+        "unattended-20261025T195948Z-veqhlf-switch-first",
+        "unattended-20261025T195948Z-veqhlf-switch-return"
+      ],
+      "completion_limits": "Both eleven-position selectors and processing-switch GUI round trip captured; physical units, independent readback, audible/stereo behavior and runtime contracts unverified."
+    },
+    {
+      "name": "BA-31",
+      "effect_id": "ba_31",
+      "panel_class": "Ba31",
+      "next_step": "complete",
+      "range_plan": "ba_31-knobs",
+      "completion_evidence": [
+        "scan-Ba31-20261025T202655138Z",
+        "unattended-20261025T195948Z-ba31-processing"
+      ],
+      "completion_limits": "Independently observed Orion BA-31 identity. Both Gain/Trim knob endpoint candidates and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

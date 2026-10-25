@@ -35,6 +35,8 @@ listed as pending. Known measured plans retain their existing behavior. See
 | PowerEx | 51 | Six knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 | VEQ-1A | 6 | Five continuous knob endpoint candidates, all three rotary maps and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 | VMEQ-5 | 5 | Three gain knob endpoint candidates, all 5/11/5 rotary maps and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
+| VEQ-HLF | 11 | Both eleven-position cut-off selectors and processing-switch GUI round trip captured; runtime/readback/units unverified |
+| BA-31 | 48 | Both knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash
@@ -45,7 +47,7 @@ separate lever trial are now captured; the launcher skips a redundant full
 rescan. See [the power dynamics findings](orion-afx-power-dynamics.md) for exact
 coverage and limitations. These observations add no runtime support.
 
-The [EQ findings](orion-afx-eq.md) record the completed VEQ-1A/VMEQ-5 visible
+The [EQ findings](orion-afx-eq.md) record the completed VEQ-1A/VMEQ-5/VEQ-HLF visible
 passes, including every rotary detent. Their launcher workflows skip redundant
 full captures; original range plans remain available for explicitly reviewed work.
 
@@ -435,3 +437,7 @@ before the restore key. It observes byte26 writes without an independent
 initial state readback. Activation uses the five capture-backed ordered labels;
 it does not traverse or screenshot popup rows. First Windows key execution and full inventory remain
 pending; no menu count, raw ordering or runtime control contract is promoted.
+
+The [preamp findings](orion-afx-preamps.md) record the completed BA-31 visible
+control pass, with endpoint candidates and an isolated processing-switch round trip.
+Runtime parameter writes, physical scaling and independent readback remain open.

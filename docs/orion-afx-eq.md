@@ -111,3 +111,36 @@ Physical scaling, independent readback, processing polarity, audible/stereo
 behavior and runtime contracts remain unverified. The final test insert was
 removed at frame2617 in `unattended-20261025-final-vmeq5-remove/Orion.pcapng`,
 leaving all eight AFX2 slots empty for the owner handoff.
+
+## VEQ-HLF
+
+The directed vendor load at frame2281 in
+`unattended-20261025T195948Z-load-veq-hlf/Orion.pcapng` establishes Orion
+type11/instance0 in channel1 slot0, with seven empty slots. The native panel is
+`PultecHLF`. Its two cut-off selectors retain the compatibility identifiers
+`low_shelf` and `high_shelf` in the catalog.
+
+Native job `scan-PultecHLF-20261025T200723927Z` accepted all four endpoint phases,
+with 30,528 packets and zero drops. Parameter blocks use `0x16 / 0xd5 / 0x04`,
+type byte18/instance byte19. Low Cut-off byte20 reaches raw0/10 at frames4185/11737;
+High Cut-off byte21 reaches raw0/10 at frames19085/26861. The earlier decoder
+rejection remains a failed priming job with zero accepted phases.
+
+The separate `unattended-20261025T195948Z-veqhlf-rotary-map` pass records every
+position, each with an isolated raw-field observation and pointer image:
+
+| Selector | Raw values | Printed labels in order |
+|---|---|---|
+| Low Cut-off | 0–10 | Off, 50, 80, 100, 150, 250, 500, 750, 1000, 1500, 2000 |
+| High Cut-off | 0–10 | 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15, Off |
+
+All40 bounded16pixel GUI steps change one detent and preserve the other payload
+bytes. The final full parameter payload matches the starting maximum block.
+The processing-switch `0x14 / 0x98` round trip carries tuples at17..19
+`00 0b 00` (first frame2443) and `00 0b 01` (return frame1527), respectively
+in `unattended-20261025T195948Z-veqhlf-switch-first` and `-switch-return`.
+The switch, LED and both selector regions have exact RGB baseline matches.
+
+This completes the observed visible controls. Printed labels are retained
+without guessing physical units. Independent readback, processing polarity,
+audible/stereo behavior and runtime contracts remain unverified.

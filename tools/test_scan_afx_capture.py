@@ -12,6 +12,14 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_hlf_parameter_family_is_passive_observation(self):
+        first = frame(0x16, [0xd5, 0x04, 11, 0, 2, 10])
+        second = frame(0x16, [0xd5, 0x04, 11, 0, 10, 10])
+        result = analyze_reports([(1, 1, 1, first), (2, 2, 1, second)])
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']), ('0x16', '0x4', 11))
+        self.assertEqual(group['varying_offsets'], [20])
+
     def test_vmeq_parameter_family_is_passive_observation(self):
         first = frame(0x1a, [0xd5, 0x08, 5, 0, 0, 4, 0, 0, 0, 0])
         second = frame(0x1a, [0xd5, 0x08, 5, 0, 0, 100, 0, 0, 0, 0])

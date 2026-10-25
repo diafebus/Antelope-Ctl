@@ -1786,6 +1786,78 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "pultec_hlf-knobs",
+      "panel": "PultecHLF",
+      "panel_class": "PultecHLF",
+      "effect_id": "pultec_hlf",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "Directed VEQ-HLF load frame2281; direct native tree and screenshot show two rotary selectors, eleven printed positions each including Off. Both bounds fully inside PultecHLF. Processing switch excluded.",
+      "controls": [
+        {
+          "id": "low_shelf",
+          "class_name": "PultecLowShelf_low_shelf",
+          "label": "Low Cut-off endpoints; eleven detents pending",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "high_shelf",
+          "class_name": "PultecHighShelf",
+          "label": "High Cut-off endpoints; eleven detents pending",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "ba_31-knobs",
+      "panel": "Ba31",
+      "panel_class": "Ba31",
+      "effect_id": "ba_31",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261025T195948Z-load-ba31/raw-ui.json; observed visible Gain/Trim knobs, processing switch separate",
+      "controls": [
+        {
+          "id": "gain",
+          "class_name": "Ba31GainPot_gain",
+          "label": "Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "trim",
+          "class_name": "Ba31GainPot_trim",
+          "label": "Trim",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
