@@ -106,7 +106,23 @@ controls are checked for visibility, enabled state and usable knob drag room
 before the first gesture. Linking remains an operator precondition: the GUI
 channel check establishes selection, not that the link flag is off.
 
-## Next capture: Master De-Esser Page key trial
+## Master De-Esser capture completed
+
+The 2026-10-25 pass covers eight knob endpoint candidates, Q under both BandPass
+modes and its HighPass disable/reset dependency, five visible Filter Type choices,
+four Monitor/Out states, a processing-button round trip and six preset names
+inventoried without selection. Entering `Master De-Esser` now reports completion
+without replaying these controls. Physical scaling, independent readback/runtime
+writes and audible/stereo behavior remain unverified. See
+[the findings](../../docs/orion-afx-deesser.md) for exact coverage and frames.
+The earlier six-filter-choice report remains a historical discrepancy.
+
+Monitor/Out exposes a checkbox but cycles through four raw states. Its measured
+class is excluded from automatic binary discovery; use its reviewed selector
+method. Qt can also retain false-visible menu rows after closing: menu operations
+now require actual native-visible ComboBox popup roots.
+
+### Reviewed Page key method
 
 Open Master De-Esser on unlinked AFX channel2 with the dropdown closed.
 Run `Run-AfxCapture.cmd`, enter `Master De-Esser`, press Enter and focus its
@@ -128,8 +144,9 @@ Host checks reject activation writes, skipped choices, unexpected effect or
 instance, parameter changes outside byte26, unstable blocks and newer edits
 before restoration. This is an adjacent-choice method trial; the total count
 discrepancy and full parameter coverage remain unresolved. The owner reports
-that keys require clicking the dropdown first. The new activation method,
-native key injection and captured round trip still need live verification.
+that keys require clicking the dropdown first. The native click-open/click-close activation and paced key round trip passed
+in `scan-Master-De-Esser-20261025T002640258Z`. An opening detector initially
+accepted a non-ComboBox window; the current guard checks the actual popup class.
 
 ## Previous direct menu attempt
 
@@ -224,8 +241,31 @@ launcher. Older diagnostic/pilot launchers have been removed; captures remain.
 ## Shared files
 
 Keep `Run-AfxCapture.cmd`, its PowerShell driver, `Inspect-AfxPanel.ps1`,
-`Run-AfxScan.ps1`, the two JSON data files and this README together. `results/`
+`Run-AfxScan.ps1`, the three JSON data files and this README together. `results/`
 contains private local evidence and stays out of Git. The Linux listener is
 `tools/afx_vm_pilot.py`; it uses the active Orion profile's transport and opens
 no competing HID controller. PowerShell runtime verification happens in the
 Windows VM; the Linux host has no PowerShell runtime.
+
+## Native launcher checks and reviewed batch selection
+
+From Windows, run the optional hardware-free launcher checks:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Test-AfxLauncher.ps1
+```
+
+They execute the real `.cmd` entry point for the completed BBD path, excluded
+Auto-Tune, wrong-effect/unknown plans, blank input and a missing resume job.
+Prerequisites are checked before execution so the completed path cannot silently
+become a live scan. Each invocation preflights PowerShell/C# and plan loading.
+The launcher preserves scan failures through PowerShell and the final `.cmd`
+`pause`; callers must check its exit status and retained job evidence.
+
+Interactive operation is unchanged. An automation caller can also supply
+`-PluginName "Master De-Esser"` and `-CapturePlan REVIEWED-PLAN-ID` to
+`Run-AfxCapture.cmd`. The selected plan must match the plugin and AFX channel;
+this does not skip panel readiness, focus, enabled-state, host handshake or
+restoration guards. Resume and CapturePlan cannot be combined. Use a new job
+after reviewing a failure; never infer successful restoration from exit status
+alone or replay completed controls merely to exercise the launcher.

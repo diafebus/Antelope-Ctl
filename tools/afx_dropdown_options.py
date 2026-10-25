@@ -96,6 +96,8 @@ def _validate_document(document):
             labels = _strings([option['label'] for option in options], 'labels')
             if dropdown.get('ordering') not in ('unknown', 'capture-observed', 'manual-listed'):
                 raise ValueError('Dropdown ordering is unknown')
+            if dropdown.get('selection_policy', 'inventory-only') not in ('inventory-only', 'reviewed-parameter-trial'):
+                raise ValueError('Dropdown selection policy is unknown')
             if labels and dropdown['ordering'] == 'unknown':
                 raise ValueError('Known dropdown labels need evidenced ordering')
             count = dropdown.get('full_count')
@@ -129,6 +131,8 @@ def key_control_options(effect_id, control, document=None):
     if len(matches) != 1:
         raise ValueError('Key target is missing from the dropdown registry')
     dropdown = matches[0]
+    if dropdown.get('selection_policy', 'inventory-only') != 'reviewed-parameter-trial':
+        raise ValueError('Inventory-only dropdown cannot be used for a key trial')
     labels = [option['label'] for option in dropdown.get('options', [])]
     if (dropdown.get('class_name') != control.get('class_name') or
             dropdown.get('ordering') not in ('capture-observed', 'manual-listed') or not 2 <= len(labels) <= 8):

@@ -1225,20 +1225,24 @@
       "effect_id": "deesser",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "clicked activation and one Page Down/Page Up round trip; first execution pending",
-      "evidence": "Owner reports Page keys work after clicking the dropdown open and closed. Scan214921898Z exposes five visible named rows, HP1/2/3 and BP1/2; total menu count remains disputed. Measured candidate byte26; no raw enum order guessed.",
-      "coverage": {"status": "keyboard activation and adjacent-choice round trip only; full choice inventory and other plugin controls pending"},
-      "controls": [{
-        "id": "FilterTypeKeys",
-        "label": "Filter Type",
-        "class_name": "DeesserComboBoxFilterType",
-        "kind": "key_button",
-        "activation": "click_open_click_close",
-        "dropdown_id": "filter_type",
-        "dwell_ms": 5000,
-        "candidate_field": "filter_type",
-        "observed_field_offset": 26
-      }]
+      "status": "capture-observed 2026-10-25: clicked activation, HighPass1/2/1 adjacent key round trip",
+      "evidence": "Owner reports Page keys work after clicking the dropdown open and closed. Scan214921898Z exposes five visible named rows, HP1/2/3 and BP1/2; total menu count remains disputed. Measured candidate byte26; no raw enum order guessed. Successful native job scan-Master-De-Esser-20261025T002640258Z after filtering native popup roots by QComboBoxPrivateContainer; no runtime writer/readback enabled.",
+      "coverage": {
+        "status": "keyboard activation and adjacent-choice round trip only; full choice inventory and other plugin controls pending"
+      },
+      "controls": [
+        {
+          "id": "FilterTypeKeys",
+          "label": "Filter Type",
+          "class_name": "DeesserComboBoxFilterType",
+          "kind": "key_button",
+          "activation": "click_open_click_close",
+          "dropdown_id": "filter_type",
+          "dwell_ms": 5000,
+          "candidate_field": "filter_type",
+          "observed_field_offset": 26
+        }
+      ]
     },
     {
       "id": "deesser-filter-wheel",
@@ -1258,6 +1262,234 @@
           "label": "Filter Type",
           "class_name": "DeesserComboBoxFilterType",
           "kind": "wheel_button"
+        }
+      ]
+    },
+    {
+      "id": "deesser-filter-five-visible",
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "capture-observed 2026-10-25: five visible choices and HighPass1 restoration; sixth-choice discrepancy unresolved",
+      "evidence": "2026-10-09 and 2026-10-25 UIA/screenshot show HighPass 1/2/3 and BandPass 1/2. Exercise only these five visible rows with isolated byte26 checks and restore the freshly observed starting choice.",
+      "coverage": {
+        "status": "five visible Filter Type choices and starting-choice restoration only; not a claim that an earlier reported sixth choice is resolved"
+      },
+      "controls": [
+        {
+          "id": "FilterTypeMenu",
+          "label": "Filter Type",
+          "class_name": "DeesserComboBoxFilterType",
+          "kind": "menu_positions",
+          "positions": 5,
+          "dwell_ms": 5000,
+          "candidate_field": "filter_type",
+          "observed_field_offset": 26
+        }
+      ]
+    },
+    {
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "bounded captured-block endpoint candidates; numerical encodings and device readback require review",
+      "evidence": "2026-10-25 live UIA inventory identifies seven enabled, distinct Deesser Pot classes. Q is disabled under HighPass1 and excluded from this batch. No guessed offsets, ranges, scale laws or preset sweeps. Binary Monitor/Out classification was rejected by native evidence and removed; do not replay the historical binary attempt.",
+      "coverage": {
+        "status": "seven enabled knob endpoint candidates only; Q dependency, bypass and preset inventory pending; Monitor/Out has four captured states and needs its reviewed selector method"
+      },
+      "id": "deesser-knob-candidates",
+      "controls": [
+        {
+          "id": "DeesserThresholdPot",
+          "class_name": "DeesserThresholdPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserCritFPot",
+          "class_name": "DeesserCritFPot",
+          "label": "Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserWetDryCtrlPot",
+          "class_name": "DeesserWetDryCtrlPot",
+          "label": "Dry/Wet",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserRatioPot",
+          "class_name": "DeesserRatioPot",
+          "label": "Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserAttackPot",
+          "class_name": "DeesserAttackPot",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserReleasePot",
+          "class_name": "DeesserReleasePot",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserKneeWidthPot",
+          "class_name": "DeesserKneeWidthPot",
+          "label": "Soft Knee",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ]
+    },
+    {
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "bounded captured-block endpoint candidates; numerical encodings and device readback require review",
+      "evidence": "2026-10-25 live UIA inventory identifies seven enabled, distinct Deesser Pot classes. Q is disabled under HighPass1 and excluded from this batch. No guessed offsets, ranges, scale laws or preset sweeps.",
+      "coverage": {
+        "status": "bounded subset: Threshold, Frequency, Dry/Wet; remaining controls stay separate"
+      },
+      "id": "deesser-knobs-a",
+      "controls": [
+        {
+          "id": "DeesserThresholdPot",
+          "class_name": "DeesserThresholdPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserCritFPot",
+          "class_name": "DeesserCritFPot",
+          "label": "Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserWetDryCtrlPot",
+          "class_name": "DeesserWetDryCtrlPot",
+          "label": "Dry/Wet",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ]
+    },
+    {
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "bounded captured-block endpoint candidates; numerical encodings and device readback require review",
+      "evidence": "2026-10-25 live UIA inventory identifies seven enabled, distinct Deesser Pot classes. Q is disabled under HighPass1 and excluded from this batch. No guessed offsets, ranges, scale laws or preset sweeps. Binary Monitor/Out classification was rejected by native evidence and removed; do not replay the historical binary attempt.",
+      "coverage": {
+        "status": "bounded subset: Ratio, Attack, Release, Soft Knee; remaining controls stay separate; Monitor/Out has four captured states and needs its reviewed selector method"
+      },
+      "id": "deesser-knobs-b",
+      "controls": [
+        {
+          "id": "DeesserRatioPot",
+          "class_name": "DeesserRatioPot",
+          "label": "Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserAttackPot",
+          "class_name": "DeesserAttackPot",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserReleasePot",
+          "class_name": "DeesserReleasePot",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "DeesserKneeWidthPot",
+          "class_name": "DeesserKneeWidthPot",
+          "label": "Soft Knee",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ]
+    },
+    {
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "Q endpoint candidates under freshly selected BandPass1 only; disabled HighPass Q is not exercised",
+      "evidence": "Live Q control class DeesserQFactorPotNoInheritance is disabled under HighPass1. Review the isolated filter-type change to BandPass1 before starting; enabled-state guard must pass. No guessed Q offsets/ranges.",
+      "coverage": {
+        "status": "Q endpoint candidates under BandPass1 only; dependency change/restoration recorded separately"
+      },
+      "id": "deesser-q-bandpass",
+      "controls": [
+        {
+          "id": "DeesserQFactorPotNoInheritance",
+          "class_name": "DeesserQFactorPotNoInheritance",
+          "label": "Q under BandPass1",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ]
+    },
+    {
+      "panel": "Master-De-Esser",
+      "panel_class": "Deesser",
+      "effect_id": "deesser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "Q endpoint candidates under freshly selected BandPass2 only",
+      "evidence": "Live Q control class DeesserQFactorPotNoInheritance is disabled under HighPass1. Review the isolated filter-type change to BandPass2 before starting; enabled-state guard must pass. No guessed Q offsets/ranges. Monitor raw0/1/2 observed in scan-Master-De-Esser-20261025T003655397Z; reviewed continuation captures2/3/0 at byte20 with all other fields stable. Four indicator positions and public product description agree on four modes. TogglePattern is not binary for this class.",
+      "coverage": {
+        "status": "Q endpoint candidates under BandPass2 plus measured four-state Monitor/Out cycle; readback and mode semantics remain separate"
+      },
+      "id": "deesser-q-bandpass2",
+      "controls": [
+        {
+          "id": "DeesserQFactorPotNoInheritance",
+          "class_name": "DeesserQFactorPotNoInheritance",
+          "label": "Q under BandPass2",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "MonitorOutCycle",
+          "class_name": "DeesserCtrlButtonNoInheritance",
+          "label": "Monitor / Out (four-state cycle)",
+          "kind": "selector_cycle",
+          "positions": 4,
+          "candidate_field": "ctrl",
+          "observed_field_offset": 20,
+          "visual_region": {
+            "x": 690,
+            "y": 60,
+            "width": 230,
+            "height": 180
+          },
+          "minimum_visual_change": 0.001
         }
       ]
     }

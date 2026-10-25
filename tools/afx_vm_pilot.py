@@ -146,7 +146,13 @@ def wire_feedback(reports, control, effect_type, phase, out_endpoint=1, instance
                 'source': 'no captured parameter write; endpoint unverified'}
     number, data = samples[-1]
     offset = wire['offset']
-    value = struct.unpack('<f', data[offset:offset + 4])[0] if wire.get('width', 1) == 4 else data[offset]
+    width = wire.get('width', 1)
+    if width == 4:
+        value = struct.unpack('<f', data[offset:offset + 4])[0]
+    elif width == 2:
+        value = int.from_bytes(data[offset:offset + 2], 'little')
+    else:
+        value = data[offset]
     expected = wire['range'][0 if phase == 'minimum' else 1]
     payload_hex = data[20:].hex()
     verified = value == expected and payload_hex == previous_payload_hex

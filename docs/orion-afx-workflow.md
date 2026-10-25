@@ -28,7 +28,7 @@ listed as pending. Known measured plans retain their existing behavior. See
 | --- | --- | --- |
 | Memory Cat Brigade | 73 | Eight fields, fresh parameter/processing reads for instances0–2, Launcher-restart retention, owner-confirmed switch labels |
 | Instinct | 75 | Load/chain,93older linked parameter writes, opcode`0x7c`, observed query75/1; automated GUI trials map three switches and all21 knob endpoints; model selection, power, interpolation laws and runtime readback remain unresolved |
-| Master De-Esser | 27 | Load/chain, 126 parameter writes in the linked-control capture, opcode`0x20`, paired writes, observed query27/1; control labels/scales unresolved |
+| Master De-Esser | 27 | Load/chain and older linked writes; native capture now covers eight knob endpoint candidates, five filter choices, four monitoring states, processing-button round trip and preset inventory; runtime readback/scaling remain unverified |
 | V12 Chorus | 70 | Labelled modulation capture: eleven changed fields and245 mirrored pairs; reader/restoration still unverified |
 | BBD Chorus | 78 | Demo modulation capture: five changed fields and85 mirrored pairs; stereo-mode mapping and reader/restoration still unverified |
 
@@ -86,8 +86,11 @@ See the [recovery instructions](../tools/windows/README.md#interrupted-batches-a
 Independent review and mocked host/guest tests cover interruptions, stale plans,
 late writes and ambiguous labels. A Windows preflight on 2026-10-21 loaded the
 reviewed plans and compiled the native helpers without operating plugin controls.
-Live consecutive-plugin capture and the revised dropdown click-open/click-close
-activation still need verification. Selector metadata covers
+The revised dropdown activation and five visible De-Esser choices passed native
+GUI/USB verification on 2026-10-25. Its four-state Monitor/Out selector also
+passed after correcting the binary-looking checkbox classification. See
+[De-Esser findings](orion-afx-deesser.md). Consecutive-plugin and interrupted/
+resumed live acceptance remain separate milestones. Selector metadata covers
 cabinet/speaker/model candidates; complete option enumeration remains pending.
 Legacy pilot launchers are removed. Instinct's catalog now records all21 knob
 endpoint associations and three switches; Volume displays−infinity..+1dB,

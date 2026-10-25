@@ -29,6 +29,7 @@ using System;
 using System.Runtime.InteropServices;
 public static class AfxPanelWindow {
     [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
+    [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
@@ -36,8 +37,30 @@ public static class AfxPanelWindow {
     [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
     [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint owner);
 }
 '@
+
+function Visible-InspectionPopups($MenuBounds) {
+    $found = @()
+    foreach ($node in $desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition)) {
+        $h = [IntPtr]::new([long]$node.Current.NativeWindowHandle)
+        $r = [AfxPanelWindow+Rect]::new(); [uint32]$owner = 0
+        if ($h -eq [IntPtr]::Zero -or $node.Current.ClassName -cne 'QComboBoxPrivateContainer' -or
+            -not [AfxPanelWindow]::IsWindowVisible($h) -or
+            [AfxPanelWindow]::GetWindowThreadProcessId($h, [ref]$owner) -eq 0 -or
+            $owner -ne [uint32]$process.Id -or -not [AfxPanelWindow]::GetWindowRect($h, [ref]$r)) { continue }
+        $width = $r.Right - $r.Left; $height = $r.Bottom - $r.Top
+        if ($width -le 0 -or $width -gt 512 -or $height -le 0 -or
+            $height -gt [System.Windows.Forms.SystemInformation]::VirtualScreen.Height -or
+            [Math]::Abs($r.Left - $MenuBounds.Left) -gt 32 -or
+            $r.Top -gt $MenuBounds.Bottom + 32 -or $r.Bottom -lt $MenuBounds.Top - 32) { continue }
+        $found += $node
+    }
+    return $found
+}
 
 [void][AfxPanelWindow]::SetProcessDPIAware()
 Write-Host "Focus the $PanelName panel within $DelaySeconds seconds."
@@ -319,16 +342,13 @@ if ($InspectMenuClasses.Count -gt 0) {
             $desktop = [System.Windows.Automation.AutomationElement]::RootElement
             $ownerCondition = [System.Windows.Automation.PropertyCondition]::new(
                 [System.Windows.Automation.AutomationElement]::ProcessIdProperty, [int]$process.Id)
-            $oldIds = @($desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition) |
-                Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty } |
-                ForEach-Object { $_.GetRuntimeId() -join ':' })
+            $menuBounds = $menu.Current.BoundingRectangle
+            if (@(Visible-InspectionPopups $menuBounds).Count -ne 0) {
+                throw 'A native dropdown is already open; no inspection invocation sent.'
+            }
             $optionCondition = [System.Windows.Automation.OrCondition]::new(
                 [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem),
                 [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::MenuItem))
-            $oldOptionIds = @($root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $optionCondition) | Where-Object {
-                    -not $_.Current.IsPassword -and -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty -and
-                    $_.Current.ControlType -in @([System.Windows.Automation.ControlType]::ListItem, [System.Windows.Automation.ControlType]::MenuItem)
-                } | ForEach-Object { $_.GetRuntimeId() -join ':' })
             $openedOptionIds = @(); $popupIds = @(); $popupRoots = @()
             $openAttempted = $false
             try {
@@ -340,14 +360,14 @@ if ($InspectMenuClasses.Count -gt 0) {
                     $root.Current.BoundingRectangle -ne $bounds -or [AfxPanelWindow]::GetAsyncKeyState(27) -lt 0) {
                     throw 'Owner focus changed while opening dropdown.'
                 }
-                $popupRoots = @($desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition) |
-                    Where-Object { -not $_.Current.IsOffscreen -and (($_.GetRuntimeId() -join ':') -notin $oldIds) })
+                $popupRoots = @(Visible-InspectionPopups $menuBounds)
                 $popupIds = @($popupRoots | ForEach-Object { $_.GetRuntimeId() -join ':' })
-                if ($popupRoots.Count -gt 4) { throw 'Too many popup windows; stopped.' }
+                if ($popupRoots.Count -ne 1) { throw 'Expected one native-visible dropdown popup; stopped.' }
                 $nodes = [System.Collections.Generic.List[object]]::new()
+                $seenOptions = @{}
                 $captureRect = [System.Drawing.Rectangle]::new([int]$bounds.X, [int]$bounds.Y,
                     [int][Math]::Ceiling($bounds.Width), [int][Math]::Ceiling($bounds.Height))
-                foreach ($popup in (@($root) + $popupRoots)) {
+                foreach ($popup in $popupRoots) {
                     $pr = $popup.Current.BoundingRectangle
                     if (-not $pr.IsEmpty) {
                         $captureRect = [System.Drawing.Rectangle]::Union($captureRect,
@@ -357,20 +377,23 @@ if ($InspectMenuClasses.Count -gt 0) {
                     $children = $popup.FindAll([System.Windows.Automation.TreeScope]::Descendants, $optionCondition)
                     foreach ($child in $children) {
                         $c = $child.Current; $r = $c.BoundingRectangle
+                        $optionId = $child.GetRuntimeId() -join ':'
                         if ($c.IsPassword -or $c.IsOffscreen -or $r.IsEmpty -or $c.ProcessId -ne $process.Id -or
+                            -not $pr.Contains($r) -or $seenOptions.ContainsKey($optionId) -or
                             $r.Right -le [System.Windows.Forms.SystemInformation]::VirtualScreen.Left -or
                             $r.Left -ge [System.Windows.Forms.SystemInformation]::VirtualScreen.Right -or
                             $r.Bottom -le [System.Windows.Forms.SystemInformation]::VirtualScreen.Top -or
                             $r.Top -ge [System.Windows.Forms.SystemInformation]::VirtualScreen.Bottom) { continue }
                         if ($nodes.Count -ge 512) { throw 'Visible dropdown options exceed inventory bound.' }
+                        $seenOptions[$optionId] = $true
                         $nodes.Add(@{ class_name = $c.ClassName; name = $c.Name; control_type = $c.ControlType.ProgrammaticName;
-                            runtime_id = ($child.GetRuntimeId() -join ':');
+                            runtime_id = $optionId; enabled = $c.IsEnabled;
                             bounds = @{ x = $r.X - $bounds.X; y = $r.Y - $bounds.Y; width = $r.Width; height = $r.Height } })
                     }
                 }
                 $options = @($nodes | Where-Object {
                     $_.control_type -in @('ControlType.ListItem', 'ControlType.MenuItem') -and
-                    -not [string]::IsNullOrWhiteSpace($_.name) -and $_.runtime_id -notin $oldOptionIds
+                    -not [string]::IsNullOrWhiteSpace($_.name)
                 })
                 $openedOptionIds = @($options | ForEach-Object { $_.runtime_id })
                 $captureRect = [System.Drawing.Rectangle]::Intersect($captureRect, [System.Windows.Forms.SystemInformation]::VirtualScreen)
@@ -397,16 +420,7 @@ if ($InspectMenuClasses.Count -gt 0) {
             }
             if ([AfxPanelWindow]::GetForegroundWindow() -ne $handle -or $root.Current.BoundingRectangle -ne $bounds -or
                 $valuePattern.Current.Value -ne $initialValue) { throw 'Dropdown changed selection/focus; stopped without repair writes.' }
-            $afterWindows = @($desktop.FindAll([System.Windows.Automation.TreeScope]::Children, $ownerCondition) |
-                Where-Object { -not $_.Current.IsOffscreen -and -not $_.Current.BoundingRectangle.IsEmpty })
-            foreach ($window in (@($root) + $afterWindows)) {
-                if (($window.GetRuntimeId() -join ':') -in $popupIds) { throw 'Dropdown popup remained visible after Escape.' }
-                $afterNodes = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $optionCondition)
-                foreach ($node in $afterNodes) {
-                    if (-not $node.Current.IsOffscreen -and -not $node.Current.BoundingRectangle.IsEmpty -and
-                        ($node.GetRuntimeId() -join ':') -in $openedOptionIds) { throw 'Dropdown options remained visible after Escape.' }
-                }
-            }
+            if (@(Visible-InspectionPopups $menuBounds).Count -ne 0) { throw 'Dropdown popup remained visible after Escape.' }
             $menuRows[$menuRows.Count - 1].closure_verified = $true
             $menuRows[$menuRows.Count - 1].selected_after = $valuePattern.Current.Value
             $menuRows[$menuRows.Count - 1].selection_unchanged = $true

@@ -1,5 +1,6 @@
 # One entry point; reviewed workflow data chooses the prepared capture stage.
-param([switch]$ValidateOnly, [string]$PreflightReport = '')
+param([switch]$ValidateOnly, [string]$PreflightReport = '',
+      [string]$PluginName = '', [string]$CapturePlan = '')
 $ErrorActionPreference = 'Stop'
 if ($ValidateOnly) {
     try {
@@ -59,14 +60,19 @@ New-Item -ItemType Directory -Path $results -Force | Out-Null
 $log = Join-Path $results ('AFX-capture-launch-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ') + '.log')
 Start-Transcript -Path $log | Out-Null
 $recording = $true
+$exitCode = 0
 try {
     # A child process compiles helpers without moving the pointer and avoids
     # loading their types twice in the actual capture process.
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -ValidateOnly
     if ($LASTEXITCODE -ne 0) { throw 'Windows preflight failed; no capture actions started.' }
-    $name = (Read-Host 'Plugin name (for example V12 Chorus), or resume scan-JOB').Trim()
+    $name = $PluginName.Trim()
+    if ([string]::IsNullOrWhiteSpace($name)) {
+        $name = ([string](Read-Host 'Plugin name (for example V12 Chorus), or resume scan-JOB')).Trim()
+    }
     if ([string]::IsNullOrWhiteSpace($name)) { throw 'A plugin name is required.' }
     if ($name -match '^resume\s+(scan-[A-Za-z0-9_-]+)$') {
+        if (-not [string]::IsNullOrWhiteSpace($CapturePlan)) { throw 'Resume cannot combine with CapturePlan.' }
         $resumeDirectory = Join-Path $results $Matches[1]
         $remainingFile = Join-Path $resumeDirectory 'remaining-plan.json'
         if (-not (Test-Path -LiteralPath $remainingFile)) {
@@ -105,8 +111,20 @@ try {
     $canonical = ($name.ToLowerInvariant() -replace '[^a-z0-9]', '')
     $matches = @($workflows.plugins | Where-Object { ($_.name.ToLowerInvariant() -replace '[^a-z0-9]', '') -ceq $canonical })
     if ($matches.Count -gt 1) { throw 'Ambiguous plugin workflow.' }
+    if (-not [string]::IsNullOrWhiteSpace($CapturePlan)) {
+        $plans = (Get-Content -Raw (Join-Path $PSScriptRoot 'afx-scan-plans.json') | ConvertFrom-Json).plans
+        $selectedPlans = @($plans | Where-Object { $_.id -ceq $CapturePlan })
+        if ($matches.Count -ne 1 -or $selectedPlans.Count -ne 1 -or
+            $selectedPlans[0].effect_id -cne $matches[0].effect_id -or
+            $selectedPlans[0].channel -ne $workflows.channel) {
+            throw 'CapturePlan must identify one reviewed plan for this plugin and channel. No gestures sent.'
+        }
+        $matches[0].next_step = 'ranges'
+        $matches[0] | Add-Member -NotePropertyName range_plan -NotePropertyValue $CapturePlan -Force
+    }
     if ($matches.Count -eq 1 -and $matches[0].next_step -eq 'complete') {
-        Write-Host "${name}: all visible editable controls have been captured and reviewed. No rescan needed."
+        Write-Host "${name}: prepared GUI capture work is complete. No rescan needed."
+        if ($matches[0].completion_limits) { Write-Host $matches[0].completion_limits }
         Write-Host 'Device readback and runtime writes remain unverified. Run the launcher with the next plugin name.'
     } elseif ($matches.Count -eq 1 -and $matches[0].next_step -eq 'ranges') {
         if ([string]::IsNullOrWhiteSpace($matches[0].range_plan)) { throw 'No reviewed range plan is ready.' }
@@ -115,6 +133,7 @@ try {
         Stop-Transcript | Out-Null
         $recording = $false
         & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -PlanId $matches[0].range_plan
+        $exitCode = $LASTEXITCODE
     } else {
         Write-Host "Preparing the control inventory for $name."
         Write-Host "Open it on unlinked AFX $($workflows.channel)."
@@ -148,9 +167,11 @@ try {
             Stop-Transcript | Out-Null
             $recording = $false
             & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -DiscoveryDirectory $directory -Prepared
+            $exitCode = $LASTEXITCODE
         }
     }
 } catch {
+    $exitCode = 1
     Write-Host 'Capture stopped:' -ForegroundColor Red
     Write-Host ($_ | Out-String)
     Write-Host $_.ScriptStackTrace
@@ -161,3 +182,4 @@ try {
     }
     if ($recording) { Stop-Transcript | Out-Null }
 }
+exit $exitCode

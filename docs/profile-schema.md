@@ -298,10 +298,19 @@ preserve the opaque payload and reject ambiguous instance correlation.
 
 Orion observations may also live in
 `parameter_observation.labelled_gui_observations` when a named
-UI control has not been associated with a compatible declaration ID. Each such
+UI control has not been associated with a compatible declaration ID, or its
+encoding remains an endpoint candidate pending runtime verification. Each such
 entry records absolute report offset/width, observed values, visual states,
 frame provenance and verification limits. Visual restoration is distinct from
 device readback; `writable: false` observations do not enable runtime controls.
+Integer endpoint candidates may use `encoding: uint8` or `uint16-le`,
+`observed_wire_range`, `observed_display_endpoints` and per-phase `endpoints`
+with frame/raw values. These remain observed candidates with `writable: false`;
+endpoint labels alone do not establish a conversion law. De-Esser additionally
+records `mode_dependencies` for coupled filter/Q changes and
+`gui_control_methods` for measured selector classes. A checkbox's binary-looking
+TogglePattern is not proof of two device states; a measured multi-state method
+must override automatic binary discovery. See [De-Esser findings](orion-afx-deesser.md).
 Float observations may additionally record `encoding: float32-le`,
 `observed_wire_range`, `observed_display_range` and `display_unit`. These are
 captured endpoints, not interpolation laws or defaults. Infinite displayed

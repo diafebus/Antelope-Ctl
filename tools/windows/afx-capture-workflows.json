@@ -20,18 +20,33 @@
       "effect_id": "bbdchorus",
       "range_plan": "bbd-controls",
       "next_step": "complete",
-      "panel_class": "BBDChorus"
+      "panel_class": "BBDChorus",
+      "completion_evidence": [
+        "scan-BBD-Chorus-20261009T192357505Z",
+        "scan-BBD-Chorus-20261009T193326058Z"
+      ],
+      "completion_limits": "Visible controls captured; device readback, runtime writes and audible behavior remain unverified."
     },
     {
       "name": "Master De-Esser",
       "effect_id": "deesser",
-      "next_step": "ranges",
+      "next_step": "complete",
       "panel_class": "Deesser",
       "menu_classes": [
         "DeesserPresetsCombobox",
         "DeesserComboBoxFilterType"
       ],
-      "range_plan": "deesser-filter-keys"
+      "range_plan": "deesser-filter-keys",
+      "completion_evidence": [
+        "scan-Master-De-Esser-20261025T003137097Z",
+        "scan-Master-De-Esser-20261025T003349239Z",
+        "scan-Master-De-Esser-20261025T003655397Z (accepted knob phases only)",
+        "scan-Master-De-Esser-20261025T004418330Z",
+        "scan-Master-De-Esser-20261025T005043532Z",
+        "panel-Master-De-Esser-20261025T010018355Z",
+        "unattended-20261025-deesser-bypass-first/return"
+      ],
+      "completion_limits": "Eight knob endpoint candidates, five visible filter choices, four monitoring states, bypass GUI round trip and preset inventory captured. Runtime readback/writes, scaling and audible/stereo behavior remain unverified; sixth-choice historical discrepancy remains open."
     }
   ]
 }

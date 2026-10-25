@@ -85,6 +85,32 @@ except RuntimeError:
             inventory = self.discovery_inventory(); inventory['controls'] = rows
             with self.assertRaises(ValueError): discovery_plan(inventory, catalog)
 
+    def test_discovery_does_not_reclassify_measured_monitor_selector_as_binary(self):
+        from tools.afx_scan_discovery import discovery_plan
+        from tools.afx_vm_pilot import ROOT
+        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        inventory = self.discovery_inventory()
+        inventory['controls'][-1]['class_name'] = 'DeesserCtrlButtonNoInheritance'
+        plan = discovery_plan(inventory, catalog)
+        self.assertEqual([c['feedback'] for c in plan['controls']], ['captured_block'])
+        self.assertTrue(any('multi-state selector' in p['reason'] for p in plan['coverage']['pending']))
+
+    def test_uint16_endpoint_feedback_preserves_full_block_stability_requirement(self):
+        control = {'wire': {'offset': 22, 'width': 2, 'range': [150, 20000]}}
+        data = bytearray(frame(0x20, [0xd5, 0x0e, 27, 0]))
+        data[22:24] = (20000).to_bytes(2, 'little')
+        report = (1, 1, 1, bytes(data))
+        first = wire_feedback([report], control, 27, 'maximum', instance=0)
+        self.assertEqual(first['observed_raw'], 20000)
+        self.assertFalse(first['endpoint_verified'])
+        stable = wire_feedback([report], control, 27, 'maximum', instance=0,
+                               previous_payload_hex=first['parameter_payload_hex'])
+        self.assertTrue(stable['endpoint_verified'])
+        data[24] = 1
+        changed = wire_feedback([(2, 2, 1, bytes(data))], control, 27, 'maximum', instance=0,
+                                previous_payload_hex=first['parameter_payload_hex'])
+        self.assertFalse(changed['endpoint_verified'])
+
     def test_discovery_plateau_is_candidate_and_requires_a_matching_block(self):
         from tools.afx_scan_discovery import block_feedback
         def sample(n, value, instance=0, ep=1):
@@ -176,7 +202,8 @@ except RuntimeError:
             if workflow['next_step'] == 'ranges':
                 self.assertIn(workflow['range_plan'], plans)
             elif workflow['next_step'] == 'complete':
-                self.assertEqual(workflow['effect_id'], 'bbdchorus')
+                self.assertTrue(workflow['completion_evidence'])
+                self.assertIn('unverified', workflow['completion_limits'])
             elif workflow['next_step'] == 'menus':
                 self.assertEqual(workflow['effect_id'], 'deesser')
                 self.assertEqual(workflow['panel_class'], 'Deesser')

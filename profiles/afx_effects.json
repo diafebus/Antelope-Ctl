@@ -1234,9 +1234,56 @@
             "recall": null,
             "parameters": null
           },
-          "control_encodings": {},
+          "control_encodings": {
+            "filter_type": {
+              "offset": 26,
+              "width": 1,
+              "range": [
+                0,
+                4
+              ],
+              "kind": "enum",
+              "label": "Filter Type",
+              "status": "capture-observed; five visible choices, full-count discrepancy unresolved",
+              "options": {
+                "0": "HighPass 1",
+                "1": "HighPass 2",
+                "2": "HighPass 3",
+                "3": "BandPass 1",
+                "4": "BandPass 2"
+              },
+              "wire_enum": {
+                "0": "HighPass 1",
+                "1": "HighPass 2",
+                "2": "HighPass 3",
+                "3": "BandPass 1",
+                "4": "BandPass 2"
+              },
+              "writable": false,
+              "evidence": [
+                "scan-Master-De-Esser-20261025T003137097Z/Master-De-Esser-channel2.pcapng: frames3259/7903/12473/17153/21841 select HighPass1/2/3 and BandPass1/2; frame26473 restores HighPass1. All six phases host-accepted; only byte26 changes. SHA256 f599f67499664741c0d5276cb0afdae2d941c2b571b138a9467b533e60e847ac. No independent parameter readback."
+              ]
+            },
+            "ctrl": {
+              "offset": 20,
+              "width": 1,
+              "range": [
+                0,
+                3
+              ],
+              "kind": "enum",
+              "label": "Monitor / Out",
+              "status": "capture-observed four-state cycle; mode meanings and runtime readback unverified",
+              "writable": false,
+              "evidence": [
+                "scan-Master-De-Esser-20261025T005043532Z: after BandPass2 Q trials, frames16347/17151/17857/18613 traverse raw1/2/3/0 and restore the preceding raw0 block; four labelled LED-region images and host acceptance. Windows TogglePattern is On for multiple states and cannot establish binary state count.",
+                "https://en.antelopeaudio.com/products/master-de-esser/"
+              ]
+            }
+          },
           "evidence": [
-            "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng"
+            "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng",
+            "scan-Master-De-Esser-20261025T003137097Z"
           ],
           "notes": "Orion type ID established by the owner-labelled load sequence. Instinct has a different opcode and a larger parameter block; Master De-Esser also uses a different opcode from Memory Cat. These observations do not enable loading or parameter writes for either effect.",
           "type_id_write_status": "unconfirmed",
@@ -1252,12 +1299,16 @@
               0,
               1
             ],
-            "notes": "Older parameter movements were unlabelled; linked UI sends identical state blocks to instance 1 then instance 0. A later GUI trial identifies two Filter Type values at byte26; remaining field maps/scales and readback are unverified. Do not reuse the Memory Cat byte encoding.",
+            "notes": "Directed native GUI captures now cover eight knob endpoint candidates (Q in both BandPass modes), five visible filter choices, the four-state Monitor/Out selector and a processing-button round trip. Presets are inventoried without selection. GUI/captured-write checks do not establish physical scaling, independent parameter/processing readback, stereo/audible behavior, or runtime writers. The older sixth-filter-choice report remains a historical discrepancy.",
             "preserved_fields": {
               "filter_type": {
                 "offset": 26,
                 "readback_offset": null,
-                "evidence": "Labelled HighPass3/BandPass1 round trip changes only byte26; automated_gui_capture gives frames and the two observed values. Remaining values and enum order unknown."
+                "evidence": "Five visible choices now mapped at byte26; control_encodings.filter_type and visible_filter_capture retain labels/frames. Unknown fields and unobserved choices remain preserved."
+              },
+              "ctrl": {
+                "offset": 20,
+                "evidence": "scan-Master-De-Esser-20261025T005043532Z frames16347/17151/17857/18613 establish the labelled four-state Monitor/Out cycle at byte20, with full-block return to preceding raw0. Earlier failed binary trial and directed continuation remain historical evidence."
               }
             },
             "automated_gui_capture": {
@@ -1266,17 +1317,517 @@
               "type_id": 27,
               "instance": 0,
               "selector_observations": [
-                {"control_id": "filter_type", "label": "BandPass 1", "offset": 26, "raw": 3, "frame": 447},
-                {"control_id": "filter_type", "label": "HighPass 3", "offset": 26, "raw": 2, "frame": 1209}
+                {
+                  "control_id": "filter_type",
+                  "label": "BandPass 1",
+                  "offset": 26,
+                  "raw": 3,
+                  "frame": 447
+                },
+                {
+                  "control_id": "filter_type",
+                  "label": "HighPass 3",
+                  "offset": 26,
+                  "raw": 2,
+                  "frame": 1209
+                }
               ],
               "restored_gui_selection": "HighPass 3",
-              "changed_parameter_offsets": [26],
+              "changed_parameter_offsets": [
+                26
+              ],
               "packet_count": 1754,
               "dropped_packets": 0,
               "device_readback_verified": false,
-              "pending": ["Remaining filter options", "Q dependency", "Knob ranges", "Monitor/Out", "Bypass", "Preset inventory"],
+              "pending": [
+                "Remaining filter options",
+                "Q dependency",
+                "Knob ranges",
+                "Monitor/Out",
+                "Bypass",
+                "Preset inventory"
+              ],
               "notes": "No complete menu, field range, option order or runtime writer inferred. Subsequent partial-notch pacing needs Windows verification."
+            },
+            "visible_filter_capture": {
+              "source": "scan-Master-De-Esser-20261025T003137097Z",
+              "capture_sha256": "f599f67499664741c0d5276cb0afdae2d941c2b571b138a9467b533e60e847ac",
+              "status": "five visible choices and GUI/captured-write restoration observed",
+              "type_id": 27,
+              "instance": 0,
+              "selector_observations": [
+                {
+                  "control_id": "filter_type",
+                  "label": "HighPass 1",
+                  "offset": 26,
+                  "raw": 0,
+                  "frames": [
+                    1551,
+                    3259
+                  ]
+                },
+                {
+                  "control_id": "filter_type",
+                  "label": "HighPass 2",
+                  "offset": 26,
+                  "raw": 1,
+                  "frames": [
+                    7903
+                  ]
+                },
+                {
+                  "control_id": "filter_type",
+                  "label": "HighPass 3",
+                  "offset": 26,
+                  "raw": 2,
+                  "frames": [
+                    12473
+                  ]
+                },
+                {
+                  "control_id": "filter_type",
+                  "label": "BandPass 1",
+                  "offset": 26,
+                  "raw": 3,
+                  "frames": [
+                    17153
+                  ]
+                },
+                {
+                  "control_id": "filter_type",
+                  "label": "BandPass 2",
+                  "offset": 26,
+                  "raw": 4,
+                  "frames": [
+                    21841
+                  ]
+                },
+                {
+                  "control_id": "filter_type",
+                  "label": "HighPass 1",
+                  "offset": 26,
+                  "raw": 0,
+                  "frames": [
+                    26473
+                  ]
+                }
+              ],
+              "restored_gui_selection": "HighPass 1",
+              "changed_parameter_offsets": [
+                26
+              ],
+              "device_readback_verified": false,
+              "full_count": null,
+              "full_count_status": "five visible choices captured; earlier reported sixth choice unresolved"
+            },
+            "gui_control_methods": {
+              "DeesserCtrlButtonNoInheritance": {
+                "kind": "selector_cycle",
+                "positions": 4,
+                "status": "capture-observed",
+                "evidence": "2026-10-25 raw0/1/2/3/0 cycle; TogglePattern reports On for multiple states. Four modes also described at https://en.antelopeaudio.com/products/master-de-esser/"
+              }
+            },
+            "labelled_gui_observations": {
+              "threshold": {
+                "label": "Threshold",
+                "class_name": "DeesserThresholdPot",
+                "offset": 21,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_range": [
+                  0,
+                  80
+                ],
+                "observed_display_endpoints": [
+                  "0",
+                  "80"
+                ],
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T003349239Z",
+                "capture_sha256": "439738c548daf79d519563056a977fb29d46f08b62b80aeb853d7db2aced432d",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 4061,
+                    "raw": 0
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 11325,
+                    "raw": 80
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  21
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              },
+              "crit_f": {
+                "label": "Frequency",
+                "class_name": "DeesserCritFPot",
+                "offset": 22,
+                "width": 2,
+                "encoding": "uint16-le",
+                "observed_wire_range": [
+                  150,
+                  20000
+                ],
+                "observed_display_endpoints": [
+                  "150",
+                  "20k"
+                ],
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T003349239Z",
+                "capture_sha256": "439738c548daf79d519563056a977fb29d46f08b62b80aeb853d7db2aced432d",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 18581,
+                    "raw": 150
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 30803,
+                    "raw": 20000
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  22,
+                  23
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              },
+              "wd_control": {
+                "label": "Dry/Wet",
+                "class_name": "DeesserWetDryCtrlPot",
+                "offset": 27,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_range": [
+                  0,
+                  100
+                ],
+                "observed_display_endpoints": null,
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T003349239Z",
+                "capture_sha256": "439738c548daf79d519563056a977fb29d46f08b62b80aeb853d7db2aced432d",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 38309,
+                    "raw": 0
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 46035,
+                    "raw": 100
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  27
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              },
+              "ratio": {
+                "label": "Ratio",
+                "class_name": "DeesserRatioPot",
+                "offset": 28,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_range": [
+                  10,
+                  200
+                ],
+                "observed_display_endpoints": [
+                  "1.0",
+                  "20.0"
+                ],
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T003655397Z",
+                "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 4347,
+                    "raw": 10
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 12307,
+                    "raw": 200
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  28
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              },
+              "attack": {
+                "label": "Attack",
+                "class_name": "DeesserAttackPot",
+                "offset": 29,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_range": [
+                  1,
+                  200
+                ],
+                "observed_display_endpoints": [
+                  "0.1",
+                  "20.0"
+                ],
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T003655397Z",
+                "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 19997,
+                    "raw": 1
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 28651,
+                    "raw": 200
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  29
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              },
+              "release": {
+                "label": "Release",
+                "class_name": "DeesserReleasePot",
+                "offset": 30,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_range": [
+                  10,
+                  200
+                ],
+                "observed_display_endpoints": [
+                  "10",
+                  "200"
+                ],
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T003655397Z",
+                "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 35897,
+                    "raw": 10
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 44851,
+                    "raw": 200
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  30
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              },
+              "knee_width": {
+                "label": "Soft Knee",
+                "class_name": "DeesserKneeWidthPot",
+                "offset": 31,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_range": [
+                  0,
+                  30
+                ],
+                "observed_display_endpoints": [
+                  "0",
+                  "30"
+                ],
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T003655397Z",
+                "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 52599,
+                    "raw": 0
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 61397,
+                    "raw": 30
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  31
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              },
+              "q_factor": {
+                "label": "Q",
+                "class_name": "DeesserQFactorPotNoInheritance",
+                "offset": 24,
+                "width": 2,
+                "encoding": "uint16-le",
+                "observed_wire_range": [
+                  1,
+                  400
+                ],
+                "observed_display_endpoints": [
+                  "0.01",
+                  "4.00"
+                ],
+                "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+                "source": "scan-Master-De-Esser-20261025T004418330Z",
+                "capture_sha256": "63509d7e174ef9bb1f6e83457d3a959c49d1db6f944f4129f60a89c9aa38dc18",
+                "endpoints": [
+                  {
+                    "phase": "minimum",
+                    "frame": 4253,
+                    "raw": 1
+                  },
+                  {
+                    "phase": "maximum",
+                    "frame": 12395,
+                    "raw": 400
+                  }
+                ],
+                "changed_parameter_offsets": [
+                  24,
+                  25
+                ],
+                "device_readback_verified": false,
+                "writable": false
+              }
+            },
+            "mode_dependencies": {
+              "filter_type_and_q": {
+                "status": "capture-observed GUI enablement and coupled writes",
+                "highpass_labels": [
+                  "HighPass 1",
+                  "HighPass 2",
+                  "HighPass 3"
+                ],
+                "bandpass_labels": [
+                  "BandPass 1",
+                  "BandPass 2"
+                ],
+                "q_enabled_under_bandpass": true,
+                "q_endpoint_raw_ranges": {
+                  "BandPass 1": [
+                    1,
+                    400
+                  ],
+                  "BandPass 2": [
+                    1,
+                    400
+                  ]
+                },
+                "q_disabled_under_highpass": true,
+                "return_to_highpass1": {
+                  "source": "unattended-20261025-q-filter-restore/Orion.pcapng frame3099; unattended-20261025-q-bandpass2-restore/Orion.pcapng frame2156",
+                  "changed_offsets": [
+                    24,
+                    25,
+                    26
+                  ],
+                  "q_raw_before": 400,
+                  "q_raw_after": 71,
+                  "q_offsets": [
+                    24,
+                    25
+                  ],
+                  "notes": "Changing the filter back to HighPass1 disables Q and emits the vendor-selected Q=71, alongside filter byte26=0. Do not force the preceding BandPass Q value back into the disabled control."
+                },
+                "device_readback_verified": false,
+                "highpass_enabled_state_evidence": {
+                  "capture": "unattended-20261025-highpass-q-dependencies/Orion.pcapng",
+                  "frames": [
+                    2181,
+                    4949,
+                    7569
+                  ],
+                  "labels": [
+                    "HighPass 2",
+                    "HighPass 3",
+                    "HighPass 1"
+                  ],
+                  "q_enabled": [
+                    false,
+                    false,
+                    false
+                  ]
+                }
+              }
+            },
+            "preset_inventory": {
+              "source": "panel-Master-De-Esser-20261025T010018355Z",
+              "class_name": "DeesserPresetsCombobox",
+              "visible_labels": [
+                "BV Elec Hi Hat",
+                "BV Female S 2",
+                "BV Reduce High Freq",
+                "BV Slap Bass",
+                "BV Subtle Female S",
+                "BV Typical S"
+              ],
+              "status": "visible GUI inventory only; no presets selected",
+              "selected_before": "BV Elec Hi Hat",
+              "selected_after": "BV Elec Hi Hat",
+              "closure_verified": true,
+              "outbound_control_reports": 0,
+              "complete_library": "unknown; visible inventory does not establish hidden/virtualized presets"
+            },
+            "range_capture_summary": {
+              "status": "visible-control capture pass completed; runtime contracts remain unverified",
+              "knobs": 8,
+              "q_modes": [
+                "BandPass 1",
+                "BandPass 2"
+              ],
+              "filter_choices_captured": 5,
+              "monitor_states_captured": 4,
+              "processing_button_round_trip": "GUI and captured-event restoration observed",
+              "preset_inventory_count": 6,
+              "presets_selected": false,
+              "device_readback_verified": false,
+              "pending": [
+                "Physical scaling/interpolation beyond displayed endpoint associations",
+                "Independent parameter/processing readback and verified runtime write/restore",
+                "Audible/stereo behavior",
+                "Historical report of a sixth filter choice"
+              ]
             }
+          },
+          "bypass_observation": {
+            "status": "capture-observed",
+            "opcode": "0x14",
+            "selector": "0x98",
+            "instance_offset": 17,
+            "type_offset": 18,
+            "state_offset": 19,
+            "observed_instance": 0,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_restoration": "exact RGB button match",
+            "polarity": "not independently verified",
+            "device_readback_verified": false,
+            "runtime_writable": false,
+            "evidence": [
+              "unattended-20261025-deesser-bypass-first/Orion.pcapng frame2589 tuple@17..19=001b00",
+              "unattended-20261025-deesser-bypass-return/Orion.pcapng frame751 tuple@17..19=001b01"
+            ]
           }
         }
       ]

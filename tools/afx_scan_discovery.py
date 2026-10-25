@@ -37,6 +37,7 @@ def discovery_plan(inventory, catalog):
     implementations = [i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json']
     if len(implementations) != 1 or type(implementations[0].get('type_id')) is not int:
         raise ValueError('Orion effect type has not been captured; inventory retained')
+    methods = implementations[0].get('parameter_observation', {}).get('gui_control_methods', {})
     panel_class = inventory['panel_class']
     # User-facing names can differ from Qt class names. Accept catalog identity
     # or the already reviewed workflow class, never an arbitrary common ancestor.
@@ -75,6 +76,10 @@ def discovery_plan(inventory, catalog):
               'TogglePatternIdentifiers.Pattern' in row.get('patterns', []) and
               row.get('values', {}).get('toggle') in ('On', 'Off') and
               key(cls).startswith(key(panel_class)) and 'bypass' not in cls.lower()):
+            if methods.get(cls, {}).get('kind') == 'selector_cycle':
+                pending.append({'control': cls, 'reason':
+                    'capture-observed multi-state selector; TogglePattern does not establish a binary control'})
+                continue
             controls.append({'id': cls, 'class_name': cls, 'label': row.get('name') or cls,
                              'kind': 'binary_button', 'feedback': 'gui_toggle'})
             continue

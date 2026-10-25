@@ -1949,6 +1949,32 @@ two OUT blocks. Guest and host completion checks pass,1754packets/zero drops.
 This is a partial labelled mapping: remaining options, Q dependencies, other
 controls, device readback and runtime writes remain unverified.
 
+**Master De-Esser five visible Filter Type choices (2026-10-25).** Native
+launcher job `scan-Master-De-Esser-20261025T003137097Z` traverses the five
+currently visible rows and returns to HighPass 1. Type27/instance0 uses the
+same parameter family; only absolute report byte26 changes:
+
+| GUI choice | Raw byte26 | Source OUT frame |
+| --- | --- | --- |
+| HighPass 1 | 0 | 3259 |
+| HighPass 2 | 1 | 7903 |
+| HighPass 3 | 2 | 12473 |
+| BandPass 1 | 3 | 17153 |
+| BandPass 2 | 4 | 21841 |
+
+Frame26473 restores HighPass1/raw0. The first target is primed through
+HighPass2 at frame1551 so an already-selected row has fresh OUT evidence.
+All six phases have host acceptance and labelled screenshots. The earlier
+report of a sixth choice remains unresolved: this maps the five visible rows,
+not a guaranteed complete device enum. The separate native key trial
+`scan-Master-De-Esser-20261025T002640258Z` completes HighPass1 → HighPass2 →
+HighPass1 with five-second dwell and one Page key per phase. These are GUI and
+captured-write restoration observations; independent parameter readback and
+runtime writes remain unverified. The catalog owns the labels and encodings.
+The subsequent eight-knob endpoint candidates, Q/filter coupling, four-state
+Monitor/Out selector, processing-button override and preset inventory are
+documented in [the De-Esser findings](docs/orion-afx-deesser.md).
+
 **Instinct ALT Morph GUI pilot (2026-10-09).** A labelled automated trial on
 unlinked AFX2 captures type75/instance1 parameter writes at frames537/1567 in
 the local `pilot-Instinct-20261009T161102564Z/Instinct-channel2.pcapng` recording.

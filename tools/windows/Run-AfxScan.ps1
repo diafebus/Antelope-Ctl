@@ -44,6 +44,7 @@ foreach ($keyControl in @($plan.controls | Where-Object { $_.kind -eq 'key_butto
     }
     $dropdowns = @($definitions[0].dropdowns | Where-Object { $_.id -eq $keyControl.dropdown_id })
     if ($dropdowns.Count -ne 1 -or $dropdowns[0].class_name -cne $keyControl.class_name -or
+        $dropdowns[0].selection_policy -ne 'reviewed-parameter-trial' -or
         $dropdowns[0].ordering -notin @('capture-observed', 'manual-listed')) {
         throw 'Key target needs a measured GUI class and known ordered choices.'
     }
@@ -93,8 +94,9 @@ public static class AfxScanInput {
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out WindowRect rect);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint owner);
     public static bool IsDropdownPopup(Rectangle rect, Rectangle button, long candidate,
-        long panel, uint owner, uint expectedOwner, bool visible) {
-        return visible && candidate != 0 && candidate != panel && owner == expectedOwner &&
+        long panel, uint owner, uint expectedOwner, bool visible, string accessibilityClass) {
+        return accessibilityClass == "QComboBoxPrivateContainer" &&
+            visible && candidate != 0 && candidate != panel && owner == expectedOwner &&
             rect.Width > 0 && rect.Height > 0 && rect.Width <= 464 && rect.Height <= 704 &&
             Math.Abs(rect.Left - button.Left) <= 32 &&
             Math.Min(Math.Abs(rect.Top - button.Bottom), Math.Abs(rect.Bottom - button.Top)) <= 32;
@@ -103,11 +105,13 @@ public static class AfxScanInput {
         Rectangle button = new Rectangle(100, 100, 127, 11);
         Rectangle popup = new Rectangle(100, 110, 127, 56);
         Rectangle host = new Rectangle(0, 0, 1380, 853);
-        if (!IsDropdownPopup(popup, button, 2, 1, 7, 7, true) ||
-            IsDropdownPopup(popup, button, 2, 1, 7, 7, false) ||
-            IsDropdownPopup(host, button, 3, 1, 7, 7, true) ||
-            IsDropdownPopup(popup, button, 1, 1, 7, 7, true) ||
-            IsDropdownPopup(popup, button, 2, 1, 8, 7, true))
+        if (!IsDropdownPopup(popup, button, 2, 1, 7, 7, true, "QComboBoxPrivateContainer") ||
+            IsDropdownPopup(popup, button, 2, 1, 7, 7, false, "QComboBoxPrivateContainer") ||
+            IsDropdownPopup(host, button, 3, 1, 7, 7, true, "QComboBoxPrivateContainer") ||
+            IsDropdownPopup(popup, button, 1, 1, 7, 7, true, "QComboBoxPrivateContainer") ||
+            IsDropdownPopup(popup, button, 2, 1, 8, 7, true, "QComboBoxPrivateContainer") ||
+            IsDropdownPopup(popup, button, 2, 1, 7, 7, true, "SysShadow") ||
+            IsDropdownPopup(popup, button, 2, 1, 7, 7, true, "QTipLabel"))
             throw new Exception("Native dropdown state fixtures failed.");
     }
     [StructLayout(LayoutKind.Sequential)] public struct Mouse {
@@ -289,7 +293,7 @@ function Visible-MenuRows($Windows) {
     foreach ($window in $Windows) {
         foreach ($node in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $menuOptionCondition)) {
             $c = $node.Current; $r = $c.BoundingRectangle; $id = $node.GetRuntimeId() -join ':'
-            if ($c.ProcessId -ne $root.Current.ProcessId -or $c.IsPassword -or $c.IsOffscreen -or
+            if (-not $window.Current.BoundingRectangle.Contains($r) -or $c.ProcessId -ne $root.Current.ProcessId -or $c.IsPassword -or $c.IsOffscreen -or
                 -not $c.IsEnabled -or $r.IsEmpty -or $r.Width -le 0 -or $r.Height -le 0 -or
                 -not $menuScreen.Contains([System.Drawing.Rectangle]::new([int]$r.X, [int]$r.Y, [int][Math]::Ceiling($r.Width), [int][Math]::Ceiling($r.Height))) -or
                 [Math]::Abs($r.X - $buttonBounds.X) -gt 32 -or $r.Width -gt 400 -or $r.Height -gt 80 -or
@@ -303,25 +307,35 @@ function Visible-MenuRows($Windows) {
     return $found
 }
 function Menu-Windows {
-    return @($menuDesktop.FindAll([System.Windows.Automation.TreeScope]::Children, $menuOwnerCondition) |
-        Where-Object {
-            $r = $_.Current.BoundingRectangle
-            -not $_.Current.IsOffscreen -and -not $r.IsEmpty -and
-                ($_.GetRuntimeId() -join ':') -ne $menuRootId -and
-                [long]$_.Current.NativeWindowHandle -ne $handle.ToInt64() -and
-                $menuSearchBounds.IntersectsWith($r)
-        })
+    # Qt can retain rows with IsOffscreen=false after closing a popup. Only
+    # currently visible, native ComboBox popup roots establish an open menu.
+    $buttonRect = [System.Drawing.Rectangle]::new([int]$buttonBounds.X, [int]$buttonBounds.Y,
+        [int][Math]::Ceiling($buttonBounds.Width), [int][Math]::Ceiling($buttonBounds.Height))
+    $result = @()
+    foreach ($node in $menuDesktop.FindAll([System.Windows.Automation.TreeScope]::Children, $menuOwnerCondition)) {
+        $native = [IntPtr]::new([long]$node.Current.NativeWindowHandle)
+        $nativeRect = [AfxScanInput+WindowRect]::new(); [uint32]$owner = 0
+        if ($native -eq [IntPtr]::Zero -or
+            [AfxScanInput]::GetWindowThreadProcessId($native, [ref]$owner) -eq 0 -or
+            -not [AfxScanInput]::GetWindowRect($native, [ref]$nativeRect)) { continue }
+        $rect = [System.Drawing.Rectangle]::FromLTRB($nativeRect.left, $nativeRect.top,
+            $nativeRect.right, $nativeRect.bottom)
+        if ([AfxScanInput]::IsDropdownPopup($rect, $buttonRect, $native.ToInt64(), $handle.ToInt64(),
+            $owner, [uint32]$root.Current.ProcessId, [AfxScanInput]::IsWindowVisible($native),
+            $node.Current.ClassName)) { $result += $node }
+    }
+    return $result
 }
 function Save-MenuDiscovery([string]$Suffix, [string]$Stage, $Windows, $Rows) {
     # Save before validation so unsupported accessibility leaves useful evidence.
     Write-Record (Join-Path $job ($filePrefix + '-' + $Suffix + '-menu.json')) @{
         stage = $Stage; selected = $menuValue.Current.Value;
-        popup_windows = @($Windows | ForEach-Object {
+        popup_windows = @($Windows | Where-Object { $null -ne $_ } | ForEach-Object {
             $r = $_.Current.BoundingRectangle
             @{ runtime_id = ($_.GetRuntimeId() -join ':'); handle = [long]$_.Current.NativeWindowHandle;
                 x = $r.X - $windowBounds.X; y = $r.Y - $windowBounds.Y; width = $r.Width; height = $r.Height }
         });
-        options = @($Rows | ForEach-Object { @{ name = $_.name; runtime_id = $_.id;
+        options = @($Rows | Where-Object { $null -ne $_ } | ForEach-Object { @{ name = $_.name; runtime_id = $_.id;
             x = $_.rect.X - $windowBounds.X; y = $_.rect.Y - $windowBounds.Y;
             width = $_.rect.Width; height = $_.rect.Height } })
     }
@@ -341,9 +355,9 @@ function Save-MenuDiscovery([string]$Suffix, [string]$Stage, $Windows, $Rows) {
 function Close-ConfirmedMenu {
     if ($script:menuOpened) {
         Assert-MenuOwner
-        $windows = Menu-Windows
+        $windows = @(Menu-Windows)
         $stillOpen = @($windows | Where-Object { ($_.GetRuntimeId() -join ':') -in $script:menuPopupIds }).Count -gt 0 -or
-            @(Visible-MenuRows (@($visible[0]) + $windows) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0
+            @(Visible-MenuRows $windows | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0
         if (-not $stillOpen) { $script:menuOpened = $false; return }
         Assert-MenuOwner
         [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
@@ -356,9 +370,9 @@ function Open-NamedMenu([string]$Suffix) {
     $beforeSelection = $menuValue.Current.Value
     $script:menuOpened = $false
     $script:menuPopupIds = @(); $script:menuOptionIds = @(); $script:menuPopupHandles = @()
-    $beforeWindows = Menu-Windows
+    $beforeWindows = @(Menu-Windows)
     Save-MenuDiscovery ($Suffix + '-before-scan') 'before row discovery; menu not invoked' $beforeWindows @()
-    $beforeRows = @(Visible-MenuRows (@($visible[0]) + $beforeWindows))
+    $beforeRows = @(Visible-MenuRows $beforeWindows)
     Save-MenuDiscovery ($Suffix + '-before') 'before invocation' $beforeWindows $beforeRows
     if ($beforeRows.Count -ne 0) { throw 'Adjacent menu rows already visible before invocation; no menu opened.' }
     $beforeOptionIds = @($beforeRows | ForEach-Object { $_.id })
@@ -374,12 +388,12 @@ function Open-NamedMenu([string]$Suffix) {
     # Popup handles are accepted only after the named/anchored list is verified.
     Assert-MenuOwner -Discovering
     if ($menuValue.Current.Value -cne $beforeSelection) { throw 'Menu changed selection merely by opening.' }
-    $afterWindows = Menu-Windows
+    $afterWindows = @(Menu-Windows)
     Save-MenuDiscovery ($Suffix + '-after-scan') 'after invocation; before row discovery' $afterWindows @()
     if ($afterWindows.Count -gt 4) { throw 'Too many adjacent menu windows; inventory saved.' }
     # Qt can reuse a popup container. Its rows must become visible this opening;
     # the container itself need not have a new runtime ID.
-    $rows = @(Visible-MenuRows (@($visible[0]) + $afterWindows) | Where-Object { $_.id -notin $beforeOptionIds } |
+    $rows = @(Visible-MenuRows $afterWindows | Where-Object { $_.id -notin $beforeOptionIds } |
         Sort-Object { $_.rect.Y }, { $_.rect.X })
     Save-MenuDiscovery $Suffix 'after scoped row discovery' $afterWindows $rows
     if ($rows.Count -ne [int]$control.positions -or
@@ -419,9 +433,9 @@ function Select-NamedMenu($Rows, [int]$Position) {
     Start-Sleep -Milliseconds 1500
     Assert-Panel
     if ($menuValue.Current.Value -cne $row.name) { throw 'Menu selected a different name; stopped.' }
-    $after = Menu-Windows
+    $after = @(Menu-Windows)
     if (@($after | Where-Object { ($_.GetRuntimeId() -join ':') -in $script:menuPopupIds }).Count -gt 0 -or
-        @(Visible-MenuRows (@($visible[0]) + $after) | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0) {
+        @(Visible-MenuRows $after | Where-Object { $_.id -in $script:menuOptionIds }).Count -gt 0) {
         throw 'Menu remained open after selection.'
     }
     $script:menuOpened = $false
@@ -438,8 +452,9 @@ function Get-KeyPopups {
         $rect = [System.Drawing.Rectangle]::FromLTRB($nativeRect.left, $nativeRect.top,
             $nativeRect.right, $nativeRect.bottom)
         if ([AfxScanInput]::IsDropdownPopup($rect, $keyButtonRect, $native.ToInt64(), $handle.ToInt64(),
-            $nativeOwner, [uint32]$root.Current.ProcessId, [AfxScanInput]::IsWindowVisible($native))) {
-            $result += @{ handle = $native.ToInt64(); rect = $rect }
+            $nativeOwner, [uint32]$root.Current.ProcessId, [AfxScanInput]::IsWindowVisible($native),
+            $node.Current.ClassName)) {
+            $result += @{ handle = $native.ToInt64(); rect = $rect; class_name = $node.Current.ClassName }
         }
     }
     if ($result.Count -gt 4) { throw 'Too many native dropdown windows; stopped before further input.' }
@@ -484,7 +499,7 @@ function Activate-KeyTarget {
     $openedHandles = @($opened | ForEach-Object { $_.handle })
     Write-Record (Join-Path $job 'key-activation-open.json') @{
         source = 'native popup visibility and bounds; no menu screenshot';
-        handles = $openedHandles; selected = $selection.Current.Value
+        handles = $openedHandles; windows = $opened; selected = $selection.Current.Value
     }
     # Recheck the actual open state after a short settling interval. No menu
     # screenshot or UIA option traversal is used to decide opening/closure.
@@ -1150,9 +1165,11 @@ try {
     if ($null -ne $job) {
         Write-Record (Join-Path $job 'guest-error.json') @{
             error = $_.Exception.Message; stop = $true; restoration = 'inspect screenshots; not assumed'
+            script_stack = $_.ScriptStackTrace; position = $_.InvocationInfo.PositionMessage
         }
     }
     Write-Host "Pilot stopped: $($_.Exception.Message)"
+    Write-Host $_.ScriptStackTrace
     Write-Host 'Review current state and saved screenshots. No blind restoration will be attempted.'
     exit 1
 } finally {
