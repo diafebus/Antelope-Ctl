@@ -1,0 +1,32 @@
+name: Offline checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      # The suite uses only Python stdlib and Node built-ins. WebUI server
+      # dependencies, vendor tools, hardware and private captures are not needed.
+      - name: Run hardware-free regression suite
+        run: python3 tools/offline_checks.py
+      - name: Check whitespace
+        run: git diff --check

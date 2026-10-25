@@ -16,6 +16,10 @@ used; the device firmware is not touched.
 | file | what's in it |
 |---|---|
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
+| **[`CONTRIBUTING.md`](CONTRIBUTING.md)** | clean-clone setup, offline checks, evidence requirements and contribution licenses |
+| **[`docs/architecture.md`](docs/architecture.md)** | profiles, protocol/transport, CLI, WebUI worker and capture-tool boundaries |
+| **[`docs/contributor-work.md`](docs/contributor-work.md)** | public coverage, remaining limits and bounded contribution tasks |
+| **[`docs/evidence-to-test.md`](docs/evidence-to-test.md)** | sanitized startup-query example from capture provenance to an offline regression |
 | **`AGENTS.md`** | sole project instruction entry point; local handoff and open tasks have separate roles |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
@@ -213,10 +217,10 @@ this software interoperates with.
   a source of *facts* -- channel counts, feature names, signal flow. No
   manual text, tables, or diagrams are reproduced here; documents are
   cited in the profile's `evidence` fields.
-- **Packet captures** committed under `captures/` are recordings of the
-  contributor's own device on the contributor's own machine, kept
-  minimal and included only as evidence for a documented finding. Device
-  serial numbers are redacted where practical.
+- **Raw packet captures and screenshots stay local and ignored.** A fresh
+  clone contains documented findings, profile evidence references and
+  sanitized/synthetic test fixtures, not the private `captures/` archive.
+  Shared evidence must omit serials, account data and unrelated traffic.
 - **AFX means device-side Synergy Core Real-Time effects here.** Antelope
   describes these as running on a supported device, with a Real-Time
   license assigned to that device through Launcher. Their parameter
@@ -251,8 +255,11 @@ request you agree to license your contribution that way.
 
 ## Requirements
 
-- Linux, Python 3.9+ (no third-party packages -- stdlib only).
-- Read/write access to the device's `hidraw` node. Either run with `sudo`,
+- Linux and Python; the CLI/protocol core uses only the standard library.
+  For the verified contributor workflow use Python 3.11+ and Node.js 24.
+  See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and hardware-free checks.
+  The optional WebUI also needs `webui/requirements.txt` (FastAPI/Uvicorn).
+- Live controls require read/write access to the device's `hidraw` node. Either run with `sudo`,
   or add a udev rule granting your user access to the Antelope device's
   `vid`/`pid` (see `device` in the profile JSON) so you don't need root
   every time.
@@ -285,7 +292,7 @@ tools/surround_format_selftest.py <- bounded Surround format readback and revers
 tools/surround_eq_position_selftest.py <- Surround EQ PRE/POST readback and one-bit write/restore probe
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
-captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
+captures/                      <- private ignored archive; absent from a fresh clone
 ```
 
 **Rule of thumb:** if you're about to hardcode a byte offset, param_id, or magic
