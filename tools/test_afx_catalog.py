@@ -124,6 +124,9 @@ class AfxCatalogTests(unittest.TestCase):
         self.assertNotIn('presetIndex', {c['id'] for c in v12['controls']})
         controls = {c['id']: c for c in v12['controls']}
         self.assertEqual(controls['gain']['range'], [0, 255])
+        self.assertTrue(controls['voices']['rotary'])
+        self.assertEqual(controls['voices']['kind'], 'enum')
+        self.assertEqual(list(controls['voices']['options']), [str(i) for i in range(1, 13)])
         self.assertEqual(controls['colorShifter']['range'], [0, 255])
         bbd = {c['id']: c for c in panels['bbdchorus']['controls']}
         self.assertEqual(bbd['chvibrato']['options'], {'0': 'Vibrato', '1': 'Chorus'})

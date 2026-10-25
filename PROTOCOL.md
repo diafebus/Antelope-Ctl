@@ -2174,6 +2174,13 @@ position filter maps and an isolated processing round trip are recorded in
 [preamp findings](docs/orion-afx-preamps.md). Compatibility IDs are retained;
 physical scaling and runtime writes remain unverified.
 
+**V12 visible controls completed (2026-10-25).** Fresh isolated power events
+confirm instance17/type18/state19 at frames3461/713. Directed per-count captures
+establish all twelve Voices positions; catalog/UI kind is now a rotary enum,
+with fractional local counts rejected. The earlier ten-knob/Humanize batch is
+retained. [Modulation findings](docs/orion-afx-modulation.md) distinguish this
+completion from the historical linked pulse pairs. Runtime writes remain disabled.
+
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
 surfaces support drag reordering, including drops between them. Unsupported

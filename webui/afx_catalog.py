@@ -126,6 +126,8 @@ def panel_definition(effect, implementation):
                 control['display_center'] = field['display_center']
         elif control['kind'] == 'enum' and field.get('options'):
             control['options'] = field['options']
+            if field.get('rotary') is True:
+                control['rotary'] = True
         else:
             return None
         controls.append(control)

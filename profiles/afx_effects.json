@@ -7991,12 +7991,54 @@
                 1,
                 12
               ],
-              "kind": "continuous",
+              "kind": "enum",
               "label": "Voices",
               "status": "capture-observed",
               "evidence": [
-                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 39951-42061; labelled gesture and isolated byte changes agree with the existing declaration."
-              ]
+                "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 39951-42061; labelled gesture and isolated byte changes agree with the existing declaration.",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-10/Orion.pcapng frame1979: isolated Voices byte21 raw1, digital display 1; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-10/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-09/Orion.pcapng frame1959: isolated Voices byte21 raw2, digital display 2; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-09/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-08/Orion.pcapng frame1993: isolated Voices byte21 raw3, digital display 3; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-08/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-07/Orion.pcapng frame1931: isolated Voices byte21 raw4, digital display 4; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-07/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-06/Orion.pcapng frame1951: isolated Voices byte21 raw5, digital display 5; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-06/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-05/Orion.pcapng frame1965: isolated Voices byte21 raw6, digital display 6; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-05/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-04/Orion.pcapng frame1923: isolated Voices byte21 raw7, digital display 7; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-04/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-03/Orion.pcapng frame1909: isolated Voices byte21 raw8, digital display 8; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-03/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-02/Orion.pcapng frame1685: isolated Voices byte21 raw9, digital display 9; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-02/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-01/Orion.pcapng frame1875: isolated Voices byte21 raw10, digital display 10; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-01/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-up-20/Orion.pcapng frame1859: isolated Voices byte21 raw11, digital display 11; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-up-20/observed-detent.png",
+                "captures/unattended-20261025T195948Z-v12-voices-map/voices-up-21/Orion.pcapng frame1895: isolated Voices byte21 raw12, digital display 12; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-up-21/observed-detent.png"
+              ],
+              "rotary": true,
+              "options": {
+                "1": "1",
+                "2": "2",
+                "3": "3",
+                "4": "4",
+                "5": "5",
+                "6": "6",
+                "7": "7",
+                "8": "8",
+                "9": "9",
+                "10": "10",
+                "11": "11",
+                "12": "12"
+              },
+              "wire_enum": {
+                "1": "1",
+                "2": "2",
+                "3": "3",
+                "4": "4",
+                "5": "5",
+                "6": "6",
+                "7": "7",
+                "8": "8",
+                "9": "9",
+                "10": "10",
+                "11": "11",
+                "12": "12"
+              },
+              "writable": false
             },
             "delay": {
               "offset": 22,
@@ -8155,10 +8197,11 @@
           },
           "evidence": [
             "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng",
-            "antelope-orion-afx-modulation-tab.pcapng"
+            "antelope-orion-afx-modulation-tab.pcapng",
+            "unattended-20261025T195948Z-load-v12/Orion.pcapng frame2491: fresh labelled V12 Chorus load, AFX2/channel1slot0 type70/instance0, sevenempty; SHA256 a34091a3da96341ab0fd49219b6a0669b2487d98199a79983c83cc833549cb03."
           ],
-          "notes": "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. 490 writes, 245 right-1/left-0 mirrored pairs. No state query/reply in this capture. UNVERIFIED: fresh readback, bounded write/verify/restore, restart and power-cycle retention. Opaque bytes remain preserved; no runtime parameter reader/writer enabled.",
-          "type_id_write_status": "unconfirmed",
+          "notes": "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. 490 writes, 245 right-1/left-0 mirrored pairs. No state query/reply in this capture. UNVERIFIED: fresh readback, bounded write/verify/restore, restart and power-cycle retention. Opaque bytes remain preserved; no runtime parameter reader/writer enabled. Fresh 2026-10-25 single-instance processing roundtrip and all twelve discrete Voices count images complete visible-control coverage together with the prior ten-knob/Humanize batch. Historical linked pulse pairs remain archived; no readback, runtime parameter or processing writer enabled.",
+          "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
           "parameter_observation": {
             "prefix_hex": "70000000200000000000000000000000d50e",
             "frame_length": 32,
@@ -8260,10 +8303,48 @@
                 }
               ],
               "notes": "Fresh action-local OUT endpoints equal existing catalog bounds; repeated sweeps and complete block stability checked. Screenshots retained locally. No physical interpolation law, runtime writer or device readback established."
+            },
+            "voices_count_mapping": {
+              "status": "capture-observed; all twelve discrete voice counts match raw integers",
+              "source": "captures/unattended-20261025T195948Z-v12-voices-map",
+              "endpoint_source": "scan-V12-Voices-20261025T204943477Z/V12-Voices-channel2.pcapng",
+              "endpoint_capture_sha256": "b6b0fe761de0b6ac92eecf2297ad5ec4ec28ec05bc4c3819f63a07fa0fb41440",
+              "endpoint_frames": [
+                1469,
+                6419
+              ],
+              "endpoint_packet_count": 8606,
+              "endpoint_dropped_packets": 0,
+              "trial_count": 21,
+              "starting_parameter_payload_hex": "000c010000000000005a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "restored_parameter_payload_hex": "000c010000000000005a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "device_readback_verified": false,
+              "notes": "Initial eight-pixel step crossed two counts; remaining four-pixel steps visit every count and capture a matching digital readout. All other payload bytes preserved. Prior ten-knob/Humanize batch retained without rerunning other controls."
             }
           },
           "state_readback": null,
-          "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c"
+          "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c",
+          "bypass_observation": {
+            "status": "capture-observed",
+            "opcode": "0x14",
+            "selector": "0x98",
+            "instance_offset": 17,
+            "type_offset": 18,
+            "state_offset": 19,
+            "observed_instance": 0,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_restoration": "exact RGB power indicator, Humanize and all ten knob/readout regions; animated meter excluded",
+            "polarity": "not independently verified",
+            "device_readback_verified": false,
+            "runtime_writable": false,
+            "evidence": [
+              "unattended-20261025T195948Z-v12-processing/first/Orion.pcapng frame3461 tuple@17..19=004600",
+              "unattended-20261025T195948Z-v12-processing/return/Orion.pcapng frame713 tuple@17..19=004601"
+            ]
+          }
         }
       ],
       "panel": {

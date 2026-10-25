@@ -1962,6 +1962,44 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "v12-voices-detents-endpoints",
+      "panel": "V12-Voices",
+      "panel_class": "TurboEnsembler",
+      "effect_id": "turboensembler",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed single discrete Voices endpoint witness; other completed knobs excluded",
+      "evidence": "unattended-20261025T195948Z-load-v12/raw-ui.json: unique visible TurboEnsemblerVoicesPot and digital1; existing Orion mapping raw1..12 byte21; prepare all-detent image pass",
+      "controls": [
+        {
+          "id": "voices",
+          "class_name": "TurboEnsemblerVoicesPot",
+          "label": "Voices endpoints; twelve discrete counts",
+          "kind": "knob_range",
+          "feedback": "captured_wire",
+          "wire": {
+            "control_id": "voices",
+            "offset": 21,
+            "range": [
+              1,
+              12
+            ]
+          }
+        }
+      ],
+      "coverage": {
+        "status": "single Voices control only; prepare directed per-count capture",
+        "pending": [
+          "Every Voices count image",
+          "Processing switch separate",
+          "Physical scaling of other knobs",
+          "Independent readback",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

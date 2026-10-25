@@ -12,8 +12,15 @@
       "name": "V12 Chorus",
       "effect_id": "turboensembler",
       "range_plan": "v12-controls",
-      "next_step": "ranges",
-      "panel_class": "TurboEnsembler"
+      "next_step": "complete",
+      "panel_class": "TurboEnsembler",
+      "completion_evidence": [
+        "scan-V12-Chorus-20261009T184118945Z",
+        "scan-V12-Voices-20261025T204943477Z",
+        "unattended-20261025T195948Z-v12-voices-map",
+        "unattended-20261025T195948Z-v12-processing"
+      ],
+      "completion_limits": "Ten knob endpoint candidates and Humanize captured previously; all twelve discrete Voices counts and separate processing roundtrip now captured. Physical scaling of other knobs, independent readback, audible/stereo behavior and runtime contracts remain unverified."
     },
     {
       "name": "BBD Chorus",

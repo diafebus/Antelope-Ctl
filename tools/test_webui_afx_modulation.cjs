@@ -22,8 +22,15 @@ for (const effect of fixture.effects) {
     values:Object.fromEntries(effect.controls.map(c=>[c.id,null]))},0)`, ctx);
   assert.match(rendered, /Device settings unknown/);
   const inputs = [...rendered.matchAll(/<input[^>]+>/g)].map(m=>m[0]);
-  assert.equal(inputs.length, effect.id === 'turboensembler' ? 10 : 4);
+  assert.equal(inputs.length, effect.id === 'turboensembler' ? 9 : 4);
   assert.ok(inputs.every(input=>/ disabled/.test(input)));
+  const selects = [...rendered.matchAll(/<select[^>]+>/g)].map(m=>m[0]);
+  assert.equal(selects.length, effect.id === 'turboensembler' ? 1 : 0);
+  assert.ok(selects.every(select=>/ disabled/.test(select)));
+  if (effect.id === 'turboensembler') {
+    assert.match(selects[0], /data-afx-control="voices"/);
+    assert.equal([...rendered.matchAll(/<option value="(?:[1-9]|1[0-2])"/g)].length, 12);
+  }
   assert.doesNotMatch(rendered, /data-afx-control="(presetIndex|peakmeter|bypass)"/);
   const modeButtons = [...rendered.matchAll(/<button[^>]+data-afx-mode[^>]+>/g)].map(m=>m[0]);
   assert.ok(modeButtons.every(button=>/ disabled/.test(button)));
@@ -42,6 +49,13 @@ ctx.input = input;
 vm.runInContext('afxEffectInput(draft,input)',ctx);
 assert.equal(vm.runInContext('draft.values.gain',ctx),255);
 assert.equal(properties['--afx-turn'],'135deg');
+const voicesInput = {...input,dataset:{afxControl:'voices',afxSlot:'0'},value:'7'};
+ctx.voicesInput = voicesInput;
+vm.runInContext('afxEffectInput(draft,voicesInput)',ctx);
+assert.equal(vm.runInContext('draft.values.voices',ctx),'7');
+voicesInput.value='7.5';
+vm.runInContext('afxEffectInput(draft,voicesInput)',ctx);
+assert.equal(vm.runInContext('draft.values.voices',ctx),'7');
 input.value='256';vm.runInContext('afxEffectInput(draft,input)',ctx);
 assert.equal(vm.runInContext('draft.values.gain',ctx),255);
 const v12 = vm.runInContext('AFX_PANELS.get(effect.id).render(draft,0)',ctx);

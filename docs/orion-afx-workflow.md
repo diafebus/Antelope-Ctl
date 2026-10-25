@@ -53,11 +53,12 @@ The [EQ findings](orion-afx-eq.md) record the completed VEQ-1A/VMEQ-5/VEQ-HLF vi
 passes, including every rotary detent. Their launcher workflows skip redundant
 full captures; original range plans remain available for explicitly reviewed work.
 
-Instinct and De-Esser changes can reduce new capture work, but their individual
-control order was not labelled. Do not assign names from catalog declaration
-order. V12/BBD's isolated labelled gestures are now mapped in
-[the modulation findings](orion-afx-modulation.md); their remaining gaps are
-fresh parameter readback, bounded restoration and BBD stereo-mode polarity.
+Earlier unlabelled Instinct/De-Esser captures remain historical; labelled native
+batches establish control names independently of catalog declaration order.
+Instinct model/processing work remains open. V12/BBD visible controls are now
+captured, including all twelve discrete V12 Voices counts and separate power
+round trips; see [the modulation findings](orion-afx-modulation.md). Fresh state
+readback, physical scaling and audible/stereo behavior remain unverified.
 Exact frames, wire maps
 and confirmation limits belong in
 [PROTOCOL.md §12a](../PROTOCOL.md#12a-afx-real-time-chain-and-parameter-controls)

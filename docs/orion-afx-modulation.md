@@ -83,3 +83,33 @@ model-local catalog layout passes; no new device actions or rerun were needed.
 The resume has8646 packets and zero drops. Device readback, processing polarity
 and runtime writer remain unverified. The LED above Chorus/Vibrato shows
 vibrato speed, per owner; it is excluded from mode and power verification.
+
+## V12 completed visible-control capture, 2026-10-25
+
+A fresh labelled load in `unattended-20261025T195948Z-load-v12/Orion.pcapng`
+frame2491 independently confirms type70/instance0 in AFX2/channel1 slot0,
+with seven empty slots. The prior ten-knob endpoint/Humanize batch
+`scan-V12-Chorus-20261009T184118945Z` is retained. The other knobs were not
+rerun for this completion pass.
+
+Voices is a discrete count selector, despite its earlier catalog kind
+`continuous`. The single-control `scan-V12-Voices-20261025T204943477Z` pass
+confirms byte21 raw1/12 at frames1469/6419, with8606packets and zero drops.
+The separate `unattended-20261025T195948Z-v12-voices-map` records all twelve
+integer counts, each with an isolated raw observation and matching digital
+readout image. Its initial eight-pixel step crossed two counts; subsequent
+four-pixel steps captured every count, including11on return. The21trials
+preserve all other parameter bytes and restore the full starting maximum block.
+The catalog and WebUI now represent Voices as a rotary selector with counts1–12;
+local edits reject fractional counts. No device writer is enabled.
+
+The isolated processing round trip in
+`unattended-20261025T195948Z-v12-processing` uses `0x14 / 0x98`, with
+instance17/type18/state19: first frame3461 carries `00 46 00`, return frame713
+carries `00 46 01`. Both actions emit one target event. Power indicator,
+Humanize and all ten knob/readout regions match their RGB baseline exactly;
+animated metering is excluded. Historical linked pulse pairs remain archived.
+
+This completes the observed visible controls. Fresh parameter readback,
+physical scaling of other knobs, processing polarity, audible/stereo behavior
+and runtime contracts remain unverified. Hidden `presetIndex` remains opaque.
