@@ -4562,16 +4562,189 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 51,
+          "status": "capture-observed",
+          "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "unattended-20261025-load-powerex/Orion.pcapng frame4473: labelled PowerEx vendor load, channel1 slot0 type51/instance0, remaining seven slots empty; SHA256 93425ba960fab3c1c443efb44a95105c91b504fd94619d92d7aff5f0029af342. No independent readback."
+          ],
+          "notes": "Orion identity and six knob endpoint candidates captured independently through directed vendor UI trials. Separate processing-switch round trip has exact visual restoration. No preset selector observed on this panel. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified.",
+          "parameter_observation": {
+            "opcode": "0x1d",
+            "param_id": "0xd5",
+            "subcmd": "0x0b",
+            "type_id_offset": 18,
+            "instance_index_offset": 19,
+            "status": "six knob endpoint candidates captured; scaling and independent readback unverified",
+            "writable": false,
+            "labelled_gui_observations": {
+              "threshold": {
+                "label": "Threshold",
+                "class_name": "PowerExThreshPan",
+                "offset": 20,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_endpoints": [
+                  0,
+                  80
+                ],
+                "observed_display_endpoints": [
+                  "0",
+                  "80"
+                ],
+                "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames4505/13811; both phases host-accepted, only listed field differs between endpoint blocks."
+                ]
+              },
+              "range": {
+                "label": "Range",
+                "class_name": "PowerExRangePanNoInheritance",
+                "offset": 21,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_endpoints": [
+                  0,
+                  80
+                ],
+                "observed_display_endpoints": [
+                  "0",
+                  "80"
+                ],
+                "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames22719/32787; both phases host-accepted, only listed field differs between endpoint blocks."
+                ]
+              },
+              "attack": {
+                "label": "Attack",
+                "class_name": "PowerExAttackPanNoInheritance",
+                "offset": 22,
+                "width": 2,
+                "encoding": "uint16-le-candidate",
+                "observed_wire_endpoints": [
+                  1,
+                  750
+                ],
+                "observed_display_endpoints": [
+                  "1",
+                  "750"
+                ],
+                "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames43605/52491; both phases host-accepted, only listed field differs between endpoint blocks."
+                ]
+              },
+              "decay": {
+                "label": "Decay",
+                "class_name": "PowerExDecayPan",
+                "offset": 24,
+                "width": 2,
+                "encoding": "uint16-le-candidate",
+                "observed_wire_endpoints": [
+                  1,
+                  1000
+                ],
+                "observed_display_endpoints": [
+                  "1",
+                  "1000"
+                ],
+                "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames60135/68143; both phases host-accepted, only listed field differs between endpoint blocks."
+                ]
+              },
+              "ratio": {
+                "label": "Ratio",
+                "class_name": "PowerExRatioPan",
+                "offset": 26,
+                "width": 2,
+                "encoding": "uint16-le-candidate",
+                "observed_wire_endpoints": [
+                  100,
+                  2000
+                ],
+                "observed_display_endpoints": [
+                  "1.0",
+                  "20.0"
+                ],
+                "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames76575/85097; both phases host-accepted, only listed field differs between endpoint blocks."
+                ]
+              },
+              "gain": {
+                "label": "Gain",
+                "class_name": "PowerExGainPan",
+                "offset": 28,
+                "width": 1,
+                "encoding": "int8-candidate",
+                "observed_wire_endpoints": [
+                  232,
+                  12
+                ],
+                "observed_display_endpoints": [
+                  "-24",
+                  "12"
+                ],
+                "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames93375/103399; both phases host-accepted, only listed field differs between endpoint blocks."
+                ]
+              }
+            },
+            "range_capture_summary": {
+              "status": "all six observed knobs, twelve phases accepted in one native launcher batch",
+              "accepted_phases": 12,
+              "source": "scan-PowerEx-20261025T094607276Z",
+              "sha256": "d4db4309dc8294c3b448c967c425e2bdac8ed99181afc69a0c6067f24bc148ac",
+              "packet_count": 110974,
+              "dropped_packets": 0,
+              "knobs_finish_at_maximum": true,
+              "device_readback_verified": false,
+              "interpolation_laws_verified": false,
+              "notes": "Attack display is1..750, unlike the separately observed PowerGate0.1..75.0. Do not inherit physical scaling between effects. Ratio100..2000 corresponds to displayed1.0..20.0 only at captured endpoints. Gain232/display-24 suggests int8 but full signed range not verified."
+            }
+          },
+          "bypass_observation": {
+            "status": "capture-observed",
+            "opcode": "0x14",
+            "selector": "0x98",
+            "instance_offset": 17,
+            "type_offset": 18,
+            "state_offset": 19,
+            "observed_instance": 0,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_restoration": "exact RGB switch and LED match after pointer moved away",
+            "polarity": "not independently verified",
+            "device_readback_verified": false,
+            "runtime_writable": false,
+            "evidence": [
+              "unattended-20261025-powerex-switch-first/Orion.pcapng frame2627 tuple@17..19=003300",
+              "unattended-20261025-powerex-switch-return/Orion.pcapng frame1889 tuple@17..19=003301; endpoint displays unchanged"
+            ]
+          }
         }
       ]
     },
@@ -4627,16 +4800,183 @@
             "subcmd": "0x0b",
             "type_id_offset": 18,
             "instance_index_offset": 19,
-            "status": "capture-observed parameter family; endpoint capture pending",
+            "status": "six knob endpoint candidates captured; physical scaling and independent readback unverified",
             "writable": false,
             "evidence": [
               "scan-PowerGate-20261025T093451547Z/PowerGate-channel2.pcapng: 33 directed threshold-priming OUT reports, frames520-3008, all opcode0x1d/d5/0b type39/instance0; only byte20 varies. Initial host decoder rejected this new family, so zero phases accepted. No runtime write or readback contract."
-            ]
+            ],
+            "labelled_gui_observations": {
+              "threshold": {
+                "label": "Threshold",
+                "class_name": "PowerGateThresholdPan",
+                "offset": 20,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_endpoints": [
+                  0,
+                  120
+                ],
+                "observed_display_endpoints": [
+                  "0",
+                  "120"
+                ],
+                "status": "capture-observed endpoint candidates; interpolation and physical units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerGate-20261025T093705223Z/PowerGate-channel2.pcapng frames8188/14706; both endpoint phases host-accepted. Only this control field differs between endpoint blocks."
+                ]
+              },
+              "attack": {
+                "label": "Attack",
+                "class_name": "PowerGateAttackPan",
+                "offset": 22,
+                "width": 2,
+                "encoding": "uint16-le-candidate",
+                "observed_wire_endpoints": [
+                  1,
+                  750
+                ],
+                "observed_display_endpoints": [
+                  "0.1",
+                  "75.0"
+                ],
+                "status": "capture-observed endpoint candidates; interpolation and physical units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerGate-20261025T093705223Z/PowerGate-channel2.pcapng frames26074/30450; both endpoint phases host-accepted. Only this control field differs between endpoint blocks."
+                ]
+              },
+              "hold": {
+                "label": "Hold",
+                "class_name": "PowerGateHoldPan",
+                "offset": 26,
+                "width": 2,
+                "encoding": "uint16-le-candidate",
+                "observed_wire_endpoints": [
+                  0,
+                  5000
+                ],
+                "observed_display_endpoints": [
+                  "0",
+                  "5000"
+                ],
+                "status": "capture-observed endpoint candidates; interpolation and physical units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerGate-20261025T094022183Z/PowerGate-channel2.pcapng frames11977/19833; both endpoint phases host-accepted. Only this control field differs between endpoint blocks."
+                ]
+              },
+              "range": {
+                "label": "Range",
+                "class_name": "PowerGateRangePan",
+                "offset": 21,
+                "width": 1,
+                "encoding": "uint8",
+                "observed_wire_endpoints": [
+                  0,
+                  20
+                ],
+                "observed_display_endpoints": [
+                  "0",
+                  "20"
+                ],
+                "status": "capture-observed endpoint candidates; interpolation and physical units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerGate-20261025T094022183Z/PowerGate-channel2.pcapng frames34467/37713; both endpoint phases host-accepted. Only this control field differs between endpoint blocks."
+                ]
+              },
+              "decay": {
+                "label": "Decay",
+                "class_name": "PowerGateDecayPan",
+                "offset": 24,
+                "width": 2,
+                "encoding": "uint16-le-candidate",
+                "observed_wire_endpoints": [
+                  1,
+                  1000
+                ],
+                "observed_display_endpoints": [
+                  "1",
+                  "1000"
+                ],
+                "status": "capture-observed endpoint candidates; interpolation and physical units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerGate-20261025T094022183Z/PowerGate-channel2.pcapng frames50073/54491; both endpoint phases host-accepted. Only this control field differs between endpoint blocks."
+                ]
+              },
+              "gain": {
+                "label": "Gain",
+                "class_name": "PowerGateGainPan",
+                "offset": 28,
+                "width": 1,
+                "encoding": "int8-candidate",
+                "observed_wire_endpoints": [
+                  232,
+                  12
+                ],
+                "observed_display_endpoints": [
+                  "-24",
+                  "12"
+                ],
+                "status": "capture-observed endpoint candidates; interpolation and physical units unverified",
+                "writable": false,
+                "readback_verified": false,
+                "evidence": [
+                  "scan-PowerGate-20261025T094022183Z/PowerGate-channel2.pcapng frames67347/71085; both endpoint phases host-accepted. Only this control field differs between endpoint blocks. Signed Gain interpretation is a candidate from raw232/display-24 and raw12/display12."
+                ]
+              }
+            },
+            "range_capture_summary": {
+              "status": "all six visible knobs captured across original and reviewed remaining batch",
+              "accepted_phases": 12,
+              "sources": [
+                {
+                  "job": "scan-PowerGate-20261025T093705223Z",
+                  "sha256": "79398f588b41a75b02f29d481933113bf195d624e07c9f2dedc410a407e86bf2"
+                },
+                {
+                  "job": "scan-PowerGate-20261025T094022183Z",
+                  "sha256": "287c550871dae4fa7b27f5fac4bacca3ae909a71a6fc38c0be9adab35016a1de"
+                }
+              ],
+              "knobs_finish_at_maximum": true,
+              "device_readback_verified": false,
+              "interpolation_laws_verified": false,
+              "notes": "First batch stops on focus loss after four accepted phases; reviewed resume skips Threshold/Attack and accepts eight remaining phases. Neither failed batch is relabelled as a full success. Gain signedness and multibyte encodings are endpoint candidates."
+            }
           },
           "evidence": [
             "unattended-20261025-load-powergate/Orion.pcapng: frame2959, labelled vendor-menu PowerGate load on AFX2; opcode0x23/d7/11, channel byte18=1, slot0 type39/instance0, remaining seven slots empty. SHA256 07f27c4bced93f1eeb2df5d63f73a1723445eeaa6d6deeb4dc3f8721445e907b. No independent readback."
           ],
-          "notes": "Orion identity comes from the directed vendor load, independently of sibling-device metadata. Parameters, ranges, bypass encoding and runtime load/readback/write contracts remain unverified. Observed PowerGateBypassPot is a processing lever, not a knob; the six visible knob containers use Pan classes and require target review before gestures."
+          "notes": "Orion identity and six labelled knob endpoint candidates come from directed vendor GUI captures. The processing lever has a separate captured round trip. Presets were not observed on this panel. Physical scaling, signed/multibyte interpretation beyond endpoints, independent readback, audible/stereo behavior and runtime writers remain unverified.",
+          "bypass_observation": {
+            "status": "capture-observed",
+            "opcode": "0x14",
+            "selector": "0x98",
+            "instance_offset": 17,
+            "type_offset": 18,
+            "state_offset": 19,
+            "observed_instance": 0,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_restoration": "exact RGB lever and LED match after pointer moved away",
+            "polarity": "not independently verified",
+            "device_readback_verified": false,
+            "runtime_writable": false,
+            "evidence": [
+              "unattended-20261025-powergate-lever-first/Orion.pcapng frame2685 tuple@17..19=002700",
+              "unattended-20261025-powergate-lever-return/Orion.pcapng frame1557 tuple@17..19=002701; all six knob displays unchanged"
+            ]
+          }
         }
       ]
     },
@@ -4679,16 +5019,19 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 6,
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "unattended-20261025-load-veq-1a/Orion.pcapng frame3703: labelled VEQ-1A vendor load, AFX2/channel1 slot0 type6/instance0, sevenempty; SHA256 2ce35242fbe6bf4eaca20a3e12a7ea5d598be5e17c657537dd61fb7eff2e0726. GUI PultecEQP observed directly."
+          ],
+          "notes": "Orion identity observed independently through labelled VEQ-1A vendor load. Five continuous gain/bandwidth knobs and three rotary selectors observed; rotary endpoint trials do not establish full detent labels. Commands/readback/scaling remain unverified.",
+          "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed"
         }
       ]
     },

@@ -901,7 +901,7 @@
         "state_polarity_status": "Memory Cat capture-and-owner-correlated; isolated enable write and other effects pending",
         "load_observation": "Owner-tested: after Bypass All, a newly added Memory Cat is active/unbypassed. Bypass All affects existing instances rather than enforcing bypass on future loads. Loading preserves the device-assigned state and sends no forced bypass command. Evidence: antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng, bypass existing73/0 at31313 then load73/1 at36233; owner confirms new instance active.",
         "ui_behavior": "Clicking bypass disables processing for that effect slot. Current Memory Cat state is read from instance_state_readback response byte16:0=bypassed,1=active. Load defaults are not substituted for current readback.",
-        "layout_scope": "Legacy offsets here remain unresolved for other effects. Orion BBD type78 and Master De-Esser type27 use catalog implementation.bypass_observation overrides: instance17/type18/state19, captured 2026-10-09 and 2026-10-25 respectively. No runtime bypass writer enabled.",
+        "layout_scope": "Legacy offsets here remain unresolved for other effects. Orion BBD type78, Master De-Esser type27, PowerGate type39 and PowerEx type51 use catalog implementation.bypass_observation overrides: instance17/type18/state19, captured 2026-10-09 and 2026-10-25. No runtime bypass writer enabled.",
         "status": "capture-observed",
         "writable": false,
         "bucket": "B",

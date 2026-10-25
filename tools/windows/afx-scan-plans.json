@@ -1566,6 +1566,162 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "powerex-knobs",
+      "panel": "PowerEx",
+      "panel_class": "PowerEx",
+      "effect_id": "powerex",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "Directed vendor load PowerEx type51/instance0 at frame4473; raw native UIA report and screenshot. Three bottom Pan containers extend12px below parent; all knob centres inside.",
+      "controls": [
+        {
+          "id": "threshold",
+          "class_name": "PowerExThreshPan",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "range",
+          "class_name": "PowerExRangePanNoInheritance",
+          "label": "Range",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "attack",
+          "class_name": "PowerExAttackPanNoInheritance",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "decay",
+          "class_name": "PowerExDecayPan",
+          "label": "Decay",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "ratio",
+          "class_name": "PowerExRatioPan",
+          "label": "Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "gain",
+          "class_name": "PowerExGainPan",
+          "label": "Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        }
+      ],
+      "coverage": {
+        "status": "six visible knob endpoint candidates; processing switch separate",
+        "pending": [
+          "Processing switch round trip",
+          "Independent parameter readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "pultec_eqp-knobs",
+      "panel": "PultecEQP",
+      "panel_class": "PultecEQP",
+      "effect_id": "pultec_eqp",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "Directed vendor load frame3703 and exact native UI classes in raw-ui.json plus panel screenshot. Five continuous knobs and three bounded rotary selectors; endpoint captures do not establish intermediate detent labels. Bandwidth container extends3px below parent.",
+      "controls": [
+        {
+          "id": "low_boost",
+          "class_name": "PultecGain_low_boost",
+          "label": "Low Boost",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "low_atten",
+          "class_name": "PultecGain_low_atten",
+          "label": "Low Attenuation",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "high_boost",
+          "class_name": "PultecGain_high_boost",
+          "label": "High Boost",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "high_atten",
+          "class_name": "PultecGain_high_atten",
+          "label": "High Attenuation",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "bandwidth",
+          "class_name": "PultecGain_bandwidth",
+          "label": "Bandwidth",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "low_freq",
+          "class_name": "PultecFreqLow",
+          "label": "Low Frequency endpoints; detent map pending",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "high_freq",
+          "class_name": "PultecFreqHi",
+          "label": "High Frequency endpoints; detent map pending",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "atten_sel",
+          "class_name": "PultecAttenSel",
+          "label": "Attenuation Frequency endpoints; detent map pending",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

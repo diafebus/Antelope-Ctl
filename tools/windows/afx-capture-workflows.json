@@ -52,8 +52,35 @@
       "name": "PowerGate",
       "effect_id": "powergate",
       "panel_class": "PowerGate",
+      "next_step": "complete",
+      "range_plan": "powergate-knobs",
+      "completion_evidence": [
+        "scan-PowerGate-20261025T093705223Z",
+        "scan-PowerGate-20261025T094022183Z",
+        "unattended-20261025-powergate-lever-first",
+        "unattended-20261025-powergate-lever-return"
+      ],
+      "completion_limits": "Six visible knob endpoint candidates and processing lever round trip captured; physical scaling, independent readback, audible/stereo behavior and runtime writes remain unverified."
+    },
+    {
+      "name": "PowerEx",
+      "effect_id": "powerex",
+      "panel_class": "PowerEx",
+      "next_step": "complete",
+      "range_plan": "powerex-knobs",
+      "completion_evidence": [
+        "scan-PowerEx-20261025T094607276Z",
+        "unattended-20261025-powerex-switch-first",
+        "unattended-20261025-powerex-switch-return"
+      ],
+      "completion_limits": "Six visible knob endpoint candidates and processing-switch GUI round trip captured; independent readback, physical scaling, audible/stereo behavior and runtime writers remain unverified."
+    },
+    {
+      "name": "VEQ-1A",
+      "effect_id": "pultec_eqp",
+      "panel_class": "PultecEQP",
       "next_step": "ranges",
-      "range_plan": "powergate-knobs"
+      "range_plan": "pultec_eqp-knobs"
     }
   ]
 }

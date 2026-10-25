@@ -2131,7 +2131,13 @@ empty AFX2 rack emits frame2959 in local
 channel byte18=`1`, first slot type39/instance0, seven empty slots. The catalog
 records the capture hash. This establishes Orion type identity from a labelled
 vendor action; independent readback, parameter fields, bypass and runtime
-contracts remain unverified. PowerGate is outside the five-effect runtime pilot.
+contracts remain unverified. Subsequent directed GUI trials captured six knob
+endpoint candidates and a processing-lever round trip; the field/frame table
+and reviewed-resume history are in [the power dynamics findings](docs/orion-afx-power-dynamics.md).
+PowerEx is independently loaded as type51/instance0 at frame4473 of
+`unattended-20261025-load-powerex/Orion.pcapng`; six knob endpoint candidates
+and its processing-switch round trip are also captured in the findings above.
+Both effects remain outside the five-effect runtime pilot.
 
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
