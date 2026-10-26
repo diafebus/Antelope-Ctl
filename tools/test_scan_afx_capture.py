@@ -12,6 +12,25 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_neu_w492_priming_family_only_classifies_captured_parameter_writes(self):
+        # Captured low-gain priming changed byte21, not the first body byte20.
+        values = [(459, 42), (665, 0), (2905, 100)]
+        reports = [(number, index / 10, 1,
+                    frame(0x22, [0xd5, 0x10, 15, 0, 0, value]))
+                   for index, (number, value) in enumerate(values)]
+        reports.extend([(2906, 0.7, 0x82, frame(0x22, [0xd5, 0x10, 15, 0, 0, 255])),
+                        (2907, 0.8, 1, frame(0x22, [0xd4, 0x10, 15, 0, 0, 255]))])
+        result = analyze_reports(reports)
+        self.assertEqual(len(result['parameter_groups']), 1)
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']),
+                         ('0x22', '0x10', 15))
+        self.assertEqual(group['frames'], 3)
+        self.assertEqual(group['targets'][0]['instance'], 0)
+        self.assertEqual(group['varying_offsets'], [21])
+        self.assertEqual(group['observed_byte_ranges']['21'], [0, 100])
+        self.assertFalse(result['device_commands_sent'])
+
     def test_neu_pev_priming_family_preserves_unsigned_wire_observations(self):
         # Observed family/type/instance and low-gain bytes from the stopped
         # priming job; these samples do not establish endpoints or signed units.

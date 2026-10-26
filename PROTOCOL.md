@@ -2212,6 +2212,15 @@ Output signed candidates and separate display inventory. Scaling, independent
 readback, signal telemetry, audible/stereo behavior and runtime contracts remain
 unverified; no runtime writer or query bounds are expanded.
 
+**NEU-W492 priming family (2026-10-26).** The stopped native job
+`scan-NeumannW492-20261026T163707526Z/NeumannW492-channel2.pcapng` observes
+vendor OUT `0x22 / 0xd5 / 0x10`, targeting type15/instance0. Low-gain byte21
+alone changes through raw42/30/16/4/0 at frames459..665; frames2483..2905
+record the upward direction through raw100. Zero sweep actions were accepted.
+This actual observed family replaces any reference-derived prediction. Passive
+decoding does not establish parameter readback, physical scaling or a runtime
+write contract, and does not expand query bounds.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.
