@@ -2221,6 +2221,19 @@ This actual observed family replaces any reference-derived prediction. Passive
 decoding does not establish parameter readback, physical scaling or a runtime
 write contract, and does not expand query bounds.
 
+**NEU-W492 visible controls captured (2026-10-26).** The corrected native job
+`scan-NeumannW492-20261026T164051354Z` accepts all eighteen endpoint phases.
+Its observed `0x22 / 0xd5 / 0x10` blocks use Low Cut20, four Gain bytes21/24/
+27/30, four Frequency bytes22/25/28/31, section-switch bytes23/26/29/32 and
+Output33. Separate section-switch round trips and Low Cut raw0→1→2→0 cycle
+restore the full captured payload/static panel image. Reviewed Low Cut images
+map raw0/1/2 to top140/middle20/bottom80 Hz, respectively. A separate `0x14 / 0x98` processing
+round trip uses instance17/type18/state19 (frames3065/699). The
+[EQ findings](docs/orion-afx-eq.md) give endpoint frames, section state/image
+associations and display limits. Physical/intermediate scaling, independent
+readback, signal telemetry, processing polarity, audible/stereo behavior and
+runtime contracts remain unverified. No runtime writer or query bounds expand.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

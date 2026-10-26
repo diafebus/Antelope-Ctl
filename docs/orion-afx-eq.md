@@ -267,3 +267,75 @@ remain separate display inventory observations; their presence does not establis
 signal telemetry. Independent parameter/processing readback, signal telemetry,
 physical/intermediate scaling, audible/stereo behavior and runtime contracts
 remain unverified. No runtime writer or query bounds are expanded.
+
+## NEU-W492
+
+The directed vendor load at frame2285 in
+`unattended-20261026T163323Z-load-neu-w492/Orion.pcapng` establishes Orion
+type15/instance0 in channel1 slot0, with seven empty slots. The native panel is
+`NeumannW492`; the compatibility identifier is `neumann_w492`.
+
+Parameter blocks use the independently observed `0x22 / 0xd5 / 0x10` family,
+with type byte18/instance byte19. The historical native priming job
+`scan-NeumannW492-20261026T163707526Z` stopped with zero accepted sweep phases
+when this family was unrecognized. Its byte21 Low Gain observations are retained
+as calibration evidence. After fresh GUI reconciliation, the corrected job
+`scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng` accepted
+all eighteen endpoint phases: 149,536 packets, zero drops.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| Low Gain | 21 | 0, 100 | 4173/11613 |
+| Low-Mid Gain | 24 | 0, 100 | 18731/26321 |
+| High-Mid Gain | 27 | 0, 100 | 33655/41545 |
+| High Gain | 30 | 0, 100 | 49025/57225 |
+| Low Frequency | 22 | 0, 100 | 65197/73395 |
+| Low-Mid Frequency | 25 | 0, 100 | 81987/90455 |
+| High-Mid Frequency | 28 | 0, 100 | 99193/107971 |
+| High Frequency | 31 | 0, 100 | 117153/126071 |
+| Output (`level`) | 33 | 232, 12 | 135271/144729 |
+
+These are endpoint candidates; physical gain/frequency units and intermediate
+scaling remain unverified. Output retains literal unsigned wire232/12 with signed
+candidates -24/+12, without asserting signed interpretation or physical units.
+
+The isolated `unattended-20261026T163323Z-neu-w492-sections` trials establish
+four separate section switches. Each first click changes only its listed byte
+0→1; the return changes it 1→0 and restores the full captured parameter payload
+and static panel image.
+
+| Section | Byte | First/return frames |
+|---|---|---|
+| Low | 23 | 795/683 |
+| Low-Mid | 26 | 723/709 |
+| High-Mid | 29 | 707/708 |
+| High | 32 | 787/711 |
+
+Raw0 is the observed left position and raw1 the right position. These image
+associations do not establish enabled polarity or audible behavior.
+
+The separate `unattended-20261026T163323Z-neu-w492-lowcut` trial observes
+Low Cut byte20 cycling 0→1 at frame753, 1→2 at frame778, then 2→0 at frame731
+in successive isolated captures. The full captured parameter payload and static
+panel image return. Reviewed pointer images establish the literal mapping:
+
+| Low Cut raw | Position | Printed label |
+|---|---|---|
+| 0 | Top | 140 Hz |
+| 1 | Middle | 20 Hz |
+| 2 | Bottom | 80 Hz |
+
+The state order is retained as observed rather than sorted by frequency.
+
+The separate processing switch uses `0x14 / 0x98`, instance17/type18/state19.
+`unattended-20261026T163323Z-neu-w492-processing/first/Orion.pcapng`
+frame3065 carries `00 0f 00`; frame699 in
+`unattended-20261026T163323Z-neu-w492-processing/return/Orion.pcapng` carries
+`00 0f 01`. The static panel segments return exactly; the animated meter is
+excluded. Processing polarity remains unverified.
+
+This completes capture of the observed editable controls. Separately inventoried
+`NeumannPeakMeter` and `AfxLed` classes do not establish signal telemetry.
+Independent parameter/processing readback, physical/intermediate scaling,
+signal telemetry, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.

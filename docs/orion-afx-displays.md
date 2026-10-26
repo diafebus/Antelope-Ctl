@@ -9,6 +9,7 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | Effect | Observed native display classes |
 |---|---|
+| NEU-W492 | `AfxLed`; `NeumannPeakMeter` |
 | NEU-PEV | `AfxLed`; `NeumannPeakMeter` |
 | BAE-1023 | `NevePeakMeter` |
 | PowerGate | `AfxLed`; `PowerGateAttackDisplay`; `PowerGateDecayDisplay`; `PowerGateGainDisplay`; `PowerGateHoldDisplay`; `PowerGatePeakMeter`; `PowerGateRangeDisplay`; `PowerGateThresholdDisplay` |

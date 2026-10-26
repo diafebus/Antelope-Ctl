@@ -2278,6 +2278,91 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "neumann_w492-knobs",
+      "panel": "NeumannW492",
+      "panel_class": "NeumannW492",
+      "effect_id": "neumann_w492",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261026T163323Z-load-neu-w492/raw-ui.json: nine individually inspected separate rotary rectangles, centre points physically separated. All section/LowCut/processing controls excluded for separate directed capture.",
+      "controls": [
+        {
+          "id": "low_gain",
+          "class_name": "NeumannW492Pot_low_gain",
+          "label": "Low Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "lmid_gain",
+          "class_name": "NeumannW492Pot_lmid_gain",
+          "label": "Lmid Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "hmid_gain",
+          "class_name": "NeumannW492Pot_hmid_gain",
+          "label": "Hmid Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "high_gain",
+          "class_name": "NeumannW492Pot_high_gain",
+          "label": "High Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "low_freq",
+          "class_name": "NeumannW492Pot_low_freq",
+          "label": "Low Freq",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "lmid_freq",
+          "class_name": "NeumannW492Pot_lmid_freq",
+          "label": "Lmid Freq",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "hmid_freq",
+          "class_name": "NeumannW492Pot_hmid_freq",
+          "label": "Hmid Freq",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "high_freq",
+          "class_name": "NeumannW492Pot_high_freq",
+          "label": "High Freq",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level",
+          "class_name": "NeumannLevelPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

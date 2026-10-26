@@ -230,6 +230,21 @@
         "unattended-20261026T091415Z-neu-pev-processing"
       ],
       "completion_limits": "All observed editable controls captured: five endpoint pairs, four complete 9/5/7/10 stepped dial maps with literal High Gain m, full captured payload/seven static region returns and separate processing round trip. Stopped initial priming remains calibration evidence. NeumannPeakMeter/AfxLed inventory is separate from signal telemetry. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "NEU-W492",
+      "effect_id": "neumann_w492",
+      "panel_class": "NeumannW492",
+      "next_step": "complete",
+      "range_plan": "neumann_w492-knobs",
+      "completion_evidence": [
+        "unattended-20261026T163323Z-load-neu-w492",
+        "scan-NeumannW492-20261026T164051354Z",
+        "unattended-20261026T163323Z-neu-w492-sections",
+        "unattended-20261026T163323Z-neu-w492-lowcut",
+        "unattended-20261026T163323Z-neu-w492-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: nine rotary endpoint pairs, four isolated section-switch round trips (raw0 left/raw1 right), Low Cut three-state map (raw0 top140Hz/raw1 middle20Hz/raw2 bottom80Hz) and separate processing round trip. Full captured payload/static panel returns verified; animated meter excluded. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, section/processing enabled polarity, audible/stereo behavior and runtime contracts remain unverified. Separate NeumannPeakMeter/AfxLed inventory is not a telemetry contract."
     }
   ]
 }
