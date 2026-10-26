@@ -320,16 +320,82 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 72,
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "unattended-20261026T091415Z-load-atuner/Orion.pcapng frame2719: labelled ATuner load, AFX2/channel1slot0 type72/instance0, sevenempty; SHA256 6928e17c5a6048871fdb0c0ecad437e3813c97ddcd02da13da60cf3143f5eeeb."
+          ],
+          "notes": "Independently observed Orion ATuner identity and native ATuner panel. Only editable control observed is power; its GUI roundtrip is captured. The tuner depends on its screen: frequency, note and cents/needle interpretation and device telemetry/readback are deferred by owner2026-10-26. This is visible editable-control coverage, not a usable tuner implementation or verified pitch accuracy. No raw query or runtime writer added.",
+          "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+          "bypass_observation": {
+            "status": "capture-observed",
+            "opcode": "0x14",
+            "selector": "0x98",
+            "instance_offset": 17,
+            "type_offset": 18,
+            "state_offset": 19,
+            "observed_instance": 0,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_restoration": "exact RGB power button; dynamic tuning display excluded",
+            "polarity": "not independently verified audibly",
+            "device_readback_verified": false,
+            "runtime_writable": false,
+            "evidence": [
+              "unattended-20261026T091415Z-atuner-processing/first/Orion.pcapng frame9329 tuple@17..19=004800",
+              "unattended-20261026T091415Z-atuner-processing/return/Orion.pcapng frame2167 tuple@17..19=004801"
+            ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261026T091415Z-load-atuner/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "ATunerFrequencyLabel",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "ATunerNoteLabel",
+                "native_instance_count": 8,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "ATunerScreen",
+                "native_instance_count": 1,
+                "kind_hint": "screen",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "ATunerScreenBottomLabels",
+                "native_instance_count": 1,
+                "kind_hint": "screen",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "ATunerVUMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations.",
+            "follow_up": "Essential tuner-screen reading deferred by owner2026-10-26: determine frequency/note/cents/needle readout and its source before claiming a usable tuner.",
+            "owner_deferred": true
+          }
         }
       ]
     },
@@ -599,6 +665,28 @@
               "unattended-20261025T195948Z-ba31-processing/first/Orion.pcapng frame3197 tuple@17..19=003000",
               "unattended-20261025T195948Z-ba31-processing/return/Orion.pcapng frame743 tuple@17..19=003001"
             ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025T195948Z-load-ba31/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "AfxLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "Ba31PeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -1128,6 +1216,46 @@
               "scan-BBD-Chorus-20261009T193326058Z:7063/7067 instance0 state0;7999/8007 instance0 state1, visual Power round trip restored.",
               "antelope-orion-afx-modulation-tab.pcapng:232899-232913 instance17=1,1,0,0/state19=0;234191-234203 same instance sequence/state19=1. BBD model-local correction; other-effect global-profile offsets remain unresolved."
             ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261026T091415Z/display-inventories/BBD-Chorus-controls.json",
+            "displays": [
+              {
+                "ui_class": "BBDChorusClipLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "BBDChorusGainReductionLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "BBDChorusLed",
+                "native_instance_count": 3,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "BBDChorusPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PeakLed",
+                "native_instance_count": 8,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ],
@@ -2080,6 +2208,64 @@
                 ]
               }
             }
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261026T091415Z/display-inventories/Master-De-Esser-controls.json",
+            "displays": [
+              {
+                "ui_class": "DeesserAttackDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "DeesserCtrlLed",
+                "native_instance_count": 4,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "DeesserDisplay",
+                "native_instance_count": 3,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "DeesserFreqDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "DeesserGRMeterNoInheritance",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "DeesserPeakMeterNoInheritance",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "DeesserQDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "DeesserRatioDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -2767,6 +2953,28 @@
               "unattended-20261025T195948Z-gyratecix-processing/first/Orion.pcapng frame3493 tuple@17..19=002b00",
               "unattended-20261025T195948Z-gyratecix-processing/return/Orion.pcapng frame779 tuple@17..19=002b01"
             ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025T195948Z-load-gyratecix/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "AfxLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "GyratecIXPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -3954,6 +4162,22 @@
               "unattended-20261026T091415Z-instinct-presets-close"
             ],
             "notes": "All nine observed factory categories inventoried through category-only expansion. No preset applied, no device writes during inventory or close. User preset contents are outside this factory inventory; no presetIndex mapping inferred."
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261026T091415Z-load-instinct/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "CircularPeakmeter",
+                "native_instance_count": 4,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -4460,6 +4684,28 @@
               "unattended-20261025T195948Z-memorycat-processing/return/Orion.pcapng frame837 tuple@17..19=004901",
               "antelope-orion-afx-link34-add2fx-checkunlinkbug-bypassall-deleteall.pcapng frames10215/10219 tuples014900/004900,10729/10733 tuples014901/004901: linked instances1/0 receive the same state, not a rapid state1-to0 pulse. This corrects the historical swapped-offset interpretation."
             ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025T195948Z-load-memorycat/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "MemoryBrigadeLED",
+                "native_instance_count": 2,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "MemoryBrigadePeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -5442,6 +5688,46 @@
               }
             ],
             "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025-load-powerex/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "PowerExBypassLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerExDisplay",
+                "native_instance_count": 5,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerExPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerExPeakMeterGrNoInheritance",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "RatioDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -5787,6 +6073,64 @@
               }
             ],
             "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025-load-powergate/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "AfxLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerGateAttackDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerGateDecayDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerGateGainDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerGateHoldDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerGatePeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerGateRangeDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PowerGateThresholdDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -6406,6 +6750,28 @@
               }
             ],
             "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025-load-veq-1a/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "AfxLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PultecPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -6602,6 +6968,28 @@
               "unattended-20261025T195948Z-veqhlf-switch-first/Orion.pcapng frame2443 tuple@17..19=000b00",
               "unattended-20261025T195948Z-veqhlf-switch-return/Orion.pcapng frame1527 tuple@17..19=000b01; exact RGB restoration recorded"
             ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025T195948Z-load-veq-hlf/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "AfxLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PultecPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -7226,6 +7614,28 @@
               }
             ],
             "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025-load-vmeq-5/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "AfxLed",
+                "native_instance_count": 1,
+                "kind_hint": "indicator",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "PultecPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -8002,6 +8412,28 @@
               "unattended-20261025T195948Z-vpa76-processing/first/Orion.pcapng frame3637 tuple@17..19=002c00",
               "unattended-20261025T195948Z-vpa76-processing/return/Orion.pcapng frame683 tuple@17..19=002c01"
             ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025T195948Z-load-vpa76/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "GainDisplay",
+                "native_instance_count": 1,
+                "kind_hint": "parameter-or-signal-readout",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "TelefunkenFlashingPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ]
@@ -8543,6 +8975,22 @@
               "unattended-20261025T195948Z-v12-processing/first/Orion.pcapng frame3461 tuple@17..19=004600",
               "unattended-20261025T195948Z-v12-processing/return/Orion.pcapng frame713 tuple@17..19=004601"
             ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261025T195948Z-load-v12/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "TurboEnsemblerPeakMeter",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
           }
         }
       ],

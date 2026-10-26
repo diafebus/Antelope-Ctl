@@ -2007,8 +2007,9 @@ and many normalized fields0..1. Do not infer interpolation from endpoints.
 The final Volume scan shows−inf/+1dB; its minimum wire0 comes from the prior
 scan's frame174973, and maximum1 from final scan9833. The final scan emits no
 minimum change because it starts there;12878packets/zero drops. Owner permits
-leaving range knobs at maximum. Model selection/power and changed-state
-readback remain unverified; preserve all unknown bytes.
+leaving range knobs at maximum. Model selection/power were captured later
+(see the2026-10-26 completion below); changed-state readback remains
+unverified. Preserve all unknown bytes.
 
 **Linked chain editing.** The owner requested linked rack editing on2026-10-01.
 The1/2 capture pairs load writes3427/3431,4997/5001,7505/7509 and reorder
@@ -2201,6 +2202,15 @@ establish all twelve Voices positions; catalog/UI kind is now a rotary enum,
 with fractional local counts rejected. The earlier ten-knob/Humanize batch is
 retained. [Modulation findings](docs/orion-afx-modulation.md) distinguish this
 completion from the historical linked pulse pairs. Runtime writes remain disabled.
+
+**ATuner editable control captured; screen deferred (2026-10-26).** The
+labelled vendor load2719 independently establishes Orion type72/instance0.
+Its only observed editable panel control is power: first9329/return2167 carry
+004800/004801 at17..19, with exact button-image return. Frequency/note/cents
+screen reading is essential and explicitly deferred by the owner; this does
+not establish a functioning tuner or pitch accuracy. The [display inventory](docs/orion-afx-displays.md)
+records native meter/screen/LED classes for all currently captured effects,
+separately from editable-control completion. No telemetry query is inferred.
 
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both

@@ -187,6 +187,17 @@
         "unattended-20261025T195948Z-memorycat-processing"
       ],
       "completion_limits": "Prior six knob endpoint candidates/two owner-labelled binary modes and fresh processing roundtrip complete visible controls. Existing tagged Memory Cat readback retained; physical intermediate scaling, current audible confirmation and runtime bypass writes remain unverified."
+    },
+    {
+      "name": "ATuner",
+      "effect_id": "atuner",
+      "panel_class": "ATuner",
+      "next_step": "complete",
+      "completion_evidence": [
+        "unattended-20261026T091415Z-load-atuner",
+        "unattended-20261026T091415Z-atuner-processing"
+      ],
+      "completion_limits": "Only observed editable panel control(power) captured. Tuner screen is essential; frequency/note/cents/needle reading and telemetry explicitly deferred by owner2026-10-26. No functional tuner, pitch-accuracy, readback or runtime-write claim. Device telemetry, pitch accuracy, audible behavior and runtime contracts remain unverified."
     }
   ]
 }

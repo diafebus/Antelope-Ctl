@@ -444,3 +444,14 @@ pending; no menu count, raw ordering or runtime control contract is promoted.
 The [preamp findings](orion-afx-preamps.md) record the completed BA-31/Gyratec IX visible
 control pass, with endpoint candidates and an isolated processing-switch round trip.
 Runtime parameter writes, physical scaling and independent readback remain open.
+
+## Display observations during capture
+
+Record each plugin's visible VU/peak/gain-reduction meters, LEDs and other live
+readouts separately from its editable controls. The [display inventory](orion-afx-displays.md)
+and model-local catalog preserve native classes and source evidence, with unknown
+signal semantics, scales and device telemetry left explicit. Parameter readouts
+are distinguished from signal meters. ATuner's screen reading is deferred by
+owner request; its power-control pass does not implement tuning. A control pass
+marked complete does not claim decoded metering or screens. No speculative query
+is authorized by observing a widget.
