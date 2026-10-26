@@ -210,3 +210,60 @@ This completes the observed editable controls. The separately observed
 intermediate scaling, independent parameter/processing readback, meter telemetry,
 audible/stereo behavior and runtime contracts remain unverified. Captured vendor
 writes and image restoration do not enable a runtime writer or expand query bounds.
+
+## NEU-PEV
+
+The directed vendor load at frame2511 in
+`unattended-20261026T091415Z-load-neu-pev/Orion.pcapng` establishes Orion
+type13/instance0 in channel1 slot0, with seven empty slots. The observed native
+panel is `NeumannPev`; the compatibility identifier is `neumann_pev`.
+
+Parameter blocks use `0x19 / 0xd5 / 0x07`, type byte18/instance byte19.
+The initial job `scan-NeumannPev-20261026T161447638Z` stopped during priming
+because that passive family was unrecognized; zero sweep actions were accepted.
+Its observed low-gain writes and subsequent fresh GUI reconciliation are retained
+as calibration evidence, without a blind restoration. The corrected native job
+`scan-NeumannPev-20261026T161740457Z/NeumannPev-channel2.pcapng` accepted all
+ten endpoint phases, with 78,812 packets and zero drops. Each phase changes
+only its mapped parameter byte.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| Low Gain | 20 | 251, 3 | 4185/11775 |
+| Presence Gain (`pres_gain`) | 21 | 0, 4 | 18917/26639 |
+| Presence Frequency (`pres_freq`) | 22 | 0, 6 | 34205/42141 |
+| High Gain | 23 | 251, 4 | 50185/58381 |
+| Output (`level`) | 24 | 232, 12 | 66265/74663 |
+
+The completed `unattended-20261026T091415Z-neu-pev-detent-map` records all
+four stepped dials across 62 bounded trials, with isolated raw-field observations
+and matching pointer images. Other payload bytes are preserved, and the final
+full captured parameter payload matches the starting maximum block. The seven
+static regions match the last endpoint image exactly: Low Gain, Presence Gain,
+Presence Frequency, High Gain, Output body, power and LED. The animated peak
+meter is excluded from these image comparisons.
+
+| Selector | Raw values in order | Printed labels in order |
+|---|---|---|
+| Low Gain | 251, 252, 253, 254, 255, 0, 1, 2, 3 | -15, -12, -9, -6, -3, 0, 3, 6, 9 |
+| Presence Gain | 0–4 | 0, 2, 4, 6, 8 |
+| Presence Frequency | 0–6 | 0.7, 1, 1.4, 2, 2.8, 4, 5.6 |
+| High Gain | 251, 252, 253, 254, 255, 0, 1, 2, 3, 4 | -15, -12, -9, -6, -3, 0, 3, 6, 9, m |
+
+The High Gain label `m` remains literal, without an inferred meaning. Wrapped
+unsigned wire values are preserved; dial labels are GUI observations. Output's
+wire endpoints 232/12 have signed candidates -24/+12, but signed interpretation,
+physical units and intermediate scaling remain unverified.
+
+The separate processing switch uses `0x14 / 0x98`, instance17/type18/state19.
+In `unattended-20261026T091415Z-neu-pev-processing/first/Orion.pcapng`,
+frame4619 carries `00 0d 00`; frame1247 in
+`unattended-20261026T091415Z-neu-pev-processing/return/Orion.pcapng` carries
+`00 0d 01`. All seven static control/switch/LED regions return exactly to baseline
+RGB. Processing polarity remains unverified.
+
+This completes the observed editable controls. `NeumannPeakMeter` and `AfxLed`
+remain separate display inventory observations; their presence does not establish
+signal telemetry. Independent parameter/processing readback, signal telemetry,
+physical/intermediate scaling, audible/stereo behavior and runtime contracts
+remain unverified. No runtime writer or query bounds are expanded.

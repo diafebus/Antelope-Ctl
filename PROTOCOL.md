@@ -2199,6 +2199,19 @@ accepted. This adds passive decoding only: endpoint ranges, signed/physical
 scaling, independent readback and runtime writes remain unverified. This opcode
 observation does not change category-`0x19` readback bounds.
 
+**NEU-PEV visible controls completed (2026-10-26).** A fresh native job
+`scan-NeumannPev-20261026T161740457Z` accepts all ten endpoint phases after
+the stopped priming job above. The `0x19 / 0xd5 / 0x07` blocks use Low Gain20,
+Presence Gain21/Frequency22, High Gain23 and Output24. Directed detent mapping
+covers all 9/5/7/10 positions across62 bounded trials, preserving literal High
+Gain `m` and wrapped unsigned wire values. The full captured payload and seven
+static image regions return to the starting maximum state. A separate processing
+`0x14 / 0x98` round trip uses instance17/type18/state19 (frames4619/1247).
+The [EQ findings](docs/orion-afx-eq.md) record endpoint frames, literal maps,
+Output signed candidates and separate display inventory. Scaling, independent
+readback, signal telemetry, audible/stereo behavior and runtime contracts remain
+unverified; no runtime writer or query bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

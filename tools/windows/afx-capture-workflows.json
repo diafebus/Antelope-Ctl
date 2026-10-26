@@ -216,6 +216,20 @@
         "unattended-20261026T091415Z-bae1023-processing"
       ],
       "completion_limits": "All observed editable controls captured: eight endpoint pairs, literal 5/12/6/5 frequency-selector maps, isolated Phase round trip and separate EQ processing round trip with full-payload/image return checks. Concentric hit zones independently observed; compatibility ID neve_1023 retained. Separate NevePeakMeter display has no telemetry contract. Output signed interpretation, physical/intermediate scaling, independent readback, meter telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "NEU-PEV",
+      "effect_id": "neumann_pev",
+      "panel_class": "NeumannPev",
+      "next_step": "complete",
+      "range_plan": "neumann_pev-knobs",
+      "completion_evidence": [
+        "unattended-20261026T091415Z-load-neu-pev",
+        "scan-NeumannPev-20261026T161740457Z",
+        "unattended-20261026T091415Z-neu-pev-detent-map",
+        "unattended-20261026T091415Z-neu-pev-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: five endpoint pairs, four complete 9/5/7/10 stepped dial maps with literal High Gain m, full captured payload/seven static region returns and separate processing round trip. Stopped initial priming remains calibration evidence. NeumannPeakMeter/AfxLed inventory is separate from signal telemetry. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

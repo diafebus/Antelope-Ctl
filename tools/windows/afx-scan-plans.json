@@ -2221,6 +2221,63 @@
         "high_gain": 22,
         "high_freq": 21
       }
+    },
+    {
+      "id": "neumann_pev-knobs",
+      "panel": "NeumannPev",
+      "panel_class": "NeumannPev",
+      "effect_id": "neumann_pev",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261026T091415Z-load-neu-pev/raw-ui.json: five individually observed separate rotary rectangles; no concentric targets. Visible marked scales require later discrete mapping.",
+      "controls": [
+        {
+          "id": "low_gain",
+          "class_name": "NeumannPevLowGainPot",
+          "label": "Low Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "pres_gain",
+          "class_name": "NeumannPevPresGainPot",
+          "label": "Presence Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "pres_freq",
+          "class_name": "NeumannPevPresFreqPot",
+          "label": "Presence Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "high_gain",
+          "class_name": "NeumannPevHighGainPot",
+          "label": "High Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level",
+          "class_name": "NeumannLevelPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
