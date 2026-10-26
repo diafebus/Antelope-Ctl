@@ -3052,9 +3052,10 @@
           },
           "control_encodings": {},
           "evidence": [
-            "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng"
+            "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng",
+            "unattended-20261026T091415Z-load-instinct/Orion.pcapng frame4245: labelled Instinct Synergy load, AFX2/channel1slot0 type75/instance1, sevenempty; SHA256 89a40308d7cae7a8153817f35b804bb26f3395c0a357ee58041ddee63e3d4556. DEMO caption is availability, not ownership evidence."
           ],
-          "notes": "Orion type ID established by the owner-labelled load sequence. Instinct has a different opcode and a larger parameter block; Master De-Esser also uses a different opcode from Memory Cat. These observations do not enable loading or parameter writes for either effect.",
+          "notes": "Orion type ID established by the owner-labelled load sequence. Instinct has a different opcode and a larger parameter block; Master De-Esser also uses a different opcode from Memory Cat. These observations do not enable loading or parameter writes for either effect. Fresh 2026-10-26 model-switch byte68, processing roundtrip and read-only60entry factory preset inventory complete observed visible controls alongside prior21knob/threeparameter-switch evidence. Physical interpolation, algorithm naming, independent state readback and runtime contracts remain unverified.",
           "type_id_write_status": "unconfirmed",
           "parameter_observation": {
             "opcode": "0x7c",
@@ -3736,6 +3737,33 @@
                   "Volume-only scan-Instinct-20261009T180405603Z completed both phases. Screens show VOLUME: -inf DB and VOLUME: 1 DB. It starts at minimum and emits no minimum change. Previous continuous sweep ends float32-le@120=0, frame174973; new maximum ends1 at9833. Nine maximum-sweep writes vary only120..123,12878packets/zero drops."
                 ],
                 "notes": "Displayed minimum is negative infinity, stored as a string for valid JSON. Unknown dB interpolation; do not substitute a guessed linear physical scale. Owner authorizes leaving maximum."
+              },
+              "model_switch": {
+                "label": "Model switch (two icons)",
+                "ui_class": "ModelSwitchButton",
+                "offset": 68,
+                "width": 1,
+                "observed_values": [
+                  0,
+                  1
+                ],
+                "visual_states": {
+                  "0": "left icon selected",
+                  "1": "right icon selected"
+                },
+                "status": "capture-observed; isolated visual and full-payload roundtrip",
+                "writable": false,
+                "readback_verified": false,
+                "observed_instance": 1,
+                "frames": {
+                  "right_icon": 1779,
+                  "left_icon_return": 651
+                },
+                "evidence": [
+                  "unattended-20261026T091415Z-instinct-model-first/Orion.pcapng frame1779: type75/instance1, onlybyte68 0->1",
+                  "unattended-20261026T091415Z-instinct-model-return/Orion.pcapng frame651: onlybyte68 1->0; full parameter payload equals fresh ALT-return baseline; stable control images match"
+                ],
+                "notes": "Printed icons identify the two observed states. Algorithm naming and correspondence to imported declaration driveModel remain unverified. No query, reader or writer contract added."
               }
             },
             "startup_readback_observation": {
@@ -3763,21 +3791,169 @@
               "evidence": "Local instinct-init-current-20261009/init.pcapng: both instance1 startup payloads match last restored filter-scan write3527 over write offsets20..123. Instance0 differs. 56763 packets, zero drops. No Linux device commands sent."
             },
             "range_capture_summary": {
-              "status": "capture-observed; endpoint inventory complete",
+              "status": "capture-observed; visible control inventory complete",
               "knob_count": 21,
-              "mapped_switch_count": 3,
-              "unmapped_visible_controls": [
-                "ModelSwitchButton",
-                "PFEnable (power region)"
-              ],
+              "mapped_switch_count": 4,
+              "unmapped_visible_controls": [],
               "runtime_writable": false,
               "runtime_state_reader_enabled": false,
               "interpolation_laws_verified": false,
               "unknown_parameter_bytes": "Preserve every byte outside an individually observed field. Constant bytes do not establish defaults or padding.",
               "declaration_id_correspondence": "UI class names identify observed Orion controls; correspondence to imported declaration IDs remains unverified.",
               "device_scope": "Orion Studio Synergy Core only",
-              "capture_process": "Shared name-driven Windows inventory and reviewed range/button batches; GUI writes with passive Linux USB recording."
+              "capture_process": "Shared name-driven Windows inventory and reviewed range/button batches; GUI writes with passive Linux USB recording.",
+              "processing_switch_captured": true,
+              "visible_completion_date": "2026-10-26"
             }
+          },
+          "bypass_observation": {
+            "status": "capture-observed",
+            "opcode": "0x14",
+            "selector": "0x98",
+            "instance_offset": 17,
+            "type_offset": 18,
+            "state_offset": 19,
+            "observed_instance": 1,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_restoration": "exact RGB processing button and20stable control regions; animated meter regions excluded",
+            "polarity": "not independently verified audibly",
+            "device_readback_verified": false,
+            "runtime_writable": false,
+            "evidence": [
+              "unattended-20261026T091415Z-instinct-processing/first/Orion.pcapng frame3045 tuple@17..19=014b00",
+              "unattended-20261026T091415Z-instinct-processing/return/Orion.pcapng frame649 tuple@17..19=014b01; stable regions restored"
+            ]
+          },
+          "preset_inventory": {
+            "status": "capture-observed factory menu inventory; selection/parameter encoding unverified",
+            "read_only": true,
+            "preset_applied": false,
+            "factory_entry_count": 60,
+            "categories": [
+              {
+                "label": "Bus",
+                "entries": [
+                  "Glue_1",
+                  "Glue_2",
+                  "Glue_3"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets-bus2"
+              },
+              {
+                "label": "Creative",
+                "entries": [
+                  "Bassolagno",
+                  "Bebop",
+                  "Blue John",
+                  "Broken Resonant",
+                  "Chemtrails",
+                  "Father Aris",
+                  "FM",
+                  "Karamos",
+                  "Monsieur Kastritsis",
+                  "Morning Traffic",
+                  "Tyson Kiss"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/creative"
+              },
+              {
+                "label": "Dynamics",
+                "entries": [
+                  "Body Release_1",
+                  "Body Release_2",
+                  "Punch and Gate_1",
+                  "Punch and Gate_2",
+                  "Punch_1",
+                  "Punch_2"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/dynamics"
+              },
+              {
+                "label": "FX",
+                "entries": [
+                  "FM_1",
+                  "FX_1",
+                  "FX_2",
+                  "FX_3",
+                  "FX_4",
+                  "FX_5"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/fx"
+              },
+              {
+                "label": "Noise",
+                "entries": [
+                  "Hi Gain Noise_1",
+                  "Hi Gain Noise_2",
+                  "Hi Gain Noise_3",
+                  "HiGain LowFi Tube_1",
+                  "Noisy Amp_1",
+                  "Noisy Amp_2"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/noise"
+              },
+              {
+                "label": "Tape",
+                "entries": [
+                  "Tape Saturation_1",
+                  "Tape Saturation_2",
+                  "Tape Saturation_3",
+                  "Tape Saturation_4"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/tape"
+              },
+              {
+                "label": "TheMute",
+                "entries": [
+                  "Bonna Johnna",
+                  "Crush Kill n Destroy",
+                  "Less Fun",
+                  "More Fun",
+                  "Outside the Club",
+                  "Scratch Master Hype"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/themute"
+              },
+              {
+                "label": "Transistor",
+                "entries": [
+                  "Broken Transistor_1",
+                  "Broken Transistor_2",
+                  "Transistor LowFi Amp",
+                  "Transistor LowFi Amp2",
+                  "Transistor Warmth_1",
+                  "Transistor Warmth_2",
+                  "Transistor Warmth_3"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/transistor"
+              },
+              {
+                "label": "Tube",
+                "entries": [
+                  "Broken Tube_1",
+                  "Broken Tube_2",
+                  "LowFi Tube_1",
+                  "LowFi Tube_2",
+                  "LowFi Tube_3",
+                  "Tube Wall_1",
+                  "Tube Warmth_1",
+                  "Tube Warmth_2",
+                  "Tube Warmth_3",
+                  "Tube_Oppressor_1",
+                  "Tube_Oppressor_2"
+                ],
+                "evidence": "unattended-20261026T091415Z-instinct-presets/tube"
+              }
+            ],
+            "evidence": [
+              "unattended-20261026T091415Z-instinct-preset-inventory",
+              "unattended-20261026T091415Z-instinct-presets",
+              "unattended-20261026T091415Z-instinct-presets-close"
+            ],
+            "notes": "All nine observed factory categories inventoried through category-only expansion. No preset applied, no device writes during inventory or close. User preset contents are outside this factory inventory; no presetIndex mapping inferred."
           }
         }
       ]

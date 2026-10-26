@@ -6,7 +6,19 @@
       "name": "Instinct",
       "effect_id": "instinct",
       "range_plan": "instinct-knob-ranges",
-      "next_step": "ranges"
+      "next_step": "complete",
+      "completion_evidence": [
+        "scan-Instinct-20261009T162320099Z",
+        "scan-Instinct-20261009T170904069Z",
+        "scan-Instinct-20261009T172618770Z",
+        "scan-Instinct-20261009T175536310Z",
+        "scan-Instinct-20261009T180405603Z",
+        "unattended-20261026T091415Z-instinct-model-first",
+        "unattended-20261026T091415Z-instinct-model-return",
+        "unattended-20261026T091415Z-instinct-processing",
+        "unattended-20261026T091415Z-instinct-presets"
+      ],
+      "completion_limits": "Prior21knob endpoint/threeparameter-switch captures plus fresh model/power round trips and read-only factory menu inventory complete observed visible controls. Physical scaling, algorithm/declaration names, independent readback, preset encodings and runtime contracts unverified."
     },
     {
       "name": "V12 Chorus",

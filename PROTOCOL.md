@@ -2024,6 +2024,16 @@ writes without automatic repair. Link/unlink itself still sends only its flag.
 Memory Cat parameter mirroring is an explicit bounded operator candidate
 described below; other-effect parameter writers remain unsupported.
 
+**Instinct visible controls completed (2026-10-26).** Fresh type75/instance1
+model-switch captures establish byte68 raw0/1 for the two visible icons, with
+exact full-payload and checked image return. The separate processing button
+uses instance17/type18/state19, with3045/649 tuples014b00/014b01. A read-only
+inventory records60factory entries across nine categories without selecting a
+preset or sending device writes. Together with the prior21knob/threeparameter-
+switch batches, this completes the observed visible controls. See
+[Instinct findings](docs/orion-afx-instinct.md) for source frames and limits.
+No runtime query or parameter/bypass writer is enabled.
+
 **Bypass observation, corrected 2026-10-25.** Opcode `0x14`, selector `0x98`
 uses **instance at17, type at18, state at19** for the independently captured
 Orion effects. In the3/4 linked capture, frames10215/10219 carry tuples

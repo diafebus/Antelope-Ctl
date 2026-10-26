@@ -27,10 +27,10 @@ listed as pending. Known measured plans retain their existing behavior. See
 | Effect | Orion type | Existing evidence |
 | --- | --- | --- |
 | Memory Cat Brigade | 73 | Eight fields, fresh parameter/processing reads for instances0–2, Launcher-restart retention, owner-confirmed switch labels |
-| Instinct | 75 | Load/chain,93older linked parameter writes, opcode`0x7c`, observed query75/1; automated GUI trials map three switches and all21 knob endpoints; model selection, power, interpolation laws and runtime readback remain unresolved |
+| Instinct | 75 | All21knob endpoint candidates, three parameter switches, model/power round trips and60entry factory menu inventory captured; interpolation, preset encodings and runtime readback remain unverified |
 | Master De-Esser | 27 | Load/chain and older linked writes; native capture now covers eight knob endpoint candidates, five filter choices, four monitoring states, processing-button round trip and preset inventory; runtime readback/scaling remain unverified |
-| V12 Chorus | 70 | Labelled modulation capture: eleven changed fields and245 mirrored pairs; reader/restoration still unverified |
-| BBD Chorus | 78 | Demo modulation capture: five changed fields and85 mirrored pairs; stereo-mode mapping and reader/restoration still unverified |
+| V12 Chorus | 70 | Ten knob endpoint candidates, Humanize, all12Voices counts and isolated power return captured; runtime/readback/scaling remain unverified |
+| BBD Chorus | 78 | Four knob endpoint candidates, modulation/stereo choices and processing return captured; runtime/readback/scaling remain unverified |
 | PowerGate | 39 | Six knob endpoint candidates and processing-lever GUI round trip captured; runtime/readback/scaling unverified |
 | PowerEx | 51 | Six knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 | VEQ-1A | 6 | Five continuous knob endpoint candidates, all three rotary maps and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
@@ -55,7 +55,7 @@ full captures; original range plans remain available for explicitly reviewed wor
 
 Earlier unlabelled Instinct/De-Esser captures remain historical; labelled native
 batches establish control names independently of catalog declaration order.
-Instinct model/processing work remains open. Memory Cat/V12/BBD visible controls are now
+Instinct model/processing and factory menu captures are complete; see [its findings](orion-afx-instinct.md). Memory Cat/V12/BBD visible controls are now
 captured, including all twelve discrete V12 Voices counts and separate power
 round trips; see [the modulation findings](orion-afx-modulation.md). Fresh state
 readback, physical scaling and audible/stereo behavior remain unverified.
