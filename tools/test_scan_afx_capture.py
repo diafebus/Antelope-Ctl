@@ -12,6 +12,25 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_neu_pev_priming_family_preserves_unsigned_wire_observations(self):
+        # Observed family/type/instance and low-gain bytes from the stopped
+        # priming job; these samples do not establish endpoints or signed units.
+        reports = [(559, 0.0, 1, frame(0x19, [0xd5, 0x07, 13, 0, 0xff])),
+                   (755, 0.1, 1, frame(0x19, [0xd5, 0x07, 13, 0, 0xfb])),
+                   (2989, 0.2, 1, frame(0x19, [0xd5, 0x07, 13, 0, 3])),
+                   (2990, 0.3, 0x82, frame(0x19, [0xd5, 0x07, 13, 0, 0])),
+                   (2991, 0.4, 1, frame(0x19, [0xd4, 0x07, 13, 0, 0]))]
+        result = analyze_reports(reports)
+        self.assertEqual(len(result['parameter_groups']), 1)
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']),
+                         ('0x19', '0x7', 13))
+        self.assertEqual(group['frames'], 3)
+        self.assertEqual(group['targets'][0]['instance'], 0)
+        self.assertEqual(group['varying_offsets'], [20])
+        self.assertEqual(group['observed_byte_ranges']['20'], [3, 255])
+        self.assertFalse(result['device_commands_sent'])
+
     def test_gyratec_ix_parameter_family_is_passive_observation(self):
         first = frame(0x18, [0xd5, 0x06, 43, 0, 12, 59, 1, 0])
         second = frame(0x18, [0xd5, 0x06, 43, 0, 0, 59, 1, 0])

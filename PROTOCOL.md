@@ -2190,6 +2190,15 @@ image return checks and the separate peakmeter limitation. Scaling, independent
 readback, audible/stereo behavior and runtime contracts remain unverified;
 no runtime writer or query bounds are expanded.
 
+**NEU-PEV priming family (2026-10-26).** The stopped native job
+`scan-NeumannPev-20261026T161447638Z/NeumannPev-channel2.pcapng` observes
+vendor OUT `0x19 / 0xd5 / 0x07` parameter blocks targeting type13/instance0.
+Low-gain byte20 changes through literal raw `ff`..`fb` at frames559..755;
+frames2621..2989 record the return direction and raw3. No sweep actions were
+accepted. This adds passive decoding only: endpoint ranges, signed/physical
+scaling, independent readback and runtime writes remain unverified. This opcode
+observation does not change category-`0x19` readback bounds.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.
