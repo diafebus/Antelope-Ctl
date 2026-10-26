@@ -144,3 +144,69 @@ The switch, LED and both selector regions have exact RGB baseline matches.
 This completes the observed visible controls. Printed labels are retained
 without guessing physical units. Independent readback, processing polarity,
 audible/stereo behavior and runtime contracts remain unverified.
+
+## BAE-1023
+
+The directed vendor load at frame2327 in
+`unattended-20261026T091415Z-load-bae1023/Orion.pcapng` establishes Orion
+type24/instance0 in channel1 slot0, with seven empty slots. The native panel is
+`Neve1023`; the compatibility identifier remains `neve_1023`.
+
+Parameter blocks use `0x1d / 0xd5 / 0x0b`, type byte18/instance byte19.
+The separate High-pass/Output endpoint job
+`scan-Neve1023-20261026T100833281Z/Neve1023-channel2.pcapng` accepted four
+phases (30,498 packets, zero drops). The coaxial job
+`scan-Neve1023CoaxialRanges-20261026T104903760Z/Neve1023CoaxialRanges-channel2.pcapng`
+accepted twelve phases (99,948 packets, zero drops).
+
+| Control | Byte | Raw endpoint candidates | Source frames |
+|---|---|---|---|
+| Output (compatibility ID `gain`) | 20 | 236, 10 | 18971/26647, separate job |
+| High Frequency | 21 | 0, 5 | 86953/95529, coaxial job |
+| High Gain | 22 | 0, 100 | 69251/78715, coaxial job |
+| Peak Frequency | 23 | 0, 11 | 52877/61125, coaxial job |
+| Peak Gain | 24 | 0, 100 | 35785/44797, coaxial job |
+| Low Frequency | 25 | 0, 4 | 20069/27853, coaxial job |
+| Low Gain | 26 | 0, 100 | 4265/12749, coaxial job |
+| High-pass | 27 | 0, 4 | 3965/11481, separate job |
+
+Output values are literal unsigned wire bytes; signed interpretation and physical
+scaling remain unverified. The concentric frequency/gain pairs share UIA bounds.
+Directed native routing trials establish six distinct one-byte fields using
+reviewed inner/outer interaction points, rather than inferring hit zones from
+those bounds. The initial high-gain return stopped one raw unit short; a fresh
+visual reconciliation and bounded five-pixel return restored the full original
+payload. Quiet and stopped calibration records remain in the capture archive.
+
+The completed `unattended-20261026T091415Z-bae1023-frequency-map` contains
+48 bounded 32-pixel GUI steps, isolated field observations and pointer images.
+Every position is observed, other payload bytes are preserved, and the final
+full parameter payload matches the starting maximum block. Printed labels are
+retained literally:
+
+| Selector | Raw values | Printed labels in order |
+|---|---|---|
+| Low Frequency | 0–4 | Off, 220, 110, 60, 35 |
+| Peak Frequency | 0–11 | Off, 10k, 8k2, 7k2, 4k8, 3k2, 1k6, 700, 510, 360, 270, 160 |
+| High Frequency | 0–5 | Off, 10k, 12k, 16k, 20k, 24k |
+| High-pass | 0–4 | Off, 50, 80, 160, 300 |
+
+The last Peak Frequency position is printed 160 Hz; it is not inferred from a
+similarly named equalizer. Phase is a separate byte28 two-state control:
+`unattended-20261026T091415Z-bae1023-phase-first/Orion.pcapng` frame1665
+changes 0→1; `-phase-return/Orion.pcapng` frame941 changes 1→0. The return
+verification confirms the full parameter payload and exact RGB matches for
+High-pass, all three coaxial regions, Output, Phase and EQ.
+
+The separate EQ processing switch uses `0x14 / 0x98`, with instance17/type18/
+state19. In `unattended-20261026T091415Z-bae1023-processing/first/Orion.pcapng`,
+frame3485 carries `00 18 00`; return frame855 in
+`unattended-20261026T091415Z-bae1023-processing/return/Orion.pcapng` carries
+`00 18 01`. All seven checked control regions return exactly to baseline RGB.
+Processing polarity and audible behavior remain unverified.
+
+This completes the observed editable controls. The separately observed
+`NevePeakMeter` display does not establish a telemetry contract. Physical and
+intermediate scaling, independent parameter/processing readback, meter telemetry,
+audible/stereo behavior and runtime contracts remain unverified. Captured vendor
+writes and image restoration do not enable a runtime writer or expand query bounds.

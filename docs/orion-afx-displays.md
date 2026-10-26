@@ -9,6 +9,7 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | Effect | Observed native display classes |
 |---|---|
+| BAE-1023 | `NevePeakMeter` |
 | PowerGate | `AfxLed`; `PowerGateAttackDisplay`; `PowerGateDecayDisplay`; `PowerGateGainDisplay`; `PowerGateHoldDisplay`; `PowerGatePeakMeter`; `PowerGateRangeDisplay`; `PowerGateThresholdDisplay` |
 | PowerEx | `PowerExBypassLed`; `PowerExDisplay` ×5; `PowerExPeakMeter`; `PowerExPeakMeterGrNoInheritance`; `RatioDisplay` |
 | VEQ-1A | `AfxLed`; `PultecPeakMeter` |

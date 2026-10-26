@@ -198,6 +198,24 @@
         "unattended-20261026T091415Z-atuner-processing"
       ],
       "completion_limits": "Only observed editable panel control(power) captured. Tuner screen is essential; frequency/note/cents/needle reading and telemetry explicitly deferred by owner2026-10-26. No functional tuner, pitch-accuracy, readback or runtime-write claim. Device telemetry, pitch accuracy, audible behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "BAE-1023",
+      "effect_id": "neve_1023",
+      "panel_class": "Neve1023",
+      "next_step": "complete",
+      "range_plan": "neve_1023-coaxial-ranges",
+      "completion_evidence": [
+        "unattended-20261026T091415Z-load-bae1023",
+        "scan-Neve1023-20261026T100833281Z",
+        "unattended-20261026T091415Z-bae1023-coaxial-routing",
+        "scan-Neve1023CoaxialRanges-20261026T104903760Z",
+        "unattended-20261026T091415Z-bae1023-frequency-map",
+        "unattended-20261026T091415Z-bae1023-phase-first",
+        "unattended-20261026T091415Z-bae1023-phase-return",
+        "unattended-20261026T091415Z-bae1023-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: eight endpoint pairs, literal 5/12/6/5 frequency-selector maps, isolated Phase round trip and separate EQ processing round trip with full-payload/image return checks. Concentric hit zones independently observed; compatibility ID neve_1023 retained. Separate NevePeakMeter display has no telemetry contract. Output signed interpretation, physical/intermediate scaling, independent readback, meter telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

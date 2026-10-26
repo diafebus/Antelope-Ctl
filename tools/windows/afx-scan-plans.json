@@ -2000,6 +2000,227 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "neve_1023-knobs",
+      "panel": "Neve1023",
+      "panel_class": "Neve1023",
+      "effect_id": "neve_1023",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261026T091415Z-load-bae1023/raw-ui.json; only two independent controls, concentric controls and phase/EQ excluded for separate reviewed trials",
+      "controls": [
+        {
+          "id": "high_pass",
+          "class_name": "NeveHighpassFreq",
+          "label": "High-pass selector endpoints; detents pending",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "gain",
+          "class_name": "NeveOutputGain",
+          "label": "Output gain endpoints",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "neve_1023-coaxial-targets",
+      "panel": "Neve1023Coaxial",
+      "panel_class": "Neve1023",
+      "effect_id": "neve_1023",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "screenshot-reviewed inner/outer hit zones; verify isolated routing before full ranges",
+      "evidence": "unattended-20261026T091415Z-load-bae1023/raw-ui.json and panel screenshot; paired Qt controls share119square bounds. Innercenter/outerright ring points reviewed; wire fields not inferred.",
+      "controls": [
+        {
+          "id": "low_gain",
+          "class_name": "NeveGain_low_gain",
+          "label": "Low gain inner knob",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "low_freq",
+          "class_name": "NeveFreq_low",
+          "label": "Low frequency outer ring",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.86,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "peak_gain",
+          "class_name": "NeveGain_peak_gain",
+          "label": "Peak gain inner knob",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "peak_freq",
+          "class_name": "NeveFreq_peak",
+          "label": "Peak frequency outer ring",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.86,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "high_gain",
+          "class_name": "NeveGain_high_gain",
+          "label": "High gain inner knob",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "high_freq",
+          "class_name": "NeveFreq_high",
+          "label": "High frequency outer ring",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.86,
+            "y": 0.5
+          }
+        }
+      ],
+      "coverage": {
+        "status": "only six concentric controls; small isolated trials required before range batch",
+        "pending": [
+          "Isolated per-target routing verification",
+          "Selector detent maps",
+          "Phase/processing switches",
+          "Independent readback",
+          "Physical scaling"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "neve_1023-coaxial-ranges",
+      "panel": "Neve1023CoaxialRanges",
+      "panel_class": "Neve1023",
+      "effect_id": "neve_1023",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "six concentric targets individually capture-verified; endpoint candidates only",
+      "evidence": "unattended-20261026T091415Z-bae1023-coaxial-routing/final-routing-verification.json plus isolated low-gain/low-frequency probe returns; exact field associations and whole-block restoration; no range or physical interpolation inferred",
+      "controls": [
+        {
+          "id": "low_gain",
+          "class_name": "NeveGain_low_gain",
+          "label": "Low gain inner knob",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "low_freq",
+          "class_name": "NeveFreq_low",
+          "label": "Low frequency outer ring",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.86,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "peak_gain",
+          "class_name": "NeveGain_peak_gain",
+          "label": "Peak gain inner knob",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "peak_freq",
+          "class_name": "NeveFreq_peak",
+          "label": "Peak frequency outer ring",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.86,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "high_gain",
+          "class_name": "NeveGain_high_gain",
+          "label": "High gain inner knob",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "high_freq",
+          "class_name": "NeveFreq_high",
+          "label": "High frequency outer ring",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.86,
+            "y": 0.5
+          }
+        }
+      ],
+      "coverage": {
+        "status": "only six concentric controls; small isolated trials required before range batch",
+        "pending": [
+          "Selector detent maps",
+          "Phase/processing switches",
+          "Independent readback",
+          "Physical scaling"
+        ],
+        "device_readback_verified": false
+      },
+      "routing_fields": {
+        "low_gain": 26,
+        "low_freq": 25,
+        "peak_gain": 24,
+        "peak_freq": 23,
+        "high_gain": 22,
+        "high_freq": 21
+      }
     }
   ]
 }

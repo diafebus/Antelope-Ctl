@@ -2178,6 +2178,18 @@ No runtime pilot or query bounds are expanded.
 switch has an isolated `0x14 / 0x98` round trip. The [EQ findings](docs/orion-afx-eq.md)
 record frames and remaining limits. Runtime writers and query bounds are unchanged.
 
+**BAE-1023 (2026-10-26).** Directed load frame2327 establishes Orion type24/
+instance0. Its `0x1d / 0xd5 / 0x0b` blocks use Output20, High Frequency21/
+Gain22, Peak Frequency23/Gain24, Low Frequency25/Gain26, High-pass27 and
+Phase28. All eight endpoint pairs, literal 5/12/6/5 frequency-selector maps,
+Phase frame1665/941 round trip and the separate EQ `0x14 / 0x98` processing
+round trip (instance17/type18/state19, frames3485/855) are captured. Reviewed
+inner/outer hit points distinguish concentric controls sharing UIA bounds.
+The [EQ findings](docs/orion-afx-eq.md) record endpoint frames, full-payload/
+image return checks and the separate peakmeter limitation. Scaling, independent
+readback, audible/stereo behavior and runtime contracts remain unverified;
+no runtime writer or query bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.
