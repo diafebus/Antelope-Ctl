@@ -113,3 +113,25 @@ animated metering is excluded. Historical linked pulse pairs remain archived.
 This completes the observed visible controls. Fresh parameter readback,
 physical scaling of other knobs, processing polarity, audible/stereo behavior
 and runtime contracts remain unverified. Hidden `presetIndex` remains opaque.
+
+## Memory Cat processing completion, 2026-10-25
+
+The fresh labelled load at frame2355 in
+`unattended-20261025T195948Z-load-memorycat/Orion.pcapng` confirms type73/instance0,
+AFX2/channel1 slot0, seven empty slots. The native `MemoryBrigade` panel exposes
+`MemoryBrigadeBypassButton` and a separate processing LED. Existing six-knob,
+two-mode and tagged-readback evidence is retained without repeating the knobs.
+
+The isolated `unattended-20261025T195948Z-memorycat-processing` round trip
+emits one `0x14 / 0x98` event per click: first frame3637 `00 49 00`, return
+frame837 `00 49 01` at bytes17..19. This establishes instance17/type18/state19.
+Footswitch, processing LED, all six knobs and both mode controls return to exact
+RGB baselines. The overload LED and animated meter are excluded.
+
+Reinspection of the historical linked3/4 capture confirms instance1/0 pairs
+with a common state, rather than the earlier interpretation as state pulses.
+The Orion profile and model-local decoder metadata correct those swapped
+offsets. The separate tagged response processing byte16 remains unchanged,
+and runtime bypass writes remain disabled. Together with prior control evidence,
+this completes the observed visible controls; physical scaling, current audible
+confirmation and runtime bypass behavior remain unverified.

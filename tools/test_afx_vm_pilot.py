@@ -485,6 +485,26 @@ except RuntimeError:
                         failed={'repeat':2,'wrong_restore':5,'other_field':2,'newer_edit':2,'ambiguous_start':4,'disagreeing_start':4}[mode]
                         self.assertFalse((job/f'action-{failed}-ack.json').exists())
 
+    def test_memorycat_processing_layout_distinguishes_linked_instances_from_states(self):
+        # Literal tails from linked frames10215/10219 and isolated return837.
+        from tools.scan_afx_capture import analyze_reports
+        from tools.afx_vm_pilot import bypass_layout_for
+        catalog=json.loads((Path(__file__).resolve().parents[1]/'profiles/afx_effects.json').read_text())
+        layout=bypass_layout_for({'effect_id':'memory_brigade'},catalog)
+        reports=[]
+        for number,tail in ((10215,'98014900'),(10219,'98004900'),(10220,'98004901')):
+            data=bytes.fromhex('70000000140000000000000000000000'+tail).ljust(320,b'\0')
+            reports.append((number,float(number),1,data))
+        decoded=analyze_reports(reports)['operations']
+        self.assertEqual([(o['instance'],o['state']) for o in decoded],[(1,0),(0,0),(0,1)])
+        windows=[{'start_epoch':0,'end_epoch':10220,'start_frame_exclusive':0,'end_frame_inclusive':10220}]
+        events=labelled_actions(reports,windows,bypass_layout=layout)[0]['events']
+        self.assertEqual([(e['instance'],e['state']) for e in events],[(1,0),(0,0),(0,1)])
+        profile=json.loads((Path(__file__).resolve().parents[1]/'profiles/orion_studio_sc.json').read_text())
+        self.assertEqual(profile['frame']['afx_slot']['bypass']['state_offset'],19)
+        self.assertEqual(profile['frame']['afx_slot']['bypass']['instance_index_offset'],17)
+        self.assertFalse(profile['frame']['afx_slot']['bypass']['writable'])
+
     def test_bbd_power_layout_is_model_local_and_decodes_literal_capture_frames(self):
         from tools.afx_vm_pilot import bypass_layout_for, load_plans
         catalog=json.loads((Path(__file__).resolve().parents[1]/'profiles/afx_effects.json').read_text())
@@ -501,7 +521,7 @@ except RuntimeError:
         from tools.scan_afx_capture import analyze_reports
         summary=analyze_reports(reports)
         self.assertEqual([(o['instance'],o['state']) for o in summary['operations']],[(0,0),(0,1)])
-        self.assertIsNone(bypass_layout_for({'effect_id':'memory_brigade'},catalog))
+        self.assertIsNotNone(bypass_layout_for({'effect_id':'memory_brigade'},catalog))
         import copy
         changed=copy.deepcopy(catalog)
         implementation=next(i for e in changed['effects'] if e['id']=='bbdchorus'

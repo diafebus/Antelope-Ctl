@@ -2024,23 +2024,34 @@ writes without automatic repair. Link/unlink itself still sends only its flag.
 Memory Cat parameter mirroring is an explicit bounded operator candidate
 described below; other-effect parameter writers remain unsupported.
 
-**Bypass observation.** The 3/4 capture's Bypass All actions emit 16 reports
-using opcode `0x14`, selector `0x98`, **state at 17, type at 18, instance at
-19**. Each affected instance receives 1 then 0 only 3–5 ms apart; the
-same sequence repeats on later actions. The new
-`antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng` contains a single
-Bypass All write at31313: `0x14/0x98`, byte17=0, type73/instance0. Earlier
-instance-state reply17097 reports processing1; the following restart capture
-reports processing0 for this instance. Thus Memory Cat's processing flag is
-0=bypassed,1=active. The earlier duplicated1→0 actions remain a Launcher
-observation; an isolated enable write and other types' bypass transitions
-remain untested. At36233 the chain gains Memory Cat73/1, without any parameter
-or bypass initialization writes. The owner confirms this new effect is
-unbypassed after Bypass All. Loading preserves the device-assigned state;
-there is no forced default or inherited global bypass command.
-This supersedes the old subcommand /
-handle / value map. Delete All emits successive whole-chain updates until
-both chains are empty. No bypass or general Delete All writer is enabled.
+**Bypass observation, corrected 2026-10-25.** Opcode `0x14`, selector `0x98`
+uses **instance at17, type at18, state at19** for the independently captured
+Orion effects. In the3/4 linked capture, frames10215/10219 carry tuples
+`01 49 00` / `00 49 00`, and10729/10733 carry `01 49 01` / `00 49 01`.
+The adjacent1→0 bytes at17 address distinct instances with the same state;
+they are not a rapid state pulse. This supersedes the former swapped
+state17/instance19 interpretation in this section and the Orion profile.
+
+The fresh single-instance Memory Cat trial in
+`unattended-20261025T195948Z-memorycat-processing` first frame3637 carries
+`00 49 00`, return frame837 carries `00 49 01`. Each action emits one event,
+and the footswitch, processing LED, six knobs and both mode controls return
+to exact RGB baselines. Overload LED and animated meter are excluded.
+The catalog's model-local override also supplies the corrected passive decoder
+layout; unknown effects retain explicitly unverified layouts.
+
+The earlier `antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng` Bypass All
+write31313 is `00 49 00`. Prior tagged instance-state reply17097 reports
+processing1; the subsequent restart capture reports processing0 for this
+instance. Thus Memory Cat's separate readback processing flag remains
+0=bypassed,1=active at response byte16. That response layout is unchanged.
+At36233 the chain gains Memory Cat73/1 without parameter/bypass initialization;
+the owner confirms the new effect is active after Bypass All. Loading preserves
+the device-assigned state. Fresh GUI correlation does not establish new audible
+or cross-device behavior. No runtime bypass writer is enabled.
+
+Delete All emits successive whole-chain updates until both chains are empty;
+no general Delete All writer is enabled.
 
 **Readback/test verification.** Category `0x19` provides 64 safely bounded
 outer records, each with eight `{type,inst}` pairs. The original single-channel

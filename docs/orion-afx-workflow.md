@@ -55,7 +55,7 @@ full captures; original range plans remain available for explicitly reviewed wor
 
 Earlier unlabelled Instinct/De-Esser captures remain historical; labelled native
 batches establish control names independently of catalog declaration order.
-Instinct model/processing work remains open. V12/BBD visible controls are now
+Instinct model/processing work remains open. Memory Cat/V12/BBD visible controls are now
 captured, including all twelve discrete V12 Voices counts and separate power
 round trips; see [the modulation findings](orion-afx-modulation.md). Fresh state
 readback, physical scaling and audible/stereo behavior remain unverified.

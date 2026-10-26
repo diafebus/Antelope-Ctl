@@ -890,22 +890,22 @@
         "opcode_name": "SET_LINK opcode, reused",
         "param_id_offset": 16,
         "param_id": "0x98",
-        "state_offset": 17,
+        "state_offset": 19,
         "type_id_offset": 18,
-        "instance_index_offset": 19,
+        "instance_index_offset": 17,
         "state_values": [
           0,
           1
         ],
         "state_polarity": "0=bypassed; 1=processing active",
-        "state_polarity_status": "Memory Cat capture-and-owner-correlated; isolated enable write and other effects pending",
+        "state_polarity_status": "Memory Cat existing owner/readback correlation; isolated native GUI roundtrip captured 2026-10-25, no new audible confirmation",
         "load_observation": "Owner-tested: after Bypass All, a newly added Memory Cat is active/unbypassed. Bypass All affects existing instances rather than enforcing bypass on future loads. Loading preserves the device-assigned state and sends no forced bypass command. Evidence: antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng, bypass existing73/0 at31313 then load73/1 at36233; owner confirms new instance active.",
         "ui_behavior": "Clicking bypass disables processing for that effect slot. Current Memory Cat state is read from instance_state_readback response byte16:0=bypassed,1=active. Load defaults are not substituted for current readback.",
-        "layout_scope": "Legacy offsets here remain unresolved for other effects. Orion BBD type78, Master De-Esser type27, PowerGate type39, PowerEx type51, VEQ-1A type6, VMEQ-5 type5, VEQ-HLF type11, BA-31 type48, Gyratec IX type43, VPA 76 type44 and V12 type70 use catalog implementation.bypass_observation overrides: instance17/type18/state19, captured 2026-10-09 and 2026-10-25. No runtime bypass writer enabled.",
+        "layout_scope": "Orion captured processing-write layout is instance17/type18/state19. Independently observed for Memory Cat (type73), V12 (type70), BBD (type78), Master De-Esser (type27), PowerGate (type39), PowerEx (type51), VEQ-1A (type6), VMEQ-5 (type5), VEQ-HLF (type11), BA-31 (type48), Gyratec IX (type43) and VPA 76 (type44); other effects remain unconfirmed. The former state17/instance19 interpretation is superseded by isolated and linked captures. No runtime bypass writer enabled.",
         "status": "capture-observed",
         "writable": false,
         "bucket": "B",
-        "evidence": "antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng: reply17097 shows73/0 active1, Bypass All write31313 sets byte17=0 for73/0, new73/1 added36233 and owner confirms active. Subsequent restart capture replies34397/37613 return73/0 processing0 while73/1 and73/2 return1. Earlier capture frames10215-11863 repeatedly sends1then0 for the same target; this duplication remains a Launcher observation, not proof of a momentary command. No runtime bypass writer enabled."
+        "evidence": "Fresh Memory Cat processing first3637/return837 in unattended-20261025T195948Z-memorycat-processing confirms tuples004900/004901 and exact GUI/LED return. Historical link34 frames10215/10219=014900/004900,10729/10733=014901/004901 establish distinct instances1/0 with common state, not pulse pairs. Bypass All31313 in antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng is004900; prior tagged response17097 active1 and following restart responseprocessing0 establish separate processing readback polarity. New73/1 loaded36233 is owner-confirmed active. Tagged response processing_enabled remains byte16. No runtime bypass writer enabled."
       },
       "readback": "Category 0x19 contains eight {type,inst} slots at each of 64 indices. Index 0 initially contains the owner-reported accidental Preamp 1 effect (type 6, instance 0); no post-load slot readback occurs in the new capture, so write-to-readback correlation remains a test requirement. Category 0x15:0 supplies remaining counts; 0x0c:0 has passive witnesses but remains query-guarded.",
       "notes": "AFX captured-effect test operations are an explicit Orion-only scope extension requested by the owner. The picker supports the five captured load types on operator-selected indices0–31 with fresh chain readback and post-write verification; linked edits write and verify both adjacent channels with distinct instances; other devices, unmeasured effects, bypass and other-effect parameters remain unsupported; linked Memory Cat uses the bounded linked_parameters contract. Generic opcode guards remain in place. Licensing/activation traffic is excluded."
