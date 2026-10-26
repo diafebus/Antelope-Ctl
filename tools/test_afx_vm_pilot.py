@@ -10,6 +10,39 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def test_knob_drag_points_require_finite_knob_only_coordinates(self):
+        from tools.afx_vm_pilot import knob_drag_point
+        self.assertEqual(knob_drag_point({'kind': 'knob_range'}), (0.5, 0.5))
+        self.assertEqual(knob_drag_point({'kind': 'knob_range',
+                         'drag_point': {'x': .86, 'y': .5}}), (.86, .5))
+        for point in (None, [], True, {'x': .5}, {'x': .5, 'y': .5, 'z': 1},
+                      {'x': True, 'y': .5}, {'x': 0, 'y': .5},
+                      {'x': 1, 'y': .5}, {'x': .5, 'y': float('nan')},
+                      {'x': float('inf'), 'y': .5}):
+            with self.subTest(point=point), self.assertRaises(ValueError):
+                knob_drag_point({'kind': 'knob_range', 'drag_point': point})
+        with self.assertRaises(ValueError):
+            knob_drag_point({'kind': 'binary_button', 'drag_point': {'x': .5, 'y': .5}})
+
+    def test_point_targeting_requires_exact_executed_guest_plan(self):
+        import copy
+        plan = {'id': 'point-target', 'panel': 'Neve1023', 'channel': 2,
+                'controls': [{'id': 'frequency', 'kind': 'knob_range',
+                              'drag_point': {'x': .86, 'y': .5}}]}
+        request = {'version': 5, 'plan_id': plan['id'], 'panel': plan['panel'],
+                   'channel': 2, 'controls': ['frequency'], 'actions': 2,
+                   'executed_plan': copy.deepcopy(plan)}
+        with patch('tools.afx_vm_pilot.load_plans', return_value={plan['id']: plan}):
+            self.assertEqual(validate_request(request), plan)
+            stale = copy.deepcopy(request)
+            stale['executed_plan']['controls'][0]['drag_point']['x'] = .5
+            with self.assertRaises(ValueError):
+                validate_request(stale)
+            legacy = {k: v for k, v in request.items() if k != 'executed_plan'}
+            legacy['version'] = 2
+            with self.assertRaises(ValueError):
+                validate_request(legacy)
+
     def test_recorder_lock_excludes_another_process_and_releases_after_error(self):
         import subprocess
         import sys

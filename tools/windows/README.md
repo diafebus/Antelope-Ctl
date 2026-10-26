@@ -289,3 +289,24 @@ this does not skip panel readiness, focus, enabled-state, host handshake or
 restoration guards. Resume and CapturePlan cannot be combined. Use a new job
 after reviewing a failure; never infer successful restoration from exit status
 alone or replay completed controls merely to exercise the launcher.
+
+### Concentric knob targets
+
+Reviewed `knob_range` controls may declare a normalized
+`drag_point: {"x": 0.86, "y": 0.5}` within the original UIA rectangle.
+Missing metadata keeps the centre target. This distinguishes screenshot-reviewed
+inner/outer hit zones when concentric controls expose the same bounds; the
+point alone does not prove which Qt control receives input.
+
+Host and guest reject nonfinite, outside, malformed or non-knob point metadata.
+The resolved point needs a16pixel square inside the control, panel, window and
+screen, with24pixels of vertical drag room. Hover, drag and reentry use that
+same point; focus/channel/bounds/enabled/occlusion checks and bounded mouse
+release remain enforced. Point-bearing reviewed jobs use request version5 and
+an exact `executed_plan` comparison, so stale guest targeting metadata fails
+before gestures. Discovery/resume retain their existing exact-plan contracts.
+
+Verify each new concentric target with an isolated captured gesture before a
+full range pass. Review all parameter differences; bounds and native-window
+hit testing do not establish the inner/outer parameter mapping. Windows
+preflight exercises point geometry without GUI input.

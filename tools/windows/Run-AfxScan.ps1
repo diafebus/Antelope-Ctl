@@ -63,6 +63,24 @@ if (@($plan.controls).Count -lt 1 -or @($plan.controls).Count -gt $controlLimit 
     @($plan.controls | Where-Object { $_.kind -notin @('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions', 'key_button') }).Count -ne 0) {
     throw 'Choose a reviewed button or knob range plan.'
 }
+function Get-PlanDragPoint($Definition) {
+    if ($Definition.PSObject.Properties.Name -notcontains 'drag_point') {
+        return @{x=0.5;y=0.5}
+    }
+    $point = $Definition.drag_point
+    if ($Definition.kind -ne 'knob_range' -or $null -eq $point -or
+        $point -isnot [System.Management.Automation.PSCustomObject]) { throw 'Invalid reviewed knob drag point.' }
+    $names = @($point.PSObject.Properties.Name)
+    if ($names.Count -ne 2 -or 'x' -notin $names -or 'y' -notin $names) { throw 'Drag point requires exactly x/y.' }
+    foreach ($name in @('x','y')) {
+        $value = $point.$name
+        if (($value -isnot [int] -and $value -isnot [long] -and $value -isnot [double] -and $value -isnot [decimal]) -or
+            [double]::IsNaN([double]$value) -or [double]::IsInfinity([double]$value) -or
+            [double]$value -le 0 -or [double]$value -ge 1) { throw 'Drag point must stay strictly inside its control.' }
+    }
+    return @{x=[double]$point.x;y=[double]$point.y}
+}
+foreach ($definition in $plan.controls) { $null = Get-PlanDragPoint $definition }
 if ($ValidatePlanOnly) {
     # Used by Windows preflight to exercise real metadata loading without
     # loading UIA, calling user32, starting a recorder or moving any control.
@@ -112,6 +130,44 @@ public static class AfxScanInput {
             rect.Width > 0 && rect.Height > 0 && rect.Width <= 464 && rect.Height <= 704 &&
             Math.Abs(rect.Left - button.Left) <= 32 &&
             Math.Min(Math.Abs(rect.Top - button.Bottom), Math.Abs(rect.Bottom - button.Top)) <= 32;
+    }
+    [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(Point point);
+    [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
+    public static bool PointOwnedByWindow(Point point, IntPtr window) {
+        IntPtr hit = WindowFromPoint(point);
+        return hit == window || IsChild(window, hit);
+    }
+    public static Point ResolveKnobPoint(Rectangle control, Rectangle panel,
+        Rectangle window, Rectangle screen, double x, double y) {
+        if (Double.IsNaN(x) || Double.IsInfinity(x) || Double.IsNaN(y) || Double.IsInfinity(y) ||
+            x <= 0 || x >= 1 || y <= 0 || y >= 1 || control.Width <= 0 || control.Height <= 0)
+            throw new Exception("Invalid reviewed knob point.");
+        Point point = new Point((int)Math.Round(control.X + control.Width*x),
+            (int)Math.Round(control.Y + control.Height*y));
+        Rectangle safe = new Rectangle(point.X-8, point.Y-8, 16, 16);
+        if (!control.Contains(safe) || !panel.Contains(safe) || !window.Contains(safe) ||
+            !screen.Contains(safe) || point.Y-screen.Top < 24 || screen.Bottom-point.Y < 24)
+            throw new Exception("Knob point lacks safe visible drag room.");
+        return point;
+    }
+    public static void ValidateKnobPoints() {
+        Rectangle control = new Rectangle(1224,208,119,119);
+        Rectangle panel = new Rectangle(957,158,908,215);
+        Rectangle window = new Rectangle(680,123,1190,472);
+        Rectangle screen = new Rectangle(0,0,1920,1080);
+        Point center = ResolveKnobPoint(control,panel,window,screen,.5,.5);
+        Point outer = ResolveKnobPoint(control,panel,window,screen,.86,.5);
+        if (center != new Point(1284,268) || outer != new Point(1326,268))
+            throw new Exception("Reviewed knob point fixtures failed.");
+        foreach (double invalid in new double[] {0,1,Double.NaN,Double.PositiveInfinity,.99}) {
+            bool rejected = false;
+            try { ResolveKnobPoint(control,panel,window,screen,invalid,.5); } catch { rejected=true; }
+            if (!rejected) throw new Exception("Unsafe knob point accepted.");
+        }
+        bool roomRejected=false;
+        try { ResolveKnobPoint(new Rectangle(1200,1000,119,119),new Rectangle(0,0,1920,1200),
+            new Rectangle(0,0,1920,1200),screen,.5,.5); } catch { roomRejected=true; }
+        if (!roomRejected) throw new Exception("Insufficient resolved drag room accepted.");
     }
     public static void ValidateDropdownClassifier() {
         Rectangle button = new Rectangle(100, 100, 127, 11);
@@ -567,10 +623,21 @@ function Read-Knob {
     if ($token -match '^(inf(?:inity)?|\u221e)$') { return [double]::PositiveInfinity }
     return [double]::Parse($token, [System.Globalization.CultureInfo]::InvariantCulture)
 }
+function Get-KnobPoint($Bounds, $Definition) {
+    $fraction = Get-PlanDragPoint $Definition
+    $panel = $visible[0].Current.BoundingRectangle
+    return [AfxScanInput]::ResolveKnobPoint(
+        [System.Drawing.Rectangle]::new([int]$Bounds.X,[int]$Bounds.Y,[int]$Bounds.Width,[int]$Bounds.Height),
+        [System.Drawing.Rectangle]::new([int]$panel.X,[int]$panel.Y,[int]$panel.Width,[int]$panel.Height),
+        [System.Drawing.Rectangle]::new([int]$windowBounds.X,[int]$windowBounds.Y,[int]$windowBounds.Width,[int]$windowBounds.Height),
+        [System.Windows.Forms.SystemInformation]::VirtualScreen, $fraction.x, $fraction.y)
+}
 function Drag-Knob([int]$Delta, [bool]$ReadStatus = $true) {
     Assert-Panel
-    $x = [int]($buttonBounds.X + $buttonBounds.Width / 2)
-    $y = [int]($buttonBounds.Y + $buttonBounds.Height / 2)
+    if (-not $button.Current.IsEnabled -or $button.Current.IsOffscreen) { throw 'Knob is disabled or offscreen.' }
+    $point = Get-KnobPoint $buttonBounds $control
+    $x = $point.X; $y = $point.Y
+    if (-not [AfxScanInput]::PointOwnedByWindow($point, $handle)) { throw 'Knob point is occluded; no input.' }
     if (-not [AfxScanInput]::SetCursorPos($x, $y)) { throw 'Cannot position pointer.' }
     # One continuous held sweep. Some controls limit each move event, so a
     # single pointer jump is insufficient even when its distance is large.
@@ -635,7 +702,9 @@ function Run-WireKnobRange {
 }
 function Run-KnobRange {
     # Range-only scan: owner authorized leaving knobs at the final endpoint.
-    [void][AfxScanInput]::SetCursorPos([int]($buttonBounds.X + $buttonBounds.Width/2), [int]($buttonBounds.Y + $buttonBounds.Height/2))
+    $point = Get-KnobPoint $buttonBounds $control
+    if (-not [AfxScanInput]::PointOwnedByWindow($point, $handle)) { throw 'Knob point is occluded; no input.' }
+    [void][AfxScanInput]::SetCursorPos($point.X, $point.Y)
     Start-Sleep -Milliseconds 2200
     $startValue = Read-Knob
     $currentValue = $startValue
@@ -750,11 +819,7 @@ try {
             throw "Control is disabled or has empty bounds: $($control.label). No batch started."
         }
         if ($control.kind -eq 'knob_range') {
-            $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
-            $centerY = [int]($candidateBounds.Y + $candidateBounds.Height / 2)
-            if ($centerY - $screen.Top -lt 24 -or $screen.Bottom - $centerY -lt 24) {
-                throw "Insufficient vertical drag room for $($control.label). Move the panel before capturing."
-            }
+            $null = Get-KnobPoint $candidateBounds $control
         }
         $targets += @{ definition = $control; element = $candidates[0] }
     }
@@ -781,6 +846,10 @@ try {
         version = 2; plan_id = $plan.id; panel = $plan.panel; channel = $plan.channel;
         controls = @($plan.controls | ForEach-Object { $_.id });
         actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } elseif ($_.kind -in @('selector_positions', 'menu_positions')) { [int]$_.positions + 1 } else { 2 } } | Measure-Object -Sum).Sum)
+    }
+    if (@($plan.controls | Where-Object { $_.PSObject.Properties.Name -contains 'drag_point' }).Count -gt 0) {
+        $jobRequest.version = 5
+        $jobRequest.executed_plan = $plan
     }
     if (-not [string]::IsNullOrWhiteSpace($DiscoveryDirectory)) {
         $jobRequest.version = 3

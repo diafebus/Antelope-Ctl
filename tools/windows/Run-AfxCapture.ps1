@@ -23,6 +23,7 @@ if ($ValidateOnly) {
             }
         }
         [AfxScanInput]::ValidateDropdownClassifier()
+        [AfxScanInput]::ValidateKnobPoints()
         Add-Type -AssemblyName UIAutomationClient
         Add-Type -AssemblyName UIAutomationTypes
         Add-Type -AssemblyName System.Windows.Forms

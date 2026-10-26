@@ -92,6 +92,19 @@ def device_location(profile, sysfs=Path('/sys/bus/usb/devices')):
     return matches[0]
 
 
+def knob_drag_point(control):
+    """Reviewed normalized GUI targeting, never device parameter coordinates."""
+    if 'drag_point' not in control:
+        return (0.5, 0.5)
+    point = control['drag_point']
+    if (control.get('kind') != 'knob_range' or not isinstance(point, dict)
+            or set(point) != {'x', 'y'}
+            or any(type(point[k]) not in (int, float) or not math.isfinite(point[k])
+                   or not 0 < point[k] < 1 for k in ('x', 'y'))):
+        raise ValueError('Knob drag point must have two finite normalized coordinates')
+    return (point['x'], point['y'])
+
+
 def load_plans():
     document = json.loads((ROOT/'tools/windows/afx-scan-plans.json').read_text())
     plans = document['plans']
@@ -114,6 +127,7 @@ def load_plans():
                 any(c['kind'] not in ('binary_button', 'knob_range', 'selector_cycle', 'selector_positions', 'wheel_button', 'menu_positions', 'key_button') or not re.fullmatch(r'[A-Za-z0-9_-]+', c['id']) for c in controls)):
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
+            knob_drag_point(control)
             if control['kind'] == 'key_button':
                 control['option_names'] = key_control_options(plan['effect_id'], control)
                 control['positions'] = len(control['option_names'])
@@ -227,6 +241,8 @@ def validate_request(request, discovery=None):
     expected = None if plan is None else {'version': 2, 'plan_id': plan['id'],
         'panel': plan['panel'], 'channel': plan['channel'],
         'controls': [c['id'] for c in plan['controls']], 'actions': len(planned_actions(plan))}
+    if plan is not None and any('drag_point' in c for c in plan['controls']):
+        expected.update(version=5, executed_plan=plan)
     if discovery is not None:
         expected.update(version=3, executed_plan=plan)
     if plan is None or request != expected:
