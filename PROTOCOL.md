@@ -2340,6 +2340,16 @@ readback, physical/intermediate scaling, signal telemetry, audible/stereo
 behavior and runtime contracts remain unverified. No runtime writes or query
 bounds are expanded.
 
+**VEQ-STU 089 priming family (2026-10-27).** A directed vendor load establishes
+Orion type21/instance0. One bounded eight-pixel MF Gain gesture on the native
+`Studer089` panel produces frame2457 in
+`unattended-20261027T144257Z-veqstu089-priming/Orion.pcapng`: parameter
+family `0x1b / 0xd5 / 0x09`, type byte18/instance byte19. The passive analyzer
+classifies this captured family without enabling a writer or changing query
+bounds. Its first complete block is a seed observation, without a prior captured
+parameter baseline; it establishes no isolated field range, physical scale or
+device readback contract. Directed control trials are recorded separately.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

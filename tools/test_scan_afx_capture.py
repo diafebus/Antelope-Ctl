@@ -12,6 +12,26 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_stu089_captured_priming_is_only_a_passive_parameter_observation(self):
+        # Actual priming frame2457: complete block, byte24 raw51.
+        # A single report establishes no isolated field meaning or range.
+        prefix = bytes.fromhex('700000001b0000000000000000000000d509150000000000330000')
+        captured = prefix + bytes(320 - len(prefix))
+        wrong_selector = bytearray(captured)
+        wrong_selector[16] = 0xd4
+        result = analyze_reports([(2457, 0.0, 1, captured),
+                                  (2458, 0.1, 0x82, captured),
+                                  (2459, 0.2, 1, bytes(wrong_selector))])
+        self.assertEqual(len(result['parameter_groups']), 1)
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']),
+                         ('0x1b', '0x9', 21))
+        self.assertEqual(group['frames'], 1)
+        self.assertEqual(group['targets'], [{'instance': 0, 'frames': 1, 'change_runs': []}])
+        self.assertEqual(group['varying_offsets'], [])
+        self.assertEqual(result['operations'], [])
+        self.assertFalse(result['device_commands_sent'])
+
     def test_veq4k_pink_priming_family_remains_separate_from_chain_actions(self):
         frames = [2519, 2567, 2619, 2671, 2725, 2777, 2829, 2881, 2933]
         values = [8, 20, 34, 46, 58, 70, 82, 94, 100]
