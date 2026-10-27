@@ -289,6 +289,20 @@
         "unattended-20261027T015403Z-veq4k-orange-processing"
       ],
       "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, independently reviewed LF BELL (lf_bell) byte31/HF BELL (hf_bell) byte24 mode/LED round trips and separate processing round trip. Actual raw0 LED Dark/raw1 LED Lit associations retained without inferred range behavior or numeric Q/audio claims. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
+    },
+    {
+      "name": "VEQ-4K BROWN",
+      "effect_id": "ssl_brown",
+      "panel_class": "SslBrown",
+      "next_step": "complete",
+      "range_plan": "ssl_brown-knobs",
+      "completion_evidence": [
+        "unattended-20261027T015403Z-load-veq4k-brown",
+        "scan-SslBrown-20261027T024419020Z",
+        "unattended-20261027T015403Z-veq4k-brown-modes",
+        "unattended-20261027T015403Z-veq4k-brown-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, independently reviewed LF BELL (lf_bell) byte31/HF BELL (hf_bell) byte24 mode/LED round trips and separate processing round trip. Actual raw0 LED Dark/raw1 LED Lit associations retained without inferred numeric Q or bell/audio claims. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
     }
   ]
 }
