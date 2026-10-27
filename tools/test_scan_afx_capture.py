@@ -12,6 +12,27 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_veq4k_pink_priming_family_remains_separate_from_chain_actions(self):
+        frames = [2519, 2567, 2619, 2671, 2725, 2777, 2829, 2881, 2933]
+        values = [8, 20, 34, 46, 58, 70, 82, 94, 100]
+        reports = [(number, index / 10, 1, frame(0x23, [0xd5, 0x11, 16, 0, value]))
+                   for index, (number, value) in enumerate(zip(frames, values))]
+        reports.extend([(2934, 1, 0x82, frame(0x23, [0xd5, 0x11, 16, 0, 0])),
+                        (2935, 1.1, 1, frame(0x23, [0xd4, 0x11, 16, 0, 0])),
+                        (2936, 1.2, 1, frame(0x23, [0xd7, 0x11, 1, 16, 0]))])
+        result = analyze_reports(reports)
+        self.assertEqual(len(result['parameter_groups']), 1)
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']),
+                         ('0x23', '0x11', 16))
+        self.assertEqual(group['frames'], 9)
+        self.assertEqual(group['targets'][0]['instance'], 0)
+        self.assertEqual(group['varying_offsets'], [20])
+        self.assertEqual(group['observed_byte_ranges']['20'], [8, 100])
+        self.assertEqual([operation['kind'] for operation in result['operations']], ['chain'])
+        self.assertEqual(result['operations'][0]['slots'][0], {'type': 16, 'instance': 0})
+        self.assertFalse(result['device_commands_sent'])
+
     def test_neu_w492_priming_family_only_classifies_captured_parameter_writes(self):
         # Captured low-gain priming changed byte21, not the first body byte20.
         values = [(459, 42), (665, 0), (2905, 100)]

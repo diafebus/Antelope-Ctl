@@ -19,10 +19,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # 0x16: directed VEQ-HLF GUI sweep, scan-PultecHLF-20261025T200435681Z.
 # 0x19: directed NEU-PEV GUI priming, scan-NeumannPev-20261026T161447638Z.
 # 0x22: directed NEU-W492 GUI priming, scan-NeumannW492-20261026T163707526Z.
+# 0x23: directed VEQ-4K PINK GUI priming, scan-SslPink-20261027T020747657Z.
 # 0x1a: directed VMEQ-5 GUI sweep, scan-PultecMEQ-20261025T101308607Z.
 # 0x1d: directed PowerGate GUI sweep, scan-PowerGate-20261025T093451547Z.
 # These are passive decoder families, not permission to send a command.
-PARAMETER_OPCODES = {0x16, 0x18, 0x19, 0x1a, 0x1c, 0x1d, 0x20, 0x22, 0x7c}
+PARAMETER_OPCODES = {0x16, 0x18, 0x19, 0x1a, 0x1c, 0x1d, 0x20, 0x22, 0x23, 0x7c}
 
 
 def _tshark(path, *arguments):

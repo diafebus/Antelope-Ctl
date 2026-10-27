@@ -2249,6 +2249,16 @@ Output signed candidates and display limits. Scaling, independent readback,
 signal telemetry, processing polarity, audible/stereo behavior and runtime
 contracts remain unverified. No runtime writer or query bounds are expanded.
 
+**VEQ-4K PINK priming family (2026-10-27).** The stopped native job
+`scan-SslPink-20261027T020747657Z/SslPink-channel2.pcapng` observes nine
+vendor OUT `0x23 / 0xd5 / 0x11` blocks targeting type16/instance0. Only
+byte20 (LF cut) changes: frames2519/2567/2619/2671/2725/2777/2829/2881/2933
+carry raw8/20/34/46/58/70/82/94/100, respectively. No endpoint phases were
+accepted. This passive parameter classification remains separate from chain
+assignment `0x23 / 0xd7 / 0x11`; the selector distinguishes the two operations.
+These priming observations do not establish endpoint ranges, physical scaling,
+independent readback or runtime writes, and do not expand query bounds.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.
