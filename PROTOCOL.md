@@ -2259,6 +2259,21 @@ assignment `0x23 / 0xd7 / 0x11`; the selector distinguishes the two operations.
 These priming observations do not establish endpoint ranges, physical scaling,
 independent readback or runtime writes, and do not expand query bounds.
 
+**VEQ-4K PINK visible controls completed (2026-10-27).** The corrected native
+job `scan-SslPink-20261027T021124243Z` accepts all26 endpoint phases. The
+observed `0x23 / 0xd5 / 0x11` family targets type16/instance0: Low/High Cut20/21,
+HF Gain22/Frequency23, HMF mode24/Gain25/Frequency26/Quality27, LMF Gain28/
+Frequency29/Quality30/mode31, LF Gain32/Frequency33 and Output34. Independently
+reviewed mode labels are HMF ×3 (compatibility ID `hf_bell`) and LMF ÷3
+(`lf_bell`); each raw0 LED Dark→raw1 LED Lit→raw0 round trip returns its full
+captured parameter body/static image. Processing `0x14 / 0x98` uses instance17/
+type18/state19 (frames2865/645) and returns its checked static baseline. Endpoint
+jobs intentionally finish at maxima. The [EQ findings](docs/orion-afx-eq.md)
+record endpoint/mode frames, layout rejection/priming history and display limits.
+Physical/intermediate scaling, independent readback, mode audio/bell semantics,
+signal telemetry, processing polarity, audible/stereo behavior and runtime
+contracts remain unverified. No runtime writer or query bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

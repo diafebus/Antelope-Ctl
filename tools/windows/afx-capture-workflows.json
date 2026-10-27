@@ -260,6 +260,21 @@
         "unattended-20261026T163323Z-neu-w495-processing"
       ],
       "completion_limits": "All observed editable controls captured: seven rotary endpoint pairs, six complete stepped dial maps across100 bounded trials, Bell Quality (mid_q) raw0 Left/raw1 Middle/raw2 Right and separate processing round trip. Dial mapping and Bell Quality round trips returned the full captured parameter body and checked static panel images. Processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. NeumannPeakMeter/AfxLed inventory remains separate; animated meter excluded from static checks. Output signed interpretation, physical/intermediate scaling, numeric Q, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "VEQ-4K PINK",
+      "effect_id": "ssl_pink",
+      "panel_class": "SslPink",
+      "next_step": "complete",
+      "range_plan": "ssl_pink-knobs",
+      "completion_evidence": [
+        "unattended-20261027T015403Z-load-veq4k-pink",
+        "scan-SslPink-20261027T021124243Z",
+        "unattended-20261027T015403Z-veq4k-pink-modes",
+        "unattended-20261027T015403Z-veq4k-pink-processing",
+        "scan-SslPink-20261027T020747657Z"
+      ],
+      "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, LMF \u00f73 (lf_bell) byte31/HMF \u00d73 (hf_bell) byte24 independently reviewed mode/LED round trips and separate processing round trip. Mode raw0 LED Dark/raw1 LED Lit observations preserve compatibility IDs without inferred audio/bell semantics. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Historical before-input layout rejection and stopped priming retained. Output signed interpretation, physical/intermediate scaling, independent readback, mode audio/bell semantics, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
     }
   ]
 }

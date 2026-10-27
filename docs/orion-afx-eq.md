@@ -406,3 +406,73 @@ This completes the observed editable controls. Separately inventoried
 Independent parameter/processing readback, signal telemetry, physical/intermediate
 scaling, audible/stereo behavior and runtime contracts remain unverified.
 No runtime writer or query bounds are expanded.
+
+## VEQ-4K PINK
+
+The directed vendor load at frame2217 in
+`unattended-20261027T015403Z-load-veq4k-pink/Orion.pcapng` establishes Orion
+type16/instance0 in channel1 slot0, with seven empty slots. The native panel is
+`SslPink`; the compatibility identifier is `ssl_pink`.
+
+The first native attempt rejected the measured lower-row UIA overflow before
+any input. Those five 140-pixel rotary rectangles extend14 pixels below the
+panel; seven upper rectangles extend12 pixels above it. A capture-backed
+allowance retains original-panel interaction-area, full-root containment and
+native point/focus guards. The subsequent priming job
+`scan-SslPink-20261027T020747657Z` stopped with zero accepted endpoint phases
+when its actual `0x23 / 0xd5 / 0x11` family was unrecognized. Both historical
+stops remain in the evidence archive.
+
+The corrected native job
+`scan-SslPink-20261027T021124243Z/SslPink-channel2.pcapng` accepted all
+twenty-six endpoint phases, with 229,820 packets and zero drops. Parameter blocks
+use type byte18/instance byte19. Only each directed control field changes.
+Endpoint scans intentionally finish at their captured maxima.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| Low Cut | 20 | 0, 100 | 4239/11503 |
+| High Cut | 21 | 0, 100 | 19001/25915 |
+| HF Gain | 22 | 0, 100 | 34229/41993 |
+| HF Frequency | 23 | 0, 100 | 50003/57363 |
+| HMF Gain | 25 | 0, 100 | 66125/74255 |
+| HMF Frequency | 26 | 0, 100 | 82745/90524 |
+| HMF Quality | 27 | 0, 100 | 99829/108515 |
+| LMF Gain | 28 | 0, 100 | 117463/126487 |
+| LMF Frequency | 29 | 0, 100 | 135657/144279 |
+| LMF Quality | 30 | 0, 100 | 154349/163827 |
+| LF Gain | 32 | 0, 100 | 173595/183439 |
+| LF Frequency | 33 | 0, 100 | 193387/202879 |
+| Output | 34 | 232, 12 | 213647/223711 |
+
+Raw0/100 observations do not establish physical units or intermediate gain,
+frequency or quality laws. Output byte34 retains unsigned wire232/12 with signed
+candidates -24/+12; signed interpretation and physical/intermediate scaling
+remain unverified.
+
+The isolated `unattended-20261027T015403Z-veq4k-pink-modes` trials establish
+the two actual printed mode labels and their LED associations:
+
+| Visible label | Compatibility ID | Byte | First/return frames | Observed states |
+|---|---|---|---|---|
+| LMF ÷3 | `lf_bell` | 31 | 706/630 | 0 LED Dark → 1 LED Lit → 0 LED Dark |
+| HMF ×3 | `hf_bell` | 24 | 731/707 | 0 LED Dark → 1 LED Lit → 0 LED Dark |
+
+Each mode round trip returned the full captured parameter body and checked
+static panel images. These are literal printed-label/LED observations; the
+compatibility IDs do not establish bell semantics, frequency laws or audible
+behavior.
+
+The separate processing switch uses `0x14 / 0x98`, instance17/type18/state19.
+`unattended-20261027T015403Z-veq4k-pink-processing/first/Orion.pcapng`
+frame2865 carries `00 10 00`; frame645 in
+`unattended-20261027T015403Z-veq4k-pink-processing/return/Orion.pcapng` carries
+`00 10 01`. Processing returned its checked static baseline, with both panel
+segments matching exactly; the animated peak meter is excluded. Processing
+polarity remains unverified.
+
+This completes the observed editable controls. `SslPeakMeter` and three native
+`AfxLed` widgets remain separate display inventory observations; signal telemetry
+is unknown. Independent parameter/processing readback, physical/intermediate
+scaling, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.
