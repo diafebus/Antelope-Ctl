@@ -2234,6 +2234,21 @@ associations and display limits. Physical/intermediate scaling, independent
 readback, signal telemetry, processing polarity, audible/stereo behavior and
 runtime contracts remain unverified. No runtime writer or query bounds expand.
 
+**NEU-W495 visible controls completed (2026-10-27).** Directed vendor load
+frame2209 establishes Orion type20/instance0. The `0x1c / 0xd5 / 0x0a` family
+uses Low Frequency20/Gain21, Mid Frequency22/Gain23, Bell Quality24 (`mid_q`),
+High Frequency25/Gain26 and Output27. Fourteen accepted endpoint phases and
+six complete stepped dial maps across100 bounded trials are captured. Reviewed
+Bell Quality raw0/1/2 means Left/Middle/Right, without numeric Q inference.
+Dial mapping and Bell Quality round trips return the full captured parameter
+body and checked static images; endpoint scans intentionally finish at maxima.
+A separate `0x14 / 0x98` processing round trip uses instance17/type18/state19
+(frames3869/1071), returning its checked static baseline. The
+[EQ findings](docs/orion-afx-eq.md) record frames, literal wrapped-byte maps,
+Output signed candidates and display limits. Scaling, independent readback,
+signal telemetry, processing polarity, audible/stereo behavior and runtime
+contracts remain unverified. No runtime writer or query bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

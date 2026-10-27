@@ -2363,6 +2363,81 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "neumann_w495-knobs",
+      "panel": "NeumannW495",
+      "panel_class": "NeumannW495",
+      "effect_id": "neumann_w495",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261026T163323Z-load-neu-w495/raw-ui.json: seven separate inspected rotary centres. Four lower160px UIA rectangles y223..383 extend exactly10px below215pxpanel y158..373; centres/gestures remain in physical panel/window. Six marked dial positions and Bell Quality require separate maps.",
+      "controls": [
+        {
+          "id": "low_gain",
+          "class_name": "NeumannW495Pot_low_gain",
+          "label": "Low Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 10
+        },
+        {
+          "id": "low_freq",
+          "class_name": "NeumannW495LowFreqPot",
+          "label": "Low Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 10
+        },
+        {
+          "id": "mid_gain",
+          "class_name": "NeumannW495Pot_mid_gain",
+          "label": "Mid Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "mid_freq",
+          "class_name": "NeumannW495MidFreqPot",
+          "label": "Mid Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "high_gain",
+          "class_name": "NeumannW495Pot_high_gain",
+          "label": "High Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 10
+        },
+        {
+          "id": "high_freq",
+          "class_name": "NeumannW495HighFreqPot",
+          "label": "High Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 10
+        },
+        {
+          "id": "level",
+          "class_name": "NeumannLevelPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

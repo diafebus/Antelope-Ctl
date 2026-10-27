@@ -339,3 +339,70 @@ This completes capture of the observed editable controls. Separately inventoried
 Independent parameter/processing readback, physical/intermediate scaling,
 signal telemetry, audible/stereo behavior and runtime contracts remain unverified.
 No runtime writer or query bounds are expanded.
+
+## NEU-W495
+
+The directed vendor load at frame2209 in
+`unattended-20261026T163323Z-load-neu-w495/Orion.pcapng` establishes Orion
+type20/instance0 in channel1 slot0, with seven empty slots. The native panel is
+`NeumannW495`; the compatibility identifier is `neumann_w495`.
+
+Parameter blocks use `0x1c / 0xd5 / 0x0a`, type byte18/instance byte19.
+The native endpoint job
+`scan-NeumannW495-20261026T165426097Z/NeumannW495-channel2.pcapng` accepted
+all fourteen phases, with 113,326 packets and zero drops. The endpoint scans
+intentionally finish at their captured maxima.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| Low Gain | 21 | 251, 5 | 4309/11643 |
+| Low Frequency | 20 | 0, 2 | 18887/26467 |
+| Mid Gain | 23 | 251, 5 | 34663/42659 |
+| Mid Frequency | 22 | 0, 10 | 50243/58293 |
+| High Gain | 26 | 251, 5 | 66184/74384 |
+| High Frequency | 25 | 0, 2 | 82583/91083 |
+| Output (`level`) | 27 | 232, 12 | 100057/108873 |
+
+The completed `unattended-20261026T163323Z-neu-w495-detent-map` records all
+six stepped dials across100 bounded trials, with isolated field observations
+and matching pointer images. Every printed position has a reviewed raw-value
+association. Wrapped gain bytes retain their actual observed order, without a
+misleading contiguous raw range:
+
+| Selector | Raw values in order | Printed labels in order |
+|---|---|---|
+| Low Gain | 251, 252, 253, 254, 255, 0, 1, 2, 3, 4, 5 | -15, -9, -6, -4, -2, 0, 2, 4, 6, 9, 15 |
+| Low Frequency | 0, 1, 2 | 40, 60, 100 |
+| Mid Gain | 251, 252, 253, 254, 255, 0, 1, 2, 3, 4, 5 | -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10 |
+| Mid Frequency | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 | 175, 250, 350, 500, 700, 1k, 1.4k, 2k, 2.8k, 4k, 5.6k |
+| High Gain | 251, 252, 253, 254, 255, 0, 1, 2, 3, 4, 5 | -15, -9, -6, -4, -2, 0, 2, 4, 6, 9, 15 |
+| High Frequency | 0, 1, 2 | 7, 10, 14 |
+
+The labels remain literal GUI observations; physical units, intermediate scaling
+and audible behavior are not inferred. Output byte27 retains unsigned wire
+endpoints232/12 with signed candidates -24/+12; signed interpretation and
+physical/intermediate scaling remain unverified.
+
+The separate `unattended-20261026T163323Z-neu-w495-bell-quality` cycle changes
+only byte24: raw1→2 at frame975, 2→0 at frame935 and 0→1 at frame933 in
+successive isolated captures. Reviewed images establish raw0 Left, raw1 Middle
+and raw2 Right. The visible label is Bell Quality; the compatibility control ID
+remains `mid_q`. These literal positions do not establish numeric Q values.
+
+Dial mapping and Bell Quality round trips returned the full captured parameter
+body and checked static panel images. Their return checks are distinct from the
+endpoint scans, which intentionally finish at maxima.
+
+The separate processing switch uses `0x14 / 0x98`, instance17/type18/state19.
+`unattended-20261026T163323Z-neu-w495-processing/first/Orion.pcapng`
+frame3869 carries `00 14 00`; frame1071 in
+`unattended-20261026T163323Z-neu-w495-processing/return/Orion.pcapng` carries
+`00 14 01`. Processing returned its checked static baseline, with both static
+panel segments matching exactly; the animated peak meter is excluded.
+Processing polarity remains unverified.
+
+This completes the observed editable controls. Separately inventoried
+`NeumannPeakMeter` and `AfxLed` classes do not establish signal telemetry.
+Independent parameter/processing readback, signal telemetry, physical/intermediate
+scaling, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.

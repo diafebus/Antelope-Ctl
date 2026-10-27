@@ -245,6 +245,21 @@
         "unattended-20261026T163323Z-neu-w492-processing"
       ],
       "completion_limits": "All observed editable controls captured: nine rotary endpoint pairs, four isolated section-switch round trips (raw0 left/raw1 right), Low Cut three-state map (raw0 top140Hz/raw1 middle20Hz/raw2 bottom80Hz) and separate processing round trip. Full captured payload/static panel returns verified; animated meter excluded. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, section/processing enabled polarity, audible/stereo behavior and runtime contracts remain unverified. Separate NeumannPeakMeter/AfxLed inventory is not a telemetry contract."
+    },
+    {
+      "name": "NEU-W495",
+      "effect_id": "neumann_w495",
+      "panel_class": "NeumannW495",
+      "next_step": "complete",
+      "range_plan": "neumann_w495-knobs",
+      "completion_evidence": [
+        "unattended-20261026T163323Z-load-neu-w495",
+        "scan-NeumannW495-20261026T165426097Z",
+        "unattended-20261026T163323Z-neu-w495-detent-map",
+        "unattended-20261026T163323Z-neu-w495-bell-quality",
+        "unattended-20261026T163323Z-neu-w495-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: seven rotary endpoint pairs, six complete stepped dial maps across100 bounded trials, Bell Quality (mid_q) raw0 Left/raw1 Middle/raw2 Right and separate processing round trip. Dial mapping and Bell Quality round trips returned the full captured parameter body and checked static panel images. Processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. NeumannPeakMeter/AfxLed inventory remains separate; animated meter excluded from static checks. Output signed interpretation, physical/intermediate scaling, numeric Q, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

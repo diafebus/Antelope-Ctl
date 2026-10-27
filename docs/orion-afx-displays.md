@@ -9,6 +9,7 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | Effect | Observed native display classes |
 |---|---|
+| NEU-W495 | `AfxLed`; `NeumannPeakMeter` |
 | NEU-W492 | `AfxLed`; `NeumannPeakMeter` |
 | NEU-PEV | `AfxLed`; `NeumannPeakMeter` |
 | BAE-1023 | `NevePeakMeter` |
