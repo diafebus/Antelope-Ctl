@@ -113,9 +113,11 @@ leave the vendor AFX window open inside Windows.
 
 PowerGate's reviewed `powergate-knobs` plan targets six observed `Pan` controls.
 Their accessibility bounds extend up to11pixels beyond the parent panel, so the
-plan explicitly permits at most12pixels with `panel_overflow_px`. The entire
-control must remain inside the AFX window and its central16pixel square inside
-the panel. Other controls retain full parent containment. The processing lever
+plan permits12pixels with `panel_overflow_px`. VEQ-4K PINK's measured lower-row
+bounds need14pixels. Explicit reviewed knob plans may specify1–14pixels;
+invalid types, bounds and non-knob use fail during host and Windows preflight.
+The entire control must remain inside the AFX window and its central16pixel
+square inside the panel. Other controls retain full parent containment. The processing lever
 `PowerGateBypassPot` is excluded from knob discovery and needs a separate trial.
 
 ## Further visible-control captures completed
