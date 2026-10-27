@@ -32,6 +32,7 @@ PYTHON_MODULES = (
     "tools.test_surround",
     "tools.test_meter_sources",
     "tools.test_offline_checks",
+    "tools.test_schedule_codex_continue",
 )
 NODE_CHECKS = (
     "tools/test_webui_meters.cjs",

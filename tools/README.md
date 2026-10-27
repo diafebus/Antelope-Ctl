@@ -27,6 +27,48 @@ right tool.
 | Enumerate profile-bounded device readbacks | `python3 tools/readback_enum.py --profile profiles/orion_studio_sc.json` | Yes; bounded queries |
 | Investigate control-transfer/readback behavior | `python3 tools/ct_probe.py` or `python3 tools/readback_probe.py` | Potentially; read the script first |
 
+## One overnight Codex continuation
+
+`schedule_codex_continue.py` waits outside the agent and sends one message to
+an exact session using the installed `codex queue` command. It does not launch
+a second capture worker or access hardware itself. Choose the send time manually
+from that night's `/status` reset estimate, with a small margin after reset;
+there is no fixed reset schedule. Use the session UUID shown by Codex
+(`CODEX_THREAD_ID` is also provided inside its shell tools).
+
+Preview first, replacing the UUID and dates with your actual session and times:
+
+```sh
+python3 tools/schedule_codex_continue.py --thread SESSION_UUID \
+  --at '2030-01-01T01:30:00+01:00' --stop-by '2030-01-01T07:00:00+01:00'
+```
+
+Run the same command with `--arm` in a separate ordinary terminal to wait and
+send. To survive closing that terminal, use `nohup` and keep the printed PID:
+
+```sh
+nohup python3 tools/schedule_codex_continue.py --thread SESSION_UUID \
+  --at '2030-01-01T01:30:00+01:00' --stop-by '2030-01-01T07:00:00+01:00' \
+  --arm > /tmp/afx-overnight-continue.log 2>&1 &
+echo $!
+```
+
+Cancel with Ctrl+C in the foreground or `kill PID` for the background process.
+Arm only one copy. The waiting process must run outside an agent tool call so
+it remains independent of the agent's usage allowance. Keep the computer awake,
+Codex session and required VM/USB-redirection viewer running. Explicit UTC
+offsets avoid ambiguity across daylight-saving changes.
+
+This sends once without retries. If the machine wakes more than ten minutes
+after the selected time, or after the device deadline, it skips delivery. A
+successful queue exit is not proof the agent resumed; live delivery after a
+usage reset remains to be tested. The stop time is an instruction to the agent,
+**not an enforced hardware cutoff**. A suspended/blocked agent cannot guarantee
+device release at that time. The continuation requests fresh state checks,
+bounded batches that finish before the deadline, a saved handoff and a pause;
+it does not override a newer owner pause. No job is armed by installing this
+script. See the [official queue documentation](https://learn.chatgpt.com/docs/developer-commands#codex-queue).
+
 ## Safety classes
 
 - `offline_checks.py` is the documented all-in-one offline suite. It runs the
