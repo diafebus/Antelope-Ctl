@@ -600,3 +600,66 @@ This completes the observed editable controls. `SslPeakMeter` and three native
 is unknown. Independent parameter/processing readback, physical/intermediate
 scaling, audible/stereo behavior and runtime contracts remain unverified.
 No runtime writer or query bounds are expanded.
+
+## VEQ-STU 900
+
+The directed vendor load at frame2469 in
+`unattended-20261027T015403Z-load-veqstu900/Orion.pcapng` establishes Orion
+type23/instance0 in channel1 slot0, with seven empty slots. The native panel is
+`Studer900`; the compatibility identifier is `veq_stu_900`.
+
+Native job `scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng`
+accepted all twenty-two endpoint phases: 187,642 packets, zero drops. Its
+observed parameter family is `0x23 / 0xd5 / 0x11`, type byte18/instance byte19.
+Each directed phase changes only its mapped field. Endpoint scans intentionally
+finish at their captured maxima.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| Low Cut | 20 | 0, 100 | 4119/10939 |
+| High Cut | 21 | 0, 100 | 19113/26677 |
+| LF Gain | 22 | 0, 100 | 34337/42061 |
+| LF Frequency | 23 | 0, 100 | 50015/57425 |
+| LMF Gain | 25 | 0, 100 | 66199/74311 |
+| LMF Frequency | 26 | 0, 100 | 82715/90479 |
+| HMF Gain | 28 | 0, 100 | 99587/108329 |
+| HMF Frequency | 29 | 0, 100 | 117129/125465 |
+| HF Gain | 31 | 0, 100 | 135125/144271 |
+| HF Frequency | 32 | 0, 100 | 153621/162361 |
+| Output | 34 | 232, 12 | 172577/182093 |
+
+Reviewed endpoint images identify Low Cut byte20 raw0 at frame4119 as OFF,
+and High Cut (`hi_cut`) byte21 raw100 at frame26677 as OFF. These are different
+raw ends; no shared OFF convention or intermediate frequency law is inferred.
+Other raw0/100 endpoints do not establish physical gain/frequency units or
+intermediate scaling. Output byte34 retains unsigned wire232/12 with signed
+candidates -24/+12; signed interpretation and physical scaling remain unverified.
+
+The separate `unattended-20261027T015403Z-veqstu900-modes` trials establish
+four individual two-position shape-glyph switches, with no separate switch LEDs:
+
+| Switch | Compatibility ID | Byte | First/return frames | Reviewed positions |
+|---|---|---|---|---|
+| LF | `lf_switch` | 24 | 703/737 | 0 Upper → 1 Lower → 0 Upper |
+| LMF | `lmf_switch` | 27 | 811/747 | 0 Upper → 1 Lower → 0 Upper |
+| HMF | `hmf_switch` | 30 | 829/809 | 0 Upper → 1 Lower → 0 Upper |
+| HF | `hf_switch` | 33 | 821/835 | 0 Upper → 1 Lower → 0 Upper |
+
+Each switch round trip returns the full captured parameter body and checked
+static panel images. These literal position/shape-glyph observations do not
+establish numeric Q, bell semantics or audible behavior.
+
+The separate processing switch uses `0x14 / 0x98`, instance17/type18/state19.
+`unattended-20261027T015403Z-veqstu900-processing/first/Orion.pcapng`
+frame3323 carries `00 17 00`; frame725 in
+`unattended-20261027T015403Z-veqstu900-processing/return/Orion.pcapng` carries
+`00 17 01`. Processing returns its checked static baseline, with both panel
+segments matching exactly; the animated meter is excluded. Processing polarity
+remains unverified.
+
+This completes the observed editable controls. `Studer900Peakmeter` and the
+embedded red processing lamp in `Studer900Bypass` remain separate display
+inventory observations; their presence does not establish signal telemetry.
+Independent parameter/processing readback, physical/intermediate scaling,
+audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.

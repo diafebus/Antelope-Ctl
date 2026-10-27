@@ -24,6 +24,12 @@ listed as pending. Known measured plans retain their existing behavior. See
 
 ## Evidence already available
 
+Initialization status readback is established. The owner reconfirmed the
+Antelope Launcher initialization trigger on 2026-10-27, and startup captures
+already exist. Reuse those captures for remaining AFX field decoding and reply
+correlation. Per-effect readback flags below identify that remaining mapping
+work; no new initialization capture is required.
+
 | Effect | Orion type | Existing evidence |
 | --- | --- | --- |
 | Memory Cat Brigade | 73 | Eight fields, fresh parameter/processing reads for instances0–2, Launcher-restart retention, owner-confirmed switch labels |
@@ -39,6 +45,15 @@ listed as pending. Known measured plans retain their existing behavior. See
 | BA-31 | 48 | Both knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 | Gyratec IX | 43 | Both continuous endpoint candidates, all Phase/Low-Cut detents and processing round trip captured; runtime/readback/scaling unverified |
 | VPA 76 | 44 | Warmth/Trim endpoint candidates, both filter detent maps and processing round trip captured; runtime/readback/scaling unverified |
+| ATuner | 72 | Power captured; essential frequency/note/cents/needle screen reading explicitly deferred by owner |
+| BAE-1023 | 24 | Eight rotary controls, all four frequency-selector maps, Phase and processing captured; scaling and per-field readback contracts unverified |
+| NEU-PEV | 13 | Five rotary endpoint pairs, four complete stepped maps and processing captured; Output scaling and per-field readback contracts unverified |
+| NEU-W492 | 15 | Nine rotary endpoint pairs, four band-switch returns, all three Low Cut positions and processing captured; scaling and per-field readback contracts unverified |
+| NEU-W495 | 20 | Seven rotary endpoint pairs, six complete stepped maps, three Bell Quality positions and processing captured; scaling and per-field readback contracts unverified |
+| VEQ-4K PINK | 16 | Thirteen rotary endpoint pairs, LMF ÷3/HMF ×3 mode/LED returns and processing captured; scaling and per-field readback contracts unverified |
+| VEQ-4K ORANGE | 17 | Thirteen rotary endpoint pairs, LF/HF BELL mode/LED returns and processing captured; scaling and per-field readback contracts unverified |
+| VEQ-4K BROWN | 19 | Thirteen rotary endpoint pairs, LF/HF BELL mode/LED returns and processing captured; scaling and per-field readback contracts unverified |
+| VEQ-STU 900 | 23 | Eleven rotary endpoint pairs, four positional switch returns and processing captured; Low Cut raw0 OFF/High Cut raw100 OFF observed; scaling and per-field readback contracts unverified |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash

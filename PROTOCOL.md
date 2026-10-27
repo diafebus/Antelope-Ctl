@@ -2306,6 +2306,23 @@ Output signed interpretation, physical/intermediate scaling, independent readbac
 signal telemetry, processing polarity, audible/stereo behavior and runtime
 contracts remain unverified. No runtime writer or query bounds are expanded.
 
+**VEQ-STU 900 visible controls completed (2026-10-27).** Directed load
+frame2469 establishes Orion type23/instance0. Native job
+`scan-Studer900-20261027T030034849Z` accepts all22 endpoint phases, observing
+`0x23 / 0xd5 / 0x11`: Low/High Cut20/21, LF Gain22/Frequency23/switch24,
+LMF Gain25/Frequency26/switch27, HMF Gain28/Frequency29/switch30, HF Gain31/
+Frequency32/switch33 and Output34. Reviewed endpoint images establish Low Cut
+raw0 OFF and High Cut raw100 OFF, without an intermediate-law claim. Each of
+four isolated switch round trips maps raw0 Upper/raw1 Lower and returns its full
+captured parameter body/static images; numeric Q, bell/audio semantics are
+unverified. Processing `0x14 / 0x98` uses instance17/type18/state19
+(frames3323/725), returning its checked static baseline. Endpoint scans
+intentionally finish at maxima. The [EQ findings](docs/orion-afx-eq.md) record
+source frames and the separate embedded processing-lamp/meter inventory.
+Physical/intermediate scaling, independent readback, signal telemetry, processing
+polarity, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

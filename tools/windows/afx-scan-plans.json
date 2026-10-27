@@ -2813,6 +2813,115 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "veq_stu_900-knobs",
+      "panel": "Studer900",
+      "panel_class": "Studer900",
+      "effect_id": "veq_stu_900",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261027T015403Z-load-veqstu900/raw-ui.json: eleven individually inspected rotary centres fully inside physicalpanel. Upper140px UIA rectangles extend13px above panel; lower9px below; per-control exact allowance. Four band switches and processing excluded for isolated trials.",
+      "controls": [
+        {
+          "id": "low_cut",
+          "class_name": "Studer900LfPot",
+          "label": "Low Cut",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 9
+        },
+        {
+          "id": "hi_cut",
+          "class_name": "Studer900HfPot",
+          "label": "High Cut",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 13
+        },
+        {
+          "id": "lf_gain",
+          "class_name": "Studer900LfGainPot",
+          "label": "LF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 13
+        },
+        {
+          "id": "lf_freq",
+          "class_name": "Studer900LfFreqPot",
+          "label": "LF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 9
+        },
+        {
+          "id": "lmf_gain",
+          "class_name": "Studer900LmfGainPot",
+          "label": "LMF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 13
+        },
+        {
+          "id": "lmf_freq",
+          "class_name": "Studer900LmfFreqPot",
+          "label": "LMF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 9
+        },
+        {
+          "id": "hmf_gain",
+          "class_name": "Studer900HmfGainPot",
+          "label": "HMF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 13
+        },
+        {
+          "id": "hmf_freq",
+          "class_name": "Studer900HmfFreqPot",
+          "label": "HMF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 9
+        },
+        {
+          "id": "hf_gain",
+          "class_name": "Studer900HfGainPot",
+          "label": "HF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 13
+        },
+        {
+          "id": "hf_freq",
+          "class_name": "Studer900HfFreqPot",
+          "label": "HF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 9
+        },
+        {
+          "id": "level",
+          "class_name": "Studer900LevelPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

@@ -303,6 +303,20 @@
         "unattended-20261027T015403Z-veq4k-brown-processing"
       ],
       "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, independently reviewed LF BELL (lf_bell) byte31/HF BELL (hf_bell) byte24 mode/LED round trips and separate processing round trip. Actual raw0 LED Dark/raw1 LED Lit associations retained without inferred numeric Q or bell/audio claims. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
+    },
+    {
+      "name": "VEQ-STU 900",
+      "effect_id": "veq_stu_900",
+      "panel_class": "Studer900",
+      "next_step": "complete",
+      "range_plan": "veq_stu_900-knobs",
+      "completion_evidence": [
+        "unattended-20261027T015403Z-load-veqstu900",
+        "scan-Studer900-20261027T030034849Z",
+        "unattended-20261027T015403Z-veqstu900-modes",
+        "unattended-20261027T015403Z-veqstu900-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: eleven rotary endpoint pairs, four independently reviewed shape-glyph switch round trips (raw0 Upper/raw1 Lower) and separate processing round trip. Low Cut raw0 OFF/High Cut raw100 OFF are reviewed endpoint labels only. Switch round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, numeric Q/bell/audio semantics, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. Studer900Peakmeter and Studer900Bypass embedded processing lamp remain separate display inventory; switches have no separate LEDs."
     }
   ]
 }
