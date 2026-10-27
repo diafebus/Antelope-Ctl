@@ -3,6 +3,8 @@
 Reviewed 2026-10-27. This is a proposed integration plan, not an enabled
 cross-device capture runner. Hardware capture remains paused. The colleague's
 device model, vendor GUI and host/VM arrangement still need to be identified.
+The three-effect definition/panel refresh described below is now committed on
+local Gazelle proposal branches; those commits have not been pushed.
 
 The method is transferable: discover the vendor GUI, review bounded actions,
 record USB traffic passively, correlate each action with observed reports,
@@ -29,6 +31,18 @@ definitions are a useful starting point, not a merged Gazelle standard.
 The local Gazelle application checkout stays on its existing Linux branch;
 `origin/main` was inspected separately. Untracked Rust build output was retained.
 
+The owner then requested the three definitions be brought up to current
+knowledge. Isolated worktrees on the existing proposal branches merged current
+main and produced these local commits:
+
+| Branch | Local commit | Result |
+| --- | --- | --- |
+| profiles: diafebus/memory-cat-shared-definition | `fd4eecf` | Corrected processing observations, BBD stereo map, all twelve Voices values, display inventories and captured fixtures |
+| app: diafebus/shared-modulation-panels | `c04c03c` | Updated discrete controls, complete-map editing gates, current footer/keyboard integration and browser regressions |
+
+The original checkouts remain on their prior branches. The open remote PRs do
+not contain these local commits until explicitly published.
+
 ## Format compatibility
 
 Our [AFX catalog](../profiles/afx_effects.json) has a documented project format,
@@ -53,18 +67,18 @@ another model does not verify that model's transport, IDs, fields, safe query
 tuples, ranges or writes. Resource counts and menu presence do not establish
 license ownership.
 
-## Findings to reconcile first
+## Three-effect reconciliation
 
-The proposal predates later captures. These are concrete differences, not
-reasons to repeat the original scans:
+The fetched proposal predates later captures. Its three-effect differences
+are corrected in the local refresh; no original scan was repeated:
 
-| Finding | Current Orion evidence | Proposed Gazelle state | Next action |
+| Finding | Current Orion evidence | Gazelle local refresh | Remaining work |
 | --- | --- | --- | --- |
-| Processing addressing | Catalog model-local observations for Memory Cat, V12 and BBD use instance byte17, type byte18, state byte19 | All three PR21 `bypass` blocks put enabled at17 and instance at19 | Correct affected definitions and panel/protocol prose from these witnesses; keep writes unconfirmed |
-| BBD stereo selector | Byte25: 0 Basic, 1 Wide, 2 Split, 3 Cross; captured selector returns to Basic | PR21 still treats it as preserved/unmapped | Add the observed enum and its evidence, retaining readback/write restrictions |
-| V12 Voices | Byte21: twelve individually witnessed integer positions, with matching readout images | Proposal retains the older control description | Reconcile kind, complete value map and panel behavior |
+| Processing addressing | Catalog model-local observations for Memory Cat, V12 and BBD use instance byte17, type byte18, state byte19 | Corrected all three definitions and prose; fixtures include nonzero instances | Review/publish candidate observations; runtime bypass stays unconfirmed |
+| BBD stereo selector | Byte25: 0 Basic, 1 Wide, 2 Split, 3 Cross; captured selector returns to Basic | Mapped byte25; bytes26/27 stay opaque; panel requires caller's model map | Parameter readback and runtime write verification |
+| V12 Voices | Byte21: twelve individually witnessed integer positions, with matching readout images | Enum definition, twelve captured samples and rotary panel; incomplete maps cannot enable editing | Model-local reader/write contract |
 | Other completed effects | Current [workflow coverage](orion-afx-workflow.md) records 22 visible editable-control passes | PR21 defines three effects | Add effects incrementally after agreeing the extended schema |
-| Meters and tuner | [Display inventory](orion-afx-displays.md) records widgets; tuner screen decoding is owner-deferred | No generally usable meter/tuner telemetry contract | Carry display presence as observations; leave values unknown |
+| Meters and tuner | [Display inventory](orion-afx-displays.md) records widgets; tuner screen decoding is owner-deferred | Three-effect native display inventories added with readers disabled | Signal telemetry contracts and deferred tuner work |
 
 Processing witnesses include Memory Cat first/return frames3637/837 in the
 2026-10-25 processing trial, V12 frames3461/713, and BBD resume
@@ -90,6 +104,8 @@ capture or speculative getter sweep is part of this handoff.
    extending it; do not overwrite newer Discrete measurements from its older
    base. Coordinate review through the existing PRs rather than duplicating
    definitions in another location.
+   The three-effect definitions and panel descriptions are now refreshed
+   locally; other effects and the broader protocol handoff remain pending.
 3. **Agree the data contract.** Extend the proposed effect schema for finite
    rotary values, width/signedness, physical-scale unknowns, dependencies,
    processing observations and display-only widgets. Separate capture evidence
@@ -165,6 +181,15 @@ model's confirmed allow-list and existing device actor.
 - A supervised target-station pilot passes before any unattended run; the
   device deadline and release behavior are tested independently of agent quota.
 
-No Gazelle contribution, live capture, scheduler arming or publication was
-performed as part of this planning review. Upstream clones were fast-forwarded
-on their existing branches; the plan is maintained here for review first.
+The local refresh passed 87 focused profile tests, 14 compatibility tests,
+schema/structural/publication checks, 1,010 Rust workspace tests, live-profile
+loading with the updated files, public panel-asset tests, the shared-panel
+browser probe, 30 simulated panel interactions and four carrier tests. The
+reviewed partial-map regression keeps Voices disabled until all twelve model
+values are supplied, and rejects unmapped destination values separately.
+
+Six static Node gates passed. The separate meter-names gate cannot run from
+this public checkout because its private `captures/d8p` input is absent.
+Rustfmt, Clippy and the Windows target are absent from this host, so the full
+engine gate is not claimed. No raw device/controller was opened. Hardware
+capture, scheduler arming and publication remain paused/unperformed.
