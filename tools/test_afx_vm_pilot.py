@@ -10,6 +10,31 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def test_plan_loader_validates_reviewed_knob_overflow_before_capture(self):
+        from tools.afx_vm_pilot import load_plans
+        policy = {'step_delta': 10, 'pause_ms': 1000, 'max_pulses': 4}
+        plan = {'id': 'overflow', 'panel': 'MeasuredPanel', 'channel': 2,
+                'controls': [{'id': 'gain', 'kind': 'knob_range'}]}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root/'tools/windows/afx-scan-plans.json'
+            path.parent.mkdir(parents=True)
+            def load(control):
+                plan['controls'] = [control]
+                path.write_text(json.dumps({'wheel_policy': policy, 'plans': [plan]}))
+                with patch('tools.afx_vm_pilot.ROOT', root):
+                    return load_plans()
+            self.assertIn('overflow', load({'id': 'gain', 'kind': 'knob_range'}))
+            for margin in (1, 12, 14):
+                with self.subTest(margin=margin):
+                    loaded = load({'id': 'gain', 'kind': 'knob_range', 'panel_overflow_px': margin})
+                    self.assertEqual(loaded['overflow']['controls'][0]['panel_overflow_px'], margin)
+            for margin in (0, 15, True, False, 14.0, '14', None):
+                with self.subTest(margin=margin), self.assertRaisesRegex(ValueError, 'overflow'):
+                    load({'id': 'gain', 'kind': 'knob_range', 'panel_overflow_px': margin})
+            with self.assertRaisesRegex(ValueError, 'overflow'):
+                load({'id': 'switch', 'kind': 'binary_button', 'panel_overflow_px': 14})
+
     def test_knob_drag_points_require_finite_knob_only_coordinates(self):
         from tools.afx_vm_pilot import knob_drag_point
         self.assertEqual(knob_drag_point({'kind': 'knob_range'}), (0.5, 0.5))

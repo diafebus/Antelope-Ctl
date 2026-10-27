@@ -128,6 +128,11 @@ def load_plans():
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
             knob_drag_point(control)
+            if 'panel_overflow_px' in control and (
+                    control['kind'] != 'knob_range'
+                    or type(control['panel_overflow_px']) is not int
+                    or not 1 <= control['panel_overflow_px'] <= 14):
+                raise ValueError('Invalid reviewed knob overflow allowance')
             if control['kind'] == 'key_button':
                 control['option_names'] = key_control_options(plan['effect_id'], control)
                 control['positions'] = len(control['option_names'])

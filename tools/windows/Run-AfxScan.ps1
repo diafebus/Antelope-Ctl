@@ -80,7 +80,18 @@ function Get-PlanDragPoint($Definition) {
     }
     return @{x=[double]$point.x;y=[double]$point.y}
 }
-foreach ($definition in $plan.controls) { $null = Get-PlanDragPoint $definition }
+function Get-PlanOverflow($Definition) {
+    if ($Definition.PSObject.Properties.Name -notcontains 'panel_overflow_px') { return $null }
+    $margin = $Definition.panel_overflow_px
+    if ($Definition.kind -ne 'knob_range' -or $margin -isnot [int] -or $margin -lt 1 -or $margin -gt 14) {
+        throw 'Invalid reviewed knob overflow allowance.'
+    }
+    return $margin
+}
+foreach ($definition in $plan.controls) {
+    $null = Get-PlanDragPoint $definition
+    $null = Get-PlanOverflow $definition
+}
 if ($ValidatePlanOnly) {
     # Used by Windows preflight to exercise real metadata loading without
     # loading UIA, calling user32, starting a recorder or moving any control.
@@ -791,12 +802,11 @@ try {
             $inside = -not $_.Current.IsOffscreen -and $panelBounds.Contains($rect)
             # PowerGate's measured Pan containers extend 11px above / 1px
             # below their parent, but the knob centres are inside the panel.
+            # VEQ-4K PINK lower rotary containers extend 14px below their
+            # parent: unattended-20261027T015403Z-load-veq4k-pink/raw-ui.json.
             # Only explicit reviewed knob plans may allow this small overflow.
-            if ($null -ne $control.panel_overflow_px) {
-                $margin = $control.panel_overflow_px
-                if ($control.kind -ne 'knob_range' -or $margin -isnot [int] -or $margin -lt 1 -or $margin -gt 12) {
-                    throw 'Invalid reviewed knob overflow allowance.'
-                }
+            $margin = Get-PlanOverflow $control
+            if ($null -ne $margin) {
                 $expanded = [System.Windows.Rect]::new($panelBounds.X - $margin,
                     $panelBounds.Y - $margin, $panelBounds.Width + 2*$margin, $panelBounds.Height + 2*$margin)
                 $centre = [System.Windows.Rect]::new($rect.X + $rect.Width/2 - 8,
