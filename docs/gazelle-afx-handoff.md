@@ -4,7 +4,7 @@ Reviewed 2026-10-27. This is a proposed integration plan, not an enabled
 cross-device capture runner. Hardware capture remains paused. The colleague's
 device model, vendor GUI and host/VM arrangement still need to be identified.
 The three-effect definition/panel refresh described below is now committed on
-local Gazelle proposal branches; those commits have not been pushed.
+Gazelle proposal branches and published in the existing PRs.
 
 The method is transferable: discover the vendor GUI, review bounded actions,
 record USB traffic passively, correlate each action with observed reports,
@@ -33,15 +33,17 @@ The local Gazelle application checkout stays on its existing Linux branch;
 
 The owner then requested the three definitions be brought up to current
 knowledge. Isolated worktrees on the existing proposal branches merged current
-main and produced these local commits:
+main and produced these published commits:
 
-| Branch | Local commit | Result |
+| Branch | Published commit | Result |
 | --- | --- | --- |
 | profiles: diafebus/memory-cat-shared-definition | `fd4eecf` | Corrected processing observations, BBD stereo map, all twelve Voices values, display inventories and captured fixtures |
 | app: diafebus/shared-modulation-panels | `c04c03c` | Updated discrete controls, complete-map editing gates, current footer/keyboard integration and browser regressions |
 
-The original checkouts remain on their prior branches. The open remote PRs do
-not contain these local commits until explicitly published.
+The original checkouts remain on their prior branches. PR21 and PR6 now contain
+these commits and updated descriptions. Both are open and mergeable. Profiles
+CI passed for `fd4eecf`; the app engine/panel CI was running for `c04c03c` at
+publication verification. Neither PR was merged.
 
 ## Format compatibility
 
@@ -70,11 +72,11 @@ license ownership.
 ## Three-effect reconciliation
 
 The fetched proposal predates later captures. Its three-effect differences
-are corrected in the local refresh; no original scan was repeated:
+are corrected in the published refresh; no original scan was repeated:
 
-| Finding | Current Orion evidence | Gazelle local refresh | Remaining work |
+| Finding | Current Orion evidence | Gazelle published refresh | Remaining work |
 | --- | --- | --- | --- |
-| Processing addressing | Catalog model-local observations for Memory Cat, V12 and BBD use instance byte17, type byte18, state byte19 | Corrected all three definitions and prose; fixtures include nonzero instances | Review/publish candidate observations; runtime bypass stays unconfirmed |
+| Processing addressing | Catalog model-local observations for Memory Cat, V12 and BBD use instance byte17, type byte18, state byte19 | Corrected all three definitions and prose; fixtures include nonzero instances | Review candidate observations; runtime bypass stays unconfirmed |
 | BBD stereo selector | Byte25: 0 Basic, 1 Wide, 2 Split, 3 Cross; captured selector returns to Basic | Mapped byte25; bytes26/27 stay opaque; panel requires caller's model map | Parameter readback and runtime write verification |
 | V12 Voices | Byte21: twelve individually witnessed integer positions, with matching readout images | Enum definition, twelve captured samples and rotary panel; incomplete maps cannot enable editing | Model-local reader/write contract |
 | Other completed effects | Current [workflow coverage](orion-afx-workflow.md) records 22 visible editable-control passes | PR21 defines three effects | Add effects incrementally after agreeing the extended schema |
@@ -105,7 +107,8 @@ capture or speculative getter sweep is part of this handoff.
    base. Coordinate review through the existing PRs rather than duplicating
    definitions in another location.
    The three-effect definitions and panel descriptions are now refreshed
-   locally; other effects and the broader protocol handoff remain pending.
+   and published in the existing PRs; other effects and the broader protocol
+   handoff remain pending.
 3. **Agree the data contract.** Extend the proposed effect schema for finite
    rotary values, width/signedness, physical-scale unknowns, dependencies,
    processing observations and display-only widgets. Separate capture evidence
@@ -181,7 +184,7 @@ model's confirmed allow-list and existing device actor.
 - A supervised target-station pilot passes before any unattended run; the
   device deadline and release behavior are tested independently of agent quota.
 
-The local refresh passed 87 focused profile tests, 14 compatibility tests,
+The refresh passed 87 focused profile tests, 14 compatibility tests,
 schema/structural/publication checks, 1,010 Rust workspace tests, live-profile
 loading with the updated files, public panel-asset tests, the shared-panel
 browser probe, 30 simulated panel interactions and four carrier tests. The
@@ -192,4 +195,6 @@ Six static Node gates passed. The separate meter-names gate cannot run from
 this public checkout because its private `captures/d8p` input is absent.
 Rustfmt, Clippy and the Windows target are absent from this host, so the full
 engine gate is not claimed. No raw device/controller was opened. Hardware
-capture, scheduler arming and publication remain paused/unperformed.
+capture remains paused and no scheduler was armed. The owner requested
+publication; both PR branches were pushed after the tracked-file publication
+gates passed (31 profile-repository files and 208 application-repository files).
