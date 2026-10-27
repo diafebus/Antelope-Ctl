@@ -317,6 +317,20 @@
         "unattended-20261027T015403Z-veqstu900-processing"
       ],
       "completion_limits": "All observed editable controls captured: eleven rotary endpoint pairs, four independently reviewed shape-glyph switch round trips (raw0 Upper/raw1 Lower) and separate processing round trip. Low Cut raw0 OFF/High Cut raw100 OFF are reviewed endpoint labels only. Switch round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, numeric Q/bell/audio semantics, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. Studer900Peakmeter and Studer900Bypass embedded processing lamp remain separate display inventory; switches have no separate LEDs."
+    },
+    {
+      "name": "VEQ-STU 169",
+      "effect_id": "veq_stu_169",
+      "panel_class": "Studer169",
+      "next_step": "complete",
+      "range_plan": "veq_stu_169-knobs",
+      "completion_evidence": [
+        "unattended-20261027T144257Z-load-veqstu169",
+        "scan-Studer169-20261027T144830356Z",
+        "unattended-20261027T144257Z-veqstu169-filter",
+        "unattended-20261027T144257Z-veqstu169-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: five distinct rotary endpoint candidates, independently reviewed Filter switch byte20 raw0 Upper/raw1 Lower and separate processing round trip. Concentric MF Gain/Frequency preserve their partner fields. Filter returns the full captured parameter body/static panel; processing returns its checked static baseline. Endpoint scans intentionally finish at maxima. Printed gain/frequency ticks do not establish detents, physical scales or interpolation. Output signed interpretation, independent readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed are GUI display observations only; no signal telemetry reader enabled."
     }
   ]
 }

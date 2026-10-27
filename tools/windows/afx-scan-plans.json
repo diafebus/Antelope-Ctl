@@ -2922,6 +2922,71 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "veq_stu_169-knobs",
+      "panel": "Studer169",
+      "panel_class": "Studer169",
+      "effect_id": "veq_stu_169",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261027T144257Z-load-veqstu169/raw-ui.json and native panel image; five explicit rotary targets fully inside physicalpanel. MF Gain uses innergraycentre; nested MF Frequency uses reviewed outerredring at x=.86/y=.5 of its114px bounds. Filter/processing levers excluded.",
+      "controls": [
+        {
+          "id": "lf_gain",
+          "class_name": "Studer169LfGainPot",
+          "label": "LF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "mf_gain",
+          "class_name": "Studer169MfGainPot",
+          "label": "MF Gain inner knob",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "mf_freq",
+          "class_name": "Studer169MfFreqPot",
+          "label": "MF Frequency outer red ring",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.86,
+            "y": 0.5
+          }
+        },
+        {
+          "id": "hf_gain",
+          "class_name": "Studer169HfGainPot",
+          "label": "HF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level",
+          "class_name": "Studer169LevelPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

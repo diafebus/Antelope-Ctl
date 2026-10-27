@@ -663,3 +663,50 @@ inventory observations; their presence does not establish signal telemetry.
 Independent parameter/processing readback, physical/intermediate scaling,
 audible/stereo behavior and runtime contracts remain unverified.
 No runtime writer or query bounds are expanded.
+
+## VEQ-STU 169
+
+The directed load at frame2541 in
+`unattended-20261027T144257Z-load-veqstu169/Orion.pcapng` establishes Orion
+type22/instance0 on AFX2/channel1 slot0, with seven empty slots. Its native
+panel is `Studer169`; the compatibility identifier remains `veq_stu_169`.
+
+`scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng` accepts ten
+endpoint phases with 79,046 packets and zero drops. The observed parameter
+family is `0x1a / 0xd5 / 0x08`, type byte18/instance byte19. Each phase changes
+only its isolated field; the concentric MF Gain and Frequency gestures affect
+distinct bytes and preserve their partner.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| LF Gain | 24 | 0, 100 | 4169/11333 |
+| MF Gain, inner knob | 22 | 0, 100 | 19189/26501 |
+| MF Frequency, outer red ring | 23 | 0, 100 | 34700/42114 |
+| HF Gain | 21 | 0, 100 | 50373/57929 |
+| Output | 25 | 232, 12 | 66387/74395 |
+
+Printed gain ticks0-4 and frequency labels150/250/500/1K/2K/4K/7K establish
+neither a finite detent map nor a physical/interpolation law. Output retains
+unsigned wire232/12 with signed candidates -24/+12; physical units and signed
+interpretation remain unverified. Endpoint scans intentionally end at maxima.
+
+The separate `unattended-20261027T144257Z-veqstu169-filter` trial maps the
+Filter lever (`hpf_switch`) at byte20: first frame749 raw1 is Lower, return
+frame767 raw0 is Upper. Each action changes only that field. The full captured
+parameter body and checked static panel return exactly. These positional
+labels do not establish filter shape, cutoff, enabled polarity or audio behavior.
+
+The separate processing trial uses `0x14 / 0x98`, instance17/type18/state19.
+First frame3027 in
+`unattended-20261027T144257Z-veqstu169-processing/first/Orion.pcapng` carries
+`00 16 00`; return frame617 in its `return/Orion.pcapng` carries `00 16 01`.
+Both static panel segments return exactly, including processing lever/LED,
+Filter and all rotary regions; the animated meter is excluded. This is GUI
+restoration, without an independent changed-state device readback claim.
+
+The native inventory contains one `Studer089Peakmeter` and one `AfxLed` on this
+STU169 panel. Those observed class names are retained without inferring signal
+meaning, scale or a telemetry reader. All visible editable controls now have
+capture passes. Independent readback, physical/intermediate scaling,
+audible/stereo behavior and runtime contracts remain unverified. No writer or
+query bounds are expanded.

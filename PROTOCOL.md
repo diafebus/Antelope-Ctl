@@ -2323,6 +2323,23 @@ Physical/intermediate scaling, independent readback, signal telemetry, processin
 polarity, audible/stereo behavior and runtime contracts remain unverified.
 No runtime writer or query bounds are expanded.
 
+**VEQ-STU 169 visible controls completed (2026-10-27).** Directed load
+frame2541 establishes Orion type22/instance0. Native job
+`scan-Studer169-20261027T144830356Z` accepts ten endpoint phases with zero
+drops, observing `0x1a / 0xd5 / 0x08`: Filter20, HF Gain21, MF Gain22,
+MF Frequency23, LF Gain24 and Output25. Four knob pairs are raw0/100; Output
+retains unsigned232/12 with signed candidates -24/+12 only. The concentric
+MF controls affect distinct fields and preserve their partner. Filter first/
+return frames749/767 map raw1 Lower/raw0 Upper and return the complete captured
+parameter body/static panel. Processing `0x14 / 0x98` uses instance17/type18/
+state19, frames3027/617 tuples001600/001601, with checked static-image return.
+Printed gain/frequency ticks establish neither detents nor physical scaling.
+Native `Studer089Peakmeter`/`AfxLed` classes record GUI presence only. See the
+[EQ findings](docs/orion-afx-eq.md) for source captures and limits. Independent
+readback, physical/intermediate scaling, signal telemetry, audible/stereo
+behavior and runtime contracts remain unverified. No runtime writes or query
+bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.
