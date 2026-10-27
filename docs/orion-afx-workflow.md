@@ -195,6 +195,11 @@ Logs, images and raw captures stay local; reviewed facts go into JSON profiles.
 
 ### Reuse Gazelle's existing work
 
+For the current format comparison, open shared-definition proposals, later
+capture corrections and colleague onboarding sequence, see the
+[Gazelle AFX handoff plan](gazelle-afx-handoff.md). The references below retain
+the revisions used for the original Orion pilot.
+
 The reference effect names/control checklist are already imported into
 [the shared catalog](../profiles/afx_effects.json), with pinned provenance.
 Gazelle offers additional examples for the implementation and verification
