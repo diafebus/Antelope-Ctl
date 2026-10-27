@@ -476,3 +476,65 @@ This completes the observed editable controls. `SslPeakMeter` and three native
 is unknown. Independent parameter/processing readback, physical/intermediate
 scaling, audible/stereo behavior and runtime contracts remain unverified.
 No runtime writer or query bounds are expanded.
+
+## VEQ-4K ORANGE
+
+The directed vendor load at frame2113 in
+`unattended-20261027T015403Z-load-veq4k-orange/Orion.pcapng` independently
+establishes Orion type17/instance0 in channel1 slot0, with seven empty slots.
+The native panel is `SslOrange`; the compatibility identifier is `ssl_orange`.
+
+The native job
+`scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng` accepted all
+twenty-six endpoint phases: 227,598 packets, zero drops. Its actual parameter
+family is `0x23 / 0xd5 / 0x11`, type byte18/instance byte19. Each directed
+phase changes only its mapped field. Endpoint scans intentionally finish at
+their captured maxima.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| Low Cut | 20 | 0, 100 | 4193/11451 |
+| High Cut | 21 | 0, 100 | 18969/25735 |
+| HF Gain | 22 | 0, 100 | 34096/41713 |
+| HF Frequency | 23 | 0, 100 | 49577/56889 |
+| HMF Gain | 25 | 0, 100 | 65547/73581 |
+| HMF Frequency | 26 | 0, 100 | 82129/89809 |
+| HMF Quality | 27 | 0, 100 | 99011/107545 |
+| LMF Gain | 28 | 0, 100 | 116441/125275 |
+| LMF Frequency | 29 | 0, 100 | 134397/142917 |
+| LMF Quality | 30 | 0, 100 | 152835/162305 |
+| LF Gain | 32 | 0, 100 | 171977/181609 |
+| LF Frequency | 33 | 0, 100 | 191575/200857 |
+| Output | 34 | 232, 12 | 211589/221563 |
+
+Raw0/100 observations do not establish physical units or intermediate gain,
+frequency or quality laws. Output byte34 retains unsigned wire232/12 with signed
+candidates -24/+12; signed interpretation and physical/intermediate scaling
+remain unverified.
+
+The separate `unattended-20261027T015403Z-veq4k-orange-modes` trials identify
+the actual printed BELL labels under the LF and HF groups:
+
+| Visible label | Compatibility ID | Byte | First/return frames | Observed states |
+|---|---|---|---|---|
+| LF BELL | `lf_bell` | 31 | 781/743 | 0 LED Dark → 1 LED Lit → 0 LED Dark |
+| HF BELL | `hf_bell` | 24 | 781/705 | 0 LED Dark → 1 LED Lit → 0 LED Dark |
+
+Independent image review establishes these literal labels and raw-to-LED
+associations. Each mode round trip returns the full captured parameter body and
+checked static panel images. No frequency-range behavior, numeric Q values or
+audible effect is inferred from these labels or from other equalizer models.
+
+The separate processing switch uses `0x14 / 0x98`, instance17/type18/state19.
+`unattended-20261027T015403Z-veq4k-orange-processing/first/Orion.pcapng`
+frame2881 carries `00 11 00`; frame715 in
+`unattended-20261027T015403Z-veq4k-orange-processing/return/Orion.pcapng`
+carries `00 11 01`. Processing returns its checked static baseline, with both
+panel segments matching exactly; the animated peak meter is excluded.
+Processing polarity remains unverified.
+
+This completes the observed editable controls. `SslPeakMeter` and three native
+`AfxLed` widgets remain separate display inventory observations; signal telemetry
+is unknown. Independent parameter/processing readback, physical/intermediate
+scaling, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.

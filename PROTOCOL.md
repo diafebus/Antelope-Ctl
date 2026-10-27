@@ -2274,6 +2274,22 @@ Physical/intermediate scaling, independent readback, mode audio/bell semantics,
 signal telemetry, processing polarity, audible/stereo behavior and runtime
 contracts remain unverified. No runtime writer or query bounds are expanded.
 
+**VEQ-4K ORANGE visible controls completed (2026-10-27).** Independent load
+frame2113 establishes Orion type17/instance0. Native job
+`scan-SslOrange-20261027T022803586Z` accepts all26 endpoint phases, observing
+`0x23 / 0xd5 / 0x11`: Low/High Cut20/21, HF Gain22/Frequency23, HF mode24,
+HMF Gain25/Frequency26/Quality27, LMF Gain28/Frequency29/Quality30, LF mode31,
+LF Gain32/Frequency33 and Output34. Independently reviewed labels are LF BELL
+(`lf_bell`, byte31) and HF BELL (`hf_bell`, byte24); each raw0 LED Dark→raw1
+LED Lit→raw0 round trip returns its full captured parameter body/static images.
+These labels do not establish numeric Q, range behavior or audible effects.
+Processing `0x14 / 0x98` uses instance17/type18/state19 (frames2881/715) and
+returns its checked static baseline. Endpoint scans intentionally finish at
+maxima. The [EQ findings](docs/orion-afx-eq.md) record source frames and limits.
+Physical/intermediate scaling, independent readback, signal telemetry, processing
+polarity, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

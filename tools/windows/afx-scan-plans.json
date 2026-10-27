@@ -2563,6 +2563,131 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "ssl_orange-knobs",
+      "panel": "SslOrange",
+      "panel_class": "SslOrange",
+      "effect_id": "ssl_orange",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261027T015403Z-load-veq4k-orange/raw-ui.json: thirteen unique inspected 140px rotary rectangles. Actual centres fully inside panel. Top row UIA metadata extends12px above panel, lower row14px below; explicit per-control margins, root containment/focus/native hit guards retained. Switches/processing excluded for isolated trials.",
+      "controls": [
+        {
+          "id": "lf_cut",
+          "class_name": "SslCutPot_lf_cut",
+          "label": "Low Cut",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "hf_cut",
+          "class_name": "SslCutPot_hf_cut",
+          "label": "High Cut",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 14
+        },
+        {
+          "id": "hf_gain",
+          "class_name": "SslPot_hf_gain",
+          "label": "HF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "hf_freq",
+          "class_name": "SslFreqPot_hf_freq",
+          "label": "HF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 14
+        },
+        {
+          "id": "hmf_gain",
+          "class_name": "SslPot_hmf_gain",
+          "label": "HMF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "hmf_freq",
+          "class_name": "SslFreqPot_hmf_freq",
+          "label": "HMF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 14
+        },
+        {
+          "id": "hmf_qual",
+          "class_name": "SslQualPot_hmf_qual",
+          "label": "HMF Quality",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "lmf_gain",
+          "class_name": "SslPot_lmf_gain",
+          "label": "LMF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "lmf_freq",
+          "class_name": "SslFreqPot_lmf_freq",
+          "label": "LMF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 14
+        },
+        {
+          "id": "lmf_qual",
+          "class_name": "SslQualPot_lmf_qual",
+          "label": "LMF Quality",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "lf_gain",
+          "class_name": "SslPot_lf_gain",
+          "label": "LF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 12
+        },
+        {
+          "id": "lf_freq",
+          "class_name": "SslFreqPot_lf_freq",
+          "label": "LF Frequency",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 14
+        },
+        {
+          "id": "level",
+          "class_name": "SslOutputPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
