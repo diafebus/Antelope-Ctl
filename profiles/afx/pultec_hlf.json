@@ -1,0 +1,246 @@
+{
+  "id": "pultec_hlf",
+  "name": "pultec_hlf",
+  "source_name": "pultec_hlf",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.11"
+  ],
+  "controls": [
+    {
+      "id": "low_shelf",
+      "label": "Low Shelf",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_hlf_conf.fields"
+      ]
+    },
+    {
+      "id": "high_shelf",
+      "label": "High Shelf",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_hlf_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 11,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 11,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "low_shelf": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low Cut-off",
+          "range": [
+            0,
+            10
+          ],
+          "options": {
+            "0": "Off",
+            "1": "50",
+            "2": "80",
+            "3": "100",
+            "4": "150",
+            "5": "250",
+            "6": "500",
+            "7": "750",
+            "8": "1000",
+            "9": "1500",
+            "10": "2000"
+          },
+          "wire_enum": {
+            "0": "Off",
+            "1": "50",
+            "2": "80",
+            "3": "100",
+            "4": "150",
+            "5": "250",
+            "6": "500",
+            "7": "750",
+            "8": "1000",
+            "9": "1500",
+            "10": "2000"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-10/Orion.pcapng frame1577: raw0, dial Off; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-10/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-09/Orion.pcapng frame1535: raw1, dial 50; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-09/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-08/Orion.pcapng frame1625: raw2, dial 80; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-08/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-07/Orion.pcapng frame1541: raw3, dial 100; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-07/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-06/Orion.pcapng frame1547: raw4, dial 150; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-06/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-05/Orion.pcapng frame1635: raw5, dial 250; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-05/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-04/Orion.pcapng frame1645: raw6, dial 500; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-04/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-03/Orion.pcapng frame1651: raw7, dial 750; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-03/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-02/Orion.pcapng frame1475: raw8, dial 1000; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-02/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-01/Orion.pcapng frame1691: raw9, dial 1500; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-down-01/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-up-20/Orion.pcapng frame1639: raw10, dial 2000; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/low_shelf-up-20/observed-detent.png"
+          ]
+        },
+        "high_shelf": {
+          "offset": 21,
+          "width": 1,
+          "kind": "enum",
+          "label": "High Cut-off",
+          "range": [
+            0,
+            10
+          ],
+          "options": {
+            "0": "1.5",
+            "1": "2",
+            "2": "3",
+            "3": "4",
+            "4": "5",
+            "5": "6",
+            "6": "8",
+            "7": "10",
+            "8": "12",
+            "9": "15",
+            "10": "Off"
+          },
+          "wire_enum": {
+            "0": "1.5",
+            "1": "2",
+            "2": "3",
+            "3": "4",
+            "4": "5",
+            "5": "6",
+            "6": "8",
+            "7": "10",
+            "8": "12",
+            "9": "15",
+            "10": "Off"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-10/Orion.pcapng frame1643: raw0, dial 1.5; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-10/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-09/Orion.pcapng frame1623: raw1, dial 2; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-09/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-08/Orion.pcapng frame1639: raw2, dial 3; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-08/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-07/Orion.pcapng frame1585: raw3, dial 4; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-07/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-06/Orion.pcapng frame1779: raw4, dial 5; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-06/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-05/Orion.pcapng frame1561: raw5, dial 6; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-05/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-04/Orion.pcapng frame1639: raw6, dial 8; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-04/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-03/Orion.pcapng frame1587: raw7, dial 10; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-03/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-02/Orion.pcapng frame1677: raw8, dial 12; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-02/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-01/Orion.pcapng frame1585: raw9, dial 15; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-down-01/observed-detent.png",
+            "captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-up-20/Orion.pcapng frame1757: raw10, dial Off; matching pointer image captures/unattended-20261025T195948Z-veqhlf-rotary-map/high_shelf-up-20/observed-detent.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261025T195948Z-load-veq-hlf/Orion.pcapng frame2281: labelled VEQ-HLF vendor load, AFX2/channel1 slot0 type11/instance0, sevenempty; SHA256 68d4a1283ac6b2684615a0351d373593555c692e92148acebde93e3c1db246ac. Native panel PultecHLF observed."
+      ],
+      "notes": "Orion identity independently observed. Both eleven-position rotary cut-off selectors and isolated processing switch round trip captured. Compatibility control IDs low_shelf/high_shelf retained; visible labels are Low/High Cut-off. Physical units, readback, polarity, audible/stereo behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x16",
+        "param_id": "0xd5",
+        "subcmd": "0x04",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; endpoint candidates and all selector positions; runtime contract unverified",
+        "writable": false,
+        "evidence": [
+          "scan-PultecHLF-20261025T200435681Z/PultecHLF-channel2.pcapng frames2593-2905: seven directed low-cut priming writes, all0x16/d5/04 type11/instance0; only byte20 varies. Initial decoder rejection, zero accepted phases; historical failed status retained.",
+          "scan-PultecHLF-20261025T200723927Z/PultecHLF-channel2.pcapng: four accepted endpoint phases, 30528 packets/zero drops; Low Cut-off byte20 min0 frame4185/max10 frame11737; High Cut-off byte21 min0 frame19085/max10 frame26861; other payload fields preserved."
+        ],
+        "capture_sha256": "c532a430c336ec1957484578d70e33418bd3dc24bce6cb340a173363ebb736fc",
+        "device_readback_verified": false,
+        "rotary_mapping": {
+          "source": "captures/unattended-20261025T195948Z-veqhlf-rotary-map",
+          "trial_count": 40,
+          "starting_parameter_payload_hex": "0a0a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "0a0a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false,
+          "notes": "Each 16pixel step changes exactly one detent; other parameter bytes preserved. Printed labels retained without guessing physical units."
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB processing switch, LED and both selector regions",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025T195948Z-veqhlf-switch-first/Orion.pcapng frame2443 tuple@17..19=000b00",
+          "unattended-20261025T195948Z-veqhlf-switch-return/Orion.pcapng frame1527 tuple@17..19=000b01; exact RGB restoration recorded"
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025T195948Z-load-veq-hlf/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "PultecPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

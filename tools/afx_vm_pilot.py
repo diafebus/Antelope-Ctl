@@ -18,6 +18,7 @@ import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from antelope.catalog import load_catalog
 from tools.scan_afx_capture import analyze_reports, PARAMETER_OPCODES
 from tools.afx_scan_discovery import discovery_plan, block_feedback
 from tools.afx_dropdown_options import key_control_options
@@ -279,7 +280,7 @@ def validate_request(request, discovery=None):
 
 
 def plan_effect_type(plan):
-    catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+    catalog = load_catalog(ROOT/'profiles/afx_effects.json')
     effect = next(e for e in catalog['effects'] if e['id'] == plan['effect_id'])
     implementation = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
     return implementation['type_id']
@@ -484,7 +485,7 @@ def checked_job_plan(job, depth=0):
     generated = None
     if (job/'discovery-inventory.json').is_file():
         inventory = json.loads((job/'discovery-inventory.json').read_text(encoding='utf-8-sig'))
-        generated = discovery_plan(inventory, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+        generated = discovery_plan(inventory, load_catalog(ROOT/'profiles/afx_effects.json'))
     return validate_request(request, generated)
 
 
@@ -533,7 +534,7 @@ def _run_job(job, profile):
     plan = checked_job_plan(job)
     resumed = (job/'resume-source.json').is_file()
     effect_type = plan_effect_type(plan)
-    catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+    catalog = load_catalog(ROOT/'profiles/afx_effects.json')
     validate_wire_controls(plan, catalog)
     bypass_layout = bypass_layout_for(plan, catalog)
     location = device_location(profile)
@@ -964,7 +965,7 @@ def listen(args, profile, location, results):
             discovered.add(folder)
             try:
                 inventory = json.loads((folder/'inventory.json').read_text(encoding='utf-8-sig'))
-                plan = discovery_plan(inventory, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+                plan = discovery_plan(inventory, load_catalog(ROOT/'profiles/afx_effects.json'))
                 write_json(folder/'generated-plan.json', plan)
                 deadline = time.monotonic() + args.wait_seconds
                 print(f"Prepared {plan['panel']}: {len(plan['controls'])} knobs; other controls listed as pending.", flush=True)

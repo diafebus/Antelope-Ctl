@@ -151,8 +151,42 @@ is the number of insert positions, not a guaranteed simultaneous instance
 budget. DSP resources, stereo use, and per-effect instance limits are
 separate facts.
 
-`profiles/afx_effects.json` is a shared catalog, separate from device
-profiles and `mic_models.json`. Its first reference set contains 80 named
+`profiles/afx_effects.json` is the shared catalog manifest, separate from device
+profiles and `mic_models.json`. Each effect is authored in its own
+`profiles/afx/<stable_id>.json` file. The manifest retains catalog-wide metadata
+and an ordered `effect_files` array instead of inline `effects`:
+
+```json
+{
+  "storage_schema": {"id": "antelope-afx-catalog-manifest", "version": 1},
+  "effect_files": ["afx/altec_436c.json", "afx/audiobaton.json"]
+}
+```
+
+This is a storage excerpt, not a complete catalog. `catalog_schema` still
+identifies the logical `antelope-afx-effect-catalog`, version 1;
+`storage_schema` identifies only the split-file packaging. Existing device
+profiles keep `"catalog": "afx_effects.json"`. File references resolve relative
+to the manifest, and their order is the effect order.
+
+Python consumers call `antelope.catalog.load_catalog(path)` to obtain the
+existing dictionary containing inline `effects`; storage-only fields are
+removed. Omitting `path` selects the repository catalog. Legacy inline catalogs are accepted too. Plain `json.load` on the
+manifest does not load effect definitions. For tools that require a single
+JSON document, export the resolved catalog:
+
+```sh
+python3 tools/export_afx_catalog.py --catalog profiles/afx_effects.json \
+  --output /tmp/afx-catalog.json
+```
+
+Omit `--output` to write JSON to stdout. Exported JSON is derived output, not
+another source to edit or commit. Edit an existing plugin directly; when adding
+a plugin, add its stable-ID file and an ordered manifest reference. Preserve
+its model-specific implementations, unknown fields, evidence and verification
+flags. Do not infer new runtime capabilities from this storage layout.
+
+The first reference set contains 80 named
 effect types from Gazelle's Discrete 4 read-only measurements dated
 2026-09-13, with 729 declaration-derived control names. The source profile
 is pinned in `provenance`; unnamed device types are omitted. These entries

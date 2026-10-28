@@ -1,0 +1,491 @@
+{
+  "id": "bbdchorus",
+  "name": "BBD-Chorus",
+  "source_name": "bbdchorus",
+  "category": "chorus",
+  "description": "Bucket-brigade chorus and vibrato with selectable stereo modes.",
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.78",
+    "https://en.antelopeaudio.com/products/bbd-chorus/"
+  ],
+  "controls": [
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    },
+    {
+      "id": "intensity",
+      "label": "Intensity",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    },
+    {
+      "id": "rate",
+      "label": "Rate",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    },
+    {
+      "id": "depth",
+      "label": "Depth",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    },
+    {
+      "id": "chvibrato",
+      "label": "Chvibrato",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    },
+    {
+      "id": "type",
+      "label": "Type",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    },
+    {
+      "id": "bypass",
+      "label": "Bypass",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    },
+    {
+      "id": "peakmeter",
+      "label": "Peakmeter",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_bbdchorus_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 78,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 78,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "level": {
+          "offset": 20,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Level Control",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 210447-215783; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "intensity": {
+          "offset": 21,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Chorus Intensity",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 216443-221735; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "rate": {
+          "offset": 22,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Vibrato Rate",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 224185-224403, 228819-229529; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "depth": {
+          "offset": 23,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Vibrato Depth",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 222393-222667, 227191-228009, 230593-232091; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "chvibrato": {
+          "offset": 24,
+          "range": [
+            0,
+            1
+          ],
+          "display_range": [
+            0,
+            1
+          ],
+          "kind": "enum",
+          "label": "Chorus / Vibrato",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 190895, 191805, 225671; labelled gesture and isolated byte changes agree with the existing declaration. Owner initial Chorus; initial block is 1, isolated switch is 0. Do not inherit Memory Cat polarity."
+          ],
+          "options": {
+            "0": "Vibrato",
+            "1": "Chorus"
+          },
+          "wire_enum": {
+            "0": "Vibrato",
+            "1": "Chorus"
+          }
+        },
+        "type": {
+          "offset": 25,
+          "range": [
+            0,
+            3
+          ],
+          "kind": "enum",
+          "label": "Stereo Type",
+          "status": "capture-observed",
+          "options": {
+            "0": "Basic",
+            "1": "Wide",
+            "2": "Split",
+            "3": "Cross"
+          },
+          "wire_enum": {
+            "0": "basic",
+            "1": "wide",
+            "2": "split",
+            "3": "cross"
+          },
+          "evidence": [
+            "scan-BBD-Chorus-20261009T193326058Z actions1..4: direct labelled row screenshots and isolated byte25 changes; action5 restores Basic0. Runtime writer/readback remain disabled."
+          ]
+        }
+      },
+      "evidence": [
+        "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng",
+        "antelope-orion-afx-modulation-tab.pcapng"
+      ],
+      "notes": "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. 170 writes, 85 right-1/left-0 mirrored pairs. Owner identifies demo use; no ownership claim. No state query/reply in this capture. UNVERIFIED: fresh readback, bounded write/verify/restore, restart and power-cycle retention. Opaque bytes remain preserved; no runtime parameter reader/writer enabled.",
+      "type_id_write_status": "unconfirmed",
+      "parameter_observation": {
+        "prefix_hex": "700000001c0000000000000000000000d50a",
+        "frame_length": 28,
+        "selector": "0xd5",
+        "payload_id": 21,
+        "data_bytes": 10,
+        "type_offset": 18,
+        "instance_offset": 19,
+        "data_offset": 20,
+        "write_complete_block": true,
+        "preserve_other_controls": true,
+        "preserved_fields": {
+          "type": {
+            "offset": 25,
+            "readback_offset": null,
+            "evidence": "Stereo Type now capture-mapped at byte25; see control_encodings.type. Preserve untouched state in complete parameter blocks; no runtime writer enabled."
+          },
+          "bypass": {
+            "offset": 26,
+            "readback_offset": null,
+            "evidence": "Constant 0; not the separate selector-0x98 PWR gesture. Field semantics UNVERIFIED."
+          },
+          "peakmeter": {
+            "offset": 27,
+            "readback_offset": null,
+            "evidence": "Constant 96 (0x60); meter meaning and scale UNVERIFIED. Preserve, never zero-fill or expose as a knob."
+          }
+        },
+        "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults.",
+        "automated_gui_capture": {
+          "source": "scan-BBD-Chorus-20261009T192357505Z",
+          "status": "four knob endpoint pairs and Chorus/Vibrato round trip completed; Stereo Type partial, power not reached",
+          "device_readback_verified": false,
+          "range_knobs_left_at": "maximum",
+          "knob_endpoints": [
+            {
+              "label": "Level Control",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 2309,
+              "maximum_frame": 9663
+            },
+            {
+              "label": "Chorus Intensity",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 14505,
+              "maximum_frame": 22111
+            },
+            {
+              "label": "Vibrato Depth",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 26917,
+              "maximum_frame": 34673
+            },
+            {
+              "label": "Vibrato Rate",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 39807,
+              "maximum_frame": 47575
+            }
+          ],
+          "chorus_vibrato_raw_sequence": [
+            1,
+            0,
+            1
+          ],
+          "selector_observations": [
+            {
+              "label": "Basic",
+              "raw": 0,
+              "offset": 25,
+              "frame": 52399,
+              "status": "before screenshot matches preceding mode parameter block"
+            },
+            {
+              "label": "Split",
+              "raw": 2,
+              "offset": 25,
+              "frame": 53691,
+              "status": "first centre-click screenshot and parameter block agree"
+            }
+          ],
+          "pending": [
+            "Wide and Cross wire values",
+            "Direct-position selector traversal/restoration",
+            "Power round trip"
+          ],
+          "notes": "Centre clicks select Split repeatedly, not a four-state cycle. No guessed enum order or runtime writer enabled.",
+          "completion_review": {
+            "source": "scan-BBD-Chorus-20261009T193326058Z",
+            "status": "all visible editable controls captured across original and resume runs",
+            "selector_raw_values": {
+              "Basic": 0,
+              "Wide": 1,
+              "Split": 2,
+              "Cross": 3
+            },
+            "selector_restored_to": "Basic",
+            "power_visual_restoration": true,
+            "power_states_observed": [
+              0,
+              1
+            ],
+            "packet_count": 8646,
+            "dropped_packets": 0,
+            "coordinator_status": "original final ACK rejected because decoder swapped state/instance offsets; original errors preserved; reviewed offline",
+            "device_readback_verified": false
+          }
+        }
+      },
+      "state_readback": null,
+      "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c",
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "state_values": [
+          0,
+          1
+        ],
+        "processing_polarity_verified": false,
+        "readback_verified": false,
+        "writable": false,
+        "evidence": [
+          "scan-BBD-Chorus-20261009T193326058Z:7063/7067 instance0 state0;7999/8007 instance0 state1, visual Power round trip restored.",
+          "antelope-orion-afx-modulation-tab.pcapng:232899-232913 instance17=1,1,0,0/state19=0;234191-234203 same instance sequence/state19=1. BBD model-local correction; other-effect global-profile offsets remain unresolved."
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261026T091415Z/display-inventories/BBD-Chorus-controls.json",
+        "displays": [
+          {
+            "ui_class": "BBDChorusClipLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "BBDChorusGainReductionLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "BBDChorusLed",
+            "native_instance_count": 3,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "BBDChorusPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "PeakLed",
+            "native_instance_count": 8,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ],
+  "panel": {
+    "rows": [
+      [
+        "level",
+        "intensity",
+        "depth",
+        "rate"
+      ]
+    ],
+    "switches": [
+      "type",
+      "chvibrato"
+    ],
+    "dependencies": {},
+    "evidence": "https://en.antelopeaudio.com/products/bbd-chorus/ and official product panel image; original Gazelle controls follow grouping without copying vendor artwork.",
+    "display_only_controls": {
+      "type": {
+        "label": "Stereo Type",
+        "kind": "enum",
+        "options": {
+          "basic": "Basic",
+          "wide": "Wide",
+          "split": "Split",
+          "cross": "Cross"
+        },
+        "evidence": "Orion raw values now captured in the implementation; preview choices remain local until runtime verification."
+      }
+    }
+  }
+}

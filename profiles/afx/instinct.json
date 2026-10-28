@@ -1,0 +1,1352 @@
+{
+  "id": "instinct",
+  "name": "Instinct",
+  "source_name": "instinct",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.75"
+  ],
+  "controls": [
+    {
+      "id": "attackTime",
+      "label": "Attacktime",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "releaseTime",
+      "label": "Releasetime",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "transientShaperSpeed",
+      "label": "Transientshaperspeed",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "transientShaperCharacter",
+      "label": "Transientshapercharacter",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "boostFreq",
+      "label": "Boostfreq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "boostAmount",
+      "label": "Boostamount",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "drive",
+      "label": "Drive",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "driveModAmount",
+      "label": "Drivemodamount",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "driveFilterCut",
+      "label": "Drivefiltercut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "driveFilterRes",
+      "label": "Drivefilterres",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "driveFilterMix",
+      "label": "Drivefiltermix",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "x2",
+      "label": "X2",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "driveModel",
+      "label": "Drivemodel",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "enablePuncher2",
+      "label": "Enablepuncher2",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "bypassDrive",
+      "label": "Bypassdrive",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "morph",
+      "label": "Morph",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "morphModAmount",
+      "label": "Morphmodamount",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "bias",
+      "label": "Bias",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "biasModAmount",
+      "label": "Biasmodamount",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "toneFilterCut",
+      "label": "Tonefiltercut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "toneFilterCutMod",
+      "label": "Tonefiltercutmod",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "toneFilterRes",
+      "label": "Tonefilterres",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "toneFilterMix",
+      "label": "Tonefiltermix",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "toneFilterOnOff",
+      "label": "Tonefilteronoff",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "mix",
+      "label": "Mix",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    },
+    {
+      "id": "volume",
+      "label": "Volume",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_instinct_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 75,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 75,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng",
+        "unattended-20261026T091415Z-load-instinct/Orion.pcapng frame4245: labelled Instinct Synergy load, AFX2/channel1slot0 type75/instance1, sevenempty; SHA256 89a40308d7cae7a8153817f35b804bb26f3395c0a357ee58041ddee63e3d4556. DEMO caption is availability, not ownership evidence."
+      ],
+      "notes": "Orion type ID established by the owner-labelled load sequence. Instinct has a different opcode and a larger parameter block; Master De-Esser also uses a different opcode from Memory Cat. These observations do not enable loading or parameter writes for either effect. Fresh 2026-10-26 model-switch byte68, processing roundtrip and read-only60entry factory preset inventory complete observed visible controls alongside prior21knob/threeparameter-switch evidence. Physical interpolation, algorithm naming, independent state readback and runtime contracts remain unverified.",
+      "type_id_write_status": "unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x7c",
+        "param_id": "0xd5",
+        "subcmd": "0x6a",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed",
+        "writable": false,
+        "linked_instance_indices": [
+          0,
+          1
+        ],
+        "notes": "Owner-labelled GUI captures establish all21 knob endpoint associations and three switches. Model selection, power, interpolation laws, imported declaration-ID correspondence and runtime readback/write verification remain unresolved. Unknown bytes are preserved; no runtime writer enabled.",
+        "labelled_gui_observations": {
+          "alt_morph": {
+            "label": "ALT Morph",
+            "ui_class": "AltMorphButton",
+            "offset": 72,
+            "width": 1,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_states": {
+              "0": "disengaged",
+              "1": "engaged"
+            },
+            "status": "capture-observed; visual roundtrip observed",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "engaged": 537,
+              "disengaged": 1567
+            },
+            "evidence": [
+              "Local Orion AFX2 automated GUI pilot, 2026-10-09, pilot-Instinct-20261009T161102564Z/Instinct-channel2.pcapng. Same type75/instance1 block, isolated byte72 change1->0; before/restored images match exactly; zero drops. Owner confirms starting buttons disengaged."
+            ],
+            "notes": "Observed UI-to-write association. No catalog declaration ID, device state reader, audible behavior or general runtime writer is established.",
+            "startup_reply_offset": 69
+          },
+          "filter_enable": {
+            "label": "Filter enable",
+            "ui_class": "FilterEnableButton",
+            "offset": 76,
+            "width": 1,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_states": {
+              "0": "disengaged",
+              "1": "engaged"
+            },
+            "status": "capture-observed; visual roundtrip observed",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "engaged": 579,
+              "disengaged": 1603
+            },
+            "evidence": [
+              "Local Orion AFX2 automated GUI batch, 2026-10-09, scan-Instinct-20261009T162320099Z/Instinct-channel2.pcapng. Type75/instance1; isolated byte76 change1->0; before/restored crops match exactly;4092packets/0drops."
+            ],
+            "notes": "Observed UI-to-write association; no inferred declaration ID, parameter state reader, audible behavior or runtime writer.",
+            "startup_reply_offset": 73
+          },
+          "post_filter_enable": {
+            "label": "Post-filter enable",
+            "ui_class": "PFEnable (post-filter region)",
+            "offset": 112,
+            "width": 1,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_states": {
+              "0": "disengaged",
+              "1": "engaged"
+            },
+            "status": "capture-observed; visual roundtrip observed",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "engaged": 2495,
+              "disengaged": 3527
+            },
+            "evidence": [
+              "Local Orion AFX2 automated GUI batch, 2026-10-09, scan-Instinct-20261009T162320099Z/Instinct-channel2.pcapng. Type75/instance1; isolated byte112 change1->0; before/restored crops match exactly;4092packets/0drops."
+            ],
+            "notes": "Observed UI-to-write association; no inferred declaration ID, parameter state reader, audible behavior or runtime writer. PFEnable refers to the post-filter, not panel power.",
+            "startup_reply_offset": 109
+          },
+          "speed": {
+            "label": "Speed",
+            "ui_class": "SpeedPot",
+            "offset": 28,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; restoration failed",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 26583,
+              "maximum": 55845,
+              "last_observed": 83475
+            },
+            "evidence": [
+              "Local scan-Instinct-20261009T170904069Z/Instinct-channel2.pcapng: 192 type75 parameter writes vary only bytes28..31, float32-le min0.0/max1.0. Numeric phase results0%/100%, starting90%; last float0.5 after interrupted restoration. 83942 packets/zero drops."
+            ],
+            "notes": "No runtime writer, complete scale law or readback field inferred. Owner subsequently authorizes range-only scans leaving final endpoint.",
+            "fast_range_trial": {
+              "status": "capture-and-owner-confirmed endpoints; intentionally not restored",
+              "minimum_frame": 2162,
+              "maximum_frame": 4613,
+              "endpoint_phase_seconds": 5.812,
+              "evidence": "Local scan-Instinct-20261009T172307200Z/Instinct-channel2.pcapng: Speed numeric0/100%, float32-le@28 values0/1, intermediate0.96 frame3925. Only bytes28..31 vary, type75/instance1;5914packets/zero drops. Owner confirms fast movement."
+            }
+          },
+          "punch": {
+            "label": "Punch",
+            "ui_class": "PunchPot",
+            "offset": 20,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              -100,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 2260,
+              "maximum": 4592
+            },
+            "evidence": [
+              "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+            ]
+          },
+          "body": {
+            "label": "Body",
+            "ui_class": "BodyPot",
+            "offset": 24,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              -100,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 7794,
+              "maximum": 10222
+            },
+            "evidence": [
+              "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+            ]
+          },
+          "character": {
+            "label": "Character",
+            "ui_class": "CharacterPot",
+            "offset": 32,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              3.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 19202,
+              "maximum": 20870
+            },
+            "evidence": [
+              "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+            ]
+          },
+          "boost_frequency": {
+            "label": "Boost frequency",
+            "ui_class": "BoostFreqPot",
+            "offset": 36,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              100.0
+            ],
+            "observed_display_range": [
+              60,
+              12000
+            ],
+            "display_unit": "Hz",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 24232,
+              "maximum": 26160
+            },
+            "evidence": [
+              "Local scan-Instinct-20261009T172618770Z/Instinct-channel2.pcapng: action-labelled endpoint screenshots and matching full parameter writes. No interpolation law, runtime writer or readback mapping inferred."
+            ]
+          },
+          "knob_boostgain": {
+            "label": "BoostGain",
+            "ui_class": "BoostGainPot",
+            "offset": 40,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              -24.0,
+              24.0
+            ],
+            "observed_display_range": [
+              -24,
+              24
+            ],
+            "display_unit": "DB",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 2581,
+              "maximum": 7927
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_gain": {
+            "label": "Gain",
+            "ui_class": "GainPot",
+            "offset": 44,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              100.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 7927,
+              "maximum": 20737
+            },
+            "minimum_has_action_write": false,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_gainmod": {
+            "label": "GainMod",
+            "ui_class": "GainModPot",
+            "offset": 48,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 25317,
+              "maximum": 32135
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_filterfreq": {
+            "label": "FilterFreq",
+            "ui_class": "FilterFreqPot",
+            "offset": 52,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              100.0
+            ],
+            "observed_display_range": [
+              30,
+              22050
+            ],
+            "display_unit": "Hz",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 36479,
+              "maximum": 43099
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_filterq": {
+            "label": "FilterQ",
+            "ui_class": "FilterQPot",
+            "offset": 56,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.009999999776482582,
+              1.0
+            ],
+            "observed_display_range": [
+              1,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 47546,
+              "maximum": 54543
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_filtermix": {
+            "label": "FilterMix",
+            "ui_class": "FilterMixPot",
+            "offset": 60,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 59081,
+              "maximum": 65501
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_morphmod": {
+            "label": "MorphMod",
+            "ui_class": "MorphModPot",
+            "offset": 84,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 69841,
+              "maximum": 76947
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_morphamount": {
+            "label": "MorphAmount",
+            "ui_class": "MorphAmountPot",
+            "offset": 80,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 81533,
+              "maximum": 88095
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_biasmod": {
+            "label": "BiasMod",
+            "ui_class": "BiasModPot",
+            "offset": 92,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 92433,
+              "maximum": 98061
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_biasamount": {
+            "label": "BiasAmount",
+            "ui_class": "BiasAmountPot",
+            "offset": 88,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 103583,
+              "maximum": 109701
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_pffreq": {
+            "label": "PFFreq",
+            "ui_class": "PFFreqPot",
+            "offset": 96,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              100.0
+            ],
+            "observed_display_range": [
+              30,
+              22050
+            ],
+            "display_unit": "Hz",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 115335,
+              "maximum": 122393
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_pfmod": {
+            "label": "PFMod",
+            "ui_class": "PFModPot",
+            "offset": 100,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 127323,
+              "maximum": 134037
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_pfq": {
+            "label": "PFQ",
+            "ui_class": "PFQPot",
+            "offset": 104,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.009999999776482582,
+              1.0
+            ],
+            "observed_display_range": [
+              1,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 139219,
+              "maximum": 145981
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_pfmix": {
+            "label": "PFMix",
+            "ui_class": "PFMixPot",
+            "offset": 108,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 150905,
+              "maximum": 157667
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_mix": {
+            "label": "Mix",
+            "ui_class": "MixPot",
+            "offset": 116,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              0,
+              100
+            ],
+            "display_unit": "%",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum": 162795,
+              "maximum": 168861
+            },
+            "minimum_has_action_write": true,
+            "evidence": [
+              "Local scan-Instinct-20261009T175536310Z/Instinct-channel2.pcapng, labelled endpoint windows and numeric status. Each endpoint pair differs in one four-byte block;178318packets/zero drops. Gain minimum sends no changed write; latest preceding full block preserves its zero value."
+            ],
+            "notes": "No interpolation law, runtime writer or startup field reader inferred. Owner authorizes leaving maximum."
+          },
+          "knob_volume": {
+            "label": "Volume",
+            "ui_class": "VolumePot",
+            "offset": 120,
+            "width": 4,
+            "encoding": "float32-le",
+            "observed_wire_range": [
+              0.0,
+              1.0
+            ],
+            "observed_display_range": [
+              "-Infinity",
+              1
+            ],
+            "display_unit": "dB",
+            "status": "capture-observed endpoints; scale law unverified",
+            "writable": false,
+            "readback_verified": false,
+            "frames": {
+              "minimum_source_capture": "scan-Instinct-20261009T175536310Z",
+              "minimum": 174973,
+              "maximum_source_capture": "scan-Instinct-20261009T180405603Z",
+              "maximum": 9833
+            },
+            "minimum_has_action_write": false,
+            "evidence": [
+              "Volume-only scan-Instinct-20261009T180405603Z completed both phases. Screens show VOLUME: -inf DB and VOLUME: 1 DB. It starts at minimum and emits no minimum change. Previous continuous sweep ends float32-le@120=0, frame174973; new maximum ends1 at9833. Nine maximum-sweep writes vary only120..123,12878packets/zero drops."
+            ],
+            "notes": "Displayed minimum is negative infinity, stored as a string for valid JSON. Unknown dB interpolation; do not substitute a guessed linear physical scale. Owner authorizes leaving maximum."
+          },
+          "model_switch": {
+            "label": "Model switch (two icons)",
+            "ui_class": "ModelSwitchButton",
+            "offset": 68,
+            "width": 1,
+            "observed_values": [
+              0,
+              1
+            ],
+            "visual_states": {
+              "0": "left icon selected",
+              "1": "right icon selected"
+            },
+            "status": "capture-observed; isolated visual and full-payload roundtrip",
+            "writable": false,
+            "readback_verified": false,
+            "observed_instance": 1,
+            "frames": {
+              "right_icon": 1779,
+              "left_icon_return": 651
+            },
+            "evidence": [
+              "unattended-20261026T091415Z-instinct-model-first/Orion.pcapng frame1779: type75/instance1, onlybyte68 0->1",
+              "unattended-20261026T091415Z-instinct-model-return/Orion.pcapng frame651: onlybyte68 1->0; full parameter payload equals fresh ALT-return baseline; stable control images match"
+            ],
+            "notes": "Printed icons identify the two observed states. Algorithm naming and correspondence to imported declaration driveModel remain unverified. No query, reader or writer contract added."
+          }
+        },
+        "startup_readback_observation": {
+          "status": "capture-observed; restored baseline block matches",
+          "reply_data_offset": 17,
+          "write_data_offset": 20,
+          "compared_write_offsets": [
+            20,
+            123
+          ],
+          "instance": 1,
+          "query_reply_pairs": [
+            [
+              32893,
+              32899
+            ],
+            [
+              35261,
+              35267
+            ]
+          ],
+          "comparison_write_frame": 3527,
+          "changed_state_readback_verified": false,
+          "runtime_query_enabled": false,
+          "evidence": "Local instinct-init-current-20261009/init.pcapng: both instance1 startup payloads match last restored filter-scan write3527 over write offsets20..123. Instance0 differs. 56763 packets, zero drops. No Linux device commands sent."
+        },
+        "range_capture_summary": {
+          "status": "capture-observed; visible control inventory complete",
+          "knob_count": 21,
+          "mapped_switch_count": 4,
+          "unmapped_visible_controls": [],
+          "runtime_writable": false,
+          "runtime_state_reader_enabled": false,
+          "interpolation_laws_verified": false,
+          "unknown_parameter_bytes": "Preserve every byte outside an individually observed field. Constant bytes do not establish defaults or padding.",
+          "declaration_id_correspondence": "UI class names identify observed Orion controls; correspondence to imported declaration IDs remains unverified.",
+          "device_scope": "Orion Studio Synergy Core only",
+          "capture_process": "Shared name-driven Windows inventory and reviewed range/button batches; GUI writes with passive Linux USB recording.",
+          "processing_switch_captured": true,
+          "visible_completion_date": "2026-10-26"
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 1,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB processing button and20stable control regions; animated meter regions excluded",
+        "polarity": "not independently verified audibly",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261026T091415Z-instinct-processing/first/Orion.pcapng frame3045 tuple@17..19=014b00",
+          "unattended-20261026T091415Z-instinct-processing/return/Orion.pcapng frame649 tuple@17..19=014b01; stable regions restored"
+        ]
+      },
+      "preset_inventory": {
+        "status": "capture-observed factory menu inventory; selection/parameter encoding unverified",
+        "read_only": true,
+        "preset_applied": false,
+        "factory_entry_count": 60,
+        "categories": [
+          {
+            "label": "Bus",
+            "entries": [
+              "Glue_1",
+              "Glue_2",
+              "Glue_3"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets-bus2"
+          },
+          {
+            "label": "Creative",
+            "entries": [
+              "Bassolagno",
+              "Bebop",
+              "Blue John",
+              "Broken Resonant",
+              "Chemtrails",
+              "Father Aris",
+              "FM",
+              "Karamos",
+              "Monsieur Kastritsis",
+              "Morning Traffic",
+              "Tyson Kiss"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/creative"
+          },
+          {
+            "label": "Dynamics",
+            "entries": [
+              "Body Release_1",
+              "Body Release_2",
+              "Punch and Gate_1",
+              "Punch and Gate_2",
+              "Punch_1",
+              "Punch_2"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/dynamics"
+          },
+          {
+            "label": "FX",
+            "entries": [
+              "FM_1",
+              "FX_1",
+              "FX_2",
+              "FX_3",
+              "FX_4",
+              "FX_5"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/fx"
+          },
+          {
+            "label": "Noise",
+            "entries": [
+              "Hi Gain Noise_1",
+              "Hi Gain Noise_2",
+              "Hi Gain Noise_3",
+              "HiGain LowFi Tube_1",
+              "Noisy Amp_1",
+              "Noisy Amp_2"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/noise"
+          },
+          {
+            "label": "Tape",
+            "entries": [
+              "Tape Saturation_1",
+              "Tape Saturation_2",
+              "Tape Saturation_3",
+              "Tape Saturation_4"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/tape"
+          },
+          {
+            "label": "TheMute",
+            "entries": [
+              "Bonna Johnna",
+              "Crush Kill n Destroy",
+              "Less Fun",
+              "More Fun",
+              "Outside the Club",
+              "Scratch Master Hype"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/themute"
+          },
+          {
+            "label": "Transistor",
+            "entries": [
+              "Broken Transistor_1",
+              "Broken Transistor_2",
+              "Transistor LowFi Amp",
+              "Transistor LowFi Amp2",
+              "Transistor Warmth_1",
+              "Transistor Warmth_2",
+              "Transistor Warmth_3"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/transistor"
+          },
+          {
+            "label": "Tube",
+            "entries": [
+              "Broken Tube_1",
+              "Broken Tube_2",
+              "LowFi Tube_1",
+              "LowFi Tube_2",
+              "LowFi Tube_3",
+              "Tube Wall_1",
+              "Tube Warmth_1",
+              "Tube Warmth_2",
+              "Tube Warmth_3",
+              "Tube_Oppressor_1",
+              "Tube_Oppressor_2"
+            ],
+            "evidence": "unattended-20261026T091415Z-instinct-presets/tube"
+          }
+        ],
+        "evidence": [
+          "unattended-20261026T091415Z-instinct-preset-inventory",
+          "unattended-20261026T091415Z-instinct-presets",
+          "unattended-20261026T091415Z-instinct-presets-close"
+        ],
+        "notes": "All nine observed factory categories inventoried through category-only expansion. No preset applied, no device writes during inventory or close. User preset contents are outside this factory inventory; no presetIndex mapping inferred."
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261026T091415Z-load-instinct/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "CircularPeakmeter",
+            "native_instance_count": 4,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

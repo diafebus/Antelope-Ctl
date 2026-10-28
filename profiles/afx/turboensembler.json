@@ -1,0 +1,654 @@
+{
+  "id": "turboensembler",
+  "name": "V12 Chorus",
+  "source_name": "turboensembler",
+  "category": "chorus",
+  "description": "Multi-voice chorus with up to twelve generated voices.",
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.70",
+    "https://en.antelopeaudio.com/products/v12-chorus/"
+  ],
+  "controls": [
+    {
+      "id": "humanize",
+      "label": "Humanize",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "voices",
+      "label": "Voices",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "delay",
+      "label": "Delay",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "depth",
+      "label": "Depth",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "color",
+      "label": "Color",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "colorShifter",
+      "label": "Colorshifter",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "space",
+      "label": "Space",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "feedback",
+      "label": "Feedback",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "presetIndex",
+      "label": "Presetindex",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "pan",
+      "label": "Pan",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "mix",
+      "label": "Mix",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    },
+    {
+      "id": "gain",
+      "label": "Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_turboensembler_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 70,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 70,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "humanize": {
+          "offset": 20,
+          "range": [
+            0,
+            1
+          ],
+          "display_range": [
+            0,
+            1
+          ],
+          "kind": "enum",
+          "label": "Humanize",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 96657/98883; labelled gesture and isolated byte changes agree with the existing declaration."
+          ],
+          "options": {
+            "0": "Off",
+            "1": "On"
+          },
+          "wire_enum": {
+            "0": "Off",
+            "1": "On"
+          }
+        },
+        "voices": {
+          "offset": 21,
+          "range": [
+            1,
+            12
+          ],
+          "display_range": [
+            1,
+            12
+          ],
+          "kind": "enum",
+          "label": "Voices",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 39951-42061; labelled gesture and isolated byte changes agree with the existing declaration.",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-10/Orion.pcapng frame1979: isolated Voices byte21 raw1, digital display 1; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-10/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-09/Orion.pcapng frame1959: isolated Voices byte21 raw2, digital display 2; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-09/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-08/Orion.pcapng frame1993: isolated Voices byte21 raw3, digital display 3; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-08/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-07/Orion.pcapng frame1931: isolated Voices byte21 raw4, digital display 4; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-07/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-06/Orion.pcapng frame1951: isolated Voices byte21 raw5, digital display 5; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-06/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-05/Orion.pcapng frame1965: isolated Voices byte21 raw6, digital display 6; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-05/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-04/Orion.pcapng frame1923: isolated Voices byte21 raw7, digital display 7; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-04/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-03/Orion.pcapng frame1909: isolated Voices byte21 raw8, digital display 8; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-03/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-02/Orion.pcapng frame1685: isolated Voices byte21 raw9, digital display 9; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-02/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-down-01/Orion.pcapng frame1875: isolated Voices byte21 raw10, digital display 10; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-down-01/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-up-20/Orion.pcapng frame1859: isolated Voices byte21 raw11, digital display 11; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-up-20/observed-detent.png",
+            "captures/unattended-20261025T195948Z-v12-voices-map/voices-up-21/Orion.pcapng frame1895: isolated Voices byte21 raw12, digital display 12; matching pointer/readout image captures/unattended-20261025T195948Z-v12-voices-map/voices-up-21/observed-detent.png"
+          ],
+          "rotary": true,
+          "options": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "10": "10",
+            "11": "11",
+            "12": "12"
+          },
+          "wire_enum": {
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "6": "6",
+            "7": "7",
+            "8": "8",
+            "9": "9",
+            "10": "10",
+            "11": "11",
+            "12": "12"
+          },
+          "writable": false
+        },
+        "delay": {
+          "offset": 22,
+          "range": [
+            1,
+            100
+          ],
+          "display_range": [
+            1,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Delay",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 43075-47137; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "depth": {
+          "offset": 23,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Detune",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 47899-53453; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "color": {
+          "offset": 24,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Colorize",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 76705-76979, 84549-84659; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "colorShifter": {
+          "offset": 25,
+          "range": [
+            0,
+            255
+          ],
+          "display_range": [
+            0,
+            255
+          ],
+          "kind": "continuous",
+          "label": "Clr Shifter",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 79863-84041; labelled gesture and isolated byte changes agree with the existing declaration. Raw sweep crosses 127 continuously and reaches 255; unsigned byte, physical scale UNVERIFIED."
+          ]
+        },
+        "space": {
+          "offset": 26,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Space",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 68745-75539, 85777-85883; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "feedback": {
+          "offset": 27,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Feedback",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 54211-57947; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "pan": {
+          "offset": 29,
+          "display_center": 90,
+          "range": [
+            0,
+            180
+          ],
+          "display_range": [
+            0,
+            180
+          ],
+          "kind": "continuous",
+          "label": "Pan",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 86595-92303; labelled gesture and isolated byte changes agree with the existing declaration. Owner display -90..+90 with centre 0 corresponds to wire 0..180 with centre 90."
+          ]
+        },
+        "mix": {
+          "offset": 30,
+          "range": [
+            0,
+            100
+          ],
+          "display_range": [
+            0,
+            100
+          ],
+          "kind": "continuous",
+          "label": "Dry/Wet",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 92861-95793; labelled gesture and isolated byte changes agree with the existing declaration."
+          ]
+        },
+        "gain": {
+          "offset": 31,
+          "range": [
+            0,
+            255
+          ],
+          "display_range": [
+            0,
+            255
+          ],
+          "kind": "continuous",
+          "label": "Gain",
+          "status": "capture-observed",
+          "evidence": [
+            "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. Frames 58959-64553; labelled gesture and isolated byte changes agree with the existing declaration. Raw sweep crosses 127 continuously and reaches 255; unsigned byte, physical scale UNVERIFIED."
+          ]
+        }
+      },
+      "evidence": [
+        "antelope-orion-afx-link-loadfx-memorycat-v12-bbdchorus-reorder-removelink.pcapng",
+        "antelope-orion-afx-modulation-tab.pcapng",
+        "unattended-20261025T195948Z-load-v12/Orion.pcapng frame2491: fresh labelled V12 Chorus load, AFX2/channel1slot0 type70/instance0, sevenempty; SHA256 a34091a3da96341ab0fd49219b6a0669b2487d98199a79983c83cc833549cb03."
+      ],
+      "notes": "Owner-labelled modulation capture, analysed 2026-10-02; offsets below are absolute HID report offsets. 490 writes, 245 right-1/left-0 mirrored pairs. No state query/reply in this capture. UNVERIFIED: fresh readback, bounded write/verify/restore, restart and power-cycle retention. Opaque bytes remain preserved; no runtime parameter reader/writer enabled. Fresh 2026-10-25 single-instance processing roundtrip and all twelve discrete Voices count images complete visible-control coverage together with the prior ten-knob/Humanize batch. Historical linked pulse pairs remain archived; no readback, runtime parameter or processing writer enabled.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "prefix_hex": "70000000200000000000000000000000d50e",
+        "frame_length": 32,
+        "selector": "0xd5",
+        "payload_id": 21,
+        "data_bytes": 14,
+        "type_offset": 18,
+        "instance_offset": 19,
+        "data_offset": 20,
+        "write_complete_block": true,
+        "preserve_other_controls": true,
+        "preserved_fields": {
+          "presetIndex": {
+            "offset": 28,
+            "readback_offset": null,
+            "evidence": "Constant 0 throughout 490 writes; declaration name only, not a swept preset control."
+          }
+        },
+        "evidence": "Every edit contains the complete block. Preserve all untouched controls and opaque bytes from fresh state; capture blocks are examples, never defaults.",
+        "automated_gui_capture": {
+          "source": "scan-V12-Chorus-20261009T184118945Z",
+          "status": "ten knob endpoint ranges and Humanize round trip captured",
+          "channel": 2,
+          "packet_count": 138835,
+          "dropped_packets": 0,
+          "device_readback_verified": false,
+          "range_knobs_left_at": "maximum",
+          "power_bypass_captured": false,
+          "knob_endpoints": [
+            {
+              "label": "Space",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 2508,
+              "maximum_frame": 8824
+            },
+            {
+              "label": "Colorize",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 13682,
+              "maximum_frame": 20250
+            },
+            {
+              "label": "Clr Shifter",
+              "minimum": 0,
+              "maximum": 255,
+              "minimum_frame": 25172,
+              "maximum_frame": 34620
+            },
+            {
+              "label": "Voices",
+              "minimum": 1,
+              "maximum": 12,
+              "minimum_frame": 39550,
+              "maximum_frame": 46352
+            },
+            {
+              "label": "Delay",
+              "minimum": 1,
+              "maximum": 100,
+              "minimum_frame": 51058,
+              "maximum_frame": 59160
+            },
+            {
+              "label": "Detune",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 63966,
+              "maximum_frame": 72264
+            },
+            {
+              "label": "Feedback",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 77232,
+              "maximum_frame": 85814
+            },
+            {
+              "label": "Gain",
+              "minimum": 0,
+              "maximum": 255,
+              "minimum_frame": 90822,
+              "maximum_frame": 102832
+            },
+            {
+              "label": "Pan",
+              "minimum": 0,
+              "maximum": 180,
+              "minimum_frame": 108836,
+              "maximum_frame": 117706
+            },
+            {
+              "label": "Dry/Wet",
+              "minimum": 0,
+              "maximum": 100,
+              "minimum_frame": 123958,
+              "maximum_frame": 131752
+            }
+          ],
+          "notes": "Fresh action-local OUT endpoints equal existing catalog bounds; repeated sweeps and complete block stability checked. Screenshots retained locally. No physical interpolation law, runtime writer or device readback established."
+        },
+        "voices_count_mapping": {
+          "status": "capture-observed; all twelve discrete voice counts match raw integers",
+          "source": "captures/unattended-20261025T195948Z-v12-voices-map",
+          "endpoint_source": "scan-V12-Voices-20261025T204943477Z/V12-Voices-channel2.pcapng",
+          "endpoint_capture_sha256": "b6b0fe761de0b6ac92eecf2297ad5ec4ec28ec05bc4c3819f63a07fa0fb41440",
+          "endpoint_frames": [
+            1469,
+            6419
+          ],
+          "endpoint_packet_count": 8606,
+          "endpoint_dropped_packets": 0,
+          "trial_count": 21,
+          "starting_parameter_payload_hex": "000c010000000000005a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "000c010000000000005a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false,
+          "notes": "Initial eight-pixel step crossed two counts; remaining four-pixel steps visit every count and capture a matching digital readout. All other payload bytes preserved. Prior ten-knob/Humanize batch retained without rerunning other controls."
+        }
+      },
+      "state_readback": null,
+      "capture_sha256": "4aae1e81def915a851287d62ae77d05e092e471c18ac9608f5890a3bae25d21c",
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB power indicator, Humanize and all ten knob/readout regions; animated meter excluded",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025T195948Z-v12-processing/first/Orion.pcapng frame3461 tuple@17..19=004600",
+          "unattended-20261025T195948Z-v12-processing/return/Orion.pcapng frame713 tuple@17..19=004601"
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025T195948Z-load-v12/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "TurboEnsemblerPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ],
+  "panel": {
+    "rows": [
+      [
+        "voices",
+        "delay",
+        "depth",
+        "feedback",
+        "gain"
+      ],
+      [
+        "color",
+        "colorShifter",
+        "space",
+        "pan",
+        "mix"
+      ]
+    ],
+    "switches": [
+      "humanize"
+    ],
+    "dependencies": {
+      "color": "space",
+      "colorShifter": "space"
+    },
+    "evidence": "https://en.antelopeaudio.com/products/v12-chorus/ and official product panel image; original Gazelle controls follow grouping without copying vendor artwork."
+  }
+}

@@ -2,7 +2,7 @@
 
 These findings come from owner-authorized Windows GUI captures on Orion Studio
 Synergy Core, reviewed on 2026-10-25. The shared effect identifier remains
-`deesser`; model-local knowledge lives in `profiles/afx_effects.json`.
+`deesser`; model-local knowledge lives in [its plugin file](../profiles/afx/deesser.json).
 Parameter and processing commands remain observation-only. No runtime writer,
 parameter reader, audible result, stereo behavior or power-cycle retention was
 established by this pass.

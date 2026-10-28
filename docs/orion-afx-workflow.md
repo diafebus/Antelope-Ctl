@@ -22,6 +22,26 @@ with unresolved identity, selectors, presets and disabled dependencies remain
 listed as pending. Known measured plans retain their existing behavior. See
 [the Windows instructions](../tools/windows/README.md) for operation and limits.
 
+## Editing captured plugin knowledge
+
+The [catalog manifest](../profiles/afx_effects.json) owns shared provenance and
+ordered file references. Record an effect's controls, model-local encodings,
+source frames and confirmation limits in `profiles/afx/<effect_id>.json`.
+For example, unfinished Audio / Baton findings belong in
+[afx/audiobaton.json](../profiles/afx/audiobaton.json). Read only the relevant
+plugin file when preparing a capture; use `antelope.catalog.load_catalog(path)`
+when a consumer needs the resolved catalog. A new plugin needs a stable-ID
+file and a manifest reference. The [schema guide](profile-schema.md#afx-and-the-shared-effect-catalog)
+records loading and flat-export usage.
+
+Private helpers archived from earlier capture sessions may search or splice
+inline effect objects in `profiles/afx_effects.json`. Those helpers predate the
+manifest and must be adapted before reuse: update the plugin file directly and
+use the shared loader for catalog reads. Never serialize the assembled catalog
+back over the manifest. Keep historical helper archives intact as evidence;
+their archived runtime IDs, deadlines and bridge paths also require fresh
+session checks. This refactor does not resume hardware work or authorize writes.
+
 ## Evidence already available
 
 Initialization status readback is established. The owner reconfirmed the

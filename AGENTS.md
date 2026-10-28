@@ -20,7 +20,8 @@ Kernel work remains a later option after protocol/hardware validation.
 3. Read only relevant sections of [README.md](README.md),
    [PROTOCOL.md](PROTOCOL.md), [the Orion profile](profiles/orion_studio_sc.json)
    and [the schema](docs/profile-schema.md). For AFX use
-   [the workflow](docs/orion-afx-workflow.md) and [the catalog](profiles/afx_effects.json).
+   [the workflow](docs/orion-afx-workflow.md), [the catalog manifest](profiles/afx_effects.json)
+   and only the relevant `profiles/afx/<effect_id>.json` plugin files.
    Use local `captures/CAPTURE_INDEX.md` before rescanning raw captures.
 
 User instructions and existing session authorization take precedence. Finish
@@ -37,8 +38,11 @@ concise progress updates; spawn subagents only when requested.
   active profile. Separate HID controls from audio ISO traffic; an inbound-only
   capture does not establish a write command.
 - Store capacity and wire/runtime contracts in device profiles; store shared
-  effect definitions with model-specific encodings in the AFX catalog. Resource
-  counts do not establish license ownership. Consumers use these mappings;
+  effect definitions with model-specific encodings in `profiles/afx/<effect_id>.json`;
+  the catalog manifest owns metadata and ordered file references. Load the resolved
+  catalog through `antelope.catalog.load_catalog`; do not text-slice or write an
+  assembled catalog back over the manifest. Resource counts do not establish
+  license ownership. Consumers use these mappings;
   preserve unknown fields/bits and compatibility identifiers.
 - UI/software naming is **Gazelle Reverb**; **AuraVerb** is the original
   hardware/protocol name. Keep identifiers such as `auraverb` compatible.

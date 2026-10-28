@@ -1,0 +1,482 @@
+{
+  "id": "veq_stu_089",
+  "name": "VEQ-STU 089",
+  "source_name": "VEQ-STU 089",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.21"
+  ],
+  "controls": [
+    {
+      "id": "lf_cut",
+      "label": "Lf Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 089_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_cut",
+      "label": "Hf Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 089_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_shelf",
+      "label": "Lf Shelf",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 089_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_shelf",
+      "label": "Hf Shelf",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 089_conf.fields"
+      ]
+    },
+    {
+      "id": "mf_gain",
+      "label": "Mf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 089_conf.fields"
+      ]
+    },
+    {
+      "id": "mf_freq",
+      "label": "Mf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 089_conf.fields"
+      ]
+    },
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 089_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 21,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 21,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "lf_cut": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "LF Cut",
+          "options": {
+            "0": "–",
+            "1": "60",
+            "2": "100",
+            "3": "150",
+            "4": "250"
+          },
+          "wire_enum": {
+            "0": "–",
+            "1": "60",
+            "2": "100",
+            "3": "150",
+            "4": "250"
+          },
+          "status": "capture-observed; complete positional map; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/lf_cut-return-04/Orion.pcapng frame3035: byte20 raw0, printed –; paired observed.png independently reviewed; SHA256 dfc90601d91c179977aff6ba492bd84ed74576ce9e516968568901794ccd18a0",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/lf_cut-return-03/Orion.pcapng frame3081: byte20 raw1, printed 60; paired observed.png independently reviewed; SHA256 7114304f7d53d8f8f7f715849072cf5ea558ec3291594bb499093d3853ef36f7",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/lf_cut-first-01/Orion.pcapng frame2815: byte20 raw2, printed 100; paired observed.png independently reviewed; SHA256 e7b2590dc9bdea903055cc9ef32a7c2a5d428ad4289ae4ef92e0d9d1977b05f8",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/lf_cut-first-02/Orion.pcapng frame2929: byte20 raw3, printed 150; paired observed.png independently reviewed; SHA256 9d694da38bb76c0903d375e6390a97ca2e88e6d9bdfd056d9ac49b24e8c7c693",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/lf_cut-first-03/Orion.pcapng frame3023: byte20 raw4, printed 250; paired observed.png independently reviewed; SHA256 dfe31aa0e3c478a8a8edeeba45dc665d71963d29a6105cd378d9038a6787fd9f"
+          ],
+          "notes": "Printed Hz labels; literal dash retained. Vendor manual declares bypass. Captures establish wire order and full-body/static-image return, without independent device readback or calibrated response."
+        },
+        "hf_cut": {
+          "offset": 21,
+          "width": 1,
+          "kind": "enum",
+          "label": "HF Cut",
+          "options": {
+            "0": "–",
+            "1": "12",
+            "2": "8",
+            "3": "5",
+            "4": "3"
+          },
+          "wire_enum": {
+            "0": "–",
+            "1": "12",
+            "2": "8",
+            "3": "5",
+            "4": "3"
+          },
+          "status": "capture-observed; complete positional map; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/hf_cut-return-04/Orion.pcapng frame3155: byte21 raw0, printed –; paired observed.png independently reviewed; SHA256 fdd03aaaa92bd2684f9cd076e6afb2ef9ae78664c08e6c85f2c2974a3512e0f6",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/hf_cut-first-01/Orion.pcapng frame3009: byte21 raw1, printed 12; paired observed.png independently reviewed; SHA256 98a2027d35d48ce5ea9dbcca0449e134cd3c06561c5e480c89d518fc38fb6362",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/hf_cut-first-02/Orion.pcapng frame3193: byte21 raw2, printed 8; paired observed.png independently reviewed; SHA256 43e6e75b6ac2be41042e1901eb9120af983463656a5c6dd6728d2f8b214496b4",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/hf_cut-first-03/Orion.pcapng frame2931: byte21 raw3, printed 5; paired observed.png independently reviewed; SHA256 f4902f8b167bf5dc5dfba2d1a209eb2bdfe9b5de43963db30645abcb1a296367",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/hf_cut-first-04/Orion.pcapng frame2957: byte21 raw4, printed 3; paired observed.png independently reviewed; SHA256 2b8f678558a10443dd756393979cdae3990c354a49a5f11fc58443920c628272"
+          ],
+          "notes": "Printed kHz labels; literal dash retained. Vendor manual declares bypass. Captures establish wire order and full-body/static-image return, without independent device readback or calibrated response."
+        },
+        "mf_freq": {
+          "offset": 25,
+          "width": 1,
+          "kind": "enum",
+          "label": "Presence Frequency",
+          "options": {
+            "0": "–",
+            "1": "0.4",
+            "2": "0.7",
+            "3": "1.2",
+            "4": "2.2",
+            "5": "3.9",
+            "6": "6.8"
+          },
+          "wire_enum": {
+            "0": "–",
+            "1": "0.4",
+            "2": "0.7",
+            "3": "1.2",
+            "4": "2.2",
+            "5": "3.9",
+            "6": "6.8"
+          },
+          "status": "capture-observed; complete positional map; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/mf_freq-return-06/Orion.pcapng frame3631: byte25 raw0, printed –; paired observed.png independently reviewed; SHA256 a8721da130d6795b3f55ad0de68ffd12a0685ad04fda96a991c565496813b91e",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/mf_freq-first-01/Orion.pcapng frame3219: byte25 raw1, printed 0.4; paired observed.png independently reviewed; SHA256 95164f74cb9499f7e657d66f846282f8d65828266e2d7cf4d8c85da290d2c01b",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/mf_freq-first-02/Orion.pcapng frame2985: byte25 raw2, printed 0.7; paired observed.png independently reviewed; SHA256 fce79457ac5e65cd58ee6044b0745349719b8a714f118fa44c7b333365a1d6fb",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/mf_freq-first-03/Orion.pcapng frame3027: byte25 raw3, printed 1.2; paired observed.png independently reviewed; SHA256 7e394dff5b6f2966b4d5a6d1fe5b9e057a3ea5f5974e9539ae49882a7d6028bf",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/mf_freq-first-04/Orion.pcapng frame3169: byte25 raw4, printed 2.2; paired observed.png independently reviewed; SHA256 79b5c63d01f6c2d9cbd58c94f643102407c05fcd7bccedf4ee74930202946a67",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/mf_freq-first-05/Orion.pcapng frame3193: byte25 raw5, printed 3.9; paired observed.png independently reviewed; SHA256 b767411fb7f3736d52d4e56774647bda80a4181fe8f6b54b4f4d39c29026dd06",
+            "captures/unattended-20261027T144257Z-veqstu089-selector-maps/mf_freq-first-06/Orion.pcapng frame3247: byte25 raw6, printed 6.8; paired observed.png independently reviewed; SHA256 07850e3c615d5e99b06ba941c73b8de9da6961b4985d72e7a05dd2e4343b2361"
+          ],
+          "notes": "Printed kHz labels; literal dash retained. Vendor manual declares bypass. Captures establish wire order and full-body/static-image return, without independent device readback or calibrated response."
+        },
+        "mf_gain": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Presence Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer089-20261027T150545312Z/Studer089-channel2.pcapng frame4475: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Studer089-20261027T150545312Z/Studer089-channel2.pcapng frame12839: directed maximum raw100; all other parameter fields preserved."
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; printed ticks do not establish detents or physical/interpolation laws."
+        },
+        "level": {
+          "offset": 26,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer089-20261027T150545312Z/Studer089-channel2.pcapng frame20383: directed minimum raw232; all other parameter fields preserved.",
+            "captures/scan-Studer089-20261027T150545312Z/Studer089-channel2.pcapng frame27775: directed maximum raw12; all other parameter fields preserved."
+          ],
+          "raw_endpoints": [
+            232,
+            12
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            12
+          ],
+          "notes": "Unsigned wire endpoints retained. Signed interpretation, units, intermediate scale and audible gain remain unverified."
+        },
+        "lf_shelf": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "LF Shelf",
+          "options": {
+            "0": "-",
+            "1": "+2",
+            "2": "+4",
+            "3": "+6",
+            "4": "+8",
+            "255": "-2",
+            "254": "-4",
+            "253": "-6",
+            "252": "-8"
+          },
+          "wire_enum": {
+            "0": "-",
+            "1": "+2",
+            "2": "+4",
+            "3": "+6",
+            "4": "+8",
+            "255": "-2",
+            "254": "-4",
+            "253": "-6",
+            "252": "-8"
+          },
+          "status": "capture-observed; complete stepped positional map; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-first-01/Orion.pcapng frame3343: byte22 raw2, printed +4; matching observed.png independently reviewed; SHA256 39d70e4fd8b72d540afa990c567540c7eb0f1a4cd6d83b215f71805eb218e5e7",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-first-02/Orion.pcapng frame3313: byte22 raw3, printed +6; matching observed.png independently reviewed; SHA256 923b7360f1b7d921ecb83e3ef08feb986a9143d0ee93d7c26c8c7a0214a9600b",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-first-03/Orion.pcapng frame3333: byte22 raw4, printed +8; matching observed.png independently reviewed; SHA256 2d7277a1a00ecc998e2b73ad664281016db38c06b053a7e7ad135ce83d5ad8b9",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-traverse-03/Orion.pcapng frame3383: byte22 raw1, printed +2; matching observed.png independently reviewed; SHA256 8af0f9d417dd410edb18eb04c9ee72f680f93510ae4431c11fec5ec94231be9e",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-traverse-04/Orion.pcapng frame3384: byte22 raw0, printed -; matching observed.png independently reviewed; SHA256 c8f26d47178c1c7f9061526f88820e1a7a5aad6cc6a89ff34c87b38b64d2e21a",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-traverse-05/Orion.pcapng frame3697: byte22 raw255, printed -2; matching observed.png independently reviewed; SHA256 1d555876a6317a559e7317d49530f4de07f2ee5463e70e06c99257739a908ab2",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-traverse-06/Orion.pcapng frame3523: byte22 raw254, printed -4; matching observed.png independently reviewed; SHA256 22ee5b1967c132190fc746ae13563b0ce2c93b3b9a14d94e8ed33658c5c0540f",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-traverse-07/Orion.pcapng frame3481: byte22 raw253, printed -6; matching observed.png independently reviewed; SHA256 e6e80b2d5869c8abc5a14cc1db1c6ea96c720f6355d71dc2924f38b807143613",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/lf_shelf-traverse-08/Orion.pcapng frame3457: byte22 raw252, printed -8; matching observed.png independently reviewed; SHA256 057a0eb406d38c3be4b1644ef5a331966acd00167059d0fb9fc295b79814ab16"
+          ],
+          "notes": "Nine observed snapped positions; printed dB labels only. Raw bytes retained without promoting signed arithmetic or a calibrated audible response. Both visible terminals witnessed and full captured body/static panel returned."
+        },
+        "hf_shelf": {
+          "offset": 23,
+          "width": 1,
+          "kind": "enum",
+          "label": "HF Shelf",
+          "options": {
+            "0": "-",
+            "1": "+2",
+            "2": "+4",
+            "3": "+6",
+            "4": "+8",
+            "255": "-2",
+            "254": "-4",
+            "253": "-6",
+            "252": "-8"
+          },
+          "wire_enum": {
+            "0": "-",
+            "1": "+2",
+            "2": "+4",
+            "3": "+6",
+            "4": "+8",
+            "255": "-2",
+            "254": "-4",
+            "253": "-6",
+            "252": "-8"
+          },
+          "status": "capture-observed; complete stepped positional map; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-first-01/Orion.pcapng frame3389: byte23 raw1, printed +2; matching observed.png independently reviewed; SHA256 a346ac7dfd9664f893cc65f1b71948f6c487b1f81d1d28696ebcc4772b632ac8",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-first-02/Orion.pcapng frame3383: byte23 raw2, printed +4; matching observed.png independently reviewed; SHA256 bbc062b8c4643f58956bb7efdc09feacc6c55009ba36cf5ca9b3da2209df8fbf",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-first-03/Orion.pcapng frame3531: byte23 raw3, printed +6; matching observed.png independently reviewed; SHA256 1b45d81c8bdd7fce2285de91b499a29c4af0164184f1647879dde00ffc55adea",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-first-04/Orion.pcapng frame3173: byte23 raw4, printed +8; matching observed.png independently reviewed; SHA256 3c0c61c8d6a08bd47fed3926e49263a58db37e278de50c34dcc21d8f45ddfe8f",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-traverse-04/Orion.pcapng frame3323: byte23 raw0, printed -; matching observed.png independently reviewed; SHA256 d3e425ad5b050509fc3c5c5db2d96e399ca18d3a40860624a8b1456bfbeeae21",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-traverse-05/Orion.pcapng frame3311: byte23 raw255, printed -2; matching observed.png independently reviewed; SHA256 7d9db6d33b758e5a2c8a862411c494195a6ab5d368a265a9e8bd703a736728f1",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-traverse-06/Orion.pcapng frame3343: byte23 raw254, printed -4; matching observed.png independently reviewed; SHA256 1b25fba322ddb3bc348ad91318a48c5781367ae0e73ce7caf178773b6dbf3752",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-traverse-07/Orion.pcapng frame3341: byte23 raw253, printed -6; matching observed.png independently reviewed; SHA256 7064f91dc711c84cec5888dd975404fb61fefd1501df6519f2d314a22594660d",
+            "captures/unattended-20261027T144257Z-veqstu089-shelf-maps/hf_shelf-traverse-08/Orion.pcapng frame3409: byte23 raw252, printed -8; matching observed.png independently reviewed; SHA256 15f3b93d5298149415d625c22d457fad7cd1242314ef07dbdabba4bfe1cb8a65"
+          ],
+          "notes": "Nine observed snapped positions; printed dB labels only. Raw bytes retained without promoting signed arithmetic or a calibrated audible response. Both visible terminals witnessed and full captured body/static panel returned."
+        }
+      },
+      "evidence": [
+        "unattended-20261027T144257Z-load-veqstu089/Orion.pcapng frame1581: labelled VEQ-STU 089 vendor load on just-verified empty AFX2/channel1slot0,type21instance0; SHA256 592b3bcfbaa4a51a60c0f3a5cd47b3e63c1100cdcd7c7570b29c67415681660b"
+      ],
+      "notes": "Orion VEQ-STU 089: two rotary endpoint candidate pairs, LF/HF Cut five-position maps, Presence Frequency seven-position map, both nine-position shelf maps and processing round trip captured. Five sliders snap to finite positions; complete raw/printed-label maps are captured rather than inferred from ticks. Every slider map returns the complete captured body and checked static panel; processing returns its static GUI baseline. Rotary endpoint scans intentionally finish at maxima. Signed interpretations, physical/intermediate rotary scales, independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed record GUI presence only; signal telemetry remains unknown.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "status": "capture-observed; all visible editable controls covered; scaling and runtime contract unverified",
+        "opcode": "0x1b",
+        "param_id": "0xd5",
+        "subcmd": "0x09",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "unattended-20261027T144257Z-veqstu089-priming/Orion.pcapng frame2457; complete first observed block, preservation before first report not established.",
+          "scan-Studer089-20261027T150545312Z: 4 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "endpoint_candidates": [
+          {
+            "control": "mf_gain",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4475
+          },
+          {
+            "control": "mf_gain",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 12839
+          },
+          {
+            "control": "level",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 20383
+          },
+          {
+            "control": "level",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 12,
+            "frame": 27775
+          }
+        ],
+        "capture_sha256": "f90047d72a183f3a351744153cdf4c0d33b014f47bd0d77511e4ff6f46be0c0e",
+        "selector_maps": {
+          "source": "captures/unattended-20261027T144257Z-veqstu089-selector-maps",
+          "status": "three complete finite maps; whole-body/static-image restoration independently reviewed",
+          "fields": {
+            "lf_cut": 20,
+            "hf_cut": 21,
+            "mf_freq": 25
+          },
+          "starting_parameter_payload_hex": "0000000064000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "0000000064000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        },
+        "shelf_maps": {
+          "source": "captures/unattended-20261027T144257Z-veqstu089-shelf-maps",
+          "status": "two complete nine-position maps; full captured body/static-image restoration independently reviewed",
+          "fields": {
+            "lf_shelf": 22,
+            "hf_shelf": 23
+          },
+          "starting_parameter_payload_hex": "0000000064000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "0000000064000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261027T144257Z-load-veqstu089/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Studer089Peakmeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB static panel including processing lever/LED and all seven parameter controls; animated peak meter excluded",
+        "polarity": "GUI correlated only; independent changed-state readback unverified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261027T144257Z-veqstu089-processing/first/Orion.pcapng frame3863: tuple@17..19=001500; static panel returned, animated meter excluded; SHA256 2bdd2c983d7fe2dbaec6476fa3cfa26c91b96cc8cb2c9bf8583b300ffa20753e",
+          "captures/unattended-20261027T144257Z-veqstu089-processing/return/Orion.pcapng frame1055: tuple@17..19=001501; static panel returned, animated meter excluded; SHA256 a997b399baecb690b472d9eb2cf08b0db1f559e85f3a605a661e91c0411007a1"
+        ]
+      }
+    }
+  ]
+}

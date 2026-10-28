@@ -1,4 +1,5 @@
 """Hardware-free evidence and scope checks for the VM pilot."""
+from antelope.catalog import load_catalog
 import json
 from pathlib import Path
 import tempfile
@@ -181,7 +182,7 @@ except RuntimeError:
     def test_discovery_prepares_knobs_and_binary_toggles_without_wire_guesses(self):
         from tools.afx_scan_discovery import discovery_plan
         from tools.afx_vm_pilot import ROOT
-        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        catalog = load_catalog(ROOT/'profiles/afx_effects.json')
         plan = discovery_plan(self.discovery_inventory(), catalog)
         self.assertEqual([c['feedback'] for c in plan['controls']], ['captured_block', 'gui_toggle'])
         self.assertTrue(all('wire' not in c for c in plan['controls']))
@@ -195,7 +196,7 @@ except RuntimeError:
     def test_discovery_rejects_wrong_panel_and_never_moves_ambiguous_knobs(self):
         from tools.afx_scan_discovery import discovery_plan
         from tools.afx_vm_pilot import ROOT
-        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        catalog = load_catalog(ROOT/'profiles/afx_effects.json')
         for field, value in [('process_name', 'other'), ('panel_class', 'Mixer'), ('panel_name', 'unknown')]:
             inventory = self.discovery_inventory(); inventory[field] = value
             with self.subTest(field=field), self.assertRaises(ValueError): discovery_plan(inventory, catalog)
@@ -214,7 +215,7 @@ except RuntimeError:
     def test_discovery_does_not_reclassify_measured_monitor_selector_as_binary(self):
         from tools.afx_scan_discovery import discovery_plan
         from tools.afx_vm_pilot import ROOT
-        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        catalog = load_catalog(ROOT/'profiles/afx_effects.json')
         inventory = self.discovery_inventory()
         inventory['controls'][-1]['class_name'] = 'DeesserCtrlButtonNoInheritance'
         plan = discovery_plan(inventory, catalog)
@@ -224,7 +225,7 @@ except RuntimeError:
     def test_discovery_never_sweeps_processing_switches_named_pot(self):
         from tools.afx_scan_discovery import discovery_plan
         from tools.afx_vm_pilot import ROOT
-        catalog = json.loads((ROOT/'profiles/afx_effects.json').read_text())
+        catalog = load_catalog(ROOT/'profiles/afx_effects.json')
         for suffix in ('BypassPot', 'PowerPot'):
             inventory = self.discovery_inventory()
             switch = dict(inventory['controls'][0], class_name='Deesser' + suffix)
@@ -280,7 +281,7 @@ except RuntimeError:
         import copy
         from tools.afx_scan_discovery import discovery_plan
         from tools.afx_vm_pilot import ROOT, run_job
-        plan = discovery_plan(self.discovery_inventory(), json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+        plan = discovery_plan(self.discovery_inventory(), load_catalog(ROOT/'profiles/afx_effects.json'))
         request = {'version': 3, 'plan_id': plan['id'], 'panel': plan['panel'], 'channel': 2,
                    'controls': [c['id'] for c in plan['controls']], 'actions': 4, 'executed_plan': plan}
         alterations = [('class_name', 'AnotherPot'), ('kind', 'binary_button'), ('feedback', 'numeric')]
@@ -298,7 +299,7 @@ except RuntimeError:
         from tools.afx_vm_pilot import ROOT, run_job
         from tools.afx_scan_discovery import discovery_plan
         inventory = self.discovery_inventory(); inventory['controls'] = inventory['controls'][:1]
-        plan = discovery_plan(inventory, json.loads((ROOT/'profiles/afx_effects.json').read_text()))
+        plan = discovery_plan(inventory, load_catalog(ROOT/'profiles/afx_effects.json'))
         current = []; mode = {'wrong': False}
         def add_parameter(value, instance=0):
             data = bytearray(frame(0x20, [0xd5, 0x0e, 27, instance])); data[20] = value
@@ -370,7 +371,7 @@ except RuntimeError:
         from tools.afx_vm_pilot import load_plans
         plans = load_plans()
         plan = plans['v12-controls']
-        catalog = json.loads((Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json').read_text())
+        catalog = load_catalog(Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json')
         validate_wire_controls(plan, catalog)
         self.assertEqual(plan['controls'][0]['wire']['control_id'], 'space')
         self.assertEqual(len(planned_actions(plan)), 22)
@@ -404,7 +405,7 @@ except RuntimeError:
         import struct
         from tools.afx_vm_pilot import load_plans
         plan = load_plans()['instinct-speed-range']
-        catalog = json.loads((Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json').read_text())
+        catalog = load_catalog(Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json')
         validate_wire_controls(plan, catalog)
         control = plan['controls'][0]
         data = bytearray(frame(0x7c, [0xd5, 0x6a, 75, 1]))
@@ -615,7 +616,7 @@ except RuntimeError:
         # Literal tails from linked frames10215/10219 and isolated return837.
         from tools.scan_afx_capture import analyze_reports
         from tools.afx_vm_pilot import bypass_layout_for
-        catalog=json.loads((Path(__file__).resolve().parents[1]/'profiles/afx_effects.json').read_text())
+        catalog=load_catalog(Path(__file__).resolve().parents[1]/'profiles/afx_effects.json')
         layout=bypass_layout_for({'effect_id':'memory_brigade'},catalog)
         reports=[]
         for number,tail in ((10215,'98014900'),(10219,'98004900'),(10220,'98004901')):
@@ -633,7 +634,7 @@ except RuntimeError:
 
     def test_bbd_power_layout_is_model_local_and_decodes_literal_capture_frames(self):
         from tools.afx_vm_pilot import bypass_layout_for, load_plans
-        catalog=json.loads((Path(__file__).resolve().parents[1]/'profiles/afx_effects.json').read_text())
+        catalog=load_catalog(Path(__file__).resolve().parents[1]/'profiles/afx_effects.json')
         layout=bypass_layout_for(load_plans()['bbd-remaining'],catalog)
         reports=[]
         for number,tail in ((7063,'98004e00'),(7999,'98004e01')):

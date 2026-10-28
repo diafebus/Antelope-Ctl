@@ -10,6 +10,7 @@ right tool.
 | Need | Tool | Writes to hardware? |
 | --- | --- | --- |
 | Run the complete offline regression suite | `python3 tools/offline_checks.py` | No |
+| Export the split AFX catalog as one JSON document | `python3 tools/export_afx_catalog.py --catalog profiles/afx_effects.json --output /tmp/afx-catalog.json` | No |
 | Check browser rendering, links, and AFX popup lifecycle | `node tools/test_webui_meters.cjs`, `node tools/test_webui_mixer_links.cjs`, `node tools/test_webui_input_links.cjs`, and `node tools/test_webui_afx.cjs` | No |
 | Verify the connected device through bounded readbacks | `python3 tools/selftest.py` | No by default |
 | Run restore-safe hardware round trips | `python3 tools/selftest.py --write` | Yes; restores state |
@@ -100,6 +101,15 @@ Capture inputs are ignored too; keep only sanitized findings in the tracked
 profile and protocol documentation.
 
 ## Orion AFX evidence and regression checks
+
+AFX plugin definitions live in `profiles/afx/<effect_id>.json`, listed by the
+ordered `profiles/afx_effects.json` manifest. Python tools read them through
+`antelope.catalog.load_catalog(path)`. The exporter above writes resolved
+inline JSON for external tools; omit `--output` for stdout or `--catalog` to
+select the repository catalog. Generated exports
+are not authored catalog sources. Archived capture helpers that parsed or
+text-spliced the old inline catalog require migration before reuse; see the
+[editing workflow](../docs/orion-afx-workflow.md#editing-captured-plugin-knowledge).
 
 The 2026-10-01 device trials verified all 16 AFX link transitions against the
 five bounded link tables, then verified Memory Cat load/remove on the 30

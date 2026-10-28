@@ -1,0 +1,1025 @@
+{
+  "id": "deesser",
+  "name": "Master De-Esser",
+  "source_name": "deesser",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.27"
+  ],
+  "controls": [
+    {
+      "id": "ctrl",
+      "label": "Ctrl",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "threshold",
+      "label": "Threshold",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "crit_f",
+      "label": "Crit F",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "q_factor",
+      "label": "Q Factor",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "filter_type",
+      "label": "Filter Type",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "wd_control",
+      "label": "Wd Control",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "ratio",
+      "label": "Ratio",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "release",
+      "label": "Release",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    },
+    {
+      "id": "knee_width",
+      "label": "Knee Width",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_deesser_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 27,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 27,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "filter_type": {
+          "offset": 26,
+          "width": 1,
+          "range": [
+            0,
+            4
+          ],
+          "kind": "enum",
+          "label": "Filter Type",
+          "status": "capture-observed; five visible choices, full-count discrepancy unresolved",
+          "options": {
+            "0": "HighPass 1",
+            "1": "HighPass 2",
+            "2": "HighPass 3",
+            "3": "BandPass 1",
+            "4": "BandPass 2"
+          },
+          "wire_enum": {
+            "0": "HighPass 1",
+            "1": "HighPass 2",
+            "2": "HighPass 3",
+            "3": "BandPass 1",
+            "4": "BandPass 2"
+          },
+          "writable": false,
+          "evidence": [
+            "scan-Master-De-Esser-20261025T003137097Z/Master-De-Esser-channel2.pcapng: frames3259/7903/12473/17153/21841 select HighPass1/2/3 and BandPass1/2; frame26473 restores HighPass1. All six phases host-accepted; only byte26 changes. SHA256 f599f67499664741c0d5276cb0afdae2d941c2b571b138a9467b533e60e847ac. No independent parameter readback."
+          ]
+        },
+        "ctrl": {
+          "offset": 20,
+          "width": 1,
+          "range": [
+            0,
+            3
+          ],
+          "kind": "enum",
+          "label": "Monitor / Out",
+          "status": "capture-observed four-state cycle; mode meanings and runtime readback unverified",
+          "writable": false,
+          "evidence": [
+            "scan-Master-De-Esser-20261025T005043532Z: after BandPass2 Q trials, frames16347/17151/17857/18613 traverse raw1/2/3/0 and restore the preceding raw0 block; four labelled LED-region images and host acceptance. Windows TogglePattern is On for multiple states and cannot establish binary state count.",
+            "https://en.antelopeaudio.com/products/master-de-esser/"
+          ]
+        }
+      },
+      "evidence": [
+        "antelope-orion-afx-load-instinct-singlemode-clicklink-add-masterdeesser-moveparameters-inlinkmode.pcapng",
+        "scan-Master-De-Esser-20261025T003137097Z"
+      ],
+      "notes": "Orion type ID established by the owner-labelled load sequence. Instinct has a different opcode and a larger parameter block; Master De-Esser also uses a different opcode from Memory Cat. These observations do not enable loading or parameter writes for either effect.",
+      "type_id_write_status": "unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x20",
+        "param_id": "0xd5",
+        "subcmd": "0x0e",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed",
+        "writable": false,
+        "linked_instance_indices": [
+          0,
+          1
+        ],
+        "notes": "Directed native GUI captures now cover eight knob endpoint candidates (Q in both BandPass modes), five visible filter choices, the four-state Monitor/Out selector and a processing-button round trip. Presets are inventoried without selection. GUI/captured-write checks do not establish physical scaling, independent parameter/processing readback, stereo/audible behavior, or runtime writers. The older sixth-filter-choice report remains a historical discrepancy.",
+        "preserved_fields": {
+          "filter_type": {
+            "offset": 26,
+            "readback_offset": null,
+            "evidence": "Five visible choices now mapped at byte26; control_encodings.filter_type and visible_filter_capture retain labels/frames. Unknown fields and unobserved choices remain preserved."
+          },
+          "ctrl": {
+            "offset": 20,
+            "evidence": "scan-Master-De-Esser-20261025T005043532Z frames16347/17151/17857/18613 establish the labelled four-state Monitor/Out cycle at byte20, with full-block return to preceding raw0. Earlier failed binary trial and directed continuation remain historical evidence."
+          }
+        },
+        "automated_gui_capture": {
+          "source": "scan-Master-De-Esser-20261009T211457387Z",
+          "status": "Filter Type GUI round trip completed; partial selector mapping only",
+          "type_id": 27,
+          "instance": 0,
+          "selector_observations": [
+            {
+              "control_id": "filter_type",
+              "label": "BandPass 1",
+              "offset": 26,
+              "raw": 3,
+              "frame": 447
+            },
+            {
+              "control_id": "filter_type",
+              "label": "HighPass 3",
+              "offset": 26,
+              "raw": 2,
+              "frame": 1209
+            }
+          ],
+          "restored_gui_selection": "HighPass 3",
+          "changed_parameter_offsets": [
+            26
+          ],
+          "packet_count": 1754,
+          "dropped_packets": 0,
+          "device_readback_verified": false,
+          "pending": [
+            "Remaining filter options",
+            "Q dependency",
+            "Knob ranges",
+            "Monitor/Out",
+            "Bypass",
+            "Preset inventory"
+          ],
+          "notes": "No complete menu, field range, option order or runtime writer inferred. Subsequent partial-notch pacing needs Windows verification."
+        },
+        "visible_filter_capture": {
+          "source": "scan-Master-De-Esser-20261025T003137097Z",
+          "capture_sha256": "f599f67499664741c0d5276cb0afdae2d941c2b571b138a9467b533e60e847ac",
+          "status": "five visible choices and GUI/captured-write restoration observed",
+          "type_id": 27,
+          "instance": 0,
+          "selector_observations": [
+            {
+              "control_id": "filter_type",
+              "label": "HighPass 1",
+              "offset": 26,
+              "raw": 0,
+              "frames": [
+                1551,
+                3259
+              ]
+            },
+            {
+              "control_id": "filter_type",
+              "label": "HighPass 2",
+              "offset": 26,
+              "raw": 1,
+              "frames": [
+                7903
+              ]
+            },
+            {
+              "control_id": "filter_type",
+              "label": "HighPass 3",
+              "offset": 26,
+              "raw": 2,
+              "frames": [
+                12473
+              ]
+            },
+            {
+              "control_id": "filter_type",
+              "label": "BandPass 1",
+              "offset": 26,
+              "raw": 3,
+              "frames": [
+                17153
+              ]
+            },
+            {
+              "control_id": "filter_type",
+              "label": "BandPass 2",
+              "offset": 26,
+              "raw": 4,
+              "frames": [
+                21841
+              ]
+            },
+            {
+              "control_id": "filter_type",
+              "label": "HighPass 1",
+              "offset": 26,
+              "raw": 0,
+              "frames": [
+                26473
+              ]
+            }
+          ],
+          "restored_gui_selection": "HighPass 1",
+          "changed_parameter_offsets": [
+            26
+          ],
+          "device_readback_verified": false,
+          "full_count": null,
+          "full_count_status": "five visible choices captured; earlier reported sixth choice unresolved"
+        },
+        "gui_control_methods": {
+          "DeesserCtrlButtonNoInheritance": {
+            "kind": "selector_cycle",
+            "positions": 4,
+            "status": "capture-observed",
+            "evidence": "2026-10-25 raw0/1/2/3/0 cycle; TogglePattern reports On for multiple states. Four modes also described at https://en.antelopeaudio.com/products/master-de-esser/"
+          }
+        },
+        "labelled_gui_observations": {
+          "threshold": {
+            "label": "Threshold",
+            "class_name": "DeesserThresholdPot",
+            "offset": 21,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_range": [
+              0,
+              80
+            ],
+            "observed_display_endpoints": [
+              "0",
+              "80"
+            ],
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T003349239Z",
+            "capture_sha256": "439738c548daf79d519563056a977fb29d46f08b62b80aeb853d7db2aced432d",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 4061,
+                "raw": 0
+              },
+              {
+                "phase": "maximum",
+                "frame": 11325,
+                "raw": 80
+              }
+            ],
+            "changed_parameter_offsets": [
+              21
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          },
+          "crit_f": {
+            "label": "Frequency",
+            "class_name": "DeesserCritFPot",
+            "offset": 22,
+            "width": 2,
+            "encoding": "uint16-le",
+            "observed_wire_range": [
+              150,
+              20000
+            ],
+            "observed_display_endpoints": [
+              "150",
+              "20k"
+            ],
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T003349239Z",
+            "capture_sha256": "439738c548daf79d519563056a977fb29d46f08b62b80aeb853d7db2aced432d",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 18581,
+                "raw": 150
+              },
+              {
+                "phase": "maximum",
+                "frame": 30803,
+                "raw": 20000
+              }
+            ],
+            "changed_parameter_offsets": [
+              22,
+              23
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          },
+          "wd_control": {
+            "label": "Dry/Wet",
+            "class_name": "DeesserWetDryCtrlPot",
+            "offset": 27,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_range": [
+              0,
+              100
+            ],
+            "observed_display_endpoints": null,
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T003349239Z",
+            "capture_sha256": "439738c548daf79d519563056a977fb29d46f08b62b80aeb853d7db2aced432d",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 38309,
+                "raw": 0
+              },
+              {
+                "phase": "maximum",
+                "frame": 46035,
+                "raw": 100
+              }
+            ],
+            "changed_parameter_offsets": [
+              27
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          },
+          "ratio": {
+            "label": "Ratio",
+            "class_name": "DeesserRatioPot",
+            "offset": 28,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_range": [
+              10,
+              200
+            ],
+            "observed_display_endpoints": [
+              "1.0",
+              "20.0"
+            ],
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T003655397Z",
+            "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 4347,
+                "raw": 10
+              },
+              {
+                "phase": "maximum",
+                "frame": 12307,
+                "raw": 200
+              }
+            ],
+            "changed_parameter_offsets": [
+              28
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          },
+          "attack": {
+            "label": "Attack",
+            "class_name": "DeesserAttackPot",
+            "offset": 29,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_range": [
+              1,
+              200
+            ],
+            "observed_display_endpoints": [
+              "0.1",
+              "20.0"
+            ],
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T003655397Z",
+            "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 19997,
+                "raw": 1
+              },
+              {
+                "phase": "maximum",
+                "frame": 28651,
+                "raw": 200
+              }
+            ],
+            "changed_parameter_offsets": [
+              29
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          },
+          "release": {
+            "label": "Release",
+            "class_name": "DeesserReleasePot",
+            "offset": 30,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_range": [
+              10,
+              200
+            ],
+            "observed_display_endpoints": [
+              "10",
+              "200"
+            ],
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T003655397Z",
+            "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 35897,
+                "raw": 10
+              },
+              {
+                "phase": "maximum",
+                "frame": 44851,
+                "raw": 200
+              }
+            ],
+            "changed_parameter_offsets": [
+              30
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          },
+          "knee_width": {
+            "label": "Soft Knee",
+            "class_name": "DeesserKneeWidthPot",
+            "offset": 31,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_range": [
+              0,
+              30
+            ],
+            "observed_display_endpoints": [
+              "0",
+              "30"
+            ],
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T003655397Z",
+            "capture_sha256": "68a86d84f923b04449b0ba3b82bc6bc59c13356c471c884e0bbfa1f1689a6f92",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 52599,
+                "raw": 0
+              },
+              {
+                "phase": "maximum",
+                "frame": 61397,
+                "raw": 30
+              }
+            ],
+            "changed_parameter_offsets": [
+              31
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          },
+          "q_factor": {
+            "label": "Q",
+            "class_name": "DeesserQFactorPotNoInheritance",
+            "offset": 24,
+            "width": 2,
+            "encoding": "uint16-le",
+            "observed_wire_range": [
+              1,
+              400
+            ],
+            "observed_display_endpoints": [
+              "0.01",
+              "4.00"
+            ],
+            "status": "capture-observed stable-block endpoint candidates; physical scale/interpolation and readback unverified",
+            "source": "scan-Master-De-Esser-20261025T004418330Z",
+            "capture_sha256": "63509d7e174ef9bb1f6e83457d3a959c49d1db6f944f4129f60a89c9aa38dc18",
+            "endpoints": [
+              {
+                "phase": "minimum",
+                "frame": 4253,
+                "raw": 1
+              },
+              {
+                "phase": "maximum",
+                "frame": 12395,
+                "raw": 400
+              }
+            ],
+            "changed_parameter_offsets": [
+              24,
+              25
+            ],
+            "device_readback_verified": false,
+            "writable": false
+          }
+        },
+        "mode_dependencies": {
+          "filter_type_and_q": {
+            "status": "capture-observed GUI enablement and coupled writes",
+            "highpass_labels": [
+              "HighPass 1",
+              "HighPass 2",
+              "HighPass 3"
+            ],
+            "bandpass_labels": [
+              "BandPass 1",
+              "BandPass 2"
+            ],
+            "q_enabled_under_bandpass": true,
+            "q_endpoint_raw_ranges": {
+              "BandPass 1": [
+                1,
+                400
+              ],
+              "BandPass 2": [
+                1,
+                400
+              ]
+            },
+            "q_disabled_under_highpass": true,
+            "return_to_highpass1": {
+              "source": "unattended-20261025-q-filter-restore/Orion.pcapng frame3099; unattended-20261025-q-bandpass2-restore/Orion.pcapng frame2156",
+              "changed_offsets": [
+                24,
+                25,
+                26
+              ],
+              "q_raw_before": 400,
+              "q_raw_after": 71,
+              "q_offsets": [
+                24,
+                25
+              ],
+              "notes": "Changing the filter back to HighPass1 disables Q and emits the vendor-selected Q=71, alongside filter byte26=0. Do not force the preceding BandPass Q value back into the disabled control."
+            },
+            "device_readback_verified": false,
+            "highpass_enabled_state_evidence": {
+              "capture": "unattended-20261025-highpass-q-dependencies/Orion.pcapng",
+              "frames": [
+                2181,
+                4949,
+                7569
+              ],
+              "labels": [
+                "HighPass 2",
+                "HighPass 3",
+                "HighPass 1"
+              ],
+              "q_enabled": [
+                false,
+                false,
+                false
+              ]
+            }
+          }
+        },
+        "preset_inventory": {
+          "source": "panel-Master-De-Esser-20261025T010018355Z",
+          "class_name": "DeesserPresetsCombobox",
+          "visible_labels": [
+            "BV Elec Hi Hat",
+            "BV Female S 2",
+            "BV Reduce High Freq",
+            "BV Slap Bass",
+            "BV Subtle Female S",
+            "BV Typical S"
+          ],
+          "status": "visible GUI inventory only; no presets selected",
+          "selected_before": "BV Elec Hi Hat",
+          "selected_after": "BV Elec Hi Hat",
+          "closure_verified": true,
+          "outbound_control_reports": 0,
+          "complete_library": "unknown; visible inventory does not establish hidden/virtualized presets"
+        },
+        "range_capture_summary": {
+          "status": "visible-control capture pass completed; runtime contracts remain unverified",
+          "knobs": 8,
+          "q_modes": [
+            "BandPass 1",
+            "BandPass 2"
+          ],
+          "filter_choices_captured": 5,
+          "monitor_states_captured": 4,
+          "processing_button_round_trip": "GUI and captured-event restoration observed",
+          "preset_inventory_count": 6,
+          "presets_selected": false,
+          "device_readback_verified": false,
+          "pending": [
+            "Physical scaling/interpolation beyond displayed endpoint associations",
+            "Independent parameter/processing readback and verified runtime write/restore",
+            "Audible/stereo behavior",
+            "Historical report of a sixth filter choice"
+          ]
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB button match",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025-deesser-bypass-first/Orion.pcapng frame2589 tuple@17..19=001b00",
+          "unattended-20261025-deesser-bypass-return/Orion.pcapng frame751 tuple@17..19=001b01"
+        ]
+      },
+      "presentation": {
+        "status": "local-preview",
+        "name": "Master De-Esser",
+        "category": "Dynamics",
+        "family": "DYNAMICS",
+        "rows": [
+          [
+            "threshold",
+            "crit_f",
+            "q_factor",
+            "wd_control"
+          ],
+          [
+            "ratio",
+            "attack",
+            "release",
+            "knee_width"
+          ]
+        ],
+        "switches": [
+          "filter_type",
+          "ctrl",
+          "processing"
+        ],
+        "controls": [
+          {
+            "id": "threshold",
+            "label": "Threshold",
+            "kind": "continuous",
+            "range": [
+              0,
+              80
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 40,
+            "source_control": "threshold"
+          },
+          {
+            "id": "crit_f",
+            "label": "Frequency",
+            "kind": "continuous",
+            "range": [
+              150,
+              20000
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 6000,
+            "source_control": "crit_f"
+          },
+          {
+            "id": "q_factor",
+            "label": "Q",
+            "kind": "continuous",
+            "range": [
+              0.01,
+              4
+            ],
+            "step": 0.01,
+            "decimals": 2,
+            "default": 1,
+            "source_control": "q_factor"
+          },
+          {
+            "id": "wd_control",
+            "label": "Dry / Wet",
+            "kind": "continuous",
+            "range": [
+              0,
+              100
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 100,
+            "source_control": "wd_control"
+          },
+          {
+            "id": "ratio",
+            "label": "Ratio",
+            "kind": "continuous",
+            "range": [
+              1,
+              20
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 4,
+            "source_control": "ratio"
+          },
+          {
+            "id": "attack",
+            "label": "Attack",
+            "kind": "continuous",
+            "range": [
+              0.1,
+              20
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 1,
+            "source_control": "attack"
+          },
+          {
+            "id": "release",
+            "label": "Release",
+            "kind": "continuous",
+            "range": [
+              10,
+              200
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 100,
+            "source_control": "release"
+          },
+          {
+            "id": "knee_width",
+            "label": "Soft Knee",
+            "kind": "continuous",
+            "range": [
+              0,
+              30
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 6,
+            "source_control": "knee_width"
+          },
+          {
+            "id": "filter_type",
+            "label": "Filter",
+            "kind": "enum",
+            "options": {
+              "0": "HighPass 1",
+              "1": "HighPass 2",
+              "2": "HighPass 3",
+              "3": "BandPass 1",
+              "4": "BandPass 2"
+            },
+            "default": "0",
+            "rotary": false,
+            "source_control": "filter_type"
+          },
+          {
+            "id": "ctrl",
+            "label": "Monitor / Out",
+            "kind": "enum",
+            "options": {
+              "0": "Position 1",
+              "1": "Position 2",
+              "2": "Position 3",
+              "3": "Position 4"
+            },
+            "default": "0",
+            "rotary": false,
+            "source_control": "ctrl"
+          },
+          {
+            "id": "processing",
+            "label": "Processing",
+            "kind": "enum",
+            "options": {
+              "0": "Bypass",
+              "1": "Active"
+            },
+            "default": "1",
+            "source": "processing"
+          }
+        ],
+        "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default.",
+        "dependencies": {
+          "q_factor": {
+            "control": "filter_type",
+            "values": [
+              "3",
+              "4"
+            ]
+          }
+        }
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261026T091415Z/display-inventories/Master-De-Esser-controls.json",
+        "displays": [
+          {
+            "ui_class": "DeesserAttackDisplay",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "DeesserCtrlLed",
+            "native_instance_count": 4,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "DeesserDisplay",
+            "native_instance_count": 3,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "DeesserFreqDisplay",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "DeesserGRMeterNoInheritance",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "DeesserPeakMeterNoInheritance",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "DeesserQDisplay",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "DeesserRatioDisplay",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

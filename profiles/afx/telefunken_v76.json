@@ -1,0 +1,259 @@
+{
+  "id": "telefunken_v76",
+  "name": "telefunken_v76",
+  "source_name": "telefunken_v76",
+  "category": "preamp",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.44"
+  ],
+  "controls": [
+    {
+      "id": "gain",
+      "label": "Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_telefunken_v76_conf.fields"
+      ]
+    },
+    {
+      "id": "shelf_filter",
+      "label": "Shelf Filter",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_telefunken_v76_conf.fields"
+      ]
+    },
+    {
+      "id": "high_pass_filter",
+      "label": "High Pass Filter",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_telefunken_v76_conf.fields"
+      ]
+    },
+    {
+      "id": "out_vol",
+      "label": "Out Vol",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_telefunken_v76_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 44,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 44,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "gain": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Warmth",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-TelefunkenV76-20261025T203938997Z/TelefunkenV76-channel2.pcapng frame4143: directed gain minimum, raw0; other payload fields preserved",
+            "scan-TelefunkenV76-20261025T203938997Z/TelefunkenV76-channel2.pcapng frame13441: directed gain maximum, raw100; other payload fields preserved"
+          ]
+        },
+        "out_vol": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Trim",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-TelefunkenV76-20261025T203938997Z/TelefunkenV76-channel2.pcapng frame50545: directed out_vol minimum, raw0; other payload fields preserved",
+            "scan-TelefunkenV76-20261025T203938997Z/TelefunkenV76-channel2.pcapng frame59927: directed out_vol maximum, raw100; other payload fields preserved"
+          ]
+        },
+        "shelf_filter": {
+          "offset": 21,
+          "width": 1,
+          "kind": "enum",
+          "label": "Shelf Filter",
+          "range": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Off",
+            "1": "3kHz"
+          },
+          "wire_enum": {
+            "0": "Off",
+            "1": "3kHz"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025T195948Z-vpa76-rotary-map/shelf_filter-down-01/Orion.pcapng frame1751: raw0, dial Off; matching pointer image captures/unattended-20261025T195948Z-vpa76-rotary-map/shelf_filter-down-01/observed-detent.png",
+            "captures/unattended-20261025T195948Z-vpa76-rotary-map/shelf_filter-up-02/Orion.pcapng frame1771: raw1, dial 3kHz; matching pointer image captures/unattended-20261025T195948Z-vpa76-rotary-map/shelf_filter-up-02/observed-detent.png"
+          ]
+        },
+        "high_pass_filter": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "High-Pass Filter",
+          "range": [
+            0,
+            3
+          ],
+          "options": {
+            "0": "Off",
+            "1": "120Hz",
+            "2": "300Hz",
+            "3": "120+300Hz"
+          },
+          "wire_enum": {
+            "0": "Off",
+            "1": "120Hz",
+            "2": "300Hz",
+            "3": "120+300Hz"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-down-03/Orion.pcapng frame1819: raw0, dial Off; matching pointer image captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-down-03/observed-detent.png",
+            "captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-down-02/Orion.pcapng frame1711: raw1, dial 120Hz; matching pointer image captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-down-02/observed-detent.png",
+            "captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-down-01/Orion.pcapng frame1801: raw2, dial 300Hz; matching pointer image captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-down-01/observed-detent.png",
+            "captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-up-06/Orion.pcapng frame1863: raw3, dial 120+300Hz; matching pointer image captures/unattended-20261025T195948Z-vpa76-rotary-map/high_pass_filter-up-06/observed-detent.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261025T195948Z-load-vpa76/Orion.pcapng frame2505: labelled VPA 76 vendor load, AFX2/channel1 slot0 type44/instance0, sevenempty; SHA256 2d7509db33c88f083ce87d6b733c29d80f7f4b92cf2a6ae39ccec112fb60cebf."
+      ],
+      "notes": "Independently observed Orion VPA 76 identity; compatibility ID telefunken_v76 and control gain retained, visible label Warmth. Warmth/Trim endpoint candidates, Shelf two-position and High-Pass four-position maps and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x18",
+        "param_id": "0xd5",
+        "subcmd": "0x06",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; two continuous endpoint candidates and all two/four-position filter maps; runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "capture_sha256": "bab46dcb1049ef8cda53f1c06faf0ebe5dfe8b1f181ad10212c7723d5e752957",
+        "evidence": [
+          "scan-TelefunkenV76-20261025T203938997Z: eight accepted endpoint phases, 63444packets/zero drops; Warmth20/Trim23 raw0..100, Shelf21 raw0..1, HighPass22 raw0..3."
+        ],
+        "rotary_mapping": {
+          "source": "captures/unattended-20261025T195948Z-vpa76-rotary-map",
+          "trial_count": 8,
+          "starting_parameter_payload_hex": "640103640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "640103640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false,
+          "notes": "Each bounded four-pixel step changes one filter detent, preserving the other payload bytes; every visible position has a directed observation and pointer image."
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB processing switch, all four control regions and Warmth display; animated meter excluded",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025T195948Z-vpa76-processing/first/Orion.pcapng frame3637 tuple@17..19=002c00",
+          "unattended-20261025T195948Z-vpa76-processing/return/Orion.pcapng frame683 tuple@17..19=002c01"
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025T195948Z-load-vpa76/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "GainDisplay",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "TelefunkenFlashingPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

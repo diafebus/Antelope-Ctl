@@ -48,14 +48,17 @@ publication verification. Neither PR was merged.
 ## Format compatibility
 
 Our [AFX catalog](../profiles/afx_effects.json) has a documented project format,
-`catalog_schema.id = antelope-afx-effect-catalog`, version 1. Its contract is
+`catalog_schema.id = antelope-afx-effect-catalog`, version 1. Its current storage
+is an ordered manifest plus per-plugin files; `antelope.catalog.load_catalog`
+resolves the same logical `effects` array, and `tools/export_afx_catalog.py` can
+export it as flat JSON. Its contract is
 described in [the profile schema guide](profile-schema.md#afx-and-the-shared-effect-catalog)
 and checked by the existing catalog tests. It is not Gazelle's JSON schema.
 "Shared catalog" here means shared between this project's device profiles.
 
 | Topic | antelope-ctl | Gazelle main / proposed PR21 | Required handoff |
 | --- | --- | --- | --- |
-| Packaging | One catalog with an `effects` array | Main has device `params` and `plugins`; PR21 adds one file per effect | Explicit conversion, not copying the catalog into Gazelle |
+| Packaging | Ordered manifest plus per-plugin files; resolved/exported catalog has an `effects` array | Main has device `params` and `plugins`; PR21 adds one file per effect | Explicit conversion, not copying the catalog into Gazelle |
 | Effect IDs | `memory_brigade`, `turboensembler`, `bbdchorus` | PR21 uses `antelope/`-qualified versions of these IDs | Preserve compatibility IDs with an explicit namespace map |
 | Shared controls | Array keyed by each entry's `id` | PR21 object keyed by control ID | Convert structure; retain labels and sources |
 | Device knowledge | `implementations[]`, selected by profile filename | PR21 named `encodings` plus profile `effects` bindings | Separate shared descriptions, encoding candidates and model-local verification |

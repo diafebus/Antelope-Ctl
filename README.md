@@ -27,7 +27,7 @@ used; the device firmware is not touched.
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
 | **`docs/orion-afx-workflow.md`** | current AFX evidence, existing tools, proposed Launcher batch automation and effect completion criteria |
-| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` and the shared `afx_effects.json` reference catalog |
+| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json`; the shared AFX manifest is `afx_effects.json`, with one plugin definition per file in `profiles/afx/` |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
 ### Naming
@@ -79,8 +79,11 @@ stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 AFX preparation separates device capacity from effect definitions. Orion's
 `afx` metadata declares 32 mono channels and eight insert slots per channel,
 as described in [Antelope's public demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
-The shared `profiles/afx_effects.json` catalog contains 80 reference effect
-entries and 729 declared control names from Gazelle's Discrete 4 findings,
+The shared [AFX manifest](profiles/afx_effects.json) lists 80 reference effect
+files in [profiles/afx/](profiles/afx/README.md), one per stable plugin ID.
+Edit the plugin file to change its controls, model-specific encodings or evidence;
+the manifest owns catalog metadata and entry order. The catalog contains
+729 declared control names from Gazelle's Discrete 4 findings,
 with pinned source provenance. The first three descriptions are drawn from
 public effect pages. The Orion Memory Cat Brigade implementation records
 six observed 0–100 knob fields and two binary switch fields from an

@@ -136,8 +136,7 @@ assert.equal(button.on, false);
 async function checkEffectPreviews() {
   context.PROFILE = JSON.parse(fs.readFileSync(path.join(ROOT, 'profiles/orion_studio_sc.json'), 'utf8'));
   context.PROFILE.runtime_contracts.afx_memorycat_test.enabled = false;
-  const effect = JSON.parse(fs.readFileSync(path.join(ROOT, 'profiles/afx_effects.json'), 'utf8'))
-    .effects.find(item => item.id === 'memory_brigade');
+  const effect = JSON.parse(fs.readFileSync(path.join(ROOT, 'profiles/afx/memory_brigade.json'), 'utf8'));
   const implementation = effect.implementations.find(item => item.profile === 'orion_studio_sc.json');
   const controls = Object.entries(implementation.control_encodings).map(([id, field]) => ({
     id, label: field.label, kind: field.kind, range: field.display_range, options: field.options,

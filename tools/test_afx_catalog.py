@@ -1,4 +1,5 @@
 """Hardware-free checks for the preview's model and write boundaries."""
+from antelope.catalog import load_catalog
 import copy
 import json
 from pathlib import Path
@@ -10,8 +11,7 @@ from webui.afx_catalog import preview_catalog, effect_choices
 class AfxCatalogTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.catalog = json.loads((Path(__file__).resolve().parents[1]
-                                  / "profiles/afx_effects.json").read_text())
+        cls.catalog = load_catalog(Path(__file__).resolve().parents[1] / "profiles/afx_effects.json")
 
     def test_orion_preview_has_labels_without_wire_commands_or_handles(self):
         result = preview_catalog(self.catalog, "orion_studio_sc.json")

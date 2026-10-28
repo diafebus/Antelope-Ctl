@@ -13,6 +13,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from antelope.catalog import load_catalog
 
 
 # 0x18: directed Gyratec IX GUI priming, scan-GyratecIX-20261025T203041877Z.
@@ -149,7 +150,7 @@ def analyze_reports(reports):
     readback_queries = Counter()
     instance_queries, instance_states, pending_instances = [], [], {}
     profile = json.loads((Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json').read_text())
-    catalog = json.loads((Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json').read_text())
+    catalog = load_catalog(Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json')
     bypass_layouts = {i['type_id']: i['bypass_observation'] for e in catalog['effects']
                       for i in e['implementations'] if i['profile'] == 'orion_studio_sc.json'
                       and 'bypass_observation' in i}

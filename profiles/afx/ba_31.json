@@ -1,0 +1,167 @@
+{
+  "id": "ba_31",
+  "name": "ba_31",
+  "source_name": "ba_31",
+  "category": "preamp",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.48"
+  ],
+  "controls": [
+    {
+      "id": "gain",
+      "label": "Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ba_31_conf.fields"
+      ]
+    },
+    {
+      "id": "trim",
+      "label": "Trim",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ba_31_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 48,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 48,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "gain": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Gain",
+          "range": [
+            10,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-Ba31-20261025T202655138Z/Ba31-channel2.pcapng frame4445: directed gain minimum, raw10; other payload fields preserved",
+            "scan-Ba31-20261025T202655138Z/Ba31-channel2.pcapng frame12981: directed gain maximum, raw100; other payload fields preserved"
+          ]
+        },
+        "trim": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Trim",
+          "range": [
+            10,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-Ba31-20261025T202655138Z/Ba31-channel2.pcapng frame20471: directed trim minimum, raw10; other payload fields preserved",
+            "scan-Ba31-20261025T202655138Z/Ba31-channel2.pcapng frame30231: directed trim maximum, raw100; other payload fields preserved"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261025T195948Z-load-ba31/Orion.pcapng frame2367: labelled BA-31 vendor load, AFX2/channel1 slot0 type48/instance0, sevenempty; SHA256 955d69bc92001b88142e45d11d0ce5de8a863266b7d3817cdeef44fc19fdaae2."
+      ],
+      "notes": "Independently observed Orion BA-31 identity. Both Gain/Trim knob endpoint candidates and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x16",
+        "param_id": "0xd5",
+        "subcmd": "0x04",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; two endpoint candidates, physical scaling unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "capture_sha256": "525956d119b4a469f2dfbb1a170fdd5ac952689e9eb8ee260cd0ab54e5fdfa77",
+        "evidence": [
+          "scan-Ba31-20261025T202655138Z: four accepted endpoint phases, 34232packets/zero drops; only Gain byte20 and Trim byte21 vary."
+        ]
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB processing switch, LED and both knob regions",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025T195948Z-ba31-processing/first/Orion.pcapng frame3197 tuple@17..19=003000",
+          "unattended-20261025T195948Z-ba31-processing/return/Orion.pcapng frame743 tuple@17..19=003001"
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025T195948Z-load-ba31/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Ba31PeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

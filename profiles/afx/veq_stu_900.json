@@ -1,0 +1,798 @@
+{
+  "id": "veq_stu_900",
+  "name": "VEQ-STU 900",
+  "source_name": "VEQ-STU 900",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.23"
+  ],
+  "controls": [
+    {
+      "id": "low_cut",
+      "label": "Low Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "hi_cut",
+      "label": "Hi Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_gain",
+      "label": "Lf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_freq",
+      "label": "Lf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_switch",
+      "label": "Lf Switch",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "lmf_gain",
+      "label": "Lmf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "lmf_freq",
+      "label": "Lmf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "lmf_switch",
+      "label": "Lmf Switch",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "hmf_gain",
+      "label": "Hmf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "hmf_freq",
+      "label": "Hmf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "hmf_switch",
+      "label": "Hmf Switch",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_gain",
+      "label": "Hf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_freq",
+      "label": "Hf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_switch",
+      "label": "Hf Switch",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    },
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 900_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 23,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 23,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "low_cut": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Low Cut",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame4119: directed low_cut minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame10939: directed low_cut maximum raw100; other fields preserved",
+            "scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame4119: raw0, native OFF endpoint; matching scan-Studer900-20261027T030034849Z/Studer900-low_cut-minimum.png"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified. Directed native endpoint image shows OFF at raw0; this does not establish intermediate scaling.",
+          "endpoint_gui_labels": {
+            "0": "OFF"
+          }
+        },
+        "hi_cut": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "High Cut",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame19113: directed hi_cut minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame26677: directed hi_cut maximum raw100; other fields preserved",
+            "scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame26677: raw100, native OFF endpoint; matching scan-Studer900-20261027T030034849Z/Studer900-hi_cut-maximum.png"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified. Directed native endpoint image shows OFF at raw100; this does not establish intermediate scaling.",
+          "endpoint_gui_labels": {
+            "100": "OFF"
+          }
+        },
+        "lf_gain": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame34337: directed lf_gain minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame42061: directed lf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lf_freq": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame50015: directed lf_freq minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame57425: directed lf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lmf_gain": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LMF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame66199: directed lmf_gain minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame74311: directed lmf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lmf_freq": {
+          "offset": 26,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LMF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame82715: directed lmf_freq minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame90479: directed lmf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hmf_gain": {
+          "offset": 28,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HMF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame99587: directed hmf_gain minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame108329: directed hmf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hmf_freq": {
+          "offset": 29,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HMF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame117129: directed hmf_freq minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame125465: directed hmf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hf_gain": {
+          "offset": 31,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame135125: directed hf_gain minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame144271: directed hf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hf_freq": {
+          "offset": 32,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame153621: directed hf_freq minimum raw0; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame162361: directed hf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "level": {
+          "offset": 34,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame172577: directed level minimum raw232; other fields preserved",
+            "captures/scan-Studer900-20261027T030034849Z/Studer900-channel2.pcapng frame182093: directed level maximum raw12; other fields preserved"
+          ],
+          "raw_endpoints": [
+            232,
+            12
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            12
+          ],
+          "notes": "Unsigned wire endpoints retained. Signed interpretation, physical units and intermediate scaling remain unverified."
+        },
+        "lf_switch": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "LF Shape switch",
+          "observed_raw_order": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "wire_enum": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "status": "capture-observed; isolated GUI switch round trip; runtime contract unverified",
+          "writable": false,
+          "notes": "Compatibility ID retained. Reviewed switch position and printed shape-glyph context only; numeric Q, bell semantics, audio behavior and enabled polarity remain unverified. No separate switch LED observed.",
+          "evidence": [
+            "captures/unattended-20261027T015403Z-veqstu900-modes/lf_switch-first/Orion.pcapng frame703: byte24 raw1, Lower; matching observed.png",
+            "captures/unattended-20261027T015403Z-veqstu900-modes/lf_switch-return/Orion.pcapng frame737: byte24 raw0, Upper; matching observed.png"
+          ]
+        },
+        "lmf_switch": {
+          "offset": 27,
+          "width": 1,
+          "kind": "enum",
+          "label": "LMF Shape switch",
+          "observed_raw_order": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "wire_enum": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "status": "capture-observed; isolated GUI switch round trip; runtime contract unverified",
+          "writable": false,
+          "notes": "Compatibility ID retained. Reviewed switch position and printed shape-glyph context only; numeric Q, bell semantics, audio behavior and enabled polarity remain unverified. No separate switch LED observed.",
+          "evidence": [
+            "captures/unattended-20261027T015403Z-veqstu900-modes/lmf_switch-first/Orion.pcapng frame811: byte27 raw1, Lower; matching observed.png",
+            "captures/unattended-20261027T015403Z-veqstu900-modes/lmf_switch-return/Orion.pcapng frame747: byte27 raw0, Upper; matching observed.png"
+          ]
+        },
+        "hmf_switch": {
+          "offset": 30,
+          "width": 1,
+          "kind": "enum",
+          "label": "HMF Shape switch",
+          "observed_raw_order": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "wire_enum": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "status": "capture-observed; isolated GUI switch round trip; runtime contract unverified",
+          "writable": false,
+          "notes": "Compatibility ID retained. Reviewed switch position and printed shape-glyph context only; numeric Q, bell semantics, audio behavior and enabled polarity remain unverified. No separate switch LED observed.",
+          "evidence": [
+            "captures/unattended-20261027T015403Z-veqstu900-modes/hmf_switch-first/Orion.pcapng frame829: byte30 raw1, Lower; matching observed.png",
+            "captures/unattended-20261027T015403Z-veqstu900-modes/hmf_switch-return/Orion.pcapng frame809: byte30 raw0, Upper; matching observed.png"
+          ]
+        },
+        "hf_switch": {
+          "offset": 33,
+          "width": 1,
+          "kind": "enum",
+          "label": "HF Shape switch",
+          "observed_raw_order": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "wire_enum": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "status": "capture-observed; isolated GUI switch round trip; runtime contract unverified",
+          "writable": false,
+          "notes": "Compatibility ID retained. Reviewed switch position and printed shape-glyph context only; numeric Q, bell semantics, audio behavior and enabled polarity remain unverified. No separate switch LED observed.",
+          "evidence": [
+            "captures/unattended-20261027T015403Z-veqstu900-modes/hf_switch-first/Orion.pcapng frame821: byte33 raw1, Lower; matching observed.png",
+            "captures/unattended-20261027T015403Z-veqstu900-modes/hf_switch-return/Orion.pcapng frame835: byte33 raw0, Upper; matching observed.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261027T015403Z-load-veqstu900/Orion.pcapng frame2469: labelled VEQ-STU 900 vendor load, AFX2/channel1slot0 type23/instance0, sevenempty; SHA256 3ecbe59471380e44151f538eebb0c6011de5883d33814e3eb53515681d1663bb"
+      ],
+      "notes": "Orion VEQ-STU 900: eleven rotary endpoint candidate pairs, four independently reviewed shape-glyph switch round trips and separate processing round trip captured. Switch round trips returned the full captured parameter body and checked static panel images. Processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Literal Upper/Lower or Left/Right switch positions do not establish numeric Q, bell semantics or audible effects. Output signed interpretation, physical/intermediate scaling, independent readback, processing polarity, audible/stereo behavior and runtime contracts remain unverified. Studer900Bypass embedded red processing indicator and Studer900Peakmeter remain separate display inventory; signal telemetry unknown.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261027T015403Z-load-veqstu900/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "Studer900Bypass",
+            "native_instance_count": 1,
+            "kind_hint": "embedded-processing-indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Studer900Peakmeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "parameter_observation": {
+        "opcode": "0x23",
+        "param_id": "0xd5",
+        "subcmd": "0x11",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; all visible editable controls covered; scaling and runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "low_cut",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4119
+          },
+          {
+            "control": "low_cut",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 10939
+          },
+          {
+            "control": "hi_cut",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 19113
+          },
+          {
+            "control": "hi_cut",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 26677
+          },
+          {
+            "control": "lf_gain",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 34337
+          },
+          {
+            "control": "lf_gain",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 42061
+          },
+          {
+            "control": "lf_freq",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 50015
+          },
+          {
+            "control": "lf_freq",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 57425
+          },
+          {
+            "control": "lmf_gain",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 66199
+          },
+          {
+            "control": "lmf_gain",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 74311
+          },
+          {
+            "control": "lmf_freq",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 82715
+          },
+          {
+            "control": "lmf_freq",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 90479
+          },
+          {
+            "control": "hmf_gain",
+            "offset": 28,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 99587
+          },
+          {
+            "control": "hmf_gain",
+            "offset": 28,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 108329
+          },
+          {
+            "control": "hmf_freq",
+            "offset": 29,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 117129
+          },
+          {
+            "control": "hmf_freq",
+            "offset": 29,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 125465
+          },
+          {
+            "control": "hf_gain",
+            "offset": 31,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 135125
+          },
+          {
+            "control": "hf_gain",
+            "offset": 31,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 144271
+          },
+          {
+            "control": "hf_freq",
+            "offset": 32,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 153621
+          },
+          {
+            "control": "hf_freq",
+            "offset": 32,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 162361
+          },
+          {
+            "control": "level",
+            "offset": 34,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 172577
+          },
+          {
+            "control": "level",
+            "offset": 34,
+            "gesture": "maximum",
+            "raw": 12,
+            "frame": 182093
+          }
+        ],
+        "capture_sha256": "3b2e694966b213e57a1b20e011b261fdfbc69b2dd6d776aa8a0c374743704388",
+        "evidence": [
+          "scan-Studer900-20261027T030034849Z: 22 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "mode_roundtrips": {
+          "source": "captures/unattended-20261027T015403Z-veqstu900-modes",
+          "status": "completed; four isolated one-byte switch pairs; full parameter body/static panel returned",
+          "fields": {
+            "lf_switch": 24,
+            "lmf_switch": 27,
+            "hmf_switch": 30,
+            "hf_switch": 33
+          },
+          "starting_parameter_payload_hex": "64646464006464006464006464000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "64646464006464006464006464000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB two static panel segments; animated peak meter excluded",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261027T015403Z-veqstu900-processing/first/Orion.pcapng frame3323 tuple@17..19=001700",
+          "captures/unattended-20261027T015403Z-veqstu900-processing/return/Orion.pcapng frame725 tuple@17..19=001701"
+        ]
+      }
+    }
+  ]
+}

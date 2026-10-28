@@ -1,0 +1,260 @@
+{
+  "id": "gyratex_ix",
+  "name": "gyratex_ix",
+  "source_name": "gyratex_ix",
+  "category": "preamp",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.43"
+  ],
+  "controls": [
+    {
+      "id": "gain",
+      "label": "Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_gyratex_ix_conf.fields"
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Output",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_gyratex_ix_conf.fields"
+      ]
+    },
+    {
+      "id": "phase",
+      "label": "Phase",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_gyratex_ix_conf.fields"
+      ]
+    },
+    {
+      "id": "low_cut",
+      "label": "Low Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_gyratex_ix_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 43,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 43,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "gain": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-GyratecIX-20261025T203215463Z/GyratecIX-channel2.pcapng frame4129: directed gain minimum, raw0; other payload fields preserved",
+            "scan-GyratecIX-20261025T203215463Z/GyratecIX-channel2.pcapng frame12617: directed gain maximum, raw100; other payload fields preserved"
+          ]
+        },
+        "output": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-GyratecIX-20261025T203215463Z/GyratecIX-channel2.pcapng frame19815: directed output minimum, raw0; other payload fields preserved",
+            "scan-GyratecIX-20261025T203215463Z/GyratecIX-channel2.pcapng frame28629: directed output maximum, raw100; other payload fields preserved"
+          ]
+        },
+        "phase": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "Phase",
+          "range": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "−",
+            "1": "+"
+          },
+          "wire_enum": {
+            "0": "−",
+            "1": "+"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025T195948Z-gyratecix-rotary-map/phase-down-01/Orion.pcapng frame1813: raw0, dial −; matching pointer image captures/unattended-20261025T195948Z-gyratecix-rotary-map/phase-down-01/observed-detent.png",
+            "captures/unattended-20261025T195948Z-gyratecix-rotary-map/phase-up-02/Orion.pcapng frame1665: raw1, dial +; matching pointer image captures/unattended-20261025T195948Z-gyratecix-rotary-map/phase-up-02/observed-detent.png"
+          ]
+        },
+        "low_cut": {
+          "offset": 23,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low-Cut",
+          "range": [
+            0,
+            2
+          ],
+          "options": {
+            "0": "Off",
+            "1": "Low",
+            "2": "High"
+          },
+          "wire_enum": {
+            "0": "Off",
+            "1": "Low",
+            "2": "High"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025T195948Z-gyratecix-rotary-map2/low_cut-down-06/Orion.pcapng frame1683: raw0, dial Off; matching pointer image captures/unattended-20261025T195948Z-gyratecix-rotary-map2/low_cut-down-06/observed-detent.png",
+            "captures/unattended-20261025T195948Z-gyratecix-rotary-map2/low_cut-down-05/Orion.pcapng frame1783: raw1, dial Low; matching pointer image captures/unattended-20261025T195948Z-gyratecix-rotary-map2/low_cut-down-05/observed-detent.png",
+            "captures/unattended-20261025T195948Z-gyratecix-rotary-map2/low_cut-up-08/Orion.pcapng frame1659: raw2, dial High; matching pointer image captures/unattended-20261025T195948Z-gyratecix-rotary-map2/low_cut-up-08/observed-detent.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261025T195948Z-load-gyratecix/Orion.pcapng frame2485: labelled Gyratec IX vendor load, AFX2/channel1 slot0 type43/instance0, sevenempty; SHA256 b2a08591e1f18fc88272be9cf537d621d27d5caf09e85826813513ee55af2826."
+      ],
+      "notes": "Independently observed Orion Gyratec IX identity; compatibility ID gyratex_ix retained. Both Gain/Output knob endpoint candidates, Phase two-position and Low-Cut three-position maps and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x18",
+        "param_id": "0xd5",
+        "subcmd": "0x06",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; two continuous endpoint candidates and all two/three-position selector maps; runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "scan-GyratecIX-20261025T203041877Z: stopped priming, zeroaccepted; observed vendor blocks0x18/d5/06 type43/instance0, Gain onlybyte20changes. Failedjobretained.",
+          "scan-GyratecIX-20261025T203215463Z: eight accepted endpoint phases, 64210packets/zero drops; Gain20/Output21 raw0..100, Phase22 raw0..1, Low-Cut23 raw0..2."
+        ],
+        "capture_sha256": "182c76b3e26531253d033e6f2fdf8a42cec19f854ba5271c1d1f9318c8254612",
+        "rotary_mapping": {
+          "sources": [
+            "captures/unattended-20261025T195948Z-gyratecix-rotary-map",
+            "captures/unattended-20261025T195948Z-gyratecix-rotary-map2"
+          ],
+          "first_job_status": "stopped; Phase map complete, Low-Cut middle detent skipped",
+          "second_job_status": "completed; all Low-Cut positions captured with four-pixel steps after quiet calibration",
+          "starting_parameter_payload_hex": "646401020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "646401020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB processing switch, LED and all four control regions",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025T195948Z-gyratecix-processing/first/Orion.pcapng frame3493 tuple@17..19=002b00",
+          "unattended-20261025T195948Z-gyratecix-processing/return/Orion.pcapng frame779 tuple@17..19=002b01"
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025T195948Z-load-gyratecix/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "GyratecIXPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

@@ -1,0 +1,501 @@
+{
+  "id": "mg4",
+  "name": "mg4",
+  "source_name": "mg4",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.68"
+  ],
+  "controls": [
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    },
+    {
+      "id": "sub_band",
+      "label": "Sub Band",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    },
+    {
+      "id": "40hz_band",
+      "label": "40Hz Band",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    },
+    {
+      "id": "160hz_band",
+      "label": "160Hz Band",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    },
+    {
+      "id": "650hz_band",
+      "label": "650Hz Band",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    },
+    {
+      "id": "2500hz_band",
+      "label": "2500Hz Band",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    },
+    {
+      "id": "sky_gain",
+      "label": "Sky Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    },
+    {
+      "id": "sky_band",
+      "label": "Sky Band",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_mg4_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 68,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 68,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "level": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "range": [
+            0,
+            20
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame3995: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame10815: directed maximum raw20; all other parameter fields preserved."
+          ],
+          "notes": "Raw endpoint candidates only; one-byte quantization and printed numeric ticks do not establish a physical scale, interpolation law or complete finite gain map. Endpoint scans intentionally finish at maxima."
+        },
+        "sub_band": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Sub Gain",
+          "range": [
+            0,
+            20
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame19013: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame26079: directed maximum raw20; all other parameter fields preserved."
+          ],
+          "notes": "Raw endpoint candidates only; one-byte quantization and printed numeric ticks do not establish a physical scale, interpolation law or complete finite gain map. Endpoint scans intentionally finish at maxima."
+        },
+        "40hz_band": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "40Hz Gain",
+          "range": [
+            0,
+            20
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame34383: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame42045: directed maximum raw20; all other parameter fields preserved."
+          ],
+          "notes": "Raw endpoint candidates only; one-byte quantization and printed numeric ticks do not establish a physical scale, interpolation law or complete finite gain map. Endpoint scans intentionally finish at maxima."
+        },
+        "160hz_band": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "160Hz Gain",
+          "range": [
+            0,
+            20
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame50205: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame57767: directed maximum raw20; all other parameter fields preserved."
+          ],
+          "notes": "Raw endpoint candidates only; one-byte quantization and printed numeric ticks do not establish a physical scale, interpolation law or complete finite gain map. Endpoint scans intentionally finish at maxima."
+        },
+        "650hz_band": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "650Hz Gain",
+          "range": [
+            0,
+            20
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame66511: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame74689: directed maximum raw20; all other parameter fields preserved."
+          ],
+          "notes": "Raw endpoint candidates only; one-byte quantization and printed numeric ticks do not establish a physical scale, interpolation law or complete finite gain map. Endpoint scans intentionally finish at maxima."
+        },
+        "2500hz_band": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "2.5kHz Gain",
+          "range": [
+            0,
+            20
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame83184: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame91263: directed maximum raw20; all other parameter fields preserved."
+          ],
+          "notes": "Raw endpoint candidates only; one-byte quantization and printed numeric ticks do not establish a physical scale, interpolation law or complete finite gain map. Endpoint scans intentionally finish at maxima."
+        },
+        "sky_gain": {
+          "offset": 26,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Sky Gain",
+          "range": [
+            0,
+            20
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame100647: directed minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng frame109381: directed maximum raw20; all other parameter fields preserved."
+          ],
+          "notes": "Raw endpoint candidates only; one-byte quantization and printed numeric ticks do not establish a physical scale, interpolation law or complete finite gain map. Endpoint scans intentionally finish at maxima."
+        },
+        "sky_band": {
+          "offset": 27,
+          "width": 1,
+          "kind": "enum",
+          "label": "Sky Band",
+          "options": {
+            "0": "OFF",
+            "1": "2.5",
+            "2": "3.5",
+            "3": "5",
+            "4": "7",
+            "5": "10",
+            "6": "15",
+            "7": "20",
+            "8": "25",
+            "9": "30",
+            "10": "40"
+          },
+          "wire_enum": {
+            "0": "OFF",
+            "1": "2.5",
+            "2": "3.5",
+            "3": "5",
+            "4": "7",
+            "5": "10",
+            "6": "15",
+            "7": "20",
+            "8": "25",
+            "9": "30",
+            "10": "40"
+          },
+          "status": "capture-observed; complete eleven-position map; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-01/Orion.pcapng frame1379: byte27 raw1, printed 2.5; paired observed.png independently reviewed; SHA256 d66678b2feec8fed58744fcdbd0ee1aaafb874ec556531d2eb6647a3284b68cf",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-02/Orion.pcapng frame1346: byte27 raw2, printed 3.5; paired observed.png independently reviewed; SHA256 73a05a54a972a8950590f111fcc8ccbc8fa4969f4e5f88c6c58cacb3ec626557",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-03/Orion.pcapng frame1277: byte27 raw3, printed 5; paired observed.png independently reviewed; SHA256 4d5975dd9e43eb9adf34db6273a93a75071b5b959eaab18b16fe2db38615e580",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-04/Orion.pcapng frame1505: byte27 raw4, printed 7; paired observed.png independently reviewed; SHA256 25797b1777f0bd35b078f2638ac028c1859b31261d0b1f9c989e918bebe7a255",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-05/Orion.pcapng frame1422: byte27 raw5, printed 10; paired observed.png independently reviewed; SHA256 639c2af9a3a7f3102a6433ba6126222b92e806262c42e91a8cc8d4ab985b0df8",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-06/Orion.pcapng frame1413: byte27 raw6, printed 15; paired observed.png independently reviewed; SHA256 e1dc4ec0a5455560db1e70afd997096c956465eef155b36bc7983dc9b477fae8",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-07/Orion.pcapng frame1423: byte27 raw7, printed 20; paired observed.png independently reviewed; SHA256 6860c06ff1aa9c1700a5d32ff7d259c2a137914a987ffc05d1c21d5d4079eb27",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-08/Orion.pcapng frame1399: byte27 raw8, printed 25; paired observed.png independently reviewed; SHA256 64656261bfa0d9c391f2fa7dce89d03c9122c9bdb999472bf803faaa4cef7c12",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-09/Orion.pcapng frame1437: byte27 raw9, printed 30; paired observed.png independently reviewed; SHA256 2df1473ae943b0175ce9f9691eba7a65df7df3bb8d7f99e9821ba68100b11236",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-up-10/Orion.pcapng frame1485: byte27 raw10, printed 40; paired observed.png independently reviewed; SHA256 a76c046664925721bbacabbe9153a7197b102892eb1761e99d878c35bb487ae8",
+            "captures/unattended-20261028T023901Z-mg4plus-sky-map/sky-return-10/Orion.pcapng frame1339: byte27 raw0, printed OFF; paired observed.png independently reviewed; SHA256 3ad82a837c87e524d5feecf0773932bd1273e298b8535b13df1acda0d3e3737e"
+          ],
+          "notes": "Literal OFF and printed kHz labels retained. All eleven raw/pointer associations independently reviewed; both bounded terminal witnesses and full captured parameter body/static panel return recorded. Labels do not verify calibrated filter response."
+        }
+      },
+      "evidence": [
+        "captures/unattended-20261027T144257Z-load-mg4plus/Orion.pcapng frame1869: labelled MG4+ vendor load on verified empty AFX2/channel1slot0,type68instance0,sevenempty; SHA256 140f85076af54d0ae457bed5330b8475b7963adde63688cb26f8b5832fb09128"
+      ],
+      "notes": "Orion MG4+: seven isolated gain/output endpoint pairs, full eleven-position Sky Band map and processing round trip captured. Selector returns the whole captured parameter body and checked static panel; processing returns its static GUI baseline including embedded blue lamp. Range scans intentionally finish at maxima. Gain quantization and printed ticks do not establish complete finite gain maps or physical/interpolation laws. Independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Mg4PeakMeter and Mg4BypassButton embedded lamp record GUI presence only; no signal telemetry reader enabled.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "status": "capture-observed; all visible editable controls covered; scaling and runtime contract unverified",
+        "opcode": "0x1c",
+        "param_id": "0xd5",
+        "subcmd": "0x0a",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "captures/unattended-20261028T023901Z-mg4plus-priming/Orion.pcapng frames2353/2397: first observed raw blocks, only post-first byte21 changes11/12; preservation before first report not established; SHA256 9d2aa69f752dfc013600e691df433dcb7fbbaceb727840cf4fe5c20e98b96035",
+          "scan-Mg4-20261028T024610925Z: 14 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "endpoint_candidates": [
+          {
+            "control": "level",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 3995
+          },
+          {
+            "control": "level",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 20,
+            "frame": 10815
+          },
+          {
+            "control": "sub_band",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 19013
+          },
+          {
+            "control": "sub_band",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 20,
+            "frame": 26079
+          },
+          {
+            "control": "40hz_band",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 34383
+          },
+          {
+            "control": "40hz_band",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 20,
+            "frame": 42045
+          },
+          {
+            "control": "160hz_band",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 50205
+          },
+          {
+            "control": "160hz_band",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 20,
+            "frame": 57767
+          },
+          {
+            "control": "650hz_band",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 66511
+          },
+          {
+            "control": "650hz_band",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 20,
+            "frame": 74689
+          },
+          {
+            "control": "2500hz_band",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 83184
+          },
+          {
+            "control": "2500hz_band",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 20,
+            "frame": 91263
+          },
+          {
+            "control": "sky_gain",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 100647
+          },
+          {
+            "control": "sky_gain",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 20,
+            "frame": 109381
+          }
+        ],
+        "capture_sha256": "22d6429acd8c61d75307d3302d44a561a3126fb67d97ebbc240d358823da365c",
+        "selector_map": {
+          "source": "captures/unattended-20261028T023901Z-mg4plus-sky-map",
+          "status": "complete eleven-position raw/printed-label map; full body/static panel returned",
+          "offset": 27,
+          "starting_parameter_payload_hex": "141414141414140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "141414141414140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261028T023901Z-mg4plus-resume-inventory/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "Mg4BypassButton",
+            "native_instance_count": 1,
+            "kind_hint": "embedded-processing-indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Mg4PeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB static panel including button/embedded blue lamp and all eight rotary regions; animated peak meter excluded",
+        "polarity": "GUI correlated only; independent changed-state device readback unverified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261028T023901Z-mg4plus-processing/first/Orion.pcapng frame3233: tuple@17..19=004400; exact static panel return, meter excluded; SHA256 282937765c8c1ca2f6c2d61e703d7ef670e9b51bc3c5b305a9663bf60b497e53",
+          "captures/unattended-20261028T023901Z-mg4plus-processing/return/Orion.pcapng frame774: tuple@17..19=004401; exact static panel return, meter excluded; SHA256 43ba12b19c1a54878257923c734e7fb28567b60367bd19bf67e2839e0f5ac64e"
+        ]
+      }
+    }
+  ]
+}

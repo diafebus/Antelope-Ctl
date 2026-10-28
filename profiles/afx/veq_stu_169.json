@@ -1,0 +1,387 @@
+{
+  "id": "veq_stu_169",
+  "name": "VEQ-STU 169",
+  "source_name": "VEQ-STU 169",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.22"
+  ],
+  "controls": [
+    {
+      "id": "hpf_switch",
+      "label": "Hpf Switch",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 169_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_gain",
+      "label": "Hf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 169_conf.fields"
+      ]
+    },
+    {
+      "id": "mf_gain",
+      "label": "Mf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 169_conf.fields"
+      ]
+    },
+    {
+      "id": "mf_freq",
+      "label": "Mf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 169_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_gain",
+      "label": "Lf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 169_conf.fields"
+      ]
+    },
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VEQ-STU 169_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 22,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 22,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "lf_gain": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame4169: directed lf_gain minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame11333: directed lf_gain maximum raw100; all other parameter fields preserved."
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates; printed gain/frequency ticks establish neither detents nor physical/interpolation laws. Concentric partner bytes are preserved."
+        },
+        "mf_gain": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "MF Gain inner knob",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame19189: directed mf_gain minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame26501: directed mf_gain maximum raw100; all other parameter fields preserved."
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates; printed gain/frequency ticks establish neither detents nor physical/interpolation laws. Concentric partner bytes are preserved."
+        },
+        "mf_freq": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "MF Frequency outer red ring",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame34700: directed mf_freq minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame42114: directed mf_freq maximum raw100; all other parameter fields preserved."
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates; printed gain/frequency ticks establish neither detents nor physical/interpolation laws. Concentric partner bytes are preserved."
+        },
+        "hf_gain": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame50373: directed hf_gain minimum raw0; all other parameter fields preserved.",
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame57929: directed hf_gain maximum raw100; all other parameter fields preserved."
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates; printed gain/frequency ticks establish neither detents nor physical/interpolation laws. Concentric partner bytes are preserved."
+        },
+        "level": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame66387: directed level minimum raw232; all other parameter fields preserved.",
+            "captures/scan-Studer169-20261027T144830356Z/Studer169-channel2.pcapng frame74395: directed level maximum raw12; all other parameter fields preserved."
+          ],
+          "raw_endpoints": [
+            232,
+            12
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            12
+          ],
+          "notes": "Wire endpoint bytes retained. Signed interpretation, physical units, intermediate scale and audible gain remain unverified."
+        },
+        "hpf_switch": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Filter switch (positional)",
+          "options": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "wire_enum": {
+            "0": "Upper",
+            "1": "Lower"
+          },
+          "status": "capture-observed; isolated switch round trip; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261027T144257Z-veqstu169-filter/hpf_switch-first/Orion.pcapng frame749: byte20 raw1; matching observed.png, raw1 Lower/raw0 Upper independently reviewed.",
+            "captures/unattended-20261027T144257Z-veqstu169-filter/hpf_switch-return/Orion.pcapng frame767: byte20 raw0; matching observed.png, raw1 Lower/raw0 Upper independently reviewed."
+          ],
+          "notes": "Compatibility ID retained. Upper/Lower lever positions only; filter shape, cutoff, enabled polarity and audible behavior remain unverified."
+        }
+      },
+      "evidence": [
+        "unattended-20261027T144257Z-load-veqstu169/Orion.pcapng frame2541: labelled VEQ-STU 169 load on empty unlinked AFX2/channel1, slot0 type22 instance0, sevenempty; SHA256 d957aa344699d2fc5af7e9f8bfc5f8678d9db24cd73fd8d0bfa24a578ca5e04c"
+      ],
+      "notes": "Orion VEQ-STU 169: five distinct rotary endpoint candidate pairs, isolated positional Filter switch and processing round trip captured. Concentric MF Gain/Frequency affect distinct bytes22/23 with their partner preserved. Filter returned the complete captured body and checked static panel; processing returned its static GUI baseline. Endpoint scans intentionally finish at maxima. Gain/frequency printed ticks do not establish finite detents or physical/interpolation laws. Output signed interpretation, independent parameter readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed record GUI presence only; signal telemetry remains unknown.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261027T144257Z-load-veqstu169/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Studer089Peakmeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "parameter_observation": {
+        "opcode": "0x1a",
+        "param_id": "0xd5",
+        "subcmd": "0x08",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; all visible editable controls covered; scaling and runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "lf_gain",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4169
+          },
+          {
+            "control": "lf_gain",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 11333
+          },
+          {
+            "control": "mf_gain",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 19189
+          },
+          {
+            "control": "mf_gain",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 26501
+          },
+          {
+            "control": "mf_freq",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 34700
+          },
+          {
+            "control": "mf_freq",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 42114
+          },
+          {
+            "control": "hf_gain",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 50373
+          },
+          {
+            "control": "hf_gain",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 57929
+          },
+          {
+            "control": "level",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 66387
+          },
+          {
+            "control": "level",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 12,
+            "frame": 74395
+          }
+        ],
+        "capture_sha256": "5f83055c28be253805a589aad34d282b58b3c1a0d3944824a7520ea3c37e96bd",
+        "evidence": [
+          "scan-Studer169-20261027T144830356Z: 10 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "mode_roundtrips": {
+          "source": "captures/unattended-20261027T144257Z-veqstu169-filter",
+          "status": "completed; one isolated one-byte filter switch pair; full captured parameter body/static panel returned",
+          "fields": {
+            "hpf_switch": 20
+          },
+          "starting_parameter_payload_hex": "00646464640c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "00646464640c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB static panel including processing lever/LED, filter and five rotary regions; animated peak meter excluded",
+        "polarity": "GUI correlated only; independent changed-state readback unverified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261027T144257Z-veqstu169-processing/first/Orion.pcapng frame3027 tuple@17..19=001600; static panel RGB returned, meter excluded.",
+          "captures/unattended-20261027T144257Z-veqstu169-processing/return/Orion.pcapng frame617 tuple@17..19=001601; static panel RGB returned, meter excluded."
+        ]
+      }
+    }
+  ]
+}

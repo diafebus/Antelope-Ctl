@@ -1,0 +1,460 @@
+{
+  "id": "powerex",
+  "name": "powerex",
+  "source_name": "powerex",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.51"
+  ],
+  "controls": [
+    {
+      "id": "threshold",
+      "label": "Threshold",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_powerex_conf.fields"
+      ]
+    },
+    {
+      "id": "range",
+      "label": "Range",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_powerex_conf.fields"
+      ]
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_powerex_conf.fields"
+      ]
+    },
+    {
+      "id": "decay",
+      "label": "Decay",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_powerex_conf.fields"
+      ]
+    },
+    {
+      "id": "ratio",
+      "label": "Ratio",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_powerex_conf.fields"
+      ]
+    },
+    {
+      "id": "gain",
+      "label": "Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_powerex_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 51,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 51,
+      "status": "capture-observed",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "unattended-20261025-load-powerex/Orion.pcapng frame4473: labelled PowerEx vendor load, channel1 slot0 type51/instance0, remaining seven slots empty; SHA256 93425ba960fab3c1c443efb44a95105c91b504fd94619d92d7aff5f0029af342. No independent readback."
+      ],
+      "notes": "Orion identity and six knob endpoint candidates captured independently through directed vendor UI trials. Separate processing-switch round trip has exact visual restoration. No preset selector observed on this panel. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified.",
+      "parameter_observation": {
+        "opcode": "0x1d",
+        "param_id": "0xd5",
+        "subcmd": "0x0b",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "six knob endpoint candidates captured; scaling and independent readback unverified",
+        "writable": false,
+        "labelled_gui_observations": {
+          "threshold": {
+            "label": "Threshold",
+            "class_name": "PowerExThreshPan",
+            "offset": 20,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              80
+            ],
+            "observed_display_endpoints": [
+              "0",
+              "80"
+            ],
+            "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames4505/13811; both phases host-accepted, only listed field differs between endpoint blocks."
+            ]
+          },
+          "range": {
+            "label": "Range",
+            "class_name": "PowerExRangePanNoInheritance",
+            "offset": 21,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              80
+            ],
+            "observed_display_endpoints": [
+              "0",
+              "80"
+            ],
+            "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames22719/32787; both phases host-accepted, only listed field differs between endpoint blocks."
+            ]
+          },
+          "attack": {
+            "label": "Attack",
+            "class_name": "PowerExAttackPanNoInheritance",
+            "offset": 22,
+            "width": 2,
+            "encoding": "uint16-le-candidate",
+            "observed_wire_endpoints": [
+              1,
+              750
+            ],
+            "observed_display_endpoints": [
+              "1",
+              "750"
+            ],
+            "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames43605/52491; both phases host-accepted, only listed field differs between endpoint blocks."
+            ]
+          },
+          "decay": {
+            "label": "Decay",
+            "class_name": "PowerExDecayPan",
+            "offset": 24,
+            "width": 2,
+            "encoding": "uint16-le-candidate",
+            "observed_wire_endpoints": [
+              1,
+              1000
+            ],
+            "observed_display_endpoints": [
+              "1",
+              "1000"
+            ],
+            "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames60135/68143; both phases host-accepted, only listed field differs between endpoint blocks."
+            ]
+          },
+          "ratio": {
+            "label": "Ratio",
+            "class_name": "PowerExRatioPan",
+            "offset": 26,
+            "width": 2,
+            "encoding": "uint16-le-candidate",
+            "observed_wire_endpoints": [
+              100,
+              2000
+            ],
+            "observed_display_endpoints": [
+              "1.0",
+              "20.0"
+            ],
+            "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames76575/85097; both phases host-accepted, only listed field differs between endpoint blocks."
+            ]
+          },
+          "gain": {
+            "label": "Gain",
+            "class_name": "PowerExGainPan",
+            "offset": 28,
+            "width": 1,
+            "encoding": "int8-candidate",
+            "observed_wire_endpoints": [
+              232,
+              12
+            ],
+            "observed_display_endpoints": [
+              "-24",
+              "12"
+            ],
+            "status": "capture-observed endpoint candidates; intermediate laws/units unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PowerEx-20261025T094607276Z/PowerEx-channel2.pcapng frames93375/103399; both phases host-accepted, only listed field differs between endpoint blocks."
+            ]
+          }
+        },
+        "range_capture_summary": {
+          "status": "all six observed knobs, twelve phases accepted in one native launcher batch",
+          "accepted_phases": 12,
+          "source": "scan-PowerEx-20261025T094607276Z",
+          "sha256": "d4db4309dc8294c3b448c967c425e2bdac8ed99181afc69a0c6067f24bc148ac",
+          "packet_count": 110974,
+          "dropped_packets": 0,
+          "knobs_finish_at_maximum": true,
+          "device_readback_verified": false,
+          "interpolation_laws_verified": false,
+          "notes": "Attack display is1..750, unlike the separately observed PowerGate0.1..75.0. Do not inherit physical scaling between effects. Ratio100..2000 corresponds to displayed1.0..20.0 only at captured endpoints. Gain232/display-24 suggests int8 but full signed range not verified."
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB switch and LED match after pointer moved away",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025-powerex-switch-first/Orion.pcapng frame2627 tuple@17..19=003300",
+          "unattended-20261025-powerex-switch-return/Orion.pcapng frame1889 tuple@17..19=003301; endpoint displays unchanged"
+        ]
+      },
+      "presentation": {
+        "status": "local-preview",
+        "name": "PowerEx",
+        "category": "Dynamics",
+        "family": "DYNAMICS",
+        "rows": [
+          [
+            "threshold",
+            "attack",
+            "ratio"
+          ],
+          [
+            "range",
+            "decay",
+            "gain"
+          ]
+        ],
+        "switches": [
+          "processing"
+        ],
+        "controls": [
+          {
+            "id": "threshold",
+            "label": "Threshold",
+            "kind": "continuous",
+            "range": [
+              0,
+              80
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 20,
+            "source_control": "threshold"
+          },
+          {
+            "id": "attack",
+            "label": "Attack",
+            "kind": "continuous",
+            "range": [
+              1,
+              750
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 100,
+            "source_control": "attack"
+          },
+          {
+            "id": "ratio",
+            "label": "Ratio",
+            "kind": "continuous",
+            "range": [
+              1,
+              20
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 1,
+            "source_control": "ratio"
+          },
+          {
+            "id": "range",
+            "label": "Range",
+            "kind": "continuous",
+            "range": [
+              0,
+              80
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 0,
+            "source_control": "range"
+          },
+          {
+            "id": "decay",
+            "label": "Decay",
+            "kind": "continuous",
+            "range": [
+              1,
+              1000
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 50,
+            "source_control": "decay"
+          },
+          {
+            "id": "gain",
+            "label": "Gain",
+            "kind": "continuous",
+            "range": [
+              -24,
+              12
+            ],
+            "step": 1,
+            "decimals": 0,
+            "default": 0,
+            "source_control": "gain"
+          },
+          {
+            "id": "processing",
+            "label": "Processing",
+            "kind": "enum",
+            "options": {
+              "0": "Bypass",
+              "1": "Active"
+            },
+            "default": "1",
+            "source": "processing"
+          }
+        ],
+        "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025-load-powerex/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "PowerExBypassLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "PowerExDisplay",
+            "native_instance_count": 5,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "PowerExPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "PowerExPeakMeterGrNoInheritance",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "RatioDisplay",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

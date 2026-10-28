@@ -37,9 +37,15 @@ it does not send starting presets, parameters or bypass defaults.
 
 ## AFX layers
 
-[profiles/afx_effects.json](../profiles/afx_effects.json) holds shared definitions,
-model-specific encodings and capture provenance. Resource counts and catalog
-entries do not establish license ownership or enable runtime writes.
+[profiles/afx_effects.json](../profiles/afx_effects.json) is an ordered manifest
+with catalog-wide metadata. Each `profiles/afx/<effect_id>.json` file holds one
+plugin's shared definition, model-specific encodings and capture provenance.
+[antelope/catalog.py](../antelope/catalog.py) resolves the manifest into the
+existing catalog dictionary for the WebUI and capture tools; it also accepts
+legacy inline catalogs. The loader uses only the Python standard library.
+[The exporter](../tools/export_afx_catalog.py) produces flat JSON for external
+consumers without maintaining a second authored catalog. Resource counts and
+catalog entries do not establish license ownership or enable runtime writes.
 [antelope/afx.py](../antelope/afx.py) implements the explicitly bounded Orion
 operator contracts; [webui/afx_test.py](../webui/afx_test.py) performs their
 read/preflight/write/verify transactions through the existing worker.
