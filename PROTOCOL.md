@@ -2386,13 +2386,25 @@ establishes Orion type69/instance0. A bounded eight-pixel gesture on the native
 without a preceding captured parameter baseline; it establishes neither an
 isolated control range nor a physical scale. The passive analyzer recognizes
 the captured family without enabling a writer or expanding query bounds.
-Later directed captures isolate all ten field offsets: nine bands at bytes20–28
-and VOLUME at byte29. Only 40/80/160/320Hz and VOLUME have complete raw0/100
-endpoint-candidate pairs. SG640 routing comes from a stopped guarded trial;
-the four higher bands have isolated50→51 probes. Their five complete ranges
-and processing remain pending. A processing center click produced zero OUT
-and stopped before a return click. See [the partial EQ findings](docs/orion-afx-eq.md#audio--baton--partial-capture-2026-10-28)
-for source frames and limits. Runtime writes/readback remain disabled.
+Later directed captures isolate all ten fields: nine bands at bytes20–28 and
+VOLUME at29, each with completed raw0/100 endpoint-candidate pairs. Rack BP
+processing at frames3071/643 in `unattended-20261028T145303Z-audiobaton-rack-bp-processing`
+uses actual instance17/type18/state19, tuples `00 45 00` / `00 45 01`.
+BP checkbox Off→On→Off correlates front IN/right→OUT/left→IN/right, and checked
+staticGUI returns exactly. Front center-click and8pxvertical-drag methods were
+negative; no trial replayed. See [the EQ findings](docs/orion-afx-eq.md#audio--baton--visible-control-pass-2026-10-28)
+for source frames, geometry reconciliation and limits. Runtime writes/readback,
+physical interpolation, audible response and meter telemetry remain unverified.
+
+**VCA160 priming family (2026-10-28).** Directed vendor load frame1535 in
+`unattended-20261028T145303Z-load-vca160/Orion.pcapng` establishes Orion type33,
+instance0. One bounded8pxupward Output Gain gesture emits frames2247/2295 in
+`unattended-20261028T145303Z-vca160-priming/Orion.pcapng`: `0x17 / 0xd5 / 0x05`,
+type byte18/instance byte19, body `32 15 3a`→`32 15 3b`. Only byte22 changes
+after the first report; there is no captured parameter baseline before that report.
+The passive analyzer recognizes this observed envelope. Ranges, full routing,
+physical interpolation, processing, readback and runtime writes remain unverified.
+No query bounds or hardware writer are expanded.
 
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw

@@ -3102,8 +3102,8 @@
       "effect_id": "audiobaton",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "reviewed observed GUI targets; endpoint candidates only",
-      "evidence": "Measured native AudioBaton targets from unattended-20261028T023901Z-load-audiobaton/raw-ui.json. Horizontal roller routing established by directed captures; SG40/80/160/320/640 each have independently reviewed anchored one-pixel X evidence in their saved pilot/reconciliation proofs. SG40/80/160/320 and VOLUME endpoint pairs complete; remaining ranges pending. SG1280/SG10240 each have independently reviewed one-pixel X movement in unattended-20261028T023901Z-audiobaton-short-CONTROL/proof.json. SG2560/SG5120 retain exact bounds; no sibling inference.",
+      "status": "completed endpoint-candidate pass; explicit review required for any new full pass",
+      "evidence": "All ten Audio / Baton endpoint pairs captured across directed sources in profiles/afx/audiobaton.json. Each horizontal control has its own measured anchored1pxX allowance; SG2560/SG5120 corrections separately measured and independently reviewed in unattended-20261028T145303Z reconciliation proofs. No allowance was inferred from siblings. Old stopped/negative sources are preserved.",
       "controls": [
         {
           "id": "sg40",
@@ -3165,7 +3165,8 @@
           "label": "2560Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg5120",
@@ -3173,7 +3174,8 @@
           "label": "5120Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg10240",
@@ -3193,12 +3195,12 @@
         }
       ],
       "coverage": {
-        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "status": "all ten visible parameter endpoint pairs captured; rack BP processing captured separately",
         "pending": [
-          "Switches and selectors",
-          "Independent readback",
+          "Independent device readback",
           "Physical scaling/interpolation",
-          "Audible/stereo behavior"
+          "Audible/stereo behavior",
+          "Direct front OUT/IN input method (center click and8pxverticaldrag were negative)"
         ],
         "device_readback_verified": false
       }
@@ -3241,8 +3243,8 @@
       "effect_id": "audiobaton",
       "process_name": "orionstudioiii",
       "channel": 2,
-      "status": "partial capture; remaining five endpoint pairs only; fresh panel/state required",
-      "evidence": "Measured native AudioBaton targets from unattended-20261028T023901Z-load-audiobaton/raw-ui.json. Horizontal roller routing established by directed captures; SG40/80/160/320/640 each have independently reviewed anchored one-pixel X evidence in their saved pilot/reconciliation proofs. SG40/80/160/320 and VOLUME endpoint pairs complete; remaining ranges pending. SG1280/SG10240 each have independently reviewed one-pixel X movement in unattended-20261028T023901Z-audiobaton-short-CONTROL/proof.json. SG2560/SG5120 retain exact bounds; no sibling inference. SG1280/SG10240 short probes stopped on geometry guards; separate independent review supports their explicit one-pixel allowance for a fresh bounded trial. No trial was replayed.",
+      "status": "completed endpoint-candidate pass; explicit review required for any new full pass",
+      "evidence": "All ten Audio / Baton endpoint pairs captured across directed sources in profiles/afx/audiobaton.json. Each horizontal control has its own measured anchored1pxX allowance; SG2560/SG5120 corrections separately measured and independently reviewed in unattended-20261028T145303Z reconciliation proofs. No allowance was inferred from siblings. Old stopped/negative sources are preserved.",
       "controls": [
         {
           "id": "sg640",
@@ -3268,7 +3270,8 @@
           "label": "2560Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg5120",
@@ -3276,7 +3279,8 @@
           "label": "5120Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg10240",
@@ -3289,12 +3293,12 @@
         }
       ],
       "coverage": {
-        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "status": "all ten visible parameter endpoint pairs captured; rack BP processing captured separately",
         "pending": [
-          "Switches and selectors",
-          "Independent readback",
+          "Independent device readback",
           "Physical scaling/interpolation",
-          "Audible/stereo behavior"
+          "Audible/stereo behavior",
+          "Direct front OUT/IN input method (center click and8pxverticaldrag were negative)"
         ],
         "device_readback_verified": false
       }

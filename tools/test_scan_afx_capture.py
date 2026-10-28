@@ -12,6 +12,26 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_vca160_captured_priming_classifies_only_passive_parameter_blocks(self):
+        # Actual Output Gain priming frames2247/2295; no baseline before first.
+        prefix = bytes.fromhex('70000000170000000000000000000000d505210032153a')
+        first = prefix + bytes(320 - len(prefix))
+        second = bytearray(first)
+        second[22] = 59
+        wrong_selector = bytearray(first)
+        wrong_selector[16] = 0xd4
+        result = analyze_reports([(2247, 0.0, 1, first), (2295, 0.1, 1, bytes(second)),
+                                  (2296, 0.2, 0x82, first), (2297, 0.3, 1, bytes(wrong_selector))])
+        self.assertEqual(len(result['parameter_groups']), 1)
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']), ('0x17', '0x5', 33))
+        self.assertEqual(group['frames'], 2)
+        self.assertEqual(group['varying_offsets'], [22])
+        self.assertEqual(group['observed_byte_ranges']['22'], [58, 59])
+        self.assertEqual(group['targets'][0]['instance'], 0)
+        self.assertEqual(result['operations'], [])
+        self.assertFalse(result['device_commands_sent'])
+
     def test_audiobaton_captured_seed_is_only_a_passive_parameter_observation(self):
         # Actual VOLUME priming frame2529; no preceding captured baseline.
         prefix = bytes.fromhex('700000001e0000000000000000000000d50c4500'

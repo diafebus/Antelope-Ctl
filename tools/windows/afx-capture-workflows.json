@@ -365,8 +365,22 @@
       "name": "Audio / Baton",
       "effect_id": "audiobaton",
       "panel_class": "AudioBaton",
-      "next_step": "ranges",
-      "range_plan": "audiobaton-remaining-knobs"
+      "next_step": "complete",
+      "range_plan": "audiobaton-remaining-knobs",
+      "completion_evidence": [
+        "scan-AudioBaton-20261028T034922060Z",
+        "scan-AudioBaton-20261028T041027439Z",
+        "scan-AudioBaton-20261028T081055452Z",
+        "scan-AudioBaton-20261028T081837554Z",
+        "scan-AudioBaton-20261028T081932713Z",
+        "scan-AudioBaton-20261028T145656344Z",
+        "scan-AudioBaton-20261028T145757910Z",
+        "scan-AudioBaton-20261028T150138570Z",
+        "scan-AudioBaton-20261028T150709189Z",
+        "scan-AudioBaton-20261028T150808541Z",
+        "unattended-20261028T145303Z-audiobaton-rack-bp-processing"
+      ],
+      "completion_limits": "Ten isolated raw0/100 endpoint pairs plus rack BP processing roundtrip. Front indicator GUI maps state0 to OUT/left and state1 to IN/right, with exact static restoration excluding level meter. Direct front center-click and8pxverticaldrag input methods were negative; no trial replayed. Independent readback, physical interpolation, audible/stereo behavior, telemetry and runtime contracts remain unverified."
     }
   ]
 }

@@ -845,67 +845,68 @@ interpolation, audible/stereo behavior and runtime contracts remain unverified.
 No runtime writer or query bounds are expanded.
 
 
-## Audio / Baton — partial capture, 2026-10-28
+## Audio / Baton — visible control pass, 2026-10-28
 
-The directed vendor load in
-`unattended-20261028T023901Z-load-audiobaton/Orion.pcapng`, frame1627,
-establishes Orion type69/instance0. The native panel is `AudioBaton`.
-Nine horizontal rollers have paired vertical parameter indicators. The circular
-control is printed VOLUME; its compatibility ID remains `drive`.
+Orion type69/instance0 is established by directed vendor loads at frame1627
+in `unattended-20261028T023901Z-load-audiobaton/Orion.pcapng` and frame1549
+in `unattended-20261028T145303Z-load-audiobaton/Orion.pcapng`. The second
+load also emits a parameter initialization block at frame1577 (ten bytes50).
+The original one-OUT load guard stops; a separate read-only reconciliation
+verifies the sole expected slot/caption and enabled controls. No load is replayed.
+
+The native panel is `AudioBaton`. Nine horizontal rollers have paired vertical
+parameter indicators; circular VOLUME keeps compatibility ID `drive`.
 Parameter blocks use `0x1e / 0xd5 / 0x0c`, type byte18/instance byte19.
+All ten endpoint pairs are now captured. Each source is the named directory's
+`AudioBaton-channel2.pcapng`; each accepted pair isolates one field and has zero drops.
 
-Only five complete endpoint pairs are captured. Each source below is
-`scan-AudioBaton-TIMESTAMP/AudioBaton-channel2.pcapng`; each accepted pair
-changes only its own field and has zero capture drops.
-
-| Control | Byte | Raw minimum/maximum candidates | Timestamp | Frames |
+| Control | Byte | Raw minimum/maximum candidates | Source directory | Frames |
 |---|---|---|---|---|
-| 40Hz Gain | 20 | 0/100 | 20261028T034922060Z | 7489/17273 |
-| 80Hz Gain | 21 | 0/100 | 20261028T041027439Z | 6385/14811 |
-| 160Hz Gain | 22 | 0/100 | 20261028T081055452Z | 6357/14985 |
-| 320Hz Gain | 23 | 0/100 | 20261028T081932713Z | 6027/14661 |
-| VOLUME (`drive`) | 29 | 0/100 | 20261028T081837554Z | 4629/11965 |
+| 40Hz Gain | 20 | 0/100 | scan-AudioBaton-20261028T034922060Z | 7489/17273 |
+| 80Hz Gain | 21 | 0/100 | scan-AudioBaton-20261028T041027439Z | 6385/14811 |
+| 160Hz Gain | 22 | 0/100 | scan-AudioBaton-20261028T081055452Z | 6357/14985 |
+| 320Hz Gain | 23 | 0/100 | scan-AudioBaton-20261028T081932713Z | 6027/14661 |
+| 640Hz Gain | 24 | 0/100 | scan-AudioBaton-20261028T145656344Z | 5747/14531 |
+| 1280Hz Gain | 25 | 0/100 | scan-AudioBaton-20261028T145757910Z | 5635/14461 |
+| 2560Hz Gain | 26 | 0/100 | scan-AudioBaton-20261028T150138570Z | 5171/14013 |
+| 5120Hz Gain | 27 | 0/100 | scan-AudioBaton-20261028T150709189Z | 4807/14793 |
+| 10240Hz Gain | 28 | 0/100 | scan-AudioBaton-20261028T150808541Z | 4073/14277 |
+| VOLUME (`drive`) | 29 | 0/100 | scan-AudioBaton-20261028T081837554Z | 4629/11965 |
 
-Five band ranges remain pending. The stopped SG640 job
-`scan-AudioBaton-20261028T082035448Z` isolates byte24, last frame5645/raw0,
-but accepted zero phases after the geometry guard fired. A separate read-only
-reconciliation confirms the same native identity, a one-pixel X movement and
-preserved other body/static controls; it does not complete the endpoint pair.
+Ranges are raw endpoint candidates; physical scaling/interpolation, independent
+readback and audible response remain unverified. Scans intentionally end at maxima.
+The early vertical40Hz probe produced noOUT; horizontal frame2665 established
+raw50→51 with the paired mark moving y324→323. Stopped geometry trials remain
+preserved, including SG640/2560/5120 before fresh successful passes. Each allowed
+one-pixel X shift was measured for that control; native class/RID/Y/W/H and other
+body/static controls were checked separately, with independent review before
+using the measured metadata. No control's allowance came from its siblings.
+Historical four-band short50→51 probes remain routing-only evidence.
 
-Four isolated eight-pixel rightward probes establish routing only, each changing
-50 to51 with preserved other body/static controls. Sources are
-`unattended-20261028T023901Z-audiobaton-short-CONTROL/probe/Orion.pcapng`:
+The front OUT/IN control's center-click and later isolated8pxvertical-drag
+methods produced zeroOUT. The later trial is
+`unattended-20261028T145303Z-audiobaton-processing-rotary/first/Orion.pcapng`;
+separate read-only reconciliation confirms unchanged staticGUI, and no inverse
+gesture was sent. These negative methods do not establish unsupported hardware.
 
-| Control | Byte | Frame | Native gesture result |
-|---|---|---|---|
-| sg1280 | 25 | 2797 | Stopped on one-pixel X movement; separately reconciled |
-| sg2560 | 26 | 2777 | Completed |
-| sg5120 | 27 | 2751 | Completed |
-| sg10240 | 28 | 2757 | Stopped on one-pixel X movement; separately reconciled |
+The functional vendor rack BP checkbox is captured separately in
+`unattended-20261028T145303Z-audiobaton-rack-bp-processing`.
+First frame3071 carries `0x14 / 0x98`, tuple@17..19 `00 45 00`; return
+frame643 carries `00 45 01`. Actual instance17/type18/state19 addressing is
+verified; the recorder rejects swapped addressing before any return gesture.
+Native BP state goes Off→On→Off. Independent screenshot review correlates state0
+with the front OUT/left pointer and state1 with IN/right pointer. All three checked
+static panel segments and the BP widget return exactly; the green level meter
+is excluded. This is GUI correlation, not audible polarity or independent readback.
 
-These short probes establish neither endpoint pairs nor complete scales.
-The initial vertical 40Hz probe produced no OUT and unchanged GUI; horizontal
-input was established separately at frame2665 with raw50 to51 and the paired
-indicator moving from y324 to323. Slider/SliderMark widgets are parameter
-indicators. Overlapping MagicEyeBackground/left/right PeakMeter widgets remain
-GUI-only observations; independent signal sources, meter counts, scales and
-telemetry are unknown. See [the display inventory](orion-afx-displays.md).
-
-A processing center-click trial in
-`unattended-20261028T023901Z-audiobaton-processing/first/Orion.pcapng`
-produced zero OUT. The harness stopped before a return click. Processing
-mapping and round trip remain pending; the negative trial does not establish
-that the switch is unsupported. Preserve it and review another bounded method.
-
-The resume workflow selects `audiobaton-remaining-knobs`, containing only the
-five unfinished band ranges. Fresh panel/state verification is required; the
-full plan is retained for explicitly reviewed full passes. Endpoint scans end
-at maxima. The temporary effect was removed at frame2611 in
-`unattended-20261028T023901Z-remove-audiobaton/Orion.pcapng`, and the passive
-chain observation shows all eight AFX2 slots empty before the owner deadline.
-Physical scales/interpolation, audible response, independent readback and runtime
-write contracts remain unverified. No commands or query bounds are expanded.
-
+MagicEyeBackground/left/right PeakMeter widget observations remain GUI-only;
+independent meter counts, signal sources, scales and telemetry are unknown.
+Slider/SliderMark widgets indicate parameters. See [the display inventory](orion-afx-displays.md).
+Own temporary effect removal at frame649 in
+`unattended-20261028T145303Z-remove-audiobaton/Orion.pcapng` restores all eight
+AFX2 slots empty. The workflow marks the parameter/processing pass complete
+without replaying old ranges. Direct front input method, runtime contracts,
+physical interpolation, signal telemetry and audible/readback validation remain open.
 
 ## Compact preview frequency labels — owner clarification, 2026-10-28
 

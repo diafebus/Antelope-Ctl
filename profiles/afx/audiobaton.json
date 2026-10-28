@@ -199,10 +199,10 @@
           "status": "capture-observed; endpoint candidates only; runtime contract unverified",
           "writable": false,
           "evidence": [
-            "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng frame7489: directed minimum raw0; other parameter fields preserved.",
-            "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng frame17273: directed maximum raw100; other parameter fields preserved."
+            "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng frame7489: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng frame17273: directed maximum raw100; all other parameter bytes preserved."
           ],
-          "notes": "Raw endpoint candidates only; physical scale, interpolation, independent readback and audible response unverified."
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
         },
         "sg80": {
           "offset": 21,
@@ -216,10 +216,10 @@
           "status": "capture-observed; endpoint candidates only; runtime contract unverified",
           "writable": false,
           "evidence": [
-            "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng frame6385: directed minimum raw0; other parameter fields preserved.",
-            "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng frame14811: directed maximum raw100; other parameter fields preserved."
+            "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng frame6385: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng frame14811: directed maximum raw100; all other parameter bytes preserved."
           ],
-          "notes": "Raw endpoint candidates only; physical scale, interpolation, independent readback and audible response unverified."
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
         },
         "sg160": {
           "offset": 22,
@@ -233,10 +233,10 @@
           "status": "capture-observed; endpoint candidates only; runtime contract unverified",
           "writable": false,
           "evidence": [
-            "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng frame6357: directed minimum raw0; other parameter fields preserved.",
-            "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng frame14985: directed maximum raw100; other parameter fields preserved."
+            "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng frame6357: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng frame14985: directed maximum raw100; all other parameter bytes preserved."
           ],
-          "notes": "Raw endpoint candidates only; physical scale, interpolation, independent readback and audible response unverified."
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
         },
         "sg320": {
           "offset": 23,
@@ -250,10 +250,10 @@
           "status": "capture-observed; endpoint candidates only; runtime contract unverified",
           "writable": false,
           "evidence": [
-            "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng frame6027: directed minimum raw0; other parameter fields preserved.",
-            "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng frame14661: directed maximum raw100; other parameter fields preserved."
+            "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng frame6027: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng frame14661: directed maximum raw100; all other parameter bytes preserved."
           ],
-          "notes": "Raw endpoint candidates only; physical scale, interpolation, independent readback and audible response unverified."
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
         },
         "drive": {
           "offset": 29,
@@ -267,19 +267,104 @@
           "status": "capture-observed; endpoint candidates only; runtime contract unverified",
           "writable": false,
           "evidence": [
-            "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng frame4629: directed minimum raw0; other parameter fields preserved.",
-            "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng frame11965: directed maximum raw100; other parameter fields preserved."
+            "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng frame4629: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng frame11965: directed maximum raw100; all other parameter bytes preserved."
           ],
-          "notes": "Raw endpoint candidates only; physical scale, interpolation, independent readback and audible response unverified."
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg640": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "640Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng frame5747: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng frame14531: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg1280": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "1280Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng frame5635: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng frame14461: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg2560": {
+          "offset": 26,
+          "width": 1,
+          "kind": "continuous",
+          "label": "2560Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng frame5171: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng frame14013: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg5120": {
+          "offset": 27,
+          "width": 1,
+          "kind": "continuous",
+          "label": "5120Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng frame4807: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng frame14793: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg10240": {
+          "offset": 28,
+          "width": 1,
+          "kind": "continuous",
+          "label": "10240Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng frame4073: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng frame14277: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
         }
       },
       "evidence": [
         "captures/unattended-20261028T023901Z-load-audiobaton/Orion.pcapng frame1627: exact Audio / Baton vendor load on empty AFX2/channel1slot0,type69instance0,sevenempty; SHA256 dd50b5e88b64e236ccaf5cfc8a15425d6d65cf14862e67822b0e47c68bbebb8a"
       ],
-      "notes": "Partial Orion capture: all ten field offsets observed (20..28 for nine bands, 29 for VOLUME, compatibility ID drive). Only SG40/80/160/320 and VOLUME have complete endpoint pairs. SG640 routing comes from a stopped guarded trial; SG1280/2560/5120/10240 from isolated short probes. Five range pairs and processing remain pending. No runtime writer/readback enabled; overlapping meter widget names do not establish telemetry.",
+      "notes": "All ten Orion parameter fields have isolated raw0/100 endpoint pairs: nine horizontal bands at20..28 and VOLUME (compatibility ID drive) at29. Rack BP processing roundtrip captured, with native front indicator GUI change and exact static restoration. Front center-click/8pxdrag methods were negative and preserved separately. Physical interpolation, audible response, independent readback and runtime writers/readers remain unverified.",
       "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
       "parameter_observation": {
-        "status": "capture-observed; 5 of ten parameter endpoint pairs completed; remaining controls/processing pending",
+        "status": "capture-observed; all ten parameter endpoint pairs completed; processing rack BP round trip captured",
         "opcode": "0x1e",
         "param_id": "0xd5",
         "subcmd": "0x0c",
@@ -357,6 +442,86 @@
             "source": "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng"
           },
           {
+            "control": "sg640",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 5747,
+            "source": "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg640",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14531,
+            "source": "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg1280",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 5635,
+            "source": "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg1280",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14461,
+            "source": "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg2560",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 5171,
+            "source": "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg2560",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14013,
+            "source": "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg5120",
+            "offset": 27,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4807,
+            "source": "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg5120",
+            "offset": 27,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14793,
+            "source": "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg10240",
+            "offset": 28,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4073,
+            "source": "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg10240",
+            "offset": 28,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14277,
+            "source": "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng"
+          },
+          {
             "control": "drive",
             "offset": 29,
             "gesture": "minimum",
@@ -408,11 +573,46 @@
             "accepted_phases": 2,
             "packets": 20722,
             "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "61ff0ff4a9343e7c1c00235744307dc7d06c9bf8185949c25ddb4974455a50aa",
+            "accepted_phases": 2,
+            "packets": 20038,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "78421794dea5e56399b4ca47b3c3bea5518ac33ef52189bb41c33daf9b3befca",
+            "accepted_phases": 2,
+            "packets": 19358,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "a4f3f635ddc7de7f424d19399ede19ac349241dd5be5c5dc4e4fd5b83380adeb",
+            "accepted_phases": 2,
+            "packets": 18126,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "9b882251e1bdae0304c43a8b930a019402a044a3fa9e59ca7e5b5386452077ad",
+            "accepted_phases": 2,
+            "packets": 18948,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "6d283b8efe1a46d153643d3fe088725752fad434810caccf12893e97028c9125",
+            "accepted_phases": 2,
+            "packets": 17646,
+            "drops": 0
           }
         ],
         "routing_observations": [
           {
-            "status": "isolated routing observation; endpoints and physical scale pending",
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
             "control": "sg1280",
             "class": "AudioBatonHorizontalPot_sg1280",
             "runtime_id": "42:1507410:4:-2147476030",
@@ -441,7 +641,7 @@
             "runtime_writable": false
           },
           {
-            "status": "isolated routing observation; endpoints and physical scale pending",
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
             "control": "sg2560",
             "class": "AudioBatonHorizontalPot_sg2560",
             "runtime_id": "42:1507410:4:-2147476029",
@@ -470,7 +670,7 @@
             "runtime_writable": false
           },
           {
-            "status": "isolated routing observation; endpoints and physical scale pending",
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
             "control": "sg5120",
             "class": "AudioBatonHorizontalPot_sg5120",
             "runtime_id": "42:1507410:4:-2147476028",
@@ -499,7 +699,7 @@
             "runtime_writable": false
           },
           {
-            "status": "isolated routing observation; endpoints and physical scale pending",
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
             "control": "sg10240",
             "class": "AudioBatonHorizontalPot_sg10240",
             "runtime_id": "42:1507410:4:-2147476027",
@@ -574,11 +774,52 @@
         "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
       },
       "processing_observation": {
-        "status": "pending; negative center-click method; zero OUT reports; harness stopped before return click",
+        "status": "historical front center-click negative; later front8pxgesture also negative; functional rack BP processing roundtrip captured separately",
         "source": "captures/unattended-20261028T023901Z-audiobaton-processing/first/Orion.pcapng",
         "capture_sha256": "5946091506479ca4ab582a56df3f07ebf4fba53e3da65aa7ae89fd04cf2d91d9",
         "writable": false,
-        "device_readback_verified": false
+        "device_readback_verified": false,
+        "negative_methods": [
+          {
+            "method": "bounded eight-pixel vertical front OUT/IN gesture",
+            "source": "captures/unattended-20261028T145303Z-audiobaton-processing-rotary/first/Orion.pcapng",
+            "status": "zero OUT and unchanged static GUI in separate reconciliation; no return gesture",
+            "device_readback_verified": false,
+            "capture_sha256": "d84f10467c93f324154c6ce89f4a6eed39063789b5cf47ef0bc511aa83d34186"
+          }
+        ]
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB static panel and rack BP widget; green level meter excluded",
+        "polarity": "GUI BP checkbox correlated only; audible effect and independent changed-state device readback unverified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "gui_control_label": "BP",
+        "gui_states": {
+          "0": "BP checked (On)",
+          "1": "BP unchecked (Off)"
+        },
+        "input_method": "vendor rack BP checkbox; front center-click and isolated8pxverticalgesture produced noOUT",
+        "evidence": [
+          "captures/unattended-20261028T145303Z-audiobaton-rack-bp-processing/first/Orion.pcapng frame3071: tuple@17..19=004500; SHA256 0db93f72b9bf4fa952de8b489d529788a03db0ea71ee7666fc928932ccebe148",
+          "captures/unattended-20261028T145303Z-audiobaton-rack-bp-processing/return/Orion.pcapng frame643: tuple@17..19=004501; SHA256 f1158f286462f3381b97c2d5e17318e0ab54fa740ab0c89ef8d0cb180e15e6be"
+        ],
+        "front_indicator_gui_states": {
+          "0": "OUT / left pointer",
+          "1": "IN / right pointer"
+        },
+        "front_indicator_confirmation": "independent screenshot review; this is GUI correlation, not audible confirmation or readback"
       }
     }
   ]

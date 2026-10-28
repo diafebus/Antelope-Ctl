@@ -87,7 +87,7 @@ work; no new initialization capture is required.
 | VEQ-STU 169 | 22 | Five distinct rotary endpoint pairs, positional Filter return and processing captured; concentric MF controls preserve their partner fields; scales/detents and per-field readback contracts unverified |
 | VEQ-STU 089 | 21 | Two rotary endpoint pairs, all five stepped slider maps (5/5/9/9/7 positions) and processing captured; physical scaling, per-field readback and signal telemetry unverified |
 | MG4+ | 68 | Seven gain/output endpoint pairs, full eleven-position Sky Band map and processing captured; gain scales/interpolation, per-field readback and meter telemetry unverified |
-| Audio / Baton (partial) | 69 | All ten field offsets observed; five complete raw endpoint pairs (40/80/160/320Hz and VOLUME); five band range pairs and processing pending. [EQ findings](orion-afx-eq.md#audio--baton--partial-capture-2026-10-28) preserve stopped and negative trials; no runtime contract enabled |
+| Audio / Baton | 69 | All ten raw0/100 endpoint pairs and rack BP processing return captured; OUT/IN indicator GUI states correlated. Direct front click/drag methods were negative. [EQ findings](orion-afx-eq.md#audio--baton--visible-control-pass-2026-10-28) preserve limits; runtime/readback/scaling unverified |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash

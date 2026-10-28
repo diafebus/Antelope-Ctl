@@ -74,16 +74,65 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 33,
+      "status": "capture-observed",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "evidence": [
+        "captures/unattended-20261028T145303Z-load-vca160/Orion.pcapng frame1535: exact enabled VCA160 vendor load on empty AFX2/channel1slot0,type33instance0; SHA256 160d97518e2b8f8a7b19c1496f2d64b7fcc7154d098e88a26aba6859b1358039"
+      ],
+      "notes": "Fresh native Dbx160 inventory: Threshold (dB), Compression and Output Gain rotary controls plus Power processing switch; Below/Above LEDs, VU meter and peak meter GUI-only. Parameter field/range trials pending. No runtime writer/readback enabled.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "captures/unattended-20261028T145303Z-load-vca160/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "Dbx160BelowLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Dbx160AboveLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Dbx160VuMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Dbx160Peakmeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false
+      },
+      "parameter_observation": {
+        "status": "capture-observed priming envelope; ranges and prior preservation unverified",
+        "opcode": "0x17",
+        "param_id": "0xd5",
+        "subcmd": "0x05",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "captures/unattended-20261028T145303Z-vca160-priming/Orion.pcapng frames2247/2295: Output Gain eight-pixel upward gesture; body32153a→32153b, onlybyte22 changes afterfirstreport; no captured preceding baseline; SHA256 6d2887ef8610388d4cc48fefb69d333e1512be5e101cdc4135b5367ceb4f0a35"
+        ]
+      }
     }
   ]
 }

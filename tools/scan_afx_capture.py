@@ -25,8 +25,9 @@ from antelope.catalog import load_catalog
 # 0x1b: directed VEQ-STU089 GUI priming, unattended-20261027T144257Z-veqstu089-priming frame2457.
 # 0x1d: directed PowerGate GUI sweep, scan-PowerGate-20261025T093451547Z.
 # 0x1e: directed Audio/Baton VOLUME priming, unattended-20261028T023901Z-audiobaton-priming frame2529.
+# 0x17: directed VCA160 Output Gain priming, unattended-20261028T145303Z-vca160-priming frames2247/2295.
 # These are passive decoder families, not permission to send a command.
-PARAMETER_OPCODES = {0x16, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x20, 0x22, 0x23, 0x7c}
+PARAMETER_OPCODES = {0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x20, 0x22, 0x23, 0x7c}
 
 
 def _tshark(path, *arguments):
