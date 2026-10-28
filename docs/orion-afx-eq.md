@@ -767,3 +767,79 @@ parameter controls and the separate processing switch have capture passes.
 Independent per-field readback, rotary scales/interpolation, signed
 interpretations, audible/stereo behavior and runtime contracts remain pending.
 No runtime writer or query bounds are expanded.
+
+## MG4+
+
+The directed load at frame1869 in
+`unattended-20261027T144257Z-load-mg4plus/Orion.pcapng` establishes Orion
+type68/instance0 on AFX2/channel1 slot0, with seven empty slots. The native
+panel is `Mg4`; the compatibility effect ID remains `mg4`. A fresh read-only
+inventory on resume is recorded in
+`unattended-20261028T023901Z-mg4plus-resume-inventory/raw-ui.json`.
+
+`scan-Mg4-20261028T024610925Z/Mg4-channel2.pcapng` accepts fourteen endpoint
+phases with 114,052 packets and zero drops. Its parameter family is
+`0x1c / 0xd5 / 0x0a`, type byte18/instance byte19. Each action changes only
+its isolated one-byte field.
+
+| Control | Byte | Raw endpoint candidates, minimum/maximum gestures | Source frames |
+|---|---|---|---|
+| Output | 20 | 0, 20 | 3995/10815 |
+| Sub Gain | 21 | 0, 20 | 19013/26079 |
+| 40Hz Gain | 22 | 0, 20 | 34383/42045 |
+| 160Hz Gain | 23 | 0, 20 | 50205/57767 |
+| 650Hz Gain | 24 | 0, 20 | 66511/74689 |
+| 2.5kHz Gain | 25 | 0, 20 | 83184/91263 |
+| Sky Gain | 26 | 0, 20 | 100647/109381 |
+
+These are raw endpoint candidates. Sub Gain priming frames2353/2397 in
+`unattended-20261028T023901Z-mg4plus-priming/Orion.pcapng`
+show post-first byte21 changing11→12; the first observed block has no preceding
+captured preservation baseline. This quantization and the printed gain ticks
+establish neither a complete finite gain map nor a physical/interpolation law.
+In particular, Output raw0/20 is retained without inferring a signed scale or
+calibrated gain from its printed endpoint marks. Endpoint scans intentionally
+end at maxima.
+
+Sky Band is captured separately as an eleven-position selector at byte27.
+The complete raw-to-printed-label map is:
+
+| Raw | Printed Sky Band label |
+|---|---|
+| 0 | OFF |
+| 1 | 2.5 |
+| 2 | 3.5 |
+| 3 | 5 |
+| 4 | 7 |
+| 5 | 10 |
+| 6 | 15 |
+| 7 | 20 |
+| 8 | 25 |
+| 9 | 30 |
+| 10 | 40 |
+
+The panel marks kHz for its frequency choices; OFF remains a literal label.
+`unattended-20261028T023901Z-mg4plus-sky-map` contains twenty directed
+raw-change trials and two unchanged bounded drags at the visible terminals.
+Each accepted change has one captured value, a changed pointer image and
+preserved other fields/static controls. Independent raw/image review confirms
+every association. The full captured parameter body and both checked static
+panel segments return exactly to the baseline. Exact source frames and hashes
+are retained in the model-local catalog. These labels do not calibrate the
+audible filter response.
+
+The separate processing source is
+`unattended-20261028T023901Z-mg4plus-processing`. First frame3233 in
+`first/Orion.pcapng` carries tuple `00 44 00`; return frame774 in
+`return/Orion.pcapng` carries `00 44 01`. The family is `0x14 / 0x98`,
+instance17/type18/state19. Both checked static panel segments return exactly,
+including button/embedded blue lamp and all eight rotary regions; the animated
+meter is excluded. This establishes GUI restoration without independent
+changed-state device readback or a device polarity claim.
+
+The native inventory contains `Mg4PeakMeter` and a visible blue processing lamp
+within `Mg4BypassButton`. Their GUI presence establishes no signal source,
+scale or telemetry reader. All eight visible parameter controls and processing
+have capture passes; independent per-field readback, gain/output scales and
+interpolation, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.

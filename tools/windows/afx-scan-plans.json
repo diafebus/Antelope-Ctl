@@ -3023,6 +3023,77 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "mg4-knobs",
+      "panel": "Mg4",
+      "panel_class": "Mg4",
+      "effect_id": "mg4",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261028T023901Z-mg4plus-resume-inventory/raw-ui.json and fresh KVM panel image; seven unique rotary centres/paths fit the physical panel. SkyBand excluded for separate directed finite-map review.",
+      "controls": [
+        {
+          "id": "level",
+          "class_name": "Mg4OutputPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "sub_band",
+          "class_name": "Mg4SubPot",
+          "label": "Sub Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "40hz_band",
+          "class_name": "Mg440HzPot",
+          "label": "40Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "160hz_band",
+          "class_name": "Mg4160HzPot",
+          "label": "160Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "650hz_band",
+          "class_name": "Mg4650HzPot",
+          "label": "650Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "2500hz_band",
+          "class_name": "Mg42500HzPot",
+          "label": "2.5kHz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "sky_gain",
+          "class_name": "Mg4SkyGainPot",
+          "label": "Sky Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "seven gain/output endpoint pairs completed; Sky selector and processing captured separately",
+        "pending": [
+          "Independent per-field device readback",
+          "Physical gain/output scaling and interpolation",
+          "Audible/stereo behavior",
+          "Signal meter/indicator telemetry"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

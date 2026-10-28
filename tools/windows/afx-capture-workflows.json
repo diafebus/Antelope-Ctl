@@ -346,6 +346,20 @@
         "unattended-20261027T144257Z-veqstu089-processing"
       ],
       "completion_limits": "Orion VEQ-STU 089: two rotary endpoint candidate pairs, LF/HF Cut five-position maps, Presence Frequency seven-position map, both nine-position shelf maps and processing round trip captured. Five sliders snap to finite positions; complete raw/printed-label maps are captured rather than inferred from ticks. Every slider map returns the complete captured body and checked static panel; processing returns its static GUI baseline. Rotary endpoint scans intentionally finish at maxima. Signed interpretations, physical/intermediate rotary scales, independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed record GUI presence only; signal telemetry remains unknown."
+    },
+    {
+      "name": "MG4+",
+      "effect_id": "mg4",
+      "panel_class": "Mg4",
+      "next_step": "complete",
+      "range_plan": "mg4-knobs",
+      "completion_evidence": [
+        "unattended-20261027T144257Z-load-mg4plus",
+        "scan-Mg4-20261028T024610925Z",
+        "unattended-20261028T023901Z-mg4plus-sky-map",
+        "unattended-20261028T023901Z-mg4plus-processing"
+      ],
+      "completion_limits": "Orion MG4+: seven isolated gain/output endpoint pairs, full eleven-position Sky Band map and processing round trip captured. Selector returns the whole captured parameter body and checked static panel; processing returns its static GUI baseline including embedded blue lamp. Range scans intentionally finish at maxima. Gain quantization and printed ticks do not establish complete finite gain maps or physical/interpolation laws. Independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Mg4PeakMeter and Mg4BypassButton embedded lamp record GUI presence only; no signal telemetry reader enabled."
     }
   ]
 }

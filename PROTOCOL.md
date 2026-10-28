@@ -2359,6 +2359,23 @@ calibration limits. Independent per-field readback, rotary scales/interpolation,
 signal telemetry, audible/stereo behavior and runtime contracts remain
 unverified. No writer or query bounds are expanded.
 
+**MG4+ visible controls completed (2026-10-28).** Directed load frame1869
+in `unattended-20261027T144257Z-load-mg4plus/Orion.pcapng` establishes Orion
+type68/instance0. Native `Mg4` uses `0x1c / 0xd5 / 0x0a`, type18/instance19.
+The fourteen-phase scan `scan-Mg4-20261028T024610925Z` has zero drops:
+Output20, Sub21, 40Hz22, 160Hz23, 650Hz24, 2.5kHz25 and Sky Gain26 each have
+raw endpoint candidates0/20. Quantization does not establish complete finite
+gain maps, physical scales or interpolation. Sky Band27 has a separately
+captured complete eleven-position map: raw0 OFF, then raw1–10 printed
+2.5/3.5/5/7/10/15/20/25/30/40 kHz, independently reviewed with full captured
+body/static-image return. Processing `0x14 / 0x98`, instance17/type18/state19,
+frames3233/774, tuples004400/004401, returns the checked static baseline.
+`Mg4PeakMeter` and the embedded blue lamp in `Mg4BypassButton` record GUI
+presence only. See [EQ findings](docs/orion-afx-eq.md) for source frames and
+limits. Independent per-field readback, gain/output scales and interpolation,
+signal telemetry, audible/stereo behavior and runtime contracts remain
+unverified. No writer or query bounds are expanded.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.
