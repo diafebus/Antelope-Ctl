@@ -2376,6 +2376,18 @@ limits. Independent per-field readback, gain/output scales and interpolation,
 signal telemetry, audible/stereo behavior and runtime contracts remain
 unverified. No writer or query bounds are expanded.
 
+**Audio / Baton priming family (2026-10-28).** The directed load at
+frame1627 in `unattended-20261028T023901Z-load-audiobaton/Orion.pcapng`
+establishes Orion type69/instance0. A bounded eight-pixel gesture on the native
+`AudioBatonDrivePot`, printed VOLUME, produces frame2529 in
+`unattended-20261028T023901Z-audiobaton-priming/Orion.pcapng`:
+`0x1e / 0xd5 / 0x0c`, type byte18/instance byte19, with body prefix
+`32 32 32 32 32 32 32 32 32 33`. This first complete block is a seed,
+without a preceding captured parameter baseline; it establishes neither an
+isolated control range nor a physical scale. The passive analyzer recognizes
+the captured family without enabling a writer or expanding query bounds.
+Directed control routing and endpoint trials remain separate work.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

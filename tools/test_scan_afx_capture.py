@@ -12,6 +12,26 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_audiobaton_captured_seed_is_only_a_passive_parameter_observation(self):
+        # Actual VOLUME priming frame2529; no preceding captured baseline.
+        prefix = bytes.fromhex('700000001e0000000000000000000000d50c4500'
+                               '32323232323232323233')
+        captured = prefix + bytes(320 - len(prefix))
+        wrong_selector = bytearray(captured)
+        wrong_selector[16] = 0xd4
+        result = analyze_reports([(2529, 0.0, 1, captured),
+                                  (2530, 0.1, 0x82, captured),
+                                  (2531, 0.2, 1, bytes(wrong_selector))])
+        self.assertEqual(len(result['parameter_groups']), 1)
+        group = result['parameter_groups'][0]
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']),
+                         ('0x1e', '0xc', 69))
+        self.assertEqual(group['frames'], 1)
+        self.assertEqual(group['targets'], [{'instance': 0, 'frames': 1, 'change_runs': []}])
+        self.assertEqual(group['varying_offsets'], [])
+        self.assertEqual(result['operations'], [])
+        self.assertFalse(result['device_commands_sent'])
+
     def test_stu089_captured_priming_is_only_a_passive_parameter_observation(self):
         # Actual priming frame2457: complete block, byte24 raw51.
         # A single report establishes no isolated field meaning or range.
@@ -119,8 +139,9 @@ class ScanAfxCaptureTests(unittest.TestCase):
     def test_powergate_parameter_family_is_passive_observation(self):
         first = frame(0x1d, [0xd5, 0x0b, 39, 0, 90, 0, 100, 0, 50, 0])
         second = frame(0x1d, [0xd5, 0x0b, 39, 0, 31, 0, 100, 0, 50, 0])
+        # Keep the negative fixture outside the captured parameter families.
         result = analyze_reports([(1, 1, 1, first), (2, 2, 1, second),
-                                  (3, 3, 1, frame(0x1e, [0xd5, 0x0b, 39, 0]))])
+                                  (3, 3, 1, frame(0x1f, [0xd5, 0x0b, 39, 0]))])
         self.assertEqual(len(result['parameter_groups']), 1)
         group = result['parameter_groups'][0]
         self.assertEqual((group['opcode'], group['subcommand'], group['type']), ('0x1d', '0xb', 39))
