@@ -366,7 +366,7 @@
       "effect_id": "audiobaton",
       "panel_class": "AudioBaton",
       "next_step": "ranges",
-      "range_plan": "audiobaton-knobs"
+      "range_plan": "audiobaton-remaining-knobs"
     }
   ]
 }

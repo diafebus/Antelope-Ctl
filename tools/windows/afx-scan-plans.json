@@ -3103,7 +3103,7 @@
       "process_name": "orionstudioiii",
       "channel": 2,
       "status": "reviewed observed GUI targets; endpoint candidates only",
-      "evidence": "unattended-20261028T023901Z-load-audiobaton/raw-ui.json and screenshot; nine horizontal rollers plus circular VOLUME have unique enabled native targets and measured control centres. The40Hz horizontal routing trial establishes rightward increase; vertical probe was unchanged. Full range trials remain pending.",
+      "evidence": "Measured native AudioBaton targets from unattended-20261028T023901Z-load-audiobaton/raw-ui.json. Horizontal roller routing established by directed captures; SG40/80/160/320/640 each have independently reviewed anchored one-pixel X evidence in their saved pilot/reconciliation proofs. SG40/80/160/320 and VOLUME endpoint pairs complete; remaining ranges pending. SG1280/SG10240 each have independently reviewed one-pixel X movement in unattended-20261028T023901Z-audiobaton-short-CONTROL/proof.json. SG2560/SG5120 retain exact bounds; no sibling inference.",
       "controls": [
         {
           "id": "sg40",
@@ -3120,7 +3120,8 @@
           "label": "80Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg160",
@@ -3128,7 +3129,8 @@
           "label": "160Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg320",
@@ -3136,7 +3138,8 @@
           "label": "320Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg640",
@@ -3144,7 +3147,8 @@
           "label": "640Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg1280",
@@ -3152,7 +3156,8 @@
           "label": "1280Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "sg2560",
@@ -3176,7 +3181,8 @@
           "label": "10240Hz Gain",
           "kind": "knob_range",
           "feedback": "captured_block",
-          "drag_axis": "horizontal"
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
         },
         {
           "id": "drive",
@@ -3205,7 +3211,7 @@
       "process_name": "orionstudioiii",
       "channel": 2,
       "status": "reviewed single-control horizontal launcher pilot; endpoint candidates only",
-      "evidence": "unattended-20261028T023901Z-load-audiobaton/raw-ui.json and screenshot; nine horizontal rollers plus circular VOLUME have unique enabled native targets and measured control centres. The40Hz horizontal routing trial establishes rightward increase; vertical probe was unchanged. Full range trials remain pending.",
+      "evidence": "Historical completed SG40 horizontal pilot: scan-AudioBaton-20261028T034922060Z accepted both endpoint phases; see Audio / Baton partial findings. The resume workflow excludes this completed control.",
       "controls": [
         {
           "id": "sg40",
@@ -3219,6 +3225,71 @@
       ],
       "coverage": {
         "status": "40Hz only; test runner horizontal direction before full reviewed plan",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "audiobaton-remaining-knobs",
+      "panel": "AudioBaton",
+      "panel_class": "AudioBaton",
+      "effect_id": "audiobaton",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "partial capture; remaining five endpoint pairs only; fresh panel/state required",
+      "evidence": "Measured native AudioBaton targets from unattended-20261028T023901Z-load-audiobaton/raw-ui.json. Horizontal roller routing established by directed captures; SG40/80/160/320/640 each have independently reviewed anchored one-pixel X evidence in their saved pilot/reconciliation proofs. SG40/80/160/320 and VOLUME endpoint pairs complete; remaining ranges pending. SG1280/SG10240 each have independently reviewed one-pixel X movement in unattended-20261028T023901Z-audiobaton-short-CONTROL/proof.json. SG2560/SG5120 retain exact bounds; no sibling inference. SG1280/SG10240 short probes stopped on geometry guards; separate independent review supports their explicit one-pixel allowance for a fresh bounded trial. No trial was replayed.",
+      "controls": [
+        {
+          "id": "sg640",
+          "class_name": "AudioBatonHorizontalPot_sg640",
+          "label": "640Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
+        },
+        {
+          "id": "sg1280",
+          "class_name": "AudioBatonHorizontalPot_sg1280",
+          "label": "1280Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
+        },
+        {
+          "id": "sg2560",
+          "class_name": "AudioBatonHorizontalPot_sg2560",
+          "label": "2560Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg5120",
+          "class_name": "AudioBatonHorizontalPot_sg5120",
+          "label": "5120Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg10240",
+          "class_name": "AudioBatonHorizontalPot_sg10240",
+          "label": "10240Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
         "pending": [
           "Switches and selectors",
           "Independent readback",

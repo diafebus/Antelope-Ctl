@@ -2386,7 +2386,13 @@ establishes Orion type69/instance0. A bounded eight-pixel gesture on the native
 without a preceding captured parameter baseline; it establishes neither an
 isolated control range nor a physical scale. The passive analyzer recognizes
 the captured family without enabling a writer or expanding query bounds.
-Directed control routing and endpoint trials remain separate work.
+Later directed captures isolate all ten field offsets: nine bands at bytes20–28
+and VOLUME at byte29. Only 40/80/160/320Hz and VOLUME have complete raw0/100
+endpoint-candidate pairs. SG640 routing comes from a stopped guarded trial;
+the four higher bands have isolated50→51 probes. Their five complete ranges
+and processing remain pending. A processing center click produced zero OUT
+and stopped before a return click. See [the partial EQ findings](docs/orion-afx-eq.md#audio--baton--partial-capture-2026-10-28)
+for source frames and limits. Runtime writes/readback remain disabled.
 
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
