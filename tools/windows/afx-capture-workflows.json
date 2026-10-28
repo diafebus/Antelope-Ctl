@@ -407,6 +407,20 @@
         "unattended-20261028T145303Z-altec436c-rack-bp-processing"
       ],
       "completion_limits": "Four isolated knob endpoint pairs with printed labels and rack BP/front POWER GUI return. Eight-pixel nativePower method negative, no inverse sent; complete finite intermediate maps, physical scaling, signed Output law, independent readback, audio, telemetry and runtime contracts remain unverified. Byte24 preserved unidentified."
+    },
+    {
+      "name": "Liverpool",
+      "effect_id": "liverpool",
+      "panel_class": "Liverpool",
+      "next_step": "complete",
+      "range_plan": "liverpool-knobs",
+      "completion_evidence": [
+        "unattended-20261028T145303Z-load-liverpool",
+        "scan-Liverpool-20261028T161230170Z",
+        "unattended-20261028T145303Z-liverpool-selector-maps",
+        "unattended-20261028T230645Z-liverpool-processing"
+      ],
+      "completion_limits": "Two continuous endpoint pairs, full11/11/6 raw-label selector maps and labelled Mains Power/BP/lamp GUI restoration. All repeated C/H states preserved separately. Timing, audible equivalence/polarity, calibrated scales, meter telemetry, independent readback and runtime contracts remain unverified."
     }
   ]
 }

@@ -80,6 +80,26 @@ class AfxCatalogTests(unittest.TestCase):
             self.assertEqual(list(display['options']), list(impl['control_encodings'][control_id]['wire_enum']))
             self.assertFalse(impl['control_encodings'][control_id]['writable'])
 
+    def test_liverpool_selector_contacts_stay_distinct_and_read_only(self):
+        effect = next(e for e in self.catalog['effects'] if e['id'] == 'liverpool')
+        impl = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+        for control_id, letter in [('attack', 'C'), ('recovery', 'H')]:
+            control = impl['control_encodings'][control_id]
+            self.assertEqual(control['kind'], 'enum')
+            self.assertEqual(list(control['wire_enum']), [str(n) for n in range(11)])
+            contacts = [str(n) for n in (1, 3, 5, 7, 9)]
+            self.assertTrue(all(control['printed_labels'][key] == letter for key in contacts))
+            self.assertEqual(len({control['options'][key] for key in contacts}), 5,
+                             'Repeated Off/Hold legends must not collapse different wire contacts')
+            self.assertFalse(control['writable'])
+        output = impl['control_encodings']['output']
+        self.assertEqual(output['kind'], 'enum', 'Output is a stepped attenuator, not continuous gain')
+        self.assertEqual(list(output['options'].values()), ['30 dB', '20 dB', '15 dB', '10 dB', '5 dB', '0 dB'])
+        self.assertFalse(output['writable'])
+        self.assertTrue(all(command is None for command in impl['commands'].values()))
+        self.assertNotIn('liverpool', {e['id'] for e in preview_catalog(self.catalog, 'orion_studio_sc.json')['effects']},
+                         'Capture metadata alone must not enable a runtime or guessed local panel')
+
     def test_local_presentation_requires_its_own_model_capture_sources(self):
         catalog = copy.deepcopy(self.catalog)
         effect = next(e for e in catalog['effects'] if e['id'] == 'powergate')

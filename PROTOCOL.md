@@ -2424,6 +2424,20 @@ Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-p
 retain source frames, measured geometry and label/scale limits. No runtime
 writer, independent readback or query expansion is established.
 
+**Liverpool (2026-10-29).** Directed load1581 in
+`unattended-20261028T145303Z-load-liverpool` establishes Orion type31/0.
+Its `0x1a / 0xd5 / 0x08` block has Input20/Threshold21 raw0/100 endpoints,
+Attack22/Recovery23 eleven-position maps and Output24 six-position attenuation
+map. Byte25 stays unidentified. The full50change/sixterminal selector pass returns
+whole body/static baseline. Outputraw0–5 means printed30/20/15/10/5/0dB;
+numbered Attack/Recovery settings retain every interleaved C/COMP OFF and H/HOLD
+wire state separately. Mains Power first7413/return625 in
+`unattended-20261028T230645Z-liverpool-processing` uses actual instance17/type18/
+state19 tuples `00 1f 00` / `00 1f 01`, with exact checked GUI restoration.
+[Detailed dynamics findings](docs/orion-afx-power-dynamics.md#liverpool--visible-control-pass-2026-10-29)
+record labels, source frames and limits; timing, audio, telemetry, independent
+readback and runtime writes remain unverified. No query scope expands.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

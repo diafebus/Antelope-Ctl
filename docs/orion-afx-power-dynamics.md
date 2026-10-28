@@ -172,3 +172,67 @@ Displays: `Altec436CVuMeter` (face caption dB COMPRESSION),
 correlation). Signal telemetry/scales remain unknown. Own trial removal frame679
 in `unattended-20261028T145303Z-remove-altec436c/Orion.pcapng` restores eight
 empty AFX2 slots. Runtime commands remain null and query bounds unchanged.
+
+
+## Liverpool — visible control pass, 2026-10-29
+
+Directed load frame1581 in `unattended-20261028T145303Z-load-liverpool/Orion.pcapng`
+establishes Orion type31/instance0. Native panel `Liverpool` exposes Input,
+Threshold, Attack, Recovery, Output Attenuator(dB), labelled Mains Power and
+its red lamp. `scan-Liverpool-20261028T161230170Z/Liverpool-channel2.pcapng`
+accepts ten endpoint phases with 78,704 packets and zero drops. Parameter family
+is `0x1a / 0xd5 / 0x08`, type18/instance19.
+
+| Control | Byte | Raw endpoint candidates | Source frames |
+|---|---|---|---|
+| Input | 20 | 0/100 | 4741/11535 |
+| Threshold | 21 | 0/100 | 19847/26669 |
+| Attack selector | 22 | 0/10 | 34733/41763 |
+| Recovery selector | 23 | 0/10 | 50401/57613 |
+| Output selector | 24 | 0/5 | 66103/73607 |
+
+Input and Threshold pointers match printed 0/10; no unit or intermediate law is
+established. Byte 25 remains0/unidentified. The first short Output gesture had
+zeroOUT and exact nonmeter GUI on separate reconciliation; no inverse sent.
+The later Input probe frames 1601/1651 established the family with body
+`23 32 05 00 02 00`→`24 32 05 00 02 00`; no preceding parameter baseline exists.
+
+The separate first-change KVM mapping in
+`unattended-20261028T145303Z-liverpool-selector-maps` records every state with
+an image and source frame. Fifty directed changes and six quiet terminal
+witnesses cover all three selectors; each returns the complete captured body
+and checked static panel. All raw/image associations were independently reviewed.
+
+| Raw | Attack printed mark | Recovery printed mark |
+|---|---|---|
+| 0 | 1 (FAST end) | 1 (FAST end) |
+| 1 | C between1–2 | H between1–2 |
+| 2 | 2 | 2 |
+| 3 | C between2–3 | H between2–3 |
+| 4 | 3 | 3 |
+| 5 | C between3–4 | H between3–4 |
+| 6 | 4 | 4 |
+| 7 | C between4–5 | H between4–5 |
+| 8 | 5 | 5 |
+| 9 | C between5–6 | H between5–6 |
+| 10 | 6 (SLOW end) | 6 (SLOW end) |
+
+The printed legends are COMP OFF and HOLD. All five C/H raw states stay distinct;
+no numeric timing or audible equivalence is inferred. Output raw 0–5 maps to
+**30,20,15,10,5,0**, under explicit OUTPUT ATTENUATOR(dB). These are positive
+printed attenuation labels; do not turn this selector into continuous signed gain.
+
+The final Mains Power round trip is in
+`unattended-20261028T230645Z-liverpool-processing`. First frame 7413 carries
+`0x14 / 0x98`, actual instance17/type18/state 19 tuple `00 1f 00`; return 625
+carries `00 1f 01`. State 0 is switch DOWN/OFF, lamp dark and native BP On;
+state 1 is UP/ON, lamp lit and BP Off. All five checked static regions return
+exactly. The VU and four-pixel peak meter are excluded. This is GUI correlation,
+not audible polarity or independent changed-state device readback.
+
+`LiverpoolVuMeter` has the visible GAIN REDUCTION caption; `LiverpoolPeakMeter`
+and the Power lamp `AfxLed` are also inventoried. Signal telemetry/scales remain
+unverified. Own trial removal frame1139 in
+`unattended-20261028T230645Z-remove-liverpool/Orion.pcapng` restores all eight
+AFX2 slots empty. Owner requested pause; no further effects started. Runtime
+commands remain null; no writer or query bound is expanded.

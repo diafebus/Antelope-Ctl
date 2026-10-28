@@ -3398,6 +3398,63 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "liverpool-knobs",
+      "panel": "Liverpool",
+      "panel_class": "Liverpool",
+      "effect_id": "liverpool",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "completed endpoint survey; Attack/Recovery/Output selectors mapped separately",
+      "evidence": "unattended-20261028T145303Z-load-liverpool/raw-ui.json and observed.png; allfiveenabled circular/lever controlcontainers fullyinside physicalpanel and unique. First Inputgesture establishesactual1a/d5/08type31/0. Attack/Recovery are visibly marked selectors: endpointgestures alone do NOT establishtheirfullraw-labelmapsorcontinuity. Later survey establishes Attack/Recovery11positions and Output6positions; full separately reviewed selector maps are in the model-local catalog. No continuous Output interpolation.",
+      "controls": [
+        {
+          "id": "input",
+          "class_name": "LiverpoolInputPot_input",
+          "label": "Input",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "threshold",
+          "class_name": "LiverpoolThresholdPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "attack",
+          "class_name": "LiverpoolAttackPot_attack",
+          "label": "Attack (selector endpoints only)",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "recovery",
+          "class_name": "LiverpoolRecoveryPot",
+          "label": "Recovery (selector endpoints only)",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "output",
+          "class_name": "LiverpoolOutputPot",
+          "label": "Output Attenuator (dB)",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "two continuous endpoint pairs plus selector endpoints; full selector maps and Power captured separately",
+        "pending": [
+          "Independent readback",
+          "Numeric timing and audible equivalence of C/H positions",
+          "Calibrated scales and signal telemetry",
+          "Runtime contracts"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
