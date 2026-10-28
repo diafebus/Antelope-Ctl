@@ -66,6 +66,14 @@ concise progress updates; spawn subagents only when requested.
 ## WebUI
 
 Keep effect panels in separate modules and shared rack/state logic generic.
+Panel design should be compact without crowding controls: integrate the plugin
+name and bypass into the control face rather than allocating separate full-width
+rows. Avoid decorative branding columns and repeated notes that add rack height.
+Align controls at consistent, fixed vertical positions within each panel row;
+use additional rows only when the actual control count requires them. Preserve
+readable labels, usable hit targets and responsive layouts without clipping.
+Vectorcraft and Photocraft may be used for original panel artwork when available;
+keep interactive controls separate and aligned over the artwork.
 Use an original design with static knob bodies/lighting, moving pointers and
 no extra sliders; send coalesced live edits. Preserve the single-channel rack,
 categorized left slot selectors, drag/drop from both views, compact chain link button, link markers
