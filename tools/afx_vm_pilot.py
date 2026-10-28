@@ -105,6 +105,27 @@ def knob_drag_point(control):
     return (point['x'], point['y'])
 
 
+def knob_drag_axis(control):
+    """Explicit reviewed GUI motion; existing controls remain vertical."""
+    if 'drag_axis' not in control:
+        return 'vertical'
+    axis = control['drag_axis']
+    if control.get('kind') != 'knob_range' or axis not in ('vertical', 'horizontal'):
+        raise ValueError('Knob drag axis must be vertical or horizontal')
+    return axis
+
+
+def knob_bounds_shift_x(control):
+    """Optional measured one-pixel GUI shift, never a moving anchor."""
+    if 'bounds_shift_x_px' not in control:
+        return 0
+    shift = control['bounds_shift_x_px']
+    if (control.get('kind') != 'knob_range' or knob_drag_axis(control) != 'horizontal'
+            or type(shift) is not int or shift not in (0, 1)):
+        raise ValueError('Horizontal knob bounds shift must be integer zero or one')
+    return shift
+
+
 def load_plans():
     document = json.loads((ROOT/'tools/windows/afx-scan-plans.json').read_text())
     plans = document['plans']
@@ -128,6 +149,8 @@ def load_plans():
             raise ValueError('Invalid reviewed GUI plan or scope')
         for control in controls:
             knob_drag_point(control)
+            knob_drag_axis(control)
+            knob_bounds_shift_x(control)
             if 'panel_overflow_px' in control and (
                     control['kind'] != 'knob_range'
                     or type(control['panel_overflow_px']) is not int
@@ -246,7 +269,7 @@ def validate_request(request, discovery=None):
     expected = None if plan is None else {'version': 2, 'plan_id': plan['id'],
         'panel': plan['panel'], 'channel': plan['channel'],
         'controls': [c['id'] for c in plan['controls']], 'actions': len(planned_actions(plan))}
-    if plan is not None and any('drag_point' in c for c in plan['controls']):
+    if plan is not None and any('drag_point' in c or 'drag_axis' in c for c in plan['controls']):
         expected.update(version=5, executed_plan=plan)
     if discovery is not None:
         expected.update(version=3, executed_plan=plan)

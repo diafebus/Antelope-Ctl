@@ -9,6 +9,7 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | Effect | Observed native display classes |
 |---|---|
+| Audio / Baton | `AudioBatonMagicEyeBackground`; `AudioBatonPeakMeter_left`; `AudioBatonPeakMeter_right` |
 | MG4+ | `Mg4BypassButton`; `Mg4PeakMeter` |
 | VEQ-STU 089 | `AfxLed`; `Studer089Peakmeter` |
 | VEQ-STU 169 | `AfxLed`; `Studer089Peakmeter` |

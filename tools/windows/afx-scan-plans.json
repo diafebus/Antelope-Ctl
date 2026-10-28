@@ -3094,6 +3094,139 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "audiobaton-knobs",
+      "panel": "AudioBaton",
+      "panel_class": "AudioBaton",
+      "effect_id": "audiobaton",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261028T023901Z-load-audiobaton/raw-ui.json and screenshot; nine horizontal rollers plus circular VOLUME have unique enabled native targets and measured control centres. The40Hz horizontal routing trial establishes rightward increase; vertical probe was unchanged. Full range trials remain pending.",
+      "controls": [
+        {
+          "id": "sg40",
+          "class_name": "AudioBatonHorizontalPot_sg40",
+          "label": "40Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
+        },
+        {
+          "id": "sg80",
+          "class_name": "AudioBatonHorizontalPot_sg80",
+          "label": "80Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg160",
+          "class_name": "AudioBatonHorizontalPot_sg160",
+          "label": "160Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg320",
+          "class_name": "AudioBatonHorizontalPot_sg320",
+          "label": "320Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg640",
+          "class_name": "AudioBatonHorizontalPot_sg640",
+          "label": "640Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg1280",
+          "class_name": "AudioBatonHorizontalPot_sg1280",
+          "label": "1280Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg2560",
+          "class_name": "AudioBatonHorizontalPot_sg2560",
+          "label": "2560Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg5120",
+          "class_name": "AudioBatonHorizontalPot_sg5120",
+          "label": "5120Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "sg10240",
+          "class_name": "AudioBatonHorizontalPot_sg10240",
+          "label": "10240Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal"
+        },
+        {
+          "id": "drive",
+          "class_name": "AudioBatonDrivePot",
+          "label": "VOLUME (compatibility ID drive)",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "audiobaton-sg40-horizontal",
+      "panel": "AudioBaton",
+      "panel_class": "AudioBaton",
+      "effect_id": "audiobaton",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed single-control horizontal launcher pilot; endpoint candidates only",
+      "evidence": "unattended-20261028T023901Z-load-audiobaton/raw-ui.json and screenshot; nine horizontal rollers plus circular VOLUME have unique enabled native targets and measured control centres. The40Hz horizontal routing trial establishes rightward increase; vertical probe was unchanged. Full range trials remain pending.",
+      "controls": [
+        {
+          "id": "sg40",
+          "class_name": "AudioBatonHorizontalPot_sg40",
+          "label": "40Hz Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_axis": "horizontal",
+          "bounds_shift_x_px": 1
+        }
+      ],
+      "coverage": {
+        "status": "40Hz only; test runner horizontal direction before full reviewed plan",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

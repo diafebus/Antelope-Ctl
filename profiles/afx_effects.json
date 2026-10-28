@@ -440,16 +440,88 @@
         },
         {
           "profile": "orion_studio_sc.json",
-          "type_id": null,
-          "status": "unconfirmed",
+          "type_id": 69,
+          "status": "capture-observed",
           "commands": {
             "load": null,
             "recall": null,
             "parameters": null
           },
           "control_encodings": {},
-          "evidence": [],
-          "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+          "evidence": [
+            "captures/unattended-20261028T023901Z-load-audiobaton/Orion.pcapng frame1627: exact Audio / Baton vendor load on empty AFX2/channel1slot0,type69instance0,sevenempty; SHA256 dd50b5e88b64e236ccaf5cfc8a15425d6d65cf14862e67822b0e47c68bbebb8a"
+          ],
+          "notes": "Native AudioBaton: nine horizontal roller controls with paired vertical indicators, circular VOLUME (compatibility ID drive), processing switch and overlapping MagicEyeBackground/left/right PeakMeter widgets. Isolated horizontal40Hz trial changes byte20 and its paired indicator only. Other routing/ranges pending; no writer/readback enabled.",
+          "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+          "parameter_observation": {
+            "status": "capture-observed; 1 of ten parameter endpoint pairs completed; remaining controls/processing pending",
+            "opcode": "0x1e",
+            "param_id": "0xd5",
+            "subcmd": "0x0c",
+            "type_id_offset": 18,
+            "instance_index_offset": 19,
+            "writable": false,
+            "device_readback_verified": false,
+            "evidence": [
+              "captures/unattended-20261028T023901Z-audiobaton-priming/Orion.pcapng frame2529: first observed complete block; preservation before first report not established; SHA256 6e67a41259836921383f45b4aa95fa0b67ab953403a5f8b8b48711f321300701",
+              "captures/unattended-20261028T023901Z-audiobaton-band40-horizontal/Orion.pcapng frame2665: eight-pixel rightward gesture on native AudioBatonHorizontalPot_sg40 changes only byte20 raw50 to51, paired vertical mark y324 to323; other body/static controls preserved; SHA256 cb37461ac64f58bd8f70ffa246f03e2e6f9acbc05895d2cd250cce9a2d853473"
+            ],
+            "endpoint_candidates": [
+              {
+                "control": "sg40",
+                "offset": 20,
+                "gesture": "minimum",
+                "raw": 0,
+                "frame": 7489,
+                "source": "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng"
+              },
+              {
+                "control": "sg40",
+                "offset": 20,
+                "gesture": "maximum",
+                "raw": 100,
+                "frame": 17273,
+                "source": "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng"
+              }
+            ],
+            "endpoint_sources": [
+              {
+                "source": "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng",
+                "capture_sha256": "3466dca5c78a05ed3cfaeb6577474b1276cbec341f54a2ad02782169dd24f4fb",
+                "accepted_phases": 2,
+                "packets": 24254,
+                "drops": 0
+              }
+            ]
+          },
+          "display_observations": {
+            "status": "capture-observed native GUI inventory; signal telemetry unverified",
+            "source": "unattended-20261028T023901Z-load-audiobaton/raw-ui.json",
+            "displays": [
+              {
+                "ui_class": "AudioBatonMagicEyeBackground",
+                "native_instance_count": 1,
+                "kind_hint": "display-background",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "AudioBatonPeakMeter_left",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              },
+              {
+                "ui_class": "AudioBatonPeakMeter_right",
+                "native_instance_count": 1,
+                "kind_hint": "meter",
+                "status": "GUI-observed; native class is not a telemetry contract"
+              }
+            ],
+            "device_telemetry_readback_verified": false,
+            "runtime_reader_enabled": false,
+            "meter_scale_and_signal_meaning_verified": false,
+            "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+          }
         }
       ]
     },

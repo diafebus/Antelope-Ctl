@@ -312,3 +312,38 @@ Verify each new concentric target with an isolated captured gesture before a
 full range pass. Review all parameter differences; bounds and native-window
 hit testing do not establish the inner/outer parameter mapping. Windows
 preflight exercises point geometry without GUI input.
+
+### Horizontal controls
+
+An explicitly reviewed `knob_range` may declare `"drag_axis": "horizontal"`.
+Missing metadata retains vertical motion; only the exact strings `vertical`
+and `horizontal` are accepted, and other control kinds cannot declare an axis.
+Horizontal minimum gestures move left and maximum gestures move right. The
+existing vertical directions remain down/up. Start-point, focus, screen bounds,
+enabled-state and mouse-release guards remain enforced, with drag room checked
+on the selected axis.
+
+Audio / Baton's 40Hz roller was independently probed horizontally: frame2665
+in `unattended-20261028T023901Z-audiobaton-band40-horizontal/Orion.pcapng`
+changes only byte20 from50 to51 while the paired vertical indicator moves and
+other controls remain unchanged. A vertical probe produced no parameter write.
+This is measured input routing, not an endpoint or physical gain scale.
+
+Axis-bearing plans require request version5 and the exact executed plan, just
+like point-bearing plans. Native preflight checks metadata, direction and
+axis-aware geometry without gestures. Trial a new control through the launcher
+before expanding its reviewed range plan; class naming alone is insufficient.
+
+The first 40Hz runner pilot stopped when that same roller's native bounds
+shifted one pixel horizontally. Its runtime identity, Y, width and height were
+unchanged, and only the intended parameter changed. A reviewed horizontal knob
+may declare `"bounds_shift_x_px": 1` for this measured case; the default is
+exact bounds. Only integer0/1 is accepted. The original anchor and pointer stay
+fixed, with no accumulated drift; Y/size/identity remain exact and the16pixel
+starting area must fit the live control, panel and window. Other layout, focus
+and parameter checks remain enforced. Apply this allowance only after evidence
+for that particular control; it is not inferred for sibling rollers. The fresh single-control
+`scan-AudioBaton-20261028T034922060Z` pilot then accepted both phases:
+byte20 raw0 at frame7489 and raw100 at frame17273, with 24,254 packets and
+zero drops. These are endpoint candidates; other controls need their own
+routing, bounds and range evidence.

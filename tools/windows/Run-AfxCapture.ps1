@@ -9,11 +9,13 @@ if ($ValidateOnly) {
             if ($data.version -ne 1) { throw "$file has an unsupported version." }
         }
         $sources = @('Run-AfxCapture.ps1', 'Inspect-AfxPanel.ps1', 'Run-AfxScan.ps1')
+        $scanAst = $null
         foreach ($file in $sources) {
             $tokens = $null; $parseErrors = $null
             $ast = [System.Management.Automation.Language.Parser]::ParseFile(
                 (Join-Path $PSScriptRoot $file), [ref]$tokens, [ref]$parseErrors)
             if ($parseErrors.Count -gt 0) { throw "$file syntax: $($parseErrors.Message -join '; ')" }
+            if ($file -ceq 'Run-AfxScan.ps1') { $scanAst = $ast }
             $nativeSources = @($ast.FindAll({ param($node)
                 $node -is [System.Management.Automation.Language.StringConstantExpressionAst] -and
                 $node.Value -match 'public static class Afx(PanelWindow|ScanInput)'
@@ -24,6 +26,54 @@ if ($ValidateOnly) {
         }
         [AfxScanInput]::ValidateDropdownClassifier()
         [AfxScanInput]::ValidateKnobPoints()
+        [AfxScanInput]::ValidateSweepAxes()
+        [AfxScanInput]::ValidateControlBounds()
+        # Define only these pure metadata helpers, without running the scan script.
+        $axisFunctions = @($scanAst.FindAll({ param($node)
+            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -cin @('Get-PlanDragAxis','Get-PlanSweepDelta','Get-PlanBoundsShiftX')
+        }, $true))
+        if ($axisFunctions.Count -ne 3) { throw 'Missing drag-axis metadata guards.' }
+        foreach ($function in $axisFunctions) { . ([scriptblock]::Create($function.Extent.Text)) }
+        $vertical = [pscustomobject]@{kind='knob_range';drag_axis='vertical'}
+        $horizontal = [pscustomobject]@{kind='knob_range';drag_axis='horizontal'}
+        if ((Get-PlanDragAxis ([pscustomobject]@{kind='knob_range'})) -cne 'vertical' -or
+            (Get-PlanDragAxis $horizontal) -cne 'horizontal' -or
+            (Get-PlanSweepDelta $vertical 800) -ne 800 -or
+            (Get-PlanSweepDelta $vertical -800) -ne -800 -or
+            (Get-PlanSweepDelta $horizontal 800) -ne -800 -or
+            (Get-PlanSweepDelta $horizontal -800) -ne 800) { throw 'Drag-axis direction fixtures failed.' }
+        $badAxes = @(
+            [pscustomobject]@{kind='knob_range';drag_axis=$null},
+            [pscustomobject]@{kind='knob_range';drag_axis=$true},
+            [pscustomobject]@{kind='knob_range';drag_axis=1},
+            [pscustomobject]@{kind='knob_range';drag_axis='Horizontal'},
+            [pscustomobject]@{kind='knob_range';drag_axis=[object[]]@('horizontal')},
+            [pscustomobject]@{kind='binary_button';drag_axis='vertical'}
+        )
+        foreach ($bad in $badAxes) {
+            $rejected = $false
+            try { $null = Get-PlanDragAxis $bad } catch { $rejected = $true }
+            if (-not $rejected) { throw 'Unsafe drag-axis metadata accepted.' }
+        }
+        foreach ($allowed in @(0,1)) {
+            $definition = [pscustomobject]@{kind='knob_range';drag_axis='horizontal';bounds_shift_x_px=$allowed}
+            if ((Get-PlanBoundsShiftX $definition) -ne $allowed) { throw 'Bounds allowance fixture failed.' }
+        }
+        if ((Get-PlanBoundsShiftX $horizontal) -ne 0) { throw 'Default control bounds must remain exact.' }
+        $badShifts = @(
+            [pscustomobject]@{kind='knob_range';drag_axis='horizontal';bounds_shift_x_px=$null},
+            [pscustomobject]@{kind='knob_range';drag_axis='horizontal';bounds_shift_x_px=$true},
+            [pscustomobject]@{kind='knob_range';drag_axis='horizontal';bounds_shift_x_px=2},
+            [pscustomobject]@{kind='knob_range';drag_axis='horizontal';bounds_shift_x_px=-1},
+            [pscustomobject]@{kind='knob_range';drag_axis='vertical';bounds_shift_x_px=1},
+            [pscustomobject]@{kind='binary_button';drag_axis='horizontal';bounds_shift_x_px=1}
+        )
+        foreach ($bad in $badShifts) {
+            $rejected = $false
+            try { $null = Get-PlanBoundsShiftX $bad } catch { $rejected = $true }
+            if (-not $rejected) { throw 'Unsafe control bounds allowance accepted.' }
+        }
         Add-Type -AssemblyName UIAutomationClient
         Add-Type -AssemblyName UIAutomationTypes
         Add-Type -AssemblyName System.Windows.Forms
@@ -42,7 +92,8 @@ if ($ValidateOnly) {
                 $hashes[$file] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $file)).Hash
             }
             @{ status = 'ok'; checked_utc = [DateTime]::UtcNow.ToString('o'); hashes = $hashes;
-                checked_plans = $checkedPlans; settings_written = $false } |
+                checked_plans = $checkedPlans; drag_axis_checks = 'metadata, direction and native geometry passed';
+                control_bounds_checks = 'fixed anchor and metadata passed'; settings_written = $false } |
                 ConvertTo-Json -Depth 16 | Set-Content -Encoding UTF8 $PreflightReport
         }
         Write-Host 'Windows preflight passed: PowerShell syntax, native helper compilation and UI Automation assemblies.'

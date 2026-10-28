@@ -360,6 +360,13 @@
         "unattended-20261028T023901Z-mg4plus-processing"
       ],
       "completion_limits": "Orion MG4+: seven isolated gain/output endpoint pairs, full eleven-position Sky Band map and processing round trip captured. Selector returns the whole captured parameter body and checked static panel; processing returns its static GUI baseline including embedded blue lamp. Range scans intentionally finish at maxima. Gain quantization and printed ticks do not establish complete finite gain maps or physical/interpolation laws. Independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Mg4PeakMeter and Mg4BypassButton embedded lamp record GUI presence only; no signal telemetry reader enabled."
+    },
+    {
+      "name": "Audio / Baton",
+      "effect_id": "audiobaton",
+      "panel_class": "AudioBaton",
+      "next_step": "ranges",
+      "range_plan": "audiobaton-knobs"
     }
   ]
 }

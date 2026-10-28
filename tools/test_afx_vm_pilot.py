@@ -10,6 +10,74 @@ from tools.test_scan_afx_capture import frame
 
 
 class VmPilotTests(unittest.TestCase):
+    def test_reviewed_drag_axes_validate_before_capture(self):
+        from tools.afx_vm_pilot import knob_drag_axis, load_plans
+        self.assertEqual(knob_drag_axis({'kind': 'knob_range'}), 'vertical')
+        policy = {'step_delta': 10, 'pause_ms': 1000, 'max_pulses': 4}
+        plan = {'id': 'axis', 'panel': 'AudioBaton', 'channel': 2, 'controls': []}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root/'tools/windows/afx-scan-plans.json'
+            path.parent.mkdir(parents=True)
+            def load(axis, kind='knob_range', **metadata):
+                plan['controls'] = [{'id': 'sg40', 'kind': kind, 'drag_axis': axis, **metadata}]
+                path.write_text(json.dumps({'wheel_policy': policy, 'plans': [plan]}))
+                with patch('tools.afx_vm_pilot.ROOT', root):
+                    return load_plans()
+            for axis in ('vertical', 'horizontal'):
+                self.assertEqual(load(axis)['axis']['controls'][0]['drag_axis'], axis)
+            for axis in (None, True, False, 0, 1, '', 'Horizontal', 'diagonal', [], {}):
+                with self.subTest(axis=axis), self.assertRaisesRegex(ValueError, 'axis'):
+                    load(axis)
+            with self.assertRaisesRegex(ValueError, 'axis'):
+                load('vertical', 'binary_button')
+            for shift in (0, 1):
+                self.assertEqual(load('horizontal', bounds_shift_x_px=shift)['axis']
+                                 ['controls'][0]['bounds_shift_x_px'], shift)
+            for shift in (-1, 2, True, False, None, 1.0, '1'):
+                with self.subTest(shift=shift), self.assertRaisesRegex(ValueError, 'bounds shift'):
+                    load('horizontal', bounds_shift_x_px=shift)
+            with self.assertRaisesRegex(ValueError, 'bounds shift'):
+                load('vertical', bounds_shift_x_px=1)
+
+    def test_axis_targeting_requires_exact_guest_plan_and_keeps_legacy_vertical(self):
+        import copy
+        plan = {'id': 'axis', 'panel': 'AudioBaton', 'channel': 2,
+                'controls': [{'id': 'sg40', 'kind': 'knob_range', 'drag_axis': 'horizontal'}]}
+        request = {'version': 5, 'plan_id': 'axis', 'panel': 'AudioBaton',
+                   'channel': 2, 'controls': ['sg40'], 'actions': 2,
+                   'executed_plan': copy.deepcopy(plan)}
+        with patch('tools.afx_vm_pilot.load_plans', return_value={'axis': plan}):
+            self.assertEqual(validate_request(request), plan)
+            stale = copy.deepcopy(request)
+            stale['executed_plan']['controls'][0]['drag_axis'] = 'vertical'
+            with self.assertRaises(ValueError):
+                validate_request(stale)
+            plan['controls'][0]['bounds_shift_x_px'] = 1
+            current = copy.deepcopy(request)
+            current['executed_plan'] = copy.deepcopy(plan)
+            self.assertEqual(validate_request(current), plan)
+            with self.assertRaises(ValueError):
+                validate_request(request)  # Guest omitted the measured allowance.
+            del plan['controls'][0]['bounds_shift_x_px']
+            legacy = {k: v for k, v in request.items() if k != 'executed_plan'}
+            legacy['version'] = 2
+            with self.assertRaises(ValueError):
+                validate_request(legacy)
+            del plan['controls'][0]['drag_axis']
+            self.assertEqual(validate_request(legacy), plan)
+
+    def test_resume_rejects_changed_drag_axis(self):
+        import copy
+        from tools.afx_capture_progress import progress_snapshot, remaining_plan
+        plan = {'id': 'axis', 'controls': [
+            {'id': 'sg40', 'kind': 'knob_range', 'drag_axis': 'horizontal'}]}
+        progress = progress_snapshot(plan, planned_actions(plan), [])
+        changed = copy.deepcopy(plan)
+        changed['controls'][0]['drag_axis'] = 'vertical'
+        with self.assertRaisesRegex(ValueError, 'different original plan'):
+            remaining_plan(changed, progress)
+
     def test_plan_loader_validates_reviewed_knob_overflow_before_capture(self):
         from tools.afx_vm_pilot import load_plans
         policy = {'step_delta': 10, 'pause_ms': 1000, 'max_pulses': 4}

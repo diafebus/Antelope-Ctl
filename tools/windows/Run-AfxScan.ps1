@@ -88,9 +88,30 @@ function Get-PlanOverflow($Definition) {
     }
     return $margin
 }
+function Get-PlanDragAxis($Definition) {
+    if ($Definition.PSObject.Properties.Name -notcontains 'drag_axis') { return 'vertical' }
+    $axis = $Definition.drag_axis
+    if ($Definition.kind -cne 'knob_range' -or $axis -isnot [string] -or
+        $axis -cnotin @('vertical','horizontal')) { throw 'Invalid reviewed knob drag axis.' }
+    return $axis
+}
+function Get-PlanSweepDelta($Definition, [int]$Delta) {
+    # Endpoint logic uses positive for minimum: down vertically, left horizontally.
+    if ((Get-PlanDragAxis $Definition) -ceq 'horizontal') { return -$Delta }
+    return $Delta
+}
+function Get-PlanBoundsShiftX($Definition) {
+    if ($Definition.PSObject.Properties.Name -notcontains 'bounds_shift_x_px') { return 0 }
+    $shift = $Definition.bounds_shift_x_px
+    if ($Definition.kind -cne 'knob_range' -or (Get-PlanDragAxis $Definition) -cne 'horizontal' -or
+        $shift -isnot [int] -or $shift -notin @(0,1)) { throw 'Invalid horizontal knob bounds shift.' }
+    return $shift
+}
 foreach ($definition in $plan.controls) {
     $null = Get-PlanDragPoint $definition
     $null = Get-PlanOverflow $definition
+    $null = Get-PlanDragAxis $definition
+    $null = Get-PlanBoundsShiftX $definition
 }
 if ($ValidatePlanOnly) {
     # Used by Windows preflight to exercise real metadata loading without
@@ -150,14 +171,21 @@ public static class AfxScanInput {
     }
     public static Point ResolveKnobPoint(Rectangle control, Rectangle panel,
         Rectangle window, Rectangle screen, double x, double y) {
+        return ResolveKnobPoint(control,panel,window,screen,x,y,false);
+    }
+    public static Point ResolveKnobPoint(Rectangle control, Rectangle panel,
+        Rectangle window, Rectangle screen, double x, double y, bool horizontal) {
         if (Double.IsNaN(x) || Double.IsInfinity(x) || Double.IsNaN(y) || Double.IsInfinity(y) ||
             x <= 0 || x >= 1 || y <= 0 || y >= 1 || control.Width <= 0 || control.Height <= 0)
             throw new Exception("Invalid reviewed knob point.");
         Point point = new Point((int)Math.Round(control.X + control.Width*x),
             (int)Math.Round(control.Y + control.Height*y));
         Rectangle safe = new Rectangle(point.X-8, point.Y-8, 16, 16);
+        int position = horizontal ? point.X : point.Y;
+        int first = horizontal ? screen.Left : screen.Top;
+        int last = horizontal ? screen.Right : screen.Bottom;
         if (!control.Contains(safe) || !panel.Contains(safe) || !window.Contains(safe) ||
-            !screen.Contains(safe) || point.Y-screen.Top < 24 || screen.Bottom-point.Y < 24)
+            !screen.Contains(safe) || position-first < 24 || last-position < 24)
             throw new Exception("Knob point lacks safe visible drag room.");
         return point;
     }
@@ -179,6 +207,35 @@ public static class AfxScanInput {
         try { ResolveKnobPoint(new Rectangle(1200,1000,119,119),new Rectangle(0,0,1920,1200),
             new Rectangle(0,0,1920,1200),screen,.5,.5); } catch { roomRejected=true; }
         if (!roomRejected) throw new Exception("Insufficient resolved drag room accepted.");
+        Rectangle edgeControl = new Rectangle(90,1060,60,20);
+        Rectangle fullScreen = new Rectangle(0,0,1920,1080);
+        Point horizontal = ResolveKnobPoint(edgeControl,fullScreen,fullScreen,fullScreen,.5,.5,true);
+        if (horizontal != new Point(120,1070)) throw new Exception("Horizontal point fixture failed.");
+        bool horizontalRoomRejected=false;
+        try { ResolveKnobPoint(new Rectangle(0,100,20,20),fullScreen,fullScreen,fullScreen,.5,.5,true); }
+        catch { horizontalRoomRejected=true; }
+        if (!horizontalRoomRejected) throw new Exception("Insufficient horizontal drag room accepted.");
+    }
+    public static bool ControlBoundsMatch(Rectangle anchor, Rectangle current, Point start, int shiftX) {
+        Rectangle safe = new Rectangle(start.X-8,start.Y-8,16,16);
+        return (shiftX == 0 || shiftX == 1) && anchor.Width > 0 && anchor.Height > 0 &&
+            current.Y == anchor.Y && current.Width == anchor.Width && current.Height == anchor.Height &&
+            Math.Abs(current.X-anchor.X) <= shiftX && anchor.Contains(safe) && current.Contains(safe);
+    }
+    public static void ValidateControlBounds() {
+        Rectangle anchor = new Rectangle(957,393,60,20);
+        Point start = new Point(987,403);
+        if (!ControlBoundsMatch(anchor,anchor,start,0) ||
+            !ControlBoundsMatch(anchor,new Rectangle(958,393,60,20),start,1) ||
+            !ControlBoundsMatch(anchor,new Rectangle(956,393,60,20),start,1) ||
+            ControlBoundsMatch(anchor,new Rectangle(958,393,60,20),start,0) ||
+            ControlBoundsMatch(anchor,new Rectangle(959,393,60,20),start,1) ||
+            ControlBoundsMatch(anchor,new Rectangle(957,394,60,20),start,1) ||
+            ControlBoundsMatch(anchor,new Rectangle(957,393,61,20),start,1) ||
+            ControlBoundsMatch(anchor,new Rectangle(957,393,60,21),start,1) ||
+            ControlBoundsMatch(anchor,anchor,new Point(958,403),1) ||
+            ControlBoundsMatch(anchor,anchor,start,2))
+            throw new Exception("Anchored control bounds fixtures failed.");
     }
     public static void ValidateDropdownClassifier() {
         Rectangle button = new Rectangle(100, 100, 127, 11);
@@ -255,12 +312,37 @@ public static class AfxScanInput {
             throw new Exception("Page key injection failed; release attempted, no retry permitted.");
         }
     }
+    public static Point ResolveSweepEnd(Point start, int delta, bool horizontal, Rectangle screen) {
+        int first = horizontal ? screen.Left : screen.Top;
+        int extent = horizontal ? screen.Width : screen.Height;
+        int position = horizontal ? start.X : start.Y;
+        if (extent <= 8 || !screen.Contains(start)) throw new Exception("Invalid sweep desktop bounds.");
+        int end = Math.Max(first + 4, Math.Min(first + extent - 5, position + delta));
+        if (Math.Abs(end-position) < 16) throw new Exception("Insufficient screen room for drag.");
+        return horizontal ? new Point(end,start.Y) : new Point(start.X,end);
+    }
+    public static void ValidateSweepAxes() {
+        Rectangle screen = new Rectangle(0,0,1920,1080);
+        Point start = new Point(987,403);
+        if (ResolveSweepEnd(start,-800,true,screen) != new Point(187,403) ||
+            ResolveSweepEnd(start,800,true,screen) != new Point(1787,403) ||
+            ResolveSweepEnd(start,800,false,screen) != new Point(987,1075) ||
+            ResolveSweepEnd(start,-800,false,screen) != new Point(987,4) ||
+            ResolveSweepEnd(new Point(1700,403),800,true,screen) != new Point(1915,403) ||
+            ResolveSweepEnd(new Point(-900,400),-800,true,new Rectangle(-1920,-100,1920,1080)) != new Point(-1700,400))
+            throw new Exception("Sweep axis or clamping fixtures failed.");
+        bool rejected=false;
+        try { ResolveSweepEnd(new Point(10,403),-800,true,screen); } catch { rejected=true; }
+        if (!rejected) throw new Exception("Insufficient horizontal sweep room accepted.");
+    }
     public static void Sweep(int x, int y, int delta, IntPtr window) {
-        int top = GetSystemMetrics(77), height = GetSystemMetrics(79);
-        if (height <= 8) throw new Exception("Cannot determine desktop bounds.");
-        int end = Math.Max(top + 4, Math.Min(top + height - 5, y + delta));
-        int distance = end - y;
-        if (Math.Abs(distance) < 16) throw new Exception("Insufficient screen room for drag.");
+        Sweep(x,y,delta,window,false);
+    }
+    public static void Sweep(int x, int y, int delta, IntPtr window, bool horizontal) {
+        Rectangle screen = new Rectangle(GetSystemMetrics(76),GetSystemMetrics(77),
+            GetSystemMetrics(78),GetSystemMetrics(79));
+        Point end = ResolveSweepEnd(new Point(x,y),delta,horizontal,screen);
+        int distance = horizontal ? end.X-x : end.Y-y;
         int samples = Math.Max(2, (int)Math.Ceiling(Math.Abs(distance) / 4.0));
         try {
             Held(true);
@@ -268,7 +350,8 @@ public static class AfxScanInput {
             for (int i=1; i<=samples; i++) {
                 if (GetForegroundWindow() != window || GetAsyncKeyState(27) < 0)
                     throw new Exception("Focus changed or Escape pressed during sweep.");
-                if (!SetCursorPos(x, y + (int)Math.Round(distance * (double)i / samples)))
+                int movement = (int)Math.Round(distance * (double)i / samples);
+                if (!SetCursorPos(horizontal ? x+movement : x, horizontal ? y : y+movement))
                     throw new Exception("Pointer sweep failed.");
                 Thread.Sleep(12);
             }
@@ -322,7 +405,27 @@ function Assert-Panel {
     $now = $root.Current.BoundingRectangle
     if ($now -ne $windowBounds) { throw 'Panel moved or resized; stopped.' }
     Assert-AfxChannel
-    if ($button.Current.BoundingRectangle -ne $buttonBounds) { throw 'Control moved; stopped.' }
+    $liveBounds = $button.Current.BoundingRectangle
+    if ($liveBounds -ne $buttonBounds) {
+        $shift = Get-PlanBoundsShiftX $control
+        if ($shift -eq 0) { throw 'Control moved; stopped.' }
+        # Keep the original anchor and pointer. Never accumulate a new origin.
+        $point = Get-KnobPoint $buttonBounds $control
+        $safe = [System.Windows.Rect]::new($point.X-8,$point.Y-8,16,16)
+        $anchorRect = [System.Drawing.Rectangle]::new([int]$buttonBounds.X,[int]$buttonBounds.Y,
+            [int]$buttonBounds.Width,[int]$buttonBounds.Height)
+        $liveRect = [System.Drawing.Rectangle]::new([int]$liveBounds.X,[int]$liveBounds.Y,
+            [int]$liveBounds.Width,[int]$liveBounds.Height)
+        if ($liveBounds.Y -ne $buttonBounds.Y -or $liveBounds.Width -ne $buttonBounds.Width -or
+            $liveBounds.Height -ne $buttonBounds.Height -or [Math]::Abs($liveBounds.X-$buttonBounds.X) -gt $shift -or
+            -not $button.Current.IsEnabled -or $button.Current.IsOffscreen -or
+            $button.Current.ClassName -cne $control.class_name -or ($button.GetRuntimeId()-join ':') -cne $buttonRuntimeId -or
+            -not $liveBounds.Contains($safe) -or -not $windowBounds.Contains($liveBounds) -or
+            -not $visible[0].Current.BoundingRectangle.Contains($liveBounds) -or
+            -not [AfxScanInput]::ControlBoundsMatch($anchorRect,$liveRect,$point,$shift)) {
+            throw 'Control moved outside its measured horizontal allowance; stopped.'
+        }
+    }
 }
 function Assert-AfxChannel {
     $tabs = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants,
@@ -636,12 +739,13 @@ function Read-Knob {
 }
 function Get-KnobPoint($Bounds, $Definition) {
     $fraction = Get-PlanDragPoint $Definition
+    $horizontal = (Get-PlanDragAxis $Definition) -ceq 'horizontal'
     $panel = $visible[0].Current.BoundingRectangle
     return [AfxScanInput]::ResolveKnobPoint(
         [System.Drawing.Rectangle]::new([int]$Bounds.X,[int]$Bounds.Y,[int]$Bounds.Width,[int]$Bounds.Height),
         [System.Drawing.Rectangle]::new([int]$panel.X,[int]$panel.Y,[int]$panel.Width,[int]$panel.Height),
         [System.Drawing.Rectangle]::new([int]$windowBounds.X,[int]$windowBounds.Y,[int]$windowBounds.Width,[int]$windowBounds.Height),
-        [System.Windows.Forms.SystemInformation]::VirtualScreen, $fraction.x, $fraction.y)
+        [System.Windows.Forms.SystemInformation]::VirtualScreen, $fraction.x, $fraction.y, $horizontal)
 }
 function Drag-Knob([int]$Delta, [bool]$ReadStatus = $true) {
     Assert-Panel
@@ -653,7 +757,9 @@ function Drag-Knob([int]$Delta, [bool]$ReadStatus = $true) {
     # One continuous held sweep. Some controls limit each move event, so a
     # single pointer jump is insufficient even when its distance is large.
     # Native motion avoids expensive UI Automation traversal at every point.
-    [AfxScanInput]::Sweep($x, $y, $Delta, $handle)
+    $horizontal = (Get-PlanDragAxis $control) -ceq 'horizontal'
+    $motion = Get-PlanSweepDelta $control $Delta
+    [AfxScanInput]::Sweep($x, $y, $motion, $handle, $horizontal)
     Assert-Panel
     # Re-enter the knob after the large sweep so its numeric status is visible.
     [void][AfxScanInput]::SetCursorPos([int]($windowBounds.Left + 8), [int]($windowBounds.Bottom - 8))
@@ -833,8 +939,10 @@ try {
         }
         $targets += @{ definition = $control; element = $candidates[0] }
     }
+    $control = $targets[0].definition
     $button = $targets[0].element
     $buttonBounds = $button.Current.BoundingRectangle
+    $buttonRuntimeId = $button.GetRuntimeId()-join ':'
     if (-not $button.Current.IsEnabled -or -not $windowBounds.Contains($buttonBounds)) {
         throw 'Target button is not fully visible and enabled.'
     }
@@ -857,7 +965,9 @@ try {
         controls = @($plan.controls | ForEach-Object { $_.id });
         actions = [int](($plan.controls | ForEach-Object { if ($_.kind -eq 'selector_cycle') { [int]$_.positions } elseif ($_.kind -in @('selector_positions', 'menu_positions')) { [int]$_.positions + 1 } else { 2 } } | Measure-Object -Sum).Sum)
     }
-    if (@($plan.controls | Where-Object { $_.PSObject.Properties.Name -contains 'drag_point' }).Count -gt 0) {
+    if (@($plan.controls | Where-Object {
+        $_.PSObject.Properties.Name -contains 'drag_point' -or $_.PSObject.Properties.Name -contains 'drag_axis'
+    }).Count -gt 0) {
         $jobRequest.version = 5
         $jobRequest.executed_plan = $plan
     }
@@ -884,6 +994,7 @@ try {
     $control = $target.definition
     $button = $target.element
     $buttonBounds = $button.Current.BoundingRectangle
+    $buttonRuntimeId = $button.GetRuntimeId()-join ':'
     if (-not $button.Current.IsEnabled -or -not $windowBounds.Contains($buttonBounds)) { throw 'Target is no longer enabled/visible.' }
     $crop = [System.Drawing.Rectangle]::new([int]$buttonBounds.X - 2, [int]$buttonBounds.Y - 2,
         [int]$buttonBounds.Width + 4, [int]$buttonBounds.Height + 4)
