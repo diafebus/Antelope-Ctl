@@ -4,8 +4,8 @@
 AFX_PANELS.set('pultec_eqp', {
   label: 'VEQ-1A',
   category: 'EQ & Filters',
-  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v1',
-  render: (draft, slot) => afxCapturedHTML(draft, slot, 'veq1a', 'PASSIVE / TONE'),
+  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v9',
+  render: (draft, slot) => afxCapturedHTML(draft, slot, 'veq1a'),
   update: afxCapturedUpdate,
   input: afxEffectInput,
   click: afxEffectClick,

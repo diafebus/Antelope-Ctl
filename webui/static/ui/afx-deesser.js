@@ -4,8 +4,8 @@
 AFX_PANELS.set('deesser', {
   label: 'Master De-Esser',
   category: 'Dynamics',
-  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v1',
-  render: (draft, slot) => afxCapturedHTML(draft, slot, 'deesser', 'FILTER / MONITOR'),
+  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v9',
+  render: (draft, slot) => afxCapturedHTML(draft, slot, 'deesser'),
   update: afxCapturedUpdate,
   input: afxEffectInput,
   click: afxEffectClick,

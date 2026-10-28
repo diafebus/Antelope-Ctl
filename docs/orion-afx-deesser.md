@@ -66,6 +66,9 @@ multiple nonzero states report `On`. The corrected native selector plan in
 preceding full parameter block. Four distinct indicator images accompany it.
 The [manufacturer description](https://en.antelopeaudio.com/products/master-de-esser/)
 also describes four monitoring modes; individual mode meanings remain unmapped.
+The WebUI therefore shows an explicitly unverified, disabled Monitor/Out
+selector. This is partial semantic coverage; four captured positions do not
+establish four usable mode names.
 
 ## Processing button and presets
 

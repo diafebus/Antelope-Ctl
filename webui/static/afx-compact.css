@@ -1,0 +1,38 @@
+
+/* Compact rack faces: identity and processing sit alongside the control bank. */
+.afx-rack-unit { container-type:inline-size; }
+.afx-effect-face.afx-compact-panel { display:grid; grid-template-columns:145px minmax(0,1fr); gap:16px; padding:12px 16px; }
+.afx-compact-panel .afx-panel-identity { display:flex; flex-direction:column; align-items:stretch; justify-content:center; gap:8px; padding:0 12px 0 0; border:0; border-right:1px solid #ffffff18; min-width:0; }
+.afx-compact-panel .afx-panel-tools { display:flex; align-items:center; gap:7px; }
+.afx-compact-panel .afx-preview-close { margin-left:auto; font-size:20px; line-height:1; }
+.afx-compact-panel .afx-effect-heading h3 { margin:0; font-size:14px; letter-spacing:.02em; line-height:1.25; overflow-wrap:anywhere; }
+.afx-compact-panel .afx-preview-badge { margin:0; align-self:flex-start; border:0; padding:0; font-size:10px; color:#aaa4b7; white-space:normal; background:none; }
+.afx-panel-content { min-width:0; display:grid; align-content:center; gap:10px; }
+.afx-compact-panel .afx-effect-control { display:grid; justify-items:center; align-content:start; grid-template-rows:26px 48px 28px; gap:3px; }
+.afx-compact-panel .afx-control-label { font-size:11px; text-align:center; align-self:center; line-height:1.2; }
+.afx-compact-panel .afx-knob { width:48px; height:48px; box-shadow:none; }
+.afx-compact-panel .afx-knob-cap { width:38px; height:38px; }
+.afx-compact-panel .afx-knob-pointer::after { top:4px; height:11px; }
+.afx-compact-panel .afx-control-value { align-self:center; }
+.afx-compact-panel .afx-detent-select { max-width:100px; padding:4px; align-self:center; font-size:11px; }
+.afx-compact-panel .afx-knob-bank, .afx-compact-panel .afx-captured-banks, .afx-compact-panel .afx-modulation-knobs { display:grid; grid-template-columns:repeat(auto-fit,minmax(76px,1fr)); gap:10px; }
+.afx-compact-panel .afx-captured-row, .afx-compact-panel .afx-modulation-row { display:contents; }
+.afx-compact-panel .afx-captured-switches, .afx-compact-panel .afx-modulation-switches, .afx-compact-panel .afx-mode-bank { display:flex; flex-wrap:wrap; gap:8px 16px; border:0; padding:0; }
+.afx-compact-panel .afx-mode-control { flex:0 1 auto; min-width:0; gap:3px; }
+.afx-compact-panel .afx-mode-options { flex-wrap:wrap; padding:2px; }
+.afx-compact-panel .afx-mode-button { padding:5px 7px; min-height:28px; }
+.afx-panel-processing .afx-control-label { display:none; }
+.afx-bypass-state { color:#a6a0af; font-size:11px; }
+.afx-compact-panel .afx-live-status { margin-top:0; gap:5px; }
+.afx-unmapped-control { display:grid; grid-template-columns:auto auto; align-items:center; gap:3px 8px; color:#aaa4b7; font-size:10px; }
+.afx-unmapped-control select { grid-column:1 / -1; max-width:160px; color:#aaa4b7; background:#141a23; border:1px solid #ffffff25; border-radius:4px; padding:4px; }
+@container (max-width:620px) {
+  .afx-effect-face.afx-compact-panel { grid-template-columns:minmax(0,1fr); gap:10px; padding:10px; }
+  .afx-compact-panel .afx-panel-identity { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; border:0; padding:0; }
+  .afx-compact-panel .afx-panel-tools { grid-column:2; grid-row:1; }
+  .afx-compact-panel .afx-effect-heading h3 { grid-column:1; grid-row:1; }
+  .afx-compact-panel .afx-preview-badge { grid-column:1; }
+  .afx-compact-panel .afx-panel-processing { grid-column:2; }
+}
+
+.afx-captured-panel.afx-compact-panel .afx-effect-heading h3 { font-size:14px; }

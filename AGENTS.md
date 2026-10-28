@@ -30,6 +30,9 @@ concise progress updates; spawn subagents only when requested.
 
 ## Evidence and implementation
 
+- Capture each selector value together with its displayed label and meaning.
+  Numeric positions alone are partial evidence; leave unidentified meanings
+  explicitly pending and do not present guessed labels as usable controls.
 - Resolve disagreements using observable device behavior, then directed/action-
   labelled captures, capture-backed profiles, and finally code/tests/prose.
   Distinguish captured facts, owner confirmations, candidates and unknowns;

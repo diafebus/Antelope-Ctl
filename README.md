@@ -100,6 +100,10 @@ and [preamp](docs/orion-afx-preamps.md) reports. Stepped selectors have individu
 null. This metadata does not enable
 a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
 
+AFX faces use a compact side identity/processing block and aligned control rows,
+without separate full-width name or bypass strips. EQ selector labels include
+Hz/kHz. De-Esser's monitor modes remain unidentified and disabled in the preview.
+
 The **Panel studio** link in the AFX window opens interactive PowerGate,
 PowerEx, VEQ-1A, VMEQ-5 and Master De-Esser panels. It is also available at
 `/webui/static/afx-preview.html`. Choose local effects in the categorized slot

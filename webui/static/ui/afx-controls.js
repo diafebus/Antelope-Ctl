@@ -126,24 +126,29 @@ function afxEffectDependencies(draft, doc) {
   }
 }
 
+// Shared compact face identity. Processing remains a local preview unless an
+// existing panel explicitly supplies a runtime control; this adds no writer.
+function afxPanelIdentityHTML(draft, slot, processing, removable = true) {
+  const status = draft.live ? (draft.effect.local_presentation
+    ? 'Device values unavailable' : draft.effect.id === 'memory_brigade' ? 'Device test' : 'Device settings unknown') : 'Local preview';
+  const power = processing || `<span class="afx-bypass-state" data-afx-bypass-state title="Bypass cannot be changed by this panel">Bypass: ${draft.live && typeof draft.bypassed === 'boolean' ? draft.bypassed ? 'On' : 'Off' : 'Unknown'}</span>`;
+  return `<aside class="afx-effect-heading afx-panel-identity"><div class="afx-panel-tools">${afxPanelPositionHTML(slot, removable)}`
+    + `<button type="button" class="afx-preview-close" ${draft.live ? 'data-afx-device-remove' : 'data-afx-remove'}="${slot}"${removable ? '' : ' disabled'} aria-label="${draft.live ? 'Remove effect from device' : 'Remove local panel'}">×</button></div>`
+    + `<h3>${afxEscape(draft.effect.name)}</h3><span class="afx-preview-badge" title="${afxEscape(status)}">${afxEscape(status)}</span>`
+    + `<div class="afx-panel-processing">${power}</div></aside>`;
+}
+
 // Presentation only; no new runtime writer is connected by this renderer.
 function afxModulationHTML(draft, slot, style) {
   draft.slot = slot;
   const panel = draft.effect.panel;
   const byId = new Map(draft.effect.controls.map(c => [c.id, c]));
-  const ready = id => (!draft.live || draft.parameterAvailable)
-    && (!panel.dependencies?.[id] || draft.values[panel.dependencies[id]] > 0);
-  const control = id => afxEffectControlHTML(byId.get(id), draft.values[id], slot, draft.live, ready(id));
-  return `<div class="afx-effect-face afx-modulation afx-${style}"><div class="afx-effect-heading">${afxPanelPositionHTML(slot)}<div>`
-    + `<span class="afx-effect-family">SYNERGY CORE · MODULATION</span><h3>${afxEscape(draft.effect.name)}</h3></div>`
-    + `<span class="afx-preview-badge">${draft.live ? 'Device settings unknown' : 'Local preview'}</span>`
-    + `<button type="button" class="afx-preview-close" ${draft.live ? 'data-afx-device-remove' : 'data-afx-remove'}="${slot}" aria-label="${draft.live ? 'Remove effect from device' : 'Close local preview'}">×</button></div>`
-    + '<div class="afx-modulation-body"><div class="afx-modulation-knobs">'
+  const control = id => afxEffectControlHTML(byId.get(id), draft.values[id], slot,
+    draft.live, afxEffectReady(draft, id));
+  const note = style === 'v12' ? 'Colorize and Clr Shifter require Space above zero.' : '';
+  return `<div class="afx-effect-face afx-compact-panel afx-modulation afx-${style}" title="${afxEscape(note)}">`
+    + afxPanelIdentityHTML(draft, slot)
+    + '<div class="afx-panel-content"><div class="afx-modulation-knobs">'
     + panel.rows.map(row => `<div class="afx-modulation-row">${row.map(control).join('')}</div>`).join('')
-    + `</div><div class="afx-modulation-switches">${panel.switches.map(control).join('')}`
-    + '<div class="afx-mode-control"><span class="afx-control-label">Power</span><button type="button" class="afx-mode-button" disabled>Unknown</button></div></div></div>'
-    + '<div class="afx-modulation-meter">Output level unavailable</div>'
-    + `<p class="afx-preview-note">${draft.live ? 'Parameter state unavailable · controls wait for verified readback. Load, move and remove use the captured rack contract.' : 'Local preview settings only · no device parameter or bypass writes.'}</p>`
-    + (style === 'v12' ? '<p class="afx-preview-note">Colorize and Clr Shifter require Space above zero.</p>' : '')
-    + '</div>';
+    + `</div><div class="afx-modulation-switches">${panel.switches.map(control).join('')}</div></div></div>`;
 }

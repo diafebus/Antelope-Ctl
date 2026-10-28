@@ -22,6 +22,16 @@ with unresolved identity, selectors, presets and disabled dependencies remain
 listed as pending. Known measured plans retain their existing behavior. See
 [the Windows instructions](../tools/windows/README.md) for operation and limits.
 
+## Selector labels and completion
+
+Capture each selector value together with its displayed label and what it means.
+A complete numeric cycle with unknown mode names remains partial semantic
+coverage, even when its visible-control capture pass is recorded. Match labels
+against captured GUI indicators and available vendor documentation; audible
+interpretations need separate confirmation. Do not invent user-facing names.
+Master De-Esser's four Monitor/Out values remain semantically unidentified; the
+panel marks that selector unverified and disables it pending this work.
+
 ## Editing captured plugin knowledge
 
 The [catalog manifest](../profiles/afx_effects.json) owns shared provenance and

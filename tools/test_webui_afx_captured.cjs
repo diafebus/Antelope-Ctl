@@ -18,6 +18,12 @@ for(const effect of fixture.effects){
  vm.runInContext(`draft={effect,live:true,parameterAvailable:false,values:{}};afxEffectInput(draft,{dataset:{afxControl:effect.controls[0].id},value:'1'});`,ctx);
  assert.equal(vm.runInContext('Object.keys(draft.values).length',ctx),0);
 }
+// An unidentified selector must not masquerade as four usable named modes.
+const deesserHTML=vm.runInContext(`effect=fixture.effects.find(e=>e.id==='deesser');AFX_PANELS.get('deesser').render({effect,live:false,values:Object.fromEntries(effect.controls.map(c=>[c.id,c.default]))},0)`,ctx);
+assert.match(deesserHTML,/Mode meanings unverified/);
+assert.match(deesserHTML,/<select[^>]*data-afx-control="ctrl"[^>]* disabled/);
+assert.doesNotMatch(deesserHTML,/Position [1-4]|data-afx-mode="ctrl"/);
+assert.equal([...deesserHTML.matchAll(/data-afx-mode="processing"/g)].length,2,'Only one processing control pair');
 const properties={},output={},doc={querySelectorAll:()=>[],querySelector:()=>null};
 const group={style:{setProperty:(k,v)=>properties[k]=v},querySelector:()=>output};
 ctx.input={dataset:{afxControl:'attack',afxSlot:'0'},value:'0.2',closest:()=>group,ownerDocument:doc};

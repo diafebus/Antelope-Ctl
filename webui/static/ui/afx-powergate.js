@@ -4,8 +4,8 @@
 AFX_PANELS.set('powergate', {
   label: 'PowerGate',
   category: 'Dynamics',
-  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v1',
-  render: (draft, slot) => afxCapturedHTML(draft, slot, 'powergate', 'GATE / HOLD'),
+  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v9',
+  render: (draft, slot) => afxCapturedHTML(draft, slot, 'powergate'),
   update: afxCapturedUpdate,
   input: afxEffectInput,
   click: afxEffectClick,

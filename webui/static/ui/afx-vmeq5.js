@@ -4,8 +4,8 @@
 AFX_PANELS.set('pultec_meq', {
   label: 'VMEQ-5',
   category: 'EQ & Filters',
-  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v1',
-  render: (draft, slot) => afxCapturedHTML(draft, slot, 'vmeq5', 'MIDRANGE / FOCUS'),
+  stylesheet: '/webui/static/afx-captured.css?v=afx-captured-v9',
+  render: (draft, slot) => afxCapturedHTML(draft, slot, 'vmeq5'),
   update: afxCapturedUpdate,
   input: afxEffectInput,
   click: afxEffectClick,

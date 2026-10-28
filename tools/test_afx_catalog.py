@@ -64,6 +64,22 @@ class AfxCatalogTests(unittest.TestCase):
         self.assertEqual(controls['powergate']['gain']['range'], [-24, 12])
         self.assertEqual(len(controls['pultec_meq']['mid_freq']['options']), 11)
 
+    def test_eq_frequency_labels_include_units_without_changing_wire_choices(self):
+        preview = {e['id']: e for e in preview_catalog(self.catalog, 'orion_studio_sc.json')['effects']}
+        eqp = {c['id']: c for c in preview['pultec_eqp']['controls']}
+        meq = {c['id']: c for c in preview['pultec_meq']['controls']}
+        self.assertEqual(eqp['high_freq']['options']['5'], '12 kHz')
+        self.assertEqual(eqp['atten_sel']['options']['0'], '5 kHz')
+        self.assertEqual(meq['mid_freq']['options']['0'], '200 Hz')
+        self.assertEqual(meq['mid_freq']['options']['6'], '2 kHz')
+        self.assertEqual(meq['hi_freq']['options']['0'], '1.5 kHz')
+        for effect_id, control_id in [('pultec_eqp', 'high_freq'), ('pultec_meq', 'mid_freq')]:
+            effect = next(e for e in self.catalog['effects'] if e['id'] == effect_id)
+            impl = next(i for i in effect['implementations'] if i['profile'] == 'orion_studio_sc.json')
+            display = next(c for c in preview[effect_id]['controls'] if c['id'] == control_id)
+            self.assertEqual(list(display['options']), list(impl['control_encodings'][control_id]['wire_enum']))
+            self.assertFalse(impl['control_encodings'][control_id]['writable'])
+
     def test_local_presentation_requires_its_own_model_capture_sources(self):
         catalog = copy.deepcopy(self.catalog)
         effect = next(e for e in catalog['effects'] if e['id'] == 'powergate')

@@ -660,10 +660,10 @@
             "label": "Low Frequency",
             "kind": "enum",
             "options": {
-              "0": "20",
-              "1": "30",
-              "2": "60",
-              "3": "100"
+              "0": "20 Hz",
+              "1": "30 Hz",
+              "2": "60 Hz",
+              "3": "100 Hz"
             },
             "default": "0",
             "rotary": true,
@@ -687,13 +687,13 @@
             "label": "High Frequency",
             "kind": "enum",
             "options": {
-              "0": "3",
-              "1": "4",
-              "2": "5",
-              "3": "8",
-              "4": "10",
-              "5": "12",
-              "6": "16"
+              "0": "3 kHz",
+              "1": "4 kHz",
+              "2": "5 kHz",
+              "3": "8 kHz",
+              "4": "10 kHz",
+              "5": "12 kHz",
+              "6": "16 kHz"
             },
             "default": "0",
             "rotary": true,
@@ -704,9 +704,9 @@
             "label": "Atten Select",
             "kind": "enum",
             "options": {
-              "0": "5",
-              "1": "10",
-              "2": "20"
+              "0": "5 kHz",
+              "1": "10 kHz",
+              "2": "20 kHz"
             },
             "default": "0",
             "rotary": true,

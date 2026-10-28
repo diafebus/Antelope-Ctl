@@ -259,6 +259,7 @@ function openAfxWindow() {
     + '<link rel="stylesheet" href="/webui/static/app.css?v=routing-mix-colors-v1">'
     + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-channel-rack-v14">'
     + Array.from(new Set(Array.from(AFX_PANELS.values(), panel => panel.stylesheet)), stylesheet => `<link rel="stylesheet" href="${afxEscape(stylesheet)}">`).join('')
+    + '<link rel="stylesheet" href="/webui/static/afx-compact.css?v=compact-v1">'
     + '</head><body class="afx-window-body" role="dialog" aria-label="AFX"></body></html>');
   d.close();
   mountAfxWindow(popup, capacity);

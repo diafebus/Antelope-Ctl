@@ -905,3 +905,14 @@ at maxima. The temporary effect was removed at frame2611 in
 chain observation shows all eight AFX2 slots empty before the owner deadline.
 Physical scales/interpolation, audible response, independent readback and runtime
 write contracts remain unverified. No commands or query bounds are expanded.
+
+
+## Compact preview frequency labels — owner clarification, 2026-10-28
+
+The owner confirmed that high-frequency selector marks such as2/3/5/12/16
+denote kilohertz. VEQ-1A and VMEQ-5 local presentation choices now include Hz
+or kHz explicitly, including VMEQ-5's mixed-scale Dip Frequency choices
+(200–700Hz followed by1–7kHz). These are display-label clarifications; the
+original printed-label observations, raw selector keys, model-local encodings
+and runtime verification flags remain unchanged. This does not establish an
+audible frequency calibration or a continuous interpolation law.
