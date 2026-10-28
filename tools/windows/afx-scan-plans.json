@@ -3345,6 +3345,59 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "altec_436c-knobs",
+      "panel": "Altec436C",
+      "panel_class": "Altec436C",
+      "effect_id": "altec_436c",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261028T145303Z-load-altec436c/raw-ui.json and observed.png; explicitpercontrolnativebounds overflow measured0/14/14/7, centres/startareas inside physical215pxpanel; independent geometry/label review. Printedticks alone do not establishcontinuous/steppedsemantics.",
+      "controls": [
+        {
+          "id": "input",
+          "class_name": "Altec436CBigPot_input",
+          "label": "Volume",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "threshold",
+          "class_name": "Altec436CThresholdPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 14
+        },
+        {
+          "id": "release",
+          "class_name": "Altec436CReleasePot",
+          "label": "Release Time",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 14
+        },
+        {
+          "id": "output",
+          "class_name": "Altec436CSmallPot_output",
+          "label": "Output (dB)",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 7
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

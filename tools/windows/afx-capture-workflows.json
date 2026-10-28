@@ -394,6 +394,19 @@
         "unattended-20261028T145303Z-vca160-processing"
       ],
       "completion_limits": "Three isolated knob endpoint pairs with printed endpoint-label associations and POWER/BP GUI-correlated processing return; exact checked static restoration excluding signal displays. Raw quantization does not establish a finite labelled selector map, physical interpolation, audible response, device readback or runtime contracts. Physical scales/interpolation, audible behavior, independent readback and runtime contracts remain unverified."
+    },
+    {
+      "name": "ALT-436C",
+      "effect_id": "altec_436c",
+      "panel_class": "Altec436C",
+      "next_step": "complete",
+      "range_plan": "altec_436c-knobs",
+      "completion_evidence": [
+        "unattended-20261028T145303Z-load-altec436c",
+        "scan-Altec436C-20261028T154214904Z",
+        "unattended-20261028T145303Z-altec436c-rack-bp-processing"
+      ],
+      "completion_limits": "Four isolated knob endpoint pairs with printed labels and rack BP/front POWER GUI return. Eight-pixel nativePower method negative, no inverse sent; complete finite intermediate maps, physical scaling, signed Output law, independent readback, audio, telemetry and runtime contracts remain unverified. Byte24 preserved unidentified."
     }
   ]
 }

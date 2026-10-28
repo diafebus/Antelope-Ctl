@@ -2412,6 +2412,18 @@ static restoration and BP/lamp GUI correlation. See [dynamics findings](docs/ori
 Physical interpolation, audible response, meter telemetry and independent
 readback remain unverified; no query bounds or hardware writer are expanded.
 
+**ALT-436C (2026-10-28).** Directed load frame1553 in
+`unattended-20261028T145303Z-load-altec436c` establishes Orion type35/0.
+`scan-Altec436C-20261028T154214904Z` captures Input20, Threshold21 and Release22
+raw0/100, Output23 wire232/24 with signed candidates−24/+24. Forty observed
+Release values rule out interpreting its three printed marks as three captured
+states. Byte24 remains unidentified/preserved. Rack BP first3136/return729 uses
+actual instance17/type18/state19 tuples `00 23 00` / `00 23 01`, with checked
+static restoration and lamp/POWER-pointer GUI correlation. The short native
+Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-power-dynamics.md#alt-436c--visible-control-pass-2026-10-28)
+retain source frames, measured geometry and label/scale limits. No runtime
+writer, independent readback or query expansion is established.
+
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
 endpoint candidates10/100, plus an isolated processing-switch round trip.

@@ -879,8 +879,8 @@ The early vertical40Hz probe produced noOUT; horizontal frame2665 established
 raw50→51 with the paired mark moving y324→323. Stopped geometry trials remain
 preserved, including SG640/2560/5120 before fresh successful passes. Each allowed
 one-pixel X shift was measured for that control; native class/RID/Y/W/H and other
-body/static controls were checked separately, with independent review before
-using the measured metadata. No control's allowance came from its siblings.
+body/static controls were checked separately, and the source proofs were
+independently reviewed. No control's allowance came from its siblings.
 Historical four-band short50→51 probes remain routing-only evidence.
 
 The front OUT/IN control's center-click and later isolated8pxvertical-drag

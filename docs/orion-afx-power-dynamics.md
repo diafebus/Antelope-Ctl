@@ -1,4 +1,4 @@
-# Orion PowerGate and PowerEx capture findings
+# Orion dynamics capture findings
 
 These are directed vendor GUI observations on Orion Studio Synergy Core.
 The [catalog](../profiles/afx_effects.json) owns model-local encodings, capture
@@ -119,3 +119,56 @@ the POWER lamp inside `Dbx160BypassButton` are GUI observations. Signal sources,
 scales and telemetry remain unverified. Own trial removal frame693 in
 `unattended-20261028T145303Z-remove-vca160/Orion.pcapng` restores eight empty
 AFX2 slots. Runtime commands remain null; no writer or query bound is expanded.
+
+
+## ALT-436C — visible control pass, 2026-10-28
+
+Directed vendor load frame1553 in
+`unattended-20261028T145303Z-load-altec436c/Orion.pcapng` establishes Orion
+type35/instance0. Native panel `Altec436C` has four parameter knobs and a
+separate POWER rotary. Individual native-container overflow allowances are
+measured: Input0, Threshold14, Release14, Output7 pixels. Starting areas and
+pointer paths remain within the physical panel; entire native bounds remain
+inside the AFX window. The geometry/method received read-only planner review.
+
+`scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng` accepts eight
+isolated phases with62,804packets and zero drops. Parameter family is
+`0x19 / 0xd5 / 0x07`, type byte18/instance byte19.
+
+| Control | Byte | Raw candidates | Printed endpoints | Frames |
+|---|---|---|---|---|
+| VOLUME (`input`) | 20 | 0/100 | 0 / 10 | 4647/11425 |
+| Threshold | 21 | 0/100 | 0 / +16 | 19691/26285 |
+| Release Time | 22 | 0/100 | .3 / 1.3 | 35161/42035 |
+| Output (dB) | 23 | 232/24 | −24 / +24 | 50973/57787 |
+
+Endpoint pointers and printed labels were independently checked. Release shows
+40distinct raw values; its three printed marks(.3/.8/1.3) do not establish a
+three-state selector. Intermediate scales and unprinted units remain unknown.
+Output retains unsigned wire232/24 with signed candidates−24/+24; no complete
+signed/interpolation law or calibrated audible gain is claimed. Byte24 stays0
+throughout captured parameter reports and remains unidentified, without adopting
+another model's linked-field semantics. Scans end at maxima.
+
+The earlier8pxOutput priming frame2201 in
+`unattended-20261028T145303Z-altec436c-priming/Orion.pcapng` has body
+`1b 45 00 01 00`; there is no preceding captured parameter baseline.
+A later bounded8pxdownward POWER gesture produces zeroOUT and checked staticGUI
+remains exact in a separate read-only reconciliation. No inverse gesture is sent.
+Its source is `unattended-20261028T145303Z-altec436c-power-rotary/first/Orion.pcapng`.
+
+The functional rack BP round trip is separately preserved in
+`unattended-20261028T145303Z-altec436c-rack-bp-processing`: first frame3136,
+actual instance17/type18/state19 tuple `00 23 00`; return frame729,
+`00 23 01`, family `0x14 / 0x98`. Native BP goes Off→On→Off. Independent
+images correlate state1 with red lamp lit/POWER pointer up and state0 with
+lamp dark/pointer right. POWER has no printed ON/OFF position labels; these
+are literal GUI associations. All five checked physical control/lamp/BP regions
+restore exactly. Active VU upper area and the four-pixel peak strip are excluded.
+No audible polarity or independent changed-state device readback is established.
+
+Displays: `Altec436CVuMeter` (face caption dB COMPRESSION),
+`Altects436PeakMeter` (native spelling preserved) and `AfxLed` (Power GUI
+correlation). Signal telemetry/scales remain unknown. Own trial removal frame679
+in `unattended-20261028T145303Z-remove-altec436c/Orion.pcapng` restores eight
+empty AFX2 slots. Runtime commands remain null and query bounds unchanged.
