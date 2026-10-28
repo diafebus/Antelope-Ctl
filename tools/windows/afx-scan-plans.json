@@ -2987,6 +2987,42 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "veq_stu_089-knobs",
+      "panel": "Studer089",
+      "panel_class": "Studer089",
+      "effect_id": "veq_stu_089",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261027T144257Z-load-veqstu089/raw-ui.json and native panel screenshot; two rotary centres fully inside physicalpanel. Five Slider classes explicitly excluded pending separate handle/position trials.",
+      "controls": [
+        {
+          "id": "mf_gain",
+          "class_name": "Studer089MfGainPot",
+          "label": "Presence/MF Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level",
+          "class_name": "Studer089LevelPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "two rotary endpoint candidate pairs completed; all five stepped sliders and processing captured separately",
+        "pending": [
+          "Independent per-field device readback",
+          "Physical rotary scaling/interpolation",
+          "Audible/stereo behavior",
+          "Meter/LED signal telemetry"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

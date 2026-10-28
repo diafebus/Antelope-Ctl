@@ -710,3 +710,60 @@ meaning, scale or a telemetry reader. All visible editable controls now have
 capture passes. Independent readback, physical/intermediate scaling,
 audible/stereo behavior and runtime contracts remain unverified. No writer or
 query bounds are expanded.
+
+## VEQ-STU 089
+
+The directed load at frame1581 in
+`unattended-20261027T144257Z-load-veqstu089/Orion.pcapng` establishes Orion
+type21/instance0 on AFX2/channel1 slot0, with seven empty slots. Its native
+panel is `Studer089`; the compatibility identifier remains `veq_stu_089`.
+
+`scan-Studer089-20261027T150545312Z/Studer089-channel2.pcapng` accepts four
+rotary endpoint phases with 32,039 packets and zero drops. The parameter family
+is `0x1b / 0xd5 / 0x09`, type byte18/instance byte19. Presence Gain uses byte24:
+raw0/100 at frames4475/12839. Output uses byte26: unsigned232/12 at
+frames20383/27775, with signed candidates -24/+12 only. Every phase changes
+only its isolated field. These are raw endpoint candidates; printed rotary
+ticks establish neither detents nor a physical/interpolation law. The endpoint
+scan intentionally ends at maxima.
+
+The five vertical sliders require stepped maps. Directed KVM tablet gestures
+stop on the first isolated captured change, with a screenshot for each position.
+Both visible terminals are witnessed; each control returns the entire captured
+parameter body and checked static panel. Equal reverse pixel travel alone was
+insufficient during LF Cut calibration: the guard stopped one position short,
+and a separately reviewed measured return restored the exact baseline. The
+stopped trial and negative input probes remain in the local evidence archive.
+
+| Control | Byte | Captured raw-to-printed-label map |
+|---|---|---|
+| LF Cut | 20 | 0: –; 1:60; 2:100; 3:150; 4:250 Hz |
+| HF Cut | 21 | 0: –; 1:12; 2:8; 3:5; 4:3 kHz |
+| LF Shelf, 80Hz | 22 | 4:+8; 3:+6; 2:+4; 1:+2; 0:-; 255:-2; 254:-4; 253:-6; 252:-8 (printed dB) |
+| HF Shelf, 8kHz | 23 | 4:+8; 3:+6; 2:+4; 1:+2; 0:-; 255:-2; 254:-4; 253:-6; 252:-8 (printed dB) |
+| Presence Frequency | 25 | 0: –; 1:0.4; 2:0.7; 3:1.2; 4:2.2; 5:3.9; 6:6.8 kHz |
+
+Selector sources are
+`unattended-20261027T144257Z-veqstu089-selector-maps`; shelf sources are
+`unattended-20261027T144257Z-veqstu089-shelf-maps`. Each accepted raw map is
+independently checked against the paired pointer image. Exact frames and hashes
+belong to each model-local catalog encoding. The literal dash is retained;
+the [vendor manual](https://jp.antelopeaudio.com/support/user-manuals/veq-stu-089/)
+declares bypass and the printed units, while the directed captures establish
+wire order. Printed shelf labels do not verify calibrated audible gain.
+
+The separate processing source is
+`unattended-20261027T144257Z-veqstu089-processing`. First frame3863 in
+`first/Orion.pcapng` carries tuple `001500`; return frame1055 in
+`return/Orion.pcapng` carries `001501`. The family is
+`0x14 / 0x98`, instance17/type18/state19. Both checked static panel segments
+return exactly, including processing lever/LED and all parameter controls;
+the animated peak meter is excluded. This is GUI restoration without an
+independent changed-state device readback or polarity claim.
+
+One native `Studer089Peakmeter` and one `AfxLed` record GUI presence only;
+signal meaning, scale and telemetry remain unverified. All seven visible
+parameter controls and the separate processing switch have capture passes.
+Independent per-field readback, rotary scales/interpolation, signed
+interpretations, audible/stereo behavior and runtime contracts remain pending.
+No runtime writer or query bounds are expanded.

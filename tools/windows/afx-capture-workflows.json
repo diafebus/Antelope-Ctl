@@ -331,6 +331,21 @@
         "unattended-20261027T144257Z-veqstu169-processing"
       ],
       "completion_limits": "All observed editable controls captured: five distinct rotary endpoint candidates, independently reviewed Filter switch byte20 raw0 Upper/raw1 Lower and separate processing round trip. Concentric MF Gain/Frequency preserve their partner fields. Filter returns the full captured parameter body/static panel; processing returns its checked static baseline. Endpoint scans intentionally finish at maxima. Printed gain/frequency ticks do not establish detents, physical scales or interpolation. Output signed interpretation, independent readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed are GUI display observations only; no signal telemetry reader enabled."
+    },
+    {
+      "name": "VEQ-STU 089",
+      "effect_id": "veq_stu_089",
+      "panel_class": "Studer089",
+      "next_step": "complete",
+      "range_plan": "veq_stu_089-knobs",
+      "completion_evidence": [
+        "unattended-20261027T144257Z-load-veqstu089",
+        "scan-Studer089-20261027T150545312Z",
+        "unattended-20261027T144257Z-veqstu089-selector-maps",
+        "unattended-20261027T144257Z-veqstu089-shelf-maps",
+        "unattended-20261027T144257Z-veqstu089-processing"
+      ],
+      "completion_limits": "Orion VEQ-STU 089: two rotary endpoint candidate pairs, LF/HF Cut five-position maps, Presence Frequency seven-position map, both nine-position shelf maps and processing round trip captured. Five sliders snap to finite positions; complete raw/printed-label maps are captured rather than inferred from ticks. Every slider map returns the complete captured body and checked static panel; processing returns its static GUI baseline. Rotary endpoint scans intentionally finish at maxima. Signed interpretations, physical/intermediate rotary scales, independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed record GUI presence only; signal telemetry remains unknown."
     }
   ]
 }

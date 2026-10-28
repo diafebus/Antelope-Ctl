@@ -2340,15 +2340,24 @@ readback, physical/intermediate scaling, signal telemetry, audible/stereo
 behavior and runtime contracts remain unverified. No runtime writes or query
 bounds are expanded.
 
-**VEQ-STU 089 priming family (2026-10-27).** A directed vendor load establishes
-Orion type21/instance0. One bounded eight-pixel MF Gain gesture on the native
-`Studer089` panel produces frame2457 in
-`unattended-20261027T144257Z-veqstu089-priming/Orion.pcapng`: parameter
-family `0x1b / 0xd5 / 0x09`, type byte18/instance byte19. The passive analyzer
-classifies this captured family without enabling a writer or changing query
-bounds. Its first complete block is a seed observation, without a prior captured
-parameter baseline; it establishes no isolated field range, physical scale or
-device readback contract. Directed control trials are recorded separately.
+**VEQ-STU 089 visible controls completed (2026-10-27).** Directed load
+frame1581 establishes Orion type21/instance0. Observed parameter family
+`0x1b / 0xd5 / 0x09` uses type18/instance19. The rotary scan
+`scan-Studer089-20261027T150545312Z` accepts four phases: Presence Gain24
+raw0/100 frames4475/12839 and Output26 unsigned232/12 frames20383/27775,
+signed candidates -24/+12 only. Five finite slider maps are independently
+reviewed: LF Cut20 five positions, HF Cut21 five, LF Shelf22 nine, HF Shelf23
+nine and Presence Frequency25 seven. Complete captured bodies and checked
+static images return exactly for every slider map; printed labels and raw
+bytes are retained without assuming physical calibration or signed arithmetic.
+The processing source `unattended-20261027T144257Z-veqstu089-processing`
+uses `0x14 / 0x98`, instance17/type18/state19, frames3863/1055
+tuples001500/001501, with checked static-image return.
+Native `Studer089Peakmeter`/`AfxLed` record GUI presence only. See the
+[EQ findings](docs/orion-afx-eq.md) for exact raw maps, captures and input
+calibration limits. Independent per-field readback, rotary scales/interpolation,
+signal telemetry, audible/stereo behavior and runtime contracts remain
+unverified. No writer or query bounds are expanded.
 
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
