@@ -81,3 +81,41 @@ pixels match the baseline exactly after moving the pointer away, with endpoint
 displays unchanged. Polarity, independent readback and audible confirmation are
 unverified. This completes the six observed knobs and processing switch; no
 preset selector was observed on this panel.
+
+
+## VCA160 — visible control pass, 2026-10-28
+
+`unattended-20261028T145303Z-load-vca160/Orion.pcapng` frame1535 establishes
+Orion type33/instance0, independently of another model's IDs. The native panel
+is `Dbx160`. `scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng`
+accepts all six phases,49,456 packets with zero drops. Parameter family is
+`0x17 / 0xd5 / 0x05`, type byte18/instance byte19. Each phase changes only
+its own one-byte field; minimum/maximum screenshots independently associate
+these printed endpoints:
+
+| Control | Byte | Raw candidates | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Threshold (dB) | 20 | 0/100 | −50 / 0 | 4567/12151 |
+| Compression | 21 | 0/60 | 1 / ∞ | 20731/27917 |
+| Output Gain | 22 | 0/100 | −20 / +20 | 36669/44667 |
+
+Only Threshold explicitly prints(dB) in this inventory. Printed endpoint
+associations do not establish an intermediate scale, calibrated gain response,
+audible behavior or a complete finite map from raw quantization. The priming
+source `unattended-20261028T145303Z-vca160-priming` contains frames2247/2295,
+body `32 15 3a`→`32 15 3b`, with onlybyte22 changing after the first block;
+preservation before that first report is not established. Range scans end at maxima.
+
+A separate labelled POWER round trip is preserved in
+`unattended-20261028T145303Z-vca160-processing`. First frame2911 carries
+`0x14 / 0x98`, actual instance17/type18/state19 tuple `00 21 00`; return
+frame679 carries `00 21 01`. Native rack BP goes Off→On→Off; the POWER lamp
+is lit→dark→lit. All five checked static regions, including knobs, POWER lamp
+and rack BP, restore exactly. Below/Above LEDs, VU and peak meters are excluded.
+This is GUI correlation without an audible polarity or independent readback claim.
+
+`Dbx160BelowLed`, `Dbx160AboveLed`, `Dbx160VuMeter`, `Dbx160Peakmeter` and
+the POWER lamp inside `Dbx160BypassButton` are GUI observations. Signal sources,
+scales and telemetry remain unverified. Own trial removal frame693 in
+`unattended-20261028T145303Z-remove-vca160/Orion.pcapng` restores eight empty
+AFX2 slots. Runtime commands remain null; no writer or query bound is expanded.

@@ -35,6 +35,7 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 | ATuner | `ATunerFrequencyLabel`; `ATunerNoteLabel` ×8; `ATunerScreen`; `ATunerScreenBottomLabels`; `ATunerVUMeter` |
 | BBD Chorus | `BBDChorusClipLed`; `BBDChorusGainReductionLed`; `BBDChorusLed` ×3; `BBDChorusPeakMeter`; `PeakLed` ×8 |
 | Master De-Esser | `DeesserAttackDisplay`; `DeesserCtrlLed` ×4; `DeesserDisplay` ×3; `DeesserFreqDisplay`; `DeesserGRMeterNoInheritance`; `DeesserPeakMeterNoInheritance`; `DeesserQDisplay`; `DeesserRatioDisplay` |
+| VCA160 | `Dbx160BelowLed`, `Dbx160AboveLed`, `Dbx160VuMeter`, `Dbx160Peakmeter`; POWER lamp within `Dbx160BypassButton` (processing GUI correlation only) |
 
 ## Deferred display work
 

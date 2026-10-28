@@ -2402,9 +2402,15 @@ instance0. One bounded8pxupward Output Gain gesture emits frames2247/2295 in
 `unattended-20261028T145303Z-vca160-priming/Orion.pcapng`: `0x17 / 0xd5 / 0x05`,
 type byte18/instance byte19, body `32 15 3a`→`32 15 3b`. Only byte22 changes
 after the first report; there is no captured parameter baseline before that report.
-The passive analyzer recognizes this observed envelope. Ranges, full routing,
-physical interpolation, processing, readback and runtime writes remain unverified.
-No query bounds or hardware writer are expanded.
+The passive analyzer recognizes this observed envelope. The later six-phase
+`scan-Dbx160-20261028T152511931Z` maps Threshold20 raw0/100, Compression21
+raw0/60 and Output Gain22 raw0/100. Independent screenshots associate printed
+−50/0 (Threshold explicitlydB),1/∞ and−20/+20 respectively. POWER first2911 /
+return679 in `unattended-20261028T145303Z-vca160-processing` uses actual
+instance17/type18/state19 tuples `00 21 00` / `00 21 01`, with exact checked
+static restoration and BP/lamp GUI correlation. See [dynamics findings](docs/orion-afx-power-dynamics.md#vca160--visible-control-pass-2026-10-28).
+Physical interpolation, audible response, meter telemetry and independent
+readback remain unverified; no query bounds or hardware writer are expanded.
 
 **BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
 type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw

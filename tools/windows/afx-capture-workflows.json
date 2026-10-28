@@ -381,6 +381,19 @@
         "unattended-20261028T145303Z-audiobaton-rack-bp-processing"
       ],
       "completion_limits": "Ten isolated raw0/100 endpoint pairs plus rack BP processing roundtrip. Front indicator GUI maps state0 to OUT/left and state1 to IN/right, with exact static restoration excluding level meter. Direct front center-click and8pxverticaldrag input methods were negative; no trial replayed. Independent readback, physical interpolation, audible/stereo behavior, telemetry and runtime contracts remain unverified."
+    },
+    {
+      "name": "VCA160",
+      "effect_id": "vca160",
+      "panel_class": "Dbx160",
+      "next_step": "complete",
+      "range_plan": "vca160-knobs",
+      "completion_evidence": [
+        "unattended-20261028T145303Z-load-vca160",
+        "scan-Dbx160-20261028T152511931Z",
+        "unattended-20261028T145303Z-vca160-processing"
+      ],
+      "completion_limits": "Three isolated knob endpoint pairs with printed endpoint-label associations and POWER/BP GUI-correlated processing return; exact checked static restoration excluding signal displays. Raw quantization does not establish a finite labelled selector map, physical interpolation, audible response, device readback or runtime contracts. Physical scales/interpolation, audible behavior, independent readback and runtime contracts remain unverified."
     }
   ]
 }

@@ -3302,6 +3302,49 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "vca160-knobs",
+      "panel": "Dbx160",
+      "panel_class": "Dbx160",
+      "effect_id": "vca160",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "unattended-20261028T145303Z-load-vca160/raw-ui.json and observed.png: three uniquely identified enabled circular controls; type33/0 independently load-observed; exact labels Threshold (dB), Compression, Output Gain. First bounded endpoint trial pending.",
+      "controls": [
+        {
+          "id": "threshold",
+          "class_name": "Dbx160ThresholdPot",
+          "label": "Threshold (dB)",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "compression",
+          "class_name": "Dbx160CompressionPot",
+          "label": "Compression",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "output",
+          "class_name": "Dbx160OutputPot",
+          "label": "Output Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
