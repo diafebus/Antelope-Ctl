@@ -373,9 +373,111 @@ both distinct linked instances and their settings. Owner listening complements
 readback, especially for modes and linked operation. Channel addressing can
 reuse the proven rack contract; every control need not repeat on all 32 channels.
 
+## Dedicated native meter session
+
+The owner reserved a separate session for **actual card meter readings**, using
+`antelope-ctl` oscillator/routing controls with the existing capture process.
+This session runs on Linux without the official Launcher or Windows GUI bridge.
+Reuse passive usbmon recording, labelled action windows, full-report decoding,
+checkpoints and evidence review from the control campaign; replace vendor GUI
+gestures with serialized native device operations. The
+[meter inventory and telemetry criteria](orion-afx-displays.md#dedicated-card-telemetry-session)
+remain the source of completion requirements. This is a future-session procedure,
+not a record of an executed test or a scheduled automation.
+
+### Native controls and evidence already available
+
+- [Matrix operations](../README.md#routing-matrix) provide `matrix-status` and
+  `route`, including oscillator sources, AFX inputs/returns and recording/output
+  destinations. `protocol.resolve_route_dest`, `resolve_route_source` and
+  `build_route_command` obtain addressing and group sizes from the active profile.
+  The native WebUI's `/api/routing` and `/api/route` use the existing device actor.
+- [Oscillator settings](../PROTOCOL.md#oscillator----two-access-points-settings-panel-decoded-2026-09-01)
+  are separate from routing: the captured generator command is a packed
+  `SET_GLOBAL` parameter described by `params.oscillator`, built with
+  `protocol.build_global_command`. There is no dedicated oscillator-settings
+  CLI/UI command today. Frequency-bit label polarity and the apparent shared
+  level field still have unresolved semantics, and ordinary state reports do
+  not provide a confirmed settings readback. Do not invent CLI syntax or treat
+  an old captured byte as the current oscillator state.
+- The [prior native meter investigation](../README.md#current-meter-status-2026-09-12)
+  already used direct oscillator routing, silence comparisons and restoration
+  to map card-returned Surround lanes. Reuse its method and archived evidence;
+  its offsets/scales do not establish a plugin's meter contract.
+
+### Oscillator, matrix and capture procedure
+
+1. Give the existing Linux device actor sole HID ownership; release VM USB
+   passthrough and leave the Launcher stopped. Run all routing, generator,
+   effect and readback operations through that owner. A standalone CLI session
+   must not open a second transport alongside an active WebUI actor. Passive
+   usbmon recording and audio recording are separate from HID control ownership.
+2. Snapshot fresh device routing for every destination group the trial may touch,
+   plus the test rack, relevant selectors, effect settings and available generator
+   state. `matrix-status` can fall back to cached routes: only confirmed live
+   category-`0x03` records are a restoration baseline. Do not rely on CLI/worker
+   routing caches for fresh read-modify-write; explicitly refresh each group
+   through the actor before changing it and compare device readback afterward.
+3. Choose an unused test channel and recording/output destination. The intended
+   path is `OSCILLATOR -> AFX In N -> loaded effect -> AFX Out N -> chosen
+   destination`. For a test plan using unused AFX2/Computer Record2 channels,
+   the existing route operations are `route afx_in 2 osc1` and
+   `route com_rec 2 afx2`; substitute the session's actual unused channels.
+   Additional recording/physical output taps use the same matrix API and must
+   each have a saved baseline. AFX In is a matrix destination; AFX Out is a
+   source. Inserting an oscillator means selecting `osc1`/`osc2` as that
+   destination channel's source. Removing it means restoring the saved source,
+   or temporarily selecting `mute`; there is no empty/unroute operation.
+4. Start the bounded full-length, bidirectional HID capture before setup writes
+   and retain it through restoration. Log oscillator identity, measured frequency
+   and level, destination/channel, effect type/actual instance, action start/end
+   frames and verification outcome. Matrix frames resend the whole destination
+   group: preserve all other channel pairs, and on cleanup restore only slots
+   still attributable to this trial, preserving newer owner changes. Keep audio
+   ISO traffic distinct from HID reports and check truncation/drops as in the
+   existing capture process.
+5. Establish silence by routing the test AFX input to `mute`, then route the
+   oscillator back for repeated tone-on/off and level trials. This can gate the
+   test path without changing the shared oscillator settings or anyone else's
+   oscillator routes. Measure the routed tone's frequency/amplitude through the
+   selected recording path when available; do not assume the oscillator's
+   last-sent label is a measured signal level.
+6. Where generator frequency/level/mute changes are required, use the captured
+   packed-byte fields through a bounded native operation on the same actor.
+   Preserve the other oscillator's fields and unknown bits, and record the
+   baseline's provenance and restoration limits. If a current complete baseline
+   cannot be established, keep the generator settings unchanged and gate/measure
+   the existing tone through the matrix; establish the missing native state/
+   restore contract before relying on generator-setting sweeps. Unknown shared-
+   level semantics must not be presented as independent oscillator levels.
+7. Exercise one variable at a time: stimulus level, measured effect input/output
+   gain, dynamics action, or a captured meter gain/sensitivity control if one
+   exists. Use only native effect operations with verified contracts. For other
+   captured effects, first add and validate the bounded profile-driven native
+   operation through the actor; capture-only mappings do not silently become
+   runtime writers. The meter session must not require a Launcher gesture to
+   load an effect, alter a gain or operate a special meter.
+8. Correlate the card's inbound reports with tone, routing and gain changes.
+   Distinguish input/output level from gain reduction or other meter quantities;
+   change actual instances/channels independently to establish ownership. Record
+   native readouts, measured audio and existing captured panel labels as
+   references. The official GUI is not required as a live reference. Preserve
+   raw bytes, source frames, layout, timing and uncertainty; retain existing
+   distinctions between free-running meter reports and query replies.
+9. Finish with silence, then restore and read back the trial's routes, effect/
+   selector changes and any generator settings whose restoration contract was
+   established. Remove only temporary effects owned by this trial. Stop on
+   verification failure and record the exact residual state rather than issuing
+   blind repair writes. Publish only correlated card telemetry and measured
+   display conversions; absent/stale data stays unknown, with no simulated
+   activity derived from oscillator or knob settings.
+
 ## Capture transport
 
-Stop the WebUI before the Launcher owns HID. Capture passively with full report
+For the native meter session, keep the single Linux actor and use usbmon as a
+passive recorder; no Launcher, guest GUI bridge or competing HID controller is
+needed. For vendor-GUI control discovery, stop the WebUI before the Launcher
+owns HID. Capture passively with full report
 lengths and both directions. Verify a known 320-byte OUT before a long batch.
 Audio ISO may dominate file size; bound recordings and check drops/truncation.
 

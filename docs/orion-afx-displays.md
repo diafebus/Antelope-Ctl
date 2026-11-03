@@ -52,9 +52,11 @@ last-sent gain values and GUI animations are experimental references; none is
 a substitute for device meter readback. Do not implement simulated meters or
 derive displayed activity solely from the oscillator or parameter settings.
 
-Use a controlled oscillator through an isolated AFX test path, recording its
-routing, frequency and level alongside synchronized GUI observations and passive
-card-to-host HID reports. Establish silence, then repeat measured level steps
+Use the [native oscillator/matrix capture procedure](orion-afx-workflow.md#dedicated-native-meter-session)
+through an isolated AFX test path, without the official Launcher. Record routing,
+measured frequency and level alongside native observations and passive card-to-host
+HID reports; existing panel captures can supply reference labels. Establish
+silence, then repeat measured level steps
 and tone on/off transitions. Change one variable at a time to distinguish input,
 output, gain reduction, overload and other meter sources. For special meters,
 use relevant measured effect gain/dynamics controls, or a documented meter
@@ -62,8 +64,8 @@ gain/sensitivity control if present, to exercise the display. Record which gain
 was changed; do not assume a meter has its own gain control.
 
 For each candidate telemetry field, record source frames, byte/bit layout,
-effect type/actual instance/channel correlation, raw readings and observed GUI
-labels. Repeat across levels and independently changed instances/channels to
+effect type/actual instance/channel correlation, raw readings and available
+reference labels. Repeat across levels and independently changed instances/channels to
 establish ownership. Use tone transitions to measure update rate, attack/release,
 peak hold, clipping and silence behavior where observable. Derive any display
 conversion from measured raw/label pairs and retain unverified regions as unknown;
