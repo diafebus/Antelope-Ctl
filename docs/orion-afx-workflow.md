@@ -95,6 +95,7 @@ work; no new initialization capture is required.
 | SMT-100A | 36 | Two endpoint pairs, three-contact Attack/Release maps and Power GUI return. Centered timing meanings remain unknown; [dynamics findings](orion-afx-power-dynamics.md#smt-100a--visible-control-pass-2026-11-03) preserve limits; runtime/readback unverified |
 | X903 | 29 | Three endpoint pairs with literal ratio endpoint −1:1 and IN-button/lamp GUI return. [Dynamics findings](orion-afx-power-dynamics.md#x903--visible-control-pass-2026-11-03) preserve limits; runtime/readback/scales unverified |
 | FET-A78 | 37 | Four endpoint pairs, four individually labelled Ratio button states and Power GUI return. [Dynamics findings](orion-afx-power-dynamics.md#fet-a78--visible-control-pass-2026-11-03) preserve limits; combinations/runtime/readback/timing unverified |
+| FET-A76 | 9 | Four endpoint pairs, four individually labelled Ratio button states and illuminated ON-button return. [Dynamics findings](orion-afx-power-dynamics.md#fet-a76--visible-control-pass-2026-11-03) preserve limits; combinations/runtime/readback/timing unverified |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash

@@ -480,6 +480,20 @@
         "unattended-20261103T144909Z-feta78-processing"
       ],
       "completion_limits": "Four isolated knob endpoint pairs, individually labelled Ratio buttons and Power/lamp roundtrip captured. Ratio returns full captured body/static regions; Power static return checked excluding meters. Own trial removed; ownerAFX1preserved. Physical scaling, numerical timing, button combinations, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "FET-A76",
+      "effect_id": "uad_1176",
+      "panel_class": "Uad1176",
+      "next_step": "complete",
+      "range_plan": "uad_1176-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-feta76",
+        "scan-Uad1176-20261103T152833429Z",
+        "unattended-20261103T144909Z-feta76-ratio",
+        "unattended-20261103T144909Z-feta76-processing"
+      ],
+      "completion_limits": "Four isolated knob endpoint pairs, individually labelled Ratio buttons and ON-button/lamp roundtrip captured. Ratio returns full captured body/static regions; ON-button static return checked excluding meters. Own trial removed; ownerAFX1preserved. Physical scaling, numerical timing, button combinations, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

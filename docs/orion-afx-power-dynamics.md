@@ -401,3 +401,45 @@ observations, without signal telemetry. Removal frame695 in
 empty. Owner AFX1 V12 was preserved. Runtime writes, independent state readback,
 physical scaling/timing, meter telemetry and audible/stereo behavior remain
 unverified; no query bound is expanded. Compatibility ID `uad_1178` is retained.
+
+## FET-A76 — visible control pass, 2026-11-03
+
+`unattended-20261103T144909Z-load-feta76` frame761 assigns Orion type9/instance0
+to empty, unlinked AFX2 slot0. Frame783 immediately sends a same-instance
+`0x19 / 0xd5 / 0x07` parameter block, body`23 2e 4e 15 01`. The strict
+single-event load guard stopped before control gestures. Read-only reconciliation
+verified both frames and the actual `Uad1176` panel without replaying the load.
+The initialization body establishes neither defaults nor parameter readback.
+
+The four knobs use unique native classes `UadInputPotNoInheritance`,
+`UadOutputPotNoInheritance`, `Uad1176AttackPot` and `Uad1176ReleasePot`.
+Eight accepted phases in `scan-Uad1176-20261103T152833429Z` record61,822
+packets with zero drops; each phase changes only its mapped byte.
+
+| Control | Byte | Raw endpoints | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Input | 20 | 0 / 60 | ∞ / 0 | 4249 / 10825 |
+| Output | 21 | 0 / 60 | ∞ / 0 | 19091 / 25827 |
+| Attack | 22 | 0 / 100 | 1 SLOW / 7 FAST | 34175 / 41485 |
+| Release | 23 | 0 / 100 | 1 SLOW / 7 FAST | 49875 / 56901 |
+
+Only printed endpoint associations are established; numerical times, gain
+calibration and intermediate laws remain unverified.
+
+`unattended-20261103T144909Z-feta76-ratio` captures only byte24 changing:
+raw2 button8/frame3412, raw4 button12/frame6475, raw8 button20/frame9599 and
+raw1 button4/frame12715. Each image shows its corresponding single lit button.
+The cycle returns the entire captured parameter body and five checked static
+regions. Button combinations and other bits have no verified contract.
+
+The illuminated ON button is `Uad1176BypassButton`, distinct from FET-A78's
+Power lever. It sends `0x14 / 0x98`, instance17/type18/state19. In
+`unattended-20261103T144909Z-feta76-processing`, first frame3391 carries
+`00 09 00` with the embedded button lamp dark; return frame783 carries
+`00 09 01` with that lamp lit. Five static regions returned exactly, excluding
+`UadVuMeter` and `UadPeakMeter`. The ON lamp is an embedded processing indicator,
+not an independently identified signal meter. Removal frame889 in `unattended-20261103T144909Z-remove-feta76` verifies
+all eight AFX2 slots empty; owner AFX1 V12 was preserved.
+Compatibility ID `uad_1176` remains unchanged. Runtime writes, independent
+readback, physical scaling/timing, signal telemetry and audible/stereo behavior
+remain unverified; no query bound is expanded.

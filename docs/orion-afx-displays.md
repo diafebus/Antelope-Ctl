@@ -47,6 +47,8 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | FET-A78 | `UadVuMeter` (VU face), `UadPeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
 
+| FET-A76 | `UadVuMeter` (VU face), `UadPeakMeter`; embedded ON lamp in `Uad1176BypassButton` (signal telemetry unverified) |
+
 ## Deferred display work
 
 The owner explicitly deferred reading ATuner’s screen. Its frequency, note and

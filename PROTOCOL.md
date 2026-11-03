@@ -2424,6 +2424,20 @@ Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-p
 retain source frames, measured geometry and label/scale limits. No runtime
 writer, independent readback or query expansion is established.
 
+**FET-A76 (2026-11-03).** Directed load frame761 establishes Orion type9/instance0;
+frame783 sends a same-instance initialization block. Read-only reconciliation
+preserves the original strict single-event guard failure; no load replayed.
+Eight endpoint phases in `scan-Uad1176-20261103T152833429Z` observe
+`0x19 / 0xd5 / 0x07`: Input20/Output21 raw0..60, printed∞/0;
+Attack22/Release23 raw0..100, printed1 SLOW/7 FAST. Ratio24 individually maps
+1→4,2→8,4→12,8→20 with full-body/static return; combinations remain unobserved.
+The illuminated ON button sends `0x14 / 0x98`, instance17/type18/state19,
+with lamp dark0/lit1 and a checked static return excluding VU/peak meters. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#fet-a76--visible-control-pass-2026-11-03)
+record exact frames and limits. Compatibility ID `uad_1176` is retained. Runtime
+writes, independent readback, physical scaling/timing, telemetry and audible
+behavior remain unverified; query bounds are unchanged.
+
 **FET-A78 (2026-11-03).** Directed load frame757 establishes Orion type37/instance0;
 frame801 sends a same-instance initialization block. Read-only reconciliation
 preserves the original strict single-event guard failure; no load replayed.
