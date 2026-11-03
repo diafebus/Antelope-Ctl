@@ -2424,6 +2424,19 @@ Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-p
 retain source frames, measured geometry and label/scale limits. No runtime
 writer, independent readback or query expansion is established.
 
+**SMT-100A (2026-11-03).** Directed load frame729 establishes Orion
+type36/instance0. Four endpoint phases in `scan-Summit100A-20261103T150522388Z`
+observe `0x18 / 0xd5 / 0x06`: Gain20 (`output`) and Gain Reduction23 (`input`)
+raw0..100, printed0..10. Attack21/Release22 each map0 right/SLOW,1 centered
+unlabelled,2 left/FAST. Both complete directed cycles return the full captured
+body and five static regions; centered timing meanings remain unknown. Power
+`0x14 / 0x98`, instance17/type18/state19, maps0 right/lamp dark and1 left/ON/lamp
+lit with a checked static return. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#smt-100a--visible-control-pass-2026-11-03)
+record exact evidence and the separate VU/peak inventory. Physical scales,
+timing, independent readback, telemetry, audible behavior and runtime contracts
+remain unverified. No query bound or writer is expanded.
+
 **Stay-Levin (2026-11-03).** Directed load frame1083 establishes Orion
 type34/instance0. Six accepted endpoint phases in
 `scan-StayLevin-20261103T145457652Z` observe `0x18 / 0xd5 / 0x06`:

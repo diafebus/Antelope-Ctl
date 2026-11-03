@@ -284,3 +284,47 @@ calibration or interpolation. `StayLevinVuMeter` (dB COMPRESSION face),
 `StayLevinPeakMeter` and `AfxLed` record GUI presence/correlation separately
 from signal telemetry. No runtime writer, query bound or readback contract is
 expanded. No restart/power-cycle retention or audible/stereo behavior is claimed.
+
+## SMT-100A — visible control pass, 2026-11-03
+
+Directed load frame729 in `unattended-20261103T144909Z-load-smt100a`
+assigns Orion type36/instance0 to empty, unlinked AFX2 slot0. Native panel
+`Summit100A` prints GAIN and GAIN REDUCTION on the two knobs; compatibility
+IDs/classes `output`/`Summit100AOutputPot` and `input`/`Summit100AInputPot`
+remain unchanged. The four-phase job `scan-Summit100A-20261103T150522388Z`
+records30,382 packets with zero drops. Parameter family is
+`0x18 / 0xd5 / 0x06`, type byte18/instance byte19.
+
+| Control | Byte | Raw endpoints | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Gain (`output`) | 20 | 0 / 100 | 0 / 10 | 4659 / 11083 |
+| Gain Reduction (`input`) | 23 | 0 / 100 | 0 / 10 | 19430 / 26252 |
+
+ATTACK byte21 and RELEASE byte22 each have three observed contacts:
+raw0 right/SLOW, raw1 center/unlabelled, raw2 left/FAST. The center meanings
+remain unknown; neither Medium/Auto labels nor numerical times are inferred.
+A read-only hover over centered Attack produced no tooltip in its retained image.
+
+Attack started at raw1. Its first isolated click emitted raw2 at frame2959 in
+`unattended-20261103T144909Z-smt100a-attack/first`; the binary expectation
+stopped the helper before any return. After image/raw review, the next directed
+click emitted raw0 at frame779 in `...-smt100a-attack-next`, and the final
+click restored raw1 at frame797 in `...-smt100a-attack-return`. Release started
+at raw2 and cycled0→1→2 at frames1473/4289/7113 in
+`unattended-20261103T144909Z-smt100a-release-cycle`. Each isolated action
+changes only its selector byte. Both cycles return the whole captured parameter
+body and five checked static regions; the VU/peak displays are excluded.
+
+Power `0x14 / 0x98` uses instance17/type18/state19. In
+`unattended-20261103T144909Z-smt100a-processing`, first frame3011 carries
+`00 24 00`: switch right, away from ON, lamp dark. Return frame769 carries
+`00 24 01`: switch left at ON, lamp lit. Five static regions returned exactly.
+No unprinted OFF label, independent changed-state readback or audible polarity
+is claimed. Removal frame783 in `unattended-20261103T144909Z-remove-smt100a`
+verifies all eight AFX2 slots empty; the owner's AFX1 V12 Chorus was preserved.
+
+This completes visible-control capture with both centered timing meanings
+explicitly pending. `Summit100AVuMeter` (VU face), `Summit100APeakMeter` and
+`AfxLed` remain separate GUI observations. Printed knob scales do not establish
+calibrated units/interpolation, timing, telemetry, independent readback,
+audible/stereo behavior or runtime contracts. No query bound or writer is expanded.

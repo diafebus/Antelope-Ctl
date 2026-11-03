@@ -41,6 +41,8 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | Stay-Levin | `StayLevinVuMeter` (dB COMPRESSION face), `StayLevinPeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
 
+| SMT-100A | `Summit100AVuMeter` (VU face), `Summit100APeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
+
 ## Deferred display work
 
 The owner explicitly deferred reading ATuner’s screen. Its frequency, note and

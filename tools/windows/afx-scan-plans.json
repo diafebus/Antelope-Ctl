@@ -3500,6 +3500,44 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "summit_100a-knobs",
+      "panel": "Summit100A",
+      "panel_class": "Summit100A",
+      "effect_id": "summit_100a",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/unattended-20261103T144909Z-load-smt100a; screenshot and unique native classes",
+      "controls": [
+        {
+          "id": "output",
+          "class_name": "Summit100AOutputPot",
+          "label": "Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "input",
+          "class_name": "Summit100AInputPot",
+          "label": "Gain Reduction",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "completed endpoint candidates; separate Attack/Release/Power captures cover visible controls",
+        "pending": [
+          "Centered Attack/Release contact timing meanings",
+          "Physical scaling and numerical timing",
+          "Independent readback",
+          "Meter telemetry",
+          "Audible/stereo behavior",
+          "Runtime contract"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
