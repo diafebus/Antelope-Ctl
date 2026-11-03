@@ -91,6 +91,7 @@ work; no new initialization capture is required.
 | VCA160 | 33 | Three raw endpoint pairs with printed endpoint associations, plus labelled POWER/rack BP GUI processing return. [Dynamics findings](orion-afx-power-dynamics.md#vca160--visible-control-pass-2026-10-28) retain limits; readback/interpolation/runtime unverified |
 | ALT-436C | 35 | Four raw endpoint pairs with printed label associations, plus rack BP/front POWER indicator GUI return. [Dynamics findings](orion-afx-power-dynamics.md#alt-436c--visible-control-pass-2026-10-28) preserve signed Output candidates and unidentified byte24; runtime/readback/scaling unverified |
 | Liverpool | 31 | Two continuous endpoint pairs, complete11/11/6 Attack/Recovery/Output selector maps with printed meanings, and Mains Power/BP/lamp GUI return. [Dynamics findings](orion-afx-power-dynamics.md#liverpool--visible-control-pass-2026-10-29) preserve limits; runtime/readback/timing unverified |
+| Stay-Levin | 34 | Three endpoint pairs, five Recovery contacts and labelled Mode/Power GUI returns. Intermediate Recovery timing meanings remain unknown; [dynamics findings](orion-afx-power-dynamics.md#stay-levin--visible-control-pass-2026-11-03) preserve limits; runtime/readback unverified |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash

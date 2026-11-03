@@ -39,6 +39,8 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 | ALT-436C | `Altec436CVuMeter` (dB COMPRESSION face), `Altects436PeakMeter`, `AfxLed` (Power GUI association only) |
 | Liverpool | `LiverpoolVuMeter` (GAIN REDUCTION face), `LiverpoolPeakMeter`, `AfxLed` (Mains Power GUI association only) |
 
+| Stay-Levin | `StayLevinVuMeter` (dB COMPRESSION face), `StayLevinPeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
+
 ## Deferred display work
 
 The owner explicitly deferred reading ATuner’s screen. Its frequency, note and

@@ -236,3 +236,51 @@ unverified. Own trial removal frame1139 in
 `unattended-20261028T230645Z-remove-liverpool/Orion.pcapng` restores all eight
 AFX2 slots empty. Owner requested pause; no further effects started. Runtime
 commands remain null; no writer or query bound is expanded.
+
+## Stay-Levin — visible control pass, 2026-11-03
+
+Directed menu load in `unattended-20261103T144909Z-load-staylevin/Orion.pcapng`
+frame1083 establishes Orion type34/instance0 on empty, unlinked AFX2 slot0.
+Native panel `StayLevin` exposes Input, Output, Recovery Time, Mode and Power.
+The three-knob job `scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng`
+accepts six phases,80,036 packets with zero drops. Parameter family is
+`0x18 / 0xd5 / 0x06`, type byte18/instance byte19. Every accepted endpoint
+phase changes only its mapped byte:
+
+| Control | Byte | Raw endpoints | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Input | 20 | 0 / 100 | 0 / 20 | 9091 / 23713 |
+| Output | 21 | 0 / 100 | 0 / 20 | 68315 / 75661 |
+| Recovery Time | 22 | 0 / 4 | SLOW / FAST | 41001 / 56841 |
+
+`unattended-20261103T144909Z-staylevin-recovery-map2` captures eight adjacent
+changes,4→3→2→1→0→1→2→3→4, with one isolated byte22 write per trial.
+Raw0 is the leftmost SLOW dot; raw4 is the rightmost FAST dot. Raw1/2/3 point
+to the unlabelled upper-left/top/upper-right dots. Their timing meanings remain
+unknown; positional evidence supplies neither numerical times nor usable named
+timing choices. The complete captured parameter body and three checked static
+panel regions returned exactly. An earlier8px gesture produced no OUT; a local
+aggregation import failure was reconciled offline without replaying gestures.
+
+The printed MODE switch maps byte23 raw0 to lower DOUBLE and raw1 to upper
+SINGLE. First frame3081 in `unattended-20261103T144909Z-staylevin-mode-first2`
+and return frame709 in `unattended-20261103T144909Z-staylevin-mode-return`
+change only byte23 and restore the complete captured parameter body/static
+regions. Compatibility ID `attack` is retained; these mode labels do not
+establish attack-time semantics. The initial focus rejection occurred before
+control input and is retained separately.
+
+Power uses `0x14 / 0x98`, instance17/type18/state19. In
+`unattended-20261103T144909Z-staylevin-processing`, first frame2869 carries
+`00 22 00` (OFF/lamp dark), return frame679 carries `00 22 01` (ON/lamp lit).
+Three static regions returned exactly; the VU and peak displays were excluded.
+Independent changed-state readback and audible polarity remain unverified.
+Removal frame739 in `unattended-20261103T144909Z-remove-staylevin` restores
+all eight AFX2 slots to empty. The owner's AFX1 V12 Chorus was preserved.
+
+The visible control pass is complete, with the three intermediate Recovery
+contacts' timing meanings explicitly pending. Printed gain marks do not prove
+calibration or interpolation. `StayLevinVuMeter` (dB COMPRESSION face),
+`StayLevinPeakMeter` and `AfxLed` record GUI presence/correlation separately
+from signal telemetry. No runtime writer, query bound or readback contract is
+expanded. No restart/power-cycle retention or audible/stereo behavior is claimed.

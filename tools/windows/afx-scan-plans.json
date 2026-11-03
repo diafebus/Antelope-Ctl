@@ -3455,6 +3455,51 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "staylevin-knobs",
+      "panel": "StayLevin",
+      "panel_class": "StayLevin",
+      "effect_id": "staylevin",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/unattended-20261103T144909Z-load-staylevin; panel PNG and unique native classes observed",
+      "controls": [
+        {
+          "id": "input",
+          "class_name": "StayLevinInputPot",
+          "label": "Input",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "release",
+          "class_name": "StayLevinSmallPot",
+          "label": "Recovery Time",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "output",
+          "class_name": "StayLevinOutputPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "completed endpoint candidates; separate Mode/Recovery/Power captures cover visible controls",
+        "pending": [
+          "Three unlabelled intermediate Recovery timing meanings",
+          "Physical scaling and numerical timing",
+          "Independent readback",
+          "Meter telemetry",
+          "Audible/stereo behavior",
+          "Runtime contract"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

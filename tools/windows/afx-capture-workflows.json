@@ -421,6 +421,21 @@
         "unattended-20261028T230645Z-liverpool-processing"
       ],
       "completion_limits": "Two continuous endpoint pairs, full11/11/6 raw-label selector maps and labelled Mains Power/BP/lamp GUI restoration. All repeated C/H states preserved separately. Timing, audible equivalence/polarity, calibrated scales, meter telemetry, independent readback and runtime contracts remain unverified."
+    },
+    {
+      "name": "Stay-Levin",
+      "effect_id": "staylevin",
+      "panel_class": "StayLevin",
+      "next_step": "complete",
+      "range_plan": "staylevin-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-staylevin",
+        "scan-StayLevin-20261103T145457652Z",
+        "unattended-20261103T144909Z-staylevin-recovery-map2",
+        "unattended-20261103T144909Z-staylevin-mode-first2/return",
+        "unattended-20261103T144909Z-staylevin-processing"
+      ],
+      "completion_limits": "Three endpoint pairs, five directed Recovery contacts, labelled SINGLE/DOUBLE Mode and ON/OFF Power GUI return captured. Three intermediate Recovery timing meanings remain unknown; no numerical timing, calibration, telemetry, independent readback, audible/stereo behavior or runtime contract claimed. Full parameter/static returns checked for Mode/Recovery; processing static return checked. Own trial removed; ownerAFX1 preserved. Independent readback, physical scaling, numerical timing, telemetry, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

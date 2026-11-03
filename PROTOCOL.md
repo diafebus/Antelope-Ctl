@@ -2424,6 +2424,20 @@ Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-p
 retain source frames, measured geometry and label/scale limits. No runtime
 writer, independent readback or query expansion is established.
 
+**Stay-Levin (2026-11-03).** Directed load frame1083 establishes Orion
+type34/instance0. Six accepted endpoint phases in
+`scan-StayLevin-20261103T145457652Z` observe `0x18 / 0xd5 / 0x06`:
+Input20/Output21 raw0..100, Recovery22 raw0..4. Eight adjacent Recovery
+changes capture all five pointer contacts and return the full captured body/static
+regions. Only endpoint dots are labelled SLOW/FAST; intermediate timing meanings
+remain unknown. MODE byte23 maps0 DOUBLE/1 SINGLE (compatibility ID `attack`),
+with a full-body/static return. Power uses `0x14 / 0x98`, instance17/type18/state19,
+with OFF/dark0 and ON/lit1 GUI observations and static return. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#stay-levin--visible-control-pass-2026-11-03)
+record frames, failed-input boundaries and separate meters. Runtime writes,
+independent readback, timing/scaling, telemetry and audible behavior remain
+unverified; query bounds are unchanged.
+
 **Liverpool (2026-10-29).** Directed load1581 in
 `unattended-20261028T145303Z-load-liverpool` establishes Orion type31/0.
 Its `0x1a / 0xd5 / 0x08` block has Input20/Threshold21 raw0/100 endpoints,
