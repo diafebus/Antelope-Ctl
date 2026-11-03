@@ -328,3 +328,34 @@ explicitly pending. `Summit100AVuMeter` (VU face), `Summit100APeakMeter` and
 `AfxLed` remain separate GUI observations. Printed knob scales do not establish
 calibrated units/interpolation, timing, telemetry, independent readback,
 audible/stereo behavior or runtime contracts. No query bound or writer is expanded.
+
+## X903 — visible control pass, 2026-11-03
+
+Directed load frame889 in `unattended-20261103T144909Z-load-x903` establishes
+Orion type29/instance0 in empty, unlinked AFX2 slot0. Native panel `Dbx903`
+has Threshold, Ratio, Output and IN. Six accepted endpoint phases in
+`scan-Dbx903-20261103T151417999Z/Dbx903-channel2.pcapng` record45,462 packets
+with zero drops. Parameter family is `0x17 / 0xd5 / 0x05`, type byte18/instance
+byte19; every accepted phase changes only its mapped field.
+
+| Control | Byte | Raw endpoints | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Threshold | 20 | 0 / 100 | −60 dB / 0 dB | 4151 / 10703 |
+| Ratio | 21 | 0 / 60 | 1:1 / −1:1 | 18599 / 25349 |
+| Output | 22 | 0 / 100 | −20 dB / +20 dB | 33915 / 40919 |
+
+Ratio's negative endpoint is the literal printed label. Do not transfer VCA160's
+compression law despite matching raw endpoints/family, or infer intermediate
+ratios, gain calibration or signed arithmetic from these captures.
+
+IN `0x14 / 0x98` uses instance17/type18/state19. In
+`unattended-20261103T144909Z-x903-processing`, first frame3065 carries
+`00 1d 00` with IN lamp dark; return frame705 carries `00 1d 01` with lamp lit.
+Four static regions returned exactly, excluding both animated meter rows.
+The separate native inventory identifies `Dbx903GRPeakMeter` (GAIN REDUCTION),
+`Dbx903PeakMeter` (LEVEL), two overlapping `Dbx903PeakMeterBackground` widgets
+and `AfxLed`. Their signal telemetry is unverified. The sole test insert was
+removed afterward with all eight AFX2 slots verified empty; owner AFX1 V12 was
+preserved. Independent state readback, physical/intermediate scales, audible
+processing polarity, stereo behavior and runtime contracts remain unverified.
+No writer or query bound is expanded.

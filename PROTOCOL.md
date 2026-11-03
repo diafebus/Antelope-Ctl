@@ -2424,6 +2424,18 @@ Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-p
 retain source frames, measured geometry and label/scale limits. No runtime
 writer, independent readback or query expansion is established.
 
+**X903 (2026-11-03).** Directed load frame889 establishes Orion type29/instance0.
+Six endpoint phases in `scan-Dbx903-20261103T151417999Z` observe
+`0x17 / 0xd5 / 0x05`: Threshold20 raw0..100 (printed−60..0dB), Ratio21
+raw0..60 (printed1:1/−1:1), Output22 raw0..100 (printed−20..+20dB).
+IN `0x14 / 0x98`, instance17/type18/state19, maps0 lamp dark/1 lamp lit with
+four checked static regions returned, excluding two LED meter rows. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#x903--visible-control-pass-2026-11-03)
+record exact frames and separate display inventory. Intermediate ratio/gain laws,
+physical calibration, signed interpretation, independent readback, telemetry,
+audible behavior and runtime contracts remain unverified; no query bound or
+writer is expanded.
+
 **SMT-100A (2026-11-03).** Directed load frame729 establishes Orion
 type36/instance0. Four endpoint phases in `scan-Summit100A-20261103T150522388Z`
 observe `0x18 / 0xd5 / 0x06`: Gain20 (`output`) and Gain Reduction23 (`input`)

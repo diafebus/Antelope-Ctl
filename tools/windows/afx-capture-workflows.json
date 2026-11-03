@@ -453,6 +453,19 @@
         "unattended-20261103T144909Z-smt100a-processing"
       ],
       "completion_limits": "Two knob endpoint pairs, three-contact Attack/Release maps and labelled Power/lamp roundtrip captured. Both centered timing meanings unknown; no Medium/Auto labels inferred. Full parameter/static selector returns and static processing return verified. Own trial removed; ownerAFX1preserved. Physical scales, timing, independent readback, telemetry, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "X903",
+      "effect_id": "x903",
+      "panel_class": "Dbx903",
+      "next_step": "complete",
+      "range_plan": "x903-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-x903",
+        "scan-Dbx903-20261103T151417999Z",
+        "unattended-20261103T144909Z-x903-processing"
+      ],
+      "completion_limits": "Three isolated knob endpoint pairs with literal printed endpoint labels and IN-button/lamp processing roundtrip captured; checked static regions returned, meter rows excluded. Own trial removed; ownerAFX1preserved. Physical/intermediate scaling, negative ratio law, signed Output interpretation, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }

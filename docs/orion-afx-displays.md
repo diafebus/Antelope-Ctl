@@ -43,6 +43,8 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | SMT-100A | `Summit100AVuMeter` (VU face), `Summit100APeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
 
+| X903 | `Dbx903GRPeakMeter` (GAIN REDUCTION row), `Dbx903PeakMeter` (LEVEL row), `Dbx903PeakMeterBackground` ×2, `AfxLed` (IN lamp; signal telemetry unverified) |
+
 ## Deferred display work
 
 The owner explicitly deferred reading ATuner’s screen. Its frequency, note and

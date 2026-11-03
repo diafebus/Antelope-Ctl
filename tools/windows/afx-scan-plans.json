@@ -3538,6 +3538,50 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "x903-knobs",
+      "panel": "Dbx903",
+      "panel_class": "Dbx903",
+      "effect_id": "x903",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/unattended-20261103T144909Z-load-x903; screenshot and unique native classes",
+      "controls": [
+        {
+          "id": "threshold",
+          "class_name": "Dbx903ThresholdPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "ratio",
+          "class_name": "Dbx903RatioPot",
+          "label": "Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "output",
+          "class_name": "Dbx903OutputPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "completed endpoint candidates; separate IN processing capture covers remaining editable control",
+        "pending": [
+          "Physical/intermediate scaling and ratio law",
+          "Independent readback",
+          "Meter telemetry",
+          "Audible/stereo behavior",
+          "Runtime contract"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
