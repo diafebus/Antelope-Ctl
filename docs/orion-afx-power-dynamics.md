@@ -359,3 +359,45 @@ removed afterward with all eight AFX2 slots verified empty; owner AFX1 V12 was
 preserved. Independent state readback, physical/intermediate scales, audible
 processing polarity, stereo behavior and runtime contracts remain unverified.
 No writer or query bound is expanded.
+
+## FET-A78 — visible control pass, 2026-11-03
+
+`unattended-20261103T144909Z-load-feta78` frame757 assigns Orion type37/instance0
+to empty, unlinked AFX2 slot0. Frame801 immediately sends a same-instance
+`0x19 / 0xd5 / 0x07` parameter block, body`23 26 51 12 01`. The strict
+single-event load guard stopped before any control gestures. Read-only review
+verified those two frames and the GUI without replaying the load. The body
+is an initialization observation, not a default/range/readback contract.
+
+Native `Uad1178` exposes Input, Output, Attack, Release, four Ratio buttons and
+Power. Eight endpoint phases in `scan-Uad1178-20261103T152024481Z` record
+61,700 packets with zero drops. Each phase changes only its mapped byte;
+parameter family remains `0x19 / 0xd5 / 0x07`, type18/instance19.
+
+| Control | Byte | Raw endpoints | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Input | 20 | 0 / 60 | ∞ / 0 | 4257 / 10815 |
+| Output | 21 | 0 / 60 | ∞ / 0 | 19039 / 25845 |
+| Attack | 22 | 0 / 100 | 1 / 7 | 34207 / 41415 |
+| Release | 23 | 0 / 100 | 1 / 7 | 49769 / 56677 |
+
+The printed attenuation/timing marks establish endpoint associations only;
+calibration, numerical times and intermediate laws remain unverified.
+
+`unattended-20261103T144909Z-feta78-ratio` captures only byte24 changing:
+raw2 button8/frame3187, raw4 button12/frame6101, raw8 button20/frame9073 and
+raw1 button4/frame12053. Separate images show the corresponding single lit
+button. The cycle returns the whole captured parameter body and five checked
+static regions. These are four individually selected states, without a contract
+for button combinations or other bits.
+
+Power `0x14 / 0x98` uses instance17/type18/state19. In
+`unattended-20261103T144909Z-feta78-processing`, first frame3233 carries
+`00 25 00` (lower switch/lamp dark); return frame715 carries `00 25 01`
+(upper switch/lamp lit). Five static regions returned exactly, with VU/peak
+meters excluded. `UadVuMeter`, `UadPeakMeter` and `AfxLed` remain separate GUI
+observations, without signal telemetry. Removal frame695 in
+`unattended-20261103T144909Z-remove-feta78` verifies all eight AFX2 slots
+empty. Owner AFX1 V12 was preserved. Runtime writes, independent state readback,
+physical scaling/timing, meter telemetry and audible/stereo behavior remain
+unverified; no query bound is expanded. Compatibility ID `uad_1178` is retained.

@@ -45,6 +45,8 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 
 | X903 | `Dbx903GRPeakMeter` (GAIN REDUCTION row), `Dbx903PeakMeter` (LEVEL row), `Dbx903PeakMeterBackground` ×2, `AfxLed` (IN lamp; signal telemetry unverified) |
 
+| FET-A78 | `UadVuMeter` (VU face), `UadPeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
+
 ## Deferred display work
 
 The owner explicitly deferred reading ATuner’s screen. Its frequency, note and

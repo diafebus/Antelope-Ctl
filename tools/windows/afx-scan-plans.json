@@ -3582,6 +3582,58 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "uad_1178-knobs",
+      "panel": "Uad1178",
+      "panel_class": "Uad1178",
+      "effect_id": "uad_1178",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/unattended-20261103T144909Z-load-feta78; four unique observed knob targets",
+      "controls": [
+        {
+          "id": "input",
+          "class_name": "Uad1178InputKnob",
+          "label": "Input",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "output",
+          "class_name": "Uad1178OutputKnob",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "attack",
+          "class_name": "Uad1178AttackPot",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "release",
+          "class_name": "Uad1178ReleasePot",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "completed endpoint candidates; separate Ratio/Power captures cover visible editable controls",
+        "pending": [
+          "Physical calibration/interpolation and numerical timing",
+          "Unobserved button combinations",
+          "Independent readback",
+          "Meter telemetry",
+          "Audible/stereo behavior",
+          "Runtime contract"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

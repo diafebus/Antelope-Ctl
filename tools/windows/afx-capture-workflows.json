@@ -466,6 +466,20 @@
         "unattended-20261103T144909Z-x903-processing"
       ],
       "completion_limits": "Three isolated knob endpoint pairs with literal printed endpoint labels and IN-button/lamp processing roundtrip captured; checked static regions returned, meter rows excluded. Own trial removed; ownerAFX1preserved. Physical/intermediate scaling, negative ratio law, signed Output interpretation, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "FET-A78",
+      "effect_id": "uad_1178",
+      "panel_class": "Uad1178",
+      "next_step": "complete",
+      "range_plan": "uad_1178-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-feta78",
+        "scan-Uad1178-20261103T152024481Z",
+        "unattended-20261103T144909Z-feta78-ratio",
+        "unattended-20261103T144909Z-feta78-processing"
+      ],
+      "completion_limits": "Four isolated knob endpoint pairs, individually labelled Ratio buttons and Power/lamp roundtrip captured. Ratio returns full captured body/static regions; Power static return checked excluding meters. Own trial removed; ownerAFX1preserved. Physical scaling, numerical timing, button combinations, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
     }
   ]
 }
