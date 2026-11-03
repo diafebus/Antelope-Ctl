@@ -38,16 +38,45 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 | VCA160 | `Dbx160BelowLed`, `Dbx160AboveLed`, `Dbx160VuMeter`, `Dbx160Peakmeter`; POWER lamp within `Dbx160BypassButton` (processing GUI correlation only) |
 | ALT-436C | `Altec436CVuMeter` (dB COMPRESSION face), `Altects436PeakMeter`, `AfxLed` (Power GUI association only) |
 | Liverpool | `LiverpoolVuMeter` (GAIN REDUCTION face), `LiverpoolPeakMeter`, `AfxLed` (Mains Power GUI association only) |
-
 | Stay-Levin | `StayLevinVuMeter` (dB COMPRESSION face), `StayLevinPeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
-
 | SMT-100A | `Summit100AVuMeter` (VU face), `Summit100APeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
-
 | X903 | `Dbx903GRPeakMeter` (GAIN REDUCTION row), `Dbx903PeakMeter` (LEVEL row), `Dbx903PeakMeterBackground` ×2, `AfxLed` (IN lamp; signal telemetry unverified) |
-
 | FET-A78 | `UadVuMeter` (VU face), `UadPeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
-
 | FET-A76 | `UadVuMeter` (VU face), `UadPeakMeter`; embedded ON lamp in `Uad1176BypassButton` (signal telemetry unverified) |
+
+## Dedicated card-telemetry session
+
+The owner reserved meter investigation for a separate session. The target is
+live readings returned by the Orion card. Oscillator levels, control positions,
+last-sent gain values and GUI animations are experimental references; none is
+a substitute for device meter readback. Do not implement simulated meters or
+derive displayed activity solely from the oscillator or parameter settings.
+
+Use a controlled oscillator through an isolated AFX test path, recording its
+routing, frequency and level alongside synchronized GUI observations and passive
+card-to-host HID reports. Establish silence, then repeat measured level steps
+and tone on/off transitions. Change one variable at a time to distinguish input,
+output, gain reduction, overload and other meter sources. For special meters,
+use relevant measured effect gain/dynamics controls, or a documented meter
+gain/sensitivity control if present, to exercise the display. Record which gain
+was changed; do not assume a meter has its own gain control.
+
+For each candidate telemetry field, record source frames, byte/bit layout,
+effect type/actual instance/channel correlation, raw readings and observed GUI
+labels. Repeat across levels and independently changed instances/channels to
+establish ownership. Use tone transitions to measure update rate, attack/release,
+peak hold, clipping and silence behavior where observable. Derive any display
+conversion from measured raw/label pairs and retain unverified regions as unknown;
+do not impose a guessed meter curve.
+
+Runtime meters require an established card-telemetry source and correlation
+contract. Missing or stale readings must remain unknown/unavailable rather than
+showing invented activity or a false zero. If passive captures do not reveal a
+source, leave support pending and review existing startup/query evidence before
+planning any bounded query trial. This plan does not authorize speculative
+queries, index sweeps or competing HID actors. It schedules no automation and
+starts no hardware trial; routing and trial changes must be verified and restored
+within the eventual session's bounded plan.
 
 ## Deferred display work
 
