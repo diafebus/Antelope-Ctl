@@ -66,7 +66,9 @@ function Write-AfxPreflightReport([string]$Path, $Report) {
             [System.Text.UTF8Encoding]::new($false))
         # Same-directory replacement publishes a complete file; never truncate a live cache.
         if ([System.IO.File]::Exists($full)) {
-            [System.IO.File]::Replace($temporary, $full, $null)
+            # PowerShell 5 binds $null to an empty string for this overload;
+            # NullString passes the actual null backup filename to .NET.
+            [System.IO.File]::Replace($temporary, $full, [NullString]::Value)
         } else {
             [System.IO.File]::Move($temporary, $full)
         }
@@ -273,6 +275,10 @@ try {
         Write-Host "${name}: prepared GUI capture work is complete. No rescan needed."
         if ($matches[0].completion_limits) { Write-Host $matches[0].completion_limits }
         Write-Host 'Device readback and runtime writes remain unverified. Run the launcher with the next plugin name.'
+    } elseif ($matches.Count -eq 1 -and $matches[0].next_step -eq 'review') {
+        Write-Host "${name}: existing capture evidence needs review. No automatic rescan."
+        if ($matches[0].review_reason) { Write-Host $matches[0].review_reason }
+        Write-Host 'Inspect the saved evidence and prepare the remaining directed trial before continuing.'
     } elseif ($matches.Count -eq 1 -and $matches[0].next_step -eq 'ranges') {
         if ([string]::IsNullOrWhiteSpace($matches[0].range_plan)) { throw 'No reviewed range plan is ready.' }
         Write-Host "${name}: automatic control batch, AFX $($workflows.channel)."

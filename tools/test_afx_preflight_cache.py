@@ -39,10 +39,12 @@ class PreflightCacheIntegrationTests(unittest.TestCase):
         self.assertIn("if ($Prepared) { throw 'Prepared capture cannot resume", source)
         self.assertIn('$selectedPlans[0].effect_id -cne $matches[0].effect_id', source)
         self.assertIn('-PlanId $matches[0].range_plan -Prepared:$Prepared', source)
+        self.assertIn("$matches[0].next_step -eq 'review'", source)
+        self.assertIn('No automatic rescan.', source)
 
     def test_cache_publication_never_truncates_existing_destination(self):
         helper = SOURCE.read_text().split('function Write-AfxPreflightReport', 1)[1].split('if ($ValidateOnly)', 1)[0]
-        self.assertIn('[System.IO.File]::Replace($temporary, $full, $null)', helper)
+        self.assertIn('[System.IO.File]::Replace($temporary, $full, [NullString]::Value)', helper)
         self.assertIn('[System.IO.File]::Move($temporary, $full)', helper)
         self.assertNotIn('Set-Content', helper)
         self.assertNotIn('Remove-Item', helper)

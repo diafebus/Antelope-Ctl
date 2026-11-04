@@ -110,6 +110,17 @@ class VmPilotTests(unittest.TestCase):
                     load({'id': 'gain', 'kind': 'knob_range', 'panel_overflow_px': margin})
             with self.assertRaisesRegex(ValueError, 'overflow'):
                 load({'id': 'switch', 'kind': 'binary_button', 'panel_overflow_px': 14})
+            plan.update(panel_class='Ssl4kBus', effect_id='ssl4kbus')
+            measured = {'id': 'threshold', 'kind': 'knob_range',
+                        'class_name': 'Ssl4kBusPotThreshold', 'panel_overflow_px': 19}
+            self.assertIn('overflow', load(measured))
+            for field, value in (('class_name', 'UnmeasuredPot'), ('panel_overflow_px', 20),
+                                 ('panel_overflow_px', 19.0), ('kind', 'binary_button')):
+                with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, 'overflow'):
+                    load({**measured, field: value})
+            plan['effect_id'] = 'another_effect'
+            with self.assertRaisesRegex(ValueError, 'overflow'):
+                load(measured)
 
     def test_knob_drag_points_require_finite_knob_only_coordinates(self):
         from tools.afx_vm_pilot import knob_drag_point
@@ -368,6 +379,10 @@ except RuntimeError:
                 self.assertEqual(workflow['effect_id'], 'deesser')
                 self.assertEqual(workflow['panel_class'], 'Deesser')
                 self.assertEqual(workflow['menu_classes'], ['DeesserPresetsCombobox', 'DeesserComboBoxFilterType'])
+            elif workflow['next_step'] == 'review':
+                self.assertTrue(workflow['review_reason'])
+                self.assertTrue(workflow['partial_evidence'])
+                self.assertIn(workflow['range_plan'], plans)
             else:
                 self.assertEqual(workflow['next_step'], 'inventory')
         v12 = next(w for w in workflows['plugins'] if w['name'] == 'V12 Chorus')

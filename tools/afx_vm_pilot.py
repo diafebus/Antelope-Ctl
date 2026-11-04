@@ -154,10 +154,20 @@ def load_plans():
             knob_drag_point(control)
             knob_drag_axis(control)
             knob_bounds_shift_x(control)
+            # Measured Comp-4K-Bus upper containers start 19px above their
+            # parent. This exception names each observed class; it is not a
+            # general expansion of the geometry allowance.
+            ssl_upper = (plan.get('panel_class') == 'Ssl4kBus'
+                         and plan.get('effect_id') == 'ssl4kbus'
+                         and control.get('class_name') in (
+                             'Ssl4kBusPotThreshold', 'Ssl4kBusPotShortRunRate',
+                             'Ssl4kBusPotShortRunScFilter', 'Ssl4kBusAttackPot',
+                             'Ssl4kBusRatioPotNoInherit')
+                         and control.get('panel_overflow_px') == 19)
             if 'panel_overflow_px' in control and (
                     control['kind'] != 'knob_range'
                     or type(control['panel_overflow_px']) is not int
-                    or not 1 <= control['panel_overflow_px'] <= 14):
+                    or not (1 <= control['panel_overflow_px'] <= 14 or ssl_upper)):
                 raise ValueError('Invalid reviewed knob overflow allowance')
             if control['kind'] == 'key_button':
                 control['option_names'] = key_control_options(plan['effect_id'], control)

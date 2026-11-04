@@ -89,7 +89,11 @@ function Get-PlanDragPoint($Definition) {
 function Get-PlanOverflow($Definition) {
     if ($Definition.PSObject.Properties.Name -notcontains 'panel_overflow_px') { return $null }
     $margin = $Definition.panel_overflow_px
-    if ($Definition.kind -ne 'knob_range' -or $margin -isnot [int] -or $margin -lt 1 -or $margin -gt 14) {
+    $sslUpper = $plan.panel_class -ceq 'Ssl4kBus' -and $plan.effect_id -ceq 'ssl4kbus' -and
+        $Definition.class_name -cin @('Ssl4kBusPotThreshold','Ssl4kBusPotShortRunRate',
+            'Ssl4kBusPotShortRunScFilter','Ssl4kBusAttackPot','Ssl4kBusRatioPotNoInherit') -and $margin -eq 19
+    if ($Definition.kind -ne 'knob_range' -or $margin -isnot [int] -or $margin -lt 1 -or
+        ($margin -gt 14 -and -not $sslUpper)) {
         throw 'Invalid reviewed knob overflow allowance.'
     }
     return $margin
