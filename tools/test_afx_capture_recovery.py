@@ -10,6 +10,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from tools.test_afx_vm_pilot import recording_process
 from tools.afx_capture_progress import progress_snapshot
 from tools.afx_vm_pilot import (checked_job_plan, load_plans, planned_actions,
                                listen, read_reports, resume_plan, resume_request, run_job, write_json)
@@ -115,7 +116,7 @@ class CaptureRecoveryTests(unittest.TestCase):
             recorder = Mock(); recorder.poll.return_value = None
             with patch('tools.afx_vm_pilot.device_location', return_value={'bus': 5, 'address': 15}), \
                  patch('tools.afx_vm_pilot.Path.exists', side_effect=[True, False]), \
-                 patch('tools.afx_vm_pilot.subprocess.Popen', return_value=recorder), \
+                 patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(recorder, command, **kw)), \
                  patch('tools.afx_vm_pilot.read_reports', side_effect=lambda *a, **k: list(current)), \
                  patch('tools.afx_vm_pilot.wait_file', side_effect=wait), \
                  patch('tools.afx_vm_pilot.time.sleep'):
@@ -139,7 +140,7 @@ class CaptureRecoveryTests(unittest.TestCase):
                 raise RuntimeError('guest focus changed')
             with patch('tools.afx_vm_pilot.device_location', return_value={'bus': 5, 'address': 15}), \
                  patch('tools.afx_vm_pilot.Path.exists', side_effect=[True, False]), \
-                 patch('tools.afx_vm_pilot.subprocess.Popen', return_value=recorder), \
+                 patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(recorder, command, **kw)), \
                  patch('tools.afx_vm_pilot.read_reports', return_value=initial), \
                  patch('tools.afx_vm_pilot.wait_file', side_effect=wait):
                 with self.assertRaisesRegex(RuntimeError, 'guest focus changed'):
@@ -158,6 +159,27 @@ class CaptureRecoveryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'decoding exceeded twenty seconds'):
                 read_reports(Path('capture.pcapng'), {'bus': 5, 'address': 15},
                              {'report_size': 320, 'in_endpoint': '0x82', 'out_endpoint': '0x01'})
+
+    def test_termination_unwinds_active_capture_and_records_failed_progress(self):
+        from tools.afx_vm_pilot import stop_recorder
+        with tempfile.TemporaryDirectory() as folder:
+            source, _ = self.source(Path(folder), count=0)
+            job = Path(folder)/'scan-interrupted'; job.mkdir()
+            write_json(job/'request.json', json.loads((source/'request.json').read_text()))
+            recorder = Mock(); recorder.poll.return_value = None
+            initial = [(1, 0, 0x82, bytes([0x73]).ljust(320, b'\0'))]
+            with patch('tools.afx_vm_pilot.device_location', return_value={'bus': 5, 'address': 15}), \
+                 patch('tools.afx_vm_pilot.Path.exists', side_effect=[True, False]), \
+                 patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(recorder, command, **kw)), \
+                 patch('tools.afx_vm_pilot.read_reports', return_value=initial), \
+                 patch('tools.afx_vm_pilot.wait_file', side_effect=lambda *a: stop_recorder(None, None)):
+                with self.assertRaises(KeyboardInterrupt):
+                    run_job(job, {'transport': {'in_endpoint': '0x82', 'out_endpoint': '0x01'}})
+            recorder.terminate.assert_called_once()
+            recorder.wait.assert_called_once()
+            progress = json.loads((job/'progress.json').read_text())
+            self.assertEqual(progress['status'], 'failed')
+            self.assertEqual(progress['accepted_count'], 0)
 
     def test_serving_success_failure_then_fresh_success_never_replays_failed_job(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -10,6 +10,13 @@ from tools.afx_vm_pilot import device_location, labelled_actions, planned_action
 from tools.test_scan_afx_capture import frame
 
 
+def recording_process(process, command, **kwargs):
+    """Model dumpcap creating its output so final artifact hashing is exercised."""
+    if '-w' in command:
+        Path(command[command.index('-w') + 1]).write_bytes(b'offline-capture-fixture')
+    return process
+
+
 class VmPilotTests(unittest.TestCase):
     def test_reviewed_drag_axes_validate_before_capture(self):
         from tools.afx_vm_pilot import knob_drag_axis, load_plans
@@ -333,7 +340,7 @@ except RuntimeError:
                 (job/'discovery-inventory.json').write_text(json.dumps(inventory))
                 with patch('tools.afx_vm_pilot.device_location', return_value=location), \
                      patch('tools.afx_vm_pilot.Path.exists', side_effect=[True, False]), \
-                     patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                     patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                      patch('tools.afx_vm_pilot.read_reports', side_effect=read), \
                      patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
                     if wrong:
@@ -459,7 +466,7 @@ except RuntimeError:
                  patch('tools.afx_vm_pilot.plan_effect_type',return_value=70), \
                  patch('tools.afx_vm_pilot.device_location',return_value=location), \
                  patch('tools.afx_vm_pilot.Path.exists',return_value=True) as exists, \
-                 patch('tools.afx_vm_pilot.subprocess.Popen',return_value=process), \
+                 patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                  patch('tools.afx_vm_pilot.read_reports',side_effect=lambda *a,**kw:list(current)), \
                  patch('tools.afx_vm_pilot.wait_file',side_effect=guest_wait), \
                  patch('tools.afx_vm_pilot.time.sleep'):
@@ -534,7 +541,7 @@ except RuntimeError:
                          patch('tools.afx_vm_pilot.plan_effect_type',return_value=78), \
                          patch('tools.afx_vm_pilot.device_location',return_value=location), \
                          patch('tools.afx_vm_pilot.Path.exists',side_effect=[True,False]), \
-                         patch('tools.afx_vm_pilot.subprocess.Popen',return_value=process), \
+                         patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                          patch('tools.afx_vm_pilot.read_reports',side_effect=lambda *a,**kw:list(current)), \
                          patch('tools.afx_vm_pilot.wait_file',side_effect=guest_wait), \
                          patch('tools.afx_vm_pilot.time.sleep'):
@@ -595,7 +602,7 @@ except RuntimeError:
                          patch('tools.afx_vm_pilot.plan_effect_type',return_value=78), \
                          patch('tools.afx_vm_pilot.device_location',return_value=location), \
                          patch('tools.afx_vm_pilot.Path.exists',side_effect=[True,False]), \
-                         patch('tools.afx_vm_pilot.subprocess.Popen',return_value=process), \
+                         patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                          patch('tools.afx_vm_pilot.read_reports',side_effect=lambda *a,**kw:list(current)), \
                          patch('tools.afx_vm_pilot.wait_file',side_effect=guest_wait), \
                          patch('tools.afx_vm_pilot.time.sleep'):
@@ -691,7 +698,7 @@ except RuntimeError:
                          patch('tools.afx_vm_pilot.plan_effect_type',return_value=27), \
                          patch('tools.afx_vm_pilot.device_location',return_value=location), \
                          patch('tools.afx_vm_pilot.Path.exists',side_effect=[True,False]), \
-                         patch('tools.afx_vm_pilot.subprocess.Popen',return_value=process), \
+                         patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                          patch('tools.afx_vm_pilot.read_reports',side_effect=lambda *a,**kw:list(current)), \
                          patch('tools.afx_vm_pilot.wait_file',side_effect=guest_wait), \
                          patch('tools.afx_vm_pilot.time.sleep'):
@@ -756,7 +763,7 @@ except RuntimeError:
                     with patch('tools.afx_vm_pilot.validate_request', return_value=plan), \
                          patch('tools.afx_vm_pilot.device_location', return_value={'bus':5,'address':15}), \
                          patch('tools.afx_vm_pilot.Path.exists', side_effect=[True,False]), \
-                         patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                         patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                          patch('tools.afx_vm_pilot.read_reports', side_effect=lambda *a,**kw:list(current)), \
                          patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
                         if outcome == 'ok': run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
@@ -793,7 +800,7 @@ except RuntimeError:
                 with patch('tools.afx_vm_pilot.validate_request', return_value=plan), \
                      patch('tools.afx_vm_pilot.device_location', return_value={'bus':5,'address':15}), \
                      patch('tools.afx_vm_pilot.Path.exists', side_effect=[True,False]), \
-                     patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                     patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                      patch('tools.afx_vm_pilot.read_reports', side_effect=lambda *a,**kw:list(current)), \
                      patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
                     if outcome == 'ok': run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})
@@ -876,7 +883,7 @@ except RuntimeError:
                 with patch('tools.afx_vm_pilot.validate_request', return_value=plan), \
                      patch('tools.afx_vm_pilot.device_location', return_value={'bus':5,'address':15}), \
                      patch('tools.afx_vm_pilot.Path.exists', side_effect=[True,False]), \
-                     patch('tools.afx_vm_pilot.subprocess.Popen', return_value=process), \
+                     patch('tools.afx_vm_pilot.subprocess.Popen', side_effect=lambda command, **kw: recording_process(process, command, **kw)), \
                      patch('tools.afx_vm_pilot.read_reports', side_effect=lambda *a,**kw:list(current)), \
                      patch('tools.afx_vm_pilot.wait_file', side_effect=wait), patch('tools.afx_vm_pilot.time.sleep'):
                     if outcome == 'ok': run_job(job, {'transport': {'in_endpoint':'0x82','out_endpoint':'0x01'}})

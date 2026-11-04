@@ -1,8 +1,14 @@
 # Reusable GUI knob, binary switch and finite selector capture from reviewed plans.
 param([string]$PlanId = '', [string]$DiscoveryDirectory = '',
       [string]$ResumeDirectory = '', [switch]$ResumeReviewed, [switch]$Prepared,
-      [switch]$ValidatePlanOnly)
+      [switch]$ValidatePlanOnly, [string]$CancellationPath = '', [long]$DeadlineEpoch = 0)
 $ErrorActionPreference = 'Stop'
+function Assert-CaptureActive {
+    if(($CancellationPath -and (Test-Path -LiteralPath $CancellationPath)) -or
+       ($DeadlineEpoch -gt 0 -and [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() -ge $DeadlineEpoch)) {
+        throw 'Capture cancelled or command deadline reached; no further gesture'
+    }
+}
 $script:captureBudget = $null
 $results = Join-Path $PSScriptRoot 'results'
 New-Item -ItemType Directory -Path $results -Force | Out-Null
@@ -130,6 +136,30 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
 public static class AfxScanInput {
+    public static string CaptureCancellationPath;
+    public static long CaptureDeadlineEpoch;
+    public static void CheckCancellation() {
+        if ((!String.IsNullOrEmpty(CaptureCancellationPath) && System.IO.File.Exists(CaptureCancellationPath)) ||
+            (CaptureDeadlineEpoch > 0 && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= CaptureDeadlineEpoch))
+            throw new Exception("Capture cancelled or command deadline reached.");
+    }
+    public static void ValidateCancellationGuards() {
+        string oldPath=CaptureCancellationPath, temporary=null;
+        long oldDeadline=CaptureDeadlineEpoch;
+        try {
+            CaptureCancellationPath=null; CaptureDeadlineEpoch=1;
+            bool rejected=false; try { CheckCancellation(); } catch { rejected=true; }
+            if (!rejected) throw new Exception("Expired gesture deadline accepted.");
+            CaptureDeadlineEpoch=0; temporary=System.IO.Path.GetTempFileName();
+            CaptureCancellationPath=temporary;
+            rejected=false; try { CheckCancellation(); } catch { rejected=true; }
+            if (!rejected) throw new Exception("Cancelled gesture accepted.");
+            CaptureCancellationPath=null; CheckCancellation();
+        } finally {
+            if (temporary!=null) System.IO.File.Delete(temporary);
+            CaptureCancellationPath=oldPath; CaptureDeadlineEpoch=oldDeadline;
+        }
+    }
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
@@ -345,9 +375,11 @@ public static class AfxScanInput {
         int distance = horizontal ? end.X-x : end.Y-y;
         int samples = Math.Max(2, (int)Math.Ceiling(Math.Abs(distance) / 4.0));
         try {
+            CheckCancellation();
             Held(true);
             Thread.Sleep(100);
             for (int i=1; i<=samples; i++) {
+                CheckCancellation();
                 if (GetForegroundWindow() != window || GetAsyncKeyState(27) < 0)
                     throw new Exception("Focus changed or Escape pressed during sweep.");
                 int movement = (int)Math.Round(distance * (double)i / samples);
@@ -369,6 +401,8 @@ public static class AfxScanInput {
     }
 }
 '@
+[AfxScanInput]::CaptureCancellationPath=$CancellationPath
+[AfxScanInput]::CaptureDeadlineEpoch=$DeadlineEpoch
 
 function Write-Record($Path, $Value) {
     # JSON has no numeric infinity. Preserve the displayed endpoint explicitly
@@ -383,6 +417,7 @@ function Write-Record($Path, $Value) {
     Move-Item -LiteralPath $temporary -Destination $Path
 }
 function Wait-HostFile($Name, $Seconds) {
+    Assert-CaptureActive
     if ($null -ne $script:captureBudget) {
         $Seconds = [Math]::Max($Seconds, [int]$script:captureBudget.feedback_seconds)
     }
@@ -395,11 +430,13 @@ function Wait-HostFile($Name, $Seconds) {
         if (Test-Path -LiteralPath $path) {
             return (Get-Content -Raw -LiteralPath $path | ConvertFrom-Json)
         }
+        Assert-CaptureActive
         Start-Sleep -Milliseconds 100
     }
     throw "No host response: $Name. No further clicks will be sent."
 }
 function Assert-Panel {
+    Assert-CaptureActive
     if ([AfxScanInput]::GetAsyncKeyState(27) -lt 0) { throw 'Escape pressed; stopped.' }
     if ([AfxScanInput]::GetForegroundWindow() -ne $handle) { throw 'Panel focus changed; stopped.' }
     $now = $root.Current.BoundingRectangle

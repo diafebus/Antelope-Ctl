@@ -6,6 +6,36 @@ Enter the plugin name. It chooses the prepared stage from
 Known GUI dropdown choices and aliases live in `afx-dropdown-options.json`.
 Their order is UI evidence, not a device encoding or a license inventory.
 
+For fingerprinted queues, compact offline evidence reports and the reviewed-stage
+contract, see [the batch runner guide](../../docs/orion-afx-batch-runner.md).
+Windows validation and reviewed setup/cleanup recipes are required before its
+first unattended use.
+
+## Cached tool preflight and prepared capture
+
+Ordinary launches cache successful syntax, native-helper and reviewed-plan
+validation in `results/preflight-cache.json`. Reuse requires matching SHA256
+hashes for all three capture scripts and all three JSON registries, together
+with the PowerShell/.NET/OS/process architecture context. Missing, malformed,
+failed or mismatched reports trigger full validation. Full validation checks
+that the kit did not change during the check; reports are published through
+same-directory atomic file replacement rather than an in-place overwrite.
+Filesystems that cannot perform that replacement fail the launch before gestures.
+
+`-ValidateOnly` always performs the complete check, even when a cache exists.
+`-PreflightReport <path>` still writes an explicit report for that check.
+The cache contains no device availability, selected-channel, focus, instance,
+parameter or restoration state: each capture still runs the normal current GUI
+and host evidence guards.
+
+For a prepared batch stage, `Run-AfxCapture.ps1 -Prepared -PluginName <name>
+-CapturePlan <reviewed-plan-id>` forwards prepared mode only after the plugin,
+plan and channel match the reviewed registry. It avoids the manual readiness
+prompt/delay in `Run-AfxScan.ps1`; the caller must already have the correct panel
+in the foreground. It retains tool preflight and all actual gesture checks.
+Prepared mode rejects missing plugin/plan arguments and cannot invoke discovery
+or a reviewed resume.
+
 ## BBD Chorus capture completed
 
 The original range scan and short resume cover four knob ranges, the

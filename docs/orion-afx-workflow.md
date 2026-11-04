@@ -609,6 +609,14 @@ The [preamp findings](orion-afx-preamps.md) record the completed BA-31/Gyratec I
 control pass, with endpoint candidates and an isolated processing-switch round trip.
 Runtime parameter writes, physical scaling and independent readback remain open.
 
+## Reviewed queue runner
+
+The [batch runner guide](orion-afx-batch-runner.md) describes fingerprinted
+offline queue preparation, a fresh leased GUI bridge, the reusable capture-plan
+adapter and compact saved-artifact reports. Completion still requires reviewed
+setup/cleanup recipes and semantic evidence review. Validate the Windows changes
+and run a supervised bounded trial before unattended use.
+
 ## Display observations during capture
 
 Record each plugin's visible VU/peak/gain-reduction meters, LEDs and other live

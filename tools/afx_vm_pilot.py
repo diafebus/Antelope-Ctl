@@ -7,10 +7,12 @@ bounded metadata-generated plans on channel2. Evidence remains local.
 import argparse
 from contextlib import contextmanager
 import fcntl
+import hashlib
 import json
 import math
 import os
 import re
+import signal
 from pathlib import Path
 import subprocess
 import struct
@@ -359,6 +361,14 @@ def verify_action_events(events, expected=None, effect_type=75):
     if expected is not None and target != expected:
         raise RuntimeError('Target instance or command family changed; stop for review')
     return target
+
+
+def capture_sha256(path):
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def read_reports(capture, location, transport, allow_incomplete=False):
@@ -892,11 +902,17 @@ def _run_job(job, profile):
     reports = read_reports(capture, location, transport)
     write_json(job/f"{plan['panel']}-analysis.json", {'status': 'candidate; review required', 'plan_id': plan['id'],
         'device_readback_verified': False, 'visual_restoration': 'see completed.json',
+        'capture_sha256': capture_sha256(capture),
         'packet_loss': 'review dumpcap.log; not automatically certified',
         'labelled_actions': labelled_actions(reports, windows, out_ep, bypass_layout),
         'capture_summary': analyze_reports(reports)})
     write_json(job/'host-completed.json', {'status': 'ok', 'coverage': plan.get('coverage', {'status': 'partial; controls outside plan unknown'})})
     save_progress(job, plan, actions, windows, completed=True)
+
+
+def stop_recorder(signum, frame):
+    # Raising unwinds run_job/dumpcap finally blocks; default SIGTERM would not.
+    raise KeyboardInterrupt('Recorder shutdown requested')
 
 
 def main():
@@ -915,6 +931,7 @@ def main():
         print(f"Remaining plan saved to {args.prepare_resume/'remaining-plan.json'}. "
               'Review the interrupted control and current plugin state before resuming.', flush=True)
         return 0
+    signal.signal(signal.SIGTERM, stop_recorder)
     profile = json.loads((ROOT/'profiles/orion_studio_sc.json').read_text())
     location = device_location(profile)
     if not Path('/dev', f"usbmon{location['bus']}").exists():

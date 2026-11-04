@@ -1,14 +1,93 @@
 # One entry point; reviewed workflow data chooses the prepared capture stage.
 param([switch]$ValidateOnly, [string]$PreflightReport = '',
-      [string]$PluginName = '', [string]$CapturePlan = '')
+      [string]$PluginName = '', [string]$CapturePlan = '', [switch]$Prepared,
+      [string]$CancellationPath = '', [long]$DeadlineEpoch = 0)
 $ErrorActionPreference = 'Stop'
+if ($Prepared -and ($ValidateOnly -or [string]::IsNullOrWhiteSpace($PluginName) -or
+    [string]::IsNullOrWhiteSpace($CapturePlan))) {
+    throw 'Prepared capture requires explicit PluginName and reviewed CapturePlan; no discovery or resume.'
+}
+# Cache only pure tool/plan validation. Device, focus and gesture guards run afresh.
+$script:AfxPreflightFiles = @('Run-AfxCapture.ps1', 'Inspect-AfxPanel.ps1', 'Run-AfxScan.ps1',
+    'afx-scan-plans.json', 'afx-capture-workflows.json', 'afx-dropdown-options.json')
+function Get-AfxKitHashes([string]$Root = $PSScriptRoot) {
+    $hashes = @{}
+    foreach ($file in $script:AfxPreflightFiles) {
+        $hashes[$file] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $Root $file)).Hash
+    }
+    return $hashes
+}
+function Get-AfxPreflightContext {
+    return ([ordered]@{
+        powershell = $PSVersionTable.PSVersion.ToString()
+        clr = [Environment]::Version.ToString()
+        os = [Environment]::OSVersion.VersionString
+        process_64bit = [Environment]::Is64BitProcess
+    } | ConvertTo-Json -Compress)
+}
+function Test-AfxKitHashes($Expected, [hashtable]$Current) {
+    if ($null -eq $Expected -or $Current.Count -ne $script:AfxPreflightFiles.Count) { return $false }
+    $keys = @($Expected.PSObject.Properties.Name)
+    if ($keys.Count -ne $script:AfxPreflightFiles.Count) { return $false }
+    foreach ($file in $script:AfxPreflightFiles) {
+        if (-not $Current.ContainsKey($file) -or $keys -cnotcontains $file) { return $false }
+        $hash = $Expected.$file
+        if ($hash -isnot [string] -or $hash -cnotmatch '^[A-F0-9]{64}$' -or $hash -cne $Current[$file]) {
+            return $false
+        }
+    }
+    return $true
+}
+function Test-AfxPreflightCache([string]$Path, [hashtable]$Hashes, [string]$Context) {
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+        $report = Get-Content -Raw -LiteralPath $Path | ConvertFrom-Json
+        if (-not ($report.cache_schema -is [int] -or $report.cache_schema -is [long]) -or
+            $report.cache_schema -ne 1 -or $report.status -isnot [string] -or $report.status -cne 'ok' -or $report.validation_complete -isnot [bool] -or
+            -not $report.validation_complete -or $report.settings_written -isnot [bool] -or
+            $report.settings_written -or $report.validation_context -isnot [string] -or
+            $report.validation_context -cne $Context -or
+            $report.drag_axis_checks -isnot [string] -or
+            $report.control_bounds_checks -isnot [string] -or
+            $report.drag_axis_checks -cne 'metadata, direction and native geometry passed' -or
+            $report.control_bounds_checks -cne 'fixed anchor and metadata passed') { return $false }
+        return (Test-AfxKitHashes $report.hashes $Hashes)
+    } catch {
+        return $false
+    }
+}
+function Write-AfxPreflightReport([string]$Path, $Report) {
+    $full = [System.IO.Path]::GetFullPath($Path)
+    $directory = [System.IO.Path]::GetDirectoryName($full)
+    [void][System.IO.Directory]::CreateDirectory($directory)
+    $temporary = $full + '.' + [Guid]::NewGuid().ToString('N') + '.tmp'
+    try {
+        [System.IO.File]::WriteAllText($temporary, ($Report | ConvertTo-Json -Depth 20),
+            [System.Text.UTF8Encoding]::new($false))
+        # Same-directory replacement publishes a complete file; never truncate a live cache.
+        if ([System.IO.File]::Exists($full)) {
+            [System.IO.File]::Replace($temporary, $full, $null)
+        } else {
+            [System.IO.File]::Move($temporary, $full)
+        }
+    } finally {
+        if ([System.IO.File]::Exists($temporary)) { [System.IO.File]::Delete($temporary) }
+    }
+}
 if ($ValidateOnly) {
     try {
+        $initialHashes = Get-AfxKitHashes
+        $context = Get-AfxPreflightContext
         foreach ($file in @('afx-scan-plans.json', 'afx-capture-workflows.json', 'afx-dropdown-options.json')) {
             $data = Get-Content -Raw (Join-Path $PSScriptRoot $file) | ConvertFrom-Json
             if ($data.version -ne 1) { throw "$file has an unsupported version." }
         }
         $sources = @('Run-AfxCapture.ps1', 'Inspect-AfxPanel.ps1', 'Run-AfxScan.ps1')
+        # Optional queue scripts are parsed during explicit validation when deployed.
+        # Their execution fingerprints belong to the reviewed batch manifest.
+        foreach ($optional in @('Run-AfxSessionBridge.ps1', 'Invoke-AfxCaptureStage.ps1')) {
+            if (Test-Path -LiteralPath (Join-Path $PSScriptRoot $optional)) { $sources += $optional }
+        }
         $scanAst = $null
         foreach ($file in $sources) {
             $tokens = $null; $parseErrors = $null
@@ -28,6 +107,7 @@ if ($ValidateOnly) {
         [AfxScanInput]::ValidateKnobPoints()
         [AfxScanInput]::ValidateSweepAxes()
         [AfxScanInput]::ValidateControlBounds()
+        [AfxScanInput]::ValidateCancellationGuards()
         # Define only these pure metadata helpers, without running the scan script.
         $axisFunctions = @($scanAst.FindAll({ param($node)
             $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
@@ -86,22 +166,27 @@ if ($ValidateOnly) {
             }
             $checkedPlans += $loaded
         }
+        $hashes = Get-AfxKitHashes
+        $initialObject = $initialHashes | ConvertTo-Json | ConvertFrom-Json
+        if (-not (Test-AfxKitHashes $initialObject $hashes)) {
+            throw 'Capture kit changed during preflight; no result may be reused.'
+        }
         if (-not [string]::IsNullOrWhiteSpace($PreflightReport)) {
-            $hashes = @{}
-            foreach ($file in $sources + @('afx-scan-plans.json', 'afx-capture-workflows.json', 'afx-dropdown-options.json')) {
-                $hashes[$file] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $file)).Hash
-            }
-            @{ status = 'ok'; checked_utc = [DateTime]::UtcNow.ToString('o'); hashes = $hashes;
+            Write-AfxPreflightReport $PreflightReport @{
+                cache_schema = 1; status = 'ok'; validation_complete = $true;
+                validation_context = $context; checked_utc = [DateTime]::UtcNow.ToString('o'); hashes = $hashes;
                 checked_plans = $checkedPlans; drag_axis_checks = 'metadata, direction and native geometry passed';
-                control_bounds_checks = 'fixed anchor and metadata passed'; settings_written = $false } |
-                ConvertTo-Json -Depth 16 | Set-Content -Encoding UTF8 $PreflightReport
+                control_bounds_checks = 'fixed anchor and metadata passed'; settings_written = $false
+            }
         }
         Write-Host 'Windows preflight passed: PowerShell syntax, native helper compilation and UI Automation assemblies.'
         exit 0
     } catch {
         if (-not [string]::IsNullOrWhiteSpace($PreflightReport)) {
-            @{ status = 'failed'; error = $_.Exception.Message; settings_written = $false } |
-                ConvertTo-Json | Set-Content -Encoding UTF8 $PreflightReport
+            Write-AfxPreflightReport $PreflightReport @{
+                cache_schema = 1; status = 'failed'; validation_complete = $false;
+                error = $_.Exception.Message; settings_written = $false
+            }
         }
         Write-Host ($_ | Out-String)
         exit 1
@@ -114,16 +199,26 @@ Start-Transcript -Path $log | Out-Null
 $recording = $true
 $exitCode = 0
 try {
-    # A child process compiles helpers without moving the pointer and avoids
-    # loading their types twice in the actual capture process.
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -ValidateOnly
-    if ($LASTEXITCODE -ne 0) { throw 'Windows preflight failed; no capture actions started.' }
+    $cache = Join-Path $results 'preflight-cache.json'
+    $currentHashes = Get-AfxKitHashes
+    $context = Get-AfxPreflightContext
+    if (Test-AfxPreflightCache $cache $currentHashes $context) {
+        Write-Host 'Tool/plan preflight cache matched; current device and GUI guards still apply.'
+    } else {
+        # Compile only on cache miss, in a child process so native helper types stay isolated.
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -ValidateOnly -PreflightReport $cache
+        if ($LASTEXITCODE -ne 0 -or
+            -not (Test-AfxPreflightCache $cache (Get-AfxKitHashes) (Get-AfxPreflightContext))) {
+            throw 'Windows preflight failed or kit changed; no capture actions started.'
+        }
+    }
     $name = $PluginName.Trim()
     if ([string]::IsNullOrWhiteSpace($name)) {
         $name = ([string](Read-Host 'Plugin name (for example V12 Chorus), or resume scan-JOB')).Trim()
     }
     if ([string]::IsNullOrWhiteSpace($name)) { throw 'A plugin name is required.' }
     if ($name -match '^resume\s+(scan-[A-Za-z0-9_-]+)$') {
+        if ($Prepared) { throw 'Prepared capture cannot resume a previous job.' }
         if (-not [string]::IsNullOrWhiteSpace($CapturePlan)) { throw 'Resume cannot combine with CapturePlan.' }
         $resumeDirectory = Join-Path $results $Matches[1]
         $remainingFile = Join-Path $resumeDirectory 'remaining-plan.json'
@@ -184,7 +279,7 @@ try {
         Write-Host 'Linux recorder must be waiting. The next screen lists this batch and its coverage.'
         Stop-Transcript | Out-Null
         $recording = $false
-        & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -PlanId $matches[0].range_plan
+        & (Join-Path $PSScriptRoot 'Run-AfxScan.ps1') -PlanId $matches[0].range_plan -Prepared:$Prepared -CancellationPath $CancellationPath -DeadlineEpoch $DeadlineEpoch
         $exitCode = $LASTEXITCODE
     } else {
         Write-Host "Preparing the control inventory for $name."
