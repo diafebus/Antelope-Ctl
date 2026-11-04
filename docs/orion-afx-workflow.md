@@ -96,6 +96,8 @@ work; no new initialization capture is required.
 | X903 | 29 | Three endpoint pairs with literal ratio endpoint −1:1 and IN-button/lamp GUI return. [Dynamics findings](orion-afx-power-dynamics.md#x903--visible-control-pass-2026-11-03) preserve limits; runtime/readback/scales unverified |
 | FET-A78 | 37 | Four endpoint pairs, four individually labelled Ratio button states and Power GUI return. [Dynamics findings](orion-afx-power-dynamics.md#fet-a78--visible-control-pass-2026-11-03) preserve limits; combinations/runtime/readback/timing unverified |
 | FET-A76 | 9 | Four endpoint pairs, four individually labelled Ratio button states and illuminated ON-button return. [Dynamics findings](orion-afx-power-dynamics.md#fet-a76--visible-control-pass-2026-11-03) preserve limits; combinations/runtime/readback/timing unverified |
+| Impresser (partial) | 42 | Six endpoint pairs and eight literal Ratio labels captured. Detector intermediate labels, Harmonics, Stereo Link, UK Mode and processing remain pending. Full Ratio parameter body returns, but OPTO lamp differs; [partial findings](orion-afx-power-dynamics.md#impresser--partial-control-capture-2026-11-04) preserve the failed static check. This is not a completed plugin pass; runtime/readback/telemetry remain unverified |
+| Comp-4K-Bus | 63 | Six continuous endpoint pairs including HR, complete Attack/Release/Ratio label maps, Auto Fade and IN-button/rack BP GUI returns captured. Own trial removed and empty AFX2 verified; [dynamics findings](orion-afx-power-dynamics.md#comp-4k-bus--visible-control-pass-2026-11-04) preserve scope and physical/runtime limits |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash

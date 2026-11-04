@@ -43,6 +43,18 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 | X903 | `Dbx903GRPeakMeter` (GAIN REDUCTION row), `Dbx903PeakMeter` (LEVEL row), `Dbx903PeakMeterBackground` ×2, `AfxLed` (IN lamp; signal telemetry unverified) |
 | FET-A78 | `UadVuMeter` (VU face), `UadPeakMeter`, `AfxLed` (POWER lamp; signal telemetry unverified) |
 | FET-A76 | `UadVuMeter` (VU face), `UadPeakMeter`; embedded ON lamp in `Uad1176BypassButton` (signal telemetry unverified) |
+| Impresser (partial controls) | `ImpresserGRMeter`; `PeakLed` ×16; `ClipLed`; `ImpresserLed` ×4; `OptoLed`; `DistortionLed` ×2; `RatioDisplay` (parameter readout) |
+| Comp-4K-Bus | `Ssl4kBusVuMeter`; `Ssl4kBusPeakMeter`; embedded IN lamp in `Ssl4kBusBypassButton` (processing GUI correlation only; signal telemetry unverified) |
+
+Impresser's `OptoLed` does not return to its initial appearance after the
+eight-label Ratio cycle: it is bright before raw3/4:1, dark after the full
+captured parameter body and Ratio display return, and remains dark on a
+read-only recheck. The exact difference occupies `(1024,402)–(1040,418)`.
+`supervised-20261104T012645Z-impresser-ratio/reconciliation.json` preserves
+the original static-check failure and source images; the lamp's meaning and
+origin remain unresolved. No repair or replay was attempted. This indicator
+discrepancy establishes no card-telemetry field or signal-meter contract.
+See the [partial dynamics findings](orion-afx-power-dynamics.md#impresser--partial-control-capture-2026-11-04).
 
 ## Dedicated card-telemetry session
 

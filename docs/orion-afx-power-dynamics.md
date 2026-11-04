@@ -443,3 +443,116 @@ all eight AFX2 slots empty; owner AFX1 V12 was preserved.
 Compatibility ID `uad_1176` remains unchanged. Runtime writes, independent
 readback, physical scaling/timing, signal telemetry and audible/stereo behavior
 remain unverified; no query bound is expanded.
+
+## Impresser — partial control capture, 2026-11-04
+
+`supervised-20261104T012645Z-load-impresser/Orion.pcapng` frame785 assigns
+Orion type42/instance0 to empty, unlinked AFX2 slot0. The six-control scan
+`scan-Impresser-20261104T012918709Z` completes all12 endpoint phases with
+95,932 packets and zero drops. Its `0x1e / 0xd5 / 0x0c` parameter blocks use
+type18/instance19; each accepted phase changes only its mapped byte.
+
+| Control | Byte | Raw endpoints | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Input | 20 | 0 / 100 | 0 / 100 | 4609 / 11303 |
+| Output | 21 | 0 / 100 | 0 / 100 | 19581 / 26431 |
+| Attack | 22 | 0 / 100 | 0 / 100 | 34979 / 41971 |
+| Release | 23 | 0 / 100 | 0 / 100 | 50707 / 57995 |
+| Detector high-pass filter | 25 | 0 / 10 | OFF / 1k | 66437 / 73865 |
+| Detector band-pass filter | 26 | 0 / 10 | OFF / 10k | 83177 / 90791 |
+
+The detector controls are stepped selectors. Their intermediate raw1–9 labels
+and meanings remain pending; printed marks alone do not establish those
+associations. The large-knob marks establish neither calibrated units nor
+interpolation or numerical timing.
+
+The Ratio button cycle in `supervised-20261104T012645Z-impresser-ratio`
+records18,116 packets with zero drops and changes only byte24:
+
+| Raw | Displayed Ratio | Frame |
+|---|---|---|
+| 0 | 1:1 | 10367 |
+| 1 | 2:1 | 12481 |
+| 2 | 3:1 | 14601 |
+| 3 | 4:1 | 16659 |
+| 4 | 6:1 | 2113 |
+| 5 | 10:1 | 4125 |
+| 6 | 20:1 | 6189 |
+| 7 | NUKE | 8255 |
+
+`RatioDisplay` provides these literal labels; no numerical ratio is invented
+for NUKE. The cycle starts and returns at raw3/4:1 with the entire captured
+parameter body identical. Static GUI verification nevertheless fails: the
+`OptoLed` OPTO lamp is bright before the cycle and dark afterward, and stays
+dark during a read-only recheck. The exact image difference is confined to its
+rectangle `(1024,402)–(1040,418)`. Its meaning and origin are unresolved.
+The original `error.json`, screenshots, actions and `reconciliation.json`
+remain intact; no repair gesture or cycle replay was sent.
+
+This is a **partial** plugin pass. Harmonics, Stereo Link, UK Mode (1:1),
+processing/BYPASS and both complete detector selector maps remain pending.
+The OPTO discrepancy is an indicator observation, not a decoded signal meter.
+`ImpresserGRMeter`, its16`PeakLed` segments, `ClipLed`, four`ImpresserLed`
+widgets, `OptoLed` and two`DistortionLed` widgets establish GUI presence only;
+`RatioDisplay` is a parameter readout. All model-local encodings remain read-only
+and commands null. Independent readback, telemetry, physical scaling,
+audible/stereo behavior and runtime contracts remain unverified.
+
+## Comp-4K-Bus — visible control pass, 2026-11-04
+
+`supervised-20261104T012645Z-load-ssl4kbus/Orion.pcapng` frame853 assigns
+Orion type63/instance0 to empty, unlinked AFX2 slot0. Native panel `Ssl4kBus`
+uses `0x1e / 0xd5 / 0x0c` parameter blocks with type18/instance19.
+`scan-Ssl4kBus-20261104T014150887Z` accepts all16 endpoint phases with
+131,012 packets and zero drops. The separate HR scan
+`scan-Ssl4kBus-20261104T015423692Z` accepts two phases with14,956 packets
+and zero drops; the main eight-control endpoint evidence remains intact.
+
+| Control | Byte | Raw endpoints | Printed endpoints | Frames |
+|---|---|---|---|---|
+| Threshold | 20 | 0 / 100 | −15 / +15 dB | 4201 / 11233 |
+| Make Up | 21 | 0 / 100 | −5 / +15 dB | 19029 / 25719 |
+| Rate | 22 | 0 / 100 | 1 / 60 s | 34309 / 41743 |
+| SC Filter | 27 | 0 / 100 | OFF / 500 Hz | 99779 / 108147 |
+| HR | 28 | 0 / 100 | HR-dB control; endpoint dB values unverified | 4139 / 10759 (HR scan) |
+| Mix | 29 | 0 / 100 | 0 / 100% | 117277 / 125341 |
+
+These are endpoint associations, not calibrated interpolation or physical laws.
+HR is the small native `Ssl4kBusScrew` control, separate from the main knobs;
+its printed HR-dB label does not establish numerical endpoint values.
+
+Separate `supervised-20261104T012645Z-ssl4kbus-{attack,release,ratio}-map`
+captures save each raw value with its printed label and screenshot in
+`raw-label-observations.json`. Each map returns the entire captured parameter
+body and checked static regions:
+
+| Selector | Byte | Raw → printed label | Label frames in ascending raw order |
+|---|---|---|---|
+| Attack | 23 | 0→0.1, 1→0.3, 2→1, 3→3, 4→10, 5→30 ms | 21641, 19179, 16655, 14173, 11709, 34307 |
+| Release | 24 | 0→0.1, 1→0.3, 2→0.6, 3→1.2 s, 4→Auto | 20031, 17415, 14831, 12269, 30449 |
+| Ratio | 25 | 0→2, 1→4, 2→10 | 22533, 11131, 46960 |
+
+Printed timing labels do not establish measured physical attack/release times;
+Auto's release law and audible ratio behavior remain unverified.
+`supervised-20261104T012645Z-ssl4kbus-auto-fade` captures only byte26
+changing0→1/frame2417→0/frame4679, with complete parameter-body and static
+GUI return. Auto Fade's audible direction, timing and rate behavior are not
+established by this GUI trial.
+
+The isolated `Ssl4kBusBypassButton` IN-button trial in
+`supervised-20261104T093918Z-ssl4kbus-processing` uses `0x14 / 0x98`,
+instance17/type18/state19: first frame3576 carries `00 3f 00` with IN dark and
+rack BP active; return frame837 carries `00 3f 01` with IN lit and rack BP
+normal. Both checked static regions (`controls_excluding_meters`, `rack_bp`)
+return exactly. This is a GUI correlation, not independent changed-state
+readback or an audible processing-polarity contract.
+
+Removal frame1367 in `supervised-20261104T093918Z-remove-ssl4kbus`
+verifies all eight AFX2 slots empty, with an empty final GUI snapshot. This
+completes the visible editable-control pass.
+Native `Ssl4kBusVuMeter` and `Ssl4kBusPeakMeter` record GUI presence
+only; the IN-button lamp is a processing indicator. No meter telemetry contract
+is established. Compatibility ID `ssl4kbus`
+and other device implementations remain unchanged. Commands stay null and all
+encodings read-only. Independent readback, physical scaling/interpolation,
+numerical timing, audible/stereo behavior and runtime support remain unverified.

@@ -3686,6 +3686,194 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "impresser-knobs",
+      "panel": "Impresser",
+      "panel_class": "Impresser",
+      "effect_id": "impresser",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/supervised-20261104T012645Z-load-impresser/raw-ui.json and panel.png: six separate observed rotary controls fully within physical panel; switches/Ratio/Harmonics separate",
+      "controls": [
+        {
+          "id": "input",
+          "class_name": "ImpresserInputPot",
+          "label": "Input",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "output",
+          "class_name": "ImpresserOutputPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "attack",
+          "class_name": "ImpresserAttackPot",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "release",
+          "class_name": "ImpresserReleasePot",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "high_pass_filter",
+          "class_name": "ImpresserHPF",
+          "label": "Detector high-pass filter",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "band_pass_filter",
+          "class_name": "ImpresserBPF",
+          "label": "Detector band-pass filter",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "completed six endpoint candidate pairs; labelled Ratio cycle partial due OPTO display non-return",
+        "pending": [
+          "HPF/BPF full raw-label maps",
+          "Harmonics",
+          "Stereo Link",
+          "UK Mode",
+          "Processing/BYPASS",
+          "OPTO lamp non-return",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior",
+          "Meter telemetry",
+          "Runtime contract"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "ssl4kbus-knobs",
+      "panel": "Ssl4kBus",
+      "panel_class": "Ssl4kBus",
+      "effect_id": "ssl4kbus",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/supervised-20261104T012645Z-load-ssl4kbus/raw-ui.json; reviewed-geometry.json measures upper19px/lower3px metadata overflow; every knob centre/start area inside physical panel. Attack/Ratio/Release may be stepped; endpoints only.",
+      "controls": [
+        {
+          "id": "threshold",
+          "class_name": "Ssl4kBusPotThreshold",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 19
+        },
+        {
+          "id": "makeup_gain",
+          "class_name": "Ssl4kBusPotMakeupGain",
+          "label": "Make Up",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "rate",
+          "class_name": "Ssl4kBusPotShortRunRate",
+          "label": "Rate",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 19
+        },
+        {
+          "id": "attack",
+          "class_name": "Ssl4kBusAttackPot",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 19
+        },
+        {
+          "id": "release",
+          "class_name": "Ssl4kBusReleasePot",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        },
+        {
+          "id": "ratio",
+          "class_name": "Ssl4kBusRatioPotNoInherit",
+          "label": "Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 19
+        },
+        {
+          "id": "sc_filter",
+          "class_name": "Ssl4kBusPotShortRunScFilter",
+          "label": "SC Filter",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 19
+        },
+        {
+          "id": "drywet",
+          "class_name": "Ssl4kBusPotShortRunDryWet",
+          "label": "Mix",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 3
+        }
+      ],
+      "coverage": {
+        "status": "completed endpoint candidate pass; separate selector/Auto Fade/processing captures cover visible editable controls",
+        "pending": [
+          "Physical scaling/interpolation and HR-dB calibration",
+          "Independent readback",
+          "Meter telemetry",
+          "Audible timing/fade and stereo behavior",
+          "Runtime contract"
+        ],
+        "device_readback_verified": false
+      }
+    },
+    {
+      "id": "ssl4kbus-hr",
+      "panel": "Ssl4kBus",
+      "panel_class": "Ssl4kBus",
+      "effect_id": "ssl4kbus",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/supervised-20261104T012645Z-load-ssl4kbus/raw-ui.json and panel.png: unique 16px screw control beneath printed HR-dB; entire actual UI bounds inside physical panel. Both endpoints captured in scan-Ssl4kBus-20261104T015423692Z frames4139/10759, byte28 raw0/100; no physical dB scale inferred.",
+      "controls": [
+        {
+          "id": "hr",
+          "class_name": "Ssl4kBusScrew",
+          "label": "HR-dB",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "completed endpoint candidate pass; separate selector/Auto Fade/processing captures cover visible editable controls",
+        "pending": [
+          "Physical scaling/interpolation and HR-dB calibration",
+          "Independent readback",
+          "Meter telemetry",
+          "Audible timing/fade and stereo behavior",
+          "Runtime contract"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

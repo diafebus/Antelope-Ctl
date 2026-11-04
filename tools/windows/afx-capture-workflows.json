@@ -494,6 +494,39 @@
         "unattended-20261103T144909Z-feta76-processing"
       ],
       "completion_limits": "Four isolated knob endpoint pairs, individually labelled Ratio buttons and ON-button/lamp roundtrip captured. Ratio returns full captured body/static regions; ON-button static return checked excluding meters. Own trial removed; ownerAFX1preserved. Physical scaling, numerical timing, button combinations, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "Impresser",
+      "effect_id": "impresser",
+      "panel_class": "Impresser",
+      "next_step": "review",
+      "range_plan": "impresser-knobs",
+      "review_reason": "Six endpoint pairs and eight labelled Ratio states captured; OPTO lamp failed static return although full parameter body and Ratio label returned. Reconcile display discrepancy and prepare remaining detector maps, Harmonics, Stereo Link, UK Mode and processing trials; preserve completed knob evidence.",
+      "partial_evidence": [
+        "supervised-20261104T012645Z-load-impresser",
+        "scan-Impresser-20261104T012918709Z",
+        "supervised-20261104T012645Z-impresser-ratio",
+        "supervised-20261104T012645Z-remove-impresser"
+      ]
+    },
+    {
+      "name": "Comp-4K-Bus",
+      "effect_id": "ssl4kbus",
+      "panel_class": "Ssl4kBus",
+      "next_step": "complete",
+      "range_plan": "ssl4kbus-knobs",
+      "completion_evidence": [
+        "supervised-20261104T012645Z-load-ssl4kbus",
+        "scan-Ssl4kBus-20261104T014150887Z",
+        "scan-Ssl4kBus-20261104T015423692Z",
+        "supervised-20261104T012645Z-ssl4kbus-attack-map",
+        "supervised-20261104T012645Z-ssl4kbus-release-map",
+        "supervised-20261104T012645Z-ssl4kbus-ratio-map",
+        "supervised-20261104T012645Z-ssl4kbus-auto-fade",
+        "supervised-20261104T093918Z-ssl4kbus-processing",
+        "supervised-20261104T093918Z-remove-ssl4kbus"
+      ],
+      "completion_limits": "Nine rotary targets (18 endpoint phases), all Attack/Release/Ratio labels, Auto Fade and IN-button/rack BP returns captured; trial removed and all AFX2 slots empty. Physical scaling/interpolation, HR-dB calibration, audible timing/fade behavior, independent readback, meter telemetry and runtime contracts remain unverified."
     }
   ]
 }

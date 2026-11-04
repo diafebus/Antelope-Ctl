@@ -2424,6 +2424,46 @@ Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-p
 retain source frames, measured geometry and label/scale limits. No runtime
 writer, independent readback or query expansion is established.
 
+**Comp-4K-Bus visible controls (2026-11-04).** Directed load frame853 in
+`supervised-20261104T012645Z-load-ssl4kbus` establishes Orion type63/instance0.
+The16-phase `scan-Ssl4kBus-20261104T014150887Z` and separate two-phase HR
+`scan-Ssl4kBus-20261104T015423692Z` observe `0x1e / 0xd5 / 0x0c`,
+type18/instance19. Threshold20, Make Up21, Rate22, SC Filter27, HR28 and Mix29
+each have raw0/100 endpoints. Printed endpoints respectively are−15/+15 dB,
+−5/+15 dB,1/60 s,OFF/500 Hz,unverified HR-dB values,and0/100%.
+Separate raw-label maps establish Attack23 raw0..5→0.1/0.3/1/3/10/30 ms,
+Release24 raw0..4→0.1/0.3/0.6/1.2 s/Auto and Ratio25 raw0..2→2/4/10,
+each returning the entire captured parameter body and checked static GUI.
+Auto Fade26 returns0→1→0 with full-body/static return. IN processing uses
+`0x14 / 0x98`, instance17/type18/state19: first3576 tuple`00 3f 00` with IN dark/
+BP active, return837 tuple`00 3f 01` with IN lit/BP normal in
+`supervised-20261104T093918Z-ssl4kbus-processing`. Both checked static regions
+return, excluding meters. Removal frame1367 in
+`supervised-20261104T093918Z-remove-ssl4kbus` verifies all eight AFX2 slots
+empty and completes the visible editable-control pass.
+[Dynamics findings](docs/orion-afx-power-dynamics.md#comp-4k-bus--visible-control-pass-2026-11-04)
+record source frames and physical/audible limits. HR endpoint dB values,
+calibrated interpolation, physical timing, audible Auto Fade behavior, meter
+telemetry, independent readback and runtime contracts remain unverified.
+Commands remain null and no query bounds are expanded.
+
+**Impresser partial controls (2026-11-04).** Directed load frame785 in
+`supervised-20261104T012645Z-load-impresser` establishes Orion type42/instance0.
+Twelve accepted endpoint phases in `scan-Impresser-20261104T012918709Z`
+observe `0x1e / 0xd5 / 0x0c`, type18/instance19: Input20, Output21, Attack22
+and Release23 raw0/100, each printed0/100; detector HPF25/BPF26 raw0/10,
+printed OFF/1k and OFF/10k. Intermediate selector raw-label maps remain pending;
+no continuous filter interpolation or calibrated large-knob scale is established.
+Ratio24 maps0→1:1,1→2:1,2→3:1,3→4:1,4→6:1,5→10:1,6→20:1,7→NUKE in
+`supervised-20261104T012645Z-impresser-ratio`. The full captured parameter body
+and raw3/4:1 display return, but the OPTO lamp changes bright to dark and stays
+dark during read-only recheck. The static-check failure and reconciliation are
+retained without repair/replay. [Dynamics findings](docs/orion-afx-power-dynamics.md#impresser--partial-control-capture-2026-11-04)
+record exact frames and the unresolved indicator discrepancy. Harmonics,
+Stereo Link, UK Mode, processing, complete detector maps, telemetry, independent
+readback, physical scaling and runtime contracts remain pending. This is not a
+completed plugin pass; commands remain null and no query bounds are expanded.
+
 **FET-A76 (2026-11-03).** Directed load frame761 establishes Orion type9/instance0;
 frame783 sends a same-instance initialization block. Read-only reconciliation
 preserves the original strict single-event guard failure; no load replayed.
