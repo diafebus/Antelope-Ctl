@@ -179,16 +179,230 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 80,
+      "status": "capture-observed; directed load, native inventory and four rotary endpoint pairs",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "evidence": [
+        "captures/continuation-20261118/runtime/load-neu473a/Orion.pcapng frame 1007; captures/continuation-20261118/runtime/neu473a-inventory.json",
+        "captures/continuation-20261118/runtime/remove-neu473a/Orion.pcapng frame 949: all eight AFX 2 slots empty"
+      ],
+      "notes": "AFX 2 slot 0 held type 80, instance 0, after selecting DEMO - NEU-473A. Runtime parameters, readback and telemetry are unverified.",
+      "type_id_write_status": "GUI assignment observed; runtime writer disabled",
+      "gui_observation": {
+        "panel_class": "U473A",
+        "source": "captures/continuation-20261118/runtime/neu473a-inventory.json",
+        "printed_scales": {
+          "source": "captures/continuation-20261118/runtime/neu473a-panel.png",
+          "status": "GUI legends only; intermediate raw-to-label associations require position-specific evidence",
+          "attack": [".25", "2.5", "25"],
+          "expthresh": ["-10", "-20", "-30", "-50", "-60"],
+          "recovery": [".1", ".2", ".5", "1", "2", "5", "10S", "AUTO"],
+          "exprecovery": [".03", ".1", ".2", ".5", "1", "2", "5S"],
+          "ratio": ["1:1", "1,5:1", "2:1", "3:1", "5:1", "LIM"]
+        },
+        "editable_controls": [
+          {
+            "control": "drive",
+            "ui_class": "U473ADrivePot",
+            "label": "Output Gain"
+          },
+          {
+            "control": "attack",
+            "ui_class": "U473AAttackPot",
+            "label": "Attack"
+          },
+          {
+            "control": "compgain",
+            "ui_class": "U473ACompgainPot",
+            "label": "Compr Gain"
+          },
+          {
+            "control": "expthresh",
+            "ui_class": "U473AExpThresholdPot",
+            "label": "Threshold"
+          },
+          {
+            "control": "recovery",
+            "ui_class": "U473ARecoveryPot",
+            "label": "Recovery"
+          },
+          {
+            "control": "exprecovery",
+            "ui_class": "U473AExpRecoveryPot",
+            "label": "Recovery (expander)"
+          },
+          {
+            "control": "ratio",
+            "ui_class": "U473ARatioPot",
+            "label": "Ratio"
+          },
+          {
+            "control": "expon",
+            "ui_class": "U473AButtonExpon",
+            "label": "Expander"
+          },
+          {
+            "control": "deess",
+            "ui_class": "U473AButtonDeesss",
+            "label": "De-Ess"
+          },
+          {
+            "control": "basscut",
+            "ui_class": "U473AButtonBasscut",
+            "label": "Bass Cut"
+          },
+          {
+            "control": "processing",
+            "ui_class": "U473ABypassSwitch",
+            "label": "Bypass"
+          }
+        ]
+      },
+      "display_observations": {
+        "status": "GUI-observed; signal telemetry unverified",
+        "source": "captures/continuation-20261118/runtime/neu473a-inventory.json",
+        "displays": [
+          {
+            "ui_class": "U473APeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "U473AGainReductionLedPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "gain reduction meter",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "U473ABypassLed",
+            "native_instance_count": 1,
+            "kind_hint": "bypass or on indicator",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "U473AGreenLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "U473ARedLed",
+            "native_instance_count": 1,
+            "kind_hint": "peak or limiter indicator",
+            "status": "GUI-observed; no telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false
+      },
+      "parameter_observation": {
+        "opcode": "0x1e",
+        "subcmd": "0x0c",
+        "capture_sha256": "23f661f890e5d021afa66154840150e1e2a82731c189c7326951618dfebb22a4",
+        "endpoint_candidates": [
+          {
+            "control": "drive",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 3967,
+            "displayed_label": "−6 dB"
+          },
+          {
+            "control": "drive",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 10567,
+            "displayed_label": "+4 dB"
+          },
+          {
+            "control": "attack",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 18569,
+            "displayed_label": "0.25 ms"
+          },
+          {
+            "control": "attack",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 2,
+            "frame": 25415,
+            "displayed_label": "25 ms"
+          },
+          {
+            "control": "compgain",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 33923,
+            "displayed_label": "0 dB"
+          },
+          {
+            "control": "compgain",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 40419,
+            "displayed_label": "15 dB"
+          },
+          {
+            "control": "expthresh",
+            "offset": 27,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 49483,
+            "displayed_label": "−10 dB"
+          },
+          {
+            "control": "expthresh",
+            "offset": 27,
+            "gesture": "maximum",
+            "raw": 10,
+            "frame": 56685,
+            "displayed_label": "−60 dB"
+          }
+        ],
+        "unlabelled_wire_samples": [
+          {
+            "control": "attack",
+            "offset": 23,
+            "samples": [
+              {"raw": 1, "frame": 17005, "action": 3, "phase": "priming"}
+            ]
+          },
+          {
+            "control": "expthresh",
+            "offset": 27,
+            "samples": [
+              {"raw": 2, "frame": 47761, "action": 7, "phase": "priming"},
+              {"raw": 3, "frame": 56585, "action": 8, "phase": "maximum"},
+              {"raw": 4, "frame": 47811, "action": 7, "phase": "priming"},
+              {"raw": 7, "frame": 49379, "action": 7, "phase": "minimum"},
+              {"raw": 9, "frame": 47863, "action": 7, "phase": "priming"}
+            ]
+          }
+        ],
+        "param_id": "0xd5",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "paired GUI endpoints and isolated captured bytes; intermediate positions and untested controls pending",
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "scan-U473A-20261118T152755871Z: eight accepted phases, zero drops. Raw re-decode compares the two final blocks per control and verifies phase-local reports. Attack, Compr Gain and expander Threshold minimum phases repeated their already-stable bodies; the strict single-phase summary remains review_required.",
+          "Offline re-decode of the same capture includes the pre-window priming reports. Intermediate samples are transient whole-block OUT observations with single-byte changes and no simultaneous pointer image."
+        ]
+      }
     }
   ]
 }

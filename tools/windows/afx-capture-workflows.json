@@ -527,6 +527,19 @@
         "supervised-20261104T093918Z-remove-ssl4kbus"
       ],
       "completion_limits": "Nine rotary targets (18 endpoint phases), all Attack/Release/Ratio labels, Auto Fade and IN-button/rack BP returns captured; trial removed and all AFX2 slots empty. Physical scaling/interpolation, HR-dB calibration, audible timing/fade behavior, independent readback, meter telemetry and runtime contracts remain unverified."
+    },
+    {
+      "name": "NEU-473A",
+      "effect_id": "u473a",
+      "panel_class": "U473A",
+      "next_step": "review",
+      "range_plan": "u473a-knobs",
+      "review_reason": "Four endpoint pairs already captured. Attack raw 1 and Threshold raw 2/3/4/7/9 are transient wire samples that still need position-specific visual witnesses. Both Recovery selectors, Ratio, Expander, De-Ess, Bass Cut and Bypass still need directed capture.",
+      "partial_evidence": [
+        "load-neu473a",
+        "scan-U473A-20261118T152755871Z",
+        "remove-neu473a"
+      ]
     }
   ]
 }

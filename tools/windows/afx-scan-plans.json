@@ -3874,6 +3874,56 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "u473a-knobs",
+      "panel": "U473A",
+      "panel_class": "U473A",
+      "effect_id": "u473a",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/continuation-20261118/runtime/load-neu473a/Orion.pcapng frame 1007; captures/continuation-20261118/runtime/neu473a-inventory.json; four reviewed rotary targets",
+      "controls": [
+        {
+          "id": "drive",
+          "class_name": "U473ADrivePot",
+          "label": "Output Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "attack",
+          "class_name": "U473AAttackPot",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "compgain",
+          "class_name": "U473ACompgainPot",
+          "label": "Compr Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "expthresh",
+          "class_name": "U473AExpThresholdPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

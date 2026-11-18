@@ -556,3 +556,45 @@ is established. Compatibility ID `ssl4kbus`
 and other device implementations remain unchanged. Commands stay null and all
 encodings read-only. Independent readback, physical scaling/interpolation,
 numerical timing, audible/stereo behavior and runtime support remain unverified.
+
+## NEU-473A — partial control capture, 2026-11-18
+
+The Orion Launcher displayed the demo as `DEMO - NEU-473A` on the confirmed
+unlinked AFX 2 trial channel. The directed chain assignment put Orion type 80,
+instance 0 in slot 0 (frame 1007 of `load-neu473a/Orion.pcapng`, zero packet
+drops). The native panel class is `U473A`. Its visible controls include Output
+Gain (catalog ID `drive`), Attack, Compr Gain, compressor Recovery, Ratio,
+expander Threshold and Recovery, Expander, De-Ess, Bass Cut, and Bypass.
+The [effect profile](../profiles/afx/u473a.json) records the control classes.
+Independent readback and signal telemetry remain unverified.
+
+The eight-phase `scan-U473A-20261118T152755871Z` recorded 61,636 packets
+with zero drops and one parameter family, `0x1e / 0xd5 / 0x0c`.
+Each pair of final full reports isolates its field, with type at byte 18 and
+instance at byte 19. Three minimum phases repeated the already-stable body.
+The strict per-phase summary flagged those unchanged phases for review. The
+raw capture and screenshots establish the paired observations below.
+
+| Control | Offset | Minimum gesture | Maximum gesture |
+|---|---:|---|---|
+| Output Gain (`drive`) | 20 | raw 0, −6 dB (frame 3967) | raw 100, +4 dB (frame 10567) |
+| Attack | 23 | raw 0, 0.25 ms (frame 18569) | raw 2, 25 ms (frame 25415) |
+| Compr Gain | 26 | raw 0, 0 dB (frame 33923) | raw 100, 15 dB (frame 40419) |
+| Expander Threshold | 27 | raw 0, −10 dB (frame 49483) | raw 10, −60 dB (frame 56685) |
+
+Review of all 44 matching OUT reports, including setup motion before the
+accepted endpoint windows, found these transient values. Each report changed
+only the listed byte relative to the preceding full report. The saved
+screenshots show the endpoints and the loaded faceplate. Intermediate frames
+still need position-specific visual witnesses.
+
+| Control | Pre-window priming (raw → frame) | Directed sweep (raw → frame) |
+|---|---|---|
+| Attack | 1 → 17005 | |
+| Expander Threshold | 2 → 47761, 4 → 47811, 9 → 47863 | 7 → 49379 (minimum), 3 → 56585 (maximum) |
+
+The faceplate prints `2.5` between the Attack endpoints. Expander Threshold has
+labelled and unlabelled marks. The profile inventories the printed Threshold,
+Recovery and Ratio legends. Their intermediate wire associations remain
+pending. Expander, De-Ess, Bass Cut and Bypass still require directed capture.
+Removal frame 949 in `remove-neu473a/Orion.pcapng` shows all eight AFX 2 slots empty.
