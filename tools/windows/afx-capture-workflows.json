@@ -534,7 +534,7 @@
       "panel_class": "U473A",
       "next_step": "review",
       "range_plan": "u473a-knobs",
-      "review_reason": "Four endpoint pairs recovered by raw paired review. Preserve that evidence and prepare remaining Attack and Threshold positions, both Recovery selectors, Ratio, Expander, De-Ess, Bass Cut and Bypass.",
+      "review_reason": "Four endpoint pairs already captured. Attack raw 1 and Threshold raw 2/3/4/7/9 are transient wire samples that still need position-specific visual witnesses. Both Recovery selectors, Ratio, Expander, De-Ess, Bass Cut and Bypass still need directed capture.",
       "partial_evidence": [
         "load-neu473a",
         "scan-U473A-20261118T152755871Z",

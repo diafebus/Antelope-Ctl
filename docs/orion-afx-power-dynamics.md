@@ -582,6 +582,19 @@ raw capture and screenshots establish the paired observations below.
 | Compr Gain | 26 | raw 0, 0 dB (frame 33923) | raw 100, 15 dB (frame 40419) |
 | Expander Threshold | 27 | raw 0, −10 dB (frame 49483) | raw 10, −60 dB (frame 56685) |
 
-Intermediate Attack and Threshold positions, both Recovery controls, Ratio,
-Expander, De-Ess, Bass Cut and Bypass remain pending. Removal frame 949 in
-`remove-neu473a/Orion.pcapng` shows all eight AFX 2 slots empty.
+Review of all 44 matching OUT reports, including setup motion before the
+accepted endpoint windows, found these transient values. Each report changed
+only the listed byte relative to the preceding full report. The saved
+screenshots show the endpoints and the loaded faceplate. Intermediate frames
+still need position-specific visual witnesses.
+
+| Control | Pre-window priming (raw → frame) | Directed sweep (raw → frame) |
+|---|---|---|
+| Attack | 1 → 17005 | |
+| Expander Threshold | 2 → 47761, 4 → 47811, 9 → 47863 | 7 → 49379 (minimum), 3 → 56585 (maximum) |
+
+The faceplate prints `2.5` between the Attack endpoints. Expander Threshold has
+labelled and unlabelled marks. The profile inventories the printed Threshold,
+Recovery and Ratio legends. Their intermediate wire associations remain
+pending. Expander, De-Ess, Bass Cut and Bypass still require directed capture.
+Removal frame 949 in `remove-neu473a/Orion.pcapng` shows all eight AFX 2 slots empty.

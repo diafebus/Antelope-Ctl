@@ -2428,7 +2428,9 @@ writer, independent readback or query expansion is established.
 establishes Orion type 80, instance 0. The paired endpoint capture observes
 `0x1e / 0xd5 / 0x0c`, type at byte 18 and instance at byte 19. Output Gain
 (byte 20) and Compr Gain (26) span observed raw 0 and 100, Attack (23) has
-observed raw 0 and 2, and expander Threshold (27) has observed raw 0 and 10.
+captured endpoints raw 0 and 2, and expander Threshold (27) has captured
+endpoints raw 0 and 10. The same capture contains transient Attack raw 1 and
+Threshold raw 2/3/4/7/9 without position-specific visual witnesses.
 See [labelled observations](docs/orion-afx-power-dynamics.md#neu-473a--partial-control-capture-2026-11-18)
 and the remaining selector work. Runtime commands remain disabled.
 

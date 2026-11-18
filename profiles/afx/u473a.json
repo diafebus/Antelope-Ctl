@@ -196,6 +196,15 @@
       "gui_observation": {
         "panel_class": "U473A",
         "source": "captures/continuation-20261118/runtime/neu473a-inventory.json",
+        "printed_scales": {
+          "source": "captures/continuation-20261118/runtime/neu473a-panel.png",
+          "status": "GUI legends only; intermediate raw-to-label associations require position-specific evidence",
+          "attack": [".25", "2.5", "25"],
+          "expthresh": ["-10", "-20", "-30", "-50", "-60"],
+          "recovery": [".1", ".2", ".5", "1", "2", "5", "10S", "AUTO"],
+          "exprecovery": [".03", ".1", ".2", ".5", "1", "2", "5S"],
+          "ratio": ["1:1", "1,5:1", "2:1", "3:1", "5:1", "LIM"]
+        },
         "editable_controls": [
           {
             "control": "drive",
@@ -363,6 +372,26 @@
             "displayed_label": "−60 dB"
           }
         ],
+        "unlabelled_wire_samples": [
+          {
+            "control": "attack",
+            "offset": 23,
+            "samples": [
+              {"raw": 1, "frame": 17005, "action": 3, "phase": "priming"}
+            ]
+          },
+          {
+            "control": "expthresh",
+            "offset": 27,
+            "samples": [
+              {"raw": 2, "frame": 47761, "action": 7, "phase": "priming"},
+              {"raw": 3, "frame": 56585, "action": 8, "phase": "maximum"},
+              {"raw": 4, "frame": 47811, "action": 7, "phase": "priming"},
+              {"raw": 7, "frame": 49379, "action": 7, "phase": "minimum"},
+              {"raw": 9, "frame": 47863, "action": 7, "phase": "priming"}
+            ]
+          }
+        ],
         "param_id": "0xd5",
         "type_id_offset": 18,
         "instance_index_offset": 19,
@@ -370,7 +399,8 @@
         "writable": false,
         "device_readback_verified": false,
         "evidence": [
-          "scan-U473A-20261118T152755871Z: eight accepted phases, zero drops. Raw re-decode compares the two final blocks per control and verifies phase-local reports. Attack, Compr Gain and expander Threshold minimum phases repeated their already-stable bodies; the strict single-phase summary remains review_required."
+          "scan-U473A-20261118T152755871Z: eight accepted phases, zero drops. Raw re-decode compares the two final blocks per control and verifies phase-local reports. Attack, Compr Gain and expander Threshold minimum phases repeated their already-stable bodies; the strict single-phase summary remains review_required.",
+          "Offline re-decode of the same capture includes the pre-window priming reports. Intermediate samples are transient whole-block OUT observations with single-byte changes and no simultaneous pointer image."
         ]
       }
     }
