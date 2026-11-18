@@ -20,7 +20,8 @@ Kernel work remains a later option after protocol/hardware validation.
 3. Read only relevant sections of [README.md](README.md),
    [PROTOCOL.md](PROTOCOL.md), [the Orion profile](profiles/orion_studio_sc.json)
    and [the schema](docs/profile-schema.md). For AFX use
-   [the workflow](docs/orion-afx-workflow.md) and [the catalog](profiles/afx_effects.json).
+   [the workflow](docs/orion-afx-workflow.md), [the catalog manifest](profiles/afx_effects.json)
+   and only the relevant `profiles/afx/<effect_id>.json` plugin files.
    Use local `captures/CAPTURE_INDEX.md` before rescanning raw captures.
 
 User instructions and existing session authorization take precedence. Finish
@@ -29,6 +30,9 @@ concise progress updates; spawn subagents only when requested.
 
 ## Evidence and implementation
 
+- Capture each selector value together with its displayed label and meaning.
+  Numeric positions alone are partial evidence; leave unidentified meanings
+  explicitly pending and do not present guessed labels as usable controls.
 - Resolve disagreements using observable device behavior, then directed/action-
   labelled captures, capture-backed profiles, and finally code/tests/prose.
   Distinguish captured facts, owner confirmations, candidates and unknowns;
@@ -37,8 +41,11 @@ concise progress updates; spawn subagents only when requested.
   active profile. Separate HID controls from audio ISO traffic; an inbound-only
   capture does not establish a write command.
 - Store capacity and wire/runtime contracts in device profiles; store shared
-  effect definitions with model-specific encodings in the AFX catalog. Resource
-  counts do not establish license ownership. Consumers use these mappings;
+  effect definitions with model-specific encodings in `profiles/afx/<effect_id>.json`;
+  the catalog manifest owns metadata and ordered file references. Load the resolved
+  catalog through `antelope.catalog.load_catalog`; do not text-slice or write an
+  assembled catalog back over the manifest. Resource counts do not establish
+  license ownership. Consumers use these mappings;
   preserve unknown fields/bits and compatibility identifiers.
 - UI/software naming is **Gazelle Reverb**; **AuraVerb** is the original
   hardware/protocol name. Keep identifiers such as `auraverb` compatible.
@@ -62,6 +69,14 @@ concise progress updates; spawn subagents only when requested.
 ## WebUI
 
 Keep effect panels in separate modules and shared rack/state logic generic.
+Panel design should be compact without crowding controls: integrate the plugin
+name and bypass into the control face rather than allocating separate full-width
+rows. Avoid decorative branding columns and repeated notes that add rack height.
+Align controls at consistent, fixed vertical positions within each panel row;
+use additional rows only when the actual control count requires them. Preserve
+readable labels, usable hit targets and responsive layouts without clipping.
+Vectorcraft and Photocraft may be used for original panel artwork when available;
+keep interactive controls separate and aligned over the artwork.
 Use an original design with static knob bodies/lighting, moving pointers and
 no extra sliders; send coalesced live edits. Preserve the single-channel rack,
 categorized left slot selectors, drag/drop from both views, compact chain link button, link markers

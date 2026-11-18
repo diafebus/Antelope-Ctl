@@ -176,7 +176,7 @@ function afxTestDraft(channel, slot) {
     const choice = AFX_TEST_CHOICES.find(effect => effect.type_id === record?.type);
     if (!choice?.panel || !AFX_PANELS.has(choice.id)) return null;
     // No parameter defaults, caches, requests or new writer for these effects.
-    return {live: true, parameterAvailable: false, instance: record.instance,
+    return {live: true, parameterAvailable: false, removable: !!choice.loadable, instance: record.instance,
       effect: choice.panel, values: Object.fromEntries(choice.panel.controls.map(c => [c.id, null]))};
   }
   if (!AFX_TEST_DRAFTS.has(record.instance)) {
@@ -342,6 +342,7 @@ function afxTestClick(event) {
 }
 
 AFX_DEVICE_RACK = {toolbarHTML: afxTestToolbarHTML, rackHTML: afxTestRackHTML,
+  deviceView: () => AFX_TEST_DEVICE_VIEW,
   click: afxTestClick, draft: afxTestDraft, active: afxTestActive, move: afxTestMove,
   open: afxTestOpen, slotLabel: afxTestSlotLabel, channelChanged: afxTestChannelChanged,
   slotPicker: afxTestSlotPicker, canMove: afxTestCanMove, change: afxTestChange, pairHTML: afxTestPairHTML, channelLabel: afxTestChannelLabel, linkClick: afxTestLinkClick,

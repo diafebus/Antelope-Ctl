@@ -1,0 +1,532 @@
+{
+  "version": 1,
+  "channel": 2,
+  "plugins": [
+    {
+      "name": "Instinct",
+      "effect_id": "instinct",
+      "range_plan": "instinct-knob-ranges",
+      "next_step": "complete",
+      "completion_evidence": [
+        "scan-Instinct-20261009T162320099Z",
+        "scan-Instinct-20261009T170904069Z",
+        "scan-Instinct-20261009T172618770Z",
+        "scan-Instinct-20261009T175536310Z",
+        "scan-Instinct-20261009T180405603Z",
+        "unattended-20261026T091415Z-instinct-model-first",
+        "unattended-20261026T091415Z-instinct-model-return",
+        "unattended-20261026T091415Z-instinct-processing",
+        "unattended-20261026T091415Z-instinct-presets"
+      ],
+      "completion_limits": "Prior21knob endpoint/threeparameter-switch captures plus fresh model/power round trips and read-only factory menu inventory complete observed visible controls. Physical scaling, algorithm/declaration names, independent readback, preset encodings and runtime contracts unverified."
+    },
+    {
+      "name": "V12 Chorus",
+      "effect_id": "turboensembler",
+      "range_plan": "v12-controls",
+      "next_step": "complete",
+      "panel_class": "TurboEnsembler",
+      "completion_evidence": [
+        "scan-V12-Chorus-20261009T184118945Z",
+        "scan-V12-Voices-20261025T204943477Z",
+        "unattended-20261025T195948Z-v12-voices-map",
+        "unattended-20261025T195948Z-v12-processing"
+      ],
+      "completion_limits": "Ten knob endpoint candidates and Humanize captured previously; all twelve discrete Voices counts and separate processing roundtrip now captured. Physical scaling of other knobs, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "BBD Chorus",
+      "effect_id": "bbdchorus",
+      "range_plan": "bbd-controls",
+      "next_step": "complete",
+      "panel_class": "BBDChorus",
+      "completion_evidence": [
+        "scan-BBD-Chorus-20261009T192357505Z",
+        "scan-BBD-Chorus-20261009T193326058Z"
+      ],
+      "completion_limits": "Visible controls captured; device readback, runtime writes and audible behavior remain unverified."
+    },
+    {
+      "name": "Master De-Esser",
+      "effect_id": "deesser",
+      "next_step": "complete",
+      "panel_class": "Deesser",
+      "menu_classes": [
+        "DeesserPresetsCombobox",
+        "DeesserComboBoxFilterType"
+      ],
+      "range_plan": "deesser-filter-keys",
+      "completion_evidence": [
+        "scan-Master-De-Esser-20261025T003137097Z",
+        "scan-Master-De-Esser-20261025T003349239Z",
+        "scan-Master-De-Esser-20261025T003655397Z (accepted knob phases only)",
+        "scan-Master-De-Esser-20261025T004418330Z",
+        "scan-Master-De-Esser-20261025T005043532Z",
+        "panel-Master-De-Esser-20261025T010018355Z",
+        "unattended-20261025-deesser-bypass-first/return"
+      ],
+      "completion_limits": "Eight knob endpoint candidates, five visible filter choices, four monitoring states, bypass GUI round trip and preset inventory captured. Runtime readback/writes, scaling and audible/stereo behavior remain unverified; sixth-choice historical discrepancy remains open."
+    },
+    {
+      "name": "PowerGate",
+      "effect_id": "powergate",
+      "panel_class": "PowerGate",
+      "next_step": "complete",
+      "range_plan": "powergate-knobs",
+      "completion_evidence": [
+        "scan-PowerGate-20261025T093705223Z",
+        "scan-PowerGate-20261025T094022183Z",
+        "unattended-20261025-powergate-lever-first",
+        "unattended-20261025-powergate-lever-return"
+      ],
+      "completion_limits": "Six visible knob endpoint candidates and processing lever round trip captured; physical scaling, independent readback, audible/stereo behavior and runtime writes remain unverified."
+    },
+    {
+      "name": "PowerEx",
+      "effect_id": "powerex",
+      "panel_class": "PowerEx",
+      "next_step": "complete",
+      "range_plan": "powerex-knobs",
+      "completion_evidence": [
+        "scan-PowerEx-20261025T094607276Z",
+        "unattended-20261025-powerex-switch-first",
+        "unattended-20261025-powerex-switch-return"
+      ],
+      "completion_limits": "Six visible knob endpoint candidates and processing-switch GUI round trip captured; independent readback, physical scaling, audible/stereo behavior and runtime writers remain unverified."
+    },
+    {
+      "name": "VEQ-1A",
+      "effect_id": "pultec_eqp",
+      "panel_class": "PultecEQP",
+      "next_step": "complete",
+      "range_plan": "pultec_eqp-knobs",
+      "completion_evidence": [
+        "scan-PultecEQP-20261025T095310973Z",
+        "unattended-20261025-veq1a-rotary-map (LowFrequency subset only)",
+        "unattended-20261025-veq1a-rotary-map2",
+        "unattended-20261025-veq1a-switch-first",
+        "unattended-20261025-veq1a-switch-return"
+      ],
+      "completion_limits": "Five continuous knob endpoint candidates, all three rotary detent maps and processing-switch GUI round trip captured; physical scaling, independent readback, audible/stereo behavior and runtime contracts unverified."
+    },
+    {
+      "name": "VMEQ-5",
+      "effect_id": "pultec_meq",
+      "panel_class": "PultecMEQ",
+      "next_step": "complete",
+      "range_plan": "pultec_meq-knobs",
+      "completion_evidence": [
+        "scan-PultecMEQ-20261025T101459165Z",
+        "unattended-20261025-vmeq5-rotary-map",
+        "unattended-20261025-vmeq5-switch-first",
+        "unattended-20261025-vmeq5-switch-return"
+      ],
+      "completion_limits": "Three gain knob endpoint candidates, all5/11/5rotary detent maps and processing-switch GUI round trip captured; physical scaling, independent readback, audible/stereo behavior and runtime contracts unverified."
+    },
+    {
+      "name": "VEQ-HLF",
+      "effect_id": "pultec_hlf",
+      "panel_class": "PultecHLF",
+      "next_step": "complete",
+      "range_plan": "pultec_hlf-knobs",
+      "completion_evidence": [
+        "scan-PultecHLF-20261025T200723927Z",
+        "unattended-20261025T195948Z-veqhlf-rotary-map",
+        "unattended-20261025T195948Z-veqhlf-switch-first",
+        "unattended-20261025T195948Z-veqhlf-switch-return"
+      ],
+      "completion_limits": "Both eleven-position selectors and processing-switch GUI round trip captured; physical units, independent readback, audible/stereo behavior and runtime contracts unverified."
+    },
+    {
+      "name": "BA-31",
+      "effect_id": "ba_31",
+      "panel_class": "Ba31",
+      "next_step": "complete",
+      "range_plan": "ba_31-knobs",
+      "completion_evidence": [
+        "scan-Ba31-20261025T202655138Z",
+        "unattended-20261025T195948Z-ba31-processing"
+      ],
+      "completion_limits": "Independently observed Orion BA-31 identity. Both Gain/Trim knob endpoint candidates and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "Gyratec IX",
+      "effect_id": "gyratex_ix",
+      "panel_class": "GyratecIX",
+      "next_step": "complete",
+      "range_plan": "gyratex_ix-knobs",
+      "completion_evidence": [
+        "scan-GyratecIX-20261025T203215463Z",
+        "unattended-20261025T195948Z-gyratecix-rotary-map",
+        "unattended-20261025T195948Z-gyratecix-rotary-map2",
+        "unattended-20261025T195948Z-gyratecix-processing"
+      ],
+      "completion_limits": "Independently observed Orion Gyratec IX identity; compatibility ID gyratex_ix retained. Both Gain/Output knob endpoint candidates, Phase two-position and Low-Cut three-position maps and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "VPA 76",
+      "effect_id": "telefunken_v76",
+      "panel_class": "TelefunkenV76",
+      "next_step": "complete",
+      "range_plan": "telefunken_v76-knobs",
+      "completion_evidence": [
+        "scan-TelefunkenV76-20261025T203938997Z",
+        "unattended-20261025T195948Z-vpa76-rotary-map",
+        "unattended-20261025T195948Z-vpa76-processing"
+      ],
+      "completion_limits": "Independently observed Orion VPA 76 identity; compatibility ID telefunken_v76 and control gain retained, visible label Warmth. Warmth/Trim endpoint candidates, Shelf two-position and High-Pass four-position maps and isolated processing round trip captured. Physical scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "Memory Cat Brigade",
+      "effect_id": "memory_brigade",
+      "panel_class": "MemoryBrigade",
+      "next_step": "complete",
+      "completion_evidence": [
+        "macos-memorycatbrigade-level-blend-feeback-delay-depth-filter-vib_ch-1100ms_550ms.pcapng",
+        "unattended-20261025T195948Z-load-memorycat",
+        "unattended-20261025T195948Z-memorycat-processing"
+      ],
+      "completion_limits": "Prior six knob endpoint candidates/two owner-labelled binary modes and fresh processing roundtrip complete visible controls. Existing tagged Memory Cat readback retained; physical intermediate scaling, current audible confirmation and runtime bypass writes remain unverified."
+    },
+    {
+      "name": "ATuner",
+      "effect_id": "atuner",
+      "panel_class": "ATuner",
+      "next_step": "complete",
+      "completion_evidence": [
+        "unattended-20261026T091415Z-load-atuner",
+        "unattended-20261026T091415Z-atuner-processing"
+      ],
+      "completion_limits": "Only observed editable panel control(power) captured. Tuner screen is essential; frequency/note/cents/needle reading and telemetry explicitly deferred by owner2026-10-26. No functional tuner, pitch-accuracy, readback or runtime-write claim. Device telemetry, pitch accuracy, audible behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "BAE-1023",
+      "effect_id": "neve_1023",
+      "panel_class": "Neve1023",
+      "next_step": "complete",
+      "range_plan": "neve_1023-coaxial-ranges",
+      "completion_evidence": [
+        "unattended-20261026T091415Z-load-bae1023",
+        "scan-Neve1023-20261026T100833281Z",
+        "unattended-20261026T091415Z-bae1023-coaxial-routing",
+        "scan-Neve1023CoaxialRanges-20261026T104903760Z",
+        "unattended-20261026T091415Z-bae1023-frequency-map",
+        "unattended-20261026T091415Z-bae1023-phase-first",
+        "unattended-20261026T091415Z-bae1023-phase-return",
+        "unattended-20261026T091415Z-bae1023-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: eight endpoint pairs, literal 5/12/6/5 frequency-selector maps, isolated Phase round trip and separate EQ processing round trip with full-payload/image return checks. Concentric hit zones independently observed; compatibility ID neve_1023 retained. Separate NevePeakMeter display has no telemetry contract. Output signed interpretation, physical/intermediate scaling, independent readback, meter telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "NEU-PEV",
+      "effect_id": "neumann_pev",
+      "panel_class": "NeumannPev",
+      "next_step": "complete",
+      "range_plan": "neumann_pev-knobs",
+      "completion_evidence": [
+        "unattended-20261026T091415Z-load-neu-pev",
+        "scan-NeumannPev-20261026T161740457Z",
+        "unattended-20261026T091415Z-neu-pev-detent-map",
+        "unattended-20261026T091415Z-neu-pev-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: five endpoint pairs, four complete 9/5/7/10 stepped dial maps with literal High Gain m, full captured payload/seven static region returns and separate processing round trip. Stopped initial priming remains calibration evidence. NeumannPeakMeter/AfxLed inventory is separate from signal telemetry. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "NEU-W492",
+      "effect_id": "neumann_w492",
+      "panel_class": "NeumannW492",
+      "next_step": "complete",
+      "range_plan": "neumann_w492-knobs",
+      "completion_evidence": [
+        "unattended-20261026T163323Z-load-neu-w492",
+        "scan-NeumannW492-20261026T164051354Z",
+        "unattended-20261026T163323Z-neu-w492-sections",
+        "unattended-20261026T163323Z-neu-w492-lowcut",
+        "unattended-20261026T163323Z-neu-w492-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: nine rotary endpoint pairs, four isolated section-switch round trips (raw0 left/raw1 right), Low Cut three-state map (raw0 top140Hz/raw1 middle20Hz/raw2 bottom80Hz) and separate processing round trip. Full captured payload/static panel returns verified; animated meter excluded. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, section/processing enabled polarity, audible/stereo behavior and runtime contracts remain unverified. Separate NeumannPeakMeter/AfxLed inventory is not a telemetry contract."
+    },
+    {
+      "name": "NEU-W495",
+      "effect_id": "neumann_w495",
+      "panel_class": "NeumannW495",
+      "next_step": "complete",
+      "range_plan": "neumann_w495-knobs",
+      "completion_evidence": [
+        "unattended-20261026T163323Z-load-neu-w495",
+        "scan-NeumannW495-20261026T165426097Z",
+        "unattended-20261026T163323Z-neu-w495-detent-map",
+        "unattended-20261026T163323Z-neu-w495-bell-quality",
+        "unattended-20261026T163323Z-neu-w495-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: seven rotary endpoint pairs, six complete stepped dial maps across100 bounded trials, Bell Quality (mid_q) raw0 Left/raw1 Middle/raw2 Right and separate processing round trip. Dial mapping and Bell Quality round trips returned the full captured parameter body and checked static panel images. Processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. NeumannPeakMeter/AfxLed inventory remains separate; animated meter excluded from static checks. Output signed interpretation, physical/intermediate scaling, numeric Q, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "VEQ-4K PINK",
+      "effect_id": "ssl_pink",
+      "panel_class": "SslPink",
+      "next_step": "complete",
+      "range_plan": "ssl_pink-knobs",
+      "completion_evidence": [
+        "unattended-20261027T015403Z-load-veq4k-pink",
+        "scan-SslPink-20261027T021124243Z",
+        "unattended-20261027T015403Z-veq4k-pink-modes",
+        "unattended-20261027T015403Z-veq4k-pink-processing",
+        "scan-SslPink-20261027T020747657Z"
+      ],
+      "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, LMF \u00f73 (lf_bell) byte31/HMF \u00d73 (hf_bell) byte24 independently reviewed mode/LED round trips and separate processing round trip. Mode raw0 LED Dark/raw1 LED Lit observations preserve compatibility IDs without inferred audio/bell semantics. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Historical before-input layout rejection and stopped priming retained. Output signed interpretation, physical/intermediate scaling, independent readback, mode audio/bell semantics, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
+    },
+    {
+      "name": "VEQ-4K ORANGE",
+      "effect_id": "ssl_orange",
+      "panel_class": "SslOrange",
+      "next_step": "complete",
+      "range_plan": "ssl_orange-knobs",
+      "completion_evidence": [
+        "unattended-20261027T015403Z-load-veq4k-orange",
+        "scan-SslOrange-20261027T022803586Z",
+        "unattended-20261027T015403Z-veq4k-orange-modes",
+        "unattended-20261027T015403Z-veq4k-orange-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, independently reviewed LF BELL (lf_bell) byte31/HF BELL (hf_bell) byte24 mode/LED round trips and separate processing round trip. Actual raw0 LED Dark/raw1 LED Lit associations retained without inferred range behavior or numeric Q/audio claims. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
+    },
+    {
+      "name": "VEQ-4K BROWN",
+      "effect_id": "ssl_brown",
+      "panel_class": "SslBrown",
+      "next_step": "complete",
+      "range_plan": "ssl_brown-knobs",
+      "completion_evidence": [
+        "unattended-20261027T015403Z-load-veq4k-brown",
+        "scan-SslBrown-20261027T024419020Z",
+        "unattended-20261027T015403Z-veq4k-brown-modes",
+        "unattended-20261027T015403Z-veq4k-brown-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, independently reviewed LF BELL (lf_bell) byte31/HF BELL (hf_bell) byte24 mode/LED round trips and separate processing round trip. Actual raw0 LED Dark/raw1 LED Lit associations retained without inferred numeric Q or bell/audio claims. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
+    },
+    {
+      "name": "VEQ-STU 900",
+      "effect_id": "veq_stu_900",
+      "panel_class": "Studer900",
+      "next_step": "complete",
+      "range_plan": "veq_stu_900-knobs",
+      "completion_evidence": [
+        "unattended-20261027T015403Z-load-veqstu900",
+        "scan-Studer900-20261027T030034849Z",
+        "unattended-20261027T015403Z-veqstu900-modes",
+        "unattended-20261027T015403Z-veqstu900-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: eleven rotary endpoint pairs, four independently reviewed shape-glyph switch round trips (raw0 Upper/raw1 Lower) and separate processing round trip. Low Cut raw0 OFF/High Cut raw100 OFF are reviewed endpoint labels only. Switch round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Output signed interpretation, physical/intermediate scaling, numeric Q/bell/audio semantics, independent readback, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. Studer900Peakmeter and Studer900Bypass embedded processing lamp remain separate display inventory; switches have no separate LEDs."
+    },
+    {
+      "name": "VEQ-STU 169",
+      "effect_id": "veq_stu_169",
+      "panel_class": "Studer169",
+      "next_step": "complete",
+      "range_plan": "veq_stu_169-knobs",
+      "completion_evidence": [
+        "unattended-20261027T144257Z-load-veqstu169",
+        "scan-Studer169-20261027T144830356Z",
+        "unattended-20261027T144257Z-veqstu169-filter",
+        "unattended-20261027T144257Z-veqstu169-processing"
+      ],
+      "completion_limits": "All observed editable controls captured: five distinct rotary endpoint candidates, independently reviewed Filter switch byte20 raw0 Upper/raw1 Lower and separate processing round trip. Concentric MF Gain/Frequency preserve their partner fields. Filter returns the full captured parameter body/static panel; processing returns its checked static baseline. Endpoint scans intentionally finish at maxima. Printed gain/frequency ticks do not establish detents, physical scales or interpolation. Output signed interpretation, independent readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed are GUI display observations only; no signal telemetry reader enabled."
+    },
+    {
+      "name": "VEQ-STU 089",
+      "effect_id": "veq_stu_089",
+      "panel_class": "Studer089",
+      "next_step": "complete",
+      "range_plan": "veq_stu_089-knobs",
+      "completion_evidence": [
+        "unattended-20261027T144257Z-load-veqstu089",
+        "scan-Studer089-20261027T150545312Z",
+        "unattended-20261027T144257Z-veqstu089-selector-maps",
+        "unattended-20261027T144257Z-veqstu089-shelf-maps",
+        "unattended-20261027T144257Z-veqstu089-processing"
+      ],
+      "completion_limits": "Orion VEQ-STU 089: two rotary endpoint candidate pairs, LF/HF Cut five-position maps, Presence Frequency seven-position map, both nine-position shelf maps and processing round trip captured. Five sliders snap to finite positions; complete raw/printed-label maps are captured rather than inferred from ticks. Every slider map returns the complete captured body and checked static panel; processing returns its static GUI baseline. Rotary endpoint scans intentionally finish at maxima. Signed interpretations, physical/intermediate rotary scales, independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Native Studer089Peakmeter and AfxLed record GUI presence only; signal telemetry remains unknown."
+    },
+    {
+      "name": "MG4+",
+      "effect_id": "mg4",
+      "panel_class": "Mg4",
+      "next_step": "complete",
+      "range_plan": "mg4-knobs",
+      "completion_evidence": [
+        "unattended-20261027T144257Z-load-mg4plus",
+        "scan-Mg4-20261028T024610925Z",
+        "unattended-20261028T023901Z-mg4plus-sky-map",
+        "unattended-20261028T023901Z-mg4plus-processing"
+      ],
+      "completion_limits": "Orion MG4+: seven isolated gain/output endpoint pairs, full eleven-position Sky Band map and processing round trip captured. Selector returns the whole captured parameter body and checked static panel; processing returns its static GUI baseline including embedded blue lamp. Range scans intentionally finish at maxima. Gain quantization and printed ticks do not establish complete finite gain maps or physical/interpolation laws. Independent per-field readback, audible/stereo behavior and runtime contracts remain unverified. Mg4PeakMeter and Mg4BypassButton embedded lamp record GUI presence only; no signal telemetry reader enabled."
+    },
+    {
+      "name": "Audio / Baton",
+      "effect_id": "audiobaton",
+      "panel_class": "AudioBaton",
+      "next_step": "complete",
+      "range_plan": "audiobaton-remaining-knobs",
+      "completion_evidence": [
+        "scan-AudioBaton-20261028T034922060Z",
+        "scan-AudioBaton-20261028T041027439Z",
+        "scan-AudioBaton-20261028T081055452Z",
+        "scan-AudioBaton-20261028T081837554Z",
+        "scan-AudioBaton-20261028T081932713Z",
+        "scan-AudioBaton-20261028T145656344Z",
+        "scan-AudioBaton-20261028T145757910Z",
+        "scan-AudioBaton-20261028T150138570Z",
+        "scan-AudioBaton-20261028T150709189Z",
+        "scan-AudioBaton-20261028T150808541Z",
+        "unattended-20261028T145303Z-audiobaton-rack-bp-processing"
+      ],
+      "completion_limits": "Ten isolated raw0/100 endpoint pairs plus rack BP processing roundtrip. Front indicator GUI maps state0 to OUT/left and state1 to IN/right, with exact static restoration excluding level meter. Direct front center-click and8pxverticaldrag input methods were negative; no trial replayed. Independent readback, physical interpolation, audible/stereo behavior, telemetry and runtime contracts remain unverified."
+    },
+    {
+      "name": "VCA160",
+      "effect_id": "vca160",
+      "panel_class": "Dbx160",
+      "next_step": "complete",
+      "range_plan": "vca160-knobs",
+      "completion_evidence": [
+        "unattended-20261028T145303Z-load-vca160",
+        "scan-Dbx160-20261028T152511931Z",
+        "unattended-20261028T145303Z-vca160-processing"
+      ],
+      "completion_limits": "Three isolated knob endpoint pairs with printed endpoint-label associations and POWER/BP GUI-correlated processing return; exact checked static restoration excluding signal displays. Raw quantization does not establish a finite labelled selector map, physical interpolation, audible response, device readback or runtime contracts. Physical scales/interpolation, audible behavior, independent readback and runtime contracts remain unverified."
+    },
+    {
+      "name": "ALT-436C",
+      "effect_id": "altec_436c",
+      "panel_class": "Altec436C",
+      "next_step": "complete",
+      "range_plan": "altec_436c-knobs",
+      "completion_evidence": [
+        "unattended-20261028T145303Z-load-altec436c",
+        "scan-Altec436C-20261028T154214904Z",
+        "unattended-20261028T145303Z-altec436c-rack-bp-processing"
+      ],
+      "completion_limits": "Four isolated knob endpoint pairs with printed labels and rack BP/front POWER GUI return. Eight-pixel nativePower method negative, no inverse sent; complete finite intermediate maps, physical scaling, signed Output law, independent readback, audio, telemetry and runtime contracts remain unverified. Byte24 preserved unidentified."
+    },
+    {
+      "name": "Liverpool",
+      "effect_id": "liverpool",
+      "panel_class": "Liverpool",
+      "next_step": "complete",
+      "range_plan": "liverpool-knobs",
+      "completion_evidence": [
+        "unattended-20261028T145303Z-load-liverpool",
+        "scan-Liverpool-20261028T161230170Z",
+        "unattended-20261028T145303Z-liverpool-selector-maps",
+        "unattended-20261028T230645Z-liverpool-processing"
+      ],
+      "completion_limits": "Two continuous endpoint pairs, full11/11/6 raw-label selector maps and labelled Mains Power/BP/lamp GUI restoration. All repeated C/H states preserved separately. Timing, audible equivalence/polarity, calibrated scales, meter telemetry, independent readback and runtime contracts remain unverified."
+    },
+    {
+      "name": "Stay-Levin",
+      "effect_id": "staylevin",
+      "panel_class": "StayLevin",
+      "next_step": "complete",
+      "range_plan": "staylevin-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-staylevin",
+        "scan-StayLevin-20261103T145457652Z",
+        "unattended-20261103T144909Z-staylevin-recovery-map2",
+        "unattended-20261103T144909Z-staylevin-mode-first2/return",
+        "unattended-20261103T144909Z-staylevin-processing"
+      ],
+      "completion_limits": "Three endpoint pairs, five directed Recovery contacts, labelled SINGLE/DOUBLE Mode and ON/OFF Power GUI return captured. Three intermediate Recovery timing meanings remain unknown; no numerical timing, calibration, telemetry, independent readback, audible/stereo behavior or runtime contract claimed. Full parameter/static returns checked for Mode/Recovery; processing static return checked. Own trial removed; ownerAFX1 preserved. Independent readback, physical scaling, numerical timing, telemetry, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "SMT-100A",
+      "effect_id": "summit_100a",
+      "panel_class": "Summit100A",
+      "next_step": "complete",
+      "range_plan": "summit_100a-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-smt100a",
+        "scan-Summit100A-20261103T150522388Z",
+        "unattended-20261103T144909Z-smt100a-attack/first",
+        "unattended-20261103T144909Z-smt100a-attack-next",
+        "unattended-20261103T144909Z-smt100a-attack-return",
+        "unattended-20261103T144909Z-smt100a-release-cycle",
+        "unattended-20261103T144909Z-smt100a-processing"
+      ],
+      "completion_limits": "Two knob endpoint pairs, three-contact Attack/Release maps and labelled Power/lamp roundtrip captured. Both centered timing meanings unknown; no Medium/Auto labels inferred. Full parameter/static selector returns and static processing return verified. Own trial removed; ownerAFX1preserved. Physical scales, timing, independent readback, telemetry, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "X903",
+      "effect_id": "x903",
+      "panel_class": "Dbx903",
+      "next_step": "complete",
+      "range_plan": "x903-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-x903",
+        "scan-Dbx903-20261103T151417999Z",
+        "unattended-20261103T144909Z-x903-processing"
+      ],
+      "completion_limits": "Three isolated knob endpoint pairs with literal printed endpoint labels and IN-button/lamp processing roundtrip captured; checked static regions returned, meter rows excluded. Own trial removed; ownerAFX1preserved. Physical/intermediate scaling, negative ratio law, signed Output interpretation, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "FET-A78",
+      "effect_id": "uad_1178",
+      "panel_class": "Uad1178",
+      "next_step": "complete",
+      "range_plan": "uad_1178-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-feta78",
+        "scan-Uad1178-20261103T152024481Z",
+        "unattended-20261103T144909Z-feta78-ratio",
+        "unattended-20261103T144909Z-feta78-processing"
+      ],
+      "completion_limits": "Four isolated knob endpoint pairs, individually labelled Ratio buttons and Power/lamp roundtrip captured. Ratio returns full captured body/static regions; Power static return checked excluding meters. Own trial removed; ownerAFX1preserved. Physical scaling, numerical timing, button combinations, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "FET-A76",
+      "effect_id": "uad_1176",
+      "panel_class": "Uad1176",
+      "next_step": "complete",
+      "range_plan": "uad_1176-knobs",
+      "completion_evidence": [
+        "unattended-20261103T144909Z-load-feta76",
+        "scan-Uad1176-20261103T152833429Z",
+        "unattended-20261103T144909Z-feta76-ratio",
+        "unattended-20261103T144909Z-feta76-processing"
+      ],
+      "completion_limits": "Four isolated knob endpoint pairs, individually labelled Ratio buttons and ON-button/lamp roundtrip captured. Ratio returns full captured body/static regions; ON-button static return checked excluding meters. Own trial removed; ownerAFX1preserved. Physical scaling, numerical timing, button combinations, telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified."
+    },
+    {
+      "name": "Impresser",
+      "effect_id": "impresser",
+      "panel_class": "Impresser",
+      "next_step": "review",
+      "range_plan": "impresser-knobs",
+      "review_reason": "Six endpoint pairs and eight labelled Ratio states captured; OPTO lamp failed static return although full parameter body and Ratio label returned. Reconcile display discrepancy and prepare remaining detector maps, Harmonics, Stereo Link, UK Mode and processing trials; preserve completed knob evidence.",
+      "partial_evidence": [
+        "supervised-20261104T012645Z-load-impresser",
+        "scan-Impresser-20261104T012918709Z",
+        "supervised-20261104T012645Z-impresser-ratio",
+        "supervised-20261104T012645Z-remove-impresser"
+      ]
+    },
+    {
+      "name": "Comp-4K-Bus",
+      "effect_id": "ssl4kbus",
+      "panel_class": "Ssl4kBus",
+      "next_step": "complete",
+      "range_plan": "ssl4kbus-knobs",
+      "completion_evidence": [
+        "supervised-20261104T012645Z-load-ssl4kbus",
+        "scan-Ssl4kBus-20261104T014150887Z",
+        "scan-Ssl4kBus-20261104T015423692Z",
+        "supervised-20261104T012645Z-ssl4kbus-attack-map",
+        "supervised-20261104T012645Z-ssl4kbus-release-map",
+        "supervised-20261104T012645Z-ssl4kbus-ratio-map",
+        "supervised-20261104T012645Z-ssl4kbus-auto-fade",
+        "supervised-20261104T093918Z-ssl4kbus-processing",
+        "supervised-20261104T093918Z-remove-ssl4kbus"
+      ],
+      "completion_limits": "Nine rotary targets (18 endpoint phases), all Attack/Release/Ratio labels, Auto Fade and IN-button/rack BP returns captured; trial removed and all AFX2 slots empty. Physical scaling/interpolation, HR-dB calibration, audible timing/fade behavior, independent readback, meter telemetry and runtime contracts remain unverified."
+    }
+  ]
+}

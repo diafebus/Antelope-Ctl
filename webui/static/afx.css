@@ -85,3 +85,5 @@
   .afx-capacity { margin-left:0; flex-basis:100%; }
 
 }
+
+.afx-window-body [hidden] { display:none !important; }

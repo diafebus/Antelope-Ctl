@@ -1,0 +1,475 @@
+{
+  "id": "uad_1176",
+  "name": "uad_1176",
+  "source_name": "uad_1176",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.9"
+  ],
+  "controls": [
+    {
+      "id": "input",
+      "label": "Input",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_uad_1176_conf.fields"
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Output",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_uad_1176_conf.fields"
+      ]
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_uad_1176_conf.fields"
+      ]
+    },
+    {
+      "id": "release",
+      "label": "Release",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_uad_1176_conf.fields"
+      ]
+    },
+    {
+      "id": "ratio",
+      "label": "Ratio",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_uad_1176_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 9,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 9,
+      "status": "capture-observed; visible controls captured; runtime contract unverified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "input": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Input",
+          "range": [
+            0,
+            60
+          ],
+          "observed_display_range": [
+            "∞",
+            "0"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame4249: minimum raw0; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-input-minimum.png",
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame10825: maximum raw60; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-input-maximum.png"
+          ],
+          "notes": "Endpoint association only; printed marks do not establish calibrated units, interpolation, numerical timing or independent readback."
+        },
+        "output": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "range": [
+            0,
+            60
+          ],
+          "observed_display_range": [
+            "∞",
+            "0"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame19091: minimum raw0; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-output-minimum.png",
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame25827: maximum raw60; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-output-maximum.png"
+          ],
+          "notes": "Endpoint association only; printed marks do not establish calibrated units, interpolation, numerical timing or independent readback."
+        },
+        "attack": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Attack",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "1 (SLOW)",
+            "7 (FAST)"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame34175: minimum raw0; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-attack-minimum.png",
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame41485: maximum raw100; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-attack-maximum.png"
+          ],
+          "notes": "Endpoint association only; printed marks do not establish calibrated units, interpolation, numerical timing or independent readback."
+        },
+        "release": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Release",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "1 (SLOW)",
+            "7 (FAST)"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame49875: minimum raw0; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-release-minimum.png",
+            "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng frame56901: maximum raw100; image captures/scan-Uad1176-20261103T152833429Z/Uad1176-release-maximum.png"
+          ],
+          "notes": "Endpoint association only; printed marks do not establish calibrated units, interpolation, numerical timing or independent readback."
+        },
+        "ratio": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "Ratio",
+          "enum": {
+            "2": "8",
+            "4": "12",
+            "8": "20",
+            "1": "4"
+          },
+          "status": "capture-observed; four individually labelled button states and full-body/static return",
+          "writable": false,
+          "raw_label_observations": [
+            {
+              "raw": 2,
+              "printed_label": "8",
+              "frame": 3412,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719894335376434.png"
+            },
+            {
+              "raw": 4,
+              "printed_label": "12",
+              "frame": 6475,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719900516487099.png"
+            },
+            {
+              "raw": 8,
+              "printed_label": "20",
+              "frame": 9599,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719906791377713.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "4",
+              "frame": 12715,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719912869125932.png"
+            }
+          ],
+          "device_readback_verified": false,
+          "notes": "Literal printed Ratio button labels. Only individually selected buttons captured; unobserved combinations, other bits and audible ratios have no verified contract."
+        }
+      },
+      "evidence": [
+        "captures/unattended-20261103T144909Z-load-feta76/Orion.pcapng frames761/783: AFX2slot0type9/0 followed by same-instance0x19/d5/07parameterblock; strict single-eventloadguardstopped; read-onlyreconciliation, no loadreplayed"
+      ],
+      "notes": "Orion-only directed GUI captures. Shared compatibility ID retained. All encodings read-only and commands null. Physical calibration, numerical timing/interpolation, button combinations, meter telemetry, independent readback, audible/stereo behavior and runtime contracts unverified.",
+      "type_id_write_status": "GUI assignment observed; runtime writer disabled",
+      "gui_observation": {
+        "panel_class": "Uad1176",
+        "source": "captures/unattended-20261103T144909Z-load-feta76/raw-ui.json",
+        "editable_controls": [
+          {
+            "control": "input",
+            "ui_class": "UadInputPotNoInheritance",
+            "label": "INPUT"
+          },
+          {
+            "control": "output",
+            "ui_class": "UadOutputPotNoInheritance",
+            "label": "OUTPUT"
+          },
+          {
+            "control": "attack",
+            "ui_class": "Uad1176AttackPot",
+            "label": "ATTACK"
+          },
+          {
+            "control": "release",
+            "ui_class": "Uad1176ReleasePot",
+            "label": "RELEASE"
+          },
+          {
+            "control": "ratio",
+            "ui_class": "UadButton",
+            "label": "RATIO; four buttons4/8/12/20"
+          },
+          {
+            "control": "processing",
+            "ui_class": "Uad1176BypassButton",
+            "label": "ON"
+          }
+        ]
+      },
+      "display_observations": {
+        "status": "GUI-observed; signal telemetry unverified",
+        "source": "captures/unattended-20261103T144909Z-load-feta76/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "UadVuMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "UadPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "Uad1176BypassButton",
+            "native_instance_count": 1,
+            "kind_hint": "embedded-processing-indicator",
+            "status": "Embedded ON-button lamp state0dark/state1lit GUI correlation; no signal telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false
+      },
+      "parameter_observation": {
+        "opcode": "0x19",
+        "param_id": "0xd5",
+        "subcmd": "0x07",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; four endpoint pairs and all four individual Ratio buttons captured",
+        "writable": false,
+        "device_readback_verified": false,
+        "initial_parameter_hex": "232e4e1501",
+        "evidence": [
+          "captures/unattended-20261103T144909Z-load-feta76/Orion.pcapng frame783",
+          "scan-Uad1176-20261103T152833429Z: 8 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "capture_sha256": "0415cfbb5338100cf2f409d377535f4c848a361c41c4db9ac63535b1c02980cb",
+        "endpoint_candidates": [
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4249,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          },
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 60,
+            "frame": 10825,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 19091,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 60,
+            "frame": 25827,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          },
+          {
+            "control": "attack",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 34175,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          },
+          {
+            "control": "attack",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 41485,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 49875,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 56901,
+            "source": "captures/scan-Uad1176-20261103T152833429Z/Uad1176-channel2.pcapng"
+          }
+        ],
+        "labelled_gui_observations": {
+          "ratio": [
+            {
+              "raw": 2,
+              "printed_label": "8",
+              "frame": 3412,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719894335376434.png"
+            },
+            {
+              "raw": 4,
+              "printed_label": "12",
+              "frame": 6475,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719900516487099.png"
+            },
+            {
+              "raw": 8,
+              "printed_label": "20",
+              "frame": 9599,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719906791377713.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "4",
+              "frame": 12715,
+              "source": "captures/unattended-20261103T144909Z-feta76-ratio/Orion.pcapng",
+              "screenshot": "screen-1793719912869125932.png"
+            }
+          ]
+        },
+        "ratio_return": {
+          "status": "completed",
+          "full_parameter_body_returned": true,
+          "static_checks": {
+            "left": true,
+            "above_vu": true,
+            "below_vu": true,
+            "meter_gap": true,
+            "right_edge": true
+          },
+          "device_readback_verified": false
+        }
+      },
+      "processing_observation": {
+        "status": "capture-observed; isolated ON-button GUI round trip and static return",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "instance_index_offset": 17,
+        "type_id_offset": 18,
+        "state_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "audible_polarity_verified": false,
+        "states": [
+          {
+            "raw": 0,
+            "source": "captures/unattended-20261103T144909Z-feta76-processing/first/Orion.pcapng",
+            "frame": 3391,
+            "button_indicator": "dark"
+          },
+          {
+            "raw": 1,
+            "source": "captures/unattended-20261103T144909Z-feta76-processing/return/Orion.pcapng",
+            "frame": 783,
+            "button_indicator": "lit"
+          }
+        ],
+        "static_checks": {
+          "left": true,
+          "above_vu": true,
+          "below_vu": true,
+          "meter_gap": true,
+          "right_edge": true
+        },
+        "notes": "Printed ON button, embedded lamp and rack BP GUI correlation; no independent changed-state readback or audible polarity claim."
+      }
+    }
+  ]
+}

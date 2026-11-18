@@ -1,0 +1,429 @@
+{
+  "id": "summit_100a",
+  "name": "summit_100a",
+  "source_name": "summit_100a",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.36"
+  ],
+  "controls": [
+    {
+      "id": "output",
+      "label": "Output",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_summit_100a_conf.fields"
+      ]
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_summit_100a_conf.fields"
+      ]
+    },
+    {
+      "id": "release",
+      "label": "Release",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_summit_100a_conf.fields"
+      ]
+    },
+    {
+      "id": "input",
+      "label": "Input",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_summit_100a_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 36,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 36,
+      "status": "capture-observed; visible control pass complete; centered timing meanings and runtime contract unverified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "output": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Gain",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "10"
+          ],
+          "status": "capture-observed; endpoint candidates and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng frame4659: minimum raw0; image captures/scan-Summit100A-20261103T150522388Z/Summit100A-output-minimum.png",
+            "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng frame11083: maximum raw100; image captures/scan-Summit100A-20261103T150522388Z/Summit100A-output-maximum.png"
+          ],
+          "notes": "Compatibility ID retained. Actual printed knob label differs from its class/ID. No calibrated units, interpolation or independent readback established."
+        },
+        "input": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Gain Reduction",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "10"
+          ],
+          "status": "capture-observed; endpoint candidates and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng frame19430: minimum raw0; image captures/scan-Summit100A-20261103T150522388Z/Summit100A-input-minimum.png",
+            "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng frame26252: maximum raw100; image captures/scan-Summit100A-20261103T150522388Z/Summit100A-input-maximum.png"
+          ],
+          "notes": "Compatibility ID retained. Actual printed knob label differs from its class/ID. No calibrated units, interpolation or independent readback established."
+        },
+        "attack": {
+          "offset": 21,
+          "width": 1,
+          "kind": "enum",
+          "label": "Attack",
+          "range": [
+            0,
+            2
+          ],
+          "enum": null,
+          "status": "capture-observed; three directed contacts, centered timing meaning unknown",
+          "writable": false,
+          "raw_label_observations": [
+            {
+              "raw": 2,
+              "printed_label": "FAST",
+              "pointer_position": "left",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-attack/first/Orion.pcapng",
+              "frame": 2959
+            },
+            {
+              "raw": 0,
+              "printed_label": "SLOW",
+              "pointer_position": "right",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-attack-next/Orion.pcapng",
+              "frame": 779
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "pointer_position": "center",
+              "meaning_status": "unlabelled center contact; timing meaning unknown",
+              "source": "captures/unattended-20261103T144909Z-smt100a-attack-return/Orion.pcapng",
+              "frame": 797
+            }
+          ],
+          "device_readback_verified": false,
+          "notes": "Raw0 right SLOW, raw2 left FAST; raw1 centered contact has no printed label. No Medium/Auto label or numerical time inferred. Complete captured body and five static regions returned."
+        },
+        "release": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "Release",
+          "range": [
+            0,
+            2
+          ],
+          "enum": null,
+          "status": "capture-observed; three directed contacts, centered timing meaning unknown",
+          "writable": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "SLOW",
+              "pointer_position": "right",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-release-cycle/Orion.pcapng",
+              "frame": 1473
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "pointer_position": "center",
+              "meaning_status": "unlabelled center contact; timing meaning unknown",
+              "source": "captures/unattended-20261103T144909Z-smt100a-release-cycle/Orion.pcapng",
+              "frame": 4289
+            },
+            {
+              "raw": 2,
+              "printed_label": "FAST",
+              "pointer_position": "left",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-release-cycle/Orion.pcapng",
+              "frame": 7113
+            }
+          ],
+          "device_readback_verified": false,
+          "notes": "Raw0 right SLOW, raw2 left FAST; raw1 centered contact has no printed label. No Medium/Auto label or numerical time inferred. Complete captured body and five static regions returned."
+        }
+      },
+      "evidence": [
+        "captures/unattended-20261103T144909Z-load-smt100a/Orion.pcapng frame729: AFX2slot0type36/instance0"
+      ],
+      "notes": "Orion-only observations; shared output/input IDs retained for actual GAIN/GAIN REDUCTION knobs. Attack/Release each have three contacts; center meanings unknown. Physical scaling, numerical timing, meter telemetry, independent readback, audible/stereo behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "GUI assignment observed; runtime writer disabled",
+      "gui_observation": {
+        "panel_class": "Summit100A",
+        "source": "captures/unattended-20261103T144909Z-load-smt100a/raw-ui.json",
+        "editable_controls": [
+          {
+            "control": "output",
+            "ui_class": "Summit100AOutputPot",
+            "label": "GAIN"
+          },
+          {
+            "control": "input",
+            "ui_class": "Summit100AInputPot",
+            "label": "GAIN REDUCTION"
+          },
+          {
+            "control": "attack",
+            "ui_class": "Summit100AAttackSwitch",
+            "label": "ATTACK; FAST / SLOW"
+          },
+          {
+            "control": "release",
+            "ui_class": "Summit100AReleaseSwitch",
+            "label": "RELEASE; FAST / SLOW"
+          },
+          {
+            "control": "processing",
+            "ui_class": "Summit100ABypassSwitch",
+            "label": "ON / POWER"
+          }
+        ],
+        "notes": "Compatibility output/input IDs retained; actual printed knob labels are GAIN / GAIN REDUCTION."
+      },
+      "display_observations": {
+        "status": "GUI-observed; signal telemetry unverified",
+        "source": "captures/unattended-20261103T144909Z-load-smt100a/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "Summit100AVuMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "Summit100APeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "processing-indicator",
+            "status": "GUI Power lamp state0dark/state1lit; no signal telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false
+      },
+      "parameter_observation": {
+        "opcode": "0x18",
+        "param_id": "0xd5",
+        "subcmd": "0x06",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; two knob endpoint pairs and three-contact Attack/Release cycles; centered timing meanings unknown",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "output",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4659,
+            "source": "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 11083,
+            "source": "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng"
+          },
+          {
+            "control": "input",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 19430,
+            "source": "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng"
+          },
+          {
+            "control": "input",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 26252,
+            "source": "captures/scan-Summit100A-20261103T150522388Z/Summit100A-channel2.pcapng"
+          }
+        ],
+        "capture_sha256": "c79bc10eac5b973a6582c427fce19ef09038b9c251622508ef6ebe48aa07d187",
+        "evidence": [
+          "scan-Summit100A-20261103T150522388Z: 4 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "selector_return_evidence": "captures/unattended-20261103T144909Z/smt100a-selector-returns.json",
+        "labelled_gui_observations": {
+          "attack": [
+            {
+              "raw": 2,
+              "printed_label": "FAST",
+              "pointer_position": "left",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-attack/first/Orion.pcapng",
+              "frame": 2959
+            },
+            {
+              "raw": 0,
+              "printed_label": "SLOW",
+              "pointer_position": "right",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-attack-next/Orion.pcapng",
+              "frame": 779
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "pointer_position": "center",
+              "meaning_status": "unlabelled center contact; timing meaning unknown",
+              "source": "captures/unattended-20261103T144909Z-smt100a-attack-return/Orion.pcapng",
+              "frame": 797
+            }
+          ],
+          "release": [
+            {
+              "raw": 0,
+              "printed_label": "SLOW",
+              "pointer_position": "right",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-release-cycle/Orion.pcapng",
+              "frame": 1473
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "pointer_position": "center",
+              "meaning_status": "unlabelled center contact; timing meaning unknown",
+              "source": "captures/unattended-20261103T144909Z-smt100a-release-cycle/Orion.pcapng",
+              "frame": 4289
+            },
+            {
+              "raw": 2,
+              "printed_label": "FAST",
+              "pointer_position": "left",
+              "meaning_status": "printed relative-speed label; numerical timing unverified",
+              "source": "captures/unattended-20261103T144909Z-smt100a-release-cycle/Orion.pcapng",
+              "frame": 7113
+            }
+          ]
+        }
+      },
+      "processing_observation": {
+        "status": "capture-observed; isolated Power GUI round trip and static return",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "instance_index_offset": 17,
+        "type_id_offset": 18,
+        "state_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "audible_polarity_verified": false,
+        "states": [
+          {
+            "raw": 0,
+            "switch_position": "right, away from printed ON",
+            "power_lamp": "dark",
+            "source": "captures/unattended-20261103T144909Z-smt100a-processing/first/Orion.pcapng",
+            "frame": 3011
+          },
+          {
+            "raw": 1,
+            "switch_position": "left, printed ON",
+            "power_lamp": "lit",
+            "source": "captures/unattended-20261103T144909Z-smt100a-processing/return/Orion.pcapng",
+            "frame": 769
+          }
+        ],
+        "static_checks": {
+          "left": true,
+          "right": true,
+          "above_vu": true,
+          "below_vu": true,
+          "edge": true
+        },
+        "notes": "ON label, lamp and rack BP correlate with these outbound events; no independent changed-state readback or audible polarity claim."
+      }
+    }
+  ]
+}

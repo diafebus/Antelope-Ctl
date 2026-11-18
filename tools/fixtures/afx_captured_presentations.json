@@ -1,0 +1,662 @@
+{
+  "mode": "preview",
+  "device_writes": false,
+  "effects": [
+    {
+      "id": "deesser",
+      "name": "Master De-Esser",
+      "category": "Dynamics",
+      "description": null,
+      "controls": [
+        {
+          "id": "threshold",
+          "label": "Threshold",
+          "kind": "continuous",
+          "range": [
+            0,
+            80
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 40
+        },
+        {
+          "id": "crit_f",
+          "label": "Frequency",
+          "kind": "continuous",
+          "range": [
+            150,
+            20000
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 6000
+        },
+        {
+          "id": "q_factor",
+          "label": "Q",
+          "kind": "continuous",
+          "range": [
+            0.01,
+            4
+          ],
+          "step": 0.01,
+          "decimals": 2,
+          "default": 1
+        },
+        {
+          "id": "wd_control",
+          "label": "Dry / Wet",
+          "kind": "continuous",
+          "range": [
+            0,
+            100
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 100
+        },
+        {
+          "id": "ratio",
+          "label": "Ratio",
+          "kind": "continuous",
+          "range": [
+            1,
+            20
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 4
+        },
+        {
+          "id": "attack",
+          "label": "Attack",
+          "kind": "continuous",
+          "range": [
+            0.1,
+            20
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 1
+        },
+        {
+          "id": "release",
+          "label": "Release",
+          "kind": "continuous",
+          "range": [
+            10,
+            200
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 100
+        },
+        {
+          "id": "knee_width",
+          "label": "Soft Knee",
+          "kind": "continuous",
+          "range": [
+            0,
+            30
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 6
+        },
+        {
+          "id": "filter_type",
+          "label": "Filter",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "HighPass 1",
+            "1": "HighPass 2",
+            "2": "HighPass 3",
+            "3": "BandPass 1",
+            "4": "BandPass 2"
+          },
+          "rotary": false
+        },
+        {
+          "id": "ctrl",
+          "label": "Monitor / Out",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "Position 1",
+            "1": "Position 2",
+            "2": "Position 3",
+            "3": "Position 4"
+          },
+          "rotary": false
+        },
+        {
+          "id": "processing",
+          "label": "Processing",
+          "kind": "enum",
+          "default": "1",
+          "options": {
+            "0": "Bypass",
+            "1": "Active"
+          }
+        }
+      ],
+      "panel": {
+        "rows": [
+          [
+            "threshold",
+            "crit_f",
+            "q_factor",
+            "wd_control"
+          ],
+          [
+            "ratio",
+            "attack",
+            "release",
+            "knee_width"
+          ]
+        ],
+        "switches": [
+          "filter_type",
+          "ctrl",
+          "processing"
+        ],
+        "dependencies": {
+          "q_factor": {
+            "control": "filter_type",
+            "values": [
+              "3",
+              "4"
+            ]
+          }
+        },
+        "family": "DYNAMICS"
+      },
+      "local_presentation": true
+    },
+    {
+      "id": "powerex",
+      "name": "PowerEx",
+      "category": "Dynamics",
+      "description": null,
+      "controls": [
+        {
+          "id": "threshold",
+          "label": "Threshold",
+          "kind": "continuous",
+          "range": [
+            0,
+            80
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 20
+        },
+        {
+          "id": "attack",
+          "label": "Attack",
+          "kind": "continuous",
+          "range": [
+            1,
+            750
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 100
+        },
+        {
+          "id": "ratio",
+          "label": "Ratio",
+          "kind": "continuous",
+          "range": [
+            1,
+            20
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 1
+        },
+        {
+          "id": "range",
+          "label": "Range",
+          "kind": "continuous",
+          "range": [
+            0,
+            80
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 0
+        },
+        {
+          "id": "decay",
+          "label": "Decay",
+          "kind": "continuous",
+          "range": [
+            1,
+            1000
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 50
+        },
+        {
+          "id": "gain",
+          "label": "Gain",
+          "kind": "continuous",
+          "range": [
+            -24,
+            12
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 0
+        },
+        {
+          "id": "processing",
+          "label": "Processing",
+          "kind": "enum",
+          "default": "1",
+          "options": {
+            "0": "Bypass",
+            "1": "Active"
+          }
+        }
+      ],
+      "panel": {
+        "rows": [
+          [
+            "threshold",
+            "attack",
+            "ratio"
+          ],
+          [
+            "range",
+            "decay",
+            "gain"
+          ]
+        ],
+        "switches": [
+          "processing"
+        ],
+        "dependencies": {},
+        "family": "DYNAMICS"
+      },
+      "local_presentation": true
+    },
+    {
+      "id": "powergate",
+      "name": "PowerGate",
+      "category": "Dynamics",
+      "description": null,
+      "controls": [
+        {
+          "id": "threshold",
+          "label": "Threshold",
+          "kind": "continuous",
+          "range": [
+            0,
+            120
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 60
+        },
+        {
+          "id": "attack",
+          "label": "Attack",
+          "kind": "continuous",
+          "range": [
+            0.1,
+            75
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 10
+        },
+        {
+          "id": "hold",
+          "label": "Hold",
+          "kind": "continuous",
+          "range": [
+            0,
+            5000
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 0
+        },
+        {
+          "id": "range",
+          "label": "Range",
+          "kind": "continuous",
+          "range": [
+            0,
+            20
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 0
+        },
+        {
+          "id": "decay",
+          "label": "Decay",
+          "kind": "continuous",
+          "range": [
+            1,
+            1000
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 50
+        },
+        {
+          "id": "gain",
+          "label": "Gain",
+          "kind": "continuous",
+          "range": [
+            -24,
+            12
+          ],
+          "step": 1,
+          "decimals": 0,
+          "default": 0
+        },
+        {
+          "id": "processing",
+          "label": "Processing",
+          "kind": "enum",
+          "default": "1",
+          "options": {
+            "0": "Bypass",
+            "1": "Active"
+          }
+        }
+      ],
+      "panel": {
+        "rows": [
+          [
+            "threshold",
+            "attack",
+            "hold"
+          ],
+          [
+            "range",
+            "decay",
+            "gain"
+          ]
+        ],
+        "switches": [
+          "processing"
+        ],
+        "dependencies": {},
+        "family": "DYNAMICS"
+      },
+      "local_presentation": true
+    },
+    {
+      "id": "pultec_eqp",
+      "name": "VEQ-1A",
+      "category": "EQ & Filters",
+      "description": null,
+      "controls": [
+        {
+          "id": "low_boost",
+          "label": "Low Boost",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 0
+        },
+        {
+          "id": "low_atten",
+          "label": "Low Atten",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 0
+        },
+        {
+          "id": "high_boost",
+          "label": "High Boost",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 0
+        },
+        {
+          "id": "high_atten",
+          "label": "High Atten",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 0
+        },
+        {
+          "id": "low_freq",
+          "label": "Low Frequency",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "20 Hz",
+            "1": "30 Hz",
+            "2": "60 Hz",
+            "3": "100 Hz"
+          },
+          "rotary": true
+        },
+        {
+          "id": "bandwidth",
+          "label": "Bandwidth",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 5
+        },
+        {
+          "id": "high_freq",
+          "label": "High Frequency",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "3 kHz",
+            "1": "4 kHz",
+            "2": "5 kHz",
+            "3": "8 kHz",
+            "4": "10 kHz",
+            "5": "12 kHz",
+            "6": "16 kHz"
+          },
+          "rotary": true
+        },
+        {
+          "id": "atten_sel",
+          "label": "Atten Select",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "5 kHz",
+            "1": "10 kHz",
+            "2": "20 kHz"
+          },
+          "rotary": true
+        },
+        {
+          "id": "processing",
+          "label": "Processing",
+          "kind": "enum",
+          "default": "1",
+          "options": {
+            "0": "Bypass",
+            "1": "Active"
+          }
+        }
+      ],
+      "panel": {
+        "rows": [
+          [
+            "low_boost",
+            "low_atten",
+            "high_boost",
+            "high_atten"
+          ],
+          [
+            "low_freq",
+            "bandwidth",
+            "high_freq",
+            "atten_sel"
+          ]
+        ],
+        "switches": [
+          "processing"
+        ],
+        "dependencies": {},
+        "family": "EQUALIZATION"
+      },
+      "local_presentation": true
+    },
+    {
+      "id": "pultec_meq",
+      "name": "VMEQ-5",
+      "category": "EQ & Filters",
+      "description": null,
+      "controls": [
+        {
+          "id": "low_gain",
+          "label": "Low Peak",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 0
+        },
+        {
+          "id": "mid_gain",
+          "label": "Mid Dip",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 0
+        },
+        {
+          "id": "hi_gain",
+          "label": "High Peak",
+          "kind": "continuous",
+          "range": [
+            0,
+            10
+          ],
+          "step": 0.1,
+          "decimals": 1,
+          "default": 0
+        },
+        {
+          "id": "low_freq",
+          "label": "Low Frequency",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "200 Hz",
+            "1": "300 Hz",
+            "2": "500 Hz",
+            "3": "700 Hz",
+            "4": "1000 Hz"
+          },
+          "rotary": true
+        },
+        {
+          "id": "mid_freq",
+          "label": "Dip Frequency",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "200 Hz",
+            "1": "300 Hz",
+            "2": "500 Hz",
+            "3": "700 Hz",
+            "4": "1 kHz",
+            "5": "1.5 kHz",
+            "6": "2 kHz",
+            "7": "3 kHz",
+            "8": "4 kHz",
+            "9": "5 kHz",
+            "10": "7 kHz"
+          },
+          "rotary": true
+        },
+        {
+          "id": "hi_freq",
+          "label": "High Frequency",
+          "kind": "enum",
+          "default": "0",
+          "options": {
+            "0": "1.5 kHz",
+            "1": "2 kHz",
+            "2": "3 kHz",
+            "3": "4 kHz",
+            "4": "5 kHz"
+          },
+          "rotary": true
+        },
+        {
+          "id": "processing",
+          "label": "Processing",
+          "kind": "enum",
+          "default": "1",
+          "options": {
+            "0": "Bypass",
+            "1": "Active"
+          }
+        }
+      ],
+      "panel": {
+        "rows": [
+          [
+            "low_gain",
+            "mid_gain",
+            "hi_gain"
+          ],
+          [
+            "low_freq",
+            "mid_freq",
+            "hi_freq"
+          ]
+        ],
+        "switches": [
+          "processing"
+        ],
+        "dependencies": {},
+        "family": "EQUALIZATION"
+      },
+      "local_presentation": true
+    }
+  ]
+}

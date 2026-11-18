@@ -1,0 +1,753 @@
+{
+  "id": "pultec_eqp",
+  "name": "pultec_eqp",
+  "source_name": "pultec_eqp",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.6"
+  ],
+  "controls": [
+    {
+      "id": "low_freq",
+      "label": "Low Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    },
+    {
+      "id": "low_boost",
+      "label": "Low Boost",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    },
+    {
+      "id": "low_atten",
+      "label": "Low Atten",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    },
+    {
+      "id": "high_freq",
+      "label": "High Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    },
+    {
+      "id": "high_boost",
+      "label": "High Boost",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    },
+    {
+      "id": "high_atten",
+      "label": "High Atten",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    },
+    {
+      "id": "bandwidth",
+      "label": "Bandwidth",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    },
+    {
+      "id": "atten_sel",
+      "label": "Atten Sel",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_eqp_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 6,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 6,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "low_freq": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low Frequency",
+          "range": [
+            0,
+            3
+          ],
+          "options": {
+            "0": "20",
+            "1": "30",
+            "2": "60",
+            "3": "100"
+          },
+          "wire_enum": {
+            "0": "20",
+            "1": "30",
+            "2": "60",
+            "3": "100"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025-veq1a-rotary-map/low_freq-down-02/Orion.pcapng frame3055: raw0, dial20; matching pointer image captures/unattended-20261025-veq1a-rotary-map/low_freq-down-02/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map/low_freq-down-01/Orion.pcapng frame2395: raw1, dial30; matching pointer image captures/unattended-20261025-veq1a-rotary-map/low_freq-down-01/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map/low_freq-up-04/Orion.pcapng frame4099: raw2, dial60; matching pointer image captures/unattended-20261025-veq1a-rotary-map/low_freq-up-04/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map/low_freq-up-05/Orion.pcapng frame2551: raw3, dial100; matching pointer image captures/unattended-20261025-veq1a-rotary-map/low_freq-up-05/observed-detent.png"
+          ]
+        },
+        "high_freq": {
+          "offset": 23,
+          "width": 1,
+          "kind": "enum",
+          "label": "High Frequency",
+          "range": [
+            0,
+            6
+          ],
+          "options": {
+            "0": "3",
+            "1": "4",
+            "2": "5",
+            "3": "8",
+            "4": "10",
+            "5": "12",
+            "6": "16"
+          },
+          "wire_enum": {
+            "0": "3",
+            "1": "4",
+            "2": "5",
+            "3": "8",
+            "4": "10",
+            "5": "12",
+            "6": "16"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-06/Orion.pcapng frame3091: raw0, dial3; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-06/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-05/Orion.pcapng frame2803: raw1, dial4; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-05/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-04/Orion.pcapng frame2267: raw2, dial5; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-04/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-03/Orion.pcapng frame2783: raw3, dial8; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-03/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-02/Orion.pcapng frame5107: raw4, dial10; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-02/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-01/Orion.pcapng frame3903: raw5, dial12; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-01/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/high_freq-up-12/Orion.pcapng frame4447: raw6, dial16; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/high_freq-up-12/observed-detent.png"
+          ]
+        },
+        "atten_sel": {
+          "offset": 27,
+          "width": 1,
+          "kind": "enum",
+          "label": "Attenuation Frequency",
+          "range": [
+            0,
+            2
+          ],
+          "options": {
+            "0": "5",
+            "1": "10",
+            "2": "20"
+          },
+          "wire_enum": {
+            "0": "5",
+            "1": "10",
+            "2": "20"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-04/Orion.pcapng frame6745: raw0, dial5; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-04/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-03/Orion.pcapng frame4349: raw1, dial10; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-03/observed-detent.png",
+            "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-up-06/Orion.pcapng frame3769: raw2, dial20; matching pointer image captures/unattended-20261025-veq1a-rotary-map2/atten_sel-up-06/observed-detent.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261025-load-veq-1a/Orion.pcapng frame3703: labelled VEQ-1A vendor load, AFX2/channel1 slot0 type6/instance0, sevenempty; SHA256 2ce35242fbe6bf4eaca20a3e12a7ea5d598be5e17c657537dd61fb7eff2e0726. GUI PultecEQP observed directly."
+      ],
+      "notes": "Orion VEQ-1A identity, five continuous knob endpoint candidates, all three visible rotary maps and a separate processing-switch round trip captured through directed vendor GUI trials. No preset selector observed on this panel. Physical scaling/intermediate laws, independent state readback, audible/stereo behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x1c",
+        "param_id": "0xd5",
+        "subcmd": "0x0a",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "five continuous knob endpoint candidates and three complete visible rotary maps captured",
+        "writable": false,
+        "gui_panel": {
+          "display_name": "VEQ-1A",
+          "class_name": "PultecEQP",
+          "status": "observed on Orion after labelled type6 load"
+        },
+        "labelled_gui_observations": {
+          "low_boost": {
+            "label": "Low Boost",
+            "class_name": "PultecGain_low_boost",
+            "offset": 21,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecEQP-20261025T095310973Z/PultecEQP-channel2.pcapng frames7801/20743; both phases accepted, only this byte differs between endpoint blocks. Static dial pointer reaches0/10; no numerical tooltip or linear physical law inferred."
+            ]
+          },
+          "low_atten": {
+            "label": "Low Attenuation",
+            "class_name": "PultecGain_low_atten",
+            "offset": 22,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecEQP-20261025T095310973Z/PultecEQP-channel2.pcapng frames31751/42839; both phases accepted, only this byte differs between endpoint blocks. Static dial pointer reaches0/10; no numerical tooltip or linear physical law inferred."
+            ]
+          },
+          "high_boost": {
+            "label": "High Boost",
+            "class_name": "PultecGain_high_boost",
+            "offset": 24,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecEQP-20261025T095310973Z/PultecEQP-channel2.pcapng frames52119/60573; both phases accepted, only this byte differs between endpoint blocks. Static dial pointer reaches0/10; no numerical tooltip or linear physical law inferred."
+            ]
+          },
+          "high_atten": {
+            "label": "High Attenuation",
+            "class_name": "PultecGain_high_atten",
+            "offset": 25,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecEQP-20261025T095310973Z/PultecEQP-channel2.pcapng frames71207/84037; both phases accepted, only this byte differs between endpoint blocks. Static dial pointer reaches0/10; no numerical tooltip or linear physical law inferred."
+            ]
+          },
+          "bandwidth": {
+            "label": "Bandwidth",
+            "class_name": "PultecGain_bandwidth",
+            "offset": 26,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecEQP-20261025T095310973Z/PultecEQP-channel2.pcapng frames99733/118533; both phases accepted, only this byte differs between endpoint blocks. Static dial pointer reaches0/10; no numerical tooltip or linear physical law inferred."
+            ]
+          },
+          "low_freq": {
+            "label": "Low Frequency",
+            "class_name": "PultecFreqLow",
+            "offset": 20,
+            "width": 1,
+            "encoding": "uint8-enum",
+            "observed_wire_endpoints": [
+              0,
+              3
+            ],
+            "observed_dial_endpoints": [
+              "20",
+              "100"
+            ],
+            "status": "all visible detents capture-observed; independent readback unverified",
+            "writable": false,
+            "readback_verified": false,
+            "detent_observations": [
+              {
+                "raw": 0,
+                "dial_label": "20",
+                "source": "captures/unattended-20261025-veq1a-rotary-map/low_freq-down-02/Orion.pcapng",
+                "frame": 3055,
+                "image": "captures/unattended-20261025-veq1a-rotary-map/low_freq-down-02/observed-detent.png"
+              },
+              {
+                "raw": 1,
+                "dial_label": "30",
+                "source": "captures/unattended-20261025-veq1a-rotary-map/low_freq-down-01/Orion.pcapng",
+                "frame": 2395,
+                "image": "captures/unattended-20261025-veq1a-rotary-map/low_freq-down-01/observed-detent.png"
+              },
+              {
+                "raw": 2,
+                "dial_label": "60",
+                "source": "captures/unattended-20261025-veq1a-rotary-map/low_freq-up-04/Orion.pcapng",
+                "frame": 4099,
+                "image": "captures/unattended-20261025-veq1a-rotary-map/low_freq-up-04/observed-detent.png"
+              },
+              {
+                "raw": 3,
+                "dial_label": "100",
+                "source": "captures/unattended-20261025-veq1a-rotary-map/low_freq-up-05/Orion.pcapng",
+                "frame": 2551,
+                "image": "captures/unattended-20261025-veq1a-rotary-map/low_freq-up-05/observed-detent.png"
+              }
+            ]
+          },
+          "high_freq": {
+            "label": "High Frequency",
+            "class_name": "PultecFreqHi",
+            "offset": 23,
+            "width": 1,
+            "encoding": "uint8-enum",
+            "observed_wire_endpoints": [
+              0,
+              6
+            ],
+            "observed_dial_endpoints": [
+              "3",
+              "16"
+            ],
+            "status": "all visible detents capture-observed; independent readback unverified",
+            "writable": false,
+            "readback_verified": false,
+            "detent_observations": [
+              {
+                "raw": 0,
+                "dial_label": "3",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-06/Orion.pcapng",
+                "frame": 3091,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-06/observed-detent.png"
+              },
+              {
+                "raw": 1,
+                "dial_label": "4",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-05/Orion.pcapng",
+                "frame": 2803,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-05/observed-detent.png"
+              },
+              {
+                "raw": 2,
+                "dial_label": "5",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-04/Orion.pcapng",
+                "frame": 2267,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-04/observed-detent.png"
+              },
+              {
+                "raw": 3,
+                "dial_label": "8",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-03/Orion.pcapng",
+                "frame": 2783,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-03/observed-detent.png"
+              },
+              {
+                "raw": 4,
+                "dial_label": "10",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-02/Orion.pcapng",
+                "frame": 5107,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-02/observed-detent.png"
+              },
+              {
+                "raw": 5,
+                "dial_label": "12",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-01/Orion.pcapng",
+                "frame": 3903,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-down-01/observed-detent.png"
+              },
+              {
+                "raw": 6,
+                "dial_label": "16",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-up-12/Orion.pcapng",
+                "frame": 4447,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/high_freq-up-12/observed-detent.png"
+              }
+            ]
+          },
+          "atten_sel": {
+            "label": "Attenuation Frequency",
+            "class_name": "PultecAttenSel",
+            "offset": 27,
+            "width": 1,
+            "encoding": "uint8-enum",
+            "observed_wire_endpoints": [
+              0,
+              2
+            ],
+            "observed_dial_endpoints": [
+              "5",
+              "20"
+            ],
+            "status": "all visible detents capture-observed; independent readback unverified",
+            "writable": false,
+            "readback_verified": false,
+            "detent_observations": [
+              {
+                "raw": 0,
+                "dial_label": "5",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-04/Orion.pcapng",
+                "frame": 6745,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-04/observed-detent.png"
+              },
+              {
+                "raw": 1,
+                "dial_label": "10",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-03/Orion.pcapng",
+                "frame": 4349,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-down-03/observed-detent.png"
+              },
+              {
+                "raw": 2,
+                "dial_label": "20",
+                "source": "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-up-06/Orion.pcapng",
+                "frame": 3769,
+                "image": "captures/unattended-20261025-veq1a-rotary-map2/atten_sel-up-06/observed-detent.png"
+              }
+            ]
+          }
+        },
+        "range_capture_summary": {
+          "source": "scan-PultecEQP-20261025T095310973Z",
+          "sha256": "de95667fc76d30d05adb9f2a86487f565bd32891f2c92f2f5ced4c55fdd6c28a",
+          "accepted_phases": 16,
+          "packet_count": 209758,
+          "dropped_packets": 0,
+          "status": "all eight endpoint controls accepted; five continuous and three rotary",
+          "knobs_finish_at_maximum": true,
+          "device_readback_verified": false,
+          "interpolation_laws_verified": false
+        },
+        "selector_capture_summary": {
+          "sources": [
+            "unattended-20261025-veq1a-rotary-map",
+            "unattended-20261025-veq1a-rotary-map2"
+          ],
+          "status": "all four/seven/three visible detents captured and full prior maximum parameter payload restored",
+          "restored_parameter_payload_hex": "036464066464640200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false,
+          "notes": "First map source completed Low Frequency, then stopped for calibration after High Frequency8pixel gestures produced no OUT; remains a stopped whole job. Second map completes High Frequency/AttenSel with16/32pixel steps and full captured-block restoration. Static LowFrequency dial marked CPS; HighFrequency marked KCS; AttenSel labels preserved without inventing units. No physical gain/interpolation laws inferred."
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB switch, LED and all eight knob/selector regions",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025-veq1a-switch-first/Orion.pcapng frame2859 tuple@17..19=000600",
+          "unattended-20261025-veq1a-switch-return/Orion.pcapng frame2773 tuple@17..19=000601; all eight control images unchanged"
+        ]
+      },
+      "presentation": {
+        "status": "local-preview",
+        "name": "VEQ-1A",
+        "category": "EQ & Filters",
+        "family": "EQUALIZATION",
+        "rows": [
+          [
+            "low_boost",
+            "low_atten",
+            "high_boost",
+            "high_atten"
+          ],
+          [
+            "low_freq",
+            "bandwidth",
+            "high_freq",
+            "atten_sel"
+          ]
+        ],
+        "switches": [
+          "processing"
+        ],
+        "controls": [
+          {
+            "id": "low_boost",
+            "label": "Low Boost",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 0,
+            "source_control": "low_boost"
+          },
+          {
+            "id": "low_atten",
+            "label": "Low Atten",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 0,
+            "source_control": "low_atten"
+          },
+          {
+            "id": "high_boost",
+            "label": "High Boost",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 0,
+            "source_control": "high_boost"
+          },
+          {
+            "id": "high_atten",
+            "label": "High Atten",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 0,
+            "source_control": "high_atten"
+          },
+          {
+            "id": "low_freq",
+            "label": "Low Frequency",
+            "kind": "enum",
+            "options": {
+              "0": "20 Hz",
+              "1": "30 Hz",
+              "2": "60 Hz",
+              "3": "100 Hz"
+            },
+            "default": "0",
+            "rotary": true,
+            "source_control": "low_freq"
+          },
+          {
+            "id": "bandwidth",
+            "label": "Bandwidth",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 5,
+            "source_control": "bandwidth"
+          },
+          {
+            "id": "high_freq",
+            "label": "High Frequency",
+            "kind": "enum",
+            "options": {
+              "0": "3 kHz",
+              "1": "4 kHz",
+              "2": "5 kHz",
+              "3": "8 kHz",
+              "4": "10 kHz",
+              "5": "12 kHz",
+              "6": "16 kHz"
+            },
+            "default": "0",
+            "rotary": true,
+            "source_control": "high_freq"
+          },
+          {
+            "id": "atten_sel",
+            "label": "Atten Select",
+            "kind": "enum",
+            "options": {
+              "0": "5 kHz",
+              "1": "10 kHz",
+              "2": "20 kHz"
+            },
+            "default": "0",
+            "rotary": true,
+            "source_control": "atten_sel"
+          },
+          {
+            "id": "processing",
+            "label": "Processing",
+            "kind": "enum",
+            "options": {
+              "0": "Bypass",
+              "1": "Active"
+            },
+            "default": "1",
+            "source": "processing"
+          }
+        ],
+        "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025-load-veq-1a/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "PultecPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

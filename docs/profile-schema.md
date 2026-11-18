@@ -151,8 +151,42 @@ is the number of insert positions, not a guaranteed simultaneous instance
 budget. DSP resources, stereo use, and per-effect instance limits are
 separate facts.
 
-`profiles/afx_effects.json` is a shared catalog, separate from device
-profiles and `mic_models.json`. Its first reference set contains 80 named
+`profiles/afx_effects.json` is the shared catalog manifest, separate from device
+profiles and `mic_models.json`. Each effect is authored in its own
+`profiles/afx/<stable_id>.json` file. The manifest retains catalog-wide metadata
+and an ordered `effect_files` array instead of inline `effects`:
+
+```json
+{
+  "storage_schema": {"id": "antelope-afx-catalog-manifest", "version": 1},
+  "effect_files": ["afx/altec_436c.json", "afx/audiobaton.json"]
+}
+```
+
+This is a storage excerpt, not a complete catalog. `catalog_schema` still
+identifies the logical `antelope-afx-effect-catalog`, version 1;
+`storage_schema` identifies only the split-file packaging. Existing device
+profiles keep `"catalog": "afx_effects.json"`. File references resolve relative
+to the manifest, and their order is the effect order.
+
+Python consumers call `antelope.catalog.load_catalog(path)` to obtain the
+existing dictionary containing inline `effects`; storage-only fields are
+removed. Omitting `path` selects the repository catalog. Legacy inline catalogs are accepted too. Plain `json.load` on the
+manifest does not load effect definitions. For tools that require a single
+JSON document, export the resolved catalog:
+
+```sh
+python3 tools/export_afx_catalog.py --catalog profiles/afx_effects.json \
+  --output /tmp/afx-catalog.json
+```
+
+Omit `--output` to write JSON to stdout. Exported JSON is derived output, not
+another source to edit or commit. Edit an existing plugin directly; when adding
+a plugin, add its stable-ID file and an ordered manifest reference. Preserve
+its model-specific implementations, unknown fields, evidence and verification
+flags. Do not infer new runtime capabilities from this storage layout.
+
+The first reference set contains 80 named
 effect types from Gazelle's Discrete 4 read-only measurements dated
 2026-09-13, with 729 declaration-derived control names. The source profile
 is pinned in `provenance`; unnamed device types are omitted. These entries
@@ -260,6 +294,13 @@ or other-effect stereo parameter writer is enabled. The catalog contains neither
 installed-effect state nor account entitlements; licensing/activation traffic is outside its purpose. Gazelle
 Reverb retains its separate existing command/readback contract.
 
+Model-local `frame.afx_slot.instance_state_readback.effects` entries may carry
+`initialization_observation` with an owner-confirmed trigger, captured query/
+reply frame pairs, reply header and opaque payload start. Identical observed
+payloads support reusing the envelope; `field_map_verified: false` and
+`runtime_query_enabled: false` retain the field-decoding/runtime limits. This
+metadata does not add safe query indices or establish initialization-only reads.
+
 The seed entries use `status: reference-only`. The Discrete 4 implementation
 records a `readback-observed` type ID, with `type_id_write_status:
 unconfirmed`. Owner-labelled loading captures now establish five Orion
@@ -281,6 +322,51 @@ knobs. `panel.display_only_controls` supplies BBD stereo-mode names for local
 preview without a wire mapping. Model-local captured membership must be complete
 before a preview is exposed; other models inherit no Orion parameter evidence.
 Details and source frames: [modulation findings](orion-afx-modulation.md).
+
+An implementation may additionally define `presentation` with
+`status: local-preview`, a friendly name/category, rows/switches and explicit
+local control ranges, steps, defaults or rotary options. Each parameter control
+names the same captured `source_control`; processing controls require a captured
+`bypass_observation`. Presentation validation rejects missing model-local sources,
+ambiguous membership, invalid ranges and dependency conditions. This metadata is
+separate from `control_encodings` and never enables runtime loading or writes.
+Local intermediate dial motion and defaults are UI choices, not newly verified
+physical conversion laws or device state. The browser receives presentation
+fields without wire offsets, commands or instance handles. Model-local friendly
+names preserve compatibility effect IDs such as `pultec_eqp` / `pultec_meq`.
+Rotary enums retain captured labels and detents; De-Esser Q depends on the two
+BandPass choices without assuming a universal captured Q reset value.
+`parameter_observation.startup_readback_observation` may record a captured
+comparison between a restored parameter write and an initialization reply.
+It identifies the compared byte range, instance and query/reply frames.
+An optional `startup_reply_offset` on a GUI observation associates that field
+with the matching baseline. This does not verify changed-state readback,
+authorize runtime queries, or establish unlabelled knob units. Offline tools
+preserve the opaque payload and reject ambiguous instance correlation.
+
+Orion observations may also live in
+`parameter_observation.labelled_gui_observations` when a named
+UI control has not been associated with a compatible declaration ID, or its
+encoding remains an endpoint candidate pending runtime verification. Each such
+entry records absolute report offset/width, observed values, visual states,
+frame provenance and verification limits. Visual restoration is distinct from
+device readback; `writable: false` observations do not enable runtime controls.
+Integer endpoint candidates may use `encoding: uint8` or `uint16-le`,
+`observed_wire_range`, `observed_display_endpoints` and per-phase `endpoints`
+with frame/raw values. These remain observed candidates with `writable: false`;
+endpoint labels alone do not establish a conversion law. De-Esser additionally
+records `mode_dependencies` for coupled filter/Q changes and
+`gui_control_methods` for measured selector classes. A checkbox's binary-looking
+TogglePattern is not proof of two device states; a measured multi-state method
+must override automatic binary discovery. See [De-Esser findings](orion-afx-deesser.md).
+Float observations may additionally record `encoding: float32-le`,
+`observed_wire_range`, `observed_display_range` and `display_unit`. These are
+captured endpoints, not interpolation laws or defaults. Infinite displayed
+endpoints use the string `-Infinity` or `Infinity`, never nonstandard numeric
+JSON tokens. `minimum_has_action_write: false` distinguishes an unchanged
+minimum from a fresh write; its prior full-block source is recorded explicitly.
+`parameter_observation.range_capture_summary` reports inventory completion and
+remaining controls without enabling runtime parameter commands.
 The shared control declarations retain their identifiers, so Orion observations
 do not become another model's contract. All three command definitions
 remain `null` for every implementation. A declared control name carries neither an inferred range

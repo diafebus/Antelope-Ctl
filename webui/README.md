@@ -160,10 +160,15 @@ compatibility.
 
 ## Run
 
+Use Python 3.11+ for the contributor workflow. Offline browser/protocol checks
+need no server, hardware or pip dependencies; start with
+[CONTRIBUTING.md](../CONTRIBUTING.md). The live command below starts a HID worker.
+
 ```
 cd webui
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements.txt
 python3 server.py
 ```
 

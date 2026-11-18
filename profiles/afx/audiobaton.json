@@ -1,0 +1,826 @@
+{
+  "id": "audiobaton",
+  "name": "audiobaton",
+  "source_name": "audiobaton",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.69"
+  ],
+  "controls": [
+    {
+      "id": "sg40",
+      "label": "Sg40",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg80",
+      "label": "Sg80",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg160",
+      "label": "Sg160",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg320",
+      "label": "Sg320",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg640",
+      "label": "Sg640",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg1280",
+      "label": "Sg1280",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg2560",
+      "label": "Sg2560",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg5120",
+      "label": "Sg5120",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "sg10240",
+      "label": "Sg10240",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    },
+    {
+      "id": "drive",
+      "label": "Drive",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_audiobaton_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 69,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 69,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "sg40": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "40Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng frame7489: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng frame17273: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg80": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "80Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng frame6385: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng frame14811: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg160": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "160Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng frame6357: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng frame14985: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg320": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "320Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng frame6027: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng frame14661: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "drive": {
+          "offset": 29,
+          "width": 1,
+          "kind": "continuous",
+          "label": "VOLUME",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng frame4629: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng frame11965: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg640": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "640Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng frame5747: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng frame14531: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg1280": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "1280Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng frame5635: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng frame14461: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg2560": {
+          "offset": 26,
+          "width": 1,
+          "kind": "continuous",
+          "label": "2560Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng frame5171: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng frame14013: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg5120": {
+          "offset": 27,
+          "width": 1,
+          "kind": "continuous",
+          "label": "5120Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng frame4807: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng frame14793: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        },
+        "sg10240": {
+          "offset": 28,
+          "width": 1,
+          "kind": "continuous",
+          "label": "10240Hz Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng frame4073: directed minimum raw0; all other parameter bytes preserved.",
+            "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng frame14277: directed maximum raw100; all other parameter bytes preserved."
+          ],
+          "notes": "Raw endpoint candidates only; physical scale/interpolation, independent readback and audible response unverified."
+        }
+      },
+      "evidence": [
+        "captures/unattended-20261028T023901Z-load-audiobaton/Orion.pcapng frame1627: exact Audio / Baton vendor load on empty AFX2/channel1slot0,type69instance0,sevenempty; SHA256 dd50b5e88b64e236ccaf5cfc8a15425d6d65cf14862e67822b0e47c68bbebb8a"
+      ],
+      "notes": "All ten Orion parameter fields have isolated raw0/100 endpoint pairs: nine horizontal bands at20..28 and VOLUME (compatibility ID drive) at29. Rack BP processing roundtrip captured, with native front indicator GUI change and exact static restoration. Front center-click/8pxdrag methods were negative and preserved separately. Physical interpolation, audible response, independent readback and runtime writers/readers remain unverified.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "status": "capture-observed; all ten parameter endpoint pairs completed; processing rack BP round trip captured",
+        "opcode": "0x1e",
+        "param_id": "0xd5",
+        "subcmd": "0x0c",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "captures/unattended-20261028T023901Z-audiobaton-priming/Orion.pcapng frame2529: first observed complete block; preservation before first report not established; SHA256 6e67a41259836921383f45b4aa95fa0b67ab953403a5f8b8b48711f321300701",
+          "captures/unattended-20261028T023901Z-audiobaton-band40-horizontal/Orion.pcapng frame2665: eight-pixel rightward gesture on native AudioBatonHorizontalPot_sg40 changes only byte20 raw50 to51, paired vertical mark y324 to323; other body/static controls preserved; SHA256 cb37461ac64f58bd8f70ffa246f03e2e6f9acbc05895d2cd250cce9a2d853473"
+        ],
+        "endpoint_candidates": [
+          {
+            "control": "sg40",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 7489,
+            "source": "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg40",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 17273,
+            "source": "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg80",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 6385,
+            "source": "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg80",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14811,
+            "source": "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg160",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 6357,
+            "source": "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg160",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14985,
+            "source": "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg320",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 6027,
+            "source": "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg320",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14661,
+            "source": "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg640",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 5747,
+            "source": "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg640",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14531,
+            "source": "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg1280",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 5635,
+            "source": "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg1280",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14461,
+            "source": "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg2560",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 5171,
+            "source": "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg2560",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14013,
+            "source": "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg5120",
+            "offset": 27,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4807,
+            "source": "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg5120",
+            "offset": 27,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14793,
+            "source": "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg10240",
+            "offset": 28,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4073,
+            "source": "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "sg10240",
+            "offset": 28,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 14277,
+            "source": "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "drive",
+            "offset": 29,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4629,
+            "source": "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng"
+          },
+          {
+            "control": "drive",
+            "offset": 29,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 11965,
+            "source": "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng"
+          }
+        ],
+        "endpoint_sources": [
+          {
+            "source": "captures/scan-AudioBaton-20261028T034922060Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "3466dca5c78a05ed3cfaeb6577474b1276cbec341f54a2ad02782169dd24f4fb",
+            "accepted_phases": 2,
+            "packets": 24254,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T041027439Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "6ffe370d7b5be0a71f54ee529911a7c73d5af01268e2c31054dd6fd03314f417",
+            "accepted_phases": 2,
+            "packets": 21804,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T081055452Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "5f31fab8e7fd35e739ccf05b3ddf7ccd9a4f83bd43ea946883cd6a3ff4789677",
+            "accepted_phases": 2,
+            "packets": 21584,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T081837554Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "5f54f6933d3613c0afa393be3543407e132dd813de377f4322eae33c58dc49b1",
+            "accepted_phases": 2,
+            "packets": 16712,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T081932713Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "3288c9f4e3b7bc9f16c27513277105219856dc2d94b838b696be8bf1b3df1391",
+            "accepted_phases": 2,
+            "packets": 20722,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T145656344Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "61ff0ff4a9343e7c1c00235744307dc7d06c9bf8185949c25ddb4974455a50aa",
+            "accepted_phases": 2,
+            "packets": 20038,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T145757910Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "78421794dea5e56399b4ca47b3c3bea5518ac33ef52189bb41c33daf9b3befca",
+            "accepted_phases": 2,
+            "packets": 19358,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T150138570Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "a4f3f635ddc7de7f424d19399ede19ac349241dd5be5c5dc4e4fd5b83380adeb",
+            "accepted_phases": 2,
+            "packets": 18126,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T150709189Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "9b882251e1bdae0304c43a8b930a019402a044a3fa9e59ca7e5b5386452077ad",
+            "accepted_phases": 2,
+            "packets": 18948,
+            "drops": 0
+          },
+          {
+            "source": "captures/scan-AudioBaton-20261028T150808541Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "6d283b8efe1a46d153643d3fe088725752fad434810caccf12893e97028c9125",
+            "accepted_phases": 2,
+            "packets": 17646,
+            "drops": 0
+          }
+        ],
+        "routing_observations": [
+          {
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
+            "control": "sg1280",
+            "class": "AudioBatonHorizontalPot_sg1280",
+            "runtime_id": "42:1507410:4:-2147476030",
+            "offset": 25,
+            "before_raw": 50,
+            "after_raw": 51,
+            "frame": 2797,
+            "source": "captures/unattended-20261028T023901Z-audiobaton-short-sg1280/probe/Orion.pcapng",
+            "capture_sha256": "919d91bd04b928cb48d9efc780c590f5e4501e5c0d8e595f189bc672e9c50e42",
+            "native_trial_exit_code": 1,
+            "native_bounds_before": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1387
+            },
+            "native_bounds_after": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1388
+            },
+            "other_parameter_bytes_preserved": true,
+            "other_static_controls_preserved": true,
+            "device_readback_verified": false,
+            "runtime_writable": false
+          },
+          {
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
+            "control": "sg2560",
+            "class": "AudioBatonHorizontalPot_sg2560",
+            "runtime_id": "42:1507410:4:-2147476029",
+            "offset": 26,
+            "before_raw": 50,
+            "after_raw": 51,
+            "frame": 2777,
+            "source": "captures/unattended-20261028T023901Z-audiobaton-short-sg2560/probe/Orion.pcapng",
+            "capture_sha256": "6c5011a5f9717bf68a94a49d1664c7adc2bd016250cee541223af7ef50a17a01",
+            "native_trial_exit_code": 0,
+            "native_bounds_before": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1473
+            },
+            "native_bounds_after": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1473
+            },
+            "other_parameter_bytes_preserved": true,
+            "other_static_controls_preserved": true,
+            "device_readback_verified": false,
+            "runtime_writable": false
+          },
+          {
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
+            "control": "sg5120",
+            "class": "AudioBatonHorizontalPot_sg5120",
+            "runtime_id": "42:1507410:4:-2147476028",
+            "offset": 27,
+            "before_raw": 50,
+            "after_raw": 51,
+            "frame": 2751,
+            "source": "captures/unattended-20261028T023901Z-audiobaton-short-sg5120/probe/Orion.pcapng",
+            "capture_sha256": "ada5ee6f4f3343a69a0fe23f326491650d6e2192d00c92ac38822e9d5b193957",
+            "native_trial_exit_code": 0,
+            "native_bounds_before": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1560
+            },
+            "native_bounds_after": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1560
+            },
+            "other_parameter_bytes_preserved": true,
+            "other_static_controls_preserved": true,
+            "device_readback_verified": false,
+            "runtime_writable": false
+          },
+          {
+            "status": "historical isolated routing observation; full endpoint pair captured later; original native trial result preserved",
+            "control": "sg10240",
+            "class": "AudioBatonHorizontalPot_sg10240",
+            "runtime_id": "42:1507410:4:-2147476027",
+            "offset": 28,
+            "before_raw": 50,
+            "after_raw": 51,
+            "frame": 2757,
+            "source": "captures/unattended-20261028T023901Z-audiobaton-short-sg10240/probe/Orion.pcapng",
+            "capture_sha256": "e36350f8c6ac49fe617fcf39c8ab57177f5e07749d9aa38f9066cd65fc051a00",
+            "native_trial_exit_code": 1,
+            "native_bounds_before": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1645
+            },
+            "native_bounds_after": {
+              "y": 393,
+              "width": 60,
+              "height": 20,
+              "x": 1646
+            },
+            "other_parameter_bytes_preserved": true,
+            "other_static_controls_preserved": true,
+            "device_readback_verified": false,
+            "runtime_writable": false
+          }
+        ],
+        "stopped_routing_observations": [
+          {
+            "control": "sg640",
+            "offset": 24,
+            "last_frame": 5645,
+            "last_raw": 0,
+            "source": "captures/scan-AudioBaton-20261028T082035448Z/AudioBaton-channel2.pcapng",
+            "capture_sha256": "7aa9117b04c399b5a14a577b7c0a3d90d36b241bd300fed43c0492d84de1ca5a",
+            "status": "isolated routing in stopped geometry-guard trial; zero accepted phases; complete endpoint pair pending",
+            "reconciliation_source": "captures/unattended-20261028T023901Z-audiobaton-sg640-reconcile-20261028T082035448Z/proof.json",
+            "other_parameter_bytes_preserved": true,
+            "other_static_controls_preserved": true,
+            "device_readback_verified": false,
+            "writable": false
+          }
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261028T023901Z-load-audiobaton/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AudioBatonMagicEyeBackground",
+            "native_instance_count": 1,
+            "kind_hint": "display-background",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "AudioBatonPeakMeter_left",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "AudioBatonPeakMeter_right",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "processing_observation": {
+        "status": "historical front center-click negative; later front8pxgesture also negative; functional rack BP processing roundtrip captured separately",
+        "source": "captures/unattended-20261028T023901Z-audiobaton-processing/first/Orion.pcapng",
+        "capture_sha256": "5946091506479ca4ab582a56df3f07ebf4fba53e3da65aa7ae89fd04cf2d91d9",
+        "writable": false,
+        "device_readback_verified": false,
+        "negative_methods": [
+          {
+            "method": "bounded eight-pixel vertical front OUT/IN gesture",
+            "source": "captures/unattended-20261028T145303Z-audiobaton-processing-rotary/first/Orion.pcapng",
+            "status": "zero OUT and unchanged static GUI in separate reconciliation; no return gesture",
+            "device_readback_verified": false,
+            "capture_sha256": "d84f10467c93f324154c6ce89f4a6eed39063789b5cf47ef0bc511aa83d34186"
+          }
+        ]
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB static panel and rack BP widget; green level meter excluded",
+        "polarity": "GUI BP checkbox correlated only; audible effect and independent changed-state device readback unverified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "gui_control_label": "BP",
+        "gui_states": {
+          "0": "BP checked (On)",
+          "1": "BP unchecked (Off)"
+        },
+        "input_method": "vendor rack BP checkbox; front center-click and isolated8pxverticalgesture produced noOUT",
+        "evidence": [
+          "captures/unattended-20261028T145303Z-audiobaton-rack-bp-processing/first/Orion.pcapng frame3071: tuple@17..19=004500; SHA256 0db93f72b9bf4fa952de8b489d529788a03db0ea71ee7666fc928932ccebe148",
+          "captures/unattended-20261028T145303Z-audiobaton-rack-bp-processing/return/Orion.pcapng frame643: tuple@17..19=004501; SHA256 f1158f286462f3381b97c2d5e17318e0ab54fa740ab0c89ef8d0cb180e15e6be"
+        ],
+        "front_indicator_gui_states": {
+          "0": "OUT / left pointer",
+          "1": "IN / right pointer"
+        },
+        "front_indicator_confirmation": "independent screenshot review; this is GUI correlation, not audible confirmation or readback"
+      }
+    }
+  ]
+}

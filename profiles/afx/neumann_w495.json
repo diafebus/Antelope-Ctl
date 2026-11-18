@@ -1,0 +1,697 @@
+{
+  "id": "neumann_w495",
+  "name": "neumann_w495",
+  "source_name": "neumann_w495",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.20"
+  ],
+  "controls": [
+    {
+      "id": "low_freq",
+      "label": "Low Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    },
+    {
+      "id": "low_gain",
+      "label": "Low Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    },
+    {
+      "id": "mid_freq",
+      "label": "Mid Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    },
+    {
+      "id": "mid_gain",
+      "label": "Mid Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    },
+    {
+      "id": "mid_q",
+      "label": "Mid Q",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    },
+    {
+      "id": "high_freq",
+      "label": "High Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    },
+    {
+      "id": "high_gain",
+      "label": "High Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    },
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w495_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 20,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 20,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "low_gain": {
+          "offset": 21,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low Gain",
+          "observed_raw_order": [
+            251,
+            252,
+            253,
+            254,
+            255,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "options": {
+            "251": "-15",
+            "252": "-9",
+            "253": "-6",
+            "254": "-4",
+            "255": "-2",
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "9",
+            "5": "15"
+          },
+          "wire_enum": {
+            "251": "-15",
+            "252": "-9",
+            "253": "-6",
+            "254": "-4",
+            "255": "-2",
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "9",
+            "5": "15"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-12/Orion.pcapng frame1830: raw251, literal label -15; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-12/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-11/Orion.pcapng frame1787: raw252, literal label -9; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-11/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-10/Orion.pcapng frame1790: raw253, literal label -6; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-10/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-09/Orion.pcapng frame1755: raw254, literal label -4; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-09/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-08/Orion.pcapng frame1803: raw255, literal label -2; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-08/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-07/Orion.pcapng frame1771: raw0, literal label 0; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-07/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-06/Orion.pcapng frame1713: raw1, literal label 2; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-06/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-05/Orion.pcapng frame1661: raw2, literal label 4; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-05/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-04/Orion.pcapng frame1687: raw3, literal label 6; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-04/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-03/Orion.pcapng frame1769: raw4, literal label 9; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-down-03/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-up-22/Orion.pcapng frame1789: raw5, literal label 15; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_gain-up-22/observed-detent.png"
+          ],
+          "notes": "Literal GUI labels and unsigned wire order retained; no inferred intermediate values or audible/scaling claim."
+        },
+        "low_freq": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low Freq",
+          "observed_raw_order": [
+            0,
+            1,
+            2
+          ],
+          "options": {
+            "0": "40",
+            "1": "60",
+            "2": "100"
+          },
+          "wire_enum": {
+            "0": "40",
+            "1": "60",
+            "2": "100"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_freq-down-04/Orion.pcapng frame1845: raw0, literal label 40; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_freq-down-04/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_freq-down-03/Orion.pcapng frame1895: raw1, literal label 60; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_freq-down-03/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/low_freq-up-06/Orion.pcapng frame1825: raw2, literal label 100; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/low_freq-up-06/observed-detent.png"
+          ],
+          "notes": "Literal GUI labels and unsigned wire order retained; no inferred intermediate values or audible/scaling claim."
+        },
+        "mid_gain": {
+          "offset": 23,
+          "width": 1,
+          "kind": "enum",
+          "label": "Mid Gain",
+          "observed_raw_order": [
+            251,
+            252,
+            253,
+            254,
+            255,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "options": {
+            "251": "-10",
+            "252": "-8",
+            "253": "-6",
+            "254": "-4",
+            "255": "-2",
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "8",
+            "5": "10"
+          },
+          "wire_enum": {
+            "251": "-10",
+            "252": "-8",
+            "253": "-6",
+            "254": "-4",
+            "255": "-2",
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "8",
+            "5": "10"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-12/Orion.pcapng frame2027: raw251, literal label -10; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-12/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-11/Orion.pcapng frame2025: raw252, literal label -8; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-11/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-10/Orion.pcapng frame2005: raw253, literal label -6; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-10/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-09/Orion.pcapng frame2037: raw254, literal label -4; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-09/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-08/Orion.pcapng frame2005: raw255, literal label -2; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-08/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-07/Orion.pcapng frame1977: raw0, literal label 0; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-07/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-06/Orion.pcapng frame1963: raw1, literal label 2; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-06/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-05/Orion.pcapng frame2011: raw2, literal label 4; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-05/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-04/Orion.pcapng frame1925: raw3, literal label 6; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-04/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-03/Orion.pcapng frame1855: raw4, literal label 8; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-down-03/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-up-22/Orion.pcapng frame1909: raw5, literal label 10; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_gain-up-22/observed-detent.png"
+          ],
+          "notes": "Literal GUI labels and unsigned wire order retained; no inferred intermediate values or audible/scaling claim."
+        },
+        "mid_freq": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "Mid Freq",
+          "observed_raw_order": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "options": {
+            "0": "175",
+            "1": "250",
+            "2": "350",
+            "3": "500",
+            "4": "700",
+            "5": "1k",
+            "6": "1.4k",
+            "7": "2k",
+            "8": "2.8k",
+            "9": "4k",
+            "10": "5.6k"
+          },
+          "wire_enum": {
+            "0": "175",
+            "1": "250",
+            "2": "350",
+            "3": "500",
+            "4": "700",
+            "5": "1k",
+            "6": "1.4k",
+            "7": "2k",
+            "8": "2.8k",
+            "9": "4k",
+            "10": "5.6k"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-12/Orion.pcapng frame1831: raw0, literal label 175; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-12/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-11/Orion.pcapng frame2271: raw1, literal label 250; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-11/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-10/Orion.pcapng frame2025: raw2, literal label 350; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-10/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-09/Orion.pcapng frame2283: raw3, literal label 500; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-09/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-08/Orion.pcapng frame2013: raw4, literal label 700; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-08/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-07/Orion.pcapng frame2003: raw5, literal label 1k; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-07/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-06/Orion.pcapng frame2043: raw6, literal label 1.4k; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-06/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-05/Orion.pcapng frame2203: raw7, literal label 2k; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-05/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-04/Orion.pcapng frame1963: raw8, literal label 2.8k; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-04/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-03/Orion.pcapng frame1965: raw9, literal label 4k; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-down-03/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-up-22/Orion.pcapng frame1901: raw10, literal label 5.6k; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/mid_freq-up-22/observed-detent.png"
+          ],
+          "notes": "Literal GUI labels and unsigned wire order retained; no inferred intermediate values or audible/scaling claim."
+        },
+        "high_gain": {
+          "offset": 26,
+          "width": 1,
+          "kind": "enum",
+          "label": "High Gain",
+          "observed_raw_order": [
+            251,
+            252,
+            253,
+            254,
+            255,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "options": {
+            "251": "-15",
+            "252": "-9",
+            "253": "-6",
+            "254": "-4",
+            "255": "-2",
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "9",
+            "5": "15"
+          },
+          "wire_enum": {
+            "251": "-15",
+            "252": "-9",
+            "253": "-6",
+            "254": "-4",
+            "255": "-2",
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "9",
+            "5": "15"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-12/Orion.pcapng frame1959: raw251, literal label -15; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-12/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-11/Orion.pcapng frame2015: raw252, literal label -9; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-11/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-10/Orion.pcapng frame1999: raw253, literal label -6; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-10/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-09/Orion.pcapng frame1993: raw254, literal label -4; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-09/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-08/Orion.pcapng frame2029: raw255, literal label -2; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-08/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-07/Orion.pcapng frame1961: raw0, literal label 0; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-07/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-06/Orion.pcapng frame2007: raw1, literal label 2; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-06/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-05/Orion.pcapng frame1927: raw2, literal label 4; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-05/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-04/Orion.pcapng frame1955: raw3, literal label 6; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-04/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-03/Orion.pcapng frame2003: raw4, literal label 9; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-down-03/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-up-22/Orion.pcapng frame2095: raw5, literal label 15; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_gain-up-22/observed-detent.png"
+          ],
+          "notes": "Literal GUI labels and unsigned wire order retained; no inferred intermediate values or audible/scaling claim."
+        },
+        "high_freq": {
+          "offset": 25,
+          "width": 1,
+          "kind": "enum",
+          "label": "High Freq",
+          "observed_raw_order": [
+            0,
+            1,
+            2
+          ],
+          "options": {
+            "0": "7",
+            "1": "10",
+            "2": "14"
+          },
+          "wire_enum": {
+            "0": "7",
+            "1": "10",
+            "2": "14"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_freq-down-04/Orion.pcapng frame2095: raw0, literal label 7; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_freq-down-04/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_freq-down-03/Orion.pcapng frame2161: raw1, literal label 10; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_freq-down-03/observed-detent.png",
+            "captures/unattended-20261026T163323Z-neu-w495-detent-map/high_freq-up-06/Orion.pcapng frame2247: raw2, literal label 14; matching pointer image captures/unattended-20261026T163323Z-neu-w495-detent-map/high_freq-up-06/observed-detent.png"
+          ],
+          "notes": "Literal GUI labels and unsigned wire order retained; no inferred intermediate values or audible/scaling claim."
+        },
+        "level": {
+          "offset": 27,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "raw_endpoints": [
+            232,
+            12
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            12
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "notes": "Unsigned wire endpoints retained. Signed interpretation, physical units and intermediate scaling remain unverified.",
+          "evidence": [
+            "scan-NeumannW495-20261026T165426097Z/NeumannW495-channel2.pcapng frame100057: Output minimum gesture raw232",
+            "scan-NeumannW495-20261026T165426097Z/NeumannW495-channel2.pcapng frame108873: Output maximum gesture raw12"
+          ]
+        },
+        "mid_q": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "Bell Quality",
+          "observed_raw_order": [
+            2,
+            0,
+            1
+          ],
+          "options": {
+            "2": "Right",
+            "0": "Left",
+            "1": "Middle"
+          },
+          "wire_enum": {
+            "2": "Right",
+            "0": "Left",
+            "1": "Middle"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image; runtime contract unverified",
+          "writable": false,
+          "notes": "Independently reviewed literal switch positions; no numeric Q or sonic meaning inferred.",
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w495-bell-quality/centre-01/Orion.pcapng frame975: raw2, literal label Right; matching pointer image captures/unattended-20261026T163323Z-neu-w495-bell-quality/centre-01/observed.png",
+            "captures/unattended-20261026T163323Z-neu-w495-bell-quality/centre-02/Orion.pcapng frame935: raw0, literal label Left; matching pointer image captures/unattended-20261026T163323Z-neu-w495-bell-quality/centre-02/observed.png",
+            "captures/unattended-20261026T163323Z-neu-w495-bell-quality/centre-03/Orion.pcapng frame933: raw1, literal label Middle; matching pointer image captures/unattended-20261026T163323Z-neu-w495-bell-quality/centre-03/observed.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261026T163323Z-load-neu-w495/Orion.pcapng frame2209: labelled vendor NEU-W495 load, AFX2/channel1slot0 type20/instance0, sevenempty; SHA256 f3ca7413ee4f08fae7e1b82f68b710f4c6b8048ab1b917d330831a923f29f885"
+      ],
+      "notes": "Orion NEU-W495: seven rotary endpoint candidates, six complete stepped dial maps, three Bell Quality positions and a separate processing round trip captured. Dial mapping and Bell Quality round trips returned the full captured parameter body and checked static panel images. Processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Animated peak meter excluded. Wrapped gain bytes and literal reviewed labels retained. Output signed interpretation, physical/intermediate scaling, independent readback, processing polarity, audible/stereo behavior and runtime contracts remain unverified. Native meter/LED presence remains separate display inventory; no signal telemetry reader enabled.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261026T163323Z-load-neu-w495/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "NeumannPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "parameter_observation": {
+        "opcode": "0x1c",
+        "param_id": "0xd5",
+        "subcmd": "0x0a",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; all visible editable controls covered; Output scaling and runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "low_gain",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 251,
+            "frame": 4309
+          },
+          {
+            "control": "low_gain",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 5,
+            "frame": 11643
+          },
+          {
+            "control": "low_freq",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 18887
+          },
+          {
+            "control": "low_freq",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 2,
+            "frame": 26467
+          },
+          {
+            "control": "mid_gain",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 251,
+            "frame": 34663
+          },
+          {
+            "control": "mid_gain",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 5,
+            "frame": 42659
+          },
+          {
+            "control": "mid_freq",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 50243
+          },
+          {
+            "control": "mid_freq",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 10,
+            "frame": 58293
+          },
+          {
+            "control": "high_gain",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 251,
+            "frame": 66184
+          },
+          {
+            "control": "high_gain",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 5,
+            "frame": 74384
+          },
+          {
+            "control": "high_freq",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 82583
+          },
+          {
+            "control": "high_freq",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 2,
+            "frame": 91083
+          },
+          {
+            "control": "level",
+            "offset": 27,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 100057
+          },
+          {
+            "control": "level",
+            "offset": 27,
+            "gesture": "maximum",
+            "raw": 12,
+            "frame": 108873
+          }
+        ],
+        "capture_sha256": "52f2e5eed0e266bb6d5c14375129dc214efeb79b4ebfacbc5ec36d77b0e40b05",
+        "evidence": [
+          "scan-NeumannW495-20261026T165426097Z: fourteen accepted endpoint phases; each phase only its mapped field changed.",
+          "scan-NeumannW495-20261026T165426097Z: fourteen accepted endpoint phases,113326packets/zero drops; every phase isolated to its mapped field."
+        ],
+        "rotary_mapping": {
+          "source": "captures/unattended-20261026T163323Z-neu-w495-detent-map",
+          "status": "completed; six stepped dials, 100 bounded trials; other payload fields preserved",
+          "starting_parameter_payload_hex": "02050a050102050c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "02050a050102050c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "static_panel_checks": {
+            "static_panel_left": true,
+            "static_panel_right": true
+          },
+          "device_readback_verified": false
+        },
+        "bell_quality_mapping": {
+          "source": "captures/unattended-20261026T163323Z-neu-w495-bell-quality",
+          "offset": 24,
+          "status": "completed; three observed states, independently reviewed position labels, full payload/static-panel return",
+          "starting_parameter_payload_hex": "02050a050102050c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "02050a050102050c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB static panel segments; animated peak meter excluded",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261026T163323Z-neu-w495-processing/first/Orion.pcapng frame3869 tuple@17..19=001400",
+          "captures/unattended-20261026T163323Z-neu-w495-processing/return/Orion.pcapng frame1071 tuple@17..19=001401"
+        ]
+      }
+    }
+  ]
+}

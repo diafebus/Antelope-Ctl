@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "profile": "orion_studio_sc.json",
+  "notes": "GUI metadata only. List position does not imply a device raw value. Allowed testing still requires a bounded reviewed plan; it does not establish license ownership.",
+  "sources": {
+    "deesser-menu-20261009": {
+      "kind": "capture-review",
+      "reference": "docs/orion-afx-workflow.md (scan-Master-De-Esser-20261009T214921898Z); local captures/deesser-five-visible-menu-review-20261009.json",
+      "notes": "Five visible rows in UI Automation and screenshot, in the listed order. Earlier owner count of six remains unresolved. 1570 packets, zero drops, 785 complete IN and zero OUT reports; no selections or raw enum mapping. Raw captures remain local."
+    },
+    "deesser-inventory-20261009": {
+      "kind": "capture-review",
+      "reference": "docs/orion-afx-workflow.md (panel-Master-De-esser-20261009T194702842Z)",
+      "notes": "Filter Type and Presets ComboBox classes observed. Preset labels and complete filter coverage remain unknown."
+    },
+    "owner-autotune-20261009": {
+      "kind": "owner-confirmation",
+      "reference": "Owner instruction, 2026-10-09; recorded in local capture handoff",
+      "notes": "Owner reports Auto-Tune not purchased and excludes it from scan plans and hardware testing. Catalog/resource entries are not ownership evidence."
+    },
+    "deesser-five-visible-20261025": {
+      "kind": "capture-review",
+      "reference": "PROTOCOL.md section12a; scan-Master-De-Esser-20261025T003137097Z",
+      "notes": "Five visible row selections and HighPass1 restoration passed native GUI/host checks. Raw byte26 mappings live in the Orion catalog implementation; earlier sixth-choice report and independent parameter readback remain unresolved."
+    }
+  },
+  "plugins": [
+    {
+      "effect_id": "deesser",
+      "name": "Master De-Esser",
+      "aliases": [
+        "Deesser"
+      ],
+      "hardware_testing": "allowed",
+      "source_ids": [
+        "deesser-menu-20261009",
+        "deesser-inventory-20261009",
+        "deesser-five-visible-20261025"
+      ],
+      "unresolved": [
+        "Five visible Filter Type choices are mapped; earlier report of six remains a historical discrepancy.",
+        "Independent parameter/processing readback and physical scaling remain unverified.",
+        "Six visible presets inventoried without selection; hidden/virtualized entries and preset vectors remain unknown."
+      ],
+      "dropdowns": [
+        {
+          "id": "filter_type",
+          "label": "Filter Type",
+          "class_name": "DeesserComboBoxFilterType",
+          "ordering": "capture-observed",
+          "status": "five visible choices captured and mapped; full-count discrepancy unresolved",
+          "full_count": null,
+          "full_count_status": "unresolved: five visible choices versus earlier owner count of six",
+          "source_ids": [
+            "deesser-menu-20261009",
+            "deesser-five-visible-20261025"
+          ],
+          "options": [
+            {
+              "label": "HighPass 1"
+            },
+            {
+              "label": "HighPass 2"
+            },
+            {
+              "label": "HighPass 3"
+            },
+            {
+              "label": "BandPass 1"
+            },
+            {
+              "label": "BandPass 2"
+            }
+          ],
+          "selection_policy": "reviewed-parameter-trial"
+        },
+        {
+          "id": "presets",
+          "label": "Presets",
+          "class_name": "DeesserPresetsCombobox",
+          "ordering": "capture-observed",
+          "status": "six visible choices inventoried without selection",
+          "full_count": null,
+          "full_count_status": "six visible names; hidden/virtualized library entries unknown",
+          "source_ids": [
+            "deesser-inventory-20261009"
+          ],
+          "options": [
+            {
+              "label": "BV Elec Hi Hat"
+            },
+            {
+              "label": "BV Female S 2"
+            },
+            {
+              "label": "BV Reduce High Freq"
+            },
+            {
+              "label": "BV Slap Bass"
+            },
+            {
+              "label": "BV Subtle Female S"
+            },
+            {
+              "label": "BV Typical S"
+            }
+          ],
+          "selection_policy": "inventory-only"
+        }
+      ]
+    },
+    {
+      "effect_id": "antares_autotune",
+      "name": "Auto-Tune",
+      "aliases": [
+        "AutoTune",
+        "Antares Auto-Tune"
+      ],
+      "hardware_testing": "excluded",
+      "source_ids": [
+        "owner-autotune-20261009"
+      ],
+      "unresolved": [],
+      "dropdowns": []
+    }
+  ]
+}

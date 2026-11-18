@@ -13,9 +13,21 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from antelope.catalog import load_catalog
 
 
-PARAMETER_OPCODES = {0x1c, 0x20, 0x7c}
+# 0x18: directed Gyratec IX GUI priming, scan-GyratecIX-20261025T203041877Z.
+# 0x16: directed VEQ-HLF GUI sweep, scan-PultecHLF-20261025T200435681Z.
+# 0x19: directed NEU-PEV GUI priming, scan-NeumannPev-20261026T161447638Z.
+# 0x22: directed NEU-W492 GUI priming, scan-NeumannW492-20261026T163707526Z.
+# 0x23: directed VEQ-4K PINK GUI priming, scan-SslPink-20261027T020747657Z.
+# 0x1a: directed VMEQ-5 GUI sweep, scan-PultecMEQ-20261025T101308607Z.
+# 0x1b: directed VEQ-STU089 GUI priming, unattended-20261027T144257Z-veqstu089-priming frame2457.
+# 0x1d: directed PowerGate GUI sweep, scan-PowerGate-20261025T093451547Z.
+# 0x1e: directed Audio/Baton VOLUME priming, unattended-20261028T023901Z-audiobaton-priming frame2529.
+# 0x17: directed VCA160 Output Gain priming, unattended-20261028T145303Z-vca160-priming frames2247/2295.
+# These are passive decoder families, not permission to send a command.
+PARAMETER_OPCODES = {0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x20, 0x22, 0x23, 0x7c}
 
 
 def _tshark(path, *arguments):
@@ -65,11 +77,88 @@ def extract_reports(path):
     return reports
 
 
+def observed_instance_readbacks(reports, profile, catalog, max_gap=1.0):
+    """Offline only: correlate serialized tagged replies and decode observed fields.
+
+    Replies omit instance IDs. Overlap or a late reply invalidates correlation
+    for the remainder of this capture; a time window alone is insufficient.
+    max_gap is an analysis limit, never a device query timeout or authorization.
+    """
+    layout = profile['frame']['afx_slot']['instance_state_readback']
+    request, response = layout['request'], layout['response']
+    transport = profile['transport']
+    size = transport['report_size']
+    out_ep, in_ep = (int(transport[k], 0) for k in ('out_endpoint', 'in_endpoint'))
+    header = bytes.fromhex(response['header_prefix_hex'])
+    definitions = {}
+    for effect in catalog['effects']:
+        for implementation in effect['implementations']:
+            if implementation['profile'] == 'orion_studio_sc.json':
+                observation = implementation.get('parameter_observation', {})
+                alignment = observation.get('startup_readback_observation')
+                if alignment:
+                    definitions[implementation['type_id']] = (observation, alignment)
+    pending, blocked, states = None, False, []
+    for frame, seconds, endpoint, data in reports:
+        if len(data) != size or blocked:
+            continue
+        if endpoint == out_ep and all(data[request[k + '_offset']] == int(request[k], 0)
+                                      for k in ('magic', 'opcode', 'kind')):
+            offset, width = request['effect_selector_offset'], request['effect_selector_width']
+            selector = int.from_bytes(data[offset:offset + width], request['effect_selector_endian'])
+            tag = int(request['effect_selector_tag'], 0)
+            if not selector & tag:
+                continue
+            if pending is not None:
+                blocked = True
+                continue
+            offset, width = request['instance_offset'], request['instance_width']
+            pending = (frame, seconds, selector, int.from_bytes(data[offset:offset + width], request['instance_endian']))
+        elif endpoint == in_ep and data.startswith(header):
+            offset, width = response['effect_selector_offset'], response['effect_selector_width']
+            selector = int.from_bytes(data[offset:offset + width], request['effect_selector_endian'])
+            if pending is None or pending[2] != selector:
+                blocked = True
+                continue
+            query_frame, query_seconds, _, instance = pending
+            pending = None
+            if not 0 <= seconds - query_seconds <= max_gap:
+                blocked = True
+                continue
+            effect_type = selector & ~int(request['effect_selector_tag'], 0)
+            if effect_type not in definitions:
+                continue
+            observation, alignment = definitions[effect_type]
+            values = {}
+            fields = observation.get('labelled_gui_observations', {}) if instance == alignment['instance'] else {}
+            for name, field in fields.items():
+                offset = field.get('startup_reply_offset')
+                if offset is not None:
+                    raw = data[offset:offset + field['width']]
+                    value = int.from_bytes(raw, 'little')
+                    values[name] = {'raw': value, 'state': field['visual_states'].get(str(value), 'unknown'),
+                                    'status': 'startup baseline association; changed-state readback untested'}
+            states.append({'query_frame': query_frame, 'frame': frame, 'type': effect_type,
+                           'instance_from_query': instance, 'values': values,
+                           'parameter_payload_hex': data[response['parameter_data_offset']:].hex(),
+                           'runtime_query_enabled': False, 'alignment_status': alignment['status']})
+    return {'states': states, 'correlation_blocked': blocked}
+
+
 def analyze_reports(reports):
+    reports = list(reports)
     operations, parameters = [], defaultdict(list)
     readback_queries = Counter()
     instance_queries, instance_states, pending_instances = [], [], {}
     profile = json.loads((Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json').read_text())
+    catalog = load_catalog(Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json')
+    bypass_layouts = {i['type_id']: i['bypass_observation'] for e in catalog['effects']
+                      for i in e['implementations'] if i['profile'] == 'orion_studio_sc.json'
+                      and 'bypass_observation' in i}
+    for layout in bypass_layouts.values():
+        if (layout['status'] != 'capture-observed' or layout['opcode'] != '0x14' or layout['selector'] != '0x98'
+                or sorted(layout[key] for key in ('instance_offset', 'type_offset', 'state_offset')) != [17,18,19]):
+            raise ValueError('Invalid captured model-local bypass layout')
     from antelope import afx
     for number, timestamp, endpoint, payload in reports:
         if len(payload) != 320:
@@ -105,8 +194,12 @@ def analyze_reports(reports):
         elif opcode == 0x14 and selector == 0xa2 and payload[17] == 4:
             operations.append({**base, 'kind': 'link', 'pair_index': payload[18], 'value': payload[19]})
         elif opcode == 0x14 and selector == 0x98:
-            operations.append({**base, 'kind': 'bypass', 'state': payload[17],
-                               'type': payload[18], 'instance': payload[19], 'polarity_confirmed': False})
+            layout = bypass_layouts.get(payload[18])
+            operations.append({**base, 'kind': 'bypass',
+                               'state': payload[layout['state_offset']] if layout else payload[17],
+                               'type': payload[18],
+                               'instance': payload[layout['instance_offset']] if layout else payload[19],
+                               'polarity_confirmed': False})
         elif opcode in PARAMETER_OPCODES and selector == 0xd5:
             parameters[(opcode, payload[17], payload[18])].append(
                 (number, timestamp, payload[19], payload[20:]))
@@ -140,9 +233,11 @@ def analyze_reports(reports):
                                                              max(s[3][offset-20] for s in samples)] for offset in varying},
                        'mirrored_writes': [{'from_instance': a, 'to_instance': b, 'pairs': count}
                                            for (a, b), count in sorted(mirrored.items())], 'targets': targets})
+    observed = observed_instance_readbacks(reports, profile, catalog)
     return {'report_offsets_exclude_usb_header': True, 'device_commands_sent': False,
             'ownership_inferred': False, 'operations': operations, 'parameter_groups': groups,
             'instance_state_queries': instance_queries, 'memorycat_readbacks': instance_states,
+            'observed_instance_readbacks': observed,
             'readback_queries': [{'category': hex(category), 'index': index, 'count': count}
                                  for (category, index), count in sorted(readback_queries.items())]}
 

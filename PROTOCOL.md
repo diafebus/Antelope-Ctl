@@ -1940,6 +1940,77 @@ parameter sweeps establish neither control-name maps nor display scales.
 Memory Cat's byte layout must not be reused for them. V12 also has observed
 `0x20` / `0xd5` traffic. Stereo writes remain outside the pilot.
 
+**Master De-Esser Filter Type GUI trial (2026-10-09).** The local
+`scan-Master-De-Esser-20261009T211457387Z/Master-De-Esser-channel2.pcapng`
+records type27/instance0 at frames447/1209. GUI selection changes from
+HighPass3 to BandPass1 and returns to HighPass3. Absolute report byte26 is3
+for BandPass1 and2 for HighPass3; no other parameter bytes differ across these
+two OUT blocks. Guest and host completion checks pass,1754packets/zero drops.
+This is a partial labelled mapping: remaining options, Q dependencies, other
+controls, device readback and runtime writes remain unverified.
+
+**Master De-Esser five visible Filter Type choices (2026-10-25).** Native
+launcher job `scan-Master-De-Esser-20261025T003137097Z` traverses the five
+currently visible rows and returns to HighPass 1. Type27/instance0 uses the
+same parameter family; only absolute report byte26 changes:
+
+| GUI choice | Raw byte26 | Source OUT frame |
+| --- | --- | --- |
+| HighPass 1 | 0 | 3259 |
+| HighPass 2 | 1 | 7903 |
+| HighPass 3 | 2 | 12473 |
+| BandPass 1 | 3 | 17153 |
+| BandPass 2 | 4 | 21841 |
+
+Frame26473 restores HighPass1/raw0. The first target is primed through
+HighPass2 at frame1551 so an already-selected row has fresh OUT evidence.
+All six phases have host acceptance and labelled screenshots. The earlier
+report of a sixth choice remains unresolved: this maps the five visible rows,
+not a guaranteed complete device enum. The separate native key trial
+`scan-Master-De-Esser-20261025T002640258Z` completes HighPass1 → HighPass2 →
+HighPass1 with five-second dwell and one Page key per phase. These are GUI and
+captured-write restoration observations; independent parameter readback and
+runtime writes remain unverified. The catalog owns the labels and encodings.
+The subsequent eight-knob endpoint candidates, Q/filter coupling, four-state
+Monitor/Out selector, processing-button override and preset inventory are
+documented in [the De-Esser findings](docs/orion-afx-deesser.md).
+
+**Instinct ALT Morph GUI pilot (2026-10-09).** A labelled automated trial on
+unlinked AFX2 captures type75/instance1 parameter writes at frames537/1567 in
+the local `pilot-Instinct-20261009T161102564Z/Instinct-channel2.pcapng` recording.
+Only absolute HID report byte72 differs, engaged1→disengaged0. Before/restored
+button images match exactly; capture reports zero drops. The owner confirms
+the initial buttons disengaged. This establishes a UI-to-write byte association
+and a visual round trip, not device parameter readback, audible behavior or a
+runtime writer. The catalog records it under model-local
+`parameter_observation.labelled_gui_observations`; declaration IDs remain intact.
+
+The subsequent two-filter batch in local
+`scan-Instinct-20261009T162320099Z/Instinct-channel2.pcapng` uses the same
+type75/instance1 family. Filter enable changes only byte76 at frames579/1603
+(engaged1→disengaged0); post-filter enable changes only byte112 at
+frames2495/3527 (engaged1→disengaged0). Each button's before/restored crops
+match exactly;4092packets/0drops. The `PFEnable` selector in the post-filter
+region is distinct from the identically named panel-power widget. These are
+two further GUI-to-write observations with visual restoration, retaining the
+same readback/runtime-writer limits as ALT Morph.
+
+Subsequent action-labelled GUI range captures establish21 Instinct knob fields
+as float32-le: Punch20, Body24, Speed28, Character32, BoostFreq36, BoostGain40,
+Gain44, GainMod48, FilterFreq52, FilterQ56, FilterMix60, MorphAmount80,
+MorphMod84, BiasAmount88, BiasMod92, PostFreq96, PostMod100, PostQ104,
+PostMix108, Mix116 and Volume120. These are absolute report offsets, not
+declaration-ID aliases or runtime writers. Each observed physical and raw
+endpoint pair and its source frames lives in the shared catalog. Scales differ:
+Character wire0..3, Gain0..100, frequencies0..100, Q approximately0.01..1,
+and many normalized fields0..1. Do not infer interpolation from endpoints.
+The final Volume scan shows−inf/+1dB; its minimum wire0 comes from the prior
+scan's frame174973, and maximum1 from final scan9833. The final scan emits no
+minimum change because it starts there;12878packets/zero drops. Owner permits
+leaving range knobs at maximum. Model selection/power were captured later
+(see the2026-10-26 completion below); changed-state readback remains
+unverified. Preserve all unknown bytes.
+
 **Linked chain editing.** The owner requested linked rack editing on2026-10-01.
 The1/2 capture pairs load writes3427/3431,4997/5001,7505/7509 and reorder
 writes11947/11951,13671/13675, left then right with distinct instances.
@@ -1954,23 +2025,44 @@ writes without automatic repair. Link/unlink itself still sends only its flag.
 Memory Cat parameter mirroring is an explicit bounded operator candidate
 described below; other-effect parameter writers remain unsupported.
 
-**Bypass observation.** The 3/4 capture's Bypass All actions emit 16 reports
-using opcode `0x14`, selector `0x98`, **state at 17, type at 18, instance at
-19**. Each affected instance receives 1 then 0 only 3–5 ms apart; the
-same sequence repeats on later actions. The new
-`antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng` contains a single
-Bypass All write at31313: `0x14/0x98`, byte17=0, type73/instance0. Earlier
-instance-state reply17097 reports processing1; the following restart capture
-reports processing0 for this instance. Thus Memory Cat's processing flag is
-0=bypassed,1=active. The earlier duplicated1→0 actions remain a Launcher
-observation; an isolated enable write and other types' bypass transitions
-remain untested. At36233 the chain gains Memory Cat73/1, without any parameter
-or bypass initialization writes. The owner confirms this new effect is
-unbypassed after Bypass All. Loading preserves the device-assigned state;
-there is no forced default or inherited global bypass command.
-This supersedes the old subcommand /
-handle / value map. Delete All emits successive whole-chain updates until
-both chains are empty. No bypass or general Delete All writer is enabled.
+**Instinct visible controls completed (2026-10-26).** Fresh type75/instance1
+model-switch captures establish byte68 raw0/1 for the two visible icons, with
+exact full-payload and checked image return. The separate processing button
+uses instance17/type18/state19, with3045/649 tuples014b00/014b01. A read-only
+inventory records60factory entries across nine categories without selecting a
+preset or sending device writes. Together with the prior21knob/threeparameter-
+switch batches, this completes the observed visible controls. See
+[Instinct findings](docs/orion-afx-instinct.md) for source frames and limits.
+No runtime query or parameter/bypass writer is enabled.
+
+**Bypass observation, corrected 2026-10-25.** Opcode `0x14`, selector `0x98`
+uses **instance at17, type at18, state at19** for the independently captured
+Orion effects. In the3/4 linked capture, frames10215/10219 carry tuples
+`01 49 00` / `00 49 00`, and10729/10733 carry `01 49 01` / `00 49 01`.
+The adjacent1→0 bytes at17 address distinct instances with the same state;
+they are not a rapid state pulse. This supersedes the former swapped
+state17/instance19 interpretation in this section and the Orion profile.
+
+The fresh single-instance Memory Cat trial in
+`unattended-20261025T195948Z-memorycat-processing` first frame3637 carries
+`00 49 00`, return frame837 carries `00 49 01`. Each action emits one event,
+and the footswitch, processing LED, six knobs and both mode controls return
+to exact RGB baselines. Overload LED and animated meter are excluded.
+The catalog's model-local override also supplies the corrected passive decoder
+layout; unknown effects retain explicitly unverified layouts.
+
+The earlier `antelope-orion-afx-load-fxstate-bypass-load-fx.pcapng` Bypass All
+write31313 is `00 49 00`. Prior tagged instance-state reply17097 reports
+processing1; the subsequent restart capture reports processing0 for this
+instance. Thus Memory Cat's separate readback processing flag remains
+0=bypassed,1=active at response byte16. That response layout is unchanged.
+At36233 the chain gains Memory Cat73/1 without parameter/bypass initialization;
+the owner confirms the new effect is active after Bypass All. Loading preserves
+the device-assigned state. Fresh GUI correlation does not establish new audible
+or cross-device behavior. No runtime bypass writer is enabled.
+
+Delete All emits successive whole-chain updates until both chains are empty;
+no general Delete All writer is enabled.
 
 **Readback/test verification.** Category `0x19` provides 64 safely bounded
 outer records, each with eight `{type,inst}` pairs. The original single-channel
@@ -2019,11 +2111,23 @@ were expanded and `0x0c:1` remains unconfirmed. Device resource counts,
 enabled/greyed-out picker entries, demo access and full ownership are
 separate observations.
 
+**BBD directed capture correction (2026-10-09).** All four Stereo Type positions
+are captured at parameter byte25:0=Basic,1=Wide,2=Split,3=Cross. The original
+scan and resume cover four knob ranges, Chorus/Vibrato, Stereo Type and Power.
+For Orion BBD type78, `0x14/0x98` addresses instance at17 and type at18, with
+state at19. Fresh instance0 Power frames7063/7067 carry state0 and7999/8007
+carry state1; older modulation frames232899–232913 and234191–234203 support
+instance17 values1/0 with state19 fixed0 then1. This corrects the BBD decoder,
+not the unresolved legacy layout for other effects. Processing polarity and
+readback remain unverified; runtime writers stay disabled. The red indicator
+above the footswitch shows vibrato speed (owner confirmation), not mode/power.
+
 **Labelled V12/BBD modulation findings (2026-10-02).** The new owned modulation
 capture establishes V12's eleven parameter fields and BBD's five changed fields,
 including unsigned255 endpoints and BBD0=Vibrato/1=Chorus. Full offsets, ranges,
 frame spans and limitations are in [the modulation findings](docs/orion-afx-modulation.md).
-V12 presetIndex and BBD stereo/bypass/meter bytes are preserved opaque fields.
+V12 presetIndex and BBD bypass/meter bytes remain opaque. BBD Stereo Type was
+subsequently mapped by the directed capture above.
 Neither effect has a measured parameter reader or verified restoration contract;
 their loaded WebUI panels stay unknown and parameter writes remain disabled.
 No runtime query or capacity bound changes.
@@ -2042,6 +2146,438 @@ accepts mono channel indices 0–31 and these five independently captured types:
 These are measured instance ranges, not the full hardware instance limits or
 an entitlement list. The shared catalog's command definitions remain null;
 only the separate typed runtime contracts enable these operator actions.
+
+**PowerGate vendor load (2026-10-25).** A directed native-menu load into the
+empty AFX2 rack emits frame2959 in local
+`unattended-20261025-load-powergate/Orion.pcapng`: `0x23 / 0xd7 / 0x11`,
+channel byte18=`1`, first slot type39/instance0, seven empty slots. The catalog
+records the capture hash. This establishes Orion type identity from a labelled
+vendor action. Independent parameter/processing readback and runtime
+contracts remain unverified. Subsequent directed GUI trials captured six knob
+endpoint candidates and a processing-lever round trip; the field/frame table
+and reviewed-resume history are in [the power dynamics findings](docs/orion-afx-power-dynamics.md).
+PowerEx is independently loaded as type51/instance0 at frame4473 of
+`unattended-20261025-load-powerex/Orion.pcapng`; six knob endpoint candidates
+and its processing-switch round trip are also captured in the findings above.
+Both effects remain outside the five-effect runtime pilot.
+
+**VEQ-1A and VMEQ-5 (2026-10-25).** Directed vendor loads establish Orion
+type6/instance0 for VEQ-1A and type5/instance0 for VMEQ-5, respectively at
+frames3703/3481 in local `unattended-20261025-load-veq-1a` /
+`unattended-20261025-load-vmeq-5`. VEQ-1A's `0x1c / 0xd5 / 0x0a` blocks now
+have five continuous endpoint candidates and three fully labelled rotary maps;
+its processing-switch round trip uses instance17/type18/state19. Exact fields,
+frames, calibration history and remaining limits are in [the EQ findings](docs/orion-afx-eq.md).
+VMEQ-5's `0x1a / 0xd5 / 0x08` blocks now have three gain endpoint candidates,
+all 5/11/5 frequency-selector maps and a separate processing-switch round trip.
+No runtime pilot or query bounds are expanded.
+
+**VEQ-HLF (2026-10-25).** The independently observed Orion type11 uses
+`0x16 / 0xd5 / 0x04` parameter blocks. Both eleven-position cut-off selectors
+(bytes20/21, raw0..10) have complete directed detent maps, and the processing
+switch has an isolated `0x14 / 0x98` round trip. The [EQ findings](docs/orion-afx-eq.md)
+record frames and remaining limits. Runtime writers and query bounds are unchanged.
+
+**BAE-1023 (2026-10-26).** Directed load frame2327 establishes Orion type24/
+instance0. Its `0x1d / 0xd5 / 0x0b` blocks use Output20, High Frequency21/
+Gain22, Peak Frequency23/Gain24, Low Frequency25/Gain26, High-pass27 and
+Phase28. All eight endpoint pairs, literal 5/12/6/5 frequency-selector maps,
+Phase frame1665/941 round trip and the separate EQ `0x14 / 0x98` processing
+round trip (instance17/type18/state19, frames3485/855) are captured. Reviewed
+inner/outer hit points distinguish concentric controls sharing UIA bounds.
+The [EQ findings](docs/orion-afx-eq.md) record endpoint frames, full-payload/
+image return checks and the separate peakmeter limitation. Scaling, independent
+readback, audible/stereo behavior and runtime contracts remain unverified;
+no runtime writer or query bounds are expanded.
+
+**NEU-PEV priming family (2026-10-26).** The stopped native job
+`scan-NeumannPev-20261026T161447638Z/NeumannPev-channel2.pcapng` observes
+vendor OUT `0x19 / 0xd5 / 0x07` parameter blocks targeting type13/instance0.
+Low-gain byte20 changes through literal raw `ff`..`fb` at frames559..755;
+frames2621..2989 record the return direction and raw3. No sweep actions were
+accepted. This adds passive decoding only: endpoint ranges, signed/physical
+scaling, independent readback and runtime writes remain unverified. This opcode
+observation does not change category-`0x19` readback bounds.
+
+**NEU-PEV visible controls completed (2026-10-26).** A fresh native job
+`scan-NeumannPev-20261026T161740457Z` accepts all ten endpoint phases after
+the stopped priming job above. The `0x19 / 0xd5 / 0x07` blocks use Low Gain20,
+Presence Gain21/Frequency22, High Gain23 and Output24. Directed detent mapping
+covers all 9/5/7/10 positions across62 bounded trials, preserving literal High
+Gain `m` and wrapped unsigned wire values. The full captured payload and seven
+static image regions return to the starting maximum state. A separate processing
+`0x14 / 0x98` round trip uses instance17/type18/state19 (frames4619/1247).
+The [EQ findings](docs/orion-afx-eq.md) record endpoint frames, literal maps,
+Output signed candidates and separate display inventory. Scaling, independent
+readback, signal telemetry, audible/stereo behavior and runtime contracts remain
+unverified; no runtime writer or query bounds are expanded.
+
+**NEU-W492 priming family (2026-10-26).** The stopped native job
+`scan-NeumannW492-20261026T163707526Z/NeumannW492-channel2.pcapng` observes
+vendor OUT `0x22 / 0xd5 / 0x10`, targeting type15/instance0. Low-gain byte21
+alone changes through raw42/30/16/4/0 at frames459..665; frames2483..2905
+record the upward direction through raw100. Zero sweep actions were accepted.
+This actual observed family replaces any reference-derived prediction. Passive
+decoding does not establish parameter readback, physical scaling or a runtime
+write contract, and does not expand query bounds.
+
+**NEU-W492 visible controls captured (2026-10-26).** The corrected native job
+`scan-NeumannW492-20261026T164051354Z` accepts all eighteen endpoint phases.
+Its observed `0x22 / 0xd5 / 0x10` blocks use Low Cut20, four Gain bytes21/24/
+27/30, four Frequency bytes22/25/28/31, section-switch bytes23/26/29/32 and
+Output33. Separate section-switch round trips and Low Cut raw0→1→2→0 cycle
+restore the full captured payload/static panel image. Reviewed Low Cut images
+map raw0/1/2 to top140/middle20/bottom80 Hz, respectively. A separate `0x14 / 0x98` processing
+round trip uses instance17/type18/state19 (frames3065/699). The
+[EQ findings](docs/orion-afx-eq.md) give endpoint frames, section state/image
+associations and display limits. Physical/intermediate scaling, independent
+readback, signal telemetry, processing polarity, audible/stereo behavior and
+runtime contracts remain unverified. No runtime writer or query bounds expand.
+
+**NEU-W495 visible controls completed (2026-10-27).** Directed vendor load
+frame2209 establishes Orion type20/instance0. The `0x1c / 0xd5 / 0x0a` family
+uses Low Frequency20/Gain21, Mid Frequency22/Gain23, Bell Quality24 (`mid_q`),
+High Frequency25/Gain26 and Output27. Fourteen accepted endpoint phases and
+six complete stepped dial maps across100 bounded trials are captured. Reviewed
+Bell Quality raw0/1/2 means Left/Middle/Right, without numeric Q inference.
+Dial mapping and Bell Quality round trips return the full captured parameter
+body and checked static images; endpoint scans intentionally finish at maxima.
+A separate `0x14 / 0x98` processing round trip uses instance17/type18/state19
+(frames3869/1071), returning its checked static baseline. The
+[EQ findings](docs/orion-afx-eq.md) record frames, literal wrapped-byte maps,
+Output signed candidates and display limits. Scaling, independent readback,
+signal telemetry, processing polarity, audible/stereo behavior and runtime
+contracts remain unverified. No runtime writer or query bounds are expanded.
+
+**VEQ-4K PINK priming family (2026-10-27).** The stopped native job
+`scan-SslPink-20261027T020747657Z/SslPink-channel2.pcapng` observes nine
+vendor OUT `0x23 / 0xd5 / 0x11` blocks targeting type16/instance0. Only
+byte20 (LF cut) changes: frames2519/2567/2619/2671/2725/2777/2829/2881/2933
+carry raw8/20/34/46/58/70/82/94/100, respectively. No endpoint phases were
+accepted. This passive parameter classification remains separate from chain
+assignment `0x23 / 0xd7 / 0x11`; the selector distinguishes the two operations.
+These priming observations do not establish endpoint ranges, physical scaling,
+independent readback or runtime writes, and do not expand query bounds.
+
+**VEQ-4K PINK visible controls completed (2026-10-27).** The corrected native
+job `scan-SslPink-20261027T021124243Z` accepts all26 endpoint phases. The
+observed `0x23 / 0xd5 / 0x11` family targets type16/instance0: Low/High Cut20/21,
+HF Gain22/Frequency23, HMF mode24/Gain25/Frequency26/Quality27, LMF Gain28/
+Frequency29/Quality30/mode31, LF Gain32/Frequency33 and Output34. Independently
+reviewed mode labels are HMF ×3 (compatibility ID `hf_bell`) and LMF ÷3
+(`lf_bell`); each raw0 LED Dark→raw1 LED Lit→raw0 round trip returns its full
+captured parameter body/static image. Processing `0x14 / 0x98` uses instance17/
+type18/state19 (frames2865/645) and returns its checked static baseline. Endpoint
+jobs intentionally finish at maxima. The [EQ findings](docs/orion-afx-eq.md)
+record endpoint/mode frames, layout rejection/priming history and display limits.
+Physical/intermediate scaling, independent readback, mode audio/bell semantics,
+signal telemetry, processing polarity, audible/stereo behavior and runtime
+contracts remain unverified. No runtime writer or query bounds are expanded.
+
+**VEQ-4K ORANGE visible controls completed (2026-10-27).** Independent load
+frame2113 establishes Orion type17/instance0. Native job
+`scan-SslOrange-20261027T022803586Z` accepts all26 endpoint phases, observing
+`0x23 / 0xd5 / 0x11`: Low/High Cut20/21, HF Gain22/Frequency23, HF mode24,
+HMF Gain25/Frequency26/Quality27, LMF Gain28/Frequency29/Quality30, LF mode31,
+LF Gain32/Frequency33 and Output34. Independently reviewed labels are LF BELL
+(`lf_bell`, byte31) and HF BELL (`hf_bell`, byte24); each raw0 LED Dark→raw1
+LED Lit→raw0 round trip returns its full captured parameter body/static images.
+These labels do not establish numeric Q, range behavior or audible effects.
+Processing `0x14 / 0x98` uses instance17/type18/state19 (frames2881/715) and
+returns its checked static baseline. Endpoint scans intentionally finish at
+maxima. The [EQ findings](docs/orion-afx-eq.md) record source frames and limits.
+Physical/intermediate scaling, independent readback, signal telemetry, processing
+polarity, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.
+
+**VEQ-4K BROWN visible controls completed (2026-10-27).** Independent load
+frame2179 establishes Orion type19/instance0. Native job
+`scan-SslBrown-20261027T024419020Z` accepts all26 endpoint phases, observing
+`0x23 / 0xd5 / 0x11`: Low/High Cut20/21, HF Gain22/Frequency23, HF mode24,
+HMF Gain25/Frequency26/Quality27, LMF Gain28/Frequency29/Quality30, LF mode31,
+LF Gain32/Frequency33 and Output34. Independently reviewed labels are LF BELL
+(`lf_bell`, byte31) and HF BELL (`hf_bell`, byte24); each raw0 LED Dark→raw1
+LED Lit→raw0 round trip returns its full captured parameter body/static images.
+These labels do not establish numeric Q, bell/audio behavior or audible effects.
+Processing `0x14 / 0x98` uses instance17/type18/state19 (frames2981/659) and
+returns its checked static baseline. Endpoint scans intentionally finish at
+maxima. The [EQ findings](docs/orion-afx-eq.md) record source frames and limits.
+Output signed interpretation, physical/intermediate scaling, independent readback,
+signal telemetry, processing polarity, audible/stereo behavior and runtime
+contracts remain unverified. No runtime writer or query bounds are expanded.
+
+**VEQ-STU 900 visible controls completed (2026-10-27).** Directed load
+frame2469 establishes Orion type23/instance0. Native job
+`scan-Studer900-20261027T030034849Z` accepts all22 endpoint phases, observing
+`0x23 / 0xd5 / 0x11`: Low/High Cut20/21, LF Gain22/Frequency23/switch24,
+LMF Gain25/Frequency26/switch27, HMF Gain28/Frequency29/switch30, HF Gain31/
+Frequency32/switch33 and Output34. Reviewed endpoint images establish Low Cut
+raw0 OFF and High Cut raw100 OFF, without an intermediate-law claim. Each of
+four isolated switch round trips maps raw0 Upper/raw1 Lower and returns its full
+captured parameter body/static images; numeric Q, bell/audio semantics are
+unverified. Processing `0x14 / 0x98` uses instance17/type18/state19
+(frames3323/725), returning its checked static baseline. Endpoint scans
+intentionally finish at maxima. The [EQ findings](docs/orion-afx-eq.md) record
+source frames and the separate embedded processing-lamp/meter inventory.
+Physical/intermediate scaling, independent readback, signal telemetry, processing
+polarity, audible/stereo behavior and runtime contracts remain unverified.
+No runtime writer or query bounds are expanded.
+
+**VEQ-STU 169 visible controls completed (2026-10-27).** Directed load
+frame2541 establishes Orion type22/instance0. Native job
+`scan-Studer169-20261027T144830356Z` accepts ten endpoint phases with zero
+drops, observing `0x1a / 0xd5 / 0x08`: Filter20, HF Gain21, MF Gain22,
+MF Frequency23, LF Gain24 and Output25. Four knob pairs are raw0/100; Output
+retains unsigned232/12 with signed candidates -24/+12 only. The concentric
+MF controls affect distinct fields and preserve their partner. Filter first/
+return frames749/767 map raw1 Lower/raw0 Upper and return the complete captured
+parameter body/static panel. Processing `0x14 / 0x98` uses instance17/type18/
+state19, frames3027/617 tuples001600/001601, with checked static-image return.
+Printed gain/frequency ticks establish neither detents nor physical scaling.
+Native `Studer089Peakmeter`/`AfxLed` classes record GUI presence only. See the
+[EQ findings](docs/orion-afx-eq.md) for source captures and limits. Independent
+readback, physical/intermediate scaling, signal telemetry, audible/stereo
+behavior and runtime contracts remain unverified. No runtime writes or query
+bounds are expanded.
+
+**VEQ-STU 089 visible controls completed (2026-10-27).** Directed load
+frame1581 establishes Orion type21/instance0. Observed parameter family
+`0x1b / 0xd5 / 0x09` uses type18/instance19. The rotary scan
+`scan-Studer089-20261027T150545312Z` accepts four phases: Presence Gain24
+raw0/100 frames4475/12839 and Output26 unsigned232/12 frames20383/27775,
+signed candidates -24/+12 only. Five finite slider maps are independently
+reviewed: LF Cut20 five positions, HF Cut21 five, LF Shelf22 nine, HF Shelf23
+nine and Presence Frequency25 seven. Complete captured bodies and checked
+static images return exactly for every slider map; printed labels and raw
+bytes are retained without assuming physical calibration or signed arithmetic.
+The processing source `unattended-20261027T144257Z-veqstu089-processing`
+uses `0x14 / 0x98`, instance17/type18/state19, frames3863/1055
+tuples001500/001501, with checked static-image return.
+Native `Studer089Peakmeter`/`AfxLed` record GUI presence only. See the
+[EQ findings](docs/orion-afx-eq.md) for exact raw maps, captures and input
+calibration limits. Independent per-field readback, rotary scales/interpolation,
+signal telemetry, audible/stereo behavior and runtime contracts remain
+unverified. No writer or query bounds are expanded.
+
+**MG4+ visible controls completed (2026-10-28).** Directed load frame1869
+in `unattended-20261027T144257Z-load-mg4plus/Orion.pcapng` establishes Orion
+type68/instance0. Native `Mg4` uses `0x1c / 0xd5 / 0x0a`, type18/instance19.
+The fourteen-phase scan `scan-Mg4-20261028T024610925Z` has zero drops:
+Output20, Sub21, 40Hz22, 160Hz23, 650Hz24, 2.5kHz25 and Sky Gain26 each have
+raw endpoint candidates0/20. Quantization does not establish complete finite
+gain maps, physical scales or interpolation. Sky Band27 has a separately
+captured complete eleven-position map: raw0 OFF, then raw1–10 printed
+2.5/3.5/5/7/10/15/20/25/30/40 kHz, independently reviewed with full captured
+body/static-image return. Processing `0x14 / 0x98`, instance17/type18/state19,
+frames3233/774, tuples004400/004401, returns the checked static baseline.
+`Mg4PeakMeter` and the embedded blue lamp in `Mg4BypassButton` record GUI
+presence only. See [EQ findings](docs/orion-afx-eq.md) for source frames and
+limits. Independent per-field readback, gain/output scales and interpolation,
+signal telemetry, audible/stereo behavior and runtime contracts remain
+unverified. No writer or query bounds are expanded.
+
+**Audio / Baton priming family (2026-10-28).** The directed load at
+frame1627 in `unattended-20261028T023901Z-load-audiobaton/Orion.pcapng`
+establishes Orion type69/instance0. A bounded eight-pixel gesture on the native
+`AudioBatonDrivePot`, printed VOLUME, produces frame2529 in
+`unattended-20261028T023901Z-audiobaton-priming/Orion.pcapng`:
+`0x1e / 0xd5 / 0x0c`, type byte18/instance byte19, with body prefix
+`32 32 32 32 32 32 32 32 32 33`. This first complete block is a seed,
+without a preceding captured parameter baseline; it establishes neither an
+isolated control range nor a physical scale. The passive analyzer recognizes
+the captured family without enabling a writer or expanding query bounds.
+Later directed captures isolate all ten fields: nine bands at bytes20–28 and
+VOLUME at29, each with completed raw0/100 endpoint-candidate pairs. Rack BP
+processing at frames3071/643 in `unattended-20261028T145303Z-audiobaton-rack-bp-processing`
+uses actual instance17/type18/state19, tuples `00 45 00` / `00 45 01`.
+BP checkbox Off→On→Off correlates front IN/right→OUT/left→IN/right, and checked
+staticGUI returns exactly. Front center-click and8pxvertical-drag methods were
+negative; no trial replayed. See [the EQ findings](docs/orion-afx-eq.md#audio--baton--visible-control-pass-2026-10-28)
+for source frames, geometry reconciliation and limits. Runtime writes/readback,
+physical interpolation, audible response and meter telemetry remain unverified.
+
+**VCA160 priming family (2026-10-28).** Directed vendor load frame1535 in
+`unattended-20261028T145303Z-load-vca160/Orion.pcapng` establishes Orion type33,
+instance0. One bounded8pxupward Output Gain gesture emits frames2247/2295 in
+`unattended-20261028T145303Z-vca160-priming/Orion.pcapng`: `0x17 / 0xd5 / 0x05`,
+type byte18/instance byte19, body `32 15 3a`→`32 15 3b`. Only byte22 changes
+after the first report; there is no captured parameter baseline before that report.
+The passive analyzer recognizes this observed envelope. The later six-phase
+`scan-Dbx160-20261028T152511931Z` maps Threshold20 raw0/100, Compression21
+raw0/60 and Output Gain22 raw0/100. Independent screenshots associate printed
+−50/0 (Threshold explicitlydB),1/∞ and−20/+20 respectively. POWER first2911 /
+return679 in `unattended-20261028T145303Z-vca160-processing` uses actual
+instance17/type18/state19 tuples `00 21 00` / `00 21 01`, with exact checked
+static restoration and BP/lamp GUI correlation. See [dynamics findings](docs/orion-afx-power-dynamics.md#vca160--visible-control-pass-2026-10-28).
+Physical interpolation, audible response, meter telemetry and independent
+readback remain unverified; no query bounds or hardware writer are expanded.
+
+**ALT-436C (2026-10-28).** Directed load frame1553 in
+`unattended-20261028T145303Z-load-altec436c` establishes Orion type35/0.
+`scan-Altec436C-20261028T154214904Z` captures Input20, Threshold21 and Release22
+raw0/100, Output23 wire232/24 with signed candidates−24/+24. Forty observed
+Release values rule out interpreting its three printed marks as three captured
+states. Byte24 remains unidentified/preserved. Rack BP first3136/return729 uses
+actual instance17/type18/state19 tuples `00 23 00` / `00 23 01`, with checked
+static restoration and lamp/POWER-pointer GUI correlation. The short native
+Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-power-dynamics.md#alt-436c--visible-control-pass-2026-10-28)
+retain source frames, measured geometry and label/scale limits. No runtime
+writer, independent readback or query expansion is established.
+
+**Comp-4K-Bus visible controls (2026-11-04).** Directed load frame853 in
+`supervised-20261104T012645Z-load-ssl4kbus` establishes Orion type63/instance0.
+The16-phase `scan-Ssl4kBus-20261104T014150887Z` and separate two-phase HR
+`scan-Ssl4kBus-20261104T015423692Z` observe `0x1e / 0xd5 / 0x0c`,
+type18/instance19. Threshold20, Make Up21, Rate22, SC Filter27, HR28 and Mix29
+each have raw0/100 endpoints. Printed endpoints respectively are−15/+15 dB,
+−5/+15 dB,1/60 s,OFF/500 Hz,unverified HR-dB values,and0/100%.
+Separate raw-label maps establish Attack23 raw0..5→0.1/0.3/1/3/10/30 ms,
+Release24 raw0..4→0.1/0.3/0.6/1.2 s/Auto and Ratio25 raw0..2→2/4/10,
+each returning the entire captured parameter body and checked static GUI.
+Auto Fade26 returns0→1→0 with full-body/static return. IN processing uses
+`0x14 / 0x98`, instance17/type18/state19: first3576 tuple`00 3f 00` with IN dark/
+BP active, return837 tuple`00 3f 01` with IN lit/BP normal in
+`supervised-20261104T093918Z-ssl4kbus-processing`. Both checked static regions
+return, excluding meters. Removal frame1367 in
+`supervised-20261104T093918Z-remove-ssl4kbus` verifies all eight AFX2 slots
+empty and completes the visible editable-control pass.
+[Dynamics findings](docs/orion-afx-power-dynamics.md#comp-4k-bus--visible-control-pass-2026-11-04)
+record source frames and physical/audible limits. HR endpoint dB values,
+calibrated interpolation, physical timing, audible Auto Fade behavior, meter
+telemetry, independent readback and runtime contracts remain unverified.
+Commands remain null and no query bounds are expanded.
+
+**Impresser partial controls (2026-11-04).** Directed load frame785 in
+`supervised-20261104T012645Z-load-impresser` establishes Orion type42/instance0.
+Twelve accepted endpoint phases in `scan-Impresser-20261104T012918709Z`
+observe `0x1e / 0xd5 / 0x0c`, type18/instance19: Input20, Output21, Attack22
+and Release23 raw0/100, each printed0/100; detector HPF25/BPF26 raw0/10,
+printed OFF/1k and OFF/10k. Intermediate selector raw-label maps remain pending;
+no continuous filter interpolation or calibrated large-knob scale is established.
+Ratio24 maps0→1:1,1→2:1,2→3:1,3→4:1,4→6:1,5→10:1,6→20:1,7→NUKE in
+`supervised-20261104T012645Z-impresser-ratio`. The full captured parameter body
+and raw3/4:1 display return, but the OPTO lamp changes bright to dark and stays
+dark during read-only recheck. The static-check failure and reconciliation are
+retained without repair/replay. [Dynamics findings](docs/orion-afx-power-dynamics.md#impresser--partial-control-capture-2026-11-04)
+record exact frames and the unresolved indicator discrepancy. Harmonics,
+Stereo Link, UK Mode, processing, complete detector maps, telemetry, independent
+readback, physical scaling and runtime contracts remain pending. This is not a
+completed plugin pass; commands remain null and no query bounds are expanded.
+
+**FET-A76 (2026-11-03).** Directed load frame761 establishes Orion type9/instance0;
+frame783 sends a same-instance initialization block. Read-only reconciliation
+preserves the original strict single-event guard failure; no load replayed.
+Eight endpoint phases in `scan-Uad1176-20261103T152833429Z` observe
+`0x19 / 0xd5 / 0x07`: Input20/Output21 raw0..60, printed∞/0;
+Attack22/Release23 raw0..100, printed1 SLOW/7 FAST. Ratio24 individually maps
+1→4,2→8,4→12,8→20 with full-body/static return; combinations remain unobserved.
+The illuminated ON button sends `0x14 / 0x98`, instance17/type18/state19,
+with lamp dark0/lit1 and a checked static return excluding VU/peak meters. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#fet-a76--visible-control-pass-2026-11-03)
+record exact frames and limits. Compatibility ID `uad_1176` is retained. Runtime
+writes, independent readback, physical scaling/timing, telemetry and audible
+behavior remain unverified; query bounds are unchanged.
+
+**FET-A78 (2026-11-03).** Directed load frame757 establishes Orion type37/instance0;
+frame801 sends a same-instance initialization block. Read-only reconciliation
+preserves the original strict single-event guard failure; no load replayed.
+Eight endpoint phases in `scan-Uad1178-20261103T152024481Z` observe
+`0x19 / 0xd5 / 0x07`: Input20/Output21 raw0..60, printed∞/0;
+Attack22/Release23 raw0..100, printed1/7. Ratio24 individually maps1→4,
+2→8,4→12,8→20 with full-body/static return; combinations remain unobserved.
+Power `0x14 / 0x98`, instance17/type18/state19, maps0 lower/dark and1 upper/lit
+with a checked static return excluding VU/peak meters. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#fet-a78--visible-control-pass-2026-11-03)
+record exact frames and limits. Runtime writes, independent readback, physical
+scaling/timing, telemetry and audible behavior remain unverified; query bounds
+are unchanged. Compatibility ID `uad_1178` is retained.
+
+**X903 (2026-11-03).** Directed load frame889 establishes Orion type29/instance0.
+Six endpoint phases in `scan-Dbx903-20261103T151417999Z` observe
+`0x17 / 0xd5 / 0x05`: Threshold20 raw0..100 (printed−60..0dB), Ratio21
+raw0..60 (printed1:1/−1:1), Output22 raw0..100 (printed−20..+20dB).
+IN `0x14 / 0x98`, instance17/type18/state19, maps0 lamp dark/1 lamp lit with
+four checked static regions returned, excluding two LED meter rows. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#x903--visible-control-pass-2026-11-03)
+record exact frames and separate display inventory. Intermediate ratio/gain laws,
+physical calibration, signed interpretation, independent readback, telemetry,
+audible behavior and runtime contracts remain unverified; no query bound or
+writer is expanded.
+
+**SMT-100A (2026-11-03).** Directed load frame729 establishes Orion
+type36/instance0. Four endpoint phases in `scan-Summit100A-20261103T150522388Z`
+observe `0x18 / 0xd5 / 0x06`: Gain20 (`output`) and Gain Reduction23 (`input`)
+raw0..100, printed0..10. Attack21/Release22 each map0 right/SLOW,1 centered
+unlabelled,2 left/FAST. Both complete directed cycles return the full captured
+body and five static regions; centered timing meanings remain unknown. Power
+`0x14 / 0x98`, instance17/type18/state19, maps0 right/lamp dark and1 left/ON/lamp
+lit with a checked static return. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#smt-100a--visible-control-pass-2026-11-03)
+record exact evidence and the separate VU/peak inventory. Physical scales,
+timing, independent readback, telemetry, audible behavior and runtime contracts
+remain unverified. No query bound or writer is expanded.
+
+**Stay-Levin (2026-11-03).** Directed load frame1083 establishes Orion
+type34/instance0. Six accepted endpoint phases in
+`scan-StayLevin-20261103T145457652Z` observe `0x18 / 0xd5 / 0x06`:
+Input20/Output21 raw0..100, Recovery22 raw0..4. Eight adjacent Recovery
+changes capture all five pointer contacts and return the full captured body/static
+regions. Only endpoint dots are labelled SLOW/FAST; intermediate timing meanings
+remain unknown. MODE byte23 maps0 DOUBLE/1 SINGLE (compatibility ID `attack`),
+with a full-body/static return. Power uses `0x14 / 0x98`, instance17/type18/state19,
+with OFF/dark0 and ON/lit1 GUI observations and static return. The
+[dynamics findings](docs/orion-afx-power-dynamics.md#stay-levin--visible-control-pass-2026-11-03)
+record frames, failed-input boundaries and separate meters. Runtime writes,
+independent readback, timing/scaling, telemetry and audible behavior remain
+unverified; query bounds are unchanged.
+
+**Liverpool (2026-10-29).** Directed load1581 in
+`unattended-20261028T145303Z-load-liverpool` establishes Orion type31/0.
+Its `0x1a / 0xd5 / 0x08` block has Input20/Threshold21 raw0/100 endpoints,
+Attack22/Recovery23 eleven-position maps and Output24 six-position attenuation
+map. Byte25 stays unidentified. The full50change/sixterminal selector pass returns
+whole body/static baseline. Outputraw0–5 means printed30/20/15/10/5/0dB;
+numbered Attack/Recovery settings retain every interleaved C/COMP OFF and H/HOLD
+wire state separately. Mains Power first7413/return625 in
+`unattended-20261028T230645Z-liverpool-processing` uses actual instance17/type18/
+state19 tuples `00 1f 00` / `00 1f 01`, with exact checked GUI restoration.
+[Detailed dynamics findings](docs/orion-afx-power-dynamics.md#liverpool--visible-control-pass-2026-10-29)
+record labels, source frames and limits; timing, audio, telemetry, independent
+readback and runtime writes remain unverified. No query scope expands.
+
+**BA-31 (2026-10-25).** A directed vendor load independently establishes Orion
+type48. Gain/Trim use bytes20/21 in `0x16 / 0xd5 / 0x04` blocks, each with raw
+endpoint candidates10/100, plus an isolated processing-switch round trip.
+See [preamp findings](docs/orion-afx-preamps.md) for source frames and limits.
+No runtime pilot or readback contract is expanded.
+
+**Gyratec IX (2026-10-25).** Directed load evidence independently establishes
+Orion type43. Its `0x18 / 0xd5 / 0x06` blocks have Gain/Output endpoint
+candidates and complete Phase/Low-Cut two/three-position maps, plus an isolated
+processing-switch round trip. The [preamp findings](docs/orion-afx-preamps.md)
+record frames, calibration history and remaining limits; no runtime writes added.
+
+**VPA 76 (2026-10-25).** Independently observed Orion type44 also uses
+`0x18 / 0xd5 / 0x06` blocks. Warmth/Trim endpoint candidates, complete two/four
+position filter maps and an isolated processing round trip are recorded in
+[preamp findings](docs/orion-afx-preamps.md). Compatibility IDs are retained;
+physical scaling and runtime writes remain unverified.
+
+**V12 visible controls completed (2026-10-25).** Fresh isolated power events
+confirm instance17/type18/state19 at frames3461/713. Directed per-count captures
+establish all twelve Voices positions; catalog/UI kind is now a rotary enum,
+with fractional local counts rejected. The earlier ten-knob/Humanize batch is
+retained. [Modulation findings](docs/orion-afx-modulation.md) distinguish this
+completion from the historical linked pulse pairs. Runtime writes remain disabled.
+
+**ATuner editable control captured; screen deferred (2026-10-26).** The
+labelled vendor load2719 independently establishes Orion type72/instance0.
+Its only observed editable panel control is power: first9329/return2167 carry
+004800/004801 at17..19, with exact button-image return. Frequency/note/cents
+screen reading is essential and explicitly deferred by the owner; this does
+not establish a functioning tuner or pitch accuracy. The [display inventory](docs/orion-afx-displays.md)
+records native meter/screen/LED classes for all currently captured effects,
+separately from editable-control completion. No telemetry query is inferred.
 
 The popup keeps categorized effect selectors in the left slot list, a compact
 pair button in its channel header, and eight rack panels on the right. Both
@@ -2113,6 +2649,16 @@ the exact captured tuples. Other Memory Cat instance reads3–7 remain guarded.
 Instinct75/1, Master De-Esser27/1 and BBD78/0 also have observed requests/replies
 in the first capture, but their individual response fields are unlabelled and
 runtime queries remain disabled. These are not license/account readbacks.
+The owner confirms that the vendor's INIT requests occur when starting the
+Orion control panel. Reuse those recordings before asking for more captures.
+Offline review on2026-10-09 identifies Instinct75/1 pairs17133/17157 and
+20341/20365 in the first capture, plus5189/5217 in the older Instinct/De-Esser
+load capture. All three parameter payloads are identical. They use the same
+tagged envelope, with reply header`7500000040010000070000004b000080` and opaque
+data beginning17. This supports shared query/reply machinery; individual
+Instinct field positions/scales and a runtime reader remain unverified. The
+vendor's startup timing does not establish an initialization-only restriction
+on the device; Memory Cat's explicit Linux reads are already verified.
 The reusable request/response layout, per-effect offsets, observed indices,
 correlation limits and evidence live in
 `profiles/orion_studio_sc.json#frame.afx_slot.instance_state_readback`;

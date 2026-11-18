@@ -10,6 +10,7 @@ right tool.
 | Need | Tool | Writes to hardware? |
 | --- | --- | --- |
 | Run the complete offline regression suite | `python3 tools/offline_checks.py` | No |
+| Export the split AFX catalog as one JSON document | `python3 tools/export_afx_catalog.py --catalog profiles/afx_effects.json --output /tmp/afx-catalog.json` | No |
 | Check browser rendering, links, and AFX popup lifecycle | `node tools/test_webui_meters.cjs`, `node tools/test_webui_mixer_links.cjs`, `node tools/test_webui_input_links.cjs`, and `node tools/test_webui_afx.cjs` | No |
 | Verify the connected device through bounded readbacks | `python3 tools/selftest.py` | No by default |
 | Run restore-safe hardware round trips | `python3 tools/selftest.py --write` | Yes; restores state |
@@ -26,6 +27,48 @@ right tool.
 | Inspect HID capabilities | `python3 tools/hid_probe.py --profile profiles/orion_studio_sc.json` | No |
 | Enumerate profile-bounded device readbacks | `python3 tools/readback_enum.py --profile profiles/orion_studio_sc.json` | Yes; bounded queries |
 | Investigate control-transfer/readback behavior | `python3 tools/ct_probe.py` or `python3 tools/readback_probe.py` | Potentially; read the script first |
+
+## One overnight Codex continuation
+
+`schedule_codex_continue.py` waits outside the agent and sends one message to
+an exact session using the installed `codex queue` command. It does not launch
+a second capture worker or access hardware itself. Choose the send time manually
+from that night's `/status` reset estimate, with a small margin after reset;
+there is no fixed reset schedule. Use the session UUID shown by Codex
+(`CODEX_THREAD_ID` is also provided inside its shell tools).
+
+Preview first, replacing the UUID and dates with your actual session and times:
+
+```sh
+python3 tools/schedule_codex_continue.py --thread SESSION_UUID \
+  --at '2030-01-01T01:30:00+01:00' --stop-by '2030-01-01T07:00:00+01:00'
+```
+
+Run the same command with `--arm` in a separate ordinary terminal to wait and
+send. To survive closing that terminal, use `nohup` and keep the printed PID:
+
+```sh
+nohup python3 tools/schedule_codex_continue.py --thread SESSION_UUID \
+  --at '2030-01-01T01:30:00+01:00' --stop-by '2030-01-01T07:00:00+01:00' \
+  --arm > /tmp/afx-overnight-continue.log 2>&1 &
+echo $!
+```
+
+Cancel with Ctrl+C in the foreground or `kill PID` for the background process.
+Arm only one copy. The waiting process must run outside an agent tool call so
+it remains independent of the agent's usage allowance. Keep the computer awake,
+Codex session and required VM/USB-redirection viewer running. Explicit UTC
+offsets avoid ambiguity across daylight-saving changes.
+
+This sends once without retries. If the machine wakes more than ten minutes
+after the selected time, or after the device deadline, it skips delivery. A
+successful queue exit is not proof the agent resumed; live delivery after a
+usage reset remains to be tested. The stop time is an instruction to the agent,
+**not an enforced hardware cutoff**. A suspended/blocked agent cannot guarantee
+device release at that time. The continuation requests fresh state checks,
+bounded batches that finish before the deadline, a saved handoff and a pause;
+it does not override a newer owner pause. No job is armed by installing this
+script. See the [official queue documentation](https://learn.chatgpt.com/docs/developer-commands#codex-queue).
 
 ## Safety classes
 
@@ -58,6 +101,15 @@ Capture inputs are ignored too; keep only sanitized findings in the tracked
 profile and protocol documentation.
 
 ## Orion AFX evidence and regression checks
+
+AFX plugin definitions live in `profiles/afx/<effect_id>.json`, listed by the
+ordered `profiles/afx_effects.json` manifest. Python tools read them through
+`antelope.catalog.load_catalog(path)`. The exporter above writes resolved
+inline JSON for external tools; omit `--output` for stdout or `--catalog` to
+select the repository catalog. Generated exports
+are not authored catalog sources. Archived capture helpers that parsed or
+text-spliced the old inline catalog require migration before reuse; see the
+[editing workflow](../docs/orion-afx-workflow.md#editing-captured-plugin-knowledge).
 
 The 2026-10-01 device trials verified all 16 AFX link transitions against the
 five bounded link tables, then verified Memory Cat load/remove on the 30

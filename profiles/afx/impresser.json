@@ -1,0 +1,771 @@
+{
+  "id": "impresser",
+  "name": "impresser",
+  "source_name": "impresser",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.42"
+  ],
+  "controls": [
+    {
+      "id": "input",
+      "label": "Input",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Output",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "release",
+      "label": "Release",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "ratio",
+      "label": "Ratio",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "high_pass_filter",
+      "label": "High Pass Filter",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "band_pass_filter",
+      "label": "Band Pass Filter",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "distortion",
+      "label": "Distortion",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "british_mode",
+      "label": "British Mode",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    },
+    {
+      "id": "linked",
+      "label": "Linked",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_impresser_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 42,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 42,
+      "status": "capture-observed; partial visible controls; OPTO indicator discrepancy unresolved",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "input": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Input",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "100"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "device_readback_verified": false,
+          "evidence": [
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame4609: minimum raw0; image captures/scan-Impresser-20261104T012918709Z/Impresser-input-minimum.png",
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame11303: maximum raw100; image captures/scan-Impresser-20261104T012918709Z/Impresser-input-maximum.png"
+          ],
+          "notes": "Printed endpoint associations only. No calibrated units, interpolation or numerical timing contract."
+        },
+        "output": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "100"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "device_readback_verified": false,
+          "evidence": [
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame19581: minimum raw0; image captures/scan-Impresser-20261104T012918709Z/Impresser-output-minimum.png",
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame26431: maximum raw100; image captures/scan-Impresser-20261104T012918709Z/Impresser-output-maximum.png"
+          ],
+          "notes": "Printed endpoint associations only. No calibrated units, interpolation or numerical timing contract."
+        },
+        "attack": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Attack",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "100"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "device_readback_verified": false,
+          "evidence": [
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame34979: minimum raw0; image captures/scan-Impresser-20261104T012918709Z/Impresser-attack-minimum.png",
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame41971: maximum raw100; image captures/scan-Impresser-20261104T012918709Z/Impresser-attack-maximum.png"
+          ],
+          "notes": "Printed endpoint associations only. No calibrated units, interpolation or numerical timing contract."
+        },
+        "release": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Release",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "100"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "device_readback_verified": false,
+          "evidence": [
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame50707: minimum raw0; image captures/scan-Impresser-20261104T012918709Z/Impresser-release-minimum.png",
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame57995: maximum raw100; image captures/scan-Impresser-20261104T012918709Z/Impresser-release-maximum.png"
+          ],
+          "notes": "Printed endpoint associations only. No calibrated units, interpolation or numerical timing contract."
+        },
+        "high_pass_filter": {
+          "offset": 25,
+          "width": 1,
+          "kind": "enum",
+          "label": "Detector high-pass filter",
+          "range": [
+            0,
+            10
+          ],
+          "observed_display_range": [
+            "OFF",
+            "1k"
+          ],
+          "status": "capture-observed; stepped selector endpoints only; intermediate labels pending",
+          "writable": false,
+          "device_readback_verified": false,
+          "evidence": [
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame66437: minimum raw0; image captures/scan-Impresser-20261104T012918709Z/Impresser-high_pass_filter-minimum.png",
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame73865: maximum raw10; image captures/scan-Impresser-20261104T012918709Z/Impresser-high_pass_filter-maximum.png"
+          ],
+          "notes": "Stepped detector selector; only raw0 OFF and raw10 endpoint label captured. Printed intermediate marks do not establish their raw associations; raw1..9 labels/meanings remain pending. No continuous interpolation.",
+          "enum": {
+            "0": "OFF",
+            "10": "1k"
+          },
+          "unmapped_raw_values": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        "band_pass_filter": {
+          "offset": 26,
+          "width": 1,
+          "kind": "enum",
+          "label": "Detector band-pass filter",
+          "range": [
+            0,
+            10
+          ],
+          "observed_display_range": [
+            "OFF",
+            "10k"
+          ],
+          "status": "capture-observed; stepped selector endpoints only; intermediate labels pending",
+          "writable": false,
+          "device_readback_verified": false,
+          "evidence": [
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame83177: minimum raw0; image captures/scan-Impresser-20261104T012918709Z/Impresser-band_pass_filter-minimum.png",
+            "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng frame90791: maximum raw10; image captures/scan-Impresser-20261104T012918709Z/Impresser-band_pass_filter-maximum.png"
+          ],
+          "notes": "Stepped detector selector; only raw0 OFF and raw10 endpoint label captured. Printed intermediate marks do not establish their raw associations; raw1..9 labels/meanings remain pending. No continuous interpolation.",
+          "enum": {
+            "0": "OFF",
+            "10": "10k"
+          },
+          "unmapped_raw_values": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        "ratio": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "Ratio",
+          "enum": {
+            "0": "1:1",
+            "1": "2:1",
+            "2": "3:1",
+            "3": "4:1",
+            "4": "6:1",
+            "5": "10:1",
+            "6": "20:1",
+            "7": "NUKE"
+          },
+          "status": "capture-observed; eight displayed labels; full body returned but OPTO lamp did not return",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 4,
+              "printed_label": "6:1",
+              "frame": 2113,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-1.png"
+            },
+            {
+              "raw": 5,
+              "printed_label": "10:1",
+              "frame": 4125,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-2.png"
+            },
+            {
+              "raw": 6,
+              "printed_label": "20:1",
+              "frame": 6189,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-3.png"
+            },
+            {
+              "raw": 7,
+              "printed_label": "NUKE",
+              "frame": 8255,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-4.png"
+            },
+            {
+              "raw": 0,
+              "printed_label": "1:1",
+              "frame": 10367,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-5.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "2:1",
+              "frame": 12481,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-6.png"
+            },
+            {
+              "raw": 2,
+              "printed_label": "3:1",
+              "frame": 14601,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-7.png"
+            },
+            {
+              "raw": 3,
+              "printed_label": "4:1",
+              "frame": 16659,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-8.png"
+            }
+          ],
+          "notes": "Literal RatioDisplay labels only; NUKE is not assigned an invented numerical ratio. Cycle starts and returns raw3/4:1 with identical full captured parameter body. OPTO lamp changes bright to dark and remains dark on read-only recheck; meaning/origin unresolved, so static GUI restoration is not certified."
+        }
+      },
+      "evidence": [
+        "captures/supervised-20261104T012645Z-load-impresser/Orion.pcapng frame785: AFX2 slot0 type42 instance0; single chain assignment; all remaining slots empty",
+        "captures/scan-Impresser-20261104T012918709Z: 12 accepted endpoint phases, 95932 packets, zero drops; capture/analysis SHA256 bound",
+        "captures/supervised-20261104T012645Z-impresser-ratio: eight one-byte Ratio changes and displayed labels; complete captured body returned, OPTO lamp differs; 18116 packets, zero drops"
+      ],
+      "notes": "Orion-only endpoint and labelled Ratio observations; remaining visible controls pending. OPTO lamp differs after full parameter-body and Ratio-label return. Original failed static-check trial and read-only reconciliation retained; no repair or replay. Commands remain null. Physical scaling, timing/interpolation, telemetry, independent readback, audible/stereo behavior and runtime contracts unverified.",
+      "type_id_write_status": "observed official GUI assignment; no runtime writer enabled",
+      "parameter_observation": {
+        "opcode": "0x1e",
+        "param_id": "0xd5",
+        "subcmd": "0x0c",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; six endpoint pairs and all eight Ratio labels; visible-control pass partial",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4609,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 11303,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 19581,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 26431,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "attack",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 34979,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "attack",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 41971,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 50707,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 57995,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "high_pass_filter",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 66437,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "high_pass_filter",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 10,
+            "frame": 73865,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "band_pass_filter",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 83177,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          },
+          {
+            "control": "band_pass_filter",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 10,
+            "frame": 90791,
+            "source": "captures/scan-Impresser-20261104T012918709Z/Impresser-channel2.pcapng"
+          }
+        ],
+        "capture_sha256": "af5eaa4c9fc628455870f0c643851a43dd635a4a0d66cb63203093c70c5c40c2",
+        "evidence": [
+          "scan-Impresser-20261104T012918709Z: 12 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "labelled_gui_observations": {
+          "ratio": [
+            {
+              "raw": 4,
+              "printed_label": "6:1",
+              "frame": 2113,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-1.png"
+            },
+            {
+              "raw": 5,
+              "printed_label": "10:1",
+              "frame": 4125,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-2.png"
+            },
+            {
+              "raw": 6,
+              "printed_label": "20:1",
+              "frame": 6189,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-3.png"
+            },
+            {
+              "raw": 7,
+              "printed_label": "NUKE",
+              "frame": 8255,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-4.png"
+            },
+            {
+              "raw": 0,
+              "printed_label": "1:1",
+              "frame": 10367,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-5.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "2:1",
+              "frame": 12481,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-6.png"
+            },
+            {
+              "raw": 2,
+              "printed_label": "3:1",
+              "frame": 14601,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-7.png"
+            },
+            {
+              "raw": 3,
+              "printed_label": "4:1",
+              "frame": 16659,
+              "source": "captures/supervised-20261104T012645Z-impresser-ratio/Orion.pcapng",
+              "screenshot": "captures/supervised-20261104T012645Z-impresser-ratio/state-8.png"
+            }
+          ]
+        },
+        "ratio_return": {
+          "source": "captures/supervised-20261104T012645Z-impresser-ratio/reconciliation.json",
+          "full_parameter_body_returned": true,
+          "ratio_label_returned": true,
+          "static_gui_restoration_verified": false,
+          "opto_indicator_discrepancy": "unresolved; original error retained, no repair or replay"
+        }
+      },
+      "gui_observation": {
+        "panel_class": "Impresser",
+        "source": "captures/supervised-20261104T012645Z-load-impresser/raw-ui.json",
+        "editable_controls": [
+          {
+            "control": "input",
+            "ui_class": "ImpresserInputPot",
+            "label": "Input",
+            "status": "partial capture; see model-local encoding"
+          },
+          {
+            "control": "output",
+            "ui_class": "ImpresserOutputPot",
+            "label": "Output",
+            "status": "partial capture; see model-local encoding"
+          },
+          {
+            "control": "attack",
+            "ui_class": "ImpresserAttackPot",
+            "label": "Attack",
+            "status": "partial capture; see model-local encoding"
+          },
+          {
+            "control": "release",
+            "ui_class": "ImpresserReleasePot",
+            "label": "Release",
+            "status": "partial capture; see model-local encoding"
+          },
+          {
+            "control": "ratio",
+            "ui_class": "ImpresserRatioButton",
+            "label": "Ratio",
+            "status": "partial capture; see model-local encoding"
+          },
+          {
+            "control": "high_pass_filter",
+            "ui_class": "ImpresserHPF",
+            "label": "Detector high-pass filter",
+            "status": "partial capture; see model-local encoding"
+          },
+          {
+            "control": "band_pass_filter",
+            "ui_class": "ImpresserBPF",
+            "label": "Detector band-pass filter",
+            "status": "partial capture; see model-local encoding"
+          },
+          {
+            "control": "distortion",
+            "ui_class": "ImpresserDistortionButton",
+            "label": "HARMONICS",
+            "status": "pending directed capture"
+          },
+          {
+            "control": "british_mode",
+            "ui_class": "ImpresserSwitchBritishMode",
+            "label": "UK MODE (1:1)",
+            "status": "pending directed capture"
+          },
+          {
+            "control": "linked",
+            "ui_class": "ImpresserStSwitch",
+            "label": "STEREO LINK",
+            "status": "pending directed capture"
+          },
+          {
+            "control": "processing",
+            "ui_class": "ImpresserBypassButton",
+            "label": "BYPASS",
+            "status": "pending directed capture"
+          }
+        ]
+      },
+      "display_observations": {
+        "status": "GUI-observed; OPTO discrepancy unresolved; signal telemetry unverified",
+        "source": "captures/supervised-20261104T012645Z-load-impresser/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "ImpresserGRMeter",
+            "native_instance_count": 1,
+            "kind_hint": "gain-reduction-meter-face",
+            "status": "GUI presence only; no telemetry or state contract"
+          },
+          {
+            "ui_class": "PeakLed",
+            "native_instance_count": 16,
+            "kind_hint": "meter-segment",
+            "status": "GUI presence only; no telemetry or state contract"
+          },
+          {
+            "ui_class": "ClipLed",
+            "native_instance_count": 1,
+            "kind_hint": "clip-indicator",
+            "status": "GUI presence only; no telemetry or state contract"
+          },
+          {
+            "ui_class": "ImpresserLed",
+            "native_instance_count": 4,
+            "kind_hint": "indicator",
+            "status": "GUI presence only; no telemetry or state contract"
+          },
+          {
+            "ui_class": "OptoLed",
+            "native_instance_count": 1,
+            "kind_hint": "OPTO-indicator",
+            "status": "Bright before Ratio cycle, dark after raw3/4:1 full-body return and read-only recheck; meaning/origin unresolved"
+          },
+          {
+            "ui_class": "DistortionLed",
+            "native_instance_count": 2,
+            "kind_hint": "Harmonics-indicator",
+            "status": "GUI presence only; no telemetry or state contract"
+          },
+          {
+            "ui_class": "RatioDisplay",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-readout",
+            "status": "Captured Ratio parameter labels; no signal telemetry contract"
+          }
+        ],
+        "opto_discrepancy": {
+          "source": "captures/supervised-20261104T012645Z-impresser-ratio/reconciliation.json",
+          "changed_pixels_bounds": [
+            1024,
+            402,
+            1040,
+            418
+          ],
+          "full_parameter_body_returned": true,
+          "ratio_label_returned": true,
+          "static_gui_restoration_verified": false,
+          "origin_and_meaning": "unknown"
+        },
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false
+      },
+      "coverage": {
+        "status": "partial visible-control capture; not a completed plugin pass",
+        "pending": [
+          "Detector selector raw-label maps",
+          "Harmonics",
+          "Stereo Link",
+          "UK Mode",
+          "Processing/BYPASS",
+          "OPTO indicator discrepancy",
+          "Telemetry",
+          "Physical scaling",
+          "Runtime contracts"
+        ],
+        "device_readback_verified": false,
+        "runtime_authorized": false
+      }
+    }
+  ]
+}

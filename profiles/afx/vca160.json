@@ -1,0 +1,289 @@
+{
+  "id": "vca160",
+  "name": "VCA160",
+  "source_name": "VCA160",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.33"
+  ],
+  "controls": [
+    {
+      "id": "threshold",
+      "label": "Threshold",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VCA160_conf.fields"
+      ]
+    },
+    {
+      "id": "compression",
+      "label": "Compression",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VCA160_conf.fields"
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Output",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_VCA160_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 33,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 33,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "threshold": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Threshold (dB)",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates and printed marks only; runtime contract unverified",
+          "writable": false,
+          "observed_display_range": [
+            "−50",
+            "0"
+          ],
+          "evidence": [
+            "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng frame4567: minimum raw0, pointer at printed −50; image captures/scan-Dbx160-20261028T152511931Z/Dbx160-threshold-minimum.png",
+            "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng frame12151: maximum raw100, pointer at printed 0; image captures/scan-Dbx160-20261028T152511931Z/Dbx160-threshold-maximum.png"
+          ],
+          "notes": "Endpoint label association only; intermediate law, calibrated response, complete finite value map and independent device readback unverified."
+        },
+        "compression": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Compression",
+          "range": [
+            0,
+            60
+          ],
+          "status": "capture-observed; endpoint candidates and printed marks only; runtime contract unverified",
+          "writable": false,
+          "observed_display_range": [
+            "1",
+            "∞"
+          ],
+          "evidence": [
+            "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng frame20731: minimum raw0, pointer at printed 1; image captures/scan-Dbx160-20261028T152511931Z/Dbx160-compression-minimum.png",
+            "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng frame27917: maximum raw60, pointer at printed ∞; image captures/scan-Dbx160-20261028T152511931Z/Dbx160-compression-maximum.png"
+          ],
+          "notes": "Endpoint label association only; intermediate law, calibrated response, complete finite value map and independent device readback unverified."
+        },
+        "output": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates and printed marks only; runtime contract unverified",
+          "writable": false,
+          "observed_display_range": [
+            "−20",
+            "+20"
+          ],
+          "evidence": [
+            "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng frame36669: minimum raw0, pointer at printed −20; image captures/scan-Dbx160-20261028T152511931Z/Dbx160-output-minimum.png",
+            "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng frame44667: maximum raw100, pointer at printed +20; image captures/scan-Dbx160-20261028T152511931Z/Dbx160-output-maximum.png"
+          ],
+          "notes": "Endpoint label association only; intermediate law, calibrated response, complete finite value map and independent device readback unverified."
+        }
+      },
+      "evidence": [
+        "captures/unattended-20261028T145303Z-load-vca160/Orion.pcapng frame1535: exact enabled VCA160 vendor load on empty AFX2/channel1slot0,type33instance0; SHA256 160d97518e2b8f8a7b19c1496f2d64b7fcc7154d098e88a26aba6859b1358039"
+      ],
+      "notes": "Native Dbx160 three knob endpoint pairs and labelled POWER return captured. Threshold printed endpoints−50/0 with explicit(dB), Compression1/∞, Output Gain−20/+20 with no explicit unit in this inventory. These are endpoint associations, not physical interpolation or calibration. All parameter commands null; runtime writers/readers disabled. Displays remain GUI-only.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "captures/unattended-20261028T145303Z-load-vca160/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "Dbx160BelowLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Dbx160AboveLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Dbx160VuMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Dbx160Peakmeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "Dbx160BypassButton",
+            "native_instance_count": 1,
+            "kind_hint": "embedded-processing-indicator",
+            "status": "POWER lamp GUI correlation captured with processing; no signal telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false
+      },
+      "parameter_observation": {
+        "status": "capture-observed; all three knob endpoint pairs and labelled Power processing return captured",
+        "opcode": "0x17",
+        "param_id": "0xd5",
+        "subcmd": "0x05",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "captures/unattended-20261028T145303Z-vca160-priming/Orion.pcapng frames2247/2295: Output Gain eight-pixel upward gesture; body32153a→32153b, onlybyte22 changes afterfirstreport; no captured preceding baseline; SHA256 6d2887ef8610388d4cc48fefb69d333e1512be5e101cdc4135b5367ceb4f0a35",
+          "scan-Dbx160-20261028T152511931Z: 6 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "endpoint_candidates": [
+          {
+            "control": "threshold",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4567,
+            "source": "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng"
+          },
+          {
+            "control": "threshold",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 12151,
+            "source": "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng"
+          },
+          {
+            "control": "compression",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 20731,
+            "source": "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng"
+          },
+          {
+            "control": "compression",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 60,
+            "frame": 27917,
+            "source": "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 36669,
+            "source": "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 44667,
+            "source": "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng"
+          }
+        ],
+        "capture_sha256": "ac0ec0562db0815d81d9b08ac068f3aeb330240aa29e2e1cc70472d361f66b39",
+        "packets": 49456,
+        "drops": 0,
+        "capture_source": "captures/scan-Dbx160-20261028T152511931Z/Dbx160-channel2.pcapng"
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "gui_control_label": "POWER",
+        "gui_states": {
+          "0": "POWER lamp dark; rack BP checked (On)",
+          "1": "POWER lamp lit; rack BP unchecked (Off)"
+        },
+        "visual_restoration": "exact RGB static controls, Power lamp, checked panel regions and rack BP widget; Below/Above LEDs, VU and peak meters excluded",
+        "polarity": "GUI-correlated only; audible effect and independent changed-state device readback unverified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261028T145303Z-vca160-processing/first/Orion.pcapng frame2911: tuple@17..19=002100; SHA256 199119c08f9d529d6479f9251d690b2ead792550eeb56372c76eabb1b5eb16ed",
+          "captures/unattended-20261028T145303Z-vca160-processing/return/Orion.pcapng frame679: tuple@17..19=002101; SHA256 0de2c744c87030fb15da1f0889c72dc523dbbd0962abebd3b4c004132ed5a59b"
+        ]
+      }
+    }
+  ]
+}

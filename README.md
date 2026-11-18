@@ -16,6 +16,10 @@ used; the device firmware is not touched.
 | file | what's in it |
 |---|---|
 | **`README.md`** (this file) | using the CLI; adding a param / a device; RE ground rules |
+| **[`CONTRIBUTING.md`](CONTRIBUTING.md)** | clean-clone setup, offline checks, evidence requirements and contribution licenses |
+| **[`docs/architecture.md`](docs/architecture.md)** | profiles, protocol/transport, CLI, WebUI worker and capture-tool boundaries |
+| **[`docs/contributor-work.md`](docs/contributor-work.md)** | public coverage, remaining limits and bounded contribution tasks |
+| **[`docs/evidence-to-test.md`](docs/evidence-to-test.md)** | sanitized startup-query example from capture provenance to an offline regression |
 | **`AGENTS.md`** | sole project instruction entry point; local handoff and open tasks have separate roles |
 | **`PROTOCOL.md`** | the reverse-engineered wire format in reference form — frames, opcodes, state-report byte maps, the `0x74`/`0x75` readback protocol (§4a), per-device notes (§14) |
 | **`docs/profile-schema.md`** | what every key in `profiles/*.json` means, and which the code reads — start here if you're writing a profile or a client (webUI) |
@@ -23,7 +27,7 @@ used; the device firmware is not touched.
 | **`docs/discrete-remote-agent-playbook.md`** | remote-only workflow for completing the Discrete 4 / 4 Pro / 8 Pro profiles with the repository's probes, capture tools, and safety rules |
 | **`CAPTURING.md`** | how to capture USB traffic — usbmon on Linux (incl. the webUI + usbmon method), Windows VM + USBPcap, or native macOS |
 | **`docs/orion-afx-workflow.md`** | current AFX evidence, existing tools, proposed Launcher batch automation and effect completion criteria |
-| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json` and the shared `afx_effects.json` reference catalog |
+| **`profiles/*.json`** | the machine-readable source of truth, one per device (`orion_studio_sc` is the reference; also `zen_go_sc`, `discrete_8_pro_sc`, `discrete_4_sc`, `discrete_4_pro_sc`) + `mic_models.json`; the shared AFX manifest is `afx_effects.json`, with one plugin definition per file in `profiles/afx/` |
 | **`SCOPE.md` / `EULA-ANALYSIS.md`** | the distinction between device-side AFX Real-Time controls and host-side Native/Cosmos plugins, plus this repo's control and licensing boundaries |
 
 ### Naming
@@ -75,8 +79,11 @@ stereo-link *is* in scope — it is plain `SET_LINK` (space `0x04`). See
 AFX preparation separates device capacity from effect definitions. Orion's
 `afx` metadata declares 32 mono channels and eight insert slots per channel,
 as described in [Antelope's public demonstration](https://en.antelopeaudio.com/2019/11/ricky-damian-demonstrates-the-capabilities-of-orion-studio-synergy-core/).
-The shared `profiles/afx_effects.json` catalog contains 80 reference effect
-entries and 729 declared control names from Gazelle's Discrete 4 findings,
+The shared [AFX manifest](profiles/afx_effects.json) lists 80 reference effect
+files in [profiles/afx/](profiles/afx/README.md), one per stable plugin ID.
+Edit the plugin file to change its controls, model-specific encodings or evidence;
+the manifest owns catalog metadata and entry order. The catalog contains
+729 declared control names from Gazelle's Discrete 4 findings,
 with pinned source provenance. The first three descriptions are drawn from
 public effect pages. The Orion Memory Cat Brigade implementation records
 six observed 0–100 knob fields and two binary switch fields from an
@@ -85,8 +92,38 @@ raw1=1100ms/Tremolo. Parameter/processing-state readbacks are captured for
 instances0–2; intermediate physical scaling remains unresolved. The typed operator path separately records
 verified chain/link round trips and owner-reported parameter operation. Owner-labelled load captures establish
 Orion type IDs for Memory Cat, V12 Chorus, BBD-Chorus, Instinct and
-Master De-Esser; catalog commands stay null. This metadata does not enable
+Master De-Esser. Directed GUI captures also identify Orion PowerGate (39),
+PowerEx (51), VEQ-1A (6), VMEQ-5 (5), VEQ-HLF (11), BA-31 (48) and
+Gyratec IX (43) and VPA 76 (44), with visible-control findings in the
+[power dynamics](docs/orion-afx-power-dynamics.md), [EQ](docs/orion-afx-eq.md)
+and [preamp](docs/orion-afx-preamps.md) reports. Stepped selectors have individual detent maps. Catalog commands stay
+null. This metadata does not enable
 a general effect writer. See [the profile schema](docs/profile-schema.md#afx-and-the-shared-effect-catalog).
+
+AFX faces use a compact side identity/processing block and aligned control rows,
+without separate full-width name or bypass strips. EQ selector labels include
+Hz/kHz. De-Esser's monitor modes remain unidentified and disabled in the preview.
+
+The **Panel studio** link in the AFX window opens interactive PowerGate,
+PowerEx, VEQ-1A, VMEQ-5 and Master De-Esser panels. It is also available at
+`/webui/static/afx-preview.html`. Choose local effects in the categorized slot
+selectors, drag knobs, use Shift for fine adjustment, or choose a fixed rotary
+position with the keyboard or selector. Drafts stay separate per channel and
+slot and can be reordered from either rack view.
+
+These panels are local previews: they do not process audio or load these new
+effects onto hardware. Already-loaded device effects can show their panels with
+unknown values and disabled edits until verified runtime contracts are available.
+Preview dial ranges/defaults do not establish wire conversions or device defaults.
+
+To serve the panel studio without starting the HID worker:
+
+```bash
+ANTELOPE_PROFILE=profiles/orion_studio_sc.json .venv/bin/python -m uvicorn webui.server:app --host 127.0.0.1 --port 8715
+```
+
+Open `http://127.0.0.1:8715/webui/static/afx-preview.html`. This imports the WebUI
+app without calling `run_server()` / `DEV.start()`.
 
 The WebUI's **AFX** button, between Routing and Mix 1, opens a detachable
 window with a channel selector and one channel overview on the left, and
@@ -107,8 +144,8 @@ in the left channel frame has an effect selector grouped into Dynamics,
 EQ & Filters, Modulation, Delay & Reverb, Pitch & Tuning, Amps & Cabinets,
 Preamps, Saturation & Distortion, and Other. These are presentation categories,
 not device capabilities. Memory Cat, Instinct, Master De-Esser, V12 Chorus
-and BBD-Chorus have independently captured Orion load IDs; unmapped entries
-are greyed out.
+and BBD-Chorus have measured runtime load contracts; other catalog entries
+remain disabled, including effects with newer capture-only observations.
 Selecting a different effect replaces a supported insert; selecting Empty
 removes it. Loading uses fresh instance counters and the complete slot
 inventory, measured instance indices, and verified whole-chain writes.
@@ -213,10 +250,10 @@ this software interoperates with.
   a source of *facts* -- channel counts, feature names, signal flow. No
   manual text, tables, or diagrams are reproduced here; documents are
   cited in the profile's `evidence` fields.
-- **Packet captures** committed under `captures/` are recordings of the
-  contributor's own device on the contributor's own machine, kept
-  minimal and included only as evidence for a documented finding. Device
-  serial numbers are redacted where practical.
+- **Raw packet captures and screenshots stay local and ignored.** A fresh
+  clone contains documented findings, profile evidence references and
+  sanitized/synthetic test fixtures, not the private `captures/` archive.
+  Shared evidence must omit serials, account data and unrelated traffic.
 - **AFX means device-side Synergy Core Real-Time effects here.** Antelope
   describes these as running on a supported device, with a Real-Time
   license assigned to that device through Launcher. Their parameter
@@ -251,8 +288,11 @@ request you agree to license your contribution that way.
 
 ## Requirements
 
-- Linux, Python 3.9+ (no third-party packages -- stdlib only).
-- Read/write access to the device's `hidraw` node. Either run with `sudo`,
+- Linux and Python; the CLI/protocol core uses only the standard library.
+  For the verified contributor workflow use Python 3.11+ and Node.js 24.
+  See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and hardware-free checks.
+  The optional WebUI also needs `webui/requirements.txt` (FastAPI/Uvicorn).
+- Live controls require read/write access to the device's `hidraw` node. Either run with `sudo`,
   or add a udev rule granting your user access to the Antelope device's
   `vid`/`pid` (see `device` in the profile JSON) so you don't need root
   every time.
@@ -285,7 +325,7 @@ tools/surround_format_selftest.py <- bounded Surround format readback and revers
 tools/surround_eq_position_selftest.py <- Surround EQ PRE/POST readback and one-bit write/restore probe
 CAPTURING.md                   <- how to capture USB traffic (Windows VM + USBPcap, or native macOS)
 PROTOCOL.md                    <- the reverse-engineered wire format, in reference form
-captures/                      <- analyzed .tsv exports + raw .pcapng captures/ (full-fidelity)
+captures/                      <- private ignored archive; absent from a fresh clone
 ```
 
 **Rule of thumb:** if you're about to hardcode a byte offset, param_id, or magic

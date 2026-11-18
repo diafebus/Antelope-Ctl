@@ -1,0 +1,800 @@
+{
+  "id": "ssl_orange",
+  "name": "ssl_orange",
+  "source_name": "ssl_orange",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.17"
+  ],
+  "controls": [
+    {
+      "id": "lf_cut",
+      "label": "Lf Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_cut",
+      "label": "Hf Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_gain",
+      "label": "Hf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_freq",
+      "label": "Hf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "hf_bell",
+      "label": "Hf Bell",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "hmf_gain",
+      "label": "Hmf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "hmf_freq",
+      "label": "Hmf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "hmf_qual",
+      "label": "Hmf Qual",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "lmf_gain",
+      "label": "Lmf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "lmf_freq",
+      "label": "Lmf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "lmf_qual",
+      "label": "Lmf Qual",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_bell",
+      "label": "Lf Bell",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_gain",
+      "label": "Lf Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "lf_freq",
+      "label": "Lf Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    },
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_ssl_orange_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 17,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 17,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "lf_cut": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Low Cut",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame4193: directed lf_cut minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame11451: directed lf_cut maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hf_cut": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "High Cut",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame18969: directed hf_cut minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame25735: directed hf_cut maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hf_gain": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame34096: directed hf_gain minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame41713: directed hf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hf_freq": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame49577: directed hf_freq minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame56889: directed hf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hmf_gain": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HMF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame65547: directed hmf_gain minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame73581: directed hmf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hmf_freq": {
+          "offset": 26,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HMF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame82129: directed hmf_freq minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame89809: directed hmf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "hmf_qual": {
+          "offset": 27,
+          "width": 1,
+          "kind": "continuous",
+          "label": "HMF Quality",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame99011: directed hmf_qual minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame107545: directed hmf_qual maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lmf_gain": {
+          "offset": 28,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LMF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame116441: directed lmf_gain minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame125275: directed lmf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lmf_freq": {
+          "offset": 29,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LMF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame134397: directed lmf_freq minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame142917: directed lmf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lmf_qual": {
+          "offset": 30,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LMF Quality",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame152835: directed lmf_qual minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame162305: directed lmf_qual maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lf_gain": {
+          "offset": 32,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LF Gain",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame171977: directed lf_gain minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame181609: directed lf_gain maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "lf_freq": {
+          "offset": 33,
+          "width": 1,
+          "kind": "continuous",
+          "label": "LF Frequency",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame191575: directed lf_freq minimum raw0; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame200857: directed lf_freq maximum raw100; other fields preserved"
+          ],
+          "range": [
+            0,
+            100
+          ],
+          "notes": "Raw endpoint candidates only; physical units/intermediate laws remain unverified."
+        },
+        "level": {
+          "offset": 34,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "status": "capture-observed; endpoint candidates only; runtime contract unverified",
+          "writable": false,
+          "evidence": [
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame211589: directed level minimum raw232; other fields preserved",
+            "captures/scan-SslOrange-20261027T022803586Z/SslOrange-channel2.pcapng frame221563: directed level maximum raw12; other fields preserved"
+          ],
+          "raw_endpoints": [
+            232,
+            12
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            12
+          ],
+          "notes": "Unsigned wire endpoints retained. Signed interpretation, physical units and intermediate scaling remain unverified."
+        },
+        "lf_bell": {
+          "offset": 31,
+          "width": 1,
+          "kind": "enum",
+          "label": "LF BELL",
+          "observed_raw_order": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "LED Dark",
+            "1": "LED Lit"
+          },
+          "wire_enum": {
+            "0": "LED Dark",
+            "1": "LED Lit"
+          },
+          "status": "capture-observed; isolated GUI/LED round trip; runtime contract unverified",
+          "writable": false,
+          "notes": "Compatibility ID retained. Literal printed label and reviewed LED state only; bell audio behavior, frequency law and enabled polarity are unverified.",
+          "evidence": [
+            "captures/unattended-20261027T015403Z-veq4k-orange-modes/lf_bell-first/Orion.pcapng frame781: byte31 raw1, LED Lit; matching observed.png",
+            "captures/unattended-20261027T015403Z-veq4k-orange-modes/lf_bell-return/Orion.pcapng frame743: byte31 raw0, LED Dark; matching observed.png"
+          ]
+        },
+        "hf_bell": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "HF BELL",
+          "observed_raw_order": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "LED Dark",
+            "1": "LED Lit"
+          },
+          "wire_enum": {
+            "0": "LED Dark",
+            "1": "LED Lit"
+          },
+          "status": "capture-observed; isolated GUI/LED round trip; runtime contract unverified",
+          "writable": false,
+          "notes": "Compatibility ID retained. Literal printed label and reviewed LED state only; bell audio behavior, frequency law and enabled polarity are unverified.",
+          "evidence": [
+            "captures/unattended-20261027T015403Z-veq4k-orange-modes/hf_bell-first/Orion.pcapng frame781: byte24 raw1, LED Lit; matching observed.png",
+            "captures/unattended-20261027T015403Z-veq4k-orange-modes/hf_bell-return/Orion.pcapng frame705: byte24 raw0, LED Dark; matching observed.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261027T015403Z-load-veq4k-orange/Orion.pcapng frame2113: labelled VEQ-4K ORANGE vendor load, AFX2/channel1slot0 type17/instance0, sevenempty; SHA256 cd63930f49719fd0c055955032a4afd11175882efeb41f0fc464aff602c96ff0"
+      ],
+      "notes": "Orion VEQ-4K ORANGE: thirteen rotary endpoint candidate pairs, two independently reviewed mode/LED round trips and separate processing round trip captured. Mode round trips returned the full captured parameter body and checked static panel images. Processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Compatibility IDs lf_bell/hf_bell retained; actual labels/LED states are in model-local encodings; printed BELL labels and LED states do not prove audible behavior. Output signed interpretation, physical/intermediate scaling, independent readback, processing polarity, audible/stereo behavior and runtime contracts remain unverified. Meter/LED display inventory remains separate from signal telemetry.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261027T015403Z-load-veq4k-orange/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 3,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "SslPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "parameter_observation": {
+        "opcode": "0x23",
+        "param_id": "0xd5",
+        "subcmd": "0x11",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; all visible editable controls covered; scaling and runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "lf_cut",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4193
+          },
+          {
+            "control": "lf_cut",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 11451
+          },
+          {
+            "control": "hf_cut",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 18969
+          },
+          {
+            "control": "hf_cut",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 25735
+          },
+          {
+            "control": "hf_gain",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 34096
+          },
+          {
+            "control": "hf_gain",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 41713
+          },
+          {
+            "control": "hf_freq",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 49577
+          },
+          {
+            "control": "hf_freq",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 56889
+          },
+          {
+            "control": "hmf_gain",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 65547
+          },
+          {
+            "control": "hmf_gain",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 73581
+          },
+          {
+            "control": "hmf_freq",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 82129
+          },
+          {
+            "control": "hmf_freq",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 89809
+          },
+          {
+            "control": "hmf_qual",
+            "offset": 27,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 99011
+          },
+          {
+            "control": "hmf_qual",
+            "offset": 27,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 107545
+          },
+          {
+            "control": "lmf_gain",
+            "offset": 28,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 116441
+          },
+          {
+            "control": "lmf_gain",
+            "offset": 28,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 125275
+          },
+          {
+            "control": "lmf_freq",
+            "offset": 29,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 134397
+          },
+          {
+            "control": "lmf_freq",
+            "offset": 29,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 142917
+          },
+          {
+            "control": "lmf_qual",
+            "offset": 30,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 152835
+          },
+          {
+            "control": "lmf_qual",
+            "offset": 30,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 162305
+          },
+          {
+            "control": "lf_gain",
+            "offset": 32,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 171977
+          },
+          {
+            "control": "lf_gain",
+            "offset": 32,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 181609
+          },
+          {
+            "control": "lf_freq",
+            "offset": 33,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 191575
+          },
+          {
+            "control": "lf_freq",
+            "offset": 33,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 200857
+          },
+          {
+            "control": "level",
+            "offset": 34,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 211589
+          },
+          {
+            "control": "level",
+            "offset": 34,
+            "gesture": "maximum",
+            "raw": 12,
+            "frame": 221563
+          }
+        ],
+        "capture_sha256": "18c357e087cf28378a106f94c6ff0b24307d33854fd1ef3cdb64f392374439f5",
+        "evidence": [
+          "scan-SslOrange-20261027T022803586Z: 26 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "mode_roundtrips": {
+          "source": "captures/unattended-20261027T015403Z-veq4k-orange-modes",
+          "status": "completed; two isolated one-byte mode/LED pairs; full parameter body/static panel returned",
+          "fields": {
+            "lf_bell": 31,
+            "hf_bell": 24
+          },
+          "starting_parameter_payload_hex": "64646464006464646464640064640c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "64646464006464646464640064640c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB two static panel segments; animated peak meter excluded",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261027T015403Z-veq4k-orange-processing/first/Orion.pcapng frame2881 tuple@17..19=001100",
+          "captures/unattended-20261027T015403Z-veq4k-orange-processing/return/Orion.pcapng frame715 tuple@17..19=001101"
+        ]
+      }
+    }
+  ]
+}

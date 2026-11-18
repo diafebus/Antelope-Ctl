@@ -61,7 +61,7 @@ establish a license or authorize a new write family.
 ### Orion captured-effect pilot
 
 The owner requested a device rack using owned Orion captures, extending the
-initial Preamp1/AFX1 test to all32 AFX channels. The captured load types are
+initial Preamp1/AFX1 test to all32 AFX channels. The pilot's supported load types are
 Memory Cat Brigade, Instinct, Master De-Esser, V12 Chorus and demo BBD Chorus.
 The pilot includes captured whole-chain add/replace/remove/reorder transactions
 and paired linked edits with distinct measured instances.

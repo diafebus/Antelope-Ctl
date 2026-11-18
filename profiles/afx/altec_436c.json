@@ -1,0 +1,367 @@
+{
+  "id": "altec_436c",
+  "name": "ALT-436C",
+  "source_name": "altec_436c",
+  "category": "compressor",
+  "description": "Variable-mu tube compressor with fixed attack times.",
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.35",
+    "https://en.antelopeaudio.com/products/alt-436c/"
+  ],
+  "controls": [
+    {
+      "id": "input",
+      "label": "Input",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_altec_436c_conf.fields"
+      ]
+    },
+    {
+      "id": "threshold",
+      "label": "Threshold",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_altec_436c_conf.fields"
+      ]
+    },
+    {
+      "id": "release",
+      "label": "Release",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_altec_436c_conf.fields"
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Output",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_altec_436c_conf.fields"
+      ]
+    },
+    {
+      "id": "linked",
+      "label": "Linked",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_altec_436c_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 35,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 35,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "input": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "VOLUME",
+          "status": "capture-observed; endpoint candidates and printed marks only; runtime contract unverified",
+          "writable": false,
+          "observed_display_range": [
+            "0",
+            "10"
+          ],
+          "evidence": [
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame4647: minimum raw0, pointer at printed 0; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-input-minimum.png",
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame11425: maximum raw100, pointer at printed 10; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-input-maximum.png"
+          ],
+          "notes": "Printed endpoint association only; intermediate scale, calibration and independent readback unverified.",
+          "range": [
+            0,
+            100
+          ]
+        },
+        "threshold": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Threshold",
+          "status": "capture-observed; endpoint candidates and printed marks only; runtime contract unverified",
+          "writable": false,
+          "observed_display_range": [
+            "0",
+            "+16"
+          ],
+          "evidence": [
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame19691: minimum raw0, pointer at printed 0; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-threshold-minimum.png",
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame26285: maximum raw100, pointer at printed +16; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-threshold-maximum.png"
+          ],
+          "notes": "Printed endpoint association only; intermediate scale, calibration and independent readback unverified.",
+          "range": [
+            0,
+            100
+          ]
+        },
+        "release": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Release Time",
+          "status": "capture-observed; endpoint candidates and printed marks only; runtime contract unverified",
+          "writable": false,
+          "observed_display_range": [
+            ".3",
+            "1.3"
+          ],
+          "evidence": [
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame35161: minimum raw0, pointer at printed .3; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-release-minimum.png",
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame42035: maximum raw100, pointer at printed 1.3; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-release-maximum.png"
+          ],
+          "notes": "Printed endpoint association only; intermediate scale, calibration and independent readback unverified.",
+          "range": [
+            0,
+            100
+          ]
+        },
+        "output": {
+          "offset": 23,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output (dB)",
+          "status": "capture-observed; endpoint candidates and printed marks only; runtime contract unverified",
+          "writable": false,
+          "observed_display_range": [
+            "−24",
+            "+24"
+          ],
+          "evidence": [
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame50973: minimum raw232, pointer at printed −24; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-output-minimum.png",
+            "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng frame57787: maximum raw24, pointer at printed +24; image captures/scan-Altec436C-20261028T154214904Z/Altec436C-output-maximum.png"
+          ],
+          "notes": "Printed endpoint association only; intermediate scale, calibration and independent readback unverified. Signed interpretation is a candidate only; preserve original wire bytes.",
+          "raw_endpoints": [
+            232,
+            24
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            24
+          ]
+        }
+      },
+      "evidence": [
+        "captures/unattended-20261028T145303Z-load-altec436c/Orion.pcapng frame1553: exact enabled ALT-436C vendor load on empty AFX2/channel1slot0,type35instance0; SHA256 c60322823694f20353a96a40cf4443586986deb9d1341578f8884a48206e9245"
+      ],
+      "notes": "Four visible knob endpoint pairs with independently checked printed endpoint labels, plus functional vendor rack BP processing and front POWER pointer/red-lamp GUI correlation. Direct8pxPower gesture was negative and preserved separately. Byte24 remains unidentified/preserved. Physical interpolation, signed Output law, signal telemetry, audible response and independent readback remain unverified; runtime commands null.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "captures/unattended-20261028T145303Z-load-altec436c/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "Altec436CVuMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract",
+            "observed_caption": "dB COMPRESSION"
+          },
+          {
+            "ui_class": "Altects436PeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "processing-indicator",
+            "status": "GUI processing correlation captured; not a signal telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false
+      },
+      "parameter_observation": {
+        "status": "capture-observed; four knob endpoint pairs plus rack BP GUI processing return captured",
+        "opcode": "0x19",
+        "param_id": "0xd5",
+        "subcmd": "0x07",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "captures/unattended-20261028T145303Z-altec436c-priming/Orion.pcapng frame2201: first observed complete block from8pxOutputgesture, body1b45000100; no preceding captured parameter baseline. SHA256 98f7d467b679b566f81463dea973f517736d3facd40eeb7b778681d8e4174db7",
+          "scan-Altec436C-20261028T154214904Z: 8 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "endpoint_candidates": [
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4647,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          },
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 11425,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          },
+          {
+            "control": "threshold",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 19691,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          },
+          {
+            "control": "threshold",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 26285,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 35161,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 42035,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 50973,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 24,
+            "frame": 57787,
+            "source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng"
+          }
+        ],
+        "capture_sha256": "1c5c5a235943c12e66eb4bc6c51f2a86f8557cc8a113288ac373a3d1327bb5af",
+        "capture_source": "captures/scan-Altec436C-20261028T154214904Z/Altec436C-channel2.pcapng",
+        "packets": 62804,
+        "drops": 0,
+        "unidentified_preserved_body_bytes": [
+          {
+            "offset": 24,
+            "observed_values": [
+              0
+            ],
+            "meaning": "unknown; do not assign another model's linked semantics"
+          }
+        ],
+        "release_intermediate_observation": "40 distinct raw values observed; three printed ticks do not establish a three-state selector or interpolation law"
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "gui_control_label": "BP; front POWER indication",
+        "gui_states": {
+          "0": "BP checked (On); red lamp dark; POWER pointer right",
+          "1": "BP unchecked (Off); red lamp lit; POWER pointer up"
+        },
+        "visual_restoration": "exact RGB checked physical control faces, red lamp and rack BP; active VU upper area and four-pixel peak strip excluded",
+        "polarity": "GUI-correlated only; no audible polarity or independent changed-state device readback claim",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "captures/unattended-20261028T145303Z-altec436c-rack-bp-processing/first/Orion.pcapng frame3136: tuple@17..19=002300; SHA256 fe81bbe73c82ec0a06e560a09afe08a2462a9eec1791040acc1fbbd61d4f934d",
+          "captures/unattended-20261028T145303Z-altec436c-rack-bp-processing/return/Orion.pcapng frame729: tuple@17..19=002301; SHA256 1d907343642511cca77a9fdae1f3c11be4bd350ceedd88495a517d38bca56875"
+        ]
+      },
+      "processing_observation": {
+        "status": "negative isolated8pxdownfrontPOWERmethod; zeroOUT and exact checked static GUI in separate reconciliation; no inverse sent",
+        "source": "captures/unattended-20261028T145303Z-altec436c-power-rotary/first/Orion.pcapng",
+        "capture_sha256": "b55967c3323e3423f9c3fcfcf58c54aa1dd596214c19b901f97a73e830e1db3c",
+        "writable": false,
+        "device_readback_verified": false
+      }
+    }
+  ]
+}

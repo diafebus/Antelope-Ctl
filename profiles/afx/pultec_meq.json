@@ -1,0 +1,730 @@
+{
+  "id": "pultec_meq",
+  "name": "pultec_meq",
+  "source_name": "pultec_meq",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.5"
+  ],
+  "controls": [
+    {
+      "id": "low_freq",
+      "label": "Low Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_meq_conf.fields"
+      ]
+    },
+    {
+      "id": "low_gain",
+      "label": "Low Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_meq_conf.fields"
+      ]
+    },
+    {
+      "id": "mid_freq",
+      "label": "Mid Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_meq_conf.fields"
+      ]
+    },
+    {
+      "id": "mid_gain",
+      "label": "Mid Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_meq_conf.fields"
+      ]
+    },
+    {
+      "id": "hi_freq",
+      "label": "Hi Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_meq_conf.fields"
+      ]
+    },
+    {
+      "id": "hi_gain",
+      "label": "Hi Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_pultec_meq_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 5,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 5,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "low_freq": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low Peak Frequency",
+          "range": [
+            0,
+            4
+          ],
+          "options": {
+            "0": "200",
+            "1": "300",
+            "2": "500",
+            "3": "700",
+            "4": "1000"
+          },
+          "wire_enum": {
+            "0": "200",
+            "1": "300",
+            "2": "500",
+            "3": "700",
+            "4": "1000"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-04/Orion.pcapng frame2203: raw0, dial200; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-04/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-03/Orion.pcapng frame2213: raw1, dial300; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-03/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-02/Orion.pcapng frame2183: raw2, dial500; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-02/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-01/Orion.pcapng frame2309: raw3, dial700; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-01/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/low_freq-up-08/Orion.pcapng frame5411: raw4, dial1000; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/low_freq-up-08/observed-detent.png"
+          ]
+        },
+        "mid_freq": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "Mid Dip Frequency",
+          "range": [
+            0,
+            10
+          ],
+          "options": {
+            "0": "200",
+            "1": "300",
+            "2": "500",
+            "3": "700",
+            "4": "1",
+            "5": "1.5",
+            "6": "2",
+            "7": "3",
+            "8": "4",
+            "9": "5",
+            "10": "7"
+          },
+          "wire_enum": {
+            "0": "200",
+            "1": "300",
+            "2": "500",
+            "3": "700",
+            "4": "1",
+            "5": "1.5",
+            "6": "2",
+            "7": "3",
+            "8": "4",
+            "9": "5",
+            "10": "7"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-10/Orion.pcapng frame2357: raw0, dial200; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-10/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-09/Orion.pcapng frame2747: raw1, dial300; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-09/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-08/Orion.pcapng frame6087: raw2, dial500; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-08/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-07/Orion.pcapng frame4521: raw3, dial700; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-07/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-06/Orion.pcapng frame3585: raw4, dial1; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-06/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-05/Orion.pcapng frame3107: raw5, dial1.5; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-05/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-04/Orion.pcapng frame5029: raw6, dial2; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-04/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-03/Orion.pcapng frame2967: raw7, dial3; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-03/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-02/Orion.pcapng frame3801: raw8, dial4; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-02/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-01/Orion.pcapng frame4499: raw9, dial5; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-01/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-up-20/Orion.pcapng frame4359: raw10, dial7; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/mid_freq-up-20/observed-detent.png"
+          ]
+        },
+        "hi_freq": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "High Peak Frequency",
+          "range": [
+            0,
+            4
+          ],
+          "options": {
+            "0": "1.5",
+            "1": "2",
+            "2": "3",
+            "3": "4",
+            "4": "5"
+          },
+          "wire_enum": {
+            "0": "1.5",
+            "1": "2",
+            "2": "3",
+            "3": "4",
+            "4": "5"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-04/Orion.pcapng frame4801: raw0, dial1.5; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-04/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-03/Orion.pcapng frame7394: raw1, dial2; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-03/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-02/Orion.pcapng frame6329: raw2, dial3; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-02/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-01/Orion.pcapng frame7051: raw3, dial4; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-01/observed-detent.png",
+            "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-up-08/Orion.pcapng frame4455: raw4, dial5; matching pointer image captures/unattended-20261025-vmeq5-rotary-map/hi_freq-up-08/observed-detent.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261025-load-vmeq-5/Orion.pcapng frame3481: labelled VMEQ-5 vendor load, AFX2/channel1 slot0 type5/instance0, sevenempty; SHA256 63bc485944e8b9f1e861194a141b36c9fdeca2840353dc3a1935c88e6198f3d7. Native PultecMEQ panel observed."
+      ],
+      "notes": "Orion VMEQ-5 identity, three gain knob endpoint candidates, all three rotary maps(5/11/5positions) and a separate processing-switch round trip captured through directed vendor GUI trials. No preset selector observed on this panel. Physical scaling/intermediate laws, independent state readback, audible/stereo behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "parameter_observation": {
+        "opcode": "0x1a",
+        "param_id": "0xd5",
+        "subcmd": "0x08",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "three gain knob endpoint candidates and all three visible rotary maps captured",
+        "writable": false,
+        "gui_panel": {
+          "display_name": "VMEQ-5",
+          "class_name": "PultecMEQ",
+          "status": "observed on Orion after labelled type5 load"
+        },
+        "labelled_gui_observations": {
+          "low_gain": {
+            "label": "Low Peak Gain",
+            "class_name": "PultecGain_low",
+            "offset": 21,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecMEQ-20261025T101459165Z/PultecMEQ-channel2.pcapng frames9291/27473; both phases accepted, only this byte differs between endpoint blocks. Printed gain dial endpoints0/10; no physical law inferred."
+            ]
+          },
+          "mid_gain": {
+            "label": "Mid Dip Gain",
+            "class_name": "PultecGain_mid",
+            "offset": 23,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecMEQ-20261025T101459165Z/PultecMEQ-channel2.pcapng frames38711/53893; both phases accepted, only this byte differs between endpoint blocks. Printed gain dial endpoints0/10; no physical law inferred."
+            ]
+          },
+          "hi_gain": {
+            "label": "High Peak Gain",
+            "class_name": "PultecGain_hi",
+            "offset": 25,
+            "width": 1,
+            "encoding": "uint8",
+            "observed_wire_endpoints": [
+              0,
+              100
+            ],
+            "observed_dial_endpoints": [
+              "0",
+              "10"
+            ],
+            "status": "capture-observed endpoint candidates; physical units and intermediate laws unverified",
+            "writable": false,
+            "readback_verified": false,
+            "evidence": [
+              "scan-PultecMEQ-20261025T101459165Z/PultecMEQ-channel2.pcapng frames69869/78027; both phases accepted, only this byte differs between endpoint blocks. Printed gain dial endpoints0/10; no physical law inferred."
+            ]
+          },
+          "low_freq": {
+            "label": "Low Peak Frequency",
+            "class_name": "PultecFreqPeak_low",
+            "offset": 20,
+            "width": 1,
+            "encoding": "uint8-enum",
+            "observed_wire_endpoints": [
+              0,
+              4
+            ],
+            "observed_dial_endpoints": [
+              "200",
+              "1000"
+            ],
+            "status": "all visible detents capture-observed; independent readback unverified",
+            "writable": false,
+            "readback_verified": false,
+            "detent_observations": [
+              {
+                "raw": 0,
+                "dial_label": "200",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-04/Orion.pcapng",
+                "frame": 2203,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-04/observed-detent.png"
+              },
+              {
+                "raw": 1,
+                "dial_label": "300",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-03/Orion.pcapng",
+                "frame": 2213,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-03/observed-detent.png"
+              },
+              {
+                "raw": 2,
+                "dial_label": "500",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-02/Orion.pcapng",
+                "frame": 2183,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-02/observed-detent.png"
+              },
+              {
+                "raw": 3,
+                "dial_label": "700",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-01/Orion.pcapng",
+                "frame": 2309,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-down-01/observed-detent.png"
+              },
+              {
+                "raw": 4,
+                "dial_label": "1000",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-up-08/Orion.pcapng",
+                "frame": 5411,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/low_freq-up-08/observed-detent.png"
+              }
+            ]
+          },
+          "mid_freq": {
+            "label": "Mid Dip Frequency",
+            "class_name": "PultecFreqDip",
+            "offset": 22,
+            "width": 1,
+            "encoding": "uint8-enum",
+            "observed_wire_endpoints": [
+              0,
+              10
+            ],
+            "observed_dial_endpoints": [
+              "200",
+              "7"
+            ],
+            "status": "all visible detents capture-observed; independent readback unverified",
+            "writable": false,
+            "readback_verified": false,
+            "detent_observations": [
+              {
+                "raw": 0,
+                "dial_label": "200",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-10/Orion.pcapng",
+                "frame": 2357,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-10/observed-detent.png"
+              },
+              {
+                "raw": 1,
+                "dial_label": "300",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-09/Orion.pcapng",
+                "frame": 2747,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-09/observed-detent.png"
+              },
+              {
+                "raw": 2,
+                "dial_label": "500",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-08/Orion.pcapng",
+                "frame": 6087,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-08/observed-detent.png"
+              },
+              {
+                "raw": 3,
+                "dial_label": "700",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-07/Orion.pcapng",
+                "frame": 4521,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-07/observed-detent.png"
+              },
+              {
+                "raw": 4,
+                "dial_label": "1",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-06/Orion.pcapng",
+                "frame": 3585,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-06/observed-detent.png"
+              },
+              {
+                "raw": 5,
+                "dial_label": "1.5",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-05/Orion.pcapng",
+                "frame": 3107,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-05/observed-detent.png"
+              },
+              {
+                "raw": 6,
+                "dial_label": "2",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-04/Orion.pcapng",
+                "frame": 5029,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-04/observed-detent.png"
+              },
+              {
+                "raw": 7,
+                "dial_label": "3",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-03/Orion.pcapng",
+                "frame": 2967,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-03/observed-detent.png"
+              },
+              {
+                "raw": 8,
+                "dial_label": "4",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-02/Orion.pcapng",
+                "frame": 3801,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-02/observed-detent.png"
+              },
+              {
+                "raw": 9,
+                "dial_label": "5",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-01/Orion.pcapng",
+                "frame": 4499,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-down-01/observed-detent.png"
+              },
+              {
+                "raw": 10,
+                "dial_label": "7",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-up-20/Orion.pcapng",
+                "frame": 4359,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/mid_freq-up-20/observed-detent.png"
+              }
+            ]
+          },
+          "hi_freq": {
+            "label": "High Peak Frequency",
+            "class_name": "PultecFreqPeak_hi",
+            "offset": 24,
+            "width": 1,
+            "encoding": "uint8-enum",
+            "observed_wire_endpoints": [
+              0,
+              4
+            ],
+            "observed_dial_endpoints": [
+              "1.5",
+              "5"
+            ],
+            "status": "all visible detents capture-observed; independent readback unverified",
+            "writable": false,
+            "readback_verified": false,
+            "detent_observations": [
+              {
+                "raw": 0,
+                "dial_label": "1.5",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-04/Orion.pcapng",
+                "frame": 4801,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-04/observed-detent.png"
+              },
+              {
+                "raw": 1,
+                "dial_label": "2",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-03/Orion.pcapng",
+                "frame": 7394,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-03/observed-detent.png"
+              },
+              {
+                "raw": 2,
+                "dial_label": "3",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-02/Orion.pcapng",
+                "frame": 6329,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-02/observed-detent.png"
+              },
+              {
+                "raw": 3,
+                "dial_label": "4",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-01/Orion.pcapng",
+                "frame": 7051,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-down-01/observed-detent.png"
+              },
+              {
+                "raw": 4,
+                "dial_label": "5",
+                "source": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-up-08/Orion.pcapng",
+                "frame": 4455,
+                "image": "captures/unattended-20261025-vmeq5-rotary-map/hi_freq-up-08/observed-detent.png"
+              }
+            ]
+          }
+        },
+        "evidence": [
+          "scan-PultecMEQ-20261025T101308607Z/PultecMEQ-channel2.pcapng frames6053-7375: nine directed low-gain priming writes, all0x1a/d5/08 type5/instance0, only byte21 varies. Initial passive decoder rejected this new family, zero phases accepted."
+        ],
+        "range_capture_summary": {
+          "source": "scan-PultecMEQ-20261025T101459165Z",
+          "sha256": "af7a8fc7a0dd0fd8c4194c731e0d10a2ecb2358e10c851abd6f662de6829433a",
+          "accepted_phases": 12,
+          "packet_count": 135320,
+          "dropped_packets": 0,
+          "status": "all six endpoint controls accepted; three gain knobs and three rotary selectors",
+          "knobs_finish_at_maximum": true,
+          "device_readback_verified": false,
+          "interpolation_laws_verified": false
+        },
+        "selector_capture_summary": {
+          "source": "unattended-20261025-vmeq5-rotary-map",
+          "status": "all5/11/5visible positions captured through36bounded GUI steps; full prior max parameter block restored",
+          "restored_parameter_payload_hex": "04640a640464000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false,
+          "notes": "All steps16pixels, one captured detent at a time, other parameter bytes preserved. Frequency labels retained exactly as printed, including mixed200/300/.../1/1.5/... notation; physical units not guessed. Initial decoder-rejected priming job remains failed with zero accepted phases."
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB processing switch, LED and all six control regions",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261025-vmeq5-switch-first/Orion.pcapng frame5701 tuple@17..19=000500",
+          "unattended-20261025-vmeq5-switch-return/Orion.pcapng frame3169 tuple@17..19=000501; all six control images unchanged"
+        ]
+      },
+      "presentation": {
+        "status": "local-preview",
+        "name": "VMEQ-5",
+        "category": "EQ & Filters",
+        "family": "EQUALIZATION",
+        "rows": [
+          [
+            "low_gain",
+            "mid_gain",
+            "hi_gain"
+          ],
+          [
+            "low_freq",
+            "mid_freq",
+            "hi_freq"
+          ]
+        ],
+        "switches": [
+          "processing"
+        ],
+        "controls": [
+          {
+            "id": "low_gain",
+            "label": "Low Peak",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 0,
+            "source_control": "low_gain"
+          },
+          {
+            "id": "mid_gain",
+            "label": "Mid Dip",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 0,
+            "source_control": "mid_gain"
+          },
+          {
+            "id": "hi_gain",
+            "label": "High Peak",
+            "kind": "continuous",
+            "range": [
+              0,
+              10
+            ],
+            "step": 0.1,
+            "decimals": 1,
+            "default": 0,
+            "source_control": "hi_gain"
+          },
+          {
+            "id": "low_freq",
+            "label": "Low Frequency",
+            "kind": "enum",
+            "options": {
+              "0": "200 Hz",
+              "1": "300 Hz",
+              "2": "500 Hz",
+              "3": "700 Hz",
+              "4": "1000 Hz"
+            },
+            "default": "0",
+            "rotary": true,
+            "source_control": "low_freq"
+          },
+          {
+            "id": "mid_freq",
+            "label": "Dip Frequency",
+            "kind": "enum",
+            "options": {
+              "0": "200 Hz",
+              "1": "300 Hz",
+              "2": "500 Hz",
+              "3": "700 Hz",
+              "4": "1 kHz",
+              "5": "1.5 kHz",
+              "6": "2 kHz",
+              "7": "3 kHz",
+              "8": "4 kHz",
+              "9": "5 kHz",
+              "10": "7 kHz"
+            },
+            "default": "0",
+            "rotary": true,
+            "source_control": "mid_freq"
+          },
+          {
+            "id": "hi_freq",
+            "label": "High Frequency",
+            "kind": "enum",
+            "options": {
+              "0": "1.5 kHz",
+              "1": "2 kHz",
+              "2": "3 kHz",
+              "3": "4 kHz",
+              "4": "5 kHz"
+            },
+            "default": "0",
+            "rotary": true,
+            "source_control": "hi_freq"
+          },
+          {
+            "id": "processing",
+            "label": "Processing",
+            "kind": "enum",
+            "options": {
+              "0": "Bypass",
+              "1": "Active"
+            },
+            "default": "1",
+            "source": "processing"
+          }
+        ],
+        "notes": "Local dial ranges and defaults are presentation choices based on captured endpoints; intermediate motion is illustrative, not a wire conversion or device default."
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261025-load-vmeq-5/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "PultecPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      }
+    }
+  ]
+}

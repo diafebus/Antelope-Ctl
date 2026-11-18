@@ -7,6 +7,7 @@ let AFX_PREVIEW_CATALOG = null;
 let AFX_PREVIEW_REQUEST = null;
 const AFX_DRAFTS = new Map();
 const AFX_PANELS = new Map();
+const AFX_PREVIEW_LOADS = new Map();
 let AFX_DEVICE_RACK = null;
 
 function afxEscape(value) {
@@ -18,9 +19,11 @@ function afxDraftKey(channel, slot) { return `${channel}:${slot}`; }
 
 async function previewAfxEffect(slot, effectId) {
   const capacity = afxCapacity();
-  if (!AFX_PANELS.has(effectId) || !capacity || !Number.isSafeInteger(slot) || slot < 0 || slot >= capacity.slots) return;
+  if (AFX_DEVICE_RACK?.deviceView?.() || !AFX_PANELS.has(effectId) || !capacity || !Number.isSafeInteger(slot) || slot < 0 || slot >= capacity.slots) return;
   const popup = AFX_WINDOW, channel = AFX_CHANNEL;
   if (!afxWindowIsOpen()) return;
+  const key = afxDraftKey(channel, slot), token = Symbol();
+  AFX_PREVIEW_LOADS.set(key, token);
   const status = popup.document.getElementById('afx-preview-status');
   status.textContent = 'Reading local control definitions…';
   try {
@@ -33,22 +36,50 @@ async function previewAfxEffect(slot, effectId) {
       }
       AFX_PREVIEW_CATALOG = await AFX_PREVIEW_REQUEST;
     }
-    if (AFX_WINDOW !== popup || popup.closed || AFX_CHANNEL !== channel) return;
+    if (AFX_WINDOW !== popup || popup.closed || AFX_CHANNEL !== channel
+        || AFX_DEVICE_RACK?.deviceView?.() || AFX_PREVIEW_LOADS.get(key) !== token) return;
     if (AFX_PREVIEW_CATALOG.mode !== 'preview' || AFX_PREVIEW_CATALOG.device_writes !== false)
       throw new Error('The local preview catalog is unavailable.');
     const effect = AFX_PREVIEW_CATALOG.effects.find(item => item.id === effectId);
     if (!effect) throw new Error('Effect controls are not mapped for this device profile.');
-    const key = afxDraftKey(channel, slot);
     if (AFX_DRAFTS.get(key)?.effect.id !== effectId) {
       AFX_DRAFTS.set(key, {effect, values: Object.fromEntries(effect.controls.map(control =>
-        [control.id, control.kind === 'continuous' ? control.range[0] : null]))});
+        [control.id, control.default ?? (control.kind === 'continuous' ? control.range[0] : null)]))});
     }
     selectAfxChannel(channel);
     status.textContent = 'Local previews do not load an effect or read its device settings.';
   } catch (error) {
-    if (AFX_WINDOW === popup && !popup.closed && AFX_CHANNEL === channel)
+    if (AFX_WINDOW === popup && !popup.closed && AFX_CHANNEL === channel
+        && !AFX_DEVICE_RACK?.deviceView?.() && AFX_PREVIEW_LOADS.get(key) === token)
       status.textContent = error.message;
+  } finally {
+    if (AFX_PREVIEW_LOADS.get(key) === token) AFX_PREVIEW_LOADS.delete(key);
   }
+}
+
+function afxPreviewPickerHTML(slot, current) {
+  const groups = new Map();
+  for (const [id, panel] of AFX_PANELS) {
+    const category = panel.category || (id === 'memory_brigade' ? 'Delay & Reverb' : 'Modulation');
+    if (!groups.has(category)) groups.set(category, []);
+    groups.get(category).push([id, panel]);
+  }
+  return `<label class="afx-slot-picker"><select data-afx-local-select="${slot}" aria-label="Local effect for slot ${slot + 1}">`
+    + `<option value=""${!current ? ' selected' : ''}>Empty · local</option>`
+    + [...groups].map(([category, panels]) => `<optgroup label="${afxEscape(category)}">`
+      + panels.map(([id, panel]) => `<option value="${afxEscape(id)}"${current === id ? ' selected' : ''}>${afxEscape(panel.label)}</option>`).join('')
+      + '</optgroup>').join('') + '</select></label>';
+}
+
+function changeAfxPreview(event) {
+  const select = event.target;
+  if (!select.matches('[data-afx-local-select]') || AFX_DEVICE_RACK?.deviceView?.()) return;
+  const slot = Number(select.dataset.afxLocalSelect), capacity = afxCapacity();
+  if (!capacity || !Number.isSafeInteger(slot) || slot < 0 || slot >= capacity.slots) return;
+  if (select.value) { void previewAfxEffect(slot, select.value); return; }
+  AFX_PREVIEW_LOADS.delete(afxDraftKey(AFX_CHANNEL, slot));
+  AFX_DRAFTS.delete(afxDraftKey(AFX_CHANNEL, slot));
+  selectAfxChannel(AFX_CHANNEL);
 }
 
 function clickAfxPreview(event) {
@@ -57,6 +88,7 @@ function clickAfxPreview(event) {
   if (preview) { void previewAfxEffect(Number(preview.dataset.afxPreview), preview.dataset.afxEffect); return; }
   const remove = event.target.closest('[data-afx-remove]');
   if (remove) {
+    AFX_PREVIEW_LOADS.delete(afxDraftKey(AFX_CHANNEL, Number(remove.dataset.afxRemove)));
     AFX_DRAFTS.delete(afxDraftKey(AFX_CHANNEL, Number(remove.dataset.afxRemove)));
     selectAfxChannel(AFX_CHANNEL);
     return;
@@ -90,14 +122,14 @@ function moveAfxDraft(source, destination) {
   selectAfxChannel(AFX_CHANNEL);
 }
 
-function afxPanelPositionHTML(slot) {
+function afxPanelPositionHTML(slot, enabled = true) {
   return `<span class="afx-panel-position">${String(slot + 1).padStart(2, '0')}</span>`
-    + `<button type="button" class="afx-panel-drag" draggable="true" data-afx-drag="${slot}"`
+    + `<button type="button" class="afx-panel-drag" draggable="${enabled}" data-afx-drag="${slot}"${enabled ? '' : ' disabled'}`
     + ' aria-label="Drag to reorder effect">⠿</button>'
     + `<button type="button" class="afx-panel-move" data-afx-slot="${slot}" data-afx-move="-1"`
-    + ` aria-label="Move effect up"${slot === 0 ? ' disabled' : ''}>↑</button>`
+    + ` aria-label="Move effect up"${!enabled || slot === 0 ? ' disabled' : ''}>↑</button>`
     + `<button type="button" class="afx-panel-move" data-afx-slot="${slot}" data-afx-move="1"`
-    + ` aria-label="Move effect down"${slot === afxCapacity().slots - 1 ? ' disabled' : ''}>↓</button>`;
+    + ` aria-label="Move effect down"${!enabled || slot === afxCapacity().slots - 1 ? ' disabled' : ''}>↓</button>`;
 }
 
 function afxCapacity() {
@@ -128,14 +160,11 @@ function afxRackHTML(capacity, channel) {
   if (deviceRack != null) return deviceRack;
   return Array.from({length: capacity.slots}, (_, slot) => {
     const draft = AFX_DRAFTS.get(afxDraftKey(channel, slot));
-    const preview = PROFILE?.afx?.catalog === 'afx_effects.json'
-      ? Array.from(AFX_PANELS, ([id, panel]) => `<button type="button" class="afx-preview-open"
-          data-afx-preview="${slot}" data-afx-effect="${afxEscape(id)}">Preview ${afxEscape(panel.label)} controls</button>`).join('') : '';
     return `<article class="afx-rack-unit${draft ? ' afx-rack-effect' : ''}" data-afx-rack-slot="${slot}" aria-label="AFX ${channel + 1}, slot ${slot + 1}: ${draft ? 'local preview, device state unavailable' : 'state unavailable'}">`
     + '<span class="afx-rack-ear" aria-hidden="true"></span>'
     + (draft ? AFX_PANELS.get(draft.effect.id).render(draft, slot)
       : `<div class="afx-rack-face"><h3><span class="afx-slot-number">${String(slot + 1).padStart(2, '0')}</span>`
-        + `Slot ${slot + 1}</h3><div class="afx-rack-controls"><span>Slot contents unavailable</span>${preview}</div></div>`)
+        + `Slot ${slot + 1}</h3><div class="afx-rack-controls"><span>Choose a local panel from the slot selector</span></div></div>`)
     + '<span class="afx-rack-ear" aria-hidden="true"></span></article>';
   }).join('');
 }
@@ -147,7 +176,7 @@ function afxSlotListHTML(capacity, channel) {
     const picker = AFX_DEVICE_RACK?.slotPicker?.(channel, slot);
     const movable = picker != null ? AFX_DEVICE_RACK.canMove(channel, slot) : !!draft;
     return `<li class="afx-slot" data-afx-list-slot="${slot}"><span class="afx-slot-number">${slot + 1}</span>`
-      + (picker ?? `<span class="afx-slot-label">${afxEscape(label)}</span>`)
+      + (picker ?? afxPreviewPickerHTML(slot, draft?.effect.id))
       + `<button type="button" class="afx-panel-drag" draggable="${movable}" data-afx-drag="${slot}"`
       + ` aria-label="Drag slot ${slot + 1} to reorder"${movable ? '' : ' disabled'}>⠿</button></li>`;
   }).join('');
@@ -169,7 +198,8 @@ function afxWindowHTML(capacity) {
     + `<p class="afx-chain-label">${capacity.slots} effect slots</p><ol id="afx-slot-list" class="afx-slots">${slots}</ol></article></aside>`
     + '<section class="afx-rack-panel" aria-labelledby="afx-rack-title">'
     + `<div class="afx-rack-heading"><h2 id="afx-rack-title">AFX ${channel + 1} · Effects rack</h2>`
-    + '<p class="afx-note">Effect controls will appear here when available.</p></div>'
+    + '<p class="afx-note">Choose effects in the left slot selectors.</p></div>'
+    + (AFX_WINDOW !== window ? '<p><a class="afx-preview-open" href="/webui/static/afx-preview.html" target="_blank" rel="noopener">Open panel studio</a></p>' : '')
     + (AFX_DEVICE_RACK?.toolbarHTML() || '')
     + '<p id="afx-preview-status" class="afx-preview-status" role="status"></p>'
     + `<div id="afx-rack" class="afx-rack">${afxRackHTML(capacity, channel)}</div></section></main>`;
@@ -199,7 +229,7 @@ function selectAfxChannel(channel) {
 function closeAfxWindow() {
   const popup = AFX_WINDOW;
   AFX_WINDOW = null;
-  if (popup && !popup.closed) popup.close();
+  if (popup && popup !== window && !popup.closed) popup.close();
   setAfxLauncherState(false);
 }
 
@@ -227,10 +257,16 @@ function openAfxWindow() {
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
     + '<title>AFX — antelope-ctl</title>'
     + '<link rel="stylesheet" href="/webui/static/app.css?v=routing-mix-colors-v1">'
-    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-channel-rack-v8">'
+    + '<link rel="stylesheet" href="/webui/static/afx.css?v=afx-channel-rack-v14">'
     + Array.from(new Set(Array.from(AFX_PANELS.values(), panel => panel.stylesheet)), stylesheet => `<link rel="stylesheet" href="${afxEscape(stylesheet)}">`).join('')
+    + '<link rel="stylesheet" href="/webui/static/afx-compact.css?v=compact-v1">'
     + '</head><body class="afx-window-body" role="dialog" aria-label="AFX"></body></html>');
   d.close();
+  mountAfxWindow(popup, capacity);
+}
+
+function mountAfxWindow(popup, capacity) {
+  const d = popup.document;
   d.body.innerHTML = afxWindowHTML(capacity);
   d.getElementById('afx-device').textContent = PROFILE.device?.label || PROFILE.device?.name || '';
   d.getElementById('afx-channel').addEventListener('change', event => {
@@ -238,7 +274,10 @@ function openAfxWindow() {
     void AFX_DEVICE_RACK?.refresh?.();
   });
   d.getElementById('afx-pair-control').addEventListener('click', event => AFX_DEVICE_RACK?.linkClick?.(event));
-  d.getElementById('afx-slot-list').addEventListener('change', event => AFX_DEVICE_RACK?.change?.(event));
+  d.getElementById('afx-slot-list').addEventListener('change', event => {
+    if (event.target.matches('[data-afx-local-select]')) changeAfxPreview(event);
+    else AFX_DEVICE_RACK?.change?.(event);
+  });
   d.getElementById('afx-rack').addEventListener('click', clickAfxPreview);
   d.body.addEventListener('click', event => {
     if (event.target.closest('.afx-test-toolbar')) AFX_DEVICE_RACK?.click(event);
@@ -280,9 +319,10 @@ function openAfxWindow() {
     });
   }
   const closeButton = d.querySelector('[data-afx-close]');
+  closeButton.hidden = popup === window;
   closeButton.addEventListener('click', closeAfxWindow);
   popup.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeAfxWindow();
+    if (event.key === 'Escape' && popup !== window) closeAfxWindow();
   });
   popup.addEventListener('pagehide', () => {
     if (AFX_WINDOW !== popup) return;
@@ -293,7 +333,7 @@ function openAfxWindow() {
   setAfxLauncherState(true);
   popup.focus();
   d.getElementById('afx-channel').focus();
-  AFX_DEVICE_RACK?.open?.();
+  if (popup !== window) AFX_DEVICE_RACK?.open?.();
 }
 
 document.getElementById('afxopen').addEventListener('click', openAfxWindow);

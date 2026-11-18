@@ -67,3 +67,71 @@ uses the same identifiers, raw ranges, polarity and display grouping for every
 Synergy Core profile. Each repository keeps its own runtime contract and
 independently authored implementation. Shared definitions are discoverable on
 all models; Orion capture evidence does not confirm another model's writes.
+
+## BBD completed GUI capture, 2026-10-09
+
+The original range scan plus `scan-BBD-Chorus-20261009T193326058Z` cover
+all visible editable controls. Stereo Type byte25 is0=Basic,1=Wide,2=Split,
+3=Cross; the selector restored Basic. Power visually restored its starting
+state. Its observed Orion BBD0x14/0x98 layout is instance17/type18/state19,
+not the old decoder's swapped instance/state fields. Frames7063/7067 and
+7999/8007 confirm instance0 states0 then1; the older linked-instance frames
+232899–232913 and234191–234203 independently support this layout.
+
+The coordinator's original final error is preserved. Offline replay with the
+model-local catalog layout passes; no new device actions or rerun were needed.
+The resume has8646 packets and zero drops. Device readback, processing polarity
+and runtime writer remain unverified. The LED above Chorus/Vibrato shows
+vibrato speed, per owner; it is excluded from mode and power verification.
+
+## V12 completed visible-control capture, 2026-10-25
+
+A fresh labelled load in `unattended-20261025T195948Z-load-v12/Orion.pcapng`
+frame2491 independently confirms type70/instance0 in AFX2/channel1 slot0,
+with seven empty slots. The prior ten-knob endpoint/Humanize batch
+`scan-V12-Chorus-20261009T184118945Z` is retained. The other knobs were not
+rerun for this completion pass.
+
+Voices is a discrete count selector, despite its earlier catalog kind
+`continuous`. The single-control `scan-V12-Voices-20261025T204943477Z` pass
+confirms byte21 raw1/12 at frames1469/6419, with8606packets and zero drops.
+The separate `unattended-20261025T195948Z-v12-voices-map` records all twelve
+integer counts, each with an isolated raw observation and matching digital
+readout image. Its initial eight-pixel step crossed two counts; subsequent
+four-pixel steps captured every count, including11on return. The21trials
+preserve all other parameter bytes and restore the full starting maximum block.
+The catalog and WebUI now represent Voices as a rotary selector with counts1–12;
+local edits reject fractional counts. No device writer is enabled.
+
+The isolated processing round trip in
+`unattended-20261025T195948Z-v12-processing` uses `0x14 / 0x98`, with
+instance17/type18/state19: first frame3461 carries `00 46 00`, return frame713
+carries `00 46 01`. Both actions emit one target event. Power indicator,
+Humanize and all ten knob/readout regions match their RGB baseline exactly;
+animated metering is excluded. Historical linked pulse pairs remain archived.
+
+This completes the observed visible controls. Fresh parameter readback,
+physical scaling of other knobs, processing polarity, audible/stereo behavior
+and runtime contracts remain unverified. Hidden `presetIndex` remains opaque.
+
+## Memory Cat processing completion, 2026-10-25
+
+The fresh labelled load at frame2355 in
+`unattended-20261025T195948Z-load-memorycat/Orion.pcapng` confirms type73/instance0,
+AFX2/channel1 slot0, seven empty slots. The native `MemoryBrigade` panel exposes
+`MemoryBrigadeBypassButton` and a separate processing LED. Existing six-knob,
+two-mode and tagged-readback evidence is retained without repeating the knobs.
+
+The isolated `unattended-20261025T195948Z-memorycat-processing` round trip
+emits one `0x14 / 0x98` event per click: first frame3637 `00 49 00`, return
+frame837 `00 49 01` at bytes17..19. This establishes instance17/type18/state19.
+Footswitch, processing LED, all six knobs and both mode controls return to exact
+RGB baselines. The overload LED and animated meter are excluded.
+
+Reinspection of the historical linked3/4 capture confirms instance1/0 pairs
+with a common state, rather than the earlier interpretation as state pulses.
+The Orion profile and model-local decoder metadata correct those swapped
+offsets. The separate tagged response processing byte16 remains unchanged,
+and runtime bypass writes remain disabled. Together with prior control evidence,
+this completes the observed visible controls; physical scaling, current audible
+confirmation and runtime bypass behavior remain unverified.

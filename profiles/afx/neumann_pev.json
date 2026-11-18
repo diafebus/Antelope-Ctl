@@ -1,0 +1,472 @@
+{
+  "id": "neumann_pev",
+  "name": "neumann_pev",
+  "source_name": "neumann_pev",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.13"
+  ],
+  "controls": [
+    {
+      "id": "low_gain",
+      "label": "Low Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_pev_conf.fields"
+      ]
+    },
+    {
+      "id": "pres_gain",
+      "label": "Pres Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_pev_conf.fields"
+      ]
+    },
+    {
+      "id": "pres_freq",
+      "label": "Pres Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_pev_conf.fields"
+      ]
+    },
+    {
+      "id": "high_gain",
+      "label": "High Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_pev_conf.fields"
+      ]
+    },
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_pev_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 13,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 13,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "low_gain": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low Gain",
+          "observed_raw_order": [
+            251,
+            252,
+            253,
+            254,
+            255,
+            0,
+            1,
+            2,
+            3
+          ],
+          "options": {
+            "251": "-15",
+            "252": "-12",
+            "253": "-9",
+            "254": "-6",
+            "255": "-3",
+            "0": "0",
+            "1": "3",
+            "2": "6",
+            "3": "9"
+          },
+          "wire_enum": {
+            "251": "-15",
+            "252": "-12",
+            "253": "-9",
+            "254": "-6",
+            "255": "-3",
+            "0": "0",
+            "1": "3",
+            "2": "6",
+            "3": "9"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-10/Orion.pcapng frame2121: raw251, dial-15; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-10/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-09/Orion.pcapng frame2047: raw252, dial-12; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-09/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-08/Orion.pcapng frame2025: raw253, dial-9; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-08/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-07/Orion.pcapng frame1993: raw254, dial-6; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-07/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-06/Orion.pcapng frame2009: raw255, dial-3; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-06/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-05/Orion.pcapng frame1967: raw0, dial0; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-05/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-04/Orion.pcapng frame1907: raw1, dial3; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-04/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-03/Orion.pcapng frame2158: raw2, dial6; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-down-03/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-up-18/Orion.pcapng frame2035: raw3, dial9; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/low_gain-up-18/observed-detent.png"
+          ],
+          "notes": "Wrapped unsigned wire values retained exactly; options record GUI labels. High Gain m is literal, without inferred semantics."
+        },
+        "pres_gain": {
+          "offset": 21,
+          "width": 1,
+          "kind": "enum",
+          "label": "Pres Gain",
+          "observed_raw_order": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "options": {
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "8"
+          },
+          "wire_enum": {
+            "0": "0",
+            "1": "2",
+            "2": "4",
+            "3": "6",
+            "4": "8"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-06/Orion.pcapng frame2187: raw0, dial0; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-06/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-05/Orion.pcapng frame2157: raw1, dial2; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-05/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-04/Orion.pcapng frame2169: raw2, dial4; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-04/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-03/Orion.pcapng frame2185: raw3, dial6; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-down-03/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-up-10/Orion.pcapng frame2201: raw4, dial8; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_gain-up-10/observed-detent.png"
+          ]
+        },
+        "pres_freq": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "Pres Freq",
+          "observed_raw_order": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "options": {
+            "0": "0.7",
+            "1": "1",
+            "2": "1.4",
+            "3": "2",
+            "4": "2.8",
+            "5": "4",
+            "6": "5.6"
+          },
+          "wire_enum": {
+            "0": "0.7",
+            "1": "1",
+            "2": "1.4",
+            "3": "2",
+            "4": "2.8",
+            "5": "4",
+            "6": "5.6"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-08/Orion.pcapng frame2293: raw0, dial0.7; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-08/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-07/Orion.pcapng frame2257: raw1, dial1; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-07/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-06/Orion.pcapng frame2301: raw2, dial1.4; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-06/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-05/Orion.pcapng frame2190: raw3, dial2; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-05/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-04/Orion.pcapng frame2283: raw4, dial2.8; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-04/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-03/Orion.pcapng frame2295: raw5, dial4; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-down-03/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-up-14/Orion.pcapng frame2313: raw6, dial5.6; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/pres_freq-up-14/observed-detent.png"
+          ]
+        },
+        "high_gain": {
+          "offset": 23,
+          "width": 1,
+          "kind": "enum",
+          "label": "High Gain",
+          "observed_raw_order": [
+            251,
+            252,
+            253,
+            254,
+            255,
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "options": {
+            "251": "-15",
+            "252": "-12",
+            "253": "-9",
+            "254": "-6",
+            "255": "-3",
+            "0": "0",
+            "1": "3",
+            "2": "6",
+            "3": "9",
+            "4": "m"
+          },
+          "wire_enum": {
+            "251": "-15",
+            "252": "-12",
+            "253": "-9",
+            "254": "-6",
+            "255": "-3",
+            "0": "0",
+            "1": "3",
+            "2": "6",
+            "3": "9",
+            "4": "m"
+          },
+          "status": "capture-observed; every visible detent has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-11/Orion.pcapng frame2469: raw251, dial-15; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-11/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-10/Orion.pcapng frame2481: raw252, dial-12; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-10/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-09/Orion.pcapng frame2433: raw253, dial-9; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-09/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-08/Orion.pcapng frame2357: raw254, dial-6; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-08/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-07/Orion.pcapng frame2318: raw255, dial-3; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-07/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-06/Orion.pcapng frame2429: raw0, dial0; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-06/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-05/Orion.pcapng frame2573: raw1, dial3; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-05/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-04/Orion.pcapng frame2347: raw2, dial6; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-04/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-03/Orion.pcapng frame2447: raw3, dial9; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-down-03/observed-detent.png",
+            "captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-up-20/Orion.pcapng frame2499: raw4, dialm; matching pointer image captures/unattended-20261026T091415Z-neu-pev-detent-map/high_gain-up-20/observed-detent.png"
+          ],
+          "notes": "Wrapped unsigned wire values retained exactly; options record GUI labels. High Gain m is literal, without inferred semantics."
+        },
+        "level": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "raw_endpoints": [
+            232,
+            12
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            12
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "notes": "Unsigned wire endpoints retained in directed minimum/maximum gesture order. Signed interpretation, physical units/intermediate scaling remain unverified.",
+          "evidence": [
+            "scan-NeumannPev-20261026T161740457Z/NeumannPev-channel2.pcapng frame66265: Output minimum gesture wire232",
+            "scan-NeumannPev-20261026T161740457Z/NeumannPev-channel2.pcapng frame74663: Output maximum gesture wire12"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261026T091415Z-load-neu-pev/Orion.pcapng frame2511: labelled vendor NEU-PEV load, AFX2/channel1slot0 type13/instance0, sevenempty; SHA256 2b959931aa779c39d3059ef1b106cb0299a402e4eaf27691236b1fb20f1f44d8"
+      ],
+      "notes": "Orion NEU-PEV identity, all five rotary endpoint candidates, four complete stepped dial maps and separate processing switch round trip captured. High Gain m retained literally. Physical/intermediate Output scaling, independent readback, audible/stereo behavior and runtime contracts remain unverified. NeumannPeakMeter and AfxLed are recorded separately; no signal telemetry reader enabled.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261026T091415Z-load-neu-pev/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "NeumannPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "parameter_observation": {
+        "opcode": "0x19",
+        "param_id": "0xd5",
+        "subcmd": "0x07",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; all visible editable controls covered; Output scaling and runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "scan-NeumannPev-20261026T161447638Z/NeumannPev-channel2.pcapng: stopped initial low_gain priming, zero accepted sweep actions. Frames559..755 byte20 ff..fb;2621..2989 up through03. Other payload fields preserved. Fresh current GUI reconciliation shows Low Gain pointer+9, other four controls unchanged. No blind restoration.",
+          "scan-NeumannPev-20261026T161740457Z: ten accepted endpoint phases; individual field routing20..24 observed, detent mapping still in progress.",
+          "scan-NeumannPev-20261026T161740457Z: ten accepted phases,78812packets/zero drops; each phase only its mapped byte20..24 changes."
+        ],
+        "endpoint_candidates": [
+          {
+            "control": "low_gain",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 251,
+            "frame": 4185
+          },
+          {
+            "control": "low_gain",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 3,
+            "frame": 11775
+          },
+          {
+            "control": "pres_gain",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 18917
+          },
+          {
+            "control": "pres_gain",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 4,
+            "frame": 26639
+          },
+          {
+            "control": "pres_freq",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 34205
+          },
+          {
+            "control": "pres_freq",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 6,
+            "frame": 42141
+          },
+          {
+            "control": "high_gain",
+            "offset": 23,
+            "gesture": "minimum",
+            "raw": 251,
+            "frame": 50185
+          },
+          {
+            "control": "high_gain",
+            "offset": 23,
+            "gesture": "maximum",
+            "raw": 4,
+            "frame": 58381
+          },
+          {
+            "control": "level",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 66265
+          },
+          {
+            "control": "level",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 12,
+            "frame": 74663
+          }
+        ],
+        "capture_sha256": "ffb01dbc3c2461167ea3b8cb22f95be36c1a6d1cbf55b4112fb5fb3dc2a96e98",
+        "rotary_mapping": {
+          "source": "captures/unattended-20261026T091415Z-neu-pev-detent-map",
+          "status": "completed; four stepped dials,62 bounded trials; other payload fields preserved",
+          "starting_parameter_payload_hex": "030406040c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "030406040c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB seven static control/switch/LED regions; peak meter excluded",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261026T091415Z-neu-pev-processing/first/Orion.pcapng frame4619 tuple@17..19=000d00",
+          "unattended-20261026T091415Z-neu-pev-processing/return/Orion.pcapng frame1247 tuple@17..19=000d01"
+        ]
+      }
+    }
+  ]
+}

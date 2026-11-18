@@ -1,0 +1,109 @@
+{
+  "id": "atuner",
+  "name": "atuner",
+  "source_name": "atuner",
+  "category": "pitch",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.72"
+  ],
+  "controls": [],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 72,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 72,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "unattended-20261026T091415Z-load-atuner/Orion.pcapng frame2719: labelled ATuner load, AFX2/channel1slot0 type72/instance0, sevenempty; SHA256 6928e17c5a6048871fdb0c0ecad437e3813c97ddcd02da13da60cf3143f5eeeb."
+      ],
+      "notes": "Independently observed Orion ATuner identity and native ATuner panel. Only editable control observed is power; its GUI roundtrip is captured. The tuner depends on its screen: frequency, note and cents/needle interpretation and device telemetry/readback are deferred by owner2026-10-26. This is visible editable-control coverage, not a usable tuner implementation or verified pitch accuracy. No raw query or runtime writer added.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB power button; dynamic tuning display excluded",
+        "polarity": "not independently verified audibly",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261026T091415Z-atuner-processing/first/Orion.pcapng frame9329 tuple@17..19=004800",
+          "unattended-20261026T091415Z-atuner-processing/return/Orion.pcapng frame2167 tuple@17..19=004801"
+        ]
+      },
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261026T091415Z-load-atuner/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "ATunerFrequencyLabel",
+            "native_instance_count": 1,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "ATunerNoteLabel",
+            "native_instance_count": 8,
+            "kind_hint": "parameter-or-signal-readout",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "ATunerScreen",
+            "native_instance_count": 1,
+            "kind_hint": "screen",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "ATunerScreenBottomLabels",
+            "native_instance_count": 1,
+            "kind_hint": "screen",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "ATunerVUMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations.",
+        "follow_up": "Essential tuner-screen reading deferred by owner2026-10-26: determine frequency/note/cents/needle readout and its source before claiming a usable tuner.",
+        "owner_deferred": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,463 @@
+{
+  "id": "staylevin",
+  "name": "staylevin",
+  "source_name": "staylevin",
+  "category": "dynamics",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.34"
+  ],
+  "controls": [
+    {
+      "id": "input",
+      "label": "Input",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_staylevin_conf.fields"
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Output",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_staylevin_conf.fields"
+      ]
+    },
+    {
+      "id": "release",
+      "label": "Release",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_staylevin_conf.fields"
+      ]
+    },
+    {
+      "id": "attack",
+      "label": "Attack",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_staylevin_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 34,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 34,
+      "status": "capture-observed; visible controls captured; intermediate timing semantics and runtime contract unverified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "input": {
+          "offset": 20,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Input",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "20"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng frame9091: minimum raw0; image captures/scan-StayLevin-20261103T145457652Z/StayLevin-input-minimum.png",
+            "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng frame23713: maximum raw100; image captures/scan-StayLevin-20261103T145457652Z/StayLevin-input-maximum.png"
+          ],
+          "notes": "Printed endpoint association only; intermediate scaling, calibrated gain and independent device readback unverified."
+        },
+        "output": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "range": [
+            0,
+            100
+          ],
+          "observed_display_range": [
+            "0",
+            "20"
+          ],
+          "status": "capture-observed; endpoints and printed marks only",
+          "writable": false,
+          "evidence": [
+            "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng frame68315: minimum raw0; image captures/scan-StayLevin-20261103T145457652Z/StayLevin-output-minimum.png",
+            "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng frame75661: maximum raw100; image captures/scan-StayLevin-20261103T145457652Z/StayLevin-output-maximum.png"
+          ],
+          "notes": "Printed endpoint association only; intermediate scaling, calibrated gain and independent device readback unverified."
+        },
+        "attack": {
+          "offset": 23,
+          "width": 1,
+          "kind": "enum",
+          "label": "Mode",
+          "enum": {
+            "0": "DOUBLE",
+            "1": "SINGLE"
+          },
+          "status": "capture-observed; complete labelled GUI switch round trip",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261103T144909Z-staylevin-mode-first2/Orion.pcapng frame3081: onlybyte23 changes0→1; bottomDOUBLE→topSINGLE screenshots",
+            "captures/unattended-20261103T144909Z-staylevin-mode-return/Orion.pcapng frame709: onlybyte23 changes1→0; full starting parameter body and three static panel regions restored"
+          ],
+          "notes": "Compatibility ID attack retained. Displayed SINGLE/DOUBLE mode labels do not establish attack times or audible behavior."
+        },
+        "release": {
+          "offset": 22,
+          "width": 1,
+          "kind": "enum",
+          "label": "Recovery Time",
+          "range": [
+            0,
+            4
+          ],
+          "enum": null,
+          "status": "capture-observed; five directed pointer contacts, three intermediate timing meanings unknown",
+          "writable": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "SLOW (leftmost dot)",
+              "pointer_position": "leftmost",
+              "meaning_status": "printed relative-speed endpoint; numerical timing unknown",
+              "frame": 901,
+              "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-04/Orion.pcapng",
+              "screenshot": "screen-1793718024924054439.png",
+              "writable": false
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "pointer_position": "upper-left",
+              "meaning_status": "unlabelled contact; timing meaning unknown",
+              "frame": 889,
+              "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-03/Orion.pcapng",
+              "screenshot": "screen-1793718018418427105.png",
+              "writable": false
+            },
+            {
+              "raw": 2,
+              "printed_label": null,
+              "pointer_position": "top",
+              "meaning_status": "unlabelled contact; timing meaning unknown",
+              "frame": 865,
+              "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-02/Orion.pcapng",
+              "screenshot": "screen-1793718012218510832.png",
+              "writable": false
+            },
+            {
+              "raw": 3,
+              "printed_label": null,
+              "pointer_position": "upper-right",
+              "meaning_status": "unlabelled contact; timing meaning unknown",
+              "frame": 957,
+              "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-01/Orion.pcapng",
+              "screenshot": "screen-1793718005879777629.png",
+              "writable": false
+            },
+            {
+              "raw": 4,
+              "printed_label": "FAST (rightmost dot)",
+              "pointer_position": "rightmost",
+              "meaning_status": "printed relative-speed endpoint; numerical timing unknown",
+              "frame": 939,
+              "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-08/Orion.pcapng",
+              "screenshot": "screen-1793718050736867257.png",
+              "writable": false
+            }
+          ],
+          "device_readback_verified": false,
+          "notes": "Compatibility ID release retained. SLOW and FAST mark relative-speed endpoints; three intermediate dots are unlabelled. No numerical time, interpolation or usable named timing choices inferred."
+        }
+      },
+      "evidence": [
+        "captures/unattended-20261103T144909Z-load-staylevin/Orion.pcapng frame1083: AFX2 slot0 type34/instance0; all other test slots empty"
+      ],
+      "notes": "Orion-only capture observations. Commands remain null and every encoding is read-only. SINGLE/DOUBLE is Mode despite compatibility ID attack. Recovery intermediate contacts have no printed timing labels. Physical scales, timing, meter telemetry, independent readback and audible/stereo behavior remain unverified.",
+      "type_id_write_status": "GUI load observed; runtime writer disabled",
+      "gui_observation": {
+        "panel_class": "StayLevin",
+        "source": "captures/unattended-20261103T144909Z-load-staylevin; snapshot1793717612840999931",
+        "editable_controls": [
+          {
+            "control": "input",
+            "ui_class": "StayLevinInputPot",
+            "label": "INPUT"
+          },
+          {
+            "control": "output",
+            "ui_class": "StayLevinOutputPot",
+            "label": "OUTPUT"
+          },
+          {
+            "control": "release",
+            "ui_class": "StayLevinSmallPot",
+            "label": "RECOVERY TIME; SLOW / FAST"
+          },
+          {
+            "control": "attack",
+            "ui_class": "StayLevinAttackSwitch",
+            "label": "MODE; SINGLE / DOUBLE",
+            "semantic_limit": "Compatibility ID attack retained; GUI labels do not establish attack times"
+          },
+          {
+            "control": "processing",
+            "ui_class": "StayLevinBypassSwitch",
+            "label": "ON / OFF; POWER lamp"
+          }
+        ],
+        "device_readback_verified": false
+      },
+      "display_observations": {
+        "status": "GUI-observed; signal telemetry unknown",
+        "source": "captures/unattended-20261103T144909Z-load-staylevin snapshot1793717612840999931",
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "displays": [
+          {
+            "ui_class": "StayLevinVuMeter",
+            "kind_hint": "meter",
+            "native_instance_count": 1,
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "StayLevinPeakMeter",
+            "kind_hint": "meter",
+            "native_instance_count": 1,
+            "status": "GUI-observed; no telemetry contract"
+          },
+          {
+            "ui_class": "AfxLed",
+            "kind_hint": "processing-indicator",
+            "native_instance_count": 1,
+            "status": "GUI POWER lamp lit at state1/dark at state0; no signal telemetry contract"
+          }
+        ]
+      },
+      "parameter_observation": {
+        "opcode": "0x18",
+        "param_id": "0xd5",
+        "subcmd": "0x06",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; three endpoint pairs, five Recovery contacts and labelled MODE return; timing meanings remain partial",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 9091,
+            "source": "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng"
+          },
+          {
+            "control": "input",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 23713,
+            "source": "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 41001,
+            "source": "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng"
+          },
+          {
+            "control": "release",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 4,
+            "frame": 56841,
+            "source": "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 68315,
+            "source": "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng"
+          },
+          {
+            "control": "output",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 75661,
+            "source": "captures/scan-StayLevin-20261103T145457652Z/StayLevin-channel2.pcapng"
+          }
+        ],
+        "capture_sha256": "76ac1b29a95d76eef088f074bdbb770e06647b6c2eda95762285f29186bbd4c7",
+        "evidence": [
+          "scan-StayLevin-20261103T145457652Z: 6 accepted endpoint phases; each action changes only its mapped one-byte field. Physical scaling/readback/runtime remain unverified."
+        ],
+        "labelled_gui_observations": {
+          "attack": {
+            "offset": 23,
+            "raw_labels": {
+              "0": "DOUBLE",
+              "1": "SINGLE"
+            },
+            "device_readback_verified": false
+          }
+        },
+        "recovery_contact_observations": [
+          {
+            "raw": 0,
+            "printed_label": "SLOW (leftmost dot)",
+            "pointer_position": "leftmost",
+            "meaning_status": "printed relative-speed endpoint; numerical timing unknown",
+            "frame": 901,
+            "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-04/Orion.pcapng",
+            "screenshot": "screen-1793718024924054439.png",
+            "writable": false
+          },
+          {
+            "raw": 1,
+            "printed_label": null,
+            "pointer_position": "upper-left",
+            "meaning_status": "unlabelled contact; timing meaning unknown",
+            "frame": 889,
+            "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-03/Orion.pcapng",
+            "screenshot": "screen-1793718018418427105.png",
+            "writable": false
+          },
+          {
+            "raw": 2,
+            "printed_label": null,
+            "pointer_position": "top",
+            "meaning_status": "unlabelled contact; timing meaning unknown",
+            "frame": 865,
+            "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-02/Orion.pcapng",
+            "screenshot": "screen-1793718012218510832.png",
+            "writable": false
+          },
+          {
+            "raw": 3,
+            "printed_label": null,
+            "pointer_position": "upper-right",
+            "meaning_status": "unlabelled contact; timing meaning unknown",
+            "frame": 957,
+            "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-01/Orion.pcapng",
+            "screenshot": "screen-1793718005879777629.png",
+            "writable": false
+          },
+          {
+            "raw": 4,
+            "printed_label": "FAST (rightmost dot)",
+            "pointer_position": "rightmost",
+            "meaning_status": "printed relative-speed endpoint; numerical timing unknown",
+            "frame": 939,
+            "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/trial-08/Orion.pcapng",
+            "screenshot": "screen-1793718050736867257.png",
+            "writable": false
+          }
+        ],
+        "recovery_return": {
+          "full_parameter_body_returned": true,
+          "static_checks": {
+            "left": true,
+            "right": true,
+            "edge": true
+          },
+          "device_readback_verified": false,
+          "source": "captures/unattended-20261103T144909Z-staylevin-recovery-map2/progress.json"
+        }
+      },
+      "processing_observation": {
+        "status": "capture-observed; isolated GUI Power round trip and static return",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "instance_index_offset": 17,
+        "type_id_offset": 18,
+        "state_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "audible_polarity_verified": false,
+        "states": [
+          {
+            "raw": 0,
+            "switch_label": "OFF",
+            "power_lamp": "dark",
+            "source": "captures/unattended-20261103T144909Z-staylevin-processing/first/Orion.pcapng",
+            "frame": 2869
+          },
+          {
+            "raw": 1,
+            "switch_label": "ON",
+            "power_lamp": "lit",
+            "source": "captures/unattended-20261103T144909Z-staylevin-processing/return/Orion.pcapng",
+            "frame": 679
+          }
+        ],
+        "static_checks": {
+          "left": true,
+          "right": true,
+          "edge": true
+        },
+        "notes": "Printed ON/OFF switch, POWER lamp and rack BP correlate with captured events; independent device readback and audible processing polarity unverified."
+      }
+    }
+  ]
+}

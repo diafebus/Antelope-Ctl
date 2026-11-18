@@ -1,0 +1,739 @@
+{
+  "id": "neumann_w492",
+  "name": "neumann_w492",
+  "source_name": "neumann_w492",
+  "category": "eq",
+  "description": null,
+  "status": "reference-only",
+  "evidence": [
+    "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.by_type_id.15"
+  ],
+  "controls": [
+    {
+      "id": "low_cut",
+      "label": "Low Cut",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "low_gain",
+      "label": "Low Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "low_freq",
+      "label": "Low Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "low_on",
+      "label": "Low On",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "lmid_gain",
+      "label": "Lmid Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "lmid_freq",
+      "label": "Lmid Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "lmid_on",
+      "label": "Lmid On",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "hmid_gain",
+      "label": "Hmid Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "hmid_freq",
+      "label": "Hmid Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "hmid_on",
+      "label": "Hmid On",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "high_gain",
+      "label": "High Gain",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "high_freq",
+      "label": "High Freq",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "high_on",
+      "label": "High On",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    },
+    {
+      "id": "level",
+      "label": "Level",
+      "description": null,
+      "kind": null,
+      "unit": null,
+      "range": null,
+      "step": null,
+      "default": null,
+      "enum": null,
+      "status": "declared",
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#params.set_neumann_w492_conf.fields"
+      ]
+    }
+  ],
+  "implementations": [
+    {
+      "profile": "discrete_4_sc.json",
+      "type_id": 15,
+      "status": "readback-observed",
+      "type_id_write_status": "unconfirmed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {},
+      "evidence": [
+        "https://github.com/Gazelle-ctl/gazelle-device-profiles/blob/a9c87be8b427c23ef5eb5d89c38170a4c65892f8/profiles/antelope/discrete_4_synergy_core.json#plugins.evidence"
+      ],
+      "notes": "Gazelle reports this type ID in model-local read-only enumeration on 2026-09-13. Control names are declared, not byte encodings or verified writes. This is reference metadata, not a contract for the local stub profile."
+    },
+    {
+      "profile": "orion_studio_sc.json",
+      "type_id": 15,
+      "status": "capture-observed",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": null
+      },
+      "control_encodings": {
+        "low_gain": {
+          "offset": 21,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Low Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame4173: directed low_gain minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame11613: directed low_gain maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "lmid_gain": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Lmid Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame18731: directed lmid_gain minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame26321: directed lmid_gain maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "hmid_gain": {
+          "offset": 27,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Hmid Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame33655: directed hmid_gain minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame41545: directed hmid_gain maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "high_gain": {
+          "offset": 30,
+          "width": 1,
+          "kind": "continuous",
+          "label": "High Gain",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame49025: directed high_gain minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame57225: directed high_gain maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "low_freq": {
+          "offset": 22,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Low Freq",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame65197: directed low_freq minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame73395: directed low_freq maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "lmid_freq": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Lmid Freq",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame81987: directed lmid_freq minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame90455: directed lmid_freq maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "hmid_freq": {
+          "offset": 28,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Hmid Freq",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame99193: directed hmid_freq minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame107971: directed hmid_freq maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "high_freq": {
+          "offset": 31,
+          "width": 1,
+          "kind": "continuous",
+          "label": "High Freq",
+          "range": [
+            0,
+            100
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame117153: directed high_freq minimum, raw0; other parameter fields preserved",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame126071: directed high_freq maximum, raw100; other parameter fields preserved"
+          ]
+        },
+        "level": {
+          "offset": 33,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Output",
+          "raw_endpoints": [
+            232,
+            12
+          ],
+          "signed_endpoint_candidates": [
+            -24,
+            12
+          ],
+          "status": "capture-observed; endpoint candidates only",
+          "writable": false,
+          "notes": "Unsigned wire endpoints retained in directed gesture order. Signed interpretation, physical units and intermediate scaling remain unverified.",
+          "evidence": [
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame135271: Output minimum gesture raw232",
+            "scan-NeumannW492-20261026T164051354Z/NeumannW492-channel2.pcapng frame144729: Output maximum gesture raw12"
+          ]
+        },
+        "low_on": {
+          "offset": 23,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low On",
+          "range": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "wire_enum": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "status": "capture-observed; isolated GUI round trip",
+          "writable": false,
+          "notes": "Literal slider positions independently reviewed. Enabled/bypassed polarity and audible effect unverified.",
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w492-sections/low_on-first/Orion.pcapng frame795: directed section first, byte23; matching observed.png",
+            "captures/unattended-20261026T163323Z-neu-w492-sections/low_on-return/Orion.pcapng frame683: directed section return, byte23; matching observed.png"
+          ]
+        },
+        "lmid_on": {
+          "offset": 26,
+          "width": 1,
+          "kind": "enum",
+          "label": "Lmid On",
+          "range": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "wire_enum": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "status": "capture-observed; isolated GUI round trip",
+          "writable": false,
+          "notes": "Literal slider positions independently reviewed. Enabled/bypassed polarity and audible effect unverified.",
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w492-sections/lmid_on-first/Orion.pcapng frame723: directed section first, byte26; matching observed.png",
+            "captures/unattended-20261026T163323Z-neu-w492-sections/lmid_on-return/Orion.pcapng frame709: directed section return, byte26; matching observed.png"
+          ]
+        },
+        "hmid_on": {
+          "offset": 29,
+          "width": 1,
+          "kind": "enum",
+          "label": "Hmid On",
+          "range": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "wire_enum": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "status": "capture-observed; isolated GUI round trip",
+          "writable": false,
+          "notes": "Literal slider positions independently reviewed. Enabled/bypassed polarity and audible effect unverified.",
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w492-sections/hmid_on-first/Orion.pcapng frame707: directed section first, byte29; matching observed.png",
+            "captures/unattended-20261026T163323Z-neu-w492-sections/hmid_on-return/Orion.pcapng frame708: directed section return, byte29; matching observed.png"
+          ]
+        },
+        "high_on": {
+          "offset": 32,
+          "width": 1,
+          "kind": "enum",
+          "label": "High On",
+          "range": [
+            0,
+            1
+          ],
+          "options": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "wire_enum": {
+            "0": "Left",
+            "1": "Right"
+          },
+          "status": "capture-observed; isolated GUI round trip",
+          "writable": false,
+          "notes": "Literal slider positions independently reviewed. Enabled/bypassed polarity and audible effect unverified.",
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w492-sections/high_on-first/Orion.pcapng frame787: directed section first, byte32; matching observed.png",
+            "captures/unattended-20261026T163323Z-neu-w492-sections/high_on-return/Orion.pcapng frame711: directed section return, byte32; matching observed.png"
+          ]
+        },
+        "low_cut": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Low Cut",
+          "range": [
+            0,
+            2
+          ],
+          "options": {
+            "0": "140",
+            "1": "20",
+            "2": "80"
+          },
+          "wire_enum": {
+            "0": "140",
+            "1": "20",
+            "2": "80"
+          },
+          "status": "capture-observed; every visible position has a directed raw value and pointer image",
+          "writable": false,
+          "evidence": [
+            "captures/unattended-20261026T163323Z-neu-w492-lowcut/centre-01/Orion.pcapng frame753: raw1, native label 20; matching observed.png",
+            "captures/unattended-20261026T163323Z-neu-w492-lowcut/centre-02/Orion.pcapng frame778: raw2, native label 80; matching observed.png",
+            "captures/unattended-20261026T163323Z-neu-w492-lowcut/centre-03/Orion.pcapng frame731: raw0, native label 140; matching observed.png"
+          ]
+        }
+      },
+      "evidence": [
+        "unattended-20261026T163323Z-load-neu-w492/Orion.pcapng frame2285: labelled vendor NEU-W492 load, AFX2/channel1slot0 type15/instance0, sevenempty; SHA256 d930614faeedcd5394fde344c18d476f00171e67dabfc18d6f9865f79ec6e0ef"
+      ],
+      "notes": "Orion NEU-W492: nine rotary endpoint candidates, four individual section-switch round trips, all three Low Cut positions and separate processing round trip captured. Section-switch and Low Cut round trips returned their full parameter payload and checked static-panel images. Processing returned its checked static-panel baseline; animated peak meter excluded. Endpoint scans intentionally finish at maxima. Physical/intermediate knob scaling, enabled polarity of section positions, independent readback, audible/stereo behavior and runtime contracts remain unverified. Native meter/LED presence remains a separate display inventory.",
+      "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
+      "display_observations": {
+        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "source": "unattended-20261026T163323Z-load-neu-w492/raw-ui.json",
+        "displays": [
+          {
+            "ui_class": "AfxLed",
+            "native_instance_count": 1,
+            "kind_hint": "indicator",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          },
+          {
+            "ui_class": "NeumannPeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; native class is not a telemetry contract"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false,
+        "meter_scale_and_signal_meaning_verified": false,
+        "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
+      },
+      "parameter_observation": {
+        "opcode": "0x22",
+        "param_id": "0xd5",
+        "subcmd": "0x10",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "capture-observed; all visible editable controls covered; knob scaling and runtime contract unverified",
+        "writable": false,
+        "device_readback_verified": false,
+        "endpoint_candidates": [
+          {
+            "control": "low_gain",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 4173
+          },
+          {
+            "control": "low_gain",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 11613
+          },
+          {
+            "control": "lmid_gain",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 18731
+          },
+          {
+            "control": "lmid_gain",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 26321
+          },
+          {
+            "control": "hmid_gain",
+            "offset": 27,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 33655
+          },
+          {
+            "control": "hmid_gain",
+            "offset": 27,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 41545
+          },
+          {
+            "control": "high_gain",
+            "offset": 30,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 49025
+          },
+          {
+            "control": "high_gain",
+            "offset": 30,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 57225
+          },
+          {
+            "control": "low_freq",
+            "offset": 22,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 65197
+          },
+          {
+            "control": "low_freq",
+            "offset": 22,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 73395
+          },
+          {
+            "control": "lmid_freq",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 81987
+          },
+          {
+            "control": "lmid_freq",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 90455
+          },
+          {
+            "control": "hmid_freq",
+            "offset": 28,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 99193
+          },
+          {
+            "control": "hmid_freq",
+            "offset": 28,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 107971
+          },
+          {
+            "control": "high_freq",
+            "offset": 31,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 117153
+          },
+          {
+            "control": "high_freq",
+            "offset": 31,
+            "gesture": "maximum",
+            "raw": 100,
+            "frame": 126071
+          },
+          {
+            "control": "level",
+            "offset": 33,
+            "gesture": "minimum",
+            "raw": 232,
+            "frame": 135271
+          },
+          {
+            "control": "level",
+            "offset": 33,
+            "gesture": "maximum",
+            "raw": 12,
+            "frame": 144729
+          }
+        ],
+        "capture_sha256": "342ee73e15ccec887cdfa5e89dfc00b0639e9a31a197c874d4243a4174b7d764",
+        "evidence": [
+          "scan-NeumannW492-20261026T163707526Z: historical stopped initial priming, zeroaccepted phases; onlybyte21lowgain0..100 observed.",
+          "scan-NeumannW492-20261026T164051354Z: eighteen accepted endpoint phases, source frames and rawvalues recorded; physical scales/interpolation remainunverified.",
+          "scan-NeumannW492-20261026T164051354Z: eighteen accepted rotary endpoint phases,149536packets/zero drops; every phase isolated to its mapped field."
+        ],
+        "section_roundtrips": {
+          "source": "captures/unattended-20261026T163323Z-neu-w492-sections",
+          "status": "completed; four one-byte binary switch pairs; full parameter payload and static-panel RGB returned",
+          "fields": {
+            "low_on": 23,
+            "lmid_on": 26,
+            "hmid_on": 29,
+            "high_on": 32
+          },
+          "device_readback_verified": false
+        },
+        "low_cut_mapping": {
+          "source": "captures/unattended-20261026T163323Z-neu-w492-lowcut",
+          "status": "completed; three observed states and full parameter payload/static-panel return",
+          "starting_parameter_payload_hex": "006464006464006464006464000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "restored_parameter_payload_hex": "006464006464006464006464000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "device_readback_verified": false
+        }
+      },
+      "bypass_observation": {
+        "status": "capture-observed",
+        "opcode": "0x14",
+        "selector": "0x98",
+        "instance_offset": 17,
+        "type_offset": 18,
+        "state_offset": 19,
+        "observed_instance": 0,
+        "observed_values": [
+          0,
+          1
+        ],
+        "visual_restoration": "exact RGB of two panel segments containing all static controls/LED; animated peak meter excluded",
+        "polarity": "not independently verified",
+        "device_readback_verified": false,
+        "runtime_writable": false,
+        "evidence": [
+          "unattended-20261026T163323Z-neu-w492-processing/first/Orion.pcapng frame3065 tuple@17..19=000f00",
+          "unattended-20261026T163323Z-neu-w492-processing/return/Orion.pcapng frame699 tuple@17..19=000f01"
+        ]
+      }
+    }
+  ]
+}

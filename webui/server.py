@@ -40,6 +40,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antelope import protocol as proto
+from antelope.catalog import load_catalog
 from antelope.transport import list_connected_hid, open_transport
 from webui.device_ui import features_for
 from webui.afx_catalog import preview_catalog, effect_choices
@@ -2054,8 +2055,7 @@ def api_afx_catalog():
     if PROFILE.get("afx", {}).get("catalog") != "afx_effects.json":
         return preview_catalog({}, os.path.basename(PROFILE_PATH))
     try:
-        with open(os.path.join(PROFILE_DIR, "afx_effects.json")) as source:
-            catalog = json.load(source)
+        catalog = load_catalog(os.path.join(PROFILE_DIR, "afx_effects.json"))
     except (OSError, ValueError):
         catalog = {}
     return preview_catalog(catalog, os.path.basename(PROFILE_PATH))
@@ -2089,8 +2089,7 @@ def api_afx_memorycat_test(channel: int = 0, refresh: bool = False):
         except (ValueError, RuntimeError) as error:
             return _bad(str(error))
     try:
-        with open(os.path.join(PROFILE_DIR, 'afx_effects.json')) as source:
-            catalog = json.load(source)
+        catalog = load_catalog(os.path.join(PROFILE_DIR, 'afx_effects.json'))
     except (OSError, ValueError):
         catalog = {}
     return {**state, 'effects': effect_choices(catalog, os.path.basename(PROFILE_PATH), PROFILE)}
