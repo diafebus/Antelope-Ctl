@@ -45,6 +45,7 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 | FET-A76 | `UadVuMeter` (VU face), `UadPeakMeter`; embedded ON lamp in `Uad1176BypassButton` (signal telemetry unverified) |
 | Impresser (partial controls) | `ImpresserGRMeter`; `PeakLed` ×16; `ClipLed`; `ImpresserLed` ×4; `OptoLed`; `DistortionLed` ×2; `RatioDisplay` (parameter readout) |
 | Comp-4K-Bus | `Ssl4kBusVuMeter`; `Ssl4kBusPeakMeter`; embedded IN lamp in `Ssl4kBusBypassButton` (processing GUI correlation only; signal telemetry unverified) |
+| NEU-473A | `U473APeakMeter`, `U473AGainReductionLedPeakMeter` with eight `PeakLed` segments, `U473ABypassLed`, `U473AGreenLed` and `U473ARedLed`. Signal telemetry remains unverified. |
 
 Impresser's `OptoLed` does not return to its initial appearance after the
 eight-label Ratio cycle: it is bright before raw3/4:1, dark after the full

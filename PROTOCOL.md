@@ -2424,6 +2424,14 @@ Power method was negative; no inverse sent. [Dynamics findings](docs/orion-afx-p
 retain source frames, measured geometry and label/scale limits. No runtime
 writer, independent readback or query expansion is established.
 
+**NEU-473A partial controls (2026-11-18).** Directed load frame 1007
+establishes Orion type 80, instance 0. The paired endpoint capture observes
+`0x1e / 0xd5 / 0x0c`, type at byte 18 and instance at byte 19. Output Gain
+(byte 20) and Compr Gain (26) span observed raw 0 and 100, Attack (23) has
+observed raw 0 and 2, and expander Threshold (27) has observed raw 0 and 10.
+See [labelled observations](docs/orion-afx-power-dynamics.md#neu-473a--partial-control-capture-2026-11-18)
+and the remaining selector work. Runtime commands remain disabled.
+
 **Comp-4K-Bus visible controls (2026-11-04).** Directed load frame853 in
 `supervised-20261104T012645Z-load-ssl4kbus` establishes Orion type63/instance0.
 The16-phase `scan-Ssl4kBus-20261104T014150887Z` and separate two-phase HR
