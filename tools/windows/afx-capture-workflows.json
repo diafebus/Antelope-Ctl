@@ -552,11 +552,12 @@
       "panel_class": "Diode609",
       "next_step": "review",
       "range_plan": "diode609-knobs",
-      "review_reason": "Seven endpoint pairs, four binary switches and Power captured. Intermediate rotary positions and SC Preview need directed visual and wire witnesses.",
+      "review_reason": "Seven endpoint pairs, five binary switches and Power captured. Intermediate rotary positions need directed visual and wire witnesses.",
       "partial_evidence": [
         "continuation-20261119/diode609/reconciled-load.json",
         "scan-Diode609-20261119T034207950Z",
-        "continuation-20261119/diode609/ranges-review.json"
+        "continuation-20261119/diode609/ranges-review.json",
+        "continuation-20261119-midday/manual-sc-verified.json"
       ]
     }
   ]

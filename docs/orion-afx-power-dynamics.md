@@ -689,8 +689,17 @@ isolates one byte in the initialized parameter family.
 | Compressor HPF | 28 | raw 0, off | raw 14, 800 Hz |
 
 The Orion model entry keeps the source frames and endpoint screenshots.
-Intermediate labels and SC Preview still need individual captures. The a2
+Intermediate rotary labels still need individual captures. The a2
 recovery law and audible behavior remain unmeasured.
 Removal frame 1083 in `continuation-20261119/diode609/remove-diode609`
 shows all eight AFX 2 slots empty. The view returned to the owner's AFX 1
 Memory Cat Brigade without a control write.
+
+The owner separately toggled SC Preview in AFX 2. Frame 10559 carried
+byte 31 raw 1 with the red lamp lit. It stayed on after the click. Frame
+39199 carried raw 0 with the lamp unlit after the second click. Only byte
+31 differs between the two full parameter reports. The disabled body
+matches the earlier initialized body for instance 0. The passive recording
+contained 72,780 packets with zero drops. These observations establish the
+toggle behavior in the GUI. Audible sidechain behavior and independent
+device readback remain unverified.

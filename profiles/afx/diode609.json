@@ -210,7 +210,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 82,
-      "status": "capture-observed; assignment, seven paired endpoints, four switches and Power",
+      "status": "capture-observed; assignment, seven paired endpoints, five switches and Power",
       "commands": {
         "load": null,
         "recall": null,
@@ -348,6 +348,41 @@
             "source": "captures/continuation-20261119/diode609/compAttack/verified.json",
             "full_parameter_body_returned": true
           }
+        },
+        "preview": {
+          "offset": 31,
+          "width": 1,
+          "kind": "boolean",
+          "label": "SC Preview",
+          "range": [
+            0,
+            1
+          ],
+          "status": "owner-operated toggle observed on Orion; lit/unlit GUI and isolated full-body return",
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 1,
+              "label": "On, lamp lit",
+              "frame": 10559,
+              "source": "captures/continuation-20261119-midday/manual-sc-preview.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-sc-active.png"
+            },
+            {
+              "raw": 0,
+              "label": "Off, lamp unlit",
+              "frame": 39199,
+              "source": "captures/continuation-20261119-midday/manual-sc-preview.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-sc-off.png"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119-midday/manual-sc-verified.json",
+            "only_preview_byte_changed": true,
+            "returned_body_matches_previous_initialization": true
+          },
+          "notes": "On remains latched after release. A second click turns it off. Audible sidechain behavior remains unverified."
         }
       },
       "evidence": [
@@ -459,7 +494,7 @@
         "subcmd": "0x0e",
         "type_id_offset": 18,
         "instance_index_offset": 19,
-        "status": "same-instance initialization, four switches and seven paired rotary endpoints",
+        "status": "same-instance initialization, five switches and seven paired rotary endpoints",
         "writable": false,
         "device_readback_verified": false,
         "evidence": [

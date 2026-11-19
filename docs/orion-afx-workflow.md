@@ -99,7 +99,7 @@ work; no new initialization capture is required.
 | Impresser (partial) | 42 | Six endpoint pairs and eight literal Ratio labels captured. Detector intermediate labels, Harmonics, Stereo Link, UK Mode and processing remain pending. Full Ratio parameter body returns, but OPTO lamp differs; [partial findings](orion-afx-power-dynamics.md#impresser--partial-control-capture-2026-11-04) preserve the failed static check. This is not a completed plugin pass; runtime/readback/telemetry remain unverified |
 | Comp-4K-Bus | 63 | Six continuous endpoint pairs including HR, complete Attack/Release/Ratio label maps, Auto Fade and IN-button/rack BP GUI returns captured. Own trial removed and empty AFX2 verified; [dynamics findings](orion-afx-power-dynamics.md#comp-4k-bus--visible-control-pass-2026-11-04) preserve scope and physical/runtime limits |
 | NEU-473A | 80 | Visible-control pass complete. Both gains, Attack, Ratio, Threshold contacts, both Recovery controls, the three switches and Bypass have [capture evidence](orion-afx-power-dynamics.md#neu-473a-continuation-2026-11-19). Numerical values for unlabelled Threshold marks remain unresolved. |
-| Diode609 (partial) | 82 | Captured assignment, initialization, seven rotary endpoint pairs, four binary switches and Power. See the [Orion findings](orion-afx-power-dynamics.md#diode609--partial-control-capture-2026-11-19). |
+| Diode609 (partial) | 82 | Captured assignment, initialization, seven rotary endpoint pairs, five binary switches and Power. See the [Orion findings](orion-afx-power-dynamics.md#diode609--partial-control-capture-2026-11-19). |
 
 PowerGate's labelled load is frame2959 in the local
 `unattended-20261025-load-powergate/Orion.pcapng`; the catalog retains its hash
