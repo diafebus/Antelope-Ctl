@@ -92,6 +92,42 @@ verified receipts and capture summaries stay in the output directory; recorder
 output goes to the adjacent `*-recorder.log`. Original scan artifacts remain in
 the shared kit's local `results/`. These files and captures stay out of Git.
 
+### Overnight operation
+
+An unattended session advances through the agreed capture queue while the
+operator is away. At each verified stage, save the completed evidence and
+the next action. Once a trial is removed and the original rack state is
+verified, start the next prepared stage within the owner's authorized scope.
+Report progress at checkpoints and keep the session running across batches.
+Use any end time the owner requested and honor a stop request immediately at
+the next safe boundary.
+
+Before leaving the session unattended, keep the Windows system and display
+awake for the run with a scoped guest helper. Save the prior settings and
+verify the screen and AFX panel remain visible after an idle period. Confirm
+the USB redirection, Windows share, owner chain, trial channel and active
+recorder before the first gesture. Verify the desktop again when a scheduled
+continuation starts. A dark display calls for a safe wake attempt and another
+read-only preflight within the authorized scope. Save the outcome and restore
+temporary power settings at session close.
+
+If a stage fails, inspect the saved intent, receipt, raw capture and current
+rack. Fix recoverable issues such as an idle display or a recorder startup
+failure. Resume at the next verified action once the intended effect,
+instance, starting state and restoration path are established. If a gesture
+may already have run, reconcile its effect before sending another input.
+Continue independent reviewed stages or offline analysis where possible.
+Close only when the agreed queue is complete, the owner requests a stop,
+or a blocker prevents further safe progress without owner input. Record
+the exact blocker and the last verified action.
+
+For a manual capture, confirm that both the recorder and timestamped
+screenshots are active before asking the operator to move a control. Keep
+both running across passes when possible. If either must restart, hold the
+current position until both are ready again. Use the settled screenshot
+after each detent. Preserve wire values without a usable visual witness
+as partial evidence.
+
 ## Stage contract and failure handling
 
 Each reviewed script accepts `InputPath`, `ReceiptPath`, `CommandId`,
