@@ -2439,6 +2439,14 @@ Cut 21, De-Ess 22 and Expander 29. The Bypass cycle uses
 `0x14 / 0x98` with instance 17, type 18 and observed state 19. Runtime
 commands remain disabled.
 
+**Diode609 partial controls (2026-11-19).** Directed load frame 983 and
+same-instance initialization frame 1013 establish Orion type 82, instance 0
+and family `0x20 / 0xd5 / 0x0e`. Four isolated switch round trips identify
+Limit 22, Limiter Attack 23, Compress 29 and Compressor Attack 30. Seven
+paired rotary endpoints and the Power/rack BP return are listed in the
+[Diode609 findings](docs/orion-afx-power-dynamics.md#diode609--partial-control-capture-2026-11-19).
+Intermediate positions and SC Preview remain pending.
+
 **Comp-4K-Bus visible controls (2026-11-04).** Directed load frame853 in
 `supervised-20261104T012645Z-load-ssl4kbus` establishes Orion type63/instance0.
 The16-phase `scan-Ssl4kBus-20261104T014150887Z` and separate two-phase HR

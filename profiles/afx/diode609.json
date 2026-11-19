@@ -209,16 +209,429 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 82,
+      "status": "capture-observed; assignment, seven paired endpoints, four switches and Power",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
-      "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "control_encodings": {
+        "limOut": {
+          "offset": 22,
+          "width": 1,
+          "kind": "boolean",
+          "label": "Limit",
+          "range": [
+            0,
+            1
+          ],
+          "status": "capture-observed; isolated switch and captured-body/GUI restoration",
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 1,
+              "frame": 1045,
+              "source": "captures/continuation-20261119/diode609/limOut/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/limOut/changed.png",
+              "printed_label": "IN"
+            },
+            {
+              "raw": 0,
+              "frame": 3811,
+              "source": "captures/continuation-20261119/diode609/limOut/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/limOut/restored.png",
+              "printed_label": "OUT"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/diode609/limOut/verified.json",
+            "full_parameter_body_returned": true
+          }
+        },
+        "limAttack": {
+          "offset": 23,
+          "width": 1,
+          "kind": "boolean",
+          "label": "Limiter Attack",
+          "range": [
+            0,
+            1
+          ],
+          "status": "capture-observed; isolated switch and captured-body/GUI restoration",
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 0,
+              "frame": 1063,
+              "source": "captures/continuation-20261119/diode609/limAttack/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/limAttack/changed.png",
+              "printed_label": "SLOW"
+            },
+            {
+              "raw": 1,
+              "frame": 3675,
+              "source": "captures/continuation-20261119/diode609/limAttack/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/limAttack/restored.png",
+              "printed_label": "FAST"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/diode609/limAttack/verified.json",
+            "full_parameter_body_returned": true
+          }
+        },
+        "compOut": {
+          "offset": 29,
+          "width": 1,
+          "kind": "boolean",
+          "label": "Compress",
+          "range": [
+            0,
+            1
+          ],
+          "status": "capture-observed; isolated switch and captured-body/GUI restoration",
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 1,
+              "frame": 1097,
+              "source": "captures/continuation-20261119/diode609/compOut/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/compOut/changed.png",
+              "printed_label": "IN"
+            },
+            {
+              "raw": 0,
+              "frame": 3913,
+              "source": "captures/continuation-20261119/diode609/compOut/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/compOut/restored.png",
+              "printed_label": "OUT"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/diode609/compOut/verified.json",
+            "full_parameter_body_returned": true
+          }
+        },
+        "compAttack": {
+          "offset": 30,
+          "width": 1,
+          "kind": "boolean",
+          "label": "Compressor Attack",
+          "range": [
+            0,
+            1
+          ],
+          "status": "capture-observed; isolated switch and captured-body/GUI restoration",
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 0,
+              "frame": 1029,
+              "source": "captures/continuation-20261119/diode609/compAttack/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/compAttack/changed.png",
+              "printed_label": "SLOW"
+            },
+            {
+              "raw": 1,
+              "frame": 4047,
+              "source": "captures/continuation-20261119/diode609/compAttack/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/diode609/compAttack/restored.png",
+              "printed_label": "FAST"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/diode609/compAttack/verified.json",
+            "full_parameter_body_returned": true
+          }
+        }
+      },
+      "evidence": [
+        "captures/continuation-20261119/diode609/load-diode609/Orion.pcapng frames 983 and 1013; same-instance initialization after slot assignment",
+        "captures/continuation-20261119/diode609/remove-diode609/Orion.pcapng frame 1083: all eight AFX 2 slots empty"
+      ],
+      "notes": "Orion-only GUI and USB observations. Device readback, signal telemetry, audible behavior and runtime contracts remain unverified.",
+      "type_id_write_status": "GUI assignment observed; runtime writer disabled",
+      "gui_observation": {
+        "panel_class": "Diode609",
+        "source": "captures/continuation-20261119/diode609/diode609-reconcile-inventory.json",
+        "editable_controls": [
+          {
+            "control": "limThreshold",
+            "ui_class": "Diode609LimThresholdPot",
+            "label": "Limiter Threshold"
+          },
+          {
+            "control": "limRecovery",
+            "ui_class": "Diode609LimRecoveryPot",
+            "label": "Limiter Recovery"
+          },
+          {
+            "control": "compThreshold",
+            "ui_class": "Diode609CompThresholdPot",
+            "label": "Compressor Threshold"
+          },
+          {
+            "control": "compRecovery",
+            "ui_class": "Diode609CompRecoveryPot",
+            "label": "Compressor Recovery"
+          },
+          {
+            "control": "compGain",
+            "ui_class": "Diode609CompGainPot",
+            "label": "Compressor Gain"
+          },
+          {
+            "control": "compRatio",
+            "ui_class": "Diode609CompRatioPot",
+            "label": "Compressor Ratio"
+          },
+          {
+            "control": "compHPF",
+            "ui_class": "Diode609CompHPFPot",
+            "label": "Compressor HPF"
+          },
+          {
+            "control": "limOut",
+            "ui_class": "Diode609ButtonLimOut",
+            "label": "Limit"
+          },
+          {
+            "control": "limAttack",
+            "ui_class": "Diode609ButtonLimAttack",
+            "label": "Limiter Attack"
+          },
+          {
+            "control": "compOut",
+            "ui_class": "Diode609ButtonCompOut",
+            "label": "Compress"
+          },
+          {
+            "control": "compAttack",
+            "ui_class": "Diode609ButtonCompAttack",
+            "label": "Compressor Attack"
+          },
+          {
+            "control": "preview",
+            "ui_class": "Diode609PreviewButton",
+            "label": "SC Preview"
+          },
+          {
+            "control": "processing",
+            "ui_class": "Diode609BypassButton",
+            "label": "Power"
+          }
+        ]
+      },
+      "display_observations": {
+        "status": "GUI-observed; no signal telemetry contract",
+        "source": "captures/continuation-20261119/diode609/diode609-reconcile-inventory.json",
+        "displays": [
+          {
+            "ui_class": "Diode609VuMeter",
+            "native_instance_count": 1,
+            "kind_hint": "gain-reduction VU face",
+            "status": "GUI-observed; signal telemetry unverified"
+          },
+          {
+            "ui_class": "Diode609PeakMeter",
+            "native_instance_count": 1,
+            "kind_hint": "meter",
+            "status": "GUI-observed; signal telemetry unverified"
+          },
+          {
+            "ui_class": "Diode609PeakLed",
+            "native_instance_count": 1,
+            "kind_hint": "peak indicator",
+            "status": "GUI-observed; signal telemetry unverified"
+          }
+        ],
+        "device_telemetry_readback_verified": false,
+        "runtime_reader_enabled": false
+      },
+      "parameter_observation": {
+        "opcode": "0x20",
+        "param_id": "0xd5",
+        "subcmd": "0x0e",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "status": "same-instance initialization, four switches and seven paired rotary endpoints",
+        "writable": false,
+        "device_readback_verified": false,
+        "evidence": [
+          "captures/continuation-20261119/diode609/load-diode609/Orion.pcapng frames 983 and 1013; same-instance initialization after slot assignment",
+          "scan-Diode609-20261119T034207950Z: 14 accepted phases, 112589 packets, zero drops; isolated paired endpoint records"
+        ],
+        "capture_sha256": "d35105cddd51ea8ff6b7c8eaa118bdf708415e2afc164e92a2d55474fe361482",
+        "endpoint_candidates": [
+          {
+            "control": "limThreshold",
+            "offset": 20,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 3871,
+            "displayed_label": "4 dBu",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-limThreshold-minimum.png"
+          },
+          {
+            "control": "limThreshold",
+            "offset": 20,
+            "gesture": "maximum",
+            "raw": 22,
+            "frame": 10521,
+            "displayed_label": "15 dBu",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-limThreshold-maximum.png"
+          },
+          {
+            "control": "limRecovery",
+            "offset": 21,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 18423,
+            "displayed_label": "50 ms",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-limRecovery-minimum.png"
+          },
+          {
+            "control": "limRecovery",
+            "offset": 21,
+            "gesture": "maximum",
+            "raw": 5,
+            "frame": 25265,
+            "displayed_label": "a2",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-limRecovery-maximum.png"
+          },
+          {
+            "control": "compThreshold",
+            "offset": 24,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 33797,
+            "displayed_label": "−20 dBu",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compThreshold-minimum.png"
+          },
+          {
+            "control": "compThreshold",
+            "offset": 24,
+            "gesture": "maximum",
+            "raw": 15,
+            "frame": 40691,
+            "displayed_label": "10 dBu",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compThreshold-maximum.png"
+          },
+          {
+            "control": "compRecovery",
+            "offset": 25,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 49303,
+            "displayed_label": "100 ms",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compRecovery-minimum.png"
+          },
+          {
+            "control": "compRecovery",
+            "offset": 25,
+            "gesture": "maximum",
+            "raw": 6,
+            "frame": 56547,
+            "displayed_label": "a2",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compRecovery-maximum.png"
+          },
+          {
+            "control": "compGain",
+            "offset": 26,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 65405,
+            "displayed_label": "0",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compGain-minimum.png"
+          },
+          {
+            "control": "compGain",
+            "offset": 26,
+            "gesture": "maximum",
+            "raw": 10,
+            "frame": 72961,
+            "displayed_label": "20",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compGain-maximum.png"
+          },
+          {
+            "control": "compRatio",
+            "offset": 27,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 81971,
+            "displayed_label": "1.5",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compRatio-minimum.png"
+          },
+          {
+            "control": "compRatio",
+            "offset": 27,
+            "gesture": "maximum",
+            "raw": 5,
+            "frame": 89775,
+            "displayed_label": "10",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compRatio-maximum.png"
+          },
+          {
+            "control": "compHPF",
+            "offset": 28,
+            "gesture": "minimum",
+            "raw": 0,
+            "frame": 99153,
+            "displayed_label": "off",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compHPF-minimum.png"
+          },
+          {
+            "control": "compHPF",
+            "offset": 28,
+            "gesture": "maximum",
+            "raw": 14,
+            "frame": 107157,
+            "displayed_label": "800 Hz",
+            "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compHPF-maximum.png"
+          }
+        ]
+      },
+      "processing_observation": {
+        "status": "capture-observed; Power and rack BP GUI return",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "instance_index_offset": 17,
+        "type_id_offset": 18,
+        "state_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "states": [
+          {
+            "raw": 0,
+            "frame": 1017,
+            "instance": 0,
+            "source": "captures/continuation-20261119/diode609/processing/Orion.pcapng",
+            "rack_bp": "active"
+          },
+          {
+            "raw": 1,
+            "frame": 3781,
+            "instance": 0,
+            "source": "captures/continuation-20261119/diode609/processing/Orion.pcapng",
+            "rack_bp": "normal"
+          }
+        ],
+        "visual_restoration": {
+          "Diode609BypassButton": {
+            "changed": true,
+            "returned": true
+          },
+          "AfxStyledManualSlotBypass": {
+            "changed": true,
+            "returned": true
+          }
+        }
+      }
     }
   ]
 }

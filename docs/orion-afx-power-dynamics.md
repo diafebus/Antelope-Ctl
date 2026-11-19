@@ -650,3 +650,47 @@ Removal frame 971 in the 2026-11-19 `remove-neu473a` capture shows all
 eight AFX 2 slots empty. The original Memory Cat Brigade on AFX 1 was still
 visible after the read-only view change. This completes the NEU-473A visible
 control pass. The effect remains capture-only in the Orion profile.
+
+## Diode609 — partial control capture, 2026-11-19
+
+AFX 2 slot 0 received Orion type 82, instance 0 in frame 983 of
+`continuation-20261119/diode609/load-diode609/Orion.pcapng`. Frame 1013
+initialized that same instance with `0x20 / 0xd5 / 0x0e`, type at byte 18
+and instance at 19. The single-report guard stopped after the assignment.
+Independent raw decode and the native `Diode609` panel confirmed the two
+reports and the occupied slot without repeating the load.
+
+| Control | Offset | Raw 0 | Raw 1 | Change / return frames |
+|---|---:|---|---|---|
+| Limit | 22 | OUT | IN | 1045 / 3811 |
+| Limiter Attack | 23 | SLOW | FAST | 1063 / 3675 |
+| Compress | 29 | OUT | IN | 1097 / 3913 |
+| Compressor Attack | 30 | SLOW | FAST | 1029 / 4047 |
+
+Each switch changed only one byte, returned the complete initialized body,
+and returned its visual position. Power used `0x14 / 0x98` with the same
+instance at 17, type 82 at 18 and state at 19. Power and rack BP returned
+in frames 1017 and 3781. The native VU face, peak meter and peak indicator
+were observed in the UI. Signal telemetry and independent device readback
+remain unverified.
+
+The endpoint job `scan-Diode609-20261119T034207950Z` recorded 112,589
+packets with zero drops. Independent raw review confirmed each pair
+isolates one byte in the initialized parameter family.
+
+| Control | Byte | Minimum gesture | Maximum gesture |
+|---|---:|---|---|
+| Limiter Threshold | 20 | raw 0, 4 dBu | raw 22, 15 dBu |
+| Limiter Recovery | 21 | raw 0, 50 ms | raw 5, a2 |
+| Compressor Threshold | 24 | raw 0, −20 dBu | raw 15, 10 dBu |
+| Compressor Recovery | 25 | raw 0, 100 ms | raw 6, a2 |
+| Compressor Gain | 26 | raw 0, printed 0 | raw 10, printed 20 |
+| Compressor Ratio | 27 | raw 0, printed 1.5 | raw 5, printed 10 |
+| Compressor HPF | 28 | raw 0, off | raw 14, 800 Hz |
+
+The Orion model entry keeps the source frames and endpoint screenshots.
+Intermediate labels and SC Preview still need individual captures. The a2
+recovery law and audible behavior remain unmeasured.
+Removal frame 1083 in `continuation-20261119/diode609/remove-diode609`
+shows all eight AFX 2 slots empty. The view returned to the owner's AFX 1
+Memory Cat Brigade without a control write.

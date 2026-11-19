@@ -3924,6 +3924,77 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "diode609-knobs",
+      "panel": "Diode609",
+      "panel_class": "Diode609",
+      "effect_id": "diode609",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed observed GUI targets; endpoint candidates only",
+      "evidence": "captures/continuation-20261119/diode609/load-diode609/Orion.pcapng frames 983 and 1013; same-instance initialization after slot assignment; seven unique reviewed native rotary targets",
+      "controls": [
+        {
+          "id": "limThreshold",
+          "class_name": "Diode609LimThresholdPot",
+          "label": "Limiter Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "limRecovery",
+          "class_name": "Diode609LimRecoveryPot",
+          "label": "Limiter Recovery",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "compThreshold",
+          "class_name": "Diode609CompThresholdPot",
+          "label": "Compressor Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "compRecovery",
+          "class_name": "Diode609CompRecoveryPot",
+          "label": "Compressor Recovery",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "compGain",
+          "class_name": "Diode609CompGainPot",
+          "label": "Compressor Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "compRatio",
+          "class_name": "Diode609CompRatioPot",
+          "label": "Compressor Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "compHPF",
+          "class_name": "Diode609CompHPFPot",
+          "label": "Compressor HPF",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "reviewed visible knob targets only; switches/selectors require separate capture",
+        "pending": [
+          "Switches and selectors",
+          "Independent readback",
+          "Physical scaling/interpolation",
+          "Audible/stereo behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
