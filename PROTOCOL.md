@@ -2432,7 +2432,12 @@ captured endpoints raw 0 and 2, and expander Threshold (27) has captured
 endpoints raw 0 and 10. The same capture contains transient Attack raw 1 and
 Threshold raw 2/3/4/7/9 without position-specific visual witnesses.
 See [labelled observations](docs/orion-afx-power-dynamics.md#neu-473a--partial-control-capture-2026-11-18)
-and the remaining selector work. Runtime commands remain disabled.
+including the 2026-11-19 follow-up. Attack raw 1 points to 2.5 ms. Ratio
+25, compressor Recovery 24, expander Threshold 27 and expander Recovery 28
+were stepped through every visible position. Single-byte switches are Bass
+Cut 21, De-Ess 22 and Expander 29. The Bypass cycle uses
+`0x14 / 0x98` with instance 17, type 18 and observed state 19. Runtime
+commands remain disabled.
 
 **Comp-4K-Bus visible controls (2026-11-04).** Directed load frame853 in
 `supervised-20261104T012645Z-load-ssl4kbus` establishes Orion type63/instance0.

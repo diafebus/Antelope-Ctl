@@ -598,3 +598,55 @@ labelled and unlabelled marks. The profile inventories the printed Threshold,
 Recovery and Ratio legends. Their intermediate wire associations remain
 pending. Expander, De-Ess, Bass Cut and Bypass still require directed capture.
 Removal frame 949 in `remove-neu473a/Orion.pcapng` shows all eight AFX 2 slots empty.
+
+### NEU-473A continuation, 2026-11-19
+
+The Attack pointer reached the printed 2.5 ms center at byte 23 raw 1
+(`attack-2/Orion.pcapng` frame 1231) and returned to the 0.25 ms position
+at raw 0 (frame 1243 in `attack-4`). The complete parameter body and the
+static control image returned. Together with the earlier 25 ms endpoint,
+all three Attack positions have visual witnesses.
+
+| Control | Offset | Raw 0 | Raw 1 | Change / return frames |
+|---|---:|---|---|---|
+| Expander | 29 | Left, indicator dark | Right, indicator lit | 911 / 3571 |
+| De-Ess | 22 | LIN | DE-ESS | 955 / 3573 |
+| Bass Cut | 21 | LIN | BASS CUT | 1001 / 3717 |
+
+Each round trip returned the switch to its baseline appearance. De-Ess and
+Bass Cut also returned to the full captured starting body. The Expander trial
+had an initial visual baseline and two captured bodies, with a single changed
+byte between them.
+
+The panel Bypass switch emitted `0x14 / 0x98` in `processing/Orion.pcapng`.
+Instance 0 is at byte 17, type 80 at 18, and processing state at 19. Frame
+919 carried raw 0 with the ON lamp dark and rack BP active. Frame 3563 carried
+raw 1 with the ON lamp lit and rack BP normal. The switch, lamp, and rack BP
+returned to their starting appearance. Device readback, audible behavior,
+and signal telemetry remain unverified.
+
+Expander Threshold byte 27 traversed all eleven contacts from raw 0 to 10
+and back. The complete starting body and knob image returned. The printed
+positions are raw 0 (−10 dB), 2 (−20 dB), 4 (−30 dB), 8 (−50 dB), and
+10 (−60 dB). Raw 1, 3, 5, 6, 7, and 9 point to unlabelled marks. Their
+numerical meanings remain unverified. The effect profile links each contact
+to its captured frame and corresponding screenshot.
+
+Ratio byte 25 visited raw 0 through 5 and returned to its full original
+parameter block. The confirmed printing reads `1:1`, `1,5:1`, `2:1`, `3:1`,
+`5:1`, and `LIM` respectively. The worker stopped after the return when
+the native control rectangle differed by five pixels where it overlaps
+Attack. Independent raw review and a new read-only image confirmed the
+complete body and the Ratio face and pointer had returned. The original
+rectangle mismatch is retained in the capture evidence.
+
+Compressor Recovery byte 24 maps raw 0–7 to the printed positions `.1`,
+`.2`, `.5`, `1`, `2`, `5`, `10S`, and `AUTO`. Expander Recovery byte
+28 maps raw 0–6 to `.03`, `.1`, `.2`, `.5`, `1`, `2`, and `5S`.
+Each cycle returned the full body and static knob image. These are printed
+positions. Physical timing and the Auto behavior remain unmeasured.
+
+Removal frame 971 in the 2026-11-19 `remove-neu473a` capture shows all
+eight AFX 2 slots empty. The original Memory Cat Brigade on AFX 1 was still
+visible after the read-only view change. This completes the NEU-473A visible
+control pass. The effect remains capture-only in the Orion profile.

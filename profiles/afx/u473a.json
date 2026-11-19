@@ -180,18 +180,477 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 80,
-      "status": "capture-observed; directed load, native inventory and four rotary endpoint pairs",
+      "status": "capture-observed; complete visible-control pass",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
-      "control_encodings": {},
+      "control_encodings": {
+        "expon": {
+          "kind": "boolean",
+          "label": "Expander",
+          "offset": 29,
+          "width": 1,
+          "states": [
+            {
+              "raw": 0,
+              "label": "Left, indicator dark"
+            },
+            {
+              "raw": 1,
+              "label": "Right, indicator lit"
+            }
+          ],
+          "status": "capture-observed; isolated switch transition and GUI return",
+          "writable": false,
+          "device_readback_verified": false,
+          "full_parameter_body_returned": false,
+          "evidence": [
+            "captures/continuation-20261119/expon/Orion.pcapng frames 911 and 3571",
+            "captures/continuation-20261119/expon/changed.png and restored.png"
+          ],
+          "range": [
+            0,
+            1
+          ]
+        },
+        "deess": {
+          "kind": "boolean",
+          "label": "De-Ess",
+          "offset": 22,
+          "width": 1,
+          "states": [
+            {
+              "raw": 0,
+              "label": "LIN"
+            },
+            {
+              "raw": 1,
+              "label": "DE-ESS"
+            }
+          ],
+          "status": "capture-observed; isolated switch transition and GUI return",
+          "writable": false,
+          "device_readback_verified": false,
+          "full_parameter_body_returned": true,
+          "evidence": [
+            "captures/continuation-20261119/deess/Orion.pcapng frames 955 and 3573",
+            "captures/continuation-20261119/deess/changed.png and restored.png"
+          ],
+          "range": [
+            0,
+            1
+          ]
+        },
+        "basscut": {
+          "kind": "boolean",
+          "label": "Bass Cut",
+          "offset": 21,
+          "width": 1,
+          "states": [
+            {
+              "raw": 0,
+              "label": "LIN"
+            },
+            {
+              "raw": 1,
+              "label": "BASS CUT"
+            }
+          ],
+          "status": "capture-observed; isolated switch transition and GUI return",
+          "writable": false,
+          "device_readback_verified": false,
+          "full_parameter_body_returned": true,
+          "evidence": [
+            "captures/continuation-20261119/basscut/Orion.pcapng frames 1001 and 3717",
+            "captures/continuation-20261119/basscut/changed.png and restored.png"
+          ],
+          "range": [
+            0,
+            1
+          ]
+        },
+        "attack": {
+          "kind": "enum",
+          "label": "Attack",
+          "offset": 23,
+          "width": 1,
+          "states": [
+            {
+              "raw": 0,
+              "label": "0.25 ms"
+            },
+            {
+              "raw": 1,
+              "label": "2.5 ms"
+            },
+            {
+              "raw": 2,
+              "label": "25 ms"
+            }
+          ],
+          "status": "capture-observed; all three positions labelled",
+          "writable": false,
+          "device_readback_verified": false,
+          "evidence": [
+            "captures/continuation-20261119/attack-2/Orion.pcapng frame 1231, GUI points to 2.5 ms",
+            "captures/continuation-20261119/attack-4/Orion.pcapng frame 1243, full body and static GUI returned",
+            "scan-U473A-20261118T152755871Z frames 18569 and 25415 for the endpoints"
+          ],
+          "unit": "ms",
+          "enum": {
+            "0": "0.25",
+            "1": "2.5",
+            "2": "25"
+          }
+        },
+        "expthresh": {
+          "offset": 27,
+          "width": 1,
+          "kind": "enum",
+          "label": "Expander Threshold",
+          "status": "capture-observed; all positions and full-body/static return",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "−10 dB",
+              "frame": 1341,
+              "source": "captures/continuation-20261119/threshold-20/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-1-raw-0.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "frame": 1287,
+              "source": "captures/continuation-20261119/threshold-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-0-raw-1.png",
+              "position": "Lower-right dot between −10 and −20",
+              "meaning": "Numerical meaning unverified"
+            },
+            {
+              "raw": 2,
+              "printed_label": "−20 dB",
+              "frame": 1169,
+              "source": "captures/continuation-20261119/threshold-2/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-1-raw-2.png"
+            },
+            {
+              "raw": 3,
+              "printed_label": null,
+              "frame": 1287,
+              "source": "captures/continuation-20261119/threshold-3/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-2-raw-3.png",
+              "position": "Bottom dot between −20 and −30",
+              "meaning": "Numerical meaning unverified"
+            },
+            {
+              "raw": 4,
+              "printed_label": "−30 dB",
+              "frame": 1211,
+              "source": "captures/continuation-20261119/threshold-4/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-3-raw-4.png"
+            },
+            {
+              "raw": 5,
+              "printed_label": null,
+              "frame": 1233,
+              "source": "captures/continuation-20261119/threshold-5/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-4-raw-5.png",
+              "position": "Lower-left dot after −30",
+              "meaning": "Numerical meaning unverified"
+            },
+            {
+              "raw": 6,
+              "printed_label": null,
+              "frame": 1291,
+              "source": "captures/continuation-20261119/threshold-6/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-5-raw-6.png",
+              "position": "Leftmost dot",
+              "meaning": "Numerical meaning unverified"
+            },
+            {
+              "raw": 7,
+              "printed_label": null,
+              "frame": 1277,
+              "source": "captures/continuation-20261119/threshold-7/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-6-raw-7.png",
+              "position": "Upper-left dot before −50",
+              "meaning": "Numerical meaning unverified"
+            },
+            {
+              "raw": 8,
+              "printed_label": "−50 dB",
+              "frame": 1309,
+              "source": "captures/continuation-20261119/threshold-8/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-7-raw-8.png"
+            },
+            {
+              "raw": 9,
+              "printed_label": null,
+              "frame": 1293,
+              "source": "captures/continuation-20261119/threshold-9/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-8-raw-9.png",
+              "position": "Top dot between −50 and −60",
+              "meaning": "Numerical meaning unverified"
+            },
+            {
+              "raw": 10,
+              "printed_label": "−60 dB",
+              "frame": 1353,
+              "source": "captures/continuation-20261119/threshold-10/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/threshold-from-9-raw-10.png"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/threshold-verified.json",
+            "full_parameter_body_returned": true,
+            "static_checks": {
+              "control": true
+            }
+          },
+          "notes": "Unlabelled marks have no verified numerical meaning."
+        },
+        "ratio": {
+          "offset": 25,
+          "width": 1,
+          "kind": "enum",
+          "label": "Ratio",
+          "status": "capture-observed; all positions and full-body/static return",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "1:1",
+              "frame": 1285,
+              "source": "captures/continuation-20261119/ratio-10/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/ratio-from-1-raw-0.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "1,5:1",
+              "frame": 1365,
+              "source": "captures/continuation-20261119/ratio-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/ratio-from-0-raw-1.png"
+            },
+            {
+              "raw": 2,
+              "printed_label": "2:1",
+              "frame": 1403,
+              "source": "captures/continuation-20261119/ratio-2/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/ratio-from-1-raw-2.png"
+            },
+            {
+              "raw": 3,
+              "printed_label": "3:1",
+              "frame": 1385,
+              "source": "captures/continuation-20261119/ratio-3/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/ratio-from-2-raw-3.png"
+            },
+            {
+              "raw": 4,
+              "printed_label": "5:1",
+              "frame": 1369,
+              "source": "captures/continuation-20261119/ratio-4/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/ratio-from-3-raw-4.png"
+            },
+            {
+              "raw": 5,
+              "printed_label": "LIM",
+              "frame": 1345,
+              "source": "captures/continuation-20261119/ratio-5/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/ratio-from-4-raw-5.png"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/ratio-verified.json",
+            "full_parameter_body_returned": true,
+            "static_checks": {
+              "ratio_face_and_pointer": true,
+              "full_native_bounds": false
+            }
+          },
+          "enum": {
+            "0": "1:1",
+            "1": "1,5:1",
+            "2": "2:1",
+            "3": "3:1",
+            "4": "5:1",
+            "5": "LIM"
+          },
+          "notes": "Original failure preserved. Raw re-decode verifies full body. Five changed pixels are in the overlapping Attack corner, outside the Ratio face and pointer. New read-only view confirms the unchanged Ratio face. The cause of the corner difference remains unknown."
+        },
+        "recovery": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "Compressor Recovery",
+          "status": "capture-observed; all positions and full-body/static return",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": ".1",
+              "frame": 1355,
+              "source": "captures/continuation-20261119/recovery-14/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-1-raw-0.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": ".2",
+              "frame": 1239,
+              "source": "captures/continuation-20261119/recovery-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-0-raw-1.png"
+            },
+            {
+              "raw": 2,
+              "printed_label": ".5",
+              "frame": 1345,
+              "source": "captures/continuation-20261119/recovery-2/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-1-raw-2.png"
+            },
+            {
+              "raw": 3,
+              "printed_label": "1",
+              "frame": 1257,
+              "source": "captures/continuation-20261119/recovery-3/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-2-raw-3.png"
+            },
+            {
+              "raw": 4,
+              "printed_label": "2",
+              "frame": 1632,
+              "source": "captures/continuation-20261119/recovery-4/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-3-raw-4.png"
+            },
+            {
+              "raw": 5,
+              "printed_label": "5",
+              "frame": 1309,
+              "source": "captures/continuation-20261119/recovery-5/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-4-raw-5.png"
+            },
+            {
+              "raw": 6,
+              "printed_label": "10S",
+              "frame": 1315,
+              "source": "captures/continuation-20261119/recovery-6/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-5-raw-6.png"
+            },
+            {
+              "raw": 7,
+              "printed_label": "AUTO",
+              "frame": 1301,
+              "source": "captures/continuation-20261119/recovery-7/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/recovery-from-6-raw-7.png"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/recovery-verified.json",
+            "full_parameter_body_returned": true,
+            "static_checks": {
+              "control": true
+            }
+          },
+          "enum": {
+            "0": ".1",
+            "1": ".2",
+            "2": ".5",
+            "3": "1",
+            "4": "2",
+            "5": "5",
+            "6": "10S",
+            "7": "AUTO"
+          }
+        },
+        "exprecovery": {
+          "offset": 28,
+          "width": 1,
+          "kind": "enum",
+          "label": "Expander Recovery",
+          "status": "capture-observed; all positions and full-body/static return",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": ".03",
+              "frame": 1335,
+              "source": "captures/continuation-20261119/exprecovery-12/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/exprecovery-from-1-raw-0.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": ".1",
+              "frame": 1285,
+              "source": "captures/continuation-20261119/exprecovery-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/exprecovery-from-0-raw-1.png"
+            },
+            {
+              "raw": 2,
+              "printed_label": ".2",
+              "frame": 1313,
+              "source": "captures/continuation-20261119/exprecovery-2/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/exprecovery-from-1-raw-2.png"
+            },
+            {
+              "raw": 3,
+              "printed_label": ".5",
+              "frame": 1331,
+              "source": "captures/continuation-20261119/exprecovery-3/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/exprecovery-from-2-raw-3.png"
+            },
+            {
+              "raw": 4,
+              "printed_label": "1",
+              "frame": 1369,
+              "source": "captures/continuation-20261119/exprecovery-4/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/exprecovery-from-3-raw-4.png"
+            },
+            {
+              "raw": 5,
+              "printed_label": "2",
+              "frame": 1379,
+              "source": "captures/continuation-20261119/exprecovery-5/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/exprecovery-from-4-raw-5.png"
+            },
+            {
+              "raw": 6,
+              "printed_label": "5S",
+              "frame": 1385,
+              "source": "captures/continuation-20261119/exprecovery-6/Orion.pcapng",
+              "screenshot": "captures/continuation-20261119/exprecovery-from-5-raw-6.png"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261119/exprecovery-verified.json",
+            "full_parameter_body_returned": true,
+            "static_checks": {
+              "control": true
+            }
+          },
+          "enum": {
+            "0": ".03",
+            "1": ".1",
+            "2": ".2",
+            "3": ".5",
+            "4": "1",
+            "5": "2",
+            "6": "5S"
+          }
+        }
+      },
       "evidence": [
         "captures/continuation-20261118/runtime/load-neu473a/Orion.pcapng frame 1007; captures/continuation-20261118/runtime/neu473a-inventory.json",
-        "captures/continuation-20261118/runtime/remove-neu473a/Orion.pcapng frame 949: all eight AFX 2 slots empty"
+        "captures/continuation-20261118/runtime/remove-neu473a/Orion.pcapng frame 949: all eight AFX 2 slots empty",
+        "captures/continuation-20261119/load-neu473a/Orion.pcapng frame 983: only type 80 instance 0 in AFX 2 slot 0",
+        "captures/continuation-20261119/remove-neu473a/Orion.pcapng frame 971: all AFX 2 slots empty"
       ],
-      "notes": "AFX 2 slot 0 held type 80, instance 0, after selecting DEMO - NEU-473A. Runtime parameters, readback and telemetry are unverified.",
+      "notes": "Orion-only GUI and USB observations. Physical interpolation, audible behavior, signal telemetry, and independent readback remain unverified.",
       "type_id_write_status": "GUI assignment observed; runtime writer disabled",
       "gui_observation": {
         "panel_class": "U473A",
@@ -199,11 +658,45 @@
         "printed_scales": {
           "source": "captures/continuation-20261118/runtime/neu473a-panel.png",
           "status": "GUI legends only; intermediate raw-to-label associations require position-specific evidence",
-          "attack": [".25", "2.5", "25"],
-          "expthresh": ["-10", "-20", "-30", "-50", "-60"],
-          "recovery": [".1", ".2", ".5", "1", "2", "5", "10S", "AUTO"],
-          "exprecovery": [".03", ".1", ".2", ".5", "1", "2", "5S"],
-          "ratio": ["1:1", "1,5:1", "2:1", "3:1", "5:1", "LIM"]
+          "attack": [
+            ".25",
+            "2.5",
+            "25"
+          ],
+          "expthresh": [
+            "-10",
+            "-20",
+            "-30",
+            "-50",
+            "-60"
+          ],
+          "recovery": [
+            ".1",
+            ".2",
+            ".5",
+            "1",
+            "2",
+            "5",
+            "10S",
+            "AUTO"
+          ],
+          "exprecovery": [
+            ".03",
+            ".1",
+            ".2",
+            ".5",
+            "1",
+            "2",
+            "5S"
+          ],
+          "ratio": [
+            "1:1",
+            "1,5:1",
+            "2:1",
+            "3:1",
+            "5:1",
+            "LIM"
+          ]
         },
         "editable_controls": [
           {
@@ -377,18 +870,48 @@
             "control": "attack",
             "offset": 23,
             "samples": [
-              {"raw": 1, "frame": 17005, "action": 3, "phase": "priming"}
+              {
+                "raw": 1,
+                "frame": 17005,
+                "action": 3,
+                "phase": "priming"
+              }
             ]
           },
           {
             "control": "expthresh",
             "offset": 27,
             "samples": [
-              {"raw": 2, "frame": 47761, "action": 7, "phase": "priming"},
-              {"raw": 3, "frame": 56585, "action": 8, "phase": "maximum"},
-              {"raw": 4, "frame": 47811, "action": 7, "phase": "priming"},
-              {"raw": 7, "frame": 49379, "action": 7, "phase": "minimum"},
-              {"raw": 9, "frame": 47863, "action": 7, "phase": "priming"}
+              {
+                "raw": 2,
+                "frame": 47761,
+                "action": 7,
+                "phase": "priming"
+              },
+              {
+                "raw": 3,
+                "frame": 56585,
+                "action": 8,
+                "phase": "maximum"
+              },
+              {
+                "raw": 4,
+                "frame": 47811,
+                "action": 7,
+                "phase": "priming"
+              },
+              {
+                "raw": 7,
+                "frame": 49379,
+                "action": 7,
+                "phase": "minimum"
+              },
+              {
+                "raw": 9,
+                "frame": 47863,
+                "action": 7,
+                "phase": "priming"
+              }
             ]
           }
         ],
@@ -402,6 +925,48 @@
           "scan-U473A-20261118T152755871Z: eight accepted phases, zero drops. Raw re-decode compares the two final blocks per control and verifies phase-local reports. Attack, Compr Gain and expander Threshold minimum phases repeated their already-stable bodies; the strict single-phase summary remains review_required.",
           "Offline re-decode of the same capture includes the pre-window priming reports. Intermediate samples are transient whole-block OUT observations with single-byte changes and no simultaneous pointer image."
         ]
+      },
+      "processing_observation": {
+        "status": "capture-observed; panel Bypass, ON lamp and rack BP round trip",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "instance_index_offset": 17,
+        "type_id_offset": 18,
+        "state_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "states": [
+          {
+            "raw": 0,
+            "instance": 0,
+            "frame": 919,
+            "source": "captures/continuation-20261119/processing/Orion.pcapng",
+            "on_lamp": "dark",
+            "rack_bp": "active"
+          },
+          {
+            "raw": 1,
+            "instance": 0,
+            "frame": 3563,
+            "source": "captures/continuation-20261119/processing/Orion.pcapng",
+            "on_lamp": "lit",
+            "rack_bp": "normal"
+          }
+        ],
+        "visual_restoration": {
+          "U473ABypassSwitch": {
+            "changed": true,
+            "returned": true
+          },
+          "U473ABypassLed": {
+            "changed": true,
+            "returned": true
+          },
+          "AfxStyledManualSlotBypass": {
+            "changed": true,
+            "returned": true
+          }
+        }
       }
     }
   ]

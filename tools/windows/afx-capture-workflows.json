@@ -532,14 +532,19 @@
       "name": "NEU-473A",
       "effect_id": "u473a",
       "panel_class": "U473A",
-      "next_step": "review",
+      "next_step": "complete",
       "range_plan": "u473a-knobs",
-      "review_reason": "Four endpoint pairs already captured. Attack raw 1 and Threshold raw 2/3/4/7/9 are transient wire samples that still need position-specific visual witnesses. Both Recovery selectors, Ratio, Expander, De-Ess, Bass Cut and Bypass still need directed capture.",
-      "partial_evidence": [
-        "load-neu473a",
+      "completion_evidence": [
         "scan-U473A-20261118T152755871Z",
-        "remove-neu473a"
-      ]
+        "continuation-20261119/attack-verified.json",
+        "continuation-20261119/threshold-verified.json",
+        "continuation-20261119/ratio-verified.json",
+        "continuation-20261119/recovery-verified.json",
+        "continuation-20261119/exprecovery-verified.json",
+        "continuation-20261119/processing/verified.json",
+        "continuation-20261119/remove-neu473a"
+      ],
+      "completion_limits": "All visible controls exercised; unlabelled Threshold mark values and physical timing remain unknown. Audible behavior, independent readback, telemetry and runtime contracts remain unverified."
     }
   ]
 }
