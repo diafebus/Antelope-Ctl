@@ -689,13 +689,13 @@ isolates one byte in the initialized parameter family.
 | Compressor HPF | 28 | raw 0, off | raw 14, 800 Hz |
 
 The Orion model entry keeps the source frames and endpoint screenshots.
-Intermediate rotary labels still need individual captures. The a2
+Individual positions were captured in the manual follow-up below. The a2
 recovery law and audible behavior remain unmeasured.
 Removal frame 1083 in `continuation-20261119/diode609/remove-diode609`
 shows all eight AFX 2 slots empty. The view returned to the owner's AFX 1
 Memory Cat Brigade without a control write.
 
-The owner separately toggled SC Preview in AFX 2. Frame 10559 carried
+The owner separately toggled SC Preview in AFX 1. Frame 10559 carried
 byte 31 raw 1 with the red lamp lit. It stayed on after the click. Frame
 39199 carried raw 0 with the lamp unlit after the second click. Only byte
 31 differs between the two full parameter reports. The disabled body
@@ -703,3 +703,21 @@ matches the earlier initialized body for instance 0. The passive recording
 contained 72,780 packets with zero drops. These observations establish the
 toggle behavior in the GUI. Audible sidechain behavior and independent
 device readback remain unverified.
+
+The owner also turned the seven rotaries through their endpoints and manually
+stepped the compressor controls on AFX 1. Each entry below has a timestamped
+image of the pointer and an isolated captured byte transition. The interface
+prints no number at the intervening Gain and HPF ticks.
+
+| Control | Offset | Visually witnessed raw positions |
+|---|---:|---|
+| Compressor Recovery | 25 | 0–6 map to 100, 200, 400, 800, 1500 ms, a1, a2 |
+| Compressor Gain | 26 | 0–10. Even positions point to printed 0, 4, 8, 12, 16, 20. Odd positions are unlabelled |
+| Compressor Ratio | 27 | 0–5 map to 1.5, 2, 3, 4, 6, 10 |
+| Compressor HPF | 28 | 0–14. Even positions point to off, 12, 25, 50, 100, 200, 400, 800 Hz. Odd positions are unlabelled |
+
+A settled image of the random middle settings also witnesses Limiter
+Threshold raw 12 at 10 dBu, Limiter Recovery raw 3 at 800 ms, and Compressor
+Threshold raw 9 at an unlabelled tick between printed 4 and 0. The remaining
+intermediate positions of those three controls need individual label
+witnesses. The manual sweeps ended at the owner's selected settings.

@@ -552,12 +552,14 @@
       "panel_class": "Diode609",
       "next_step": "review",
       "range_plan": "diode609-knobs",
-      "review_reason": "Seven endpoint pairs, five binary switches and Power captured. Intermediate rotary positions need directed visual and wire witnesses.",
+      "review_reason": "Endpoint and switch captures complete. All Compressor Recovery, Gain, Ratio and HPF positions have visual witnesses. Remaining Limiter Threshold, Limiter Recovery and Compressor Threshold positions need label witnesses.",
       "partial_evidence": [
         "continuation-20261119/diode609/reconciled-load.json",
         "scan-Diode609-20261119T034207950Z",
         "continuation-20261119/diode609/ranges-review.json",
-        "continuation-20261119-midday/manual-sc-verified.json"
+        "continuation-20261119-midday/manual-sc-verified.json",
+        "continuation-20261119-midday/manual-rotaries-decoded.json",
+        "continuation-20261119-midday/manual-stepped-aligned.json"
       ]
     }
   ]

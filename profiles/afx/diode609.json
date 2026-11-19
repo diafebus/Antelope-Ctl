@@ -210,7 +210,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 82,
-      "status": "capture-observed; assignment, seven paired endpoints, five switches and Power",
+      "status": "capture-observed; paired endpoints, five switches, Power and four fully witnessed rotary position sets",
       "commands": {
         "load": null,
         "recall": null,
@@ -380,9 +380,368 @@
           "return_evidence": {
             "source": "captures/continuation-20261119-midday/manual-sc-verified.json",
             "only_preview_byte_changed": true,
-            "returned_body_matches_previous_initialization": true
+            "returned_body_matches_previous_initialization": true,
+            "gui_channel": 1
           },
           "notes": "On remains latched after release. A second click turns it off. Audible sidechain behavior remains unverified."
+        },
+        "compRecovery": {
+          "offset": 25,
+          "width": 1,
+          "kind": "enum",
+          "label": "Compressor Recovery",
+          "status": "capture-observed; all position images matched to isolated owner-operated writes",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "100 ms",
+              "frame": 19217,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086924403265398.webp"
+            },
+            {
+              "raw": 1,
+              "printed_label": "200 ms",
+              "frame": 16953,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086921559776307.webp"
+            },
+            {
+              "raw": 2,
+              "printed_label": "400 ms",
+              "frame": 15041,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086916757154888.webp"
+            },
+            {
+              "raw": 3,
+              "printed_label": "800 ms",
+              "frame": 12631,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086913908952580.webp"
+            },
+            {
+              "raw": 4,
+              "printed_label": "1500 ms",
+              "frame": 10531,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086909225065310.webp"
+            },
+            {
+              "raw": 5,
+              "printed_label": "a1",
+              "frame": 7651,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086901696104062.webp"
+            },
+            {
+              "raw": 6,
+              "printed_label": "a2",
+              "frame": 6447,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086899826466608.webp"
+            }
+          ],
+          "enum": {
+            "0": "100 ms",
+            "1": "200 ms",
+            "2": "400 ms",
+            "3": "800 ms",
+            "4": "1500 ms",
+            "5": "a1",
+            "6": "a2"
+          }
+        },
+        "compGain": {
+          "offset": 26,
+          "width": 1,
+          "kind": "enum",
+          "label": "Compressor Gain",
+          "status": "capture-observed; all position images matched to isolated owner-operated writes",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "0",
+              "frame": 42877,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086969760052048.webp"
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "frame": 41937,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086967840461024.webp",
+              "position": "Unlabelled tick between 0 and 4",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 2,
+              "printed_label": "4",
+              "frame": 40421,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086965961304904.webp"
+            },
+            {
+              "raw": 3,
+              "printed_label": null,
+              "frame": 39603,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086963173969617.webp",
+              "position": "Unlabelled tick between 4 and 8",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 4,
+              "printed_label": "8",
+              "frame": 37571,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086961281308396.webp"
+            },
+            {
+              "raw": 5,
+              "printed_label": null,
+              "frame": 36203,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086957512506542.webp",
+              "position": "Unlabelled tick between 8 and 12",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 6,
+              "printed_label": "12",
+              "frame": 33751,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086954660970286.webp"
+            },
+            {
+              "raw": 7,
+              "printed_label": null,
+              "frame": 31959,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086949905449784.webp",
+              "position": "Unlabelled tick between 12 and 16",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 8,
+              "printed_label": "16",
+              "frame": 22735,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086931891742201.webp"
+            },
+            {
+              "raw": 9,
+              "printed_label": null,
+              "frame": 20789,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086928104213451.webp",
+              "position": "Unlabelled tick between 16 and 20",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 10,
+              "printed_label": "20",
+              "frame": 8245,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086904485961136.webp"
+            }
+          ]
+        },
+        "compRatio": {
+          "offset": 27,
+          "width": 1,
+          "kind": "enum",
+          "label": "Compressor Ratio",
+          "status": "capture-observed; all position images matched to isolated owner-operated writes",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "1.5",
+              "frame": 51169,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086984917296332.webp"
+            },
+            {
+              "raw": 1,
+              "printed_label": "2",
+              "frame": 49499,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086982089829139.webp"
+            },
+            {
+              "raw": 2,
+              "printed_label": "3",
+              "frame": 48115,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086979242123972.webp"
+            },
+            {
+              "raw": 3,
+              "printed_label": "4",
+              "frame": 46525,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086976387713008.webp"
+            },
+            {
+              "raw": 4,
+              "printed_label": "6",
+              "frame": 45159,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795086974478499982.webp"
+            },
+            {
+              "raw": 5,
+              "printed_label": "10",
+              "frame": 85151,
+              "source": "captures/continuation-20261119-midday/manual-diode609-rotaries.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-rotary-screens/1795086806898575247.webp"
+            }
+          ],
+          "enum": {
+            "0": "1.5",
+            "1": "2",
+            "2": "3",
+            "3": "4",
+            "4": "6",
+            "5": "10"
+          }
+        },
+        "compHPF": {
+          "offset": 28,
+          "width": 1,
+          "kind": "enum",
+          "label": "Compressor HPF",
+          "status": "capture-observed; all position images matched to isolated owner-operated writes",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "off",
+              "frame": 79161,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087037615340802.webp"
+            },
+            {
+              "raw": 1,
+              "printed_label": null,
+              "frame": 64253,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087006598621694.webp",
+              "position": "Unlabelled tick between off and 12 Hz",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 2,
+              "printed_label": "12 Hz",
+              "frame": 63437,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087004717841276.webp"
+            },
+            {
+              "raw": 3,
+              "printed_label": null,
+              "frame": 78505,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087031960657297.webp",
+              "position": "Unlabelled tick between 12 Hz and 25 Hz",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 4,
+              "printed_label": "25 Hz",
+              "frame": 77375,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087031004457922.webp"
+            },
+            {
+              "raw": 5,
+              "printed_label": null,
+              "frame": 76569,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087028150571968.webp",
+              "position": "Unlabelled tick between 25 Hz and 50 Hz",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 6,
+              "printed_label": "50 Hz",
+              "frame": 75773,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087027221304840.webp"
+            },
+            {
+              "raw": 7,
+              "printed_label": null,
+              "frame": 75139,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087025376231242.webp",
+              "position": "Unlabelled tick between 50 Hz and 100 Hz",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 8,
+              "printed_label": "100 Hz",
+              "frame": 74339,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087024437425156.webp"
+            },
+            {
+              "raw": 9,
+              "printed_label": null,
+              "frame": 73803,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087022547150626.webp",
+              "position": "Unlabelled tick between 100 Hz and 200 Hz",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 10,
+              "printed_label": "200 Hz",
+              "frame": 72923,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087021620869721.webp"
+            },
+            {
+              "raw": 11,
+              "printed_label": null,
+              "frame": 72077,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087019736477988.webp",
+              "position": "Unlabelled tick between 200 Hz and 400 Hz",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 12,
+              "printed_label": "400 Hz",
+              "frame": 71207,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087017863205292.webp"
+            },
+            {
+              "raw": 13,
+              "printed_label": null,
+              "frame": 68303,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087012237800468.webp",
+              "position": "Unlabelled tick between 400 Hz and 800 Hz",
+              "meaning": "Numerical value unverified"
+            },
+            {
+              "raw": 14,
+              "printed_label": "800 Hz",
+              "frame": 66637,
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087011314879581.webp"
+            }
+          ]
         }
       },
       "evidence": [
@@ -629,7 +988,61 @@
             "displayed_label": "800 Hz",
             "screenshot": "scan-Diode609-20261119T034207950Z/Diode609-compHPF-maximum.png"
           }
-        ]
+        ],
+        "manual_position_witnesses": {
+          "gui_channel": 1,
+          "instance": 0,
+          "source_captures": [
+            {
+              "source": "captures/continuation-20261119-midday/manual-diode609-rotaries.pcapng",
+              "sha256": "4347829e056d976d7e5498f2ca13ec26e7e8796a692159bdc33611a7e67320c7",
+              "packets": 134036,
+              "drops": 0
+            },
+            {
+              "source": "captures/continuation-20261119-midday/manual-diode609-stepped.pcapng",
+              "sha256": "806715ee3b85d658a2ecaf2952836550a0fe47642f94bb657ac0323706b60c71",
+              "packets": 152328,
+              "drops": 0
+            }
+          ],
+          "owner_operated": true,
+          "captured_controls": [
+            "compRecovery",
+            "compGain",
+            "compRatio",
+            "compHPF"
+          ],
+          "notes": "Position-specific timestamped screenshots and isolated byte changes. Numerical values for unlabelled ticks remain unverified.",
+          "partial_position_witnesses": [
+            {
+              "control": "limThreshold",
+              "raw": 12,
+              "printed_label": "10 dBu",
+              "frame": 13189,
+              "source": "captures/continuation-20261119-midday/manual-diode609-rotaries.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-rotary-screens/1795086723236141661.webp"
+            },
+            {
+              "control": "limRecovery",
+              "raw": 3,
+              "printed_label": "800 ms",
+              "frame": 13927,
+              "source": "captures/continuation-20261119-midday/manual-diode609-rotaries.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-rotary-screens/1795086723236141661.webp"
+            },
+            {
+              "control": "compThreshold",
+              "raw": 9,
+              "printed_label": null,
+              "frame": 14915,
+              "source": "captures/continuation-20261119-midday/manual-diode609-rotaries.pcapng",
+              "screenshot": "captures/continuation-20261119-midday/manual-rotary-screens/1795086723236141661.webp",
+              "position": "Upper-right unlabelled tick between the printed 4 and 0 marks",
+              "meaning": "Numerical value unverified"
+            }
+          ]
+        }
       },
       "processing_observation": {
         "status": "capture-observed; Power and rack BP GUI return",
