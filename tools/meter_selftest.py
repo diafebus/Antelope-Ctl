@@ -406,4 +406,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except OSError as e:
+        sys.exit(str(e))
