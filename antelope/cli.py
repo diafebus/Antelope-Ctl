@@ -280,9 +280,10 @@ def cmd_status(args, profile):
             break
         mode = proto.mode_name(profile, s.get('input_mode', -1))
         glyph, tail = _link_bracket(profile, link_state, ch)
+        flag = lambda key: '?' if key not in s else ('on' if s[key] else 'off')  # unread is not off
         print(f"{ch:>2}  {mode:<7} {s['gain']:>5}  "
-              f"{'on' if s.get('phantom') else 'off':<3} "
-              f"{'on' if s.get('phase_invert') else 'off':<5}"
+              f"{flag('phantom'):<3} "
+              f"{flag('phase_invert'):<5}"
               f"{glyph}{tail}")
     confirmed = profile['channels'].get('confirmed_indices', [])
     if confirmed and n_channels > max(confirmed) + 1:
@@ -1770,7 +1771,8 @@ def cmd_set_sample_rate(args, profile):
 # the 0x73 state report (offset 19); pan_law has no known readback.
 
 def _enum_values(profile, param):
-    v = profile['params'].get(param, {}).get('values', {})
+    p = profile['params'].get(param, {})
+    v = p.get('values') or p.get('runtime_values', {})  # a profile may name an enum only in runtime_values
     return {int(k): s for k, s in v.items()}
 
 

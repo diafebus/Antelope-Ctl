@@ -1,6 +1,8 @@
 """Offline meter-source checks. Run: python3 -m unittest tools.test_meter_sources."""
+import contextlib
 import copy
 import importlib
+import io
 import json
 from pathlib import Path
 import signal
@@ -469,6 +471,24 @@ class MeterSourceTests(unittest.TestCase):
         self.assertEqual(packet[4], 0x13)
         self.assertEqual(packet[16:19], bytes((0x49, 0, 0x0c)))
         self.assertIsNone(self.server._mixer_surface_packet(self.zen_profile, 2))
+
+    def test_cli_status_shows_unread_flags_as_unknown(self):
+        state = {'input_mode': 0, 'gain': 10, 'phantom': 1}  # phase_invert not read
+        args = types.SimpleNamespace(timeout=0.1, channels=1)
+        out = io.StringIO()
+        with mock.patch.object(cli, 'get_transport'), \
+                mock.patch.object(cli, 'read_state', return_value=b'\0'), \
+                mock.patch.object(cli, '_load_link_state', return_value={}), \
+                mock.patch.object(cli.proto, 'parse_state', return_value=state), \
+                contextlib.redirect_stdout(out):
+            cli.cmd_status(args, self.zen_profile)
+        row = out.getvalue().splitlines()[1].split()
+        self.assertEqual(row[3:5], ['on', '?'])
+
+    def test_cli_enum_values_fall_back_to_runtime_values(self):
+        self.assertNotIn('values', self.zen_profile['params']['clock_source'])
+        self.assertEqual(cli._enum_values(self.zen_profile, 'clock_source'),
+                         {0: 'Internal', 1: 'S/PDIF', 2: 'USB'})
 
 
 if __name__ == '__main__':
