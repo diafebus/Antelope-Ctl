@@ -533,14 +533,31 @@ def t_write_bus_flags(dev):
     known = dev.p.get('buses', {}).get('known', {}) or {}
     if not known or 'bus_block' not in dev.p.get('frame', {}).get('state_report', {}):
         return record(SKIP, 'WRITE bus dim/mono', 'no profile bus-block contract')
+    allowed = proto.channel_space_bounds(dev.p, 'bus')
     for bus_key in sorted(known, key=int):
         bus = int(bus_key)
+        if bus in proto.protected_mute_buses(dev.p) \
+                or (allowed is not None and bus not in allowed):
+            # an automatic flag write must never release a protected mute,
+            # and a bus outside constraints.bus_ids is not a legal target
+            record(SKIP, f'WRITE bus {bus} dim/mono', 'protected or not a legal bus target')
+            continue
         for param, key in (('bus_dim', 'dim'), ('bus_mono', 'mono')):
+            try:   # a bus may lack a dim or mono control
+                proto.build_command(dev.p, param, bus, 0)
+            except (KeyError, ValueError, proto.ConstraintError):
+                record(SKIP, f'WRITE bus {bus} {key}', 'no such control on this bus')
+                continue
             data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
             if data is None:
                 return record(FAIL, f'WRITE bus {bus} {key}', 'no state report before write')
             before = proto.parse_bus_state(dev.p, data, bus)
+            if key not in before:
+                record(SKIP, f'WRITE bus {bus} {key}', 'state report does not carry this flag')
+                continue
             orig = int(before[key])
+            orig_status = before['status_raw']
+            orig_mute = before.get('mute')
             probe = 0 if orig else 1
             after = None
             original_level = int(before['level'])
@@ -564,11 +581,14 @@ def t_write_bus_flags(dev):
                 )
             finally:
                 dev.write(proto.build_command(dev.p, param, bus, orig))
+                # a device may clear the mute bit on a dim write: put the mute back too
+                if orig_mute and 'bus_mute' in dev.p.get('params', {}):
+                    dev.write(proto.build_command(dev.p, 'bus_mute', bus, 1))
                 if level_changed:
                     dev.write(proto.build_command(dev.p, 'bus_level', bus, original_level))
                 data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
                 restored = proto.parse_bus_state(dev.p, data, bus) if data is not None else None
-                ok = restored is not None and int(restored[key]) == orig
+                ok = restored is not None and restored['status_raw'] == orig_status
                 record(
                     PASS if ok else FAIL,
                     f'WRITE bus {bus} {key}: restored {orig} '

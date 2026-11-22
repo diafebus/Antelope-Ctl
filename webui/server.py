@@ -2728,6 +2728,12 @@ def api_bus_toggle(t: BusToggle):
         packet = proto.build_command(PROFILE, pname, t.bus, 1 if t.on else 0)
     except (KeyError, ValueError, proto.ConstraintError) as e:
         return _bad(str(e))
+    # Some devices clear the mute bit on any dim write; the profile says which buses to guard.
+    state = next((b for b in DEV.get()[0].get("buses", [])
+                  if b.get("bus") == t.bus), None)
+    if proto.bus_flag_may_release_mute(PROFILE, t.bus, pname, state):
+        return _bad(f"{proto.bus_name(PROFILE, t.bus)} is muted or unread: "
+                    f"{t.param} is refused so it cannot release the mute")
     DEV.submit(lambda tr, packet=packet: tr.write(packet))
     return {"ok": True}
 

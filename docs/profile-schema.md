@@ -565,7 +565,8 @@ the complete contract and new-device checklist.
     (Orion: `[21..23]`), read by `state_clock_rate_hz(profile, data)`.
     Complements the 0-6 `sample_rate_byte_offset` enum
   - `bus_block_offset` + `bus_block_stride` — bus state array
-    (`28 + 3N` on Orion, `28 + 2N` on Zen Go)
+    (`28 + 3N` on Orion, `28 + 2N` on Zen Go); `bus_block.flags_combine`
+    is described under [`constraints`](#constraints)
   - `snapshot_payload_offset` — optional base added to payload-relative
     offsets when the report includes a fixed header (Zen Go: `0x10`)
   - `mixer_strip_meters` — optional profile-confirmed shared mixer meter map
@@ -697,6 +698,13 @@ Machine-enforced bounds. `protocol.check_opcode` / `check_target` /
 | `input_mode_allowed_values` `[...]` | `check_enum` | portable-enum guard (a foreign value crashed a sibling) |
 | `gain_bounds` / `adat_gain_bounds` / `spdif_gain_bounds` | the gain CLI commands | dB clamp ranges |
 | `min_write_interval_ms` | (advisory) | rate-limit hint |
+| `protected_mute_buses` `[...]` | `protocol.bus_flag_may_release_mute`: WebUI `bus-toggle`, CLI `set-bus-dim` / `set-bus-mono`; `tools/selftest.py` skips these buses | optional, default none (the Orion profile omits it): buses whose mute no automatic action may release. A dim/mono write to one is refused while it reads muted, mute-ambiguous or unread, unless `frame.state_report.bus_block.flags_combine` is true |
+
+`frame.state_report.bus_block.flags_combine` (optional, default false) is true
+only when a dim or mono write is known to leave the mute bit alone. It matters
+only for buses in `protected_mute_buses`. Example: on a Zen Go Synergy Core,
+dim on and dim off both clear the mute bit, so that profile would protect its
+buses and leave `flags_combine` false; a device whose dim keeps the mute sets it.
 
 Every bound here should have a matching `hazards` entry saying what goes
 wrong without it.

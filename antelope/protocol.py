@@ -144,6 +144,26 @@ def channel_space_bounds(profile: dict, space: str):
     return None
 
 
+def protected_mute_buses(profile: dict) -> list:
+    """Buses whose mute no automatic action may release
+    (constraints.protected_mute_buses, default none): self-tests skip them,
+    and a dim/mono write that could clear the mute as a side effect is refused."""
+    return [int(x) for x in constraints(profile).get('protected_mute_buses', [])]
+
+
+def bus_flag_may_release_mute(profile: dict, bus_id: int, param_name: str, bus_state) -> bool:
+    """True when this dim/mono write could un-mute a protected bus and must be
+    refused: the bus is in constraints.protected_mute_buses, the profile does
+    not say a flag write keeps the mute (bus_block.flags_combine), and the bus
+    reads muted, ambiguous or could not be read (`bus_state` None)."""
+    if param_name == 'bus_mute' or bus_id not in protected_mute_buses(profile):
+        return False
+    if profile['frame']['state_report'].get('bus_block', {}).get('flags_combine'):
+        return False
+    return bus_state is None or bool(bus_state.get('mute')) \
+        or bool(bus_state.get('mute_ambiguous'))
+
+
 def space_channel_count(profile: dict, space: str):
     """How many channels this device actually has in an address space
     ('input', 'adat', 'spdif') -- for sizing `status` / `meter` /

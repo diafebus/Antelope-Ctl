@@ -471,5 +471,128 @@ class MeterSourceTests(unittest.TestCase):
         self.assertIsNone(self.server._mixer_surface_packet(self.zen_profile, 2))
 
 
+class BusMuteSafetyTests(unittest.TestCase):
+    """constraints.protected_mute_buses on the Orion layout (bus N status byte 29 + 3N).
+
+    The Orion profile itself protects nothing; the protected copy models a
+    device whose dim write clears the mute bit (observed on a Zen Go SC)."""
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json'
+        cls.orion = json.loads(path.read_text())
+        cls.protected = copy.deepcopy(cls.orion)
+        cls.protected['constraints']['protected_mute_buses'] = [0]
+        cls.server = load_server_without_web_or_hid_boundaries()
+
+    def report(self, profile, **status_by_bus):
+        data = bytearray(profile['transport']['report_size'])
+        data[0] = 0x73
+        for bus, status in status_by_bus.items():
+            data[29 + 3 * int(bus[1:])] = status
+        return bytes(data)
+
+    def toggle(self, profile, report, **fields):
+        device = self.server.Device(profile)
+        device.snapshot = {'online': True}
+        if report is not None:
+            device.snapshot['buses'] = device._parse_buses(report)
+        sent = []
+        hid = types.SimpleNamespace(write=sent.append)
+        with mock.patch.object(self.server, 'PROFILE', profile), \
+                mock.patch.object(self.server, 'DEV', device), \
+                mock.patch.object(device, 'submit', side_effect=lambda fn: fn(hid)), \
+                mock.patch.object(self.server, '_bad',
+                                  side_effect=lambda msg: {'ok': False, 'error': msg}):
+            result = self.server.api_bus_toggle(types.SimpleNamespace(**fields))
+        return result['ok'], sent
+
+    def test_helper_rule(self):
+        may_release = protocol.bus_flag_may_release_mute
+        self.assertEqual(protocol.protected_mute_buses(self.orion), [])
+        self.assertFalse(may_release(self.orion, 0, 'bus_dim', {'mute': 1}))
+        p = self.protected
+        self.assertEqual(protocol.protected_mute_buses(p), [0])
+        self.assertTrue(may_release(p, 0, 'bus_dim', {'mute': 1}))
+        self.assertTrue(may_release(p, 0, 'bus_mono', None))              # unread
+        self.assertTrue(may_release(p, 0, 'bus_dim', {'mute': 0, 'mute_ambiguous': True}))
+        self.assertFalse(may_release(p, 0, 'bus_dim', {'mute': 0}))
+        self.assertFalse(may_release(p, 0, 'bus_mute', {'mute': 1}))      # explicit mute writes pass
+        self.assertFalse(may_release(p, 1, 'bus_dim', {'mute': 1}))       # bus not protected
+        combine = copy.deepcopy(p)
+        combine['frame']['state_report']['bus_block']['flags_combine'] = True
+        self.assertFalse(may_release(combine, 0, 'bus_dim', {'mute': 1}))
+
+    def test_webui_bus_toggle_refuses_dim_and_mono_on_a_muted_protected_bus(self):
+        p = self.protected
+        muted = self.report(p, b0=0x04, b1=0x04)
+        for param in ('dim', 'mono'):
+            for on in (True, False):
+                self.assertEqual(self.toggle(p, muted, bus=0, param=param, on=on), (False, []))
+        self.assertEqual(self.toggle(p, None, bus=0, param='dim', on=True), (False, []))
+        self.assertEqual(self.toggle(p, muted, bus=0, param='mute', on=False),
+                         (True, [protocol.build_command(p, 'bus_mute', 0, 0)]))
+        self.assertEqual(self.toggle(p, muted, bus=1, param='dim', on=True),
+                         (True, [protocol.build_command(p, 'bus_dim', 1, 1)]))
+        self.assertEqual(self.toggle(p, self.report(p, b0=0x08), bus=0, param='dim', on=False),
+                         (True, [protocol.build_command(p, 'bus_dim', 0, 0)]))
+        # the unmodified Orion profile keeps its behaviour
+        self.assertEqual(self.toggle(self.orion, muted, bus=0, param='dim', on=True),
+                         (True, [protocol.build_command(self.orion, 'bus_dim', 0, 1)]))
+
+    def test_cli_set_bus_dim_refuses_on_a_muted_protected_bus(self):
+        p = self.protected
+        written = []
+        hid = types.SimpleNamespace(write=written.append,
+                                    read_one=lambda magic, timeout: self.report(p, b0=0x04))
+        args = types.SimpleNamespace(bus='0', state='off', timeout=0.1, force=False)
+        with mock.patch.object(cli, 'get_transport', return_value=hid), \
+                mock.patch.object(cli.time, 'sleep'), \
+                mock.patch('builtins.print'):
+            with self.assertRaises(SystemExit):
+                cli.cmd_set_bus_dim(args, p)
+            with self.assertRaises(SystemExit):
+                cli.cmd_set_bus_mono(args, p)
+            self.assertEqual(written, [])
+            cli.cmd_set_bus_mute(args, p)
+            self.assertEqual(written, [protocol.build_command(p, 'bus_mute', 0, 0)])
+            del written[:]
+            cli.cmd_set_bus_dim(args, self.orion)
+            self.assertEqual(written, [protocol.build_command(self.orion, 'bus_dim', 0, 0)])
+
+    def test_selftest_skips_protected_buses_and_restores_the_whole_status_byte(self):
+        from tools import selftest
+        p = copy.deepcopy(self.protected)
+        p['buses']['known'] = {k: v for k, v in p['buses']['known'].items() if k in ('0', '1')}
+        decode = {protocol.build_command(p, name, bus, value): (name, bus, value)
+                  for bus in (0, 1) for name, values in (
+                      ('bus_dim', (0, 1)), ('bus_mono', (0, 1)), ('bus_mute', (0, 1)),
+                      ('bus_level', range(97))) for value in values}
+        state = {0: [50, 0x04], 1: [50, 0x04]}                # both buses muted
+        bits = {'bus_dim': 0x08, 'bus_mono': 0x10, 'bus_mute': 0x04}
+
+        def write(packet):
+            name, bus, value = decode[packet]
+            if name == 'bus_level':
+                state[bus][0] = value
+                return
+            if name == 'bus_dim':
+                state[bus][1] &= ~0x04                       # modelled device: dim clears mute
+            state[bus][1] = state[bus][1] | bits[name] if value else state[bus][1] & ~bits[name]
+
+        def read_one(magic, timeout):
+            data = bytearray(self.report(p))
+            for bus, (level, status) in state.items():
+                data[28 + 3 * bus], data[29 + 3 * bus] = level, status
+            return bytes(data)
+
+        dev = types.SimpleNamespace(p=p, write=write, t=types.SimpleNamespace(read_one=read_one))
+        with mock.patch.object(selftest, 'results', []) as results, \
+                mock.patch('builtins.print'):
+            selftest.t_write_bus_flags(dev)
+        self.assertEqual(results[0][:2], ('SKIP', 'WRITE bus 0 dim/mono'))
+        self.assertEqual([r[0] for r in results[1:]], ['PASS'] * 4)
+        self.assertEqual(state, {0: [50, 0x04], 1: [50, 0x04]})
+
+
 if __name__ == '__main__':
     unittest.main()
