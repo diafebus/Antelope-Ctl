@@ -64,6 +64,7 @@ evidence.
 | `adat`, `spdif` | if present on the device | extra input address spaces |
 | `mixer` | if decoded | virtual-mixer summary (human-facing; the frame is in `frame.mix_command`), plus optional profile-driven surface/link metadata. `has_master` defaults to true; set false for devices whose channel space starts at 0 with no master strip. |
 | `afx` | optional | device AFX channel/slot capacity and reference to the shared effect catalog; descriptive metadata, not a runtime write contract |
+| `afx_inserts` | optional | contract for the generic AFX insert codec and builders; no shipped profile declares it yet |
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
@@ -380,6 +381,42 @@ Other. This presentation metadata carries no write permission, device-ID
 mapping or license evidence. A `#plugins...` or
 `#params...` suffix in an evidence URL is a JSON key path within the linked
 source document, not an HTML anchor.
+
+### `afx_inserts` (generic insert codec)
+
+`protocol.py` has generic AFX builders that read their whole contract from
+this optional block. No shipped profile declares it, so nothing calls them
+today; the Orion operator path stays in `antelope/afx.py`. Missing or
+disabled sub-blocks make the builders refuse.
+
+| key | read by | meaning |
+|---|---|---|
+| `chain_write` `{opcode, param_id, subcmd, strip_offset, slots_offset, ...}` | `build_afx_insert_chain` | whole-rack write: the ordered `{type, instance}` pairs replace the strip's chain; an empty list clears it. The opcode passes `check_opcode` |
+| `writes` `{enabled, strips, max_slots}` | `afx_insert_writes`, `build_afx_insert_chain` | strips and rack length that were exercised; `type_labels` lists the types the chain may hold, and no `(type, instance)` may repeat |
+| `writes.effects.<type>.load_defaults` `[hex, ...]` | `afx_load_defaults` | blocks the vendor panel sent right after the chain write that loaded the effect; one per band for a banded effect |
+| `parameters` `{enabled, write: {param_id, length_bias}}` | `build_afx_parameter_writes` | parameter frame `70 00 00 00 \| <len + length_bias> .. \| <param_id> \| <len> \| <type> \| <inst> \| <block>` at `frame.command` offsets. Byte 4 is computed from the payload length, so it is not checked against `allowed_opcodes`; the mapped effect, block length and every field range are checked instead |
+| `parameters.effects.<type>` `{block_length, fields, bands, editable, state_query}` | `afx_parameter_effect` and the builders | one effect's block. `editable: false` refuses writes. `bands` `{count, length, selector_offset, selector_values}` splits the block into one frame per band with the selector byte put back; given the previous block, only changed bands are sent |
+| `parameters.state_query` `{category, subcmd, index_flag, index}` | `build_afx_state_query`, `is_afx_state_response` | read request at `frame.readback` offsets; the index is `index_flag \| type` unless `index` is given. An effect's own `state_query` overrides keys |
+| `parameters.bypass` `{param_id, opcode}` | `build_afx_bypass` | `<param_id> <instance> <type> <01 active / 00 bypassed>`, only for a mapped type |
+
+Each entry of `fields` is `{key, label, offset, type, min, max}` with optional
+`values`. `afx_block_get()` / `afx_block_set()` decode and change one field,
+little-endian: `u8`/`i8`, `u16`/`i16`, `u32`/`i32` and `f32` (float32), with
+raw `min`/`max`. An `f32` field takes an integer or a float and is compared as
+stored, after rounding to float32, so a limit such as 0.01 stays in range; NaN
+and infinity are refused. Integer fields refuse a float or a bool. A `values`
+list replaces the range check for a selector with gaps (FET ratio 0, 1, 2, 4, 8).
+Bytes outside the mapped fields are written back unchanged.
+
+Evidence: these frames were captured from the vendor panel on a Zen Go Synergy
+Core and a Discrete 4 by a fork contributor. Chain load/remove, bypass and
+per-effect parameter writes were then sent from Linux on those units and
+checked by read-back, with the racks restored; ClearQ's read layout is still
+capture-only, not round-tripped. The parameter
+frame also reproduces the Orion Memory Cat capture byte for byte
+(`tools/test_afx_codec.py`). Nothing about other Orion effects, bands or
+bypass through this path is established; an Orion `afx_inserts` block needs
+its own captures and an explicit scope decision.
 
 ---
 
