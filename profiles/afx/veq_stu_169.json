@@ -382,6 +382,102 @@
           "captures/unattended-20261027T144257Z-veqstu169-processing/return/Orion.pcapng frame617 tuple@17..19=001601; static panel RGB returned, meter excluded."
         ]
       }
+    },
+    {
+      "profile": "discrete_4_a270.json",
+      "type_id": 22,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 6,
+          "read_stride": 7,
+          "read_offset": 1,
+          "read_layout": "per instance: one flag byte, the block the write frame carries, then padding up to read_stride (measured with this project's own cat 0x07 read; instance 0 held the block the vendor panel last wrote)",
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "high",
+              "label": "High",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "mid",
+              "label": "Mid",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "low",
+              "label": "Low",
+              "offset": 4,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "output",
+              "label": "Output",
+              "offset": 5,
+              "type": "i8",
+              "min": -24,
+              "max": 12
+            },
+            {
+              "key": "high_pass",
+              "label": "High-pass",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "key": "mid_freq",
+              "label": "Mid Freq",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            }
+          ],
+          "notes": "VEQ-STU 169. Each listed control was wheeled to both ends in the vendor panel and moved only its own bytes; min/max are the raw limits seen. Raw units: no physical unit is claimed. Bytes of the block not listed here (switches, menus, stacked rings the wheel did not reach) are unmapped and are written back unchanged. Fields appended after Output (High-pass, Mid Freq): ported from the Zen Go, not captured on this device. They were mapped from vendor-panel captures on the owner's Zen Go (same effect type and block); the value meanings below are copied from the Zen Go note: High-pass = the toggle (0 lever up). Mid Freq = the red ring (0 = 150, 100 = 7K). Discrete 4 live trial 2026-11-22: loaded alone into the channel 3 rack through this project, every control moved by one step and put back, each write confirmed by readback.",
+          "evidence": "unattended run 2026-11-17 (owner's unit, vendor panel 1.9.22 under Wine, usbmon): veq_stu_169_sweep.pcapng (sha256 dd63c28c4cc522b960e5f36c28f8b6e7d60d0edb2c4521f9a2525147235c9d7f)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 22,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 6,
+          "read_stride": 7,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields_from": "discrete_4_a270.json",
+          "notes": "Same effect, type id and parameter block as on the Discrete 4 (its discrete_4_a270.json implementation holds the control evidence). On this device: same layout as every other shared effect on this device; read on the owner's loaded instance, in range Added from the second panel run of 2026-11-21 on the Zen Go: High-pass, Mid Freq. Each was moved over its whole range in the vendor panel (wheel, drag or menu), changed only its own bytes and was put back. High-pass = the toggle (0 lever up). Mid Freq = the red ring (0 = 150, 100 = 7K). Probed on a second instance in the channel 3 rack, because the first is in an owner rack; later changed and restored on the first instance through this project (2026-11-21).",
+          "evidence": "second panel run 2026-11-21 (same unit and setup): zen_click2/veq_stu_169_*.pcapng (6 files, sha256 over them in name order dbbe735d4c7f9f52012f3153a051cae956472491856220b7d56dc370d680356a)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
     }
   ]
 }

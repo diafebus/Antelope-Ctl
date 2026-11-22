@@ -817,6 +817,403 @@
     ]
   },
 
+  "afx_inserts": {
+    "_comment": "Per-effect AFX parameter blocks of this device, for the generic codec in antelope/protocol.py. The contracts are the zen_go_sc.json implementations in profiles/afx/<effect_id>.json (commands.parameters); the frame, state query and bypass below are device-wide. No rack load/remove (chain_write / writes) is declared here.",
+    "type_labels": {
+      "1": {
+        "label": "ClearQ",
+        "status": "confirmed",
+        "evidence": "vendor panel 1.1.26 on the owner's unit, 2026-11-17: the channel 1 rack lists ClearQ, SMT-100A, Master De-esser in that order while record 0 holds types 1, 36, 27 in that order",
+        "group": "General"
+      },
+      "2": {
+        "label": "PowerFFC",
+        "status": "confirmed",
+        "group": "General"
+      },
+      "3": {
+        "label": "Guitar Amp",
+        "status": "confirmed",
+        "group": "Guitar Amp",
+        "note": "11 amp models share this type; the model is a byte in its parameter block"
+      },
+      "4": {
+        "label": "Guitar Cabinet",
+        "status": "confirmed",
+        "group": "Guitar Cabinet",
+        "note": "11 cabinet models share this type; loading one is followed by seven parameter frames, five of them 244-byte impulse-response blocks computed by the vendor software. Not controllable from here: it can only be removed"
+      },
+      "5": {
+        "label": "VMEQ-5",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "6": {
+        "label": "VEQ-1A",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "7": {
+        "label": "BAE-1073",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "8": {
+        "label": "VEQ-55A",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "9": {
+        "label": "FET-A76",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "11": {
+        "label": "VEQ-HLF",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "12": {
+        "label": "UK-69",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "13": {
+        "label": "NEU-PEV",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "14": {
+        "label": "Lang-PEQ2",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "15": {
+        "label": "NEU-W492",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "16": {
+        "label": "VEQ-4K PINK",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "17": {
+        "label": "VEQ-4K ORANGE",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "18": {
+        "label": "VEQ-4K BLACK",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "19": {
+        "label": "VEQ-4K BROWN",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "20": {
+        "label": "NEU-W495",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "21": {
+        "label": "VEQ-STU 089",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "22": {
+        "label": "VEQ-STU 169",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "23": {
+        "label": "VEQ-STU 900",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "24": {
+        "label": "BAE-1023",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "25": {
+        "label": "BAE-1084",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "26": {
+        "label": "VEQ-HA32C",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "27": {
+        "label": "Master De-esser",
+        "status": "confirmed",
+        "evidence": "same observation; also the Orion type id",
+        "group": "General"
+      },
+      "28": {
+        "label": "VEQ-55B",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "29": {
+        "label": "X903",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "30": {
+        "label": "Gyratec X",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "31": {
+        "label": "Liverpool",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "32": {
+        "label": "Tube 176",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "33": {
+        "label": "VCA160",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "34": {
+        "label": "Stay-Levin",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "35": {
+        "label": "ALT-436C",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "36": {
+        "label": "SMT-100A",
+        "status": "confirmed",
+        "evidence": "same observation",
+        "group": "Vintage Compressors"
+      },
+      "37": {
+        "label": "FET-A78",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "38": {
+        "label": "BA-6A",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "39": {
+        "label": "PowerGate",
+        "status": "confirmed",
+        "evidence": "loaded by name in the vendor panel; the chain write then carried type 39 (zengo_afx_load_remove.pcapng (sha256 497b43813548cef6cb41712a2e826523e80422b59cfd303f426964a0d8387b55))",
+        "group": "General"
+      },
+      "41": {
+        "label": "Tubechild670",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "42": {
+        "label": "Impresser",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "43": {
+        "label": "Gyratec IX",
+        "status": "confirmed",
+        "group": "Vintage MicPreamps"
+      },
+      "44": {
+        "label": "VPA 76",
+        "status": "confirmed",
+        "group": "Vintage MicPreamps"
+      },
+      "45": {
+        "label": "BAE-1073MP",
+        "status": "confirmed",
+        "group": "Vintage MicPreamps"
+      },
+      "46": {
+        "label": "Reel To Reel",
+        "status": "confirmed",
+        "group": "General"
+      },
+      "47": {
+        "label": "RD-47",
+        "status": "confirmed",
+        "group": "Vintage MicPreamps"
+      },
+      "48": {
+        "label": "BA-31",
+        "status": "confirmed",
+        "group": "Vintage MicPreamps"
+      },
+      "50": {
+        "label": "BAE10DCF",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "51": {
+        "label": "PowerEx",
+        "status": "confirmed",
+        "evidence": "loaded by name in the vendor panel; the chain write then carried type 51 (same capture)",
+        "group": "General"
+      },
+      "53": {
+        "label": "Vari-Speed Tremolo",
+        "status": "confirmed",
+        "group": "Modulation"
+      },
+      "54": {
+        "label": "Space Flanger",
+        "status": "confirmed",
+        "group": "Modulation"
+      },
+      "59": {
+        "label": "Opto 2A",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "63": {
+        "label": "Comp-4K-Bus",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "64": {
+        "label": "Comp-4K-Strip",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "65": {
+        "label": "Adaptive Vibrato",
+        "status": "confirmed",
+        "group": "Modulation"
+      },
+      "66": {
+        "label": "VEQ-432C",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "67": {
+        "label": "Marble White AutoWah",
+        "status": "confirmed",
+        "group": "Modulation"
+      },
+      "68": {
+        "label": "MG4+",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "69": {
+        "label": "Audio Baton",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "70": {
+        "label": "V12 Chorus",
+        "status": "confirmed",
+        "group": "Modulation"
+      },
+      "71": {
+        "label": "Filtek MK3",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "72": {
+        "label": "ATuner",
+        "status": "confirmed",
+        "group": "General"
+      },
+      "73": {
+        "label": "Memory Cat Brigade",
+        "status": "confirmed",
+        "group": "Modulation"
+      },
+      "74": {
+        "label": "VEQ56",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "75": {
+        "label": "Instinct Synergy",
+        "status": "confirmed",
+        "group": "Special Processing"
+      },
+      "76": {
+        "label": "Auraverb",
+        "status": "confirmed",
+        "group": "General"
+      },
+      "77": {
+        "label": "Gyratec XIV",
+        "status": "confirmed",
+        "group": "Vintage EQs"
+      },
+      "78": {
+        "label": "BBD Chorus",
+        "status": "confirmed",
+        "group": "Modulation"
+      },
+      "80": {
+        "label": "NEU-473A",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "82": {
+        "label": "Diode609",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "83": {
+        "label": "Drum-All-Nite",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "85": {
+        "label": "Brainiac",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      },
+      "86": {
+        "label": "Gate Keeper",
+        "status": "confirmed",
+        "group": "Vintage Compressors"
+      }
+    },
+    "parameters": {
+      "enabled": true,
+      "catalog": "afx_effects.json",
+      "catalog_profile": "zen_go_sc.json",
+      "write": {
+        "param_id": "0xd5",
+        "length_bias": "0x12",
+        "layout": "70 00 00 00 | <len + 0x12> 00 00 00 | 00 x8 | d5 | <len> | <type> | <inst> | <whole parameter block>",
+        "evidence": "vendor panel load captures on the owner's unit (zengo_batch_load*.pcapng): PowerFFC, FET-A76, FET-A78 and BAE 1073MP parameter frames have the Discrete 4's block length and field positions; byte 4 = length + 0x12 on each"
+      },
+      "state_query": {
+        "category": "0x07",
+        "subcmd": "0x11",
+        "index_flag": "0x80000000",
+        "layout": "index = 0x80000000 | effect type",
+        "notes": "Query only a type that is loaded in a rack."
+      },
+      "bypass": {
+        "param_id": "0x98",
+        "opcode": "0x14",
+        "layout": "70 00 00 00 | 14 00 00 00 | 00 x8 | 98 | 00 | <type> | <01 active / 00 bypassed>",
+        "notes": "The byte before the type was 00 in every capture and is assumed to be the instance (only instance 0 was seen). The state is the flag byte in front of the effect block in the cat 0x07 reply: 01 active, 00 bypassed.",
+        "evidence": "vendor panel 2026-11-21: zen_click/bypass_veq56.pcapng (slot BP button, VEQ56: 98 00 4a 00 then 98 00 4a 01) and the in-panel power buttons of 60 effects in zen_click/<slug>_p*.pcapng. Flag byte: a bounded trial on the unit, 2026-11-21 (VEQ56 alone in the channel 3 rack): reply 01 32.. before, 00 32.. after 98 00 4a 00, 01 32.. after 98 00 4a 01; the strip record did not change."
+      }
+    }
+  },
   "constraints": {
     "_comment": "Bounds a client should enforce before writing. Conservative first pass -- widen only as captures confirm.",
     "allowed_opcodes": ["0x12", "0x13", "0x14", "0x16", "0x53"],

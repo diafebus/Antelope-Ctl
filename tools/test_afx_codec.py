@@ -11,6 +11,7 @@ from pathlib import Path
 import unittest
 
 from antelope import afx, protocol
+from antelope.catalog import load_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMAND = {'magic_offset': 0, 'magic': '0x70', 'opcode_offset': 4, 'param_id_offset': 16}
@@ -360,6 +361,116 @@ class OrionTests(unittest.TestCase):
         self.assertEqual(packet, afx.build_parameter_test(profile, 4, values))
         # The tagged query header for instance 0 is the same request upstream builds.
         self.assertEqual(protocol.build_afx_state_query(profile, 73), afx.build_parameter_query(profile, 0))
+
+
+def catalog_device(name):
+    """A device profile that resolves its parameter blocks from the shipped catalogue."""
+    if name == 'zen_go_sc.json':
+        return json.loads((ROOT / 'profiles' / name).read_text())
+    # No discrete_4_a270.json device profile ships; its implementations are reached by name.
+    return {'afx_inserts': {'parameters': {'enabled': True, 'catalog': 'afx_effects.json', 'catalog_profile': name}}}
+
+
+class CatalogContractTests(unittest.TestCase):
+    """The Zen Go / Discrete 4 parameter blocks stored in profiles/afx/<effect_id>.json."""
+
+    def test_contracts_resolve_and_are_sound(self):
+        zen, d4 = catalog_device('zen_go_sc.json'), catalog_device('discrete_4_a270.json')
+        for profile, count in ((zen, 69), (d4, 47)):
+            effects = protocol.afx_parameter_effects(profile)
+            self.assertEqual(len(effects), count)
+            for kind, effect in effects.items():
+                self.assertIs(protocol.afx_parameter_effect(profile, int(kind)), effect)
+                length, taken = effect['block_length'], set()
+                if effect.get('editable') is False:   # read not captured: no read layout is claimed
+                    self.assertNotIn('read_stride', effect, kind)
+                else:
+                    self.assertGreater(effect['read_stride'], length, kind)
+                for item in effect['fields']:
+                    width, signed = protocol._AFX_FIELD_TYPES[item['type']]
+                    span = set(range(item['offset'], item['offset'] + width))
+                    self.assertFalse(span & taken, f'{kind} {item["key"]} overlaps')
+                    self.assertLessEqual(max(span), length - 1, kind)
+                    taken |= span
+                    if item['type'] != 'f32':
+                        low = -(1 << (8 * width - 1)) if signed else 0
+                        self.assertTrue(low <= item['min'] < item['max'] < 1 << (8 * width - signed), kind)
+        # The 47 shared effects take the Discrete 4's field list (fields_from).
+        shared = protocol.afx_parameter_effects(d4)
+        for kind in shared:
+            self.assertEqual(protocol.afx_parameter_effect(zen, int(kind))['fields'], shared[kind]['fields'], kind)
+
+    def test_inline_fixtures_agree_with_the_catalogue(self):
+        # The trimmed fragments above came from these devices; every field they name is in the catalogue.
+        for inline, name in ((zen_go(), 'zen_go_sc.json'), (discrete_4(), 'discrete_4_a270.json')):
+            shipped = catalog_device(name)
+            for kind, effect in protocol.afx_parameter_effects(inline).items():
+                mapped = protocol.afx_parameter_effect(shipped, int(kind))
+                by_offset = {item['offset']: item for item in mapped['fields']}
+                for item in effect['fields']:
+                    have = by_offset[item['offset']]
+                    self.assertEqual({key: have.get(key) for key in ('type', 'min', 'max', 'values')},
+                                     {key: item.get(key) for key in ('type', 'min', 'max', 'values')},
+                                     (name, kind, item['key']))
+
+    def test_catalog_and_inline_effects_are_exclusive(self):
+        profile = catalog_device('discrete_4_a270.json')
+        profile['afx_inserts']['parameters']['effects'] = {}
+        with self.assertRaises(protocol.ConstraintError):
+            protocol.afx_parameter_effect(profile, 9)
+        self.assertIsNone(protocol.afx_effect_id(zen_go(), 9))   # inline effects have no catalogue id
+
+    def test_options_are_the_orion_labels_of_the_same_byte(self):
+        catalog = {entry['id']: entry for entry in load_catalog()['effects']}
+        count = 0
+        for name in ('discrete_4_a270.json', 'zen_go_sc.json'):
+            profile = catalog_device(name)
+            for kind, effect in protocol.afx_parameter_effects(profile).items():
+                for item in effect['fields']:
+                    if 'options' not in item:
+                        continue
+                    count += 1
+                    entry = catalog[protocol.afx_effect_id(profile, int(kind))]
+                    orion = next(i for i in entry['implementations'] if i['profile'] == 'orion_studio_sc.json')
+                    observation = orion['parameter_observation']
+                    start = observation.get('data_offset', observation.get('instance_index_offset', 0) + 1)
+                    encoding = next(enc for enc in orion['control_encodings'].values()
+                                    if enc['offset'] - start == item['offset'])
+                    self.assertEqual((encoding['kind'], protocol._AFX_FIELD_TYPES[item['type']][0]), ('enum', 1))
+                    names = encoding.get('options') or encoding['enum']
+                    if not all(key.isdigit() for key in names):
+                        names = {raw: names[key] for raw, key in encoding['wire_enum'].items()}
+                    self.assertEqual(len(names), len(item['options']), (name, kind, item['key']))
+                    for raw, label in item['options'].items():
+                        self.assertTrue(protocol.afx_field_in_range(item, int(raw)), (name, kind, raw))
+                        upstream = names[str(int(raw) & 0xff)]
+                        self.assertIn(label, (upstream, f'{upstream} {encoding.get("unit")}'), (name, kind, raw))
+        self.assertEqual(count, 87)   # 47 labelled fields: 40 Discrete 4 ones the Zen Go shares, 7 Zen-Go-only
+        ratio = next(item for item in protocol.afx_parameter_effect(catalog_device('zen_go_sc.json'), 9)['fields']
+                     if item['key'] == 'ratio')
+        self.assertEqual(ratio['options'], {'1': '4', '2': '8', '4': '12', '8': '20'})
+
+    def test_v12_orion_candidates_are_not_written(self):
+        zen = catalog_device('zen_go_sc.json')
+        effect = protocol.afx_parameter_effect(zen, 70)
+        self.assertEqual(protocol.afx_effect_id(zen, 70), 'turboensembler')
+        self.assertFalse({4, 5} & {item['offset'] for item in effect['fields']})
+        v12 = next(e for e in load_catalog()['effects'] if e['id'] == 'turboensembler')
+        candidates = next(i for i in v12['implementations'] if i['profile'] == 'zen_go_sc.json')['control_encodings']
+        self.assertEqual({key: (enc['offset'], enc['writable']) for key, enc in candidates.items()},
+                         {'color': (24, False), 'colorShifter': (25, False)})
+        self.assertTrue(all(enc['status'].startswith('candidate') for enc in candidates.values()))
+        block = bytes([0, 1, 1, 0, 0xaa, 0xbb, 0, 0, 0xcc, 90, 0, 0])
+        frame = protocol.build_afx_parameter_write(zen, 70, 0, protocol.afx_block_set(effect, block, 'space', 7))
+        self.assertEqual(frame[24:29].hex(' '), 'aa bb 07 00 cc')   # bytes 4, 5 and 8 written back unchanged
+
+    def test_shipped_zen_go_frames(self):
+        zen = catalog_device('zen_go_sc.json')
+        self.assertEqual(protocol.build_afx_state_query(zen, 1)[:16].hex(' '),   # ClearQ's own sub-command
+                         '74 00 00 00 10 00 00 00 07 00 00 00 01 00 00 80')
+        self.assertEqual(protocol.build_afx_bypass(zen, 74, 0, False)[16:20].hex(' '), '98 00 4a 00')
+        self.assertIsNone(protocol.afx_insert_writes(zen))   # no rack writes are declared
+        self.assertIsNone(protocol.afx_parameter_effect(zen, 4))   # cabinet: identified, not mapped
 
 
 if __name__ == '__main__':

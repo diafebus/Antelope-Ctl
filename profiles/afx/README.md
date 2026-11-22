@@ -15,4 +15,7 @@ See the [schema guide](../../docs/profile-schema.md#afx-and-the-shared-effect-ca
 for storage/loading/export details and the
 [capture workflow](../../docs/orion-afx-workflow.md#editing-captured-plugin-knowledge)
 for evidence updates and migration of archived helpers. Catalog observations
-do not enable runtime writes.
+do not enable runtime writes. The `zen_go_sc.json` and `discrete_4_a270.json`
+implementations are the exception: their `commands.parameters` is the
+parameter block of that device for the generic codec
+([schema](../../docs/profile-schema.md#afx-parameter-blocks-in-the-catalog)).

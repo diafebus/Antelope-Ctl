@@ -623,6 +623,139 @@
         "meter_scale_and_signal_meaning_verified": false,
         "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations."
       }
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 70,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 12,
+          "read_stride": 13,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "humanize",
+              "label": "Humanize",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 1,
+              "options": {
+                "0": "Off",
+                "1": "On"
+              }
+            },
+            {
+              "key": "voices",
+              "label": "Voices",
+              "offset": 1,
+              "type": "u8",
+              "min": 1,
+              "max": 12
+            },
+            {
+              "key": "delay",
+              "label": "Delay",
+              "offset": 2,
+              "type": "u8",
+              "min": 1,
+              "max": 100
+            },
+            {
+              "key": "detune",
+              "label": "Detune",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "space",
+              "label": "Space",
+              "offset": 6,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "feedback",
+              "label": "Feedback",
+              "offset": 7,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "pan",
+              "label": "Pan",
+              "offset": 9,
+              "type": "u8",
+              "min": 0,
+              "max": 180
+            },
+            {
+              "key": "dry_wet",
+              "label": "Dry/Wet",
+              "offset": 10,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "gain",
+              "label": "Gain",
+              "offset": 11,
+              "type": "u8",
+              "min": 0,
+              "max": 255
+            }
+          ],
+          "notes": "V12 Chorus. Each listed control was wheeled to both ends in the vendor panel and moved only its own byte; min/max are the raw limits seen. Raw units: no physical unit is claimed. Switches and selectors were clicked instead (2026-11-21); each changed only its own byte and min/max are the values seen; names and value meanings were read from the per-state pictures. Bytes 4, 5 and 8 did not answer wheel or click (Colorize and Clr Shifter were greyed out). Unmapped bytes are written back unchanged. Read layout on this device: loaded alone into an empty rack through this project's server, the cat 0x07 reply was one flag byte then the block and nothing else (one instance per reply)",
+          "evidence": "unattended run 2026-11-17 (owner's unit, fw 05.04, vendor panel under Wine, usbmon): v12_chorus_probe.pcapng (sha256 af5dbdb0b1f4b7b260b4cbcad4b48d532946ffeafd11e468543ef51e33bd372f), v12_chorus_sweep.pcapng (sha256 046b6db12aac1298e07e411e246dbed6bd16fb4fd1665dee2078d0ef685bda82); click run 2026-11-21 (same unit and setup): zen_click/v12_chorus_p*.pcapng (4 files, sha256 over them in name order da9bca5df5c22d807ee451a1eb29bc11a94761eef14e061bb3a9fbe8599cfbd1)"
+        }
+      },
+      "control_encodings": {
+        "color": {
+          "offset": 24,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Colorize",
+          "range": [
+            0,
+            100
+          ],
+          "status": "candidate; Orion capture only (upstream), not observed on this device",
+          "writable": false,
+          "evidence": [
+            "orion_studio_sc.json implementation of this effect: control_encodings.color"
+          ],
+          "notes": "Block offset 4. Greyed out in the vendor panel on the owner's Zen Go (2026-11-17 sweep and 2026-11-21 click run): the byte did not answer wheel or click. Not in commands.parameters.fields: the runtime writes the byte back unchanged."
+        },
+        "colorShifter": {
+          "offset": 25,
+          "width": 1,
+          "kind": "continuous",
+          "label": "Clr Shifter",
+          "range": [
+            0,
+            255
+          ],
+          "status": "candidate; Orion capture only (upstream), not observed on this device",
+          "writable": false,
+          "evidence": [
+            "orion_studio_sc.json implementation of this effect: control_encodings.colorShifter"
+          ],
+          "notes": "Block offset 5. Greyed out in the vendor panel on the owner's Zen Go (2026-11-17 sweep and 2026-11-21 click run): the byte did not answer wheel or click. Not in commands.parameters.fields: the runtime writes the byte back unchanged."
+        }
+      },
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts. Field options, where present, are the labels of the orion_studio_sc.json control encoding at the same block offset (Orion captures, not observed on this device); this project's own value meanings stay in commands.parameters.notes."
     }
   ],
   "panel": {

@@ -122,6 +122,39 @@ class CatalogStorageTests(unittest.TestCase):
             with self.subTest(obj=obj), self.assertRaises(ValueError):
                 load_catalog(self.path)
 
+    def test_parameter_commands_fail_closed(self):
+        field = {'key': 'level', 'label': 'Level', 'offset': 0, 'type': 'u8', 'min': 0, 'max': 100}
+        params = {'frame': 'afx_inserts.parameters.write', 'writable': True, 'block_length': 2,
+                  'read_stride': 3, 'read_offset': 1, 'fields': [field]}
+
+        def implementation(profile, **changes):
+            return {'profile': profile, 'type_id': 7,
+                    'commands': {'load': None, 'recall': None, 'parameters': {**params, **changes}}}
+        good = [implementation('a.json'), implementation('b.json', fields_from='a.json', fields=None)]
+        del good[1]['commands']['parameters']['fields']
+        self.write(self.root / 'afx/second.json', {'id': 'second', 'implementations': good})
+        resolved = load_catalog(self.path)['effects'][0]['implementations']
+        self.assertEqual(resolved, good)
+        bad = [[implementation('a.json', writable='yes')],
+               [implementation('a.json', block_length=0)],
+               [implementation('a.json', editable=False)],                 # writable must say false too
+               [implementation('a.json', fields=[])],
+               [implementation('a.json', fields=[field, field])],          # repeated key
+               [implementation('a.json', fields=[{**field, 'type': 'u24'}])],
+               [implementation('a.json', fields=[{**field, 'options': {'one': 'One'}}])],
+               [implementation('a.json', fields_from='a.json')],           # both fields and fields_from
+               [implementation('b.json', fields_from='a.json', fields=None)]]  # no such implementation
+        del bad[-1][0]['commands']['parameters']['fields']
+        for implementations in bad:
+            self.write(self.root / 'afx/second.json', {'id': 'second', 'implementations': implementations})
+            with self.subTest(implementations=implementations), self.assertRaises(ValueError):
+                load_catalog(self.path)
+        # One device type id cannot carry parameters in two effects.
+        self.write(self.root / 'afx/second.json', {'id': 'second', 'implementations': [implementation('a.json')]})
+        self.write(self.root / 'afx/first.json', {'id': 'first', 'implementations': [implementation('a.json')]})
+        with self.assertRaisesRegex(ValueError, 'type 7'):
+            load_catalog(self.path)
+
     def test_symlink_escape_fails_closed(self):
         external = self.root / 'external.json'
         self.write(external, {'id': 'first'})

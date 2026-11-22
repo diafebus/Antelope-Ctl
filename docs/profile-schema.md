@@ -64,7 +64,7 @@ evidence.
 | `adat`, `spdif` | if present on the device | extra input address spaces |
 | `mixer` | if decoded | virtual-mixer summary (human-facing; the frame is in `frame.mix_command`), plus optional profile-driven surface/link metadata. `has_master` defaults to true; set false for devices whose channel space starts at 0 with no master strip. |
 | `afx` | optional | device AFX channel/slot capacity and reference to the shared effect catalog; descriptive metadata, not a runtime write contract |
-| `afx_inserts` | optional | contract for the generic AFX insert codec and builders; no shipped profile declares it yet |
+| `afx_inserts` | optional | contract for the generic AFX insert codec and builders; only `zen_go_sc.json` declares it (parameter blocks from the AFX catalogue) |
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
@@ -370,7 +370,9 @@ minimum from a fresh write; its prior full-block source is recorded explicitly.
 remaining controls without enabling runtime parameter commands.
 The shared control declarations retain their identifiers, so Orion observations
 do not become another model's contract. All three command definitions
-remain `null` for every implementation. A declared control name carries neither an inferred range
+remain `null` for every Orion and `discrete_4_sc.json` implementation; the
+`zen_go_sc.json` and `discrete_4_a270.json` implementations populate
+`commands.parameters` (see [the parameter block](#afx-parameter-blocks-in-the-catalog)). A declared control name carries neither an inferred range
 nor an inferred byte width/offset. `source_name` preserves Gazelle's effect
 key; `name` uses a public product name only when one has been matched.
 Descriptions otherwise remain `null`. Categories now group the menu by
@@ -385,8 +387,9 @@ source document, not an HTML anchor.
 ### `afx_inserts` (generic insert codec)
 
 `protocol.py` has generic AFX builders that read their whole contract from
-this optional block. No shipped profile declares it, so nothing calls them
-today; the Orion operator path stays in `antelope/afx.py`. Missing or
+this optional block. Only `zen_go_sc.json` declares it (parameter blocks,
+state query and bypass; no rack writes), and no CLI or WebUI path calls the
+builders yet; the Orion operator path stays in `antelope/afx.py`. Missing or
 disabled sub-blocks make the builders refuse.
 
 | key | read by | meaning |
@@ -395,7 +398,7 @@ disabled sub-blocks make the builders refuse.
 | `writes` `{enabled, strips, max_slots}` | `afx_insert_writes`, `build_afx_insert_chain` | strips and rack length that were exercised; `type_labels` lists the types the chain may hold, and no `(type, instance)` may repeat |
 | `writes.effects.<type>.load_defaults` `[hex, ...]` | `afx_load_defaults` | blocks the vendor panel sent right after the chain write that loaded the effect; one per band for a banded effect |
 | `parameters` `{enabled, write: {param_id, length_bias}}` | `build_afx_parameter_writes` | parameter frame `70 00 00 00 \| <len + length_bias> .. \| <param_id> \| <len> \| <type> \| <inst> \| <block>` at `frame.command` offsets. Byte 4 is computed from the payload length, so it is not checked against `allowed_opcodes`; the mapped effect, block length and every field range are checked instead |
-| `parameters.effects.<type>` `{block_length, fields, bands, editable, state_query}` | `afx_parameter_effect` and the builders | one effect's block. `editable: false` refuses writes. `bands` `{count, length, selector_offset, selector_values}` splits the block into one frame per band with the selector byte put back; given the previous block, only changed bands are sent |
+| `parameters.effects.<type>` `{block_length, fields, bands, editable, state_query}` | `afx_parameter_effect` and the builders | one effect's block, inline; a profile instead names its catalogue entries with `parameters.catalog` / `catalog_profile` ([below](#afx-parameter-blocks-in-the-catalog)), never both. `editable: false` refuses writes. `bands` `{count, length, selector_offset, selector_values}` splits the block into one frame per band with the selector byte put back; given the previous block, only changed bands are sent |
 | `parameters.state_query` `{category, subcmd, index_flag, index}` | `build_afx_state_query`, `is_afx_state_response` | read request at `frame.readback` offsets; the index is `index_flag \| type` unless `index` is given. An effect's own `state_query` overrides keys |
 | `parameters.bypass` `{param_id, opcode}` | `build_afx_bypass` | `<param_id> <instance> <type> <01 active / 00 bypassed>`, only for a mapped type |
 
@@ -417,6 +420,52 @@ frame also reproduces the Orion Memory Cat capture byte for byte
 (`tools/test_afx_codec.py`). Nothing about other Orion effects, bands or
 bypass through this path is established; an Orion `afx_inserts` block needs
 its own captures and an explicit scope decision.
+
+### AFX parameter blocks in the catalog
+
+The Zen Go (`zen_go_sc.json`) and Discrete 4 `0xa270` (`discrete_4_a270.json`)
+implementations in `profiles/afx/<effect_id>.json` carry the parameter block of
+each mapped effect in `commands.parameters`; the device-wide frame, state
+query and bypass stay in the device profile's `afx_inserts`. The device profile
+names its catalogue entries with `afx_inserts.parameters.catalog` (a file name
+in the profiles directory, normally `afx_effects.json`) and `catalog_profile`
+(its own file name, the implementations' `profile`). No `discrete_4_a270.json`
+device profile ships: those implementations are data that the Zen Go's share
+and that a future device profile can name.
+
+```json
+{
+  "profile": "zen_go_sc.json",
+  "type_id": 9,
+  "status": "readback-verified",
+  "commands": {"load": null, "recall": null, "parameters": {
+    "frame": "afx_inserts.parameters.write",
+    "writable": true,
+    "block_length": 5, "read_stride": 6, "read_offset": 1,
+    "status": "confirmed",
+    "fields_from": "discrete_4_a270.json",
+    "notes": "...", "evidence": "..."
+  }},
+  "control_encodings": {},
+  "evidence": [],
+  "notes": "..."
+}
+```
+
+`frame` names the device-wide write layout and `writable` is false only with
+`editable: false` (read layout unconfirmed). The remaining keys are the
+contract `protocol.afx_parameter_effect(profile, type_id)` returns:
+`block_length`, `read_stride`, `read_offset`, `fields`, optional `bands`,
+`state_query`, `defaults`, `editable`, `read_layout`, and the device trial's
+`status`, `notes` and `evidence`. `fields_from` names another implementation of
+the same effect whose `fields` this one shares (same block, same byte meanings);
+the Zen Go uses it for the 47 effects it shares with the Discrete 4. A field's
+optional `options` maps raw values (decimal strings, signed for `i8`) to printed
+labels; they are copied only from a capture-observed Orion `control_encodings`
+enum at the same block offset, never where this project's own recorded meaning
+differs, and the meanings the device trials observed stay in `notes`.
+`load_catalog` refuses a malformed contract, a dangling `fields_from` and one
+device type ID with parameters in two effects. Resolution is cached per process.
 
 ---
 

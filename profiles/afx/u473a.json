@@ -403,6 +403,110 @@
           "Offline re-decode of the same capture includes the pre-window priming reports. Intermediate samples are transient whole-block OUT observations with single-byte changes and no simultaneous pointer image."
         ]
       }
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 80,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 10,
+          "read_stride": 11,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "output_gain",
+              "label": "Output Gain",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "bass_cut",
+              "label": "Bass Cut",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "key": "de_ess",
+              "label": "De-ess",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "key": "attack",
+              "label": "Attack",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "key": "compr_recovery",
+              "label": "Compr Recovery",
+              "offset": 4,
+              "type": "u8",
+              "min": 0,
+              "max": 7
+            },
+            {
+              "key": "ratio",
+              "label": "Ratio",
+              "offset": 5,
+              "type": "u8",
+              "min": 0,
+              "max": 5
+            },
+            {
+              "key": "compr_gain",
+              "label": "Compr Gain",
+              "offset": 6,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "green_threshold",
+              "label": "Green Threshold",
+              "offset": 7,
+              "type": "u8",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "key": "green_recovery",
+              "label": "Green Recovery",
+              "offset": 8,
+              "type": "u8",
+              "min": 0,
+              "max": 6
+            },
+            {
+              "key": "expander",
+              "label": "Expander",
+              "offset": 9,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            }
+          ],
+          "notes": "NEU-473A. Each listed control was wheeled to both ends in the vendor panel and moved only its own byte; min/max are the raw limits seen. Raw units: no physical unit is claimed. Switches and selectors were clicked instead (2026-11-21); each changed only its own byte and min/max are the values seen; names and value meanings were read from the per-state pictures. \"Green\" = the two green knobs of the left section, whose function label is not on the panel picture. De-ess and Bass Cut: 0 = LIN. Unmapped bytes are written back unchanged. Read layout on this device: loaded alone into an empty rack through this project's server, the cat 0x07 reply was one flag byte then the block and nothing else (one instance per reply)",
+          "evidence": "unattended run 2026-11-20 (owner's unit, fw 05.04, vendor panel under Wine, usbmon): neu_473a_probe.pcapng (sha256 16cefd0fc581eb32d381d9f659e3f0b6d3416b29acddc80787a772be3452eb80), neu_473a_sweep.pcapng (sha256 429c01ebdcdbebb7457e04bba811e8169c501be9a0805e2b326890443a669e75); click run 2026-11-21 (same unit and setup): zen_click/neu_473a_p*.pcapng (4 files, sha256 over them in name order 6d5fe423561d0f5ea5654f6eab2b1fbf086617ae78ecf362e4c5e2dcc064fd92)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
     }
   ]
 }

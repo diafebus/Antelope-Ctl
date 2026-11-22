@@ -458,6 +458,90 @@
         },
         "notes": "Printed ON/OFF switch, POWER lamp and rack BP correlate with captured events; independent device readback and audible processing polarity unverified."
       }
+    },
+    {
+      "profile": "discrete_4_a270.json",
+      "type_id": 34,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 4,
+          "read_stride": 6,
+          "read_offset": 1,
+          "read_layout": "per instance: one flag byte, the block the write frame carries, then padding up to read_stride (measured with this project's own cat 0x07 read; instance 0 held the block the vendor panel last wrote)",
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "input",
+              "label": "Input",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "output",
+              "label": "Output",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "recovery_time",
+              "label": "Recovery Time",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 4
+            },
+            {
+              "key": "mode",
+              "label": "Mode",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 1,
+              "options": {
+                "0": "DOUBLE",
+                "1": "SINGLE"
+              }
+            }
+          ],
+          "notes": "Stay-Levin. Each listed control was wheeled to both ends in the vendor panel and moved only its own bytes; min/max are the raw limits seen. Raw units: no physical unit is claimed. Bytes of the block not listed here (switches, menus, stacked rings the wheel did not reach) are unmapped and are written back unchanged. Fields appended after Recovery Time (Mode): ported from the Zen Go, not captured on this device. They were mapped from vendor-panel captures on the owner's Zen Go (same effect type and block); the value meanings below are copied from the Zen Go note: Mode: 0 Double, 1 Single. Discrete 4 live trial 2026-11-22: loaded alone into the channel 3 rack through this project, every control moved by one step and put back, each write confirmed by readback.",
+          "evidence": "unattended run 2026-11-17 (owner's unit, vendor panel 1.9.22 under Wine, usbmon): stay_levin_sweep.pcapng (sha256 df65a83010e5a278975e708ebeeb3d80d94ea38f05c3d70b00735aa0914ef599)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts. Field options, where present, are the labels of the orion_studio_sc.json control encoding at the same block offset (Orion captures, not observed on this device); this project's own value meanings stay in commands.parameters.notes."
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 34,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 4,
+          "read_stride": 5,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields_from": "discrete_4_a270.json",
+          "notes": "Same effect, type id and parameter block as on the Discrete 4 (its discrete_4_a270.json implementation holds the control evidence). On this device: loaded alone into an empty rack through this project's server, the cat 0x07 reply was one flag byte then the block and nothing else (one instance per reply) Added from the Zen Go click run of 2026-11-21 (not captured on the Discrete 4): Mode. Each was clicked in the vendor panel and changed only its own byte; min/max are the values seen. Mode: 0 Double, 1 Single. Value meanings were read from the per-state pictures.",
+          "evidence": "click run 2026-11-21 (same unit and setup): zen_click/stay_levin_p*.pcapng (5 files, sha256 over them in name order 393342bc7d04f036bc0eb858bdf94c1785504595ee5ae9d7d98ce798e8b10fda)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts. Field options, where present, are the labels of the orion_studio_sc.json control encoding at the same block offset (Orion captures, not observed on this device); this project's own value meanings stay in commands.parameters.notes."
     }
   ]
 }

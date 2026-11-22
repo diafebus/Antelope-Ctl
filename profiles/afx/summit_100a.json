@@ -424,6 +424,86 @@
         },
         "notes": "ON label, lamp and rack BP correlate with these outbound events; no independent changed-state readback or audible polarity claim."
       }
+    },
+    {
+      "profile": "discrete_4_a270.json",
+      "type_id": 36,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 4,
+          "read_stride": 6,
+          "read_offset": 1,
+          "read_layout": "per instance: one flag byte, the block the write frame carries, then padding up to read_stride (measured with this project's own cat 0x07 read; instance 0 held the block the vendor panel last wrote)",
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "gain",
+              "label": "Gain",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "gain_reduction",
+              "label": "Gain Reduction",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "attack",
+              "label": "Attack",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "key": "release",
+              "label": "Release",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            }
+          ],
+          "notes": "SMT-100A. Each listed control was wheeled to both ends in the vendor panel and moved only its own bytes; min/max are the raw limits seen. Raw units: no physical unit is claimed. Bytes of the block not listed here (switches, menus, stacked rings the wheel did not reach) are unmapped and are written back unchanged. Fields appended after Gain Reduction (Attack, Release): ported from the Zen Go, not captured on this device. They were mapped from vendor-panel captures on the owner's Zen Go (same effect type and block); the value meanings below are copied from the Zen Go note: Attack / Release toggles: 0 Slow, 1 centre, 2 Fast. Discrete 4 live trial 2026-11-22: loaded alone into the channel 3 rack through this project, every control moved by one step and put back, each write confirmed by readback.",
+          "evidence": "unattended run 2026-11-17 (owner's unit, vendor panel 1.9.22 under Wine, usbmon): smt_100a_sweep.pcapng (sha256 d2cc7d9fbe7ac4e7793931af270648198e8238efb9097f6b3da977f1cb4894d3)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 36,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 4,
+          "read_stride": 5,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields_from": "discrete_4_a270.json",
+          "notes": "Same effect, type id and parameter block as on the Discrete 4 (its discrete_4_a270.json implementation holds the control evidence). On this device: same layout as every other shared effect on this device; read on the owner's loaded instance, in range Added from the second panel run of 2026-11-21 on the Zen Go: Attack, Release. Each was moved over its whole range in the vendor panel (wheel, drag or menu), changed only its own bytes and was put back. Attack / Release toggles: 0 Slow, 1 centre, 2 Fast. Probed on a second instance in the channel 3 rack, because the first is in an owner rack; later changed and restored on the first instance through this project (2026-11-21).",
+          "evidence": "second panel run 2026-11-21 (same unit and setup): zen_click2/smt_100a_*.pcapng (5 files, sha256 over them in name order 3d03902633c899cafb8a80692a9daec815d690b900399e221e5226f673bb535c)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
     }
   ]
 }
