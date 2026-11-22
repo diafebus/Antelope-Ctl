@@ -37,6 +37,7 @@ import queue
 import sys
 import threading
 import time
+import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antelope import protocol as proto
@@ -47,6 +48,7 @@ from webui.afx_catalog import preview_catalog, effect_choices
 from webui.afx_test import MemoryCatTest
 
 from fastapi import FastAPI
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StrictInt
@@ -483,6 +485,14 @@ class Device:
         """Queue fn(transport). At most one queued function runs per fast
         state cycle, so a burst of controls cannot starve meter updates."""
         self.cmds.put(fn)
+
+    def _discard_queued(self):
+        """Forget commands queued while offline: reconnecting must not replay them."""
+        try:
+            while True:
+                self.cmds.get_nowait()   # a stop sentinel may go too: _stop is already set
+        except queue.Empty:
+            pass
 
     def get(self):
         with self._lock:
@@ -1191,6 +1201,21 @@ class Device:
             self.profile, proto.readback_body(self.profile, data))
 
     def run(self):
+        # An unexpected error (a parser bug, a short report) must not end the worker
+        # silently with the page still showing "online": log it, go offline, reconnect.
+        while not self._stop.is_set():
+            try:
+                return self._serve()
+            except Exception:                                   # noqa: BLE001
+                traceback.print_exc()
+                with self._lock:
+                    transport = self._transport
+                self._drop_transport(transport)
+                self._publish({"online": False})
+                self._discard_queued()
+                self._stop.wait(2.0)
+
+    def _serve(self):
         transport = None
         readback_plan = []
         readback_changed = False
@@ -1199,8 +1224,9 @@ class Device:
             if transport is None:
                 try:
                     transport = open_transport(self.vid, self.pid, self.report_size)
-                except SystemExit:
+                except (SystemExit, OSError):
                     self._publish({"online": False})
+                    self._discard_queued()
                     if self._stop.wait(2.0):
                         break
                     continue
@@ -1208,6 +1234,8 @@ class Device:
                     self._drop_transport(transport)
                     transport = None
                     break
+                # Also covers the retry wait and a transport dropped mid-command.
+                self._discard_queued()
                 with self._lock:
                     self._transport = transport
                     self.connection_generation += 1
@@ -1757,6 +1785,9 @@ AFX_TEST = MemoryCatTest(DEV)
 # ---------------------------------------------------------------- HTTP / SSE
 
 app = FastAPI(title="antelope-ctl webui")
+# A page on another site can point its own name at 127.0.0.1 (DNS rebinding);
+# the Host header check (port ignored) refuses those requests with 400.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
 app.mount("/webui/assets", StaticFiles(directory=os.path.join(HERE, "assets")),
           name="webui-assets")
 app.mount("/webui/static", StaticFiles(directory=os.path.join(HERE, "static")),
