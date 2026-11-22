@@ -1,0 +1,18 @@
+# systemd --user unit for the antelope-ctl WebUI (http://127.0.0.1:8714).
+# Install with packaging/install-user.sh, which fills in @REPO@.
+# The server holds the device's HID node while it runs: stop it
+# (systemctl --user stop antelope-webui) before using the CLI, the selftest
+# or a vendor panel on the same device.
+[Unit]
+Description=antelope-ctl WebUI
+
+[Service]
+WorkingDirectory=@REPO@/webui
+# Optional: ANTELOPE_PROFILE=<profile>.json when several devices are attached.
+EnvironmentFile=-%h/.config/antelope-ctl/webui.env
+ExecStart=@REPO@/webui/.venv/bin/python server.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

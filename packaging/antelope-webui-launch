@@ -1,0 +1,14 @@
+#!/bin/bash
+# Start a WebUI service if needed, wait for it to listen, open it as an app window.
+# Usage: antelope-webui-launch [unit] [port]   (default: antelope-webui 8714)
+unit=${1:-antelope-webui}; port=${2:-8714}
+url=http://127.0.0.1:$port
+systemctl --user start "$unit.service" || exit 1
+for _ in $(seq 50); do
+  (exec 3<>/dev/tcp/127.0.0.1/"$port") 2>/dev/null && break
+  sleep 0.1
+done
+if command -v chromium >/dev/null; then
+  exec chromium --app="$url"
+fi
+exec xdg-open "$url"

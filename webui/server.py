@@ -3278,7 +3278,7 @@ def run_server():
         config = uvicorn.Config(
             app,
             host="127.0.0.1",
-            port=8714,
+            port=int(os.environ.get("ANTELOPE_PORT", 8714)),
             log_level="warning",
             timeout_graceful_shutdown=2.0,
         )

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Antelope Control
+Comment=Antelope interface mixer and routing (antelope-ctl WebUI)
+Exec=@REPO@/packaging/antelope-webui-launch
+Icon=@REPO@/webui/assets/mon-knob.svg
+StartupWMClass=chrome-127.0.0.1__-Default
+Terminal=false
+Categories=AudioVideo;Audio;Mixer;
+StartupNotify=true

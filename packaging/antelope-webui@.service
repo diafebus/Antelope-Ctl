@@ -1,0 +1,19 @@
+# systemd --user template for a further device: antelope-webui@<name> reads
+# ~/.config/antelope-ctl/<name>.env (ANTELOPE_PROFILE=<profile>.json and
+# ANTELOPE_PORT=<port>). One server per device, each on its own port.
+# Install with packaging/install-user.sh, which fills in @REPO@.
+# The server holds the device's HID node while it runs: stop it
+# (systemctl --user stop antelope-webui@<name>) before using the CLI, the
+# selftest or a vendor panel on the same device.
+[Unit]
+Description=antelope-ctl WebUI (%i)
+
+[Service]
+WorkingDirectory=@REPO@/webui
+EnvironmentFile=%h/.config/antelope-ctl/%i.env
+ExecStart=@REPO@/webui/.venv/bin/python server.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target
