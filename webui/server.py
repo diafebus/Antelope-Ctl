@@ -448,6 +448,15 @@ class Device:
         self._t = threading.Thread(target=self.run, daemon=True)
         self._t.start()
 
+    def _clear_readback_locked(self):
+        self.routing.clear()
+        self.mixer.clear()
+        self.auraverb.clear()
+        self.structured.clear()
+        self.surround_global = self.surround_global_raw = None
+        self.surround_speakers.clear()
+        self.solo_state.clear()
+
     def _drop_transport(self, transport):
         """Close a platform transport and forget it, if it is still current."""
         if transport is None:
@@ -456,13 +465,7 @@ class Device:
         with self._lock:
             if self._transport is transport:
                 self._transport = None
-                self.routing.clear()
-                self.mixer.clear()
-                self.auraverb.clear()
-                self.structured.clear()
-                self.surround_global = self.surround_global_raw = None
-                self.surround_speakers.clear()
-                self.solo_state.clear()
+                self._clear_readback_locked()
                 self.rb_ver += 1
                 self.link_rb_ver += 1
                 self.snapshot = {"online": False, "rb_ver": self.rb_ver,
@@ -1094,8 +1097,11 @@ class Device:
 
     def _publish(self, snap):
         with self._lock:
-            if snap.get("online") and (self._transport is None or self._stop.is_set()):
+            stopping = self._stop.is_set()
+            if snap.get("online") and (self._transport is None or stopping):
                 return
+            if stopping:
+                self._clear_readback_locked()
             snap["rb_ver"] = self.rb_ver
             snap["link_rb_ver"] = self.link_rb_ver
             self.snapshot = snap
@@ -1426,6 +1432,8 @@ class Device:
             if category == SURROUND_GLOBAL_CAT:
                 value = proto.parse_surround_global_record(self.profile, body)
                 with self._lock:
+                    if self._stop.is_set():
+                        return None
                     changed = self.surround_global != value
                     self.surround_global = value
                     self.surround_global_raw = bytes(body)
@@ -1433,6 +1441,8 @@ class Device:
             if category == SURROUND_EQ_CAT:
                 value = proto.parse_surround_speaker_eq_record(self.profile, body)
                 with self._lock:
+                    if self._stop.is_set():
+                        return None
                     changed = self.surround_speakers.get(index) != value
                     self.surround_speakers[index] = value
                     return changed
@@ -1460,6 +1470,8 @@ class Device:
         except (TypeError, ValueError):
             return None
         with self._lock:
+            if self._stop.is_set():
+                return None
             if cache.get(cache_key) == value:
                 return False
             cache[cache_key] = value
@@ -3381,21 +3393,22 @@ async def stream():
 
 
 def _install_terminal_shutdown(server, device):
-    """Make Uvicorn's terminal signal path stop the device service first.
-
-    Uvicorn installs its own SIGINT/SIGTERM handlers inside ``Server.run``.
-    Wrapping ``handle_exit`` keeps that behavior (including the second-Ctrl+C
-    force-exit path) while also waking the HID worker immediately.  The
-    wrapper is intentionally small because it runs in Python's signal context;
-    the bounded worker join remains in ``run_server``'s ``finally`` block.
-    """
+    """Schedule device shutdown once Uvicorn returns to its event loop."""
     original = getattr(server, "handle_exit", None)
-    shutdown_requested = threading.Event()
+    shutdown_requested = False
 
     def handle_exit(sig, frame):
-        if not shutdown_requested.is_set():
-            shutdown_requested.set()
-            device.request_stop()
+        nonlocal shutdown_requested
+        if not shutdown_requested:
+            shutdown_requested = True
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # run_server's finally handles signals outside the server loop.
+                pass
+            else:
+                # The signal can interrupt a caller that holds the device lock.
+                loop.call_soon_threadsafe(device.request_stop)
         original(sig, frame)
 
     if original is None:

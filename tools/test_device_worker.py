@@ -107,6 +107,20 @@ class DeviceWorkerTests(unittest.TestCase):
                       device.structured, device.solo_state):
             self.assertEqual(cache, {})
 
+    def test_in_flight_readback_after_stop_stays_discarded(self):
+        device, transport = self.device, FakeTransport()
+        device._transport = transport
+
+        def interrupted_query(*args, **kwargs):
+            device.request_stop()
+            return b'simulated late readback'
+
+        transport.query = interrupted_query
+        with mock.patch.object(server.proto, 'readback_body', return_value=b''), \
+                mock.patch.object(server.proto, 'parse_routing_record', return_value=(0, [(1, 2)])):
+            self.assertIsNone(device._refresh_readback_one(transport, server.ROUTING_CAT, 0))
+        self.assertEqual(device.routing, {})
+
     def test_http_submission_reports_offline(self):
         with mock.patch.object(server, 'DEV', self.device):
             with self.assertRaises(server.HTTPException) as error:

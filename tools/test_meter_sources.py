@@ -1,4 +1,5 @@
 """Offline meter-source checks. Run: python3 -m unittest tools.test_meter_sources."""
+import asyncio
 import contextlib
 import copy
 import importlib
@@ -187,7 +188,7 @@ class MeterSourceTests(unittest.TestCase):
         self.assertEqual(payload['write']['speaker_bypass']['fields'], ['bypass'])
         self.assertTrue(payload['speakers'][0]['bypass'])
 
-    def test_terminal_shutdown_stops_device_before_uvicorn_exit(self):
+    def test_terminal_shutdown_schedules_device_without_taking_its_lock(self):
         class FakeServer:
             def __init__(self):
                 self.should_exit = False
@@ -201,17 +202,16 @@ class MeterSourceTests(unittest.TestCase):
         device = mock.Mock()
         wrapped = self.server._install_terminal_shutdown(fake_server, device)
 
-        wrapped.handle_exit(signal.SIGINT, None)
+        async def receive_signal():
+            wrapped.handle_exit(signal.SIGINT, None)
+            self.assertTrue(fake_server.should_exit)
+            device.request_stop.assert_not_called()
+            wrapped.handle_exit(signal.SIGINT, None)
+            await asyncio.sleep(0)
 
+        asyncio.run(receive_signal())
         device.request_stop.assert_called_once_with()
-        self.assertEqual(fake_server.calls, [(signal.SIGINT, None)])
-        self.assertTrue(fake_server.should_exit)
-
-        # A repeated Ctrl+C keeps Uvicorn's force-exit behavior but does not
-        # enqueue a second device shutdown request.
-        wrapped.handle_exit(signal.SIGINT, None)
-        device.request_stop.assert_called_once_with()
-        self.assertEqual(len(fake_server.calls), 2)
+        self.assertEqual(fake_server.calls, [(signal.SIGINT, None)] * 2)
 
     def test_orion_selected_mixer_strip_meters_follow_the_window_selector(self):
         device = self.server.Device.__new__(self.server.Device)
