@@ -692,6 +692,13 @@ negative-dB steps, and raw `96` (`0x60`) is the device's silent/`-inf`
 endpoint. This was confirmed directly on Monitor A on 2026-09-14; the
 capture-derived byte offsets remain valid.
 
+On 2026-11-23, HP1 level writes cleared an explicit mute in both tested
+directions. The `0x73` readback changed from level/status `32/0x04` to
+`95/0x00` and, after re-muting, from `95/0x04` to `32/0x00`. A separate
+mute write restored the original state at level 32. Both levels are below
+the silent endpoint. The trial ended before dim and mono were exercised
+on the muted bus.
+
 `bus_dim` / `bus_mono` were restore-guaranteed live-round-tripped on all six
 bus ids on 2026-09-14, including line_out and reamp. The test temporarily set
 HP1 from silent raw level 96 to 95 because its `0x04` status bit is the silent
