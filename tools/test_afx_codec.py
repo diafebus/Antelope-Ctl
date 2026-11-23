@@ -9,8 +9,10 @@ Orion profile and its existing Memory Cat contract only.
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from antelope import afx, protocol
+from antelope.catalog import load_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMAND = {'magic_offset': 0, 'magic': '0x70', 'opcode_offset': 4, 'param_id_offset': 16}
@@ -390,6 +392,129 @@ class OrionTests(unittest.TestCase):
         self.assertEqual(packet, afx.build_parameter_test(profile, 4, values))
         # The tagged query header for instance 0 is the same request upstream builds.
         self.assertEqual(protocol.build_afx_state_query(profile, 73, loaded_types={73}), afx.build_parameter_query(profile, 0))
+
+
+def catalog_device(name):
+    """Test-only configuration for resolving sibling device evidence."""
+    return {
+        'transport': {'report_size': 320},
+        'frame': {'command': COMMAND, 'readback': READBACK},
+        'constraints': {'allowed_opcodes': ['0x14']},
+        'afx_inserts': {'parameters': {
+            'enabled': True, 'catalog': 'afx_effects.json', 'catalog_profile': name,
+            'write': {**WRITE, 'instances': {'70': [0]}},
+            'state_query': {'targets': {'1': [0x07, 0x10, 0x80000001]}},
+            'bypass': {**BYPASS, 'instances': {'74': [0]}},
+        }},
+    }
+
+
+class CatalogContractTests(unittest.TestCase):
+    """The Zen Go / Discrete 4 parameter blocks stored in profiles/afx/<effect_id>.json."""
+
+    def test_contracts_resolve_and_are_sound(self):
+        zen, d4 = catalog_device('zen_go_sc.json'), catalog_device('discrete_4_a270.json')
+        for profile, count in ((zen, 69), (d4, 47)):
+            effects = protocol.afx_parameter_effects(profile)
+            self.assertEqual(len(effects), count)
+            for kind, effect in effects.items():
+                self.assertIs(protocol.afx_parameter_effect(profile, int(kind)), effect)
+                length, taken = effect['block_length'], set()
+                if effect.get('editable') is False:   # read not captured: no read layout is claimed
+                    self.assertNotIn('read_stride', effect, kind)
+                else:
+                    self.assertGreater(effect['read_stride'], length, kind)
+                for item in effect['fields']:
+                    width, signed = protocol._AFX_FIELD_TYPES[item['type']]
+                    span = set(range(item['offset'], item['offset'] + width))
+                    self.assertFalse(span & taken, f'{kind} {item["key"]} overlaps')
+                    self.assertLessEqual(max(span), length - 1, kind)
+                    taken |= span
+                    if item['type'] != 'f32':
+                        low = -(1 << (8 * width - 1)) if signed else 0
+                        self.assertTrue(low <= item['min'] < item['max'] < 1 << (8 * width - signed), kind)
+        # The 47 shared effects take the Discrete 4's field list (fields_from).
+        shared = protocol.afx_parameter_effects(d4)
+        for kind in shared:
+            self.assertEqual(protocol.afx_parameter_effect(zen, int(kind))['fields'], shared[kind]['fields'], kind)
+
+    def test_inline_fixtures_agree_with_the_catalogue(self):
+        # The trimmed fragments above came from these devices; every field they name is in the catalogue.
+        for inline, name in ((zen_go(), 'zen_go_sc.json'), (discrete_4(), 'discrete_4_a270.json')):
+            shipped = catalog_device(name)
+            for kind, effect in protocol.afx_parameter_effects(inline).items():
+                mapped = protocol.afx_parameter_effect(shipped, int(kind))
+                by_offset = {item['offset']: item for item in mapped['fields']}
+                for item in effect['fields']:
+                    have = by_offset[item['offset']]
+                    self.assertEqual({key: have.get(key) for key in ('type', 'min', 'max', 'values')},
+                                     {key: item.get(key) for key in ('type', 'min', 'max', 'values')},
+                                     (name, kind, item['key']))
+
+    def test_catalog_and_inline_effects_are_exclusive(self):
+        profile = catalog_device('discrete_4_a270.json')
+        profile['afx_inserts']['parameters']['effects'] = {}
+        with self.assertRaises(protocol.ConstraintError):
+            protocol.afx_parameter_effect(profile, 9)
+        self.assertIsNone(protocol.afx_effect_id(zen_go(), 9))   # inline effects have no catalogue id
+
+    def test_orion_labels_remain_unconfirmed_for_sibling_devices(self):
+        catalog = {entry['id']: entry for entry in load_catalog()['effects']}
+        count = 0
+        for name in ('discrete_4_a270.json', 'zen_go_sc.json'):
+            profile = catalog_device(name)
+            for kind, effect in protocol.afx_parameter_effects(profile).items():
+                entry = catalog[protocol.afx_effect_id(profile, int(kind))]
+                implementations = {item['profile']: item for item in entry['implementations']}
+                params = implementations[name]['commands']['parameters']
+                source = implementations[params['fields_from']]['commands']['parameters'] if 'fields_from' in params else params
+                source_fields = {item['key']: item for item in source['fields']}
+                for item in effect['fields']:
+                    self.assertNotIn('orion_option_candidates', item)
+                    candidates = source_fields[item['key']].get('orion_option_candidates')
+                    if candidates:
+                        count += 1
+                        self.assertNotIn('options', item)
+                        self.assertTrue(all(protocol.afx_field_in_range(item, int(value)) for value in candidates))
+        self.assertEqual(count, 87)
+
+    def test_model_local_options_are_not_inherited(self):
+        mapped_field = field('selector', 0, 'u8', 0, 1, options={'0': 'Model-specific label'})
+        catalog = {'effects': [{'id': 'selector', 'implementations': [
+            {'profile': 'source.json', 'type_id': 1,
+             'commands': {'parameters': effect(1, mapped_field)}},
+            {'profile': 'target.json', 'type_id': 1,
+             'commands': {'parameters': {'block_length': 1, 'fields_from': 'source.json'}}},
+        ]}]}
+        with patch.object(protocol, 'load_catalog', return_value=catalog):
+            source = protocol._catalog_parameter_contracts('model-local-options.json', 'source.json')
+            target = protocol._catalog_parameter_contracts('model-local-options.json', 'target.json')
+        self.assertEqual(source['1'][1]['fields'][0]['options'], {'0': 'Model-specific label'})
+        self.assertNotIn('options', target['1'][1]['fields'][0])
+
+    def test_v12_orion_candidates_are_not_written(self):
+        zen = catalog_device('zen_go_sc.json')
+        effect = protocol.afx_parameter_effect(zen, 70)
+        self.assertEqual(protocol.afx_effect_id(zen, 70), 'turboensembler')
+        self.assertFalse({4, 5} & {item['offset'] for item in effect['fields']})
+        v12 = next(e for e in load_catalog()['effects'] if e['id'] == 'turboensembler')
+        candidates = next(i for i in v12['implementations'] if i['profile'] == 'zen_go_sc.json')['control_encodings']
+        self.assertEqual({key: (enc['offset'], enc['writable']) for key, enc in candidates.items()},
+                         {'color': (24, False), 'colorShifter': (25, False)})
+        self.assertTrue(all(enc['status'].startswith('candidate') for enc in candidates.values()))
+        block = bytes([0, 1, 1, 0, 0xaa, 0xbb, 0, 0, 0xcc, 90, 0, 0])
+        frame = protocol.build_afx_parameter_write(zen, 70, 0, protocol.afx_block_set(effect, block, 'space', 7))
+        self.assertEqual(frame[24:29].hex(' '), 'aa bb 07 00 cc')   # bytes 4, 5 and 8 written back unchanged
+
+    def test_zen_go_capture_fixtures(self):
+        zen = catalog_device('zen_go_sc.json')
+        self.assertEqual(protocol.build_afx_state_query(zen, 1, loaded_types={1})[:16].hex(' '),   # ClearQ's captured tuple
+                         '74 00 00 00 10 00 00 00 07 00 00 00 01 00 00 80')
+        self.assertEqual(protocol.build_afx_bypass(zen, 74, 0, False)[16:20].hex(' '), '98 00 4a 00')
+        self.assertIsNone(protocol.afx_insert_writes(zen))
+        shipped = json.loads((ROOT / 'profiles' / 'zen_go_sc.json').read_text())
+        self.assertIsNone(protocol.afx_parameter_effect(shipped, 70))
+        self.assertIsNone(protocol.afx_parameter_effect(zen, 4))   # cabinet: identified, not mapped
 
 
 if __name__ == '__main__':

@@ -354,6 +354,198 @@
       "control_encodings": {},
       "evidence": [],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 77,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 21,
+          "read_stride": 22,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "low_freq",
+              "label": "Low Freq",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "key": "low_mode",
+              "label": "Low Mode",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "key": "low_q",
+              "label": "Low Q",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 39
+            },
+            {
+              "key": "low_level",
+              "label": "Low Level",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "lo_mid_freq",
+              "label": "Lo Mid Freq",
+              "offset": 4,
+              "type": "u8",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "key": "lo_mid_mode",
+              "label": "Lo Mid Mode",
+              "offset": 5,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "key": "lo_mid_q",
+              "label": "Lo Mid Q",
+              "offset": 6,
+              "type": "u8",
+              "min": 0,
+              "max": 39
+            },
+            {
+              "key": "lo_mid_level",
+              "label": "Lo Mid Level",
+              "offset": 7,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "mid_freq",
+              "label": "Mid Freq",
+              "offset": 8,
+              "type": "u8",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "key": "mid_mode",
+              "label": "Mid Mode",
+              "offset": 9,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "key": "mid_q",
+              "label": "Mid Q",
+              "offset": 10,
+              "type": "u8",
+              "min": 0,
+              "max": 39
+            },
+            {
+              "key": "mid_level",
+              "label": "Mid Level",
+              "offset": 11,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "hi_mid_freq",
+              "label": "Hi Mid Freq",
+              "offset": 12,
+              "type": "u8",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "key": "hi_mid_mode",
+              "label": "Hi Mid Mode",
+              "offset": 13,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "key": "hi_mid_q",
+              "label": "Hi Mid Q",
+              "offset": 14,
+              "type": "u8",
+              "min": 0,
+              "max": 39
+            },
+            {
+              "key": "hi_mid_level",
+              "label": "Hi Mid Level",
+              "offset": 15,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "high_freq",
+              "label": "High Freq",
+              "offset": 16,
+              "type": "u8",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "key": "high_mode",
+              "label": "High Mode",
+              "offset": 17,
+              "type": "u8",
+              "min": 0,
+              "max": 2
+            },
+            {
+              "key": "high_q",
+              "label": "High Q",
+              "offset": 18,
+              "type": "u8",
+              "min": 0,
+              "max": 39
+            },
+            {
+              "key": "high_level",
+              "label": "High Level",
+              "offset": 19,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "trim",
+              "label": "Trim",
+              "offset": 20,
+              "type": "u8",
+              "min": 0,
+              "max": 39
+            }
+          ],
+          "notes": "Gyratec XIV. Each listed control was wheeled to both ends in the vendor panel and moved only its own byte; min/max are the raw limits seen. Raw units: no physical unit is claimed. The Bypass switch is not in this block. Unmapped bytes are written back unchanged. Read layout on this device: loaded alone into an empty rack through this project's server, the cat 0x07 reply was one flag byte then the block and nothing else (one instance per reply)",
+          "evidence": "unattended run 2026-11-20 (owner's unit, fw 05.04, vendor panel under Wine, usbmon): gyratec_xiv_probe.pcapng (sha256 0cb27b1d9a01f0f828d2e32d695bf06a66b43aa0aba3312105e58bea32c7fae1), gyratec_xiv_sweep.pcapng (sha256 3dc914b80897936df2e9b2d3179cb7b5c1884b7cbf32306596ce7dc031e03232); click run 2026-11-21 (same unit and setup): zen_click/gyratec_xiv_p*.pcapng (3 files, sha256 over them in name order 8979855f750ab4ee605811a96bbb2685619ce468f86e286bdb14ea41a8bf1b83); zen_click/gyratec_q_sweep.pcapng"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
     }
   ]
 }

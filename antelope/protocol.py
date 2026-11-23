@@ -17,9 +17,13 @@ v3 adds two new areas, both still profile-driven:
     to need its own frame shape too, follow that pattern: add a new block
     under profile["frame"] rather than bending SET_PARAM to fit.
 """
+import functools
 import json
 import math
+from pathlib import Path
 import struct
+
+from antelope.catalog import DEFAULT_CATALOG, load_catalog
 
 
 def load_profile(path: str) -> dict:
@@ -2469,12 +2473,61 @@ def afx_field_in_range(field: dict, value) -> bool:
         return False
 
 
-def afx_parameter_effect(profile: dict, type_id: int):
-    """Mapped parameter block of one effect type on this device, or None."""
+# shortcut: cached for the process; an edited catalogue file is seen after a restart.
+@functools.lru_cache(maxsize=None)
+def _catalog_parameter_contracts(catalog: str, profile_name: str) -> dict:
+    """{str(type id): (effect id, parameter contract)} of one device profile in the AFX catalogue."""
+    if Path(catalog).name != catalog:
+        raise ValueError('afx_inserts.parameters.catalog must be a file name in the profiles directory')
+    out = {}
+    for effect in load_catalog(DEFAULT_CATALOG.parent / catalog)['effects']:
+        implementations = {item.get('profile'): item for item in effect.get('implementations') or []}
+        params = ((implementations.get(profile_name) or {}).get('commands') or {}).get('parameters')
+        if params is None:
+            continue
+        fields = params.get('fields')
+        excluded_field_keys = {'orion_option_candidates'}
+        if fields is None:
+            fields = implementations[params['fields_from']]['commands']['parameters']['fields']
+            excluded_field_keys.add('options')
+        contract = {key: value for key, value in params.items() if key not in ('frame', 'writable', 'fields_from')}
+        contract['fields'] = [{key: value for key, value in field.items() if key not in excluded_field_keys}
+                              for field in fields]
+        out[str(implementations[profile_name]['type_id'])] = (effect['id'], contract)
+    return out
+
+
+def _afx_parameter_entries(profile: dict) -> dict:
+    """{str(type id): (catalogue effect id or None, contract)} of this device.
+
+    From the AFX catalogue when ``parameters.catalog`` names it (the
+    implementations whose ``profile`` is ``catalog_profile``), otherwise from
+    the profile's inline ``parameters.effects``."""
     params = (profile.get('afx_inserts') or {}).get('parameters') or {}
     if not params.get('enabled'):
-        return None
-    return (params.get('effects') or {}).get(str(type_id))
+        return {}
+    if 'catalog' in params:
+        if 'effects' in params:
+            raise ConstraintError('afx_inserts.parameters takes a catalog or inline effects, not both')
+        return _catalog_parameter_contracts(params['catalog'], params['catalog_profile'])
+    return {kind: (None, effect) for kind, effect in (params.get('effects') or {}).items()}
+
+
+def afx_parameter_effects(profile: dict) -> dict:
+    """{str(type id): parameter contract} of every mapped effect on this device (shared; do not modify)."""
+    return {kind: contract for kind, (_, contract) in _afx_parameter_entries(profile).items()}
+
+
+def afx_parameter_effect(profile: dict, type_id: int):
+    """Mapped parameter block of one effect type on this device, or None."""
+    entry = _afx_parameter_entries(profile).get(str(type_id))
+    return None if entry is None else entry[1]
+
+
+def afx_effect_id(profile: dict, type_id: int):
+    """Catalogue effect ID (``profiles/afx/<id>.json``) of a mapped effect type, or None."""
+    entry = _afx_parameter_entries(profile).get(str(type_id))
+    return None if entry is None else entry[0]
 
 
 def afx_block_get(effect: dict, block: bytes) -> dict:
