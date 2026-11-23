@@ -32,6 +32,31 @@ def load_profile(path: str) -> dict:
     return profile
 
 
+def profile_device_ids(profile):
+    """Return a profile's USB VID/PID pair when its device block is usable."""
+    try:
+        device = profile['device']
+        return tuple(int(value, 16) if isinstance(value, str) else int(value)
+                     for value in (device['vid'], device['pid']))
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def matching_hid_profiles(profile_dir, connected):
+    """Yield connected profiles with state and meter report definitions."""
+    for path in sorted(Path(profile_dir).glob('*.json')):
+        try:
+            profile = load_profile(path)
+            ids = profile_device_ids(profile)
+            if ids not in connected:
+                continue
+            state_report_magic(profile)
+            meter_report_magic(profile)
+        except (OSError, KeyError, TypeError, ValueError):
+            continue
+        yield path, ids
+
+
 def _display_label(value, fallback=''):
     """Return a profile-owned display label from a string/object value.
 

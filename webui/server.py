@@ -30,7 +30,6 @@ Then: http://127.0.0.1:8714
 """
 import asyncio
 from concurrent.futures import CancelledError, Future, TimeoutError as FutureTimeoutError
-import glob
 import json
 import math
 import os
@@ -60,23 +59,6 @@ PROFILE_DIR = os.path.join(HERE, "..", "profiles")
 DEFAULT_PROFILE = os.path.join(PROFILE_DIR, "orion_studio_sc.json")
 
 
-def _profile_device_ids(path):
-    """(vid, pid) as ints from a profile's device block, or None if absent."""
-    try:
-        with open(path) as f:
-            dev = json.load(f).get("device", {})
-    except (OSError, ValueError):
-        return None
-    vid, pid = dev.get("vid"), dev.get("pid")
-    if vid is None or pid is None:
-        return None
-    try:
-        return (int(vid, 16) if isinstance(vid, str) else int(vid),
-                int(pid, 16) if isinstance(pid, str) else int(pid))
-    except (TypeError, ValueError):
-        return None
-
-
 def resolve_profile():
     """Pick the device profile. ANTELOPE_PROFILE (path or profiles/ basename)
     always wins. Otherwise match a connected HID node against profiles/*.json
@@ -92,10 +74,8 @@ def resolve_profile():
 
     connected = list_connected_hid()
     if connected:
-        for path in sorted(glob.glob(os.path.join(PROFILE_DIR, "*.json"))):
-            ids = _profile_device_ids(path)
-            if ids and ids in connected:
-                return path, "autodetected"
+        for path, _ in proto.matching_hid_profiles(PROFILE_DIR, connected):
+            return str(path), "autodetected"
     return DEFAULT_PROFILE, "default (no match)" if connected else "default (no scan)"
 
 

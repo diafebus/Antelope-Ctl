@@ -37,6 +37,7 @@ PYTHON_MODULES = (
     "tools.test_surround",
     "tools.test_meter_sources",
     "tools.test_device_worker",
+    "tools.test_webui_launcher",
     "tools.test_transport",
     "tools.test_offline_checks",
     "tools.test_schedule_codex_continue",

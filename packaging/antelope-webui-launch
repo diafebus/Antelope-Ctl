@@ -1,23 +1,190 @@
-#!/bin/bash
-# Start a WebUI service if needed, wait for it to listen, open it as an app window.
-# Usage: antelope-webui-launch [unit] [port]   (default: antelope-webui 8714)
-unit=${1:-antelope-webui}
-port=${2:-8714}
-if [[ ! $port =~ ^[0-9]{1,5}$ ]] || (( 10#$port < 1 || 10#$port > 65535 )); then
-  printf 'Invalid WebUI port: %s\n' "$port" >&2
-  exit 2
-fi
-port=$((10#$port))
-url=http://127.0.0.1:$port
-systemctl --user start -- "$unit.service" || exit 1
-for ((attempt = 0; attempt < 50; attempt++)); do
-  if (exec 3<>/dev/tcp/127.0.0.1/"$port") 2>/dev/null; then
-    if command -v chromium >/dev/null; then
-      exec chromium --app="$url"
-    fi
-    exec xdg-open "$url"
-  fi
-  sleep 0.1
-done
-printf 'WebUI did not listen on %s. Check journalctl --user -u %s.service.\n' "$url" "$unit" >&2
-exit 1
+#!/usr/bin/env python3
+"""Open the packaged Antelope WebUI, starting its user service when needed."""
+import argparse
+from contextlib import closing
+import http.client
+import json
+import os
+from pathlib import Path
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from antelope import protocol, transport
+
+
+CONFIG_DIR = Path.home() / '.config/antelope-ctl'
+PROFILE_DIR = ROOT / 'profiles'
+DEFAULT_UNIT = 'antelope-webui'
+
+
+def service_port(value):
+    port = int(value)
+    if not 1 <= port <= 65535:
+        raise ValueError(f'invalid WebUI port: {value}')
+    return port
+
+
+def service_settings(path):
+    try:
+        lines = path.read_text(encoding='utf-8').splitlines()
+    except FileNotFoundError:
+        return {}
+    settings = {}
+    for line in lines:
+        key, sep, value = line.partition('=')
+        key = key.strip()
+        if sep and key in {'ANTELOPE_PROFILE', 'ANTELOPE_PORT'}:
+            value = value.strip()
+            if value.startswith(("'", '"')):
+                parts = shlex.split(value)
+                if len(parts) != 1:
+                    raise ValueError(f'{path}: invalid {key} value')
+                value = parts[0]
+            settings[key] = value
+    return settings
+
+
+def configured_ids(name):
+    path = Path.home() / name
+    if not path.is_file():
+        path = PROFILE_DIR / (name if name.endswith('.json') else name + '.json')
+    ids = protocol.profile_device_ids(protocol.load_profile(path))
+    if ids is None:
+        raise ValueError(f'{path}: missing device VID/PID')
+    return ids
+
+
+def service_target(unit, port=None):
+    settings = {}
+    if unit == DEFAULT_UNIT:
+        settings = service_settings(CONFIG_DIR / 'webui.env')
+    elif unit.startswith(DEFAULT_UNIT + '@'):
+        settings = service_settings(CONFIG_DIR / (unit.split('@', 1)[1] + '.env'))
+    profile = settings.get('ANTELOPE_PROFILE')
+    ids = configured_ids(profile) if profile else None
+    return unit, service_port(port or settings.get('ANTELOPE_PORT') or '8714'), ids
+
+
+def connected_targets():
+    """Select from existing user services and avoid starting duplicate profiles."""
+    connected = transport.list_connected_hid()
+    default = service_target(DEFAULT_UNIT)
+    if not connected:
+        return [default]
+    _, running_default = probe(default[1])
+    targets = []
+    seen = set()
+    if running_default in connected and default[2] in (None, running_default):
+        default = (*default[:2], running_default)
+    if default[2] in connected:
+        targets.append(default)
+        seen.add(default[2])
+    for path in sorted(CONFIG_DIR.glob('*.env')):
+        if path.stem == 'webui':
+            continue
+        settings = service_settings(path)
+        profile = settings.get('ANTELOPE_PROFILE')
+        if not profile:
+            continue
+        ids = configured_ids(profile)
+        if ids not in connected or ids == default[2]:
+            continue
+        if ids in seen:
+            raise ValueError(f'{path}: more than one service selects the same VID/PID')
+        port = settings.get('ANTELOPE_PORT')
+        if not port:
+            raise ValueError(f'{path}: set a distinct ANTELOPE_PORT')
+        targets.append((DEFAULT_UNIT + '@' + path.stem, service_port(port), ids))
+        seen.add(ids)
+    if default[2] is None:
+        first = next(protocol.matching_hid_profiles(PROFILE_DIR, connected), None)
+        if first and first[1] not in seen:
+            targets.insert(0, (*default[:2], first[1]))
+    if not targets:
+        targets.append(default)
+    ports = [port for _, port, _ in targets]
+    if len(ports) != len(set(ports)):
+        raise ValueError('configured WebUI services must use distinct ports')
+    return targets
+
+
+def probe(port):
+    """Return (listening, device IDs) for the local profile endpoint."""
+    with closing(http.client.HTTPConnection('127.0.0.1', port, timeout=0.4)) as conn:
+        try:
+            conn.connect()
+        except ConnectionRefusedError:
+            return False, None
+        except OSError:
+            return True, None
+        try:
+            conn.request('GET', '/api/profile')
+            response = conn.getresponse()
+            if response.status == 200:
+                profile = json.loads(response.read(1024 * 1024))
+                if isinstance(profile, dict) and isinstance(profile.get('webui'), dict):
+                    return True, protocol.profile_device_ids(profile)
+        except (OSError, ValueError, http.client.HTTPException):
+            pass
+    return True, None
+
+
+def ensure_webui(unit, port, expected_ids):
+    listening, current = probe(port)
+    if listening:
+        if current is not None and (expected_ids is None or current == expected_ids):
+            return
+        raise RuntimeError(f'port {port} is already in use by another service or profile')
+
+    command = ['systemctl', '--user', 'start', '--', unit + '.service']
+    subprocess.run(command, check=True)
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        _, current = probe(port)
+        if current is not None:
+            if expected_ids is None or current == expected_ids:
+                return
+            raise RuntimeError(f'port {port} is serving a different device profile')
+        time.sleep(0.1)
+    raise RuntimeError(f'WebUI did not start on port {port}. '
+                       f'Check journalctl --user -u {unit}.service.')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('unit', nargs='?', help='systemd user unit without .service')
+    parser.add_argument('port', nargs='?', help='port of an already configured unit')
+    parser.add_argument('--all', action='store_true', help='open services for connected configured devices')
+    parser.add_argument('--no-browser', action='store_true', help='start or reuse services without opening a window')
+    args = parser.parse_args()
+    if args.all and args.unit:
+        parser.error('--all cannot be used with a unit or port')
+
+    chromium = shutil.which('chromium')
+    failed = False
+    try:
+        targets = connected_targets() if args.all else [service_target(args.unit or DEFAULT_UNIT, args.port)]
+    except (OSError, ValueError) as error:
+        parser.exit(2, f'{error}\n')
+    for unit, port, ids in targets:
+        try:
+            ensure_webui(unit, port, ids)
+            url = f'http://127.0.0.1:{port}'
+            if args.no_browser or os.environ.get('ANTELOPE_NO_BROWSER'):
+                print(url)
+            else:
+                subprocess.Popen([chromium, '--app=' + url] if chromium else ['xdg-open', url])
+        except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+            print(f'{unit}: {error}', file=sys.stderr)
+            failed = True
+    return int(failed)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
