@@ -22,6 +22,7 @@ PYTHON_MODULES = (
     "tools.test_afx_catalog",
     "tools.test_afx_catalog_storage",
     "tools.test_afx_test",
+    "tools.test_afx_codec",
     "tools.test_afx_state_capture",
     "tools.test_scan_afx_capture",
     "tools.test_afx_vm_pilot",
