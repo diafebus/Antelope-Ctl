@@ -2,6 +2,7 @@
 import copy
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import threading
 import unittest
 
@@ -86,6 +87,28 @@ class AfxTestTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.profile = protocol.load_profile(ROOT / 'profiles/orion_studio_sc.json')
+
+    def test_displayed_rack_checked_before_chain_or_parameter_writes(self):
+        empty = [(0, 0)] * 8
+        chain = [(73, 0), *empty[1:]]
+        transport = FakeTransport(chain, linked=True)
+        transport.chains[1] = [(73, 1), *empty[1:]]
+        service = MemoryCatTest(FakeDevice(self.profile, transport))
+        current = {0: chain, 1: transport.chains[1]}
+        for expected in (SimpleNamespace(session=0, channels=current),
+                         SimpleNamespace(session=1, channels={0: chain}),
+                         SimpleNamespace(session=1, channels={**current, 1: empty}),
+                         SimpleNamespace(session=1, channels={**current, 0: chain[::-1]})):
+            for operation in ('load', 'replace', 'remove', 'move'):
+                with self.subTest(operation=operation), self.assertRaisesRegex(RuntimeError, 'rack changed'):
+                    service.change_chain(operation, 1, source=0, expected=expected)
+            with self.assertRaisesRegex(RuntimeError, 'rack changed'):
+                service.change_parameters(0, transport.parameters[0], expected=expected)
+        self.assertEqual(transport.writes, [])
+        expected = SimpleNamespace(session=1, channels=current)
+        self.assertTrue(service.change_parameters(0, transport.parameters[0], expected=expected)['verified'])
+        service.change_chain('remove', 0, expected=expected)
+        self.assertEqual(transport.chains[1], empty)
 
     def test_complete_chain_matches_eight_instance_and_reorder_capture(self):
         # New capture frames 44873 and 48043; every other report byte is zero.

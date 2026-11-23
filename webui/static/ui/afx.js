@@ -106,11 +106,11 @@ function clickAfxPreview(event) {
   if (draft) AFX_PANELS.get(draft.effect.id)?.click(draft, event);
 }
 
-function moveAfxDraft(source, destination) {
+function moveAfxDraft(source, destination, expected) {
   const capacity = afxCapacity();
   if (!capacity || ![source, destination].every(index => Number.isSafeInteger(index)
       && index >= 0 && index < capacity.slots) || source === destination) return;
-  if (AFX_DEVICE_RACK?.active(AFX_CHANNEL)) { void AFX_DEVICE_RACK.move(source, destination); return; }
+  if (AFX_DEVICE_RACK?.active(AFX_CHANNEL)) { void AFX_DEVICE_RACK.move(source, destination, expected); return; }
   const slots = Array.from({length: capacity.slots}, (_, slot) =>
     AFX_DRAFTS.get(afxDraftKey(AFX_CHANNEL, slot)));
   if (!slots[source]) return;
@@ -296,10 +296,13 @@ function mountAfxWindow(popup, capacity) {
     const draft = AFX_DEVICE_RACK?.draft(AFX_CHANNEL, slot) || AFX_DRAFTS.get(afxDraftKey(AFX_CHANNEL, slot));
     if (draft) AFX_PANELS.get(draft.effect.id)?.pointerDown?.(draft, event);
   });
+  let dragRack;
   for (const id of ['afx-rack', 'afx-slot-list']) {
     d.getElementById(id).addEventListener('dragstart', event => {
       const handle = event.target.closest('[data-afx-drag]');
       if (!handle || handle.disabled) { event.preventDefault(); return; }
+      dragRack = AFX_DEVICE_RACK?.active(AFX_CHANNEL) ? AFX_DEVICE_RACK.expectation() : null;
+      if (AFX_DEVICE_RACK?.active(AFX_CHANNEL) && !dragRack) { event.preventDefault(); return; }
       event.dataTransfer.setData('text/plain', `${AFX_CHANNEL}:${handle.dataset.afxDrag}`);
       event.dataTransfer.effectAllowed = 'move';
     });
@@ -315,7 +318,9 @@ function mountAfxWindow(popup, capacity) {
       const data = event.dataTransfer.getData('text/plain');
       if (!/^\d+:\d+$/.test(data)) return;
       const [channel, slot] = data.split(':').map(Number);
-      if (channel === AFX_CHANNEL) moveAfxDraft(slot, Number(target.dataset.afxRackSlot ?? target.dataset.afxListSlot));
+      if (channel === AFX_CHANNEL && !!dragRack === !!AFX_DEVICE_RACK?.active(AFX_CHANNEL))
+        moveAfxDraft(slot, Number(target.dataset.afxRackSlot ?? target.dataset.afxListSlot), dragRack);
+      dragRack = null;
     });
   }
   const closeButton = d.querySelector('[data-afx-close]');

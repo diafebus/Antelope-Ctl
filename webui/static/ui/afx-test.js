@@ -19,6 +19,17 @@ function afxTestSlots(channel = AFX_CHANNEL) {
   return AFX_TEST_STATE?.channels?.[String(channel)];
 }
 
+function afxTestExpectation(channel = AFX_CHANNEL) {
+  const channels = {};
+  const linked = AFX_TEST_STATE?.links?.[Math.floor(channel / 2)] === true;
+  for (const index of linked ? [channel, channel ^ 1] : [channel]) {
+    const slots = afxTestSlots(index);
+    if (!slots || !Number.isInteger(AFX_TEST_SESSION)) return null;
+    channels[index] = slots.map(row => [row.type, row.instance]);
+  }
+  return {session: AFX_TEST_SESSION, channels};
+}
+
 function afxTestCanMove(channel, slot) {
   const record = afxTestSlots(channel)?.[slot];
   return afxTestActive(channel) && !!AFX_TEST_CHOICES.find(effect =>
@@ -103,6 +114,11 @@ async function afxTestRequest(path, body) {
   AFX_TEST_BUSY = true;
   status.textContent = body ? 'Waiting for the device…' : 'Reading the device rack…';
   try {
+    if (body && path.endsWith('/chain')) {
+      const expected = body.expected ?? afxTestExpectation(body.channel);
+      if (!expected) throw new Error('Refresh slots before editing the rack.');
+      body = {...body, expected};
+    }
     const readPath = body === undefined && path === '/api/afx/memorycat-test'
       ? `${path}?channel=${AFX_CHANNEL}&refresh=true` : path;
     const response = await fetch(readPath, body === undefined ? undefined : {
@@ -291,9 +307,9 @@ function afxTestSlotLabel(channel, slot) {
     : AFX_TEST_CHOICES.find(effect => effect.type_id === record.type)?.name || `Effect type ${record.type}`;
 }
 
-function afxTestMove(source, slot) {
+function afxTestMove(source, slot, expected) {
   if (!AFX_TEST_BUSY && afxTestActive())
-    return afxTestRequest('/api/afx/memorycat-test/chain', {operation: 'move', channel: AFX_CHANNEL, source, slot});
+    return afxTestRequest('/api/afx/memorycat-test/chain', {operation: 'move', channel: AFX_CHANNEL, source, slot, expected});
 }
 
 function afxTestClick(event) {
@@ -343,7 +359,7 @@ function afxTestClick(event) {
 
 AFX_DEVICE_RACK = {toolbarHTML: afxTestToolbarHTML, rackHTML: afxTestRackHTML,
   deviceView: () => AFX_TEST_DEVICE_VIEW,
-  click: afxTestClick, draft: afxTestDraft, active: afxTestActive, move: afxTestMove,
+  click: afxTestClick, draft: afxTestDraft, active: afxTestActive, move: afxTestMove, expectation: afxTestExpectation,
   open: afxTestOpen, slotLabel: afxTestSlotLabel, channelChanged: afxTestChannelChanged,
   slotPicker: afxTestSlotPicker, canMove: afxTestCanMove, change: afxTestChange, pairHTML: afxTestPairHTML, channelLabel: afxTestChannelLabel, linkClick: afxTestLinkClick,
   refresh: afxTestRefresh, deviceState: afxTestDeviceState};

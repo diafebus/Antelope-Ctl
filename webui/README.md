@@ -72,7 +72,11 @@ compatibility.
     partner writes and captured readback verification. Other linked pairs
     do not block that rack. Both the left list and rack support drag reordering, including
     dragging between them. Refresh reads the link table and selected slots,
-    including the partner chain and settings when linked.
+    including the partner chain and settings when linked. The WebUI includes the
+    displayed slot types, instance numbers and device session with every rack
+    or Memory Cat parameter edit. If fresh readback differs on either affected
+    channel, the worker rejects the edit before writing. Use **Refresh slots**
+    to see the current rack before editing again.
     An empty linked selection automatically shows its populated partner. Local
     preview is an explicit alternative; missing device reads remain unavailable.
     Memory Cat has six draggable knobs with fixed bodies and moving pointers,

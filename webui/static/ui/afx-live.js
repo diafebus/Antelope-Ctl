@@ -15,7 +15,9 @@ function afxLiveChanged(draft) {
   if (!afxTestActive() || !AFX_TEST_STATE.online || !AFX_TEST_STATE.writes_enabled) return;
   const values = Object.fromEntries(Object.entries(draft.values).map(([id, value]) => [id, Number(value)]));
   if (Object.values(draft.values).some(value => value == null)) return;
-  AFX_LIVE_PENDING.set(draft.instance, {channel: AFX_CHANNEL, values, session: AFX_TEST_SESSION, draft});
+  const expected = afxTestExpectation();
+  if (!expected) return;
+  AFX_LIVE_PENDING.set(draft.instance, {channel: AFX_CHANNEL, values, expected, session: AFX_TEST_SESSION, draft});
   if (AFX_LIVE_TIMER == null && !AFX_LIVE_INFLIGHT)
     AFX_LIVE_TIMER = setTimeout(afxLiveFlush, 60);
 }
@@ -42,7 +44,7 @@ async function afxLiveFlush() {
   try {
     const response = await fetch('/api/afx/memorycat-test/parameters', {
       method: 'POST', headers: {'content-type': 'application/json'},
-      body: JSON.stringify({channel: pending.channel, instance, values: pending.values}),
+      body: JSON.stringify({channel: pending.channel, instance, expected: pending.expected, values: pending.values}),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Live parameter write failed');

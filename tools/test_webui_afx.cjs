@@ -330,6 +330,8 @@ async function checkEffectPreviews() {
   assert.equal(writes.length, 1);
   assert.equal(writes[0].body.channel, 0);
   assert.equal(writes[0].body.instance, 0);
+  assert.equal(writes[0].body.expected.session, 1);
+  assert.deepEqual(writes[0].body.expected.channels[0][0], [73, 0]);
   assert.equal(writes[0].body.values.level, 42);
   assert.equal(writes[0].body.values.chrs_vibr, 0);
   assert.equal(writes[0].body.values.size, 1);
@@ -415,10 +417,12 @@ async function checkEffectPreviews() {
   const drag = {value:'',setData(_type,value){this.value=value;},getData(){return this.value;}};
   live.nodes['afx-slot-list'].dragstart({target:leftHandle,dataTransfer:drag,preventDefault(){}});
   assert.equal(drag.value, '31:7');
+  vm.runInContext('AFX_TEST_STATE.channels[31][7] = {type:73,instance:5}', context);
   live.nodes['afx-rack'].drop({target:destination,dataTransfer:drag,preventDefault(){}});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(writes.at(-1).body.channel, 31);
   assert.equal(writes.at(-1).body.source, 7);
+  assert.deepEqual(writes.at(-1).body.expected.channels[31][7], [73, 6], 'Drag retains the rack shown at drag start');
   assert.equal(writes.at(-1).body.slot, 0);
   live.nodes['afx-rack'].dragstart({target:leftHandle,dataTransfer:drag,preventDefault(){}});
   live.nodes['afx-slot-list'].drop({target:leftTarget,dataTransfer:drag,preventDefault(){}});

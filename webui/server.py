@@ -2121,7 +2121,13 @@ def api_afx_catalog():
     return preview_catalog(catalog, os.path.basename(PROFILE_PATH))
 
 
+class AfxRackExpectation(BaseModel):
+    session: StrictInt
+    channels: dict[int, list[tuple[StrictInt, StrictInt]]]
+
+
 class AfxChainTestChange(BaseModel):
+    expected: AfxRackExpectation | None = None
     channel: StrictInt = 0
     operation: str
     slot: StrictInt
@@ -2135,6 +2141,7 @@ class AfxLinkTestChange(BaseModel):
 
 
 class AfxParameterTestChange(BaseModel):
+    expected: AfxRackExpectation | None = None
     channel: StrictInt = 0
     instance: StrictInt
     values: dict[str, StrictInt]
@@ -2159,7 +2166,7 @@ def api_afx_memorycat_test(channel: int = 0, refresh: bool = False):
 def api_afx_memorycat_chain(change: AfxChainTestChange):
     try:
         return AFX_TEST.change_chain(change.operation, change.slot, change.source, change.effect_id,
-                                     channel=change.channel)
+                                     channel=change.channel, expected=change.expected)
     except (ValueError, RuntimeError) as error:
         return _bad(str(error))
 
@@ -2167,7 +2174,8 @@ def api_afx_memorycat_chain(change: AfxChainTestChange):
 @app.post("/api/afx/memorycat-test/parameters")
 def api_afx_memorycat_parameters(change: AfxParameterTestChange):
     try:
-        return AFX_TEST.change_parameters(change.instance, change.values, channel=change.channel)
+        return AFX_TEST.change_parameters(change.instance, change.values, channel=change.channel,
+                                          expected=change.expected)
     except (ValueError, RuntimeError) as error:
         return _bad(str(error))
 

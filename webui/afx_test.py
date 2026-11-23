@@ -267,7 +267,15 @@ class MemoryCatTest:
             return self.state()
         return self._execute(work, allow_linked=True, channel=channel, read_only=True)
 
-    def change_chain(self, operation, slot, source=None, effect_id='memory_brigade', *, channel=0):
+    def _check_displayed_rack(self, expected, chains):
+        if expected is None:
+            return  # Older API callers do not send a displayed rack.
+        if (expected.session != self.device.connection_generation
+                or expected.channels != chains):
+            raise RuntimeError('The AFX rack changed. Refresh slots before editing.')
+
+    def change_chain(self, operation, slot, source=None, effect_id='memory_brigade', *, channel=0,
+                     expected=None):
         afx.test_channel(self.device.profile, channel)
         if type(slot) is not int or not 0 <= slot < 8:
             raise ValueError('Slot must be an integer in 0..7')
@@ -290,6 +298,7 @@ class MemoryCatTest:
                     raise RuntimeError('Linked chain editing is unavailable for this profile')
                 channels = [channel // 2 * 2, channel // 2 * 2 + 1]
             before = {index: self._read_chain(transport, index) for index in channels}
+            self._check_displayed_rack(expected, before)
             if len(channels) == 2 and operation != 'load':
                 target = source if operation == 'move' else slot
                 if before[channels[0]][target][0] != before[channels[1]][target][0]:
@@ -334,7 +343,7 @@ class MemoryCatTest:
             return self.state()
         return self._execute(work, allow_linked=True, channel=channel)
 
-    def change_parameters(self, instance, values, *, channel=0):
+    def change_parameters(self, instance, values, *, channel=0, expected=None):
         afx.test_channel(self.device.profile, channel)
         values = afx.validate_parameters(self.device.profile, values)
         afx.build_parameter_test(self.device.profile, instance, values)
@@ -348,6 +357,7 @@ class MemoryCatTest:
                 pairs = self._link_states(self.device.structured.get((0x0b, 4)))
             if pairs is None or pairs[channel // 2] is None:
                 raise RuntimeError('Fresh AFX link state is unavailable; nothing was changed')
+            chains = {channel: chain}
             targets = {channel: instance}
             if pairs[channel // 2]:
                 spec = afx.test_contract(self.device.profile).get('linked_parameters', {})
@@ -355,8 +365,10 @@ class MemoryCatTest:
                     raise RuntimeError('Linked Memory Cat controls are unavailable for this profile')
                 partner_channel = channel ^ 1
                 partner_chain = self._read_chain(transport, partner_channel)
+                chains[partner_channel] = partner_chain
                 if partner_chain[slot][0] == 73:
                     targets[partner_channel] = partner_chain[slot][1]
+            self._check_displayed_rack(expected, chains)
             # Captured linked parameter families send right then left. Retain
             # the measured Memory Cat frame/ranges; never load a missing partner.
             instances = list(dict.fromkeys(targets[index] for index in sorted(targets, reverse=True)))
