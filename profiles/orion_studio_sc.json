@@ -995,6 +995,7 @@
           "payload_offset_base": 157,
           "payload_offset_formula": "full-report offset = 156 + strip_index",
           "raw_range": [0, 96],
+          "display_curve": "approximate_db",
           "status": "confirmed",
           "evidence": "Controlled live cross-check 2026-09-09 held one Mix active and varied target 1. Only the matching target 1 value exposed that Mix's strip lanes at @157..188; the target-0 Meters-window bank remained independently active at @125..156."
         },

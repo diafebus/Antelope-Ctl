@@ -189,7 +189,7 @@ context.applyMixerMeters({mix: 0, strips: [
   {ch: 1, raw: 24, silence: false},
   {ch: 2, raw: 96, silence: true},
 ], raw_range: [0, 96], silence_raw: 96, noise_floor_raw: null});
-assert.equal(mixerBars[0].meter.style.height, '75.0%');
+assert.equal(mixerBars[0].meter.style.height, '36.0%');
 assert.equal(mixerBars[0].meter.classList.contains('unavailable'), false);
 assert.match(mixerBars[0].meter.parentElement.title, /uncalibrated/);
 assert.equal(mixerBars[1].meter.style.height, '0.0%');
@@ -197,7 +197,20 @@ context.applyMixerMeters({mix: 0, strips: [{ch: 1, raw: 84, silence: false}],
   raw_range: [0, 96], silence_raw: 96, noise_floor_raw: 84});
 assert.equal(mixerBars[0].meter.style.height, '0.0%');
 assert.match(mixerBars[0].meter.parentElement.title, /noise floor/);
+for (let mix = 0; mix < 4; mix++) {
+  mixerPane.dataset.mixPane = String(mix);
+  for (const [raw, height] of [[0, '100.0%'], [6, '81.0%'], [30, '25.0%'],
+                               [59, '0.0%'], [76, '0.0%'], [96, '0.0%']]) {
+    context.applyMixerMeters({mix, strips: [{ch: 1, raw}], raw_range: [0, 96]});
+    assert.equal(mixerBars[0].meter.style.height, height);
+    assert.equal(mixerBars[0].meter.classList.contains('peak'), raw === 0);
+    assert.equal(mixerBars[1].meter.classList.contains('unavailable'), true);
+  }
+}
 context.PROFILE = zenProfile;
+mixerPane.dataset.mixPane = '0';
+context.applyMixerMeters({mix: 0, strips: [{ch: 1, raw: 24}], raw_range: [0, 96]});
+assert.equal(mixerBars[0].meter.style.height, '75.0%');
 assert.equal(context.outputMeterMappings().length, 6);
 assert.equal(context.outputMeterSupported(0), true);
 assert.equal(context.outputMeterSupported(3), false);

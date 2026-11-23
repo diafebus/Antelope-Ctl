@@ -669,6 +669,11 @@ the complete contract and new-device checklist.
     and exposes them as provisional raw meters; `target_index` and `lane`
     identify the logical bus and channel, while `payload_offset` is relative
     to `snapshot_payload_offset` unless the profile says otherwise.
+    A `mixer_window_strip` mapping may set `display_curve: "approximate_db"`
+    to draw an inverted raw bank on the WebUI's tapered meter scale. The
+    renderer treats the difference from the strongest raw value as an
+    approximate dB value, with a display floor corresponding to −60 dB.
+    This setting only changes bar height.
 
 For runtime-exposed Orion settings, `params.<name>.runtime_readback` is the
 canonical machine-readable declaration. It names the full-report coordinate

@@ -100,7 +100,10 @@ compatibility.
     Closing the
     window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with
-    fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
+    fader, pan, mute, solo, and the selected mixer meter. Orion's Mix 1–4
+    use a tapered display scale that compresses quiet signals and gives
+    peaks more room. Hover over a meter to see its uncalibrated raw reading.
+    Orion's Mix 1
     input strips additionally expose the Gazelle Reverb send; Mix 2-4 and all
     master strips deliberately do not. Selecting a Mix tab automatically
     selects its matching mixer surface/meter bank; multiple Solo buttons may be
