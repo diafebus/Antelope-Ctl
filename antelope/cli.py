@@ -1612,6 +1612,13 @@ def _bus_bool_command(args, profile, param_name):
     transport = get_transport(profile)
     on = 1 if args.state == 'on' else 0
     pkt = proto.build_command(profile, param_name, bus_id, on)
+    if proto.bus_flag_needs_mute_read(profile, bus_id, param_name):
+        # Same rule as the WebUI: dim/mono must not release a protected mute.
+        data = read_state(transport, profile, args.timeout)
+        state = proto.parse_bus_mute_witness(profile, data, bus_id)
+        if proto.bus_flag_may_release_mute(profile, bus_id, param_name, state):
+            sys.exit(f'{proto.bus_name(profile, bus_id)} is muted or unread: this write is '
+                     'refused so it cannot release the mute. Unmute it first if you mean to.')
     send_and_wait(transport, pkt)
     verify_bus(transport, profile, bus_id, args.timeout)
 

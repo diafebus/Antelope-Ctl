@@ -565,7 +565,8 @@ the complete contract and new-device checklist.
     (Orion: `[21..23]`), read by `state_clock_rate_hz(profile, data)`.
     Complements the 0-6 `sample_rate_byte_offset` enum
   - `bus_block_offset` + `bus_block_stride` — bus state array
-    (`28 + 3N` on Orion, `28 + 2N` on Zen Go)
+    (`28 + 3N` on Orion, `28 + 2N` on Zen Go); `bus_block.flags_combine`
+    is described under [`constraints`](#constraints)
   - `snapshot_payload_offset` — optional base added to payload-relative
     offsets when the report includes a fixed header (Zen Go: `0x10`)
   - `mixer_strip_meters` — optional profile-confirmed shared mixer meter map
@@ -697,6 +698,16 @@ Machine-enforced bounds. `protocol.check_opcode` / `check_target` /
 | `input_mode_allowed_values` `[...]` | `check_enum` | portable-enum guard (a foreign value crashed a sibling) |
 | `gain_bounds` / `adat_gain_bounds` / `spdif_gain_bounds` | the gain CLI commands | dB clamp ranges |
 | `min_write_interval_ms` | (advisory) | rate-limit hint |
+| `protected_mute_buses` `[...]` | `protocol.bus_flag_may_release_mute`, WebUI `bus-toggle`, CLI `set-bus-dim` / `set-bus-mono`, and `tools/selftest.py` | optional, default empty. Dim and mono require a complete, current state report showing that a protected bus is unmuted, unless `frame.state_report.bus_block.flags_combine` is true. The self-test skips protected buses. |
+
+`frame.state_report.bus_block.flags_combine` (optional, default false) is true
+only when dim and mono writes are both known to preserve mute. The WebUI reads
+the bus on its device worker immediately before sending a guarded write.
+Ambiguous mute bits, unrecognized status enum values and missing or incomplete
+reports cause the write to be refused. When an explicit mute is queued before
+the guarded write, the worker waits for muted readback before it can trust a
+later unmuted report. Explicit mute and unmute commands remain available.
+The shipped Orion profile leaves `protected_mute_buses` unset.
 
 Every bound here should have a matching `hazards` entry saying what goes
 wrong without it.

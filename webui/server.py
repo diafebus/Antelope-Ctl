@@ -29,6 +29,7 @@ Run:  pip install -r requirements.txt  &&  python3 server.py
 Then: http://127.0.0.1:8714
 """
 import asyncio
+from concurrent.futures import CancelledError, Future, TimeoutError as FutureTimeoutError
 import glob
 import json
 import math
@@ -433,6 +434,7 @@ class Device:
                                if auraverb_target is not None else 0)
         self.auraverb_available = proto.auraverb_readback_available(profile)
         self.solo_state = {}               # mix -> {restore: flags, active: channels}
+        self._pending_bus_mutes = set()     # actor-owned, awaiting muted readback
         self._lock = threading.Lock()
         self._t = None
         self._stop = threading.Event()
@@ -1253,6 +1255,7 @@ class Device:
                     if not stopping:
                         self._transport = transport
                         self.connection_generation += 1
+                        self._pending_bus_mutes.clear()
                 if stopping:
                     self._drop_transport(transport)
                     transport = None
@@ -1313,6 +1316,8 @@ class Device:
             if state:
                 snap["channels"] = self._parse_channels(state)
                 snap["buses"] = self._parse_buses(state)
+                if self._pending_bus_mutes and len(state) == self.report_size:
+                    self._observe_bus_mutes(snap["buses"])
                 snap["adat"] = self._parse_adat(state)
                 snap["spdif"] = self._parse_spdif(state)
                 snap["trim"] = self._parse_output_trim(state)
@@ -1485,6 +1490,12 @@ class Device:
                 "phase_invert": bool(s.get("phase_invert")),
             })
         return out
+
+    def _observe_bus_mutes(self, states):
+        """Release pending protection once a report witnesses an explicit mute."""
+        for state in states:
+            if state.get("mute") == 1 and not state.get("mute_ambiguous"):
+                self._pending_bus_mutes.discard(state["bus"])
 
     def _parse_buses(self, data):
         out = []
@@ -2783,8 +2794,73 @@ def api_bus_toggle(t: BusToggle):
         packet = proto.build_command(PROFILE, pname, t.bus, 1 if t.on else 0)
     except (KeyError, ValueError, proto.ConstraintError) as e:
         return _bad(str(e))
-    _submit(lambda tr, packet=packet: tr.write(packet))
+    device = DEV
+    if proto.bus_flag_needs_mute_read(PROFILE, t.bus, pname):
+        return _write_protected_bus_flag(device, t.bus, pname, packet)
+    track_mute = (pname == "bus_mute"
+                  and proto.bus_flag_needs_mute_read(PROFILE, t.bus, "bus_dim"))
+
+    def write(transport):
+        if track_mute:
+            if t.on:
+                device._pending_bus_mutes.add(t.bus)
+            else:
+                device._pending_bus_mutes.discard(t.bus)
+        transport.write(packet)
+
+    _submit(write)
     return {"ok": True}
+
+
+def _write_protected_bus_flag(device, bus, param, packet):
+    """Check the current report and write inside the same worker operation."""
+    with device._lock:
+        expected_transport = device._transport
+        if expected_transport is None or not device.snapshot.get("online"):
+            return _bad("Device is offline")
+    future = Future()
+    deadline = time.monotonic() + 2.0
+
+    def write(transport):
+        if not future.set_running_or_notify_cancel():
+            return
+        try:
+            if transport is not expected_transport or time.monotonic() >= deadline:
+                future.set_result("Device session changed or the request expired")
+                return
+            data = transport.read_one(device.state_magic, timeout=0.4)
+            state = proto.parse_bus_mute_witness(device.profile, data, bus)
+            if state is not None:
+                device._observe_bus_mutes((state,))
+            if (bus in device._pending_bus_mutes
+                    or proto.bus_flag_may_release_mute(device.profile, bus, param, state)):
+                name = proto.bus_name(device.profile, bus)
+                future.set_result(f"{name} is muted or unread. The write was refused.")
+                return
+            with device._lock:
+                current = device._transport
+            if current is not transport or time.monotonic() >= deadline:
+                future.set_result("Device session changed or the request expired")
+                return
+            transport.write(packet)
+        except Exception as exc:
+            future.set_exception(exc)
+            raise
+        else:
+            future.set_result(None)
+
+    if device.submit(write, on_discard=future.cancel) is False:
+        return _bad("Device is offline")
+    try:
+        error = future.result(timeout=max(0.0, deadline - time.monotonic()))
+    except CancelledError:
+        return _bad("Device disconnected before the output bus request ran")
+    except FutureTimeoutError:
+        future.cancel()
+        return _bad("The output bus request timed out")
+    except OSError as exc:
+        return _bad(f"Could not write the output bus: {exc}")
+    return _bad(error) if error else {"ok": True}
 
 
 @app.post("/api/dc-coupling")
