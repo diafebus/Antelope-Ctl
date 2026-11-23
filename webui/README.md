@@ -155,8 +155,10 @@ compatibility.
   `frame.readback.category_counts`; profiles without a complete count may use
   only an explicitly capture-confirmed feature layout. The incremental sweep
   never invents additional indices.
-- No auth (binds to `127.0.0.1` only).
-- No packaging. It is a sketch.
+- The server binds to `127.0.0.1` and accepts `127.0.0.1` and `localhost` as
+  request hostnames.
+- The worker rejects new edits while offline and discards pending edits from a
+  disconnected session. Reconnection rebuilds readback from the active device.
 
 ## Run
 
@@ -181,5 +183,17 @@ passes the signal through Uvicorn, immediately wakes its HID worker, closes
 the active transport, and then performs a bounded worker join before exiting.
 The `.venv` is only the Python environment; it is not a separate daemon.
 
-Profile: defaults to `../profiles/orion_studio_sc.json`; override with
-`ANTELOPE_PROFILE=/path/to/profile.json`.
+Profile selection uses the connected VID/PID and falls back to Orion. Override
+it with `ANTELOPE_PROFILE=/path/to/profile.json`. Port 8714 can be overridden
+with `ANTELOPE_PORT=<port>` (keep the app-menu service on 8714).
+
+### Linux desktop and user service
+
+After creating the WebUI virtual environment above, run
+`bash packaging/install-user.sh` from the repository root. The **Antelope
+Control** app-menu entry starts the user service and opens the WebUI. The
+installer also adds a template, `antelope-webui@<name>`, for a second interface
+with a different VID/PID. Set `ANTELOPE_PROFILE` and a distinct `ANTELOPE_PORT` in
+`~/.config/antelope-ctl/<name>.env`. Device selection uses VID/PID, so run only
+one service for a given VID/PID. Stop the service before using the CLI,
+self-test, or vendor panel against that device.

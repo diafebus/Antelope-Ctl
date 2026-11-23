@@ -284,6 +284,77 @@
           "captures/unattended-20261028T145303Z-vca160-processing/return/Orion.pcapng frame679: tuple@17..19=002101; SHA256 0de2c744c87030fb15da1f0889c72dc523dbbd0962abebd3b4c004132ed5a59b"
         ]
       }
+    },
+    {
+      "profile": "discrete_4_a270.json",
+      "type_id": 33,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 3,
+          "read_stride": 5,
+          "read_offset": 1,
+          "read_layout": "per instance: one flag byte, the block the write frame carries, then padding up to read_stride (measured with this project's own cat 0x07 read; instance 0 held the block the vendor panel last wrote)",
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "threshold",
+              "label": "Threshold",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "compression",
+              "label": "Compression",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 60
+            },
+            {
+              "key": "output_gain",
+              "label": "Output Gain",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            }
+          ],
+          "notes": "VCA160. Each listed control was wheeled to both ends in the vendor panel and moved only its own bytes; min/max are the raw limits seen. Raw units: no physical unit is claimed. Bytes of the block not listed here (switches, menus, stacked rings the wheel did not reach) are unmapped and are written back unchanged.",
+          "evidence": "unattended run 2026-11-17 (owner's unit, vendor panel 1.9.22 under Wine, usbmon): vca160_sweep.pcapng (sha256 a5bc246e23ebf4adead9a4efdb24cc3077d474f105670c2316e3b64034b201cc)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 33,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 3,
+          "read_stride": 4,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields_from": "discrete_4_a270.json",
+          "notes": "Same effect, type id and parameter block as on the Discrete 4 (its discrete_4_a270.json implementation holds the control evidence). On this device: loaded alone into an empty rack through this project's server, the cat 0x07 reply was one flag byte then the block and nothing else (one instance per reply)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
     }
   ]
 }

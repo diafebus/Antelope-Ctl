@@ -78,7 +78,7 @@ class FakeDevice:
         self.structured = {(0x19, index): [dict(type=0, inst=0) for _ in range(8)]
                            for index in range(64)}
 
-    def submit(self, function):
+    def submit(self, function, *, on_discard=None):
         function(self._transport)
 
 
@@ -304,7 +304,7 @@ class AfxTestTests(unittest.TestCase):
         transport = FakeTransport([(73, 0)] + [(0, 0)] * 7)
         device = FakeDevice(self.profile, transport)
         service = MemoryCatTest(device)
-        def submit(function):
+        def submit(function, *, on_discard=None):
             # Another operation failed after this request entered the queue.
             service.failed_verification = True
             function(transport)

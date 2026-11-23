@@ -64,6 +64,7 @@ evidence.
 | `adat`, `spdif` | if present on the device | extra input address spaces |
 | `mixer` | if decoded | virtual-mixer summary (human-facing; the frame is in `frame.mix_command`), plus optional profile-driven surface/link metadata. `has_master` defaults to true; set false for devices whose channel space starts at 0 with no master strip. |
 | `afx` | optional | device AFX channel/slot capacity and reference to the shared effect catalog; descriptive metadata, not a runtime write contract |
+| `afx_inserts` | optional | contract for the generic AFX insert codec and builders |
 | `constraints` | strongly recommended | machine-enforced bounds (`protocol.check_*`) |
 | `hazards` | recommended | *why* each constraint exists (carried across the family) |
 | `family_notes` | recommended | what is / isn't shared with sibling devices |
@@ -369,7 +370,9 @@ minimum from a fresh write; its prior full-block source is recorded explicitly.
 remaining controls without enabling runtime parameter commands.
 The shared control declarations retain their identifiers, so Orion observations
 do not become another model's contract. All three command definitions
-remain `null` for every implementation. A declared control name carries neither an inferred range
+remain `null` for every Orion and `discrete_4_sc.json` implementation; the
+`zen_go_sc.json` and `discrete_4_a270.json` implementations populate
+`commands.parameters` (see [the parameter block](#afx-parameter-blocks-in-the-catalog)). A declared control name carries neither an inferred range
 nor an inferred byte width/offset. `source_name` preserves Gazelle's effect
 key; `name` uses a public product name only when one has been matched.
 Descriptions otherwise remain `null`. Categories now group the menu by
@@ -380,6 +383,89 @@ Other. This presentation metadata carries no write permission, device-ID
 mapping or license evidence. A `#plugins...` or
 `#params...` suffix in an evidence URL is a JSON key path within the linked
 source document, not an HTML anchor.
+
+### `afx_inserts` (generic insert codec)
+
+`protocol.py` has generic AFX builders that read their whole contract from
+this optional block. The codec is used by offline fixtures. The Orion
+operator path uses its own captured contracts in `antelope/afx.py`. Missing
+or disabled sub-blocks make the builders refuse.
+
+| key | read by | meaning |
+|---|---|---|
+| `chain_write` `{opcode, param_id, subcmd, strip_offset, slots_offset, ...}` | `build_afx_insert_chain` | whole-rack write: the ordered `{type, instance}` pairs replace the strip's chain; an empty list clears it. The opcode passes `check_opcode` |
+| `writes` `{enabled, strips, max_slots, instances}` | `afx_insert_writes`, `build_afx_insert_chain`, `afx_load_defaults` | captured strips, rack length and map of type IDs to measured instances. Each `(type, instance)` can occur once in a rack |
+| `writes.effects.<type>.load_defaults` `[hex, ...]` | `afx_load_defaults` | blocks the vendor panel sent right after the chain write that loaded the effect; one per band for a banded effect |
+| `parameters.write` `{param_id, length_bias, instances}` | `build_afx_parameter_writes` | captured layout `<param_id> <len> <type> <instance> <block>`, with a map of type IDs to measured instances. Byte 4 is computed from the payload length. The complete frame must fit the report and every mapped value must fit its field |
+| `parameters.effects.<type>` `{block_length, fields, bands, editable}` | `afx_parameter_effect` and the builders | one effect's block, inline; a profile instead names its catalogue entries with `parameters.catalog` / `catalog_profile` ([below](#afx-parameter-blocks-in-the-catalog)), never both. `editable: false` refuses parameter edits and state queries. `bands` `{count, length, selector_offset, selector_values}` splits the block into one frame per band with the selector byte put back; given the previous block, only changed bands are sent |
+| `parameters.state_query.targets` `{type: [category, subcmd, index]}` | `build_afx_state_query`, `is_afx_state_response` | explicit capture-confirmed tuples. Building requires a confirmed layout and a type present in the caller's freshly read rack. Classic byte indices also pass `check_readback_index`. Tagged indices use the separate exact tuple |
+| `parameters.bypass` `{param_id, opcode, instances}` | `build_afx_bypass` | `<param_id> <instance> <type> <01 active / 00 bypassed>` for a mapped type with a measured bypass instance and a permitted opcode |
+
+Each entry of `fields` is `{key, label, offset, type, min, max}` with optional
+`values`. `afx_block_get()` / `afx_block_set()` decode and change one field,
+little-endian: `u8`/`i8`, `u16`/`i16`, `u32`/`i32` and `f32` (float32), with
+raw `min`/`max`. An `f32` field takes an integer or a float and is compared as
+stored, after rounding to float32, so a limit such as 0.01 stays in range; NaN
+and infinity are refused. Integer fields refuse a float or a bool. A `values`
+list replaces the range check for a selector with gaps (FET ratio 0, 1, 2, 4, 8).
+Bytes outside the mapped fields are written back unchanged.
+
+Evidence: these frames were captured from the vendor panel on a Zen Go Synergy
+Core and a Discrete 4 by a fork contributor. Chain load/remove, bypass and
+per-effect parameter writes were then sent from Linux on those units and
+checked by read-back, with the racks restored; ClearQ's read layout is still
+capture-only, not round-tripped. The parameter
+frame also reproduces the Orion Memory Cat capture byte for byte
+(`tools/test_afx_codec.py`). Nothing about other Orion effects, bands or
+bypass through this path is established; an Orion `afx_inserts` block needs
+its own captures and an explicit scope decision.
+
+### AFX parameter blocks in the catalog
+
+The Zen Go (`zen_go_sc.json`) and Discrete 4 `0xa270` (`discrete_4_a270.json`)
+implementations in `profiles/afx/<effect_id>.json` carry the parameter block of
+each mapped effect in `commands.parameters`; the device-wide frame, state
+query and bypass stay in the device profile's `afx_inserts`. The device profile
+names its catalogue entries with `afx_inserts.parameters.catalog` (a file name
+in the profiles directory, normally `afx_effects.json`) and `catalog_profile`
+(its own file name, the implementations' `profile`). No `discrete_4_a270.json`
+device profile ships: those implementations are data that the Zen Go's share
+and that a future device profile can name.
+
+```json
+{
+  "profile": "zen_go_sc.json",
+  "type_id": 9,
+  "status": "readback-verified",
+  "commands": {"load": null, "recall": null, "parameters": {
+    "frame": "afx_inserts.parameters.write",
+    "writable": true,
+    "block_length": 5, "read_stride": 6, "read_offset": 1,
+    "status": "confirmed",
+    "fields_from": "discrete_4_a270.json",
+    "notes": "...", "evidence": "..."
+  }},
+  "control_encodings": {},
+  "evidence": [],
+  "notes": "..."
+}
+```
+
+`frame` names the device-wide write layout and `writable` is false only with
+`editable: false` (read layout unconfirmed). The remaining keys are the
+contract `protocol.afx_parameter_effect(profile, type_id)` returns:
+`block_length`, `read_stride`, `read_offset`, `fields`, optional `bands`,
+`state_query`, `defaults`, `editable`, `read_layout`, and the device trial's
+`status`, `notes` and `evidence`. `fields_from` names another implementation of
+the same effect whose `fields` this one shares (same block, same byte meanings);
+the Zen Go uses it for the 47 effects it shares with the Discrete 4.
+Model-local labels are excluded from inherited fields. A field's
+optional `options` maps raw values to model-confirmed printed labels. Orion
+labels at the same block offset are retained as `orion_option_candidates`
+in the source catalog for comparison. The codec omits these candidates from
+resolved fields. The shipped profiles leave the generic codec disabled.
+`load_catalog` refuses a malformed contract, a dangling `fields_from` and one
+device type ID with parameters in two effects. Resolution is cached per process.
 
 ---
 
@@ -565,7 +651,8 @@ the complete contract and new-device checklist.
     (Orion: `[21..23]`), read by `state_clock_rate_hz(profile, data)`.
     Complements the 0-6 `sample_rate_byte_offset` enum
   - `bus_block_offset` + `bus_block_stride` — bus state array
-    (`28 + 3N` on Orion, `28 + 2N` on Zen Go)
+    (`28 + 3N` on Orion, `28 + 2N` on Zen Go); `bus_block.flags_combine`
+    is described under [`constraints`](#constraints)
   - `snapshot_payload_offset` — optional base added to payload-relative
     offsets when the report includes a fixed header (Zen Go: `0x10`)
   - `mixer_strip_meters` — optional profile-confirmed shared mixer meter map
@@ -697,6 +784,16 @@ Machine-enforced bounds. `protocol.check_opcode` / `check_target` /
 | `input_mode_allowed_values` `[...]` | `check_enum` | portable-enum guard (a foreign value crashed a sibling) |
 | `gain_bounds` / `adat_gain_bounds` / `spdif_gain_bounds` | the gain CLI commands | dB clamp ranges |
 | `min_write_interval_ms` | (advisory) | rate-limit hint |
+| `protected_mute_buses` `[...]` | `protocol.bus_flag_may_release_mute`, WebUI `bus-toggle`, CLI `set-bus-dim` / `set-bus-mono`, and `tools/selftest.py` | optional, default empty. Dim and mono require a complete, current state report showing that a protected bus is unmuted, unless `frame.state_report.bus_block.flags_combine` is true. The self-test skips protected buses. |
+
+`frame.state_report.bus_block.flags_combine` (optional, default false) is true
+only when dim and mono writes are both known to preserve mute. The WebUI reads
+the bus on its device worker immediately before sending a guarded write.
+Ambiguous mute bits, unrecognized status enum values and missing or incomplete
+reports cause the write to be refused. When an explicit mute is queued before
+the guarded write, the worker waits for muted readback before it can trust a
+later unmuted report. Explicit mute and unmute commands remain available.
+The shipped Orion profile leaves `protected_mute_buses` unset.
 
 Every bound here should have a matching `hazards` entry saying what goes
 wrong without it.

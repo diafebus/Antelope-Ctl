@@ -108,6 +108,18 @@ class ProfileLabelTests(unittest.TestCase):
         self.assertEqual(labels["compplay"], "COMPUTER PLAY")
         self.assertEqual(protocol.route_destination_label(zen, 6), "Mixer Input Map 1")
 
+    def test_input_mode_names_match_across_label_case(self):
+        zen = self.profiles["zen_go_sc"][1]  # labels "Mic"/"Line"/"HiZ"
+        self.assertEqual(protocol.mode_value(zen, "mic"), 0)
+        self.assertEqual(protocol.mode_value(zen, "HIZ"), 2)
+        with self.assertRaises(KeyError):
+            protocol.mode_value(zen, "instrument")
+
+    def test_mode_name_without_input_mode_param_is_unknown(self):
+        profile = copy.deepcopy(self.profiles["zen_go_sc"][1])
+        del profile["params"]["input_mode"]
+        self.assertEqual(protocol.mode_name(profile, 1), "?1")
+
     def test_runtime_feature_derivation_preserves_profile_labels(self):
         path, zen = self.profiles["zen_go_sc"]
         profile = copy.deepcopy(zen)

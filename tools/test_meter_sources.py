@@ -1,6 +1,9 @@
 """Offline meter-source checks. Run: python3 -m unittest tools.test_meter_sources."""
+import asyncio
+import contextlib
 import copy
 import importlib
+import io
 import json
 from pathlib import Path
 import signal
@@ -28,8 +31,19 @@ def load_server_without_web_or_hid_boundaries():
         def mount(self, *args, **kwargs):
             return None
 
+        def add_middleware(self, middleware, **options):
+            self.middleware = (middleware, options)
+
     fastapi = types.ModuleType('fastapi')
+    class FakeHTTPException(Exception):
+        def __init__(self, *, status_code, detail):
+            super().__init__(detail)
+            self.status_code = status_code
+
     fastapi.FastAPI = FakeFastAPI
+    fastapi.HTTPException = FakeHTTPException
+    trustedhost = types.ModuleType('fastapi.middleware.trustedhost')
+    trustedhost.TrustedHostMiddleware = 'TrustedHostMiddleware'
     responses = types.ModuleType('fastapi.responses')
     responses.FileResponse = object
     responses.JSONResponse = object
@@ -45,6 +59,7 @@ def load_server_without_web_or_hid_boundaries():
     uvicorn = types.ModuleType('uvicorn')
     with mock.patch.dict(sys.modules, {
         'fastapi': fastapi,
+        'fastapi.middleware.trustedhost': trustedhost,
         'fastapi.responses': responses,
         'fastapi.staticfiles': staticfiles,
         'pydantic': pydantic,
@@ -173,7 +188,7 @@ class MeterSourceTests(unittest.TestCase):
         self.assertEqual(payload['write']['speaker_bypass']['fields'], ['bypass'])
         self.assertTrue(payload['speakers'][0]['bypass'])
 
-    def test_terminal_shutdown_stops_device_before_uvicorn_exit(self):
+    def test_terminal_shutdown_schedules_device_without_taking_its_lock(self):
         class FakeServer:
             def __init__(self):
                 self.should_exit = False
@@ -187,17 +202,16 @@ class MeterSourceTests(unittest.TestCase):
         device = mock.Mock()
         wrapped = self.server._install_terminal_shutdown(fake_server, device)
 
-        wrapped.handle_exit(signal.SIGINT, None)
+        async def receive_signal():
+            wrapped.handle_exit(signal.SIGINT, None)
+            self.assertTrue(fake_server.should_exit)
+            device.request_stop.assert_not_called()
+            wrapped.handle_exit(signal.SIGINT, None)
+            await asyncio.sleep(0)
 
+        asyncio.run(receive_signal())
         device.request_stop.assert_called_once_with()
-        self.assertEqual(fake_server.calls, [(signal.SIGINT, None)])
-        self.assertTrue(fake_server.should_exit)
-
-        # A repeated Ctrl+C keeps Uvicorn's force-exit behavior but does not
-        # enqueue a second device shutdown request.
-        wrapped.handle_exit(signal.SIGINT, None)
-        device.request_stop.assert_called_once_with()
-        self.assertEqual(len(fake_server.calls), 2)
+        self.assertEqual(fake_server.calls, [(signal.SIGINT, None)] * 2)
 
     def test_orion_selected_mixer_strip_meters_follow_the_window_selector(self):
         device = self.server.Device.__new__(self.server.Device)
@@ -469,6 +483,211 @@ class MeterSourceTests(unittest.TestCase):
         self.assertEqual(packet[4], 0x13)
         self.assertEqual(packet[16:19], bytes((0x49, 0, 0x0c)))
         self.assertIsNone(self.server._mixer_surface_packet(self.zen_profile, 2))
+
+    def test_cli_status_shows_unread_flags_as_unknown(self):
+        state = {'input_mode': 0, 'gain': 10, 'phantom': 1}  # phase_invert not read
+        args = types.SimpleNamespace(timeout=0.1, channels=1)
+        out = io.StringIO()
+        with mock.patch.object(cli, 'get_transport'), \
+                mock.patch.object(cli, 'read_state', return_value=b'\0'), \
+                mock.patch.object(cli, '_load_link_state', return_value={}), \
+                mock.patch.object(cli.proto, 'parse_state', return_value=state), \
+                contextlib.redirect_stdout(out):
+            cli.cmd_status(args, self.zen_profile)
+        row = out.getvalue().splitlines()[1].split()
+        self.assertEqual(row[3:5], ['on', '?'])
+
+    def test_cli_mixed_case_hiz_checks_channel_before_opening_hid(self):
+        args = types.SimpleNamespace(channel=4, mode='HiZ', force=False, timeout=0.1)
+        with mock.patch.object(cli, '_load_link_state', return_value={}), \
+                mock.patch.object(cli, 'get_transport') as transport:
+            with self.assertRaisesRegex(SystemExit, 'Hi-Z is not available'):
+                cli.cmd_set_mode(args, self.profile)
+        transport.assert_not_called()
+
+    def test_cli_enum_values_fall_back_to_runtime_values(self):
+        self.assertNotIn('values', self.zen_profile['params']['clock_source'])
+        self.assertEqual(cli._enum_values(self.zen_profile, 'clock_source'),
+                         {0: 'Internal', 1: 'S/PDIF', 2: 'USB'})
+
+
+class BusMuteSafetyTests(unittest.TestCase):
+    """constraints.protected_mute_buses on the Orion layout (bus N status byte 29 + 3N).
+
+    The Orion profile itself protects nothing; the protected copy models a
+    device whose dim write clears the mute bit (observed on a Zen Go SC)."""
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json'
+        cls.orion = json.loads(path.read_text())
+        cls.protected = copy.deepcopy(cls.orion)
+        cls.protected['constraints']['protected_mute_buses'] = [0]
+        cls.server = load_server_without_web_or_hid_boundaries()
+
+    def report(self, profile, **status_by_bus):
+        data = bytearray(profile['transport']['report_size'])
+        data[0] = protocol.state_report_magic(profile)
+        block = profile['frame']['state_report']['bus_block']
+        for bus, status in status_by_bus.items():
+            offset = block['base_offset'] + block['bytes_per_bus'] * int(bus[1:])
+            data[offset + block['status_byte_offset']] = status
+        return bytes(data)
+
+    def toggle(self, profile, report, *, cached_report=None, before_write=None,
+               queue_mute=False, **fields):
+        device = self.server.Device(profile)
+        device.snapshot = {'online': True}
+        if cached_report is not None:
+            device.snapshot['buses'] = device._parse_buses(cached_report)
+        sent = []
+        hid = types.SimpleNamespace(write=sent.append, read_one=lambda *args, **kwargs: report)
+        device._transport = hid
+
+        def submit(fn, *, on_discard=None):
+            if before_write is not None:
+                before_write(hid)
+            fn(hid)
+
+        with mock.patch.object(self.server, 'PROFILE', profile), \
+                mock.patch.object(self.server, 'DEV', device), \
+                mock.patch.object(device, 'submit', side_effect=submit), \
+                mock.patch.object(self.server, '_bad',
+                                  side_effect=lambda msg: {'ok': False, 'error': msg}):
+            if queue_mute:
+                self.server.api_bus_toggle(types.SimpleNamespace(
+                    bus=fields['bus'], param='mute', on=True))
+            result = self.server.api_bus_toggle(types.SimpleNamespace(**fields))
+        return result['ok'], sent
+
+    def test_helper_rule(self):
+        may_release = protocol.bus_flag_may_release_mute
+        self.assertEqual(protocol.protected_mute_buses(self.orion), [])
+        self.assertFalse(may_release(self.orion, 0, 'bus_dim', {'mute': 1}))
+        p = self.protected
+        self.assertEqual(protocol.protected_mute_buses(p), [0])
+        self.assertTrue(may_release(p, 0, 'bus_dim', {'mute': 1}))
+        self.assertTrue(may_release(p, 0, 'bus_mono', None))              # unread
+        self.assertTrue(may_release(p, 0, 'bus_dim', {'bus': 0, 'level': 50}))
+        self.assertTrue(may_release(p, 0, 'bus_dim', {'mute': 0, 'mute_ambiguous': True}))
+        self.assertFalse(may_release(p, 0, 'bus_dim', {'mute': 0}))
+        self.assertFalse(may_release(p, 0, 'bus_mute', {'mute': 1}))      # explicit mute writes pass
+        self.assertFalse(may_release(p, 1, 'bus_dim', {'mute': 1}))       # bus not protected
+        combine = copy.deepcopy(p)
+        combine['frame']['state_report']['bus_block']['flags_combine'] = True
+        self.assertFalse(may_release(combine, 0, 'bus_dim', {'mute': 1}))
+
+    def test_webui_bus_toggle_refuses_dim_and_mono_on_a_muted_protected_bus(self):
+        p = self.protected
+        muted = self.report(p, b0=0x04, b1=0x04)
+        for param in ('dim', 'mono'):
+            for on in (True, False):
+                self.assertEqual(self.toggle(p, muted, bus=0, param=param, on=on), (False, []))
+        self.assertEqual(self.toggle(p, None, bus=0, param='dim', on=True), (False, []))
+        self.assertEqual(self.toggle(p, muted[:30], bus=0, param='dim', on=True), (False, []))
+        self.assertEqual(self.toggle(p, muted, bus=0, param='mute', on=False),
+                         (True, [protocol.build_command(p, 'bus_mute', 0, 0)]))
+        self.assertEqual(self.toggle(p, muted, bus=1, param='dim', on=True),
+                         (True, [protocol.build_command(p, 'bus_dim', 1, 1)]))
+        self.assertEqual(self.toggle(p, self.report(p, b0=0x08), bus=0, param='dim', on=False),
+                         (True, [protocol.build_command(p, 'bus_dim', 0, 0)]))
+        # the unmodified Orion profile keeps its behaviour
+        self.assertEqual(self.toggle(self.orion, muted, bus=0, param='dim', on=True),
+                         (True, [protocol.build_command(self.orion, 'bus_dim', 0, 1)]))
+
+    def test_webui_checks_the_worker_report_after_earlier_queued_mute(self):
+        p = self.protected
+        unmuted = self.report(p, b0=0)
+        muted = self.report(p, b0=0x04)
+
+        def apply_prior_mute(hid):
+            hid.write(protocol.build_command(p, 'bus_mute', 0, 1))
+            hid.read_one = lambda *args, **kwargs: muted
+
+        self.assertEqual(
+            self.toggle(p, unmuted, cached_report=unmuted, before_write=apply_prior_mute,
+                        bus=0, param='dim', on=False),
+            (False, [protocol.build_command(p, 'bus_mute', 0, 1)]),
+        )
+
+    def test_unknown_exclusive_mode_refuses_a_write(self):
+        path = Path(__file__).resolve().parents[1] / 'profiles/zen_go_sc.json'
+        profile = json.loads(path.read_text())
+        profile['constraints']['protected_mute_buses'] = [0]
+        report = self.report(profile, b0=3)
+        state = protocol.parse_bus_state(profile, report, 0)
+        self.assertEqual(state['mute'], 0)
+        self.assertEqual(self.toggle(profile, report, bus=0, param='dim', on=True),
+                         (False, []))
+
+    def test_webui_blocks_until_prior_mute_is_observed(self):
+        p = self.protected
+        unmuted = self.report(p, b0=0)
+        self.assertEqual(
+            self.toggle(p, unmuted, queue_mute=True, bus=0, param='dim', on=True),
+            (False, [protocol.build_command(p, 'bus_mute', 0, 1)]),
+        )
+
+    def test_cli_set_bus_dim_refuses_on_a_muted_protected_bus(self):
+        p = self.protected
+        written = []
+        hid = types.SimpleNamespace(write=written.append,
+                                    read_one=lambda magic, timeout: self.report(p, b0=0x04))
+        args = types.SimpleNamespace(bus='0', state='off', timeout=0.1, force=False)
+        with mock.patch.object(cli, 'get_transport', return_value=hid), \
+                mock.patch.object(cli.time, 'sleep'), \
+                mock.patch('builtins.print'):
+            with self.assertRaises(SystemExit):
+                cli.cmd_set_bus_dim(args, p)
+            with self.assertRaises(SystemExit):
+                cli.cmd_set_bus_mono(args, p)
+            self.assertEqual(written, [])
+            cli.cmd_set_bus_mute(args, p)
+            self.assertEqual(written, [protocol.build_command(p, 'bus_mute', 0, 0)])
+            del written[:]
+            cli.cmd_set_bus_dim(args, self.orion)
+            self.assertEqual(written, [protocol.build_command(self.orion, 'bus_dim', 0, 0)])
+
+    def test_selftest_skips_protected_buses_and_restores_the_whole_status_byte(self):
+        from tools import selftest
+        path = Path(__file__).resolve().parents[1] / 'profiles/zen_go_sc.json'
+        p = json.loads(path.read_text())
+        p['constraints']['protected_mute_buses'] = [0]
+        p['buses']['known'] = {k: v for k, v in p['buses']['known'].items() if k in ('0', '1')}
+        decode = {protocol.build_command(p, name, bus, value): (name, bus, value)
+                  for bus in (0, 1) for name, values in (
+                      ('bus_dim', (0, 1)), ('bus_mute', (0, 1))) for value in values}
+        state = {0: 1, 1: 1}
+        writes = []
+
+        def write(packet):
+            name, bus, value = decode[packet]
+            writes.append((name, bus, value))
+            state[bus] = {'bus_dim': 2, 'bus_mute': 1}[name] if value else 0
+
+        def read_one(magic, timeout):
+            return self.report(p, b0=state[0], b1=state[1])
+
+        dev = types.SimpleNamespace(p=p, write=write, t=types.SimpleNamespace(read_one=read_one))
+        with mock.patch.object(selftest, 'results', []) as results, \
+                mock.patch('builtins.print'):
+            self.assertTrue(selftest.t_write_bus_flags(dev))
+        self.assertEqual(results[0][:2], ('SKIP', 'WRITE bus 0 dim/mono'))
+        self.assertEqual([r[0] for r in results[1:]], ['PASS', 'PASS', 'SKIP'])
+        self.assertEqual(writes, [('bus_dim', 1, 1), ('bus_mute', 1, 1)])
+        self.assertEqual(state, {0: 1, 1: 1})
+
+    def test_selftest_stops_after_restore_mismatch(self):
+        from tools import selftest
+        p = self.orion
+        reports = iter([self.report(p, b0=0x04), self.report(p, b0=0x0C),
+                        self.report(p, b0=0)])
+        dev = mock.Mock(p=p)
+        dev.t.read_one.side_effect = lambda *args, **kwargs: next(reports)
+        with mock.patch.object(selftest, 'results', []) as results, \
+                mock.patch('builtins.print'):
+            self.assertFalse(selftest.t_write_bus_flags(dev))
+        self.assertEqual([r[0] for r in results], ['PASS', 'FAIL'])
+        self.assertEqual(dev.write.call_count, 2)
 
 
 if __name__ == '__main__':

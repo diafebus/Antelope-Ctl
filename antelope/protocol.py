@@ -17,8 +17,13 @@ v3 adds two new areas, both still profile-driven:
     to need its own frame shape too, follow that pattern: add a new block
     under profile["frame"] rather than bending SET_PARAM to fit.
 """
+import functools
 import json
 import math
+from pathlib import Path
+import struct
+
+from antelope.catalog import DEFAULT_CATALOG, load_catalog
 
 
 def load_profile(path: str) -> dict:
@@ -142,6 +147,48 @@ def channel_space_bounds(profile: dict, space: str):
     if space == 'bus' and 'bus_ids' in c:
         return sorted(int(x) for x in c['bus_ids'])
     return None
+
+
+def protected_mute_buses(profile: dict) -> list:
+    """Buses whose mute no automatic action may release
+    (constraints.protected_mute_buses, default none): self-tests skip them,
+    and a dim/mono write that could clear the mute as a side effect is refused."""
+    return [int(x) for x in constraints(profile).get('protected_mute_buses', [])]
+
+
+def bus_flag_needs_mute_read(profile: dict, bus_id: int, param_name: str) -> bool:
+    """Whether this dim/mono write requires a known unmuted bus."""
+    if param_name not in ('bus_dim', 'bus_mono') or bus_id not in protected_mute_buses(profile):
+        return False
+    bus_block = profile['frame']['state_report'].get('bus_block') or {}
+    return bus_block.get('flags_combine') is not True
+
+
+def bus_flag_may_release_mute(profile: dict, bus_id: int, param_name: str, bus_state) -> bool:
+    """Refuse writes to a protected bus when mute is active or unread."""
+    if not bus_flag_needs_mute_read(profile, bus_id, param_name):
+        return False
+    if not bus_state or bus_state.get('mute') != 0 or bus_state.get('mute_ambiguous'):
+        return True
+
+    report = profile['frame']['state_report']
+    bus_block = report.get('bus_block')
+    status_values = (report.get('bus_status_values', {}) if bus_block is None
+                     else bus_block.get('status_values', {}))
+    return bool(status_values) and bus_state.get('status_raw') not in {
+        _as_int(value) for value in status_values.values()
+    }
+
+
+def parse_bus_mute_witness(profile: dict, data, bus_id: int):
+    """Parse a complete state report for a protected-bus write check."""
+    if (not data or len(data) != _as_int(profile['transport']['report_size'])
+            or data[0] != state_report_magic(profile)):
+        return None
+    try:
+        return parse_bus_state(profile, data, bus_id)
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 def space_channel_count(profile: dict, space: str):
@@ -2388,6 +2435,344 @@ def parse_afx_strip_order(profile: dict, body: bytes, category: int, index: int)
                                   kind='afx_strip_order')
 
 
+def afx_insert_writes(profile: dict):
+    """The profile's bounded insert-rack write contract, or None.
+
+    ``afx_inserts.chain_write`` holds the captured whole-rack frame and
+    ``afx_inserts.writes`` the strips, effects and instances that have been
+    exercised on that device. Both must be present and enabled."""
+    spec = profile.get('afx_inserts') or {}
+    writes = spec.get('writes') or {}
+    if not spec.get('chain_write') or not writes.get('enabled'):
+        return None
+    return writes
+
+
+def _check_afx_instance(contract: dict, type_id: int, instance: int) -> None:
+    instances = contract.get('instances', {}).get(str(type_id), ())
+    if (type(type_id) is not int or not 0 <= type_id <= 255
+            or type(instance) is not int or not 0 <= instance <= 255 or instance not in instances):
+        raise ConstraintError(f'effect type {type_id}, instance {instance} has no measured contract')
+
+
+def _afx_place(packet: bytearray, offset: int, data: bytes) -> None:
+    if offset < 0 or offset + len(data) > len(packet):
+        raise ConstraintError('AFX frame does not fit the report size')
+    packet[offset:offset + len(data)] = data
+
+
+def build_afx_insert_chain(profile: dict, strip: int, slots) -> bytes:
+    """Build the whole-rack write for one insert strip.
+
+    ``slots`` is the complete ordered rack as ``(type, instance)`` pairs; the
+    device replaces the strip's chain with it, so an empty list clears the
+    rack. Refuses strips, effects and instances outside the profile contract."""
+    writes = afx_insert_writes(profile)
+    if writes is None:
+        raise ConstraintError('this profile has no enabled afx_inserts write contract')
+    frame = profile['afx_inserts']['chain_write']
+    slots = list(slots)
+    if type(strip) is not int or not 0 <= strip <= 255 or strip not in writes.get('strips', []):
+        raise ConstraintError(f'insert strip {strip} is outside the verified strips '
+                              f'{writes.get("strips", [])}')
+    if len(slots) > int(writes['max_slots']):
+        raise ConstraintError(f'a rack holds at most {writes["max_slots"]} effects here')
+    seen = set()
+    for kind, instance in slots:
+        _check_afx_instance(writes, kind, instance)
+        if (kind, instance) in seen:
+            raise ConstraintError(f'repeated instance {instance} of effect type {kind}')
+        seen.add((kind, instance))
+    opcode = _as_int(frame['opcode'])
+    check_opcode(profile, opcode)
+    pkt = bytearray(profile['transport']['report_size'])
+    for key, value in (('magic_offset', _as_int(frame['magic'])), ('opcode_offset', opcode),
+                       ('param_id_offset', _as_int(frame['param_id'])),
+                       ('subcmd_offset', _as_int(frame['subcmd'])), ('strip_offset', strip)):
+        _afx_place(pkt, _as_int(frame[key]), bytes([value]))
+    _afx_place(pkt, _as_int(frame['slots_offset']), bytes(value for slot in slots for value in slot))
+    return bytes(pkt)
+
+
+_AFX_FIELD_TYPES = {'u8': (1, False), 'i8': (1, True), 'u16': (2, False), 'i16': (2, True),
+                    'u32': (4, False), 'i32': (4, True), 'f32': (4, True)}  # f32: little-endian float32
+
+
+def _afx_f32(value) -> float:
+    return struct.unpack('<f', struct.pack('<f', value))[0]
+
+
+def afx_field_in_range(field: dict, value) -> bool:
+    """Whether ``value`` is inside a mapped field's min..max (false for NaN/inf)."""
+    if 'values' in field:  # a selector with gaps (FET ratio buttons: 0, 1, 2, 4, 8)
+        return value in field['values']
+    if field['type'] != 'f32':
+        return int(field['min']) <= value <= int(field['max'])
+    # Compared as stored: float32(0.01) is slightly below the double 0.01.
+    try:
+        return _afx_f32(field['min']) <= _afx_f32(value) <= _afx_f32(field['max'])
+    except (OverflowError, struct.error):
+        return False
+
+
+# shortcut: cached for the process; an edited catalogue file is seen after a restart.
+@functools.lru_cache(maxsize=None)
+def _catalog_parameter_contracts(catalog: str, profile_name: str) -> dict:
+    """{str(type id): (effect id, parameter contract)} of one device profile in the AFX catalogue."""
+    if Path(catalog).name != catalog:
+        raise ValueError('afx_inserts.parameters.catalog must be a file name in the profiles directory')
+    out = {}
+    for effect in load_catalog(DEFAULT_CATALOG.parent / catalog)['effects']:
+        implementations = {item.get('profile'): item for item in effect.get('implementations') or []}
+        params = ((implementations.get(profile_name) or {}).get('commands') or {}).get('parameters')
+        if params is None:
+            continue
+        fields = params.get('fields')
+        excluded_field_keys = {'orion_option_candidates'}
+        if fields is None:
+            fields = implementations[params['fields_from']]['commands']['parameters']['fields']
+            excluded_field_keys.add('options')
+        contract = {key: value for key, value in params.items() if key not in ('frame', 'writable', 'fields_from')}
+        contract['fields'] = [{key: value for key, value in field.items() if key not in excluded_field_keys}
+                              for field in fields]
+        out[str(implementations[profile_name]['type_id'])] = (effect['id'], contract)
+    return out
+
+
+def _afx_parameter_entries(profile: dict) -> dict:
+    """{str(type id): (catalogue effect id or None, contract)} of this device.
+
+    From the AFX catalogue when ``parameters.catalog`` names it (the
+    implementations whose ``profile`` is ``catalog_profile``), otherwise from
+    the profile's inline ``parameters.effects``."""
+    params = (profile.get('afx_inserts') or {}).get('parameters') or {}
+    if not params.get('enabled'):
+        return {}
+    if 'catalog' in params:
+        if 'effects' in params:
+            raise ConstraintError('afx_inserts.parameters takes a catalog or inline effects, not both')
+        return _catalog_parameter_contracts(params['catalog'], params['catalog_profile'])
+    return {kind: (None, effect) for kind, effect in (params.get('effects') or {}).items()}
+
+
+def afx_parameter_effects(profile: dict) -> dict:
+    """{str(type id): parameter contract} of every mapped effect on this device (shared; do not modify)."""
+    return {kind: contract for kind, (_, contract) in _afx_parameter_entries(profile).items()}
+
+
+def afx_parameter_effect(profile: dict, type_id: int):
+    """Mapped parameter block of one effect type on this device, or None."""
+    entry = _afx_parameter_entries(profile).get(str(type_id))
+    return None if entry is None else entry[1]
+
+
+def afx_effect_id(profile: dict, type_id: int):
+    """Catalogue effect ID (``profiles/afx/<id>.json``) of a mapped effect type, or None."""
+    entry = _afx_parameter_entries(profile).get(str(type_id))
+    return None if entry is None else entry[0]
+
+
+def afx_block_get(effect: dict, block: bytes) -> dict:
+    """Decode every mapped field of an effect's parameter block (raw units)."""
+    if len(block) != int(effect['block_length']):
+        raise ConstraintError('parameter block has an unexpected length')
+    out = {}
+    taken = set()
+    for field in effect['fields']:
+        width, signed = _AFX_FIELD_TYPES[field['type']]
+        offset = int(field['offset'])
+        span = set(range(offset, offset + width))
+        if offset < 0 or offset + width > len(block) or taken.intersection(span) or field['key'] in out:
+            raise ConstraintError(f'AFX field {field["key"]} overlaps or is outside its block')
+        taken.update(span)
+        raw = block[offset:offset + width]
+        out[field['key']] = (struct.unpack('<f', raw)[0] if field['type'] == 'f32'
+                             else int.from_bytes(raw, 'little', signed=signed))
+    return out
+
+
+def afx_block_set(effect: dict, block: bytes, key: str, value) -> bytes:
+    """Return ``block`` with one mapped field changed; refuses out-of-range values."""
+    field = next((item for item in effect['fields'] if item['key'] == key), None)
+    if field is None:
+        raise ConstraintError(f'"{key}" is not a mapped control of this effect')
+    real = field['type'] == 'f32'
+    if type(value) not in ((int, float) if real else (int,)) or not afx_field_in_range(field, value):
+        raise ConstraintError(f'{field["label"]} must be {field["min"]}..{field["max"]} (raw units)')
+    afx_block_get(effect, block)
+    width, signed = _AFX_FIELD_TYPES[field['type']]
+    offset = int(field['offset'])
+    out = bytearray(block)
+    out[offset:offset + width] = struct.pack('<f', value) if real else value.to_bytes(width, 'little', signed=signed)
+    return bytes(out)
+
+
+def _afx_state_target(profile: dict, type_id: int):
+    effect = afx_parameter_effect(profile, type_id)
+    if type(type_id) is not int or effect is None or effect.get('editable') is False:
+        raise ConstraintError(f'effect type {type_id} has no confirmed read layout')
+    spec = profile['afx_inserts']['parameters'].get('state_query', {})
+    target = spec.get('targets', {}).get(str(type_id))
+    if target is None:
+        raise ConstraintError(f'effect type {type_id} has no measured AFX query')
+    category, subcmd, index = map(_as_int, target)
+    if not 0 <= category <= 255 or not 0 <= subcmd <= 255 or not 0 <= index <= 0xffffffff:
+        raise ConstraintError(f'effect type {type_id} has an invalid AFX query contract')
+    readback = profile['frame']['readback']
+    if 'subcmd' in readback and subcmd == _as_int(readback['subcmd']) and index <= 255:
+        check_readback_index(profile, category, index)
+    return category, subcmd, index
+
+
+def build_afx_state_query(profile: dict, type_id: int, *, loaded_types) -> bytes:
+    """Build an exact captured AFX query for a type in the caller's fresh rack state."""
+    if type_id not in loaded_types:
+        raise ConstraintError(f'effect type {type_id} is not confirmed loaded')
+    category, subcmd, index = _afx_state_target(profile, type_id)
+    readback = profile['frame']['readback']
+    pkt = bytearray(profile['transport']['report_size'])
+    for key, value in (('magic_offset', _as_int(readback['request_magic'])),
+                       ('subcmd_offset', subcmd), ('category_offset', category)):
+        _afx_place(pkt, _as_int(readback[key]), bytes([value]))
+    _afx_place(pkt, _as_int(readback['index_offset']), index.to_bytes(4, 'little'))
+    return bytes(pkt)
+
+
+def is_afx_state_response(profile: dict, data: bytes, type_id: int) -> bool:
+    if data is None or len(data) != profile['transport']['report_size']:
+        return False
+    try:
+        category, _, index = _afx_state_target(profile, type_id)
+    except ConstraintError:
+        return False
+    readback = profile['frame']['readback']
+    offset = _as_int(readback['index_offset'])
+    return (data[_as_int(readback['magic_offset'])] == _as_int(readback['response_magic'])
+            and data[_as_int(readback['response_discriminator_offset'])]
+            == _as_int(readback['response_discriminator'])
+            and data[_as_int(readback['category_offset'])] == category
+            and data[offset:offset + 4] == index.to_bytes(4, 'little'))
+
+
+def _afx_parameter_frame(profile: dict, type_id: int, instance: int, block: bytes) -> bytes:
+    write = profile['afx_inserts']['parameters']['write']
+    command = profile['frame']['command']
+    payload = bytes([type_id, instance]) + bytes(block)
+    opcode = len(payload) + _as_int(write['length_bias'])
+    if not 0 <= opcode <= 255 or len(payload) > 255:
+        raise ConstraintError('AFX parameter payload does not fit its wire length')
+    pkt = bytearray(profile['transport']['report_size'])
+    _afx_place(pkt, _as_int(command['magic_offset']), bytes([_as_int(command['magic'])]))
+    _afx_place(pkt, _as_int(command['opcode_offset']), bytes([opcode]))
+    _afx_place(pkt, _as_int(command['param_id_offset']),
+               bytes([_as_int(write['param_id']), len(payload)]) + payload)
+    return bytes(pkt)
+
+
+def build_afx_bypass(profile: dict, type_id: int, instance: int, active: bool) -> bytes:
+    """The vendor panel's bypass frame for one effect instance."""
+    spec = profile.get('afx_inserts', {}).get('parameters', {}).get('bypass')
+    if not spec or afx_parameter_effect(profile, type_id) is None:
+        raise ConstraintError(f'bypass of effect type {type_id} is not captured on this device')
+    _check_afx_instance(spec, type_id, instance)
+    opcode = _as_int(spec['opcode'])
+    check_opcode(profile, opcode)
+    command = profile['frame']['command']
+    pkt = bytearray(profile['transport']['report_size'])
+    _afx_place(pkt, _as_int(command['magic_offset']), bytes([_as_int(command['magic'])]))
+    _afx_place(pkt, _as_int(command['opcode_offset']), bytes([opcode]))
+    _afx_place(pkt, _as_int(command['param_id_offset']),
+               bytes([_as_int(spec['param_id']), instance, type_id, 1 if active else 0]))
+    return bytes(pkt)
+
+
+def _afx_band_blocks(effect: dict, block: bytes) -> list:
+    """Write blocks of a banded effect: the band selector byte put back into each band."""
+    bands = effect['bands']
+    size, at = int(bands['length']), int(bands['selector_offset'])
+    count = int(bands['count'])
+    selectors = [_as_int(value) for value in bands['selector_values']]
+    if (size <= 0 or count <= 0 or len(block) != count * size or not 0 <= at <= size
+            or len(set(selectors)) != count or len(selectors) != count
+            or any(not 0 <= value <= 255 for value in selectors)):
+        raise ConstraintError('invalid AFX band layout')
+    pieces = [block[index * size:(index + 1) * size] for index in range(count)]
+    return [piece[:at] + bytes([selector]) + piece[at:] for piece, selector in zip(pieces, selectors)]
+
+
+def build_afx_parameter_writes(profile: dict, type_id: int, instance: int, block: bytes,
+                               before: bytes = None) -> list:
+    """Parameter write frames, each ``d5 | len | type | inst | block``, for one effect.
+
+    Most effects take their whole block in one frame. A banded effect (ClearQ)
+    takes one frame per band, the band selected by a byte of the block; with
+    ``before`` given only the bands that differ from it are sent.
+
+    Byte 4 of every command frame is the payload length plus 0x12, so it is
+    computed here rather than checked against the opcode allow-list; the
+    contract enforced instead is the mapped effect, its block length and the
+    range of every mapped field."""
+    effect = afx_parameter_effect(profile, type_id)
+    if effect is None:
+        raise ConstraintError(f'effect type {type_id} has no mapped parameters here')
+    if effect.get('editable') is False:
+        raise ConstraintError(f'effect type {type_id} cannot be edited: its read layout is not confirmed')
+    _check_afx_instance(profile['afx_inserts']['parameters']['write'], type_id, instance)
+    values = afx_block_get(effect, block)
+    for field in effect['fields']:
+        value = values[field['key']]
+        if not afx_field_in_range(field, value):
+            raise ConstraintError(f'{field["label"]} = {value} is outside {field["min"]}..{field["max"]}')
+    if not effect.get('bands'):
+        return [_afx_parameter_frame(profile, type_id, instance, block)]
+    if before is not None and len(before) != len(block):
+        raise ConstraintError('parameter block has an unexpected length')
+    old = _afx_band_blocks(effect, before) if before is not None else None
+    return [_afx_parameter_frame(profile, type_id, instance, piece)
+            for index, piece in enumerate(_afx_band_blocks(effect, block))
+            if old is None or piece != old[index]]
+
+
+def build_afx_parameter_write(profile: dict, type_id: int, instance: int, block: bytes) -> bytes:
+    """The single whole-block frame of an effect that is not banded."""
+    frames = build_afx_parameter_writes(profile, type_id, instance, block)
+    if len(frames) != 1:
+        raise ConstraintError(f'effect type {type_id} is written one band per frame')
+    return frames[0]
+
+
+def afx_load_defaults(profile: dict, type_id: int, instance: int):
+    """(frames, block) the vendor panel sends after the chain write that loads this effect.
+
+    ``writes.effects[type].load_defaults`` lists the captured blocks. ``block`` is what a
+    read of the instance should then return, or None when the effect has no confirmed read."""
+    writes = afx_insert_writes(profile) or {}
+    blocks = [bytes.fromhex(text) for text in
+              ((writes.get('effects') or {}).get(str(type_id)) or {}).get('load_defaults') or []]
+    if not blocks:
+        return [], None
+    effect = afx_parameter_effect(profile, type_id)
+    if effect is None:
+        raise ConstraintError(f'effect type {type_id} has load defaults but no parameter map')
+    bands = effect.get('bands')
+    if bands:
+        at = int(bands['selector_offset'])
+        if (any(len(block) != int(bands['length']) + 1 for block in blocks)
+                or not 0 <= at <= int(bands['length'])
+                or [block[at] for block in blocks] != [_as_int(value) for value in bands['selector_values']]):
+            raise ConstraintError(f'load defaults of effect type {type_id} do not match its bands')
+        image = b''.join(block[:at] + block[at + 1:] for block in blocks)
+    else:
+        if len(blocks) != 1:
+            raise ConstraintError(f'effect type {type_id} takes one default block')
+        image = blocks[0]
+    if len(image) != int(effect['block_length']):
+        raise ConstraintError(f'load defaults of effect type {type_id} have an unexpected length')
+    _check_afx_instance(writes, type_id, instance)
+    frames = [_afx_parameter_frame(profile, type_id, instance, block) for block in blocks]
+    return frames, (None if effect.get('editable') is False else image)
+
+
 def parse_afx_instance_table(profile: dict, body: bytes, category: int,
                              index: int):
     """Decode an available/max/remaining AFX instance-count table."""
@@ -3174,14 +3559,15 @@ def meter_led(profile: dict, db, source_frame='meter_report'):
 
 
 def mode_name(profile: dict, mode_val: int) -> str:
-    values = profile['params']['input_mode']['values']
+    values = profile['params'].get('input_mode', {}).get('values', {})
     return values.get(str(mode_val), f'?{mode_val}')
 
 
 def mode_value(profile: dict, name: str) -> int:
     values = profile['params']['input_mode']['values']
+    normalized_name = name.casefold()
     for k, v in values.items():
-        if v == name:
+        if v.casefold() == normalized_name:
             return int(k)
     raise KeyError(f'unknown mode name "{name}"')
 

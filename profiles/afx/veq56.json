@@ -204,6 +204,118 @@
       "control_encodings": {},
       "evidence": [],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 74,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 11,
+          "read_stride": 12,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "output",
+              "label": "Output",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "31_hz",
+              "label": "31 Hz",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "63_hz",
+              "label": "63 Hz",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "125_hz",
+              "label": "125 Hz",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "250_hz",
+              "label": "250 Hz",
+              "offset": 4,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "500_hz",
+              "label": "500 Hz",
+              "offset": 5,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "1_khz",
+              "label": "1 kHz",
+              "offset": 6,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "2_khz",
+              "label": "2 kHz",
+              "offset": 7,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "4_khz",
+              "label": "4 kHz",
+              "offset": 8,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "8_khz",
+              "label": "8 kHz",
+              "offset": 9,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            },
+            {
+              "key": "16_khz",
+              "label": "16 kHz",
+              "offset": 10,
+              "type": "u8",
+              "min": 0,
+              "max": 100
+            }
+          ],
+          "notes": "VEQ56. Each listed control was wheeled to both ends in the vendor panel and moved only its own byte; min/max are the raw limits seen. Raw units: no physical unit is claimed. Unmapped bytes are written back unchanged. Read layout on this device: loaded alone into an empty rack through this project's server, the cat 0x07 reply was one flag byte then the block and nothing else (one instance per reply)",
+          "evidence": "unattended run 2026-11-17 (owner's unit, fw 05.04, vendor panel under Wine, usbmon): veq56_probe.pcapng (sha256 b4431fd1d361efbb4d48cf3c17073ad00615253b08e48a2521107bdb2fff32f6), veq56_sweep.pcapng (sha256 9e4c864cb85ef1ca72bc74a9fe807a2fff40e05d0c66af0721c3612e4521660b)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
     }
   ]
 }
