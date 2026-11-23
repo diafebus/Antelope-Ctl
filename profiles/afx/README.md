@@ -15,4 +15,7 @@ See the [schema guide](../../docs/profile-schema.md#afx-and-the-shared-effect-ca
 for storage/loading/export details and the
 [capture workflow](../../docs/orion-afx-workflow.md#editing-captured-plugin-knowledge)
 for evidence updates and migration of archived helpers. Catalog observations
-do not enable runtime writes.
+retain model-specific wire evidence. The Zen Go and Discrete 4
+`commands.parameters` blocks are available to the offline codec fixtures.
+The shipped device profiles leave that codec disabled. Orion-derived selector
+label candidates remain evidence for model-local verification.

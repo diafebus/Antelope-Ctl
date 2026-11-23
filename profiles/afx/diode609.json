@@ -219,6 +219,126 @@
       "control_encodings": {},
       "evidence": [],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+    },
+    {
+      "profile": "zen_go_sc.json",
+      "type_id": 82,
+      "status": "readback-verified",
+      "commands": {
+        "load": null,
+        "recall": null,
+        "parameters": {
+          "frame": "afx_inserts.parameters.write",
+          "writable": true,
+          "block_length": 12,
+          "read_stride": 13,
+          "read_offset": 1,
+          "status": "confirmed",
+          "fields": [
+            {
+              "key": "limit_threshold",
+              "label": "Limit Threshold",
+              "offset": 0,
+              "type": "u8",
+              "min": 0,
+              "max": 22
+            },
+            {
+              "key": "limit_recovery",
+              "label": "Limit Recovery",
+              "offset": 1,
+              "type": "u8",
+              "min": 0,
+              "max": 5
+            },
+            {
+              "key": "limit_in",
+              "label": "Limit In",
+              "offset": 2,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "key": "limit_attack",
+              "label": "Limit Attack",
+              "offset": 3,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "key": "comp_threshold",
+              "label": "Comp Threshold",
+              "offset": 4,
+              "type": "u8",
+              "min": 0,
+              "max": 15
+            },
+            {
+              "key": "comp_recovery",
+              "label": "Comp Recovery",
+              "offset": 5,
+              "type": "u8",
+              "min": 0,
+              "max": 6
+            },
+            {
+              "key": "gain",
+              "label": "Gain",
+              "offset": 6,
+              "type": "u8",
+              "min": 0,
+              "max": 10
+            },
+            {
+              "key": "ratio",
+              "label": "Ratio",
+              "offset": 7,
+              "type": "u8",
+              "min": 0,
+              "max": 5
+            },
+            {
+              "key": "hpf",
+              "label": "HPF",
+              "offset": 8,
+              "type": "u8",
+              "min": 0,
+              "max": 14
+            },
+            {
+              "key": "compress_in",
+              "label": "Compress In",
+              "offset": 9,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "key": "compress_attack",
+              "label": "Compress Attack",
+              "offset": 10,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "key": "sc_preview",
+              "label": "SC Preview",
+              "offset": 11,
+              "type": "u8",
+              "min": 0,
+              "max": 1
+            }
+          ],
+          "notes": "Diode609. Each listed control was wheeled to both ends in the vendor panel and moved only its own byte; min/max are the raw limits seen. Raw units: no physical unit is claimed. Switches and selectors were clicked instead (2026-11-21); each changed only its own byte and min/max are the values seen; names and value meanings were read from the per-state pictures. Limit In / Compress In: 0 out, 1 in. Attack: 0 fast, 1 slow. Unmapped bytes are written back unchanged. Read layout on this device: loaded alone into an empty rack through this project's server, the cat 0x07 reply was one flag byte then the block and nothing else (one instance per reply)",
+          "evidence": "unattended run 2026-11-20 (owner's unit, fw 05.04, vendor panel under Wine, usbmon): diode609_probe.pcapng (sha256 ef26f7e128588b5e8570041d81f7600d125df2b9659e695994612f55448d0c23), diode609_sweep.pcapng (sha256 826663aa11c568101e4735146802ceb274dbbddfc347bfc7a6b2a66c261ae67d); click run 2026-11-21 (same unit and setup): zen_click/diode609_p*.pcapng (5 files, sha256 over them in name order cfe9a427d8a951eea22d16dfce9c69fb8b7881d56efc71064e4767f3a36f7c8a)"
+        }
+      },
+      "control_encodings": {},
+      "evidence": [],
+      "notes": "This project's runtime contract for this device: commands.parameters is the parameter block antelope.protocol.afx_parameter_effect() serves for this profile; its own status, notes and evidence record the device trials. The frame, state query, bypass and loads are device-wide, in the device profile's afx_inserts."
     }
   ]
 }
