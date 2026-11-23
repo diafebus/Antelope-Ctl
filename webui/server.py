@@ -1238,17 +1238,19 @@ class Device:
 
     def _serve(self):
         transport = None
+        retrying = False
         readback_plan = []
         readback_changed = False
         last_debug_meter = 0.0
         while not self._stop.is_set():
             if transport is None:
+                if retrying and self._stop.wait(2.0):
+                    break
+                retrying = True
                 try:
                     transport = open_transport(self.vid, self.pid, self.report_size)
                 except (SystemExit, OSError):
                     self._publish({"online": False})
-                    if self._stop.wait(2.0):
-                        break
                     continue
                 with self._lock:
                     stopping = self._stop.is_set()

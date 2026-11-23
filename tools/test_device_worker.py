@@ -135,6 +135,20 @@ class DeviceWorkerTests(unittest.TestCase):
             device.stop()
         self.assertFalse(device._t.is_alive())
 
+    def test_worker_backs_off_when_transport_opens_but_reports_fail(self):
+        denied = FakeTransport()
+        denied.read_one = mock.Mock(side_effect=PermissionError('hidraw denied'))
+        recovered = FakeTransport()
+        with mock.patch.object(server, 'open_transport', side_effect=[denied, recovered]), \
+                mock.patch.object(self.device._stop, 'wait', wraps=self.device._stop.wait) as wait:
+            self.device.start()
+            try:
+                self.assertTrue(self.online.wait(5), 'the worker did not reconnect')
+                wait.assert_called_once_with(2.0)
+                denied.read_one.assert_called_once()
+            finally:
+                self.device.stop()
+
     def test_stop_ends_a_worker_that_cannot_open_the_device(self):
         device = self.device
         tried = threading.Event()
