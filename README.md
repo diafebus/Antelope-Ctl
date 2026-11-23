@@ -293,9 +293,9 @@ request you agree to license your contribution that way.
   See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and hardware-free checks.
   The optional WebUI also needs `webui/requirements.txt` (FastAPI/Uvicorn).
 - Live controls require read/write access to the device's `hidraw` node. Either run with `sudo`,
-  or add a udev rule granting your user access to the Antelope device's
-  `vid`/`pid` (see `device` in the profile JSON) so you don't need root
-  every time.
+  or install [`packaging/70-antelope.rules`](packaging/70-antelope.rules)
+  (any `23e5` device: the desktop user, plus the `audio` group for SSH/headless)
+  so you don't need root every time.
 - Captures for adding new params are done either from a Windows VM
   (Antelope Launcher + USBPcap) against the passed-through hardware, or --
   simpler, when the control exists in this project's own web UI -- with

@@ -144,6 +144,48 @@ def channel_space_bounds(profile: dict, space: str):
     return None
 
 
+def protected_mute_buses(profile: dict) -> list:
+    """Buses whose mute no automatic action may release
+    (constraints.protected_mute_buses, default none): self-tests skip them,
+    and a dim/mono write that could clear the mute as a side effect is refused."""
+    return [int(x) for x in constraints(profile).get('protected_mute_buses', [])]
+
+
+def bus_flag_needs_mute_read(profile: dict, bus_id: int, param_name: str) -> bool:
+    """Whether this dim/mono write requires a known unmuted bus."""
+    if param_name not in ('bus_dim', 'bus_mono') or bus_id not in protected_mute_buses(profile):
+        return False
+    bus_block = profile['frame']['state_report'].get('bus_block') or {}
+    return bus_block.get('flags_combine') is not True
+
+
+def bus_flag_may_release_mute(profile: dict, bus_id: int, param_name: str, bus_state) -> bool:
+    """Refuse writes to a protected bus when mute is active or unread."""
+    if not bus_flag_needs_mute_read(profile, bus_id, param_name):
+        return False
+    if not bus_state or bus_state.get('mute') != 0 or bus_state.get('mute_ambiguous'):
+        return True
+
+    report = profile['frame']['state_report']
+    bus_block = report.get('bus_block')
+    status_values = (report.get('bus_status_values', {}) if bus_block is None
+                     else bus_block.get('status_values', {}))
+    return bool(status_values) and bus_state.get('status_raw') not in {
+        _as_int(value) for value in status_values.values()
+    }
+
+
+def parse_bus_mute_witness(profile: dict, data, bus_id: int):
+    """Parse a complete state report for a protected-bus write check."""
+    if (not data or len(data) != _as_int(profile['transport']['report_size'])
+            or data[0] != state_report_magic(profile)):
+        return None
+    try:
+        return parse_bus_state(profile, data, bus_id)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def space_channel_count(profile: dict, space: str):
     """How many channels this device actually has in an address space
     ('input', 'adat', 'spdif') -- for sizing `status` / `meter` /
@@ -3174,14 +3216,15 @@ def meter_led(profile: dict, db, source_frame='meter_report'):
 
 
 def mode_name(profile: dict, mode_val: int) -> str:
-    values = profile['params']['input_mode']['values']
+    values = profile['params'].get('input_mode', {}).get('values', {})
     return values.get(str(mode_val), f'?{mode_val}')
 
 
 def mode_value(profile: dict, name: str) -> int:
     values = profile['params']['input_mode']['values']
+    normalized_name = name.casefold()
     for k, v in values.items():
-        if v == name:
+        if v.casefold() == normalized_name:
             return int(k)
     raise KeyError(f'unknown mode name "{name}"')
 

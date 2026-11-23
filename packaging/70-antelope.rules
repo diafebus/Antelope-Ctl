@@ -1,0 +1,3 @@
+# Antelope Audio HID control nodes: desktop user (uaccess) + audio group (SSH/headless).
+# Install: sudo cp 70-antelope.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger
+KERNEL=="hidraw*", ATTRS{idVendor}=="23e5", MODE="0660", GROUP="audio", TAG+="uaccess"

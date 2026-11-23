@@ -1,5 +1,5 @@
 """Captured Orion rack and Memory Cat parameter tests, serialized by the device."""
-from concurrent.futures import Future, TimeoutError
+from concurrent.futures import CancelledError, Future, TimeoutError
 import time
 
 from antelope import afx, protocol
@@ -215,9 +215,12 @@ class MemoryCatTest:
                     raise
             else:
                 future.set_result(result)
-        device.submit(queued)
+        if device.submit(queued, on_discard=future.cancel) is False:
+            raise RuntimeError('The Orion device is offline')
         try:
             return future.result(timeout=12)
+        except CancelledError:
+            raise RuntimeError('Device disconnected before the AFX test ran') from None
         except TimeoutError:
             future.cancel()
             raise RuntimeError('AFX test timed out; refresh the rack before trying again') from None

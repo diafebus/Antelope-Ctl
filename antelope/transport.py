@@ -9,38 +9,47 @@ unchanged; only its JSON profile differs.
 import ctypes
 import glob
 import os
+import re
 import select
 import sys
 import time
 
 
-def find_hidraw(vid: int, pid: int) -> str:
-    for path in sorted(glob.glob('/sys/class/hidraw/hidraw*')):
-        uevent_paths = [
-            os.path.join(path, 'device', 'uevent'),
-            os.path.join(path, 'uevent'),
-        ]
-        for upath in uevent_paths:
-            if not os.path.exists(upath):
-                continue
+_SYSFS_HIDRAW = '/sys/class/hidraw'
+_MODALIAS_IDS = re.compile(r'V([0-9A-F]{8})P([0-9A-F]{8})')
+
+
+def _iter_hidraw():
+    """Yield (vid, pid, '/dev/hidrawN') for every id sysfs reports, from either
+    a HID_ID or a MODALIAS line. A node can be yielded more than once."""
+    for path in sorted(glob.glob(os.path.join(_SYSFS_HIDRAW, 'hidraw*'))):
+        node = f'/dev/{os.path.basename(path)}'
+        for upath in (os.path.join(path, 'device', 'uevent'),
+                      os.path.join(path, 'uevent')):
             try:
-                content = open(upath).read()
-            except Exception:
+                with open(upath) as f:
+                    content = f.read()
+            except (OSError, ValueError):
                 continue
             for line in content.splitlines():
                 if line.startswith('HID_ID='):
-                    parts = line.split('=')[1].split(':')
+                    parts = line.split('=', 1)[1].split(':')
                     if len(parts) == 3:
-                        found_vid = int(parts[1], 16)
-                        found_pid = int(parts[2], 16)
-                        if found_vid == vid and found_pid == pid:
-                            return f'/dev/{os.path.basename(path)}'
+                        try:
+                            yield int(parts[1], 16), int(parts[2], 16), node
+                        except ValueError:
+                            pass
                 elif line.startswith('MODALIAS='):
-                    val = line.upper()
-                    if f'V{vid:08X}' in val and f'P{pid:08X}' in val:
-                        return f'/dev/{os.path.basename(path)}'
+                    m = _MODALIAS_IDS.search(line.upper())
+                    if m:
+                        yield int(m.group(1), 16), int(m.group(2), 16), node
 
-    sys.exit(
+
+def find_hidraw(vid: int, pid: int) -> str:
+    for found_vid, found_pid, node in _iter_hidraw():
+        if found_vid == vid and found_pid == pid:
+            return node
+    raise FileNotFoundError(
         f'HID node not found for VID={hex(vid)} PID={hex(pid)}.\n'
         'Check USB connection or list nodes with: ls /dev/hidraw*'
     )
@@ -56,28 +65,11 @@ def list_connected_hid() -> set:
     """
     if sys.platform == 'win32':
         try:
-            return _list_windows_hid()
+            return {(vid, pid) for _, vid, pid in _iter_windows_hid()
+                    if vid is not None}
         except Exception:
             return set()
-
-    found = set()
-    for path in sorted(glob.glob('/sys/class/hidraw/hidraw*')):
-        for upath in (os.path.join(path, 'device', 'uevent'),
-                      os.path.join(path, 'uevent')):
-            try:
-                content = open(upath).read()
-            except OSError:
-                continue
-            for line in content.splitlines():
-                if line.startswith('HID_ID='):
-                    parts = line.split('=', 1)[1].split(':')
-                    if len(parts) == 3:
-                        try:
-                            found.add((int(parts[1], 16), int(parts[2], 16)))
-                        except ValueError:
-                            pass
-            break   # the first uevent that exists describes this node
-    return found
+    return {(vid, pid) for vid, pid, _ in _iter_hidraw()}
 
 
 class HidTransport:
@@ -92,7 +84,7 @@ class HidTransport:
         try:
             fd = os.open(self.path, os.O_RDONLY)
         except PermissionError:
-            sys.exit(f'Permission denied reading {self.path}. Try running with sudo.')
+            raise PermissionError(f'Permission denied reading {self.path}. Try running with sudo.')
 
         end = time.time() + timeout
         try:
@@ -134,7 +126,7 @@ class HidTransport:
             try:
                 fd = os.open(self.path, os.O_RDWR)
             except PermissionError:
-                sys.exit(f'Permission denied on {self.path}. Try sudo or a udev rule.')
+                raise PermissionError(f'Permission denied on {self.path}. Try sudo or a udev rule.')
             try:
                 # drain anything already queued so we don't match a stale frame
                 while select.select([fd], [], [], 0)[0]:
@@ -164,13 +156,13 @@ class HidTransport:
         try:
             fd = os.open(self.path, os.O_WRONLY)
         except PermissionError:
-            sys.exit(f'Permission denied writing {self.path}. Try running with sudo.')
+            raise PermissionError(f'Permission denied writing {self.path}. Try running with sudo.')
         try:
             n = 0
             while n < len(payload):
                 w = os.write(fd, payload[n:])
                 if w <= 0:
-                    sys.exit('short/failed write to HID device')
+                    raise OSError('short/failed write to HID device')
                 n += w
         finally:
             os.close(fd)
@@ -193,10 +185,9 @@ ERROR_SHARING_VIOLATION = 32
 
 
 def _iter_windows_hid():
-    """Yield (vid, pid) for each HID collection Windows can open. A collection
-    held by another process (vendor service) can't be queried and is skipped --
-    fine for enumeration; find_windows_hid() has the busy-vs-absent logic for
-    the single-device open path."""
+    r"""Yield (path, vid, pid) for each HID collection Windows can open, and
+    (path, None, None) for one held by another process (sharing violation):
+    attributes can only be read from an open handle, so its ids are unknown."""
     W, GUID, IfaceData, Attributes = _win_structs()
     setup, hid, k32 = ctypes.windll.setupapi, ctypes.windll.hid, ctypes.windll.kernel32
     guid = GUID()
@@ -215,6 +206,7 @@ def _iter_windows_hid():
             setup.SetupDiGetDeviceInterfaceDetailW(
                 devinfo, ctypes.byref(iface), None, 0, ctypes.byref(need), None)
             buf = ctypes.create_string_buffer(need.value)
+            # cbSize of the detail struct, not of the buffer we allocated.
             ctypes.cast(buf, ctypes.POINTER(W.DWORD))[0] = (
                 8 if ctypes.sizeof(ctypes.c_void_p) == 8 else 6)
             if not setup.SetupDiGetDeviceInterfaceDetailW(
@@ -223,19 +215,17 @@ def _iter_windows_hid():
             path = ctypes.wstring_at(ctypes.addressof(buf) + ctypes.sizeof(W.DWORD))
             handle = k32.CreateFileW(path, 0xC0000000, 3, None, 3, 0, None)
             if handle == -1:
+                if k32.GetLastError() == ERROR_SHARING_VIOLATION:
+                    yield path, None, None
                 continue
             attrs = Attributes()
             attrs.Size = ctypes.sizeof(attrs)
             ok = hid.HidD_GetAttributes(handle, ctypes.byref(attrs))
             k32.CloseHandle(handle)
             if ok:
-                yield attrs.VendorID, attrs.ProductID
+                yield path, attrs.VendorID, attrs.ProductID
     finally:
         setup.SetupDiDestroyDeviceInfoList(devinfo)
-
-
-def _list_windows_hid() -> set:
-    return set(_iter_windows_hid())
 
 
 def _win_structs():
@@ -257,59 +247,21 @@ def _win_structs():
 
 
 def find_windows_hid(vid: int, pid: int) -> str:
-    r"""Return the \\?\hid#... path for this device, or exit with why not.
+    r"""Return the \\?\hid#... path for this device, or raise OSError with why not.
 
-    Attributes can only be read from an open handle, so a device held by the
-    vendor software would otherwise look absent rather than busy: the open
-    fails and its vendor id is never seen. Sharing violations are counted so
-    the message can tell the two apart.
+    A device held by the vendor software would otherwise look absent rather
+    than busy: the open fails and its vendor id is never seen. Sharing
+    violations are counted so the message can tell the two apart.
     """
-    W, GUID, IfaceData, Attributes = _win_structs()
-    setup, hid, k32 = ctypes.windll.setupapi, ctypes.windll.hid, ctypes.windll.kernel32
-
-    guid = GUID()
-    hid.HidD_GetHidGuid(ctypes.byref(guid))
-    devinfo = setup.SetupDiGetClassDevsW(ctypes.byref(guid), None, None, 0x12)
-
     held = 0
-    index = 0
-    try:
-        while True:
-            iface = IfaceData()
-            iface.cbSize = ctypes.sizeof(iface)
-            if not setup.SetupDiEnumDeviceInterfaces(
-                    devinfo, None, ctypes.byref(guid), index, ctypes.byref(iface)):
-                break
-            index += 1
-
-            need = W.DWORD()
-            setup.SetupDiGetDeviceInterfaceDetailW(
-                devinfo, ctypes.byref(iface), None, 0, ctypes.byref(need), None)
-            buf = ctypes.create_string_buffer(need.value)
-            # cbSize of the detail struct, not of the buffer we allocated.
-            ctypes.cast(buf, ctypes.POINTER(W.DWORD))[0] = (
-                8 if ctypes.sizeof(ctypes.c_void_p) == 8 else 6)
-            if not setup.SetupDiGetDeviceInterfaceDetailW(
-                    devinfo, ctypes.byref(iface), buf, need, None, None):
-                continue
-            path = ctypes.wstring_at(ctypes.addressof(buf) + ctypes.sizeof(W.DWORD))
-
-            handle = k32.CreateFileW(path, 0xC0000000, 3, None, 3, 0, None)
-            if handle == -1:
-                if k32.GetLastError() == ERROR_SHARING_VIOLATION:
-                    held += 1
-                continue
-            attrs = Attributes()
-            attrs.Size = ctypes.sizeof(attrs)
-            ok = hid.HidD_GetAttributes(handle, ctypes.byref(attrs))
-            k32.CloseHandle(handle)
-            if ok and attrs.VendorID == vid and attrs.ProductID == pid:
-                return path
-    finally:
-        setup.SetupDiDestroyDeviceInfoList(devinfo)
+    for path, found_vid, found_pid in _iter_windows_hid():
+        if found_vid is None:
+            held += 1
+        elif found_vid == vid and found_pid == pid:
+            return path
 
     if held:
-        sys.exit(
+        raise PermissionError(
             f'The HID collection for VID={hex(vid)} PID={hex(pid)} is held by '
             f'another process ({held} sharing violation(s)).\n'
             'Antelope\'s service holds it while it runs. Stop it and close the '
@@ -318,7 +270,7 @@ def find_windows_hid(vid: int, pid: int) -> str:
             '  Get-Process "Antelope Launcher","AntelopeAudioServer" | Stop-Process -Force\n'
             'Start-Service Antelope-Manager-Service puts it back.'
         )
-    sys.exit(
+    raise FileNotFoundError(
         f'HID collection not found for VID={hex(vid)} PID={hex(pid)}.\n'
         'Check the USB connection.'
     )
@@ -340,7 +292,7 @@ class WindowsHidTransport:
         self._k32 = ctypes.windll.kernel32
         self.handle = self._k32.CreateFileW(path, 0xC0000000, 3, None, 3, 0, None)
         if self.handle == -1:
-            sys.exit(f'Could not open {path}, error {self._k32.GetLastError()}')
+            raise OSError(f'Could not open {path}, error {self._k32.GetLastError()}')
 
     def _read_raw(self, timeout: float):
         buf = ctypes.create_string_buffer(self.report_size + 1)

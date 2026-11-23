@@ -280,9 +280,13 @@ def cmd_status(args, profile):
             break
         mode = proto.mode_name(profile, s.get('input_mode', -1))
         glyph, tail = _link_bracket(profile, link_state, ch)
+        phantom, phase = (
+            '?' if value is None else ('on' if value else 'off')
+            for value in (s.get('phantom'), s.get('phase_invert'))
+        )
         print(f"{ch:>2}  {mode:<7} {s['gain']:>5}  "
-              f"{'on' if s.get('phantom') else 'off':<3} "
-              f"{'on' if s.get('phase_invert') else 'off':<5}"
+              f"{phantom:<3} "
+              f"{phase:<5}"
               f"{glyph}{tail}")
     confirmed = profile['channels'].get('confirmed_indices', [])
     if confirmed and n_channels > max(confirmed) + 1:
@@ -310,8 +314,9 @@ def _partner_channel(profile, ch):
 
 def cmd_set_mode(args, profile):
     enforce_target(profile, args.channel, 'input', args.force)
-    enforce_enum(profile, 'input_mode_allowed_values',
-                 proto.mode_value(profile, args.mode), 'input_mode', args.force)
+    mode = args.mode.casefold()
+    new_val = proto.mode_value(profile, mode)
+    enforce_enum(profile, 'input_mode_allowed_values', new_val, 'input_mode', args.force)
     link_state = _load_link_state(profile)
     if _is_pair_linked(profile, link_state, args.channel) and not args.force:
         partner = _partner_channel(profile, args.channel)
@@ -320,17 +325,16 @@ def cmd_set_mode(args, profile):
                  f'(params.channel_link.mode_requires_unlink) is: unlink -> set mode independently '
                  f'per channel -> re-link. Use --force to send it anyway (not expected to work as you want).')
 
-    transport = get_transport(profile)
-    old = require_state(transport, profile, args.channel, args.timeout)
-    new_val = proto.mode_value(profile, args.mode)
-    warn_unverified_channel(profile, args.channel)
-
     hiz_channels = profile['channels'].get('hiz_channels')
-    if args.mode == 'hiz' and hiz_channels is not None and args.channel not in hiz_channels:
+    if mode == 'hiz' and hiz_channels is not None and args.channel not in hiz_channels:
         if not args.force:
             sys.exit(f'Hi-Z is not available on channel {args.channel} on this device '
                      f'(only {hiz_channels}). Use --force if you believe this profile is wrong.')
         print(f'note: forcing hiz on channel {args.channel}, outside the known hiz_channels {hiz_channels}.')
+
+    transport = get_transport(profile)
+    old = require_state(transport, profile, args.channel, args.timeout)
+    warn_unverified_channel(profile, args.channel)
 
     mic_val = proto.mode_value(profile, 'mic')
     if old.get('phantom') and old.get('input_mode') == mic_val and new_val != mic_val:
@@ -1080,7 +1084,7 @@ def cmd_route(args, profile):
     if sel not in ('mute', 'all') and not cache.get(str(dest)):
         try:
             pairs = _read_routing_dest(get_transport(profile), profile, dest, timeout=args.timeout)
-        except SystemExit:
+        except (SystemExit, OSError):
             pairs = None
         if pairs:
             _save_matrix_dest(profile, dest, pairs)
@@ -1161,7 +1165,7 @@ def cmd_matrix_status(args, profile):
     transport = None
     try:
         transport = get_transport(profile)
-    except SystemExit:
+    except (SystemExit, OSError):
         transport = None
 
     live = {}
@@ -1608,6 +1612,13 @@ def _bus_bool_command(args, profile, param_name):
     transport = get_transport(profile)
     on = 1 if args.state == 'on' else 0
     pkt = proto.build_command(profile, param_name, bus_id, on)
+    if proto.bus_flag_needs_mute_read(profile, bus_id, param_name):
+        # Same rule as the WebUI: dim/mono must not release a protected mute.
+        data = read_state(transport, profile, args.timeout)
+        state = proto.parse_bus_mute_witness(profile, data, bus_id)
+        if proto.bus_flag_may_release_mute(profile, bus_id, param_name, state):
+            sys.exit(f'{proto.bus_name(profile, bus_id)} is muted or unread: this write is '
+                     'refused so it cannot release the mute. Unmute it first if you mean to.')
     send_and_wait(transport, pkt)
     verify_bus(transport, profile, bus_id, args.timeout)
 
@@ -1770,7 +1781,8 @@ def cmd_set_sample_rate(args, profile):
 # the 0x73 state report (offset 19); pan_law has no known readback.
 
 def _enum_values(profile, param):
-    v = profile['params'].get(param, {}).get('values', {})
+    p = profile['params'].get(param, {})
+    v = p.get('values') or p.get('runtime_values', {})  # a profile may name an enum only in runtime_values
     return {int(k): s for k, s in v.items()}
 
 
@@ -2496,7 +2508,11 @@ def main():
     args = p.parse_args()
     args.profile = _resolve_profile_path(args.profile)
     profile = proto.load_profile(args.profile)
-    args.func(args, profile)
+    try:
+        args.func(args, profile)
+    except OSError as e:
+        # transport errors carry the message for the user; no traceback
+        sys.exit(str(e))
 
 
 if __name__ == '__main__':

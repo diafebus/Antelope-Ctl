@@ -522,60 +522,100 @@ def t_write_brightness(dev):
 
 
 def t_write_bus_flags(dev):
-    """Round-trip dim and mono on every declared Orion bus.
+    """Round-trip supported dim and mono flags and verify the full restore.
 
     The status byte is read from the pushed 0x73 report after each write and
-    the original value is restored before the next flag is tested.  A bus at
-    raw level 96 is the device's silent endpoint, so the probe temporarily
-    uses 95 dB attenuation to avoid testing a flag against that endpoint; the
-    original level is restored as part of the same finally block.
+    the original value is restored before the next flag is tested. If the
+    silent endpoint shares a status bit with mute, temporarily move one step
+    off that endpoint and restore the level after the probe.
     """
     known = dev.p.get('buses', {}).get('known', {}) or {}
-    if not known or 'bus_block' not in dev.p.get('frame', {}).get('state_report', {}):
-        return record(SKIP, 'WRITE bus dim/mono', 'no profile bus-block contract')
+    bus_block = dev.p.get('frame', {}).get('state_report', {}).get('bus_block')
+    if not known or not bus_block:
+        record(SKIP, 'WRITE bus dim/mono', 'no profile bus-block contract')
+        return True
+    status_values = bus_block.get('status_values', {})
+    known_statuses = {proto._as_int(value) for value in status_values.values()}
+    params = dev.p['params']
+    allowed = proto.channel_space_bounds(dev.p, 'bus')
+    protected = proto.protected_mute_buses(dev.p)
     for bus_key in sorted(known, key=int):
         bus = int(bus_key)
+        if bus in protected or (allowed is not None and bus not in allowed):
+            record(SKIP, f'WRITE bus {bus} dim/mono', 'protected or not a legal bus target')
+            continue
         for param, key in (('bus_dim', 'dim'), ('bus_mono', 'mono')):
+            label = f'WRITE bus {bus} {key}'
             data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
             if data is None:
-                return record(FAIL, f'WRITE bus {bus} {key}', 'no state report before write')
+                return check(label, False, 'no state report before write')
             before = proto.parse_bus_state(dev.p, data, bus)
+            if key not in before or param not in params:
+                record(SKIP, label, 'no matching write and readback contract')
+                continue
+            original_status = before['status_raw']
+            if status_values and original_status not in known_statuses:
+                record(SKIP, label, f'unknown output mode 0x{original_status:02x}')
+                continue
+
             orig = int(before[key])
             probe = 0 if orig else 1
-            after = None
+            restore_param, restore_value = param, orig
+            if status_values:
+                # An exclusive mode switch clears the previously active mode.
+                for mode in status_values:
+                    if mode != key and before.get(mode):
+                        restore_param, restore_value = f'bus_{mode}', 1
+                        break
+            if restore_param not in params:
+                record(SKIP, label, 'no setter to restore the active output mode')
+                continue
+
+            try:
+                probe_packet = proto.build_command(dev.p, param, bus, probe)
+                restore_packet = proto.build_command(dev.p, restore_param, bus, restore_value)
+            except (KeyError, ValueError, proto.ConstraintError):
+                record(SKIP, label, 'no legal probe and restore commands')
+                continue
             original_level = int(before['level'])
             level_changed = False
+            probe_sent = False
             try:
-                if original_level == 96:
-                    dev.write(proto.build_command(dev.p, 'bus_level', bus, 95))
+                if before.get('mute_ambiguous'):
+                    probe_level = original_level - 1
+                    level_probe = proto.build_command(dev.p, 'bus_level', bus, probe_level)
+                    level_restore = proto.build_command(dev.p, 'bus_level', bus, original_level)
                     level_changed = True
+                    dev.write(level_probe)
                     data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
-                    if data is not None:
-                        before = proto.parse_bus_state(dev.p, data, bus)
-                dev.write(proto.build_command(dev.p, param, bus, probe))
+                    state = proto.parse_bus_state(dev.p, data, bus) if data is not None else {}
+                    if state.get('level') != probe_level or state.get(key) != orig:
+                        return check(label, False, 'could not verify the temporary level change')
+                probe_sent = True
+                dev.write(probe_packet)
                 data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
                 after = proto.parse_bus_state(dev.p, data, bus) if data is not None else None
-                check(
-                    f'WRITE bus {bus} {key}: {orig} -> {probe} '
-                    f'(status 0x{before["status_raw"]:02x} -> '
-                    f'{after["status_raw"] if after else 0:02x})',
+                probe_ok = check(
+                    f'{label}: {orig} -> {probe}',
                     after is not None and int(after[key]) == probe,
                     f'no matching readback (got {after})',
                 )
             finally:
-                dev.write(proto.build_command(dev.p, param, bus, orig))
+                if probe_sent:
+                    dev.write(restore_packet)
                 if level_changed:
-                    dev.write(proto.build_command(dev.p, 'bus_level', bus, original_level))
+                    dev.write(level_restore)
                 data = dev.t.read_one(proto.state_report_magic(dev.p), timeout=3.0)
                 restored = proto.parse_bus_state(dev.p, data, bus) if data is not None else None
-                ok = restored is not None and int(restored[key]) == orig
-                record(
-                    PASS if ok else FAIL,
-                    f'WRITE bus {bus} {key}: restored {orig} '
-                    f'(status {after["status_raw"] if after else 0:02x} -> '
-                    f'{restored["status_raw"] if restored else 0:02x})',
-                    '' if ok else 'RESTORE FAILED -- inspect the output bus by hand!',
+                restore_ok = check(
+                    f'{label}: restored status 0x{original_status:02x} and level {original_level}',
+                    restored is not None and restored['status_raw'] == original_status
+                    and restored['level'] == original_level,
+                    f'RESTORE FAILED (read back {restored}) -- inspect the output bus by hand!',
                 )
+            if not (probe_ok and restore_ok):
+                return False
+    return True
 
 
 def t_unverifiable():
@@ -639,10 +679,12 @@ def main():
     if args.write:
         print('\nwrite round trips (each restores)')
         t_write_brightness(dev)
-        t_write_bus_flags(dev)
-        t_write_mixer(dev, args.write_mix)
-        t_write_auraverb(dev)
-        t_write_routing(dev, args.write_dest)
+        if t_write_bus_flags(dev):
+            t_write_mixer(dev, args.write_mix)
+            t_write_auraverb(dev)
+            t_write_routing(dev, args.write_dest)
+        else:
+            record(SKIP, 'remaining write tests', 'bus verification failed')
     else:
         print('\nwrite round trips')
         record(SKIP, 'write tests', 'not run -- pass --write to enable')
@@ -663,4 +705,7 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except OSError as e:
+        sys.exit(str(e))
