@@ -46,6 +46,7 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 | Impresser (partial controls) | `ImpresserGRMeter`; `PeakLed` ×16; `ClipLed`; `ImpresserLed` ×4; `OptoLed`; `DistortionLed` ×2; `RatioDisplay` (parameter readout) |
 | Comp-4K-Bus | `Ssl4kBusVuMeter`; `Ssl4kBusPeakMeter`; embedded IN lamp in `Ssl4kBusBypassButton` (processing GUI correlation only; signal telemetry unverified) |
 | NEU-473A | `U473APeakMeter`, `U473AGainReductionLedPeakMeter` with eight `PeakLed` segments, `U473ABypassLed`, `U473AGreenLed` and `U473ARedLed`. Signal telemetry remains unverified. |
+| Diode609 | `Diode609VuMeter`, `Diode609PeakMeter`, `Diode609PeakLed` and the illuminated Power button. Signal telemetry remains unverified. |
 
 Impresser's `OptoLed` does not return to its initial appearance after the
 eight-label Ratio cycle: it is bright before raw3/4:1, dark after the full

@@ -325,6 +325,9 @@ function commitMixerPan(m, ch, pan, pval, value) {
 
 function applyMixerMeters(meters) {
   MIXER_METERS = meters || null;
+  const mapping = PROFILE?.frame?.state_report?.meter_mappings
+    ?.find(entry => entry.target === 'mixer_window_strip');
+  const approximateDb = mapping?.display_curve === 'approximate_db';
   const rawRange = Array.isArray(meters?.raw_range) && meters.raw_range.length === 2
     ? meters.raw_range.map(Number) : [0, 96];
   const rawLo = rawRange[0], rawHi = rawRange[1];
@@ -353,13 +356,16 @@ function applyMixerMeters(meters) {
     const silent = sample?.silence === true || raw === silenceRaw
       || (noiseFloorRaw != null && raw >= noiseFloorRaw);
     const span = rawHi - rawLo;
-    const pct = valid && !silent && span > 0
-      ? (rawHi - raw) / span * 100 : 0;
+    let pct = 0;
+    if (valid && !silent && span > 0) {
+      pct = approximateDb ? dbToPct(rawLo - raw) : (rawHi - raw) / span * 100;
+    }
     meter.classList.toggle('unavailable', !valid);
     meter.classList.toggle('peak', valid && raw === rawLo);
     meter.style.height = pct.toFixed(1) + '%';
+    const scale = approximateDb ? 'approximate scale (uncalibrated)' : 'uncalibrated';
     meter.parentElement.title = !valid ? 'Meter unavailable'
-      : `Raw ${raw}${silent ? ' · silence/noise floor' : ' · uncalibrated'}`;
+      : `Raw ${raw} · ${silent ? 'silence/noise floor' : scale}`;
   });
 }
 

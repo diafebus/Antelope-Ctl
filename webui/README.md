@@ -100,7 +100,10 @@ compatibility.
     Closing the
     window or pressing Escape clears the launch-button indicator;
     each Mix tab contains a compact horizontal board of vertical strips with
-    fader, pan, mute, solo, and the selected raw mixer meter. Orion's Mix 1
+    fader, pan, mute, solo, and the selected mixer meter. Orion's Mix 1–4
+    use a tapered display scale that compresses quiet signals and gives
+    peaks more room. Hover over a meter to see its uncalibrated raw reading.
+    Orion's Mix 1
     input strips additionally expose the Gazelle Reverb send; Mix 2-4 and all
     master strips deliberately do not. Selecting a Mix tab automatically
     selects its matching mixer surface/meter bank; multiple Solo buttons may be
@@ -184,8 +187,9 @@ the active transport, and then performs a bounded worker join before exiting.
 The `.venv` is only the Python environment; it is not a separate daemon.
 
 Profile selection uses the connected VID/PID and falls back to Orion. Override
-it with `ANTELOPE_PROFILE=/path/to/profile.json`. Port 8714 can be overridden
-with `ANTELOPE_PORT=<port>` (keep the app-menu service on 8714).
+it with `ANTELOPE_PROFILE=/path/to/profile.json`. Override port 8714 with
+`ANTELOPE_PORT=<port>`. The app-menu launcher reads the port and profile
+from `~/.config/antelope-ctl/webui.env` when that file is present.
 
 ### Linux desktop and user service
 
@@ -195,5 +199,13 @@ Control** app-menu entry starts the user service and opens the WebUI. The
 installer also adds a template, `antelope-webui@<name>`, for a second interface
 with a different VID/PID. Set `ANTELOPE_PROFILE` and a distinct `ANTELOPE_PORT` in
 `~/.config/antelope-ctl/<name>.env`. Device selection uses VID/PID, so run only
-one service for a given VID/PID. Stop the service before using the CLI,
-self-test, or vendor panel against that device.
+one service for a given VID/PID.
+
+Run `packaging/antelope-webui-launch --all` to open services for connected
+interfaces with matching configurations. An unconfigured launcher falls back
+to the default service. The launcher checks the profile of any instance
+already answering on the configured port and reuses it when it matches. Add
+`--no-browser` to start or reuse the services and print their URLs.
+
+Stop the service before using the CLI, self-test, or vendor panel against that
+device.

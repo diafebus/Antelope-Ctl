@@ -532,13 +532,34 @@
       "name": "NEU-473A",
       "effect_id": "u473a",
       "panel_class": "U473A",
-      "next_step": "review",
+      "next_step": "complete",
       "range_plan": "u473a-knobs",
-      "review_reason": "Four endpoint pairs already captured. Attack raw 1 and Threshold raw 2/3/4/7/9 are transient wire samples that still need position-specific visual witnesses. Both Recovery selectors, Ratio, Expander, De-Ess, Bass Cut and Bypass still need directed capture.",
-      "partial_evidence": [
-        "load-neu473a",
+      "completion_evidence": [
         "scan-U473A-20261118T152755871Z",
-        "remove-neu473a"
+        "continuation-20261119/attack-verified.json",
+        "continuation-20261119/threshold-verified.json",
+        "continuation-20261119/ratio-verified.json",
+        "continuation-20261119/recovery-verified.json",
+        "continuation-20261119/exprecovery-verified.json",
+        "continuation-20261119/processing/verified.json",
+        "continuation-20261119/remove-neu473a"
+      ],
+      "completion_limits": "All visible controls exercised; unlabelled Threshold mark values and physical timing remain unknown. Audible behavior, independent readback, telemetry and runtime contracts remain unverified."
+    },
+    {
+      "name": "Diode609",
+      "effect_id": "diode609",
+      "panel_class": "Diode609",
+      "next_step": "review",
+      "range_plan": "diode609-knobs",
+      "review_reason": "Endpoint and switch captures complete. All Compressor Recovery, Gain, Ratio and HPF positions have visual witnesses. Remaining Limiter Threshold, Limiter Recovery and Compressor Threshold positions need label witnesses.",
+      "partial_evidence": [
+        "continuation-20261119/diode609/reconciled-load.json",
+        "scan-Diode609-20261119T034207950Z",
+        "continuation-20261119/diode609/ranges-review.json",
+        "continuation-20261119-midday/manual-sc-verified.json",
+        "continuation-20261119-midday/manual-rotaries-decoded.json",
+        "continuation-20261119-midday/manual-stepped-aligned.json"
       ]
     }
   ]

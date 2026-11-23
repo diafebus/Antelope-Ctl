@@ -692,6 +692,13 @@ negative-dB steps, and raw `96` (`0x60`) is the device's silent/`-inf`
 endpoint. This was confirmed directly on Monitor A on 2026-09-14; the
 capture-derived byte offsets remain valid.
 
+On 2026-11-23, HP1 level writes cleared an explicit mute in both tested
+directions. The `0x73` readback changed from level/status `32/0x04` to
+`95/0x00` and, after re-muting, from `95/0x04` to `32/0x00`. A separate
+mute write restored the original state at level 32. Both levels are below
+the silent endpoint. The trial ended before dim and mono were exercised
+on the muted bus.
+
 `bus_dim` / `bus_mono` were restore-guaranteed live-round-tripped on all six
 bus ids on 2026-09-14, including line_out and reamp. The test temporarily set
 HP1 from silent raw level 96 to 95 because its `0x04` status bit is the silent
@@ -2432,7 +2439,21 @@ captured endpoints raw 0 and 2, and expander Threshold (27) has captured
 endpoints raw 0 and 10. The same capture contains transient Attack raw 1 and
 Threshold raw 2/3/4/7/9 without position-specific visual witnesses.
 See [labelled observations](docs/orion-afx-power-dynamics.md#neu-473a--partial-control-capture-2026-11-18)
-and the remaining selector work. Runtime commands remain disabled.
+including the 2026-11-19 follow-up. Attack raw 1 points to 2.5 ms. Ratio
+25, compressor Recovery 24, expander Threshold 27 and expander Recovery 28
+were stepped through every visible position. Single-byte switches are Bass
+Cut 21, De-Ess 22 and Expander 29. The Bypass cycle uses
+`0x14 / 0x98` with instance 17, type 18 and observed state 19. Runtime
+commands remain disabled.
+
+**Diode609 partial controls (2026-11-19).** Directed load frame 983 and
+same-instance initialization frame 1013 establish Orion type 82, instance 0
+and family `0x20 / 0xd5 / 0x0e`. Four isolated switch round trips identify
+Limit 22, Limiter Attack 23, Compress 29 and Compressor Attack 30. Seven
+paired rotary endpoints and the Power/rack BP return are listed in the
+[Diode609 findings](docs/orion-afx-power-dynamics.md#diode609--partial-control-capture-2026-11-19).
+The owner-operated SC Preview toggle changes byte 31 (1 lit, 0 unlit).
+Intermediate rotary positions remain pending.
 
 **Comp-4K-Bus visible controls (2026-11-04).** Directed load frame853 in
 `supervised-20261104T012645Z-load-ssl4kbus` establishes Orion type63/instance0.
