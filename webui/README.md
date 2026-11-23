@@ -155,7 +155,11 @@ compatibility.
   `frame.readback.category_counts`; profiles without a complete count may use
   only an explicitly capture-confirmed feature layout. The incremental sweep
   never invents additional indices.
-- No auth (binds to `127.0.0.1` only).
+- No auth (binds to `127.0.0.1` only). Requests whose `Host` header is not
+  `127.0.0.1` or `localhost` are refused with 400 (DNS rebinding); `[::1]` and
+  LAN names are refused too.
+- The worker rejects new edits while offline and discards pending edits from a
+  disconnected session. Reconnection rebuilds readback from the active device.
 - No packaging. It is a sketch.
 
 ## Run

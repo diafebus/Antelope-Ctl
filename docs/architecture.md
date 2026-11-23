@@ -24,7 +24,7 @@ browser modules <── SSE/snapshot + API replies ── webui/server.py
 | [Protocol](../antelope/protocol.py) | Profile loading, pure frame builders and parsers. `build_readback_query` enforces classic bounds through `check_readback_index`; record layouts describe nested payloads without expanding outer bounds. |
 | [Transport](../antelope/transport.py) | HID discovery, opening, reading, writing and request/reply handling. It does not decide which new device commands are justified. |
 | [CLI](../antelope/cli.py) | Resolves profiles and command arguments, builds frames, uses transport, displays decoded state. Some views use explicitly labelled local caches; those are not device readback. |
-| [WebUI server](../webui/server.py) | FastAPI endpoints and `Device`: one background worker owns the transport and serializes queued operations, polling and readbacks. Browser requests do not create competing controllers. |
+| [WebUI server](../webui/server.py) | FastAPI endpoints and `Device`: one background worker owns the transport and serializes queued operations, polling and readbacks. Browser requests do not create competing controllers. The worker rejects commands while offline and discards pending operations and cached readback on disconnect. It logs unexpected worker errors and reconnects. |
 | [Device UI metadata](../webui/device_ui.py) | Derives browser-facing device capabilities and labels from the active profile. |
 | [Browser](../webui/static/index.html) | Ordered modules in `static/ui/`; `core.js` supplies shared helpers, feature modules render controls, `boot.js` fans out state. SSE carries fast state; `rb_ver` signals slow-state refresh. No frontend build step. |
 

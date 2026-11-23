@@ -37,6 +37,7 @@ import queue
 import sys
 import threading
 import time
+import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antelope import protocol as proto
@@ -46,7 +47,8 @@ from webui.device_ui import features_for
 from webui.afx_catalog import preview_catalog, effect_choices
 from webui.afx_test import MemoryCatTest
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StrictInt
@@ -411,7 +413,7 @@ class Device:
             proto.readback_category_count(profile, SURROUND_EQ_CAT) or 0)
         self.surround_available = bool(self.surround_contract)
 
-        self.cmds = queue.Queue()          # callables: fn(transport) -> None
+        self.cmds = queue.Queue()          # (operation, on_discard) pairs and stop sentinel
         self.snapshot = {"online": False}  # last known state, read by the web side
         self.version = 0
         self.rb_ver = 0
@@ -446,16 +448,39 @@ class Device:
 
     def _drop_transport(self, transport):
         """Close a platform transport and forget it, if it is still current."""
-        if transport is not None:
-            close = getattr(transport, "close", None)
-            if close is not None:
-                try:
-                    close()
-                except Exception:                           # noqa: BLE001
-                    pass
+        if transport is None:
+            return
+        discarded = []
         with self._lock:
             if self._transport is transport:
                 self._transport = None
+                self.routing.clear()
+                self.mixer.clear()
+                self.auraverb.clear()
+                self.structured.clear()
+                self.surround_global = self.surround_global_raw = None
+                self.surround_speakers.clear()
+                self.solo_state.clear()
+                self.rb_ver += 1
+                self.link_rb_ver += 1
+                self.snapshot = {"online": False, "rb_ver": self.rb_ver,
+                                 "link_rb_ver": self.link_rb_ver}
+                self.version += 1
+                while True:
+                    try:
+                        entry = self.cmds.get_nowait()
+                    except queue.Empty:
+                        break
+                    if entry is not None and entry[1] is not None:
+                        discarded.append(entry[1])
+        close = getattr(transport, "close", None)
+        if close is not None:
+            try:
+                close()
+            except Exception:                           # noqa: BLE001
+                pass
+        for notify in discarded:
+            notify()
 
     def request_stop(self):
         """Request an immediate worker/transport shutdown from a signal path.
@@ -479,10 +504,13 @@ class Device:
         if worker is not None and worker is not threading.current_thread():
             worker.join(timeout=max(0.0, float(timeout)))
 
-    def submit(self, fn):
-        """Queue fn(transport). At most one queued function runs per fast
-        state cycle, so a burst of controls cannot starve meter updates."""
-        self.cmds.put(fn)
+    def submit(self, fn, *, on_discard=None):
+        """Admit an operation only while its transport session is online."""
+        with self._lock:
+            if self._stop.is_set() or self._transport is None or not self.snapshot.get("online"):
+                return False
+            self.cmds.put((fn, on_discard))
+            return True
 
     def get(self):
         with self._lock:
@@ -1064,6 +1092,8 @@ class Device:
 
     def _publish(self, snap):
         with self._lock:
+            if snap.get("online") and (self._transport is None or self._stop.is_set()):
+                return
             snap["rb_ver"] = self.rb_ver
             snap["link_rb_ver"] = self.link_rb_ver
             self.snapshot = snap
@@ -1191,6 +1221,20 @@ class Device:
             self.profile, proto.readback_body(self.profile, data))
 
     def run(self):
+        # An unexpected error (a parser bug, a short report) must not end the worker
+        # silently with the page still showing "online": log it, go offline, reconnect.
+        while not self._stop.is_set():
+            try:
+                return self._serve()
+            except Exception:                                   # noqa: BLE001
+                traceback.print_exc()
+                with self._lock:
+                    transport = self._transport
+                self._drop_transport(transport)
+                self._publish({"online": False})
+                self._stop.wait(2.0)
+
+    def _serve(self):
         transport = None
         readback_plan = []
         readback_changed = False
@@ -1199,31 +1243,34 @@ class Device:
             if transport is None:
                 try:
                     transport = open_transport(self.vid, self.pid, self.report_size)
-                except SystemExit:
+                except (SystemExit, OSError):
                     self._publish({"online": False})
                     if self._stop.wait(2.0):
                         break
                     continue
-                if self._stop.is_set():
+                with self._lock:
+                    stopping = self._stop.is_set()
+                    if not stopping:
+                        self._transport = transport
+                        self.connection_generation += 1
+                if stopping:
                     self._drop_transport(transport)
                     transport = None
                     break
-                with self._lock:
-                    self._transport = transport
-                    self.connection_generation += 1
-                    # AFX inventory and link flags belong to this connection.
-                    self.structured = {key: value for key, value in self.structured.items()
-                                       if key[0] != 0x19 and key != (0x0b, 4)}
-                    self.rb_ver += 1
                 last_readback = time.time()
                 readback_plan = self._readback_plan()
                 readback_changed = False
 
-            # 1. Run at most one queued command. Draining the queue here used
+            # 1. Run at most one queued command. Running the entire queue here used
             # to freeze meters for the duration of every pending HID write.
             try:
-                fn = self.cmds.get_nowait()
-                if fn is None:
+                entry = self.cmds.get_nowait()
+                if entry is None:
+                    continue
+                fn, on_discard = entry
+                if self._stop.is_set():
+                    if on_discard is not None:
+                        on_discard()
                     break
                 try:
                     fn(transport)
@@ -1757,6 +1804,9 @@ AFX_TEST = MemoryCatTest(DEV)
 # ---------------------------------------------------------------- HTTP / SSE
 
 app = FastAPI(title="antelope-ctl webui")
+# A page on another site can point its own name at 127.0.0.1 (DNS rebinding);
+# the Host header check (port ignored) refuses those requests with 400.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
 app.mount("/webui/assets", StaticFiles(directory=os.path.join(HERE, "assets")),
           name="webui-assets")
 app.mount("/webui/static", StaticFiles(directory=os.path.join(HERE, "static")),
@@ -1902,6 +1952,11 @@ class MixerLink(BaseModel):
     pair: int
     enabled: bool
     mix: int = 0
+
+
+def _submit(operation):
+    if DEV.submit(operation) is False:
+        raise HTTPException(status_code=503, detail="The Antelope device is offline")
 
 
 def _bad(msg):
@@ -2161,7 +2216,7 @@ def api_surround_global(change: SurroundGlobalChange):
             t.write(packet)
             DEV._cache_surround_global_packet(packet)
 
-        DEV.submit(do)
+        _submit(do)
         return {"ok": True, "queued": True, "format": format_name}
     if change.eq_position is not None:
         if change.delay_ms is not None or change.level_db is not None:
@@ -2195,7 +2250,7 @@ def api_surround_global(change: SurroundGlobalChange):
             t.write(packet)
             DEV._cache_surround_global_packet(packet)
 
-        DEV.submit(do)
+        _submit(do)
         return {
             "ok": True,
             "queued": True,
@@ -2231,7 +2286,7 @@ def api_surround_global(change: SurroundGlobalChange):
         t.write(packet)
         DEV._cache_surround_global_packet(packet)
 
-    DEV.submit(do)
+    _submit(do)
     return {
         "ok": True,
         "delay_ms": None if delay_raw is None else delay_raw * delay_step,
@@ -2287,7 +2342,7 @@ def api_surround_bass(change: SurroundBassChange):
             print(f"[surround] post-write Bass Management readback: {exc!r}",
                   file=sys.stderr, flush=True)
 
-    DEV.submit(do)
+    _submit(do)
     return {
         "ok": True,
         "queued": True,
@@ -2361,7 +2416,7 @@ def api_surround_speaker(change: SurroundSpeakerChange):
                 print(f"[surround] post-write speaker bypass readback: {exc!r}",
                       file=sys.stderr, flush=True)
 
-        DEV.submit(do)
+        _submit(do)
         return {
             "ok": True,
             "queued": True,
@@ -2402,7 +2457,7 @@ def api_surround_speaker(change: SurroundSpeakerChange):
             print(f"[surround] post-write speaker readback: {exc!r}",
                   file=sys.stderr, flush=True)
 
-    DEV.submit(do)
+    _submit(do)
     return {
         "ok": True,
         "queued": True,
@@ -2443,7 +2498,7 @@ def api_surround_eq(change: SurroundEQChange):
         t.write(packet)
         DEV._cache_surround_speaker_packet(change.speaker, packet)
 
-    DEV.submit(do)
+    _submit(do)
     return {
         "ok": True,
         "queued": True,
@@ -2487,7 +2542,7 @@ def api_surround_eq_point(change: SurroundEQPointChange):
         t.write(packet)
         DEV._cache_surround_speaker_packet(change.speaker, packet)
 
-    DEV.submit(do)
+    _submit(do)
     return {
         "ok": True,
         "queued": True,
@@ -2524,7 +2579,7 @@ def api_surround_eq_reset(change: SurroundEQReset):
         t.write(packet)
         DEV._cache_surround_speaker_packet(change.speaker, packet)
 
-    DEV.submit(do)
+    _submit(do)
     reset = eq_write.get("reset", {})
     return {
         "ok": True,
@@ -2540,7 +2595,7 @@ def api_surround_eq_reset(change: SurroundEQReset):
 @app.post("/api/gain")
 def api_gain(g: Gain):
     proto.check_target(PROFILE, g.channel, "input")
-    DEV.submit(lambda t: t.write(proto.build_command(PROFILE, "gain", g.channel, g.db)))
+    _submit(lambda t: t.write(proto.build_command(PROFILE, "gain", g.channel, g.db)))
     return {"ok": True}
 
 
@@ -2550,7 +2605,7 @@ def api_toggle(t: Toggle):
         return _bad("bad param")
     proto.check_target(PROFILE, t.channel, "input")
     val = 1 if t.on else 0
-    DEV.submit(lambda tr: tr.write(proto.build_command(PROFILE, t.param, t.channel, val)))
+    _submit(lambda tr: tr.write(proto.build_command(PROFILE, t.param, t.channel, val)))
     return {"ok": True}
 
 
@@ -2633,7 +2688,7 @@ def _queue_input_link_write(packet, domain, pair):
             with DEV._lock:
                 DEV.link_rb_ver += 1
 
-    DEV.submit(do)
+    _submit(do)
 
 
 @app.post("/api/link")
@@ -2661,7 +2716,7 @@ def _dig_gain(space, param, rng, g: "DigGain"):
         return _bad(f"{space} channel {g.channel} out of range 0..{n - 1}")
     lo, hi = rng
     db = max(lo, min(hi, g.db))
-    DEV.submit(lambda t: t.write(proto.build_command(PROFILE, param, g.channel, db)))
+    _submit(lambda t: t.write(proto.build_command(PROFILE, param, g.channel, db)))
     return {"ok": True}
 
 
@@ -2710,7 +2765,7 @@ def api_output_trim(t: Trim):
     if not (0 <= t.target <= 2):
         return _bad(f"trim target {t.target} out of range 0..2")
     v = max(0, min(6, t.value))
-    DEV.submit(lambda tr: tr.write(proto.build_command(PROFILE, "output_trim", t.target, v)))
+    _submit(lambda tr: tr.write(proto.build_command(PROFILE, "output_trim", t.target, v)))
     return {"ok": True}
 
 
@@ -2728,7 +2783,7 @@ def api_bus_toggle(t: BusToggle):
         packet = proto.build_command(PROFILE, pname, t.bus, 1 if t.on else 0)
     except (KeyError, ValueError, proto.ConstraintError) as e:
         return _bad(str(e))
-    DEV.submit(lambda tr, packet=packet: tr.write(packet))
+    _submit(lambda tr, packet=packet: tr.write(packet))
     return {"ok": True}
 
 
@@ -2738,7 +2793,7 @@ def api_dc_coupling(t: GlobalToggle):
     Device readback is 0x73 state-report byte 93 bit 0; this endpoint currently
     submits the requested value while the WebUI keeps an optimistic display
     state."""
-    DEV.submit(lambda tr: tr.write(proto.build_global_command(PROFILE, "dc_coupling", 1 if t.on else 0)))
+    _submit(lambda tr: tr.write(proto.build_global_command(PROFILE, "dc_coupling", 1 if t.on else 0)))
     return {"ok": True}
 
 
@@ -2764,7 +2819,7 @@ def api_emumic(e: EmuMic):
         pkt = proto.build_micmodeling_command(PROFILE, e.channel, e.enabled, **kw)
     except (KeyError, ValueError, proto.ConstraintError) as ex:   # noqa: BLE001
         return _bad(str(ex))
-    DEV.submit(lambda t: t.write(pkt))
+    _submit(lambda t: t.write(pkt))
     return {"ok": True}
 
 
@@ -2776,7 +2831,7 @@ def api_mode(m: Mode):
         proto.check_enum(PROFILE, "input_mode_allowed_values", val, "input_mode")
     except Exception as e:                                       # noqa: BLE001
         return _bad(str(e))
-    DEV.submit(lambda t: t.write(proto.build_command(PROFILE, "input_mode", m.channel, val)))
+    _submit(lambda t: t.write(proto.build_command(PROFILE, "input_mode", m.channel, val)))
     return {"ok": True}
 
 
@@ -2794,7 +2849,7 @@ def api_sample_rate(s: Scalar):
         return _bad("this profile has no params.sample_rate")
     if str(s.value) not in vals:
         return _bad(f"sample-rate index {s.value} not in {sorted(int(k) for k in vals)}")
-    DEV.submit(lambda t: t.write(proto.build_global_command(PROFILE, "sample_rate", s.value)))
+    _submit(lambda t: t.write(proto.build_global_command(PROFILE, "sample_rate", s.value)))
     return {"ok": True}
 
 
@@ -2810,14 +2865,14 @@ def api_clock_source(s: Scalar):
         return _bad("this profile has no params.clock_source")
     if str(s.value) not in vals:
         return _bad(f"clock-source index {s.value} not in {sorted(int(k) for k in vals)}")
-    DEV.submit(lambda t: t.write(proto.build_global_command(PROFILE, "clock_source", s.value)))
+    _submit(lambda t: t.write(proto.build_global_command(PROFILE, "clock_source", s.value)))
     return {"ok": True}
 
 
 @app.post("/api/brightness")
 def api_brightness(s: Scalar):
     v = max(0, min(100, s.value))
-    DEV.submit(lambda t: t.write(proto.build_global_command(PROFILE, "screen_brightness", v)))
+    _submit(lambda t: t.write(proto.build_global_command(PROFILE, "screen_brightness", v)))
     return {"ok": True}
 
 
@@ -2826,7 +2881,7 @@ def api_bus(b: Bus):
     proto.check_target(PROFILE, b.bus, "bus")
     lo, hi = proto.bus_level_range(PROFILE)
     v = max(lo, min(hi, b.level))
-    DEV.submit(lambda t: t.write(proto.build_command(PROFILE, "bus_level", b.bus, v)))
+    _submit(lambda t: t.write(proto.build_command(PROFILE, "bus_level", b.bus, v)))
     return {"ok": True}
 
 
@@ -2884,7 +2939,7 @@ def api_route(r: Route):
     def do(t, dest=r.dest, ch=r.channel, tgt=tgt):
         DEV._set_routing_source(t, dest, ch, tgt)
 
-    DEV.submit(do)
+    _submit(do)
     return {"ok": True}
 
 
@@ -2917,7 +2972,7 @@ def api_route_batch(b: RouteBatch):
     def do(t, dest=b.dest, changes=resolved):
         DEV._set_routing_batch(t, dest, changes)
 
-    DEV.submit(do)
+    _submit(do)
     return {"ok": True, "n": len(resolved)}
 
 
@@ -2947,7 +3002,7 @@ def api_mixer_source(s: MixerSource):
                   proto._as_int(option["index"]))
     except (KeyError, TypeError, ValueError) as e:
         return _bad(f"invalid mixer source option: {e}")
-    DEV.submit(lambda t: DEV._set_mixer_source(t, s.channel, target))
+    _submit(lambda t: DEV._set_mixer_source(t, s.channel, target))
     return {"ok": True, "mix": s.mix, "channel": s.channel,
             "source": s.source}
 
@@ -2970,7 +3025,7 @@ def api_mixer_select(s: MixerSelect):
         return _bad(str(e))
     if surface_packet is not None:
         pkt, value, target = surface_packet
-        DEV.submit(lambda t: t.write(pkt))
+        _submit(lambda t: t.write(pkt))
         return {"ok": True, "mix": s.mix, "selected": True,
                 "selector": value, "target": target}
     selector = PROFILE["frame"].get("state_report", {}).get("mixer_window_selection", {})
@@ -2986,7 +3041,7 @@ def api_mixer_select(s: MixerSelect):
         pkt = proto.build_raw_command(PROFILE, param_id, target, s.mix)
     except (KeyError, TypeError, ValueError, proto.ConstraintError) as e:
         return _bad(str(e))
-    DEV.submit(lambda t: t.write(pkt))
+    _submit(lambda t: t.write(pkt))
     return {"ok": True, "mix": s.mix}
 
 
@@ -3010,7 +3065,7 @@ def api_mix_link(link: MixerLink):
         pkt = proto.build_link_command(PROFILE, wire_pair, link.enabled, space=3)
     except (KeyError, proto.ConstraintError) as e:                # noqa: BLE001
         return _bad(str(e))
-    DEV.submit(lambda t: t.write(pkt))
+    _submit(lambda t: t.write(pkt))
     return {"ok": True, "mix": link.mix, "pair": link.pair,
             "wire_pair": wire_pair, "enabled": link.enabled}
 
@@ -3086,7 +3141,7 @@ def api_mix_solo(s: MixSolo):
             slots[idx] = {**slot, "mute": mute, "solo": solo}
         DEV._cache_mixer(m, slots)
 
-    DEV.submit(do)
+    _submit(do)
     return {"ok": True, "mix": s.mix, "channel": s.channel, "on": s.on}
 
 
@@ -3146,7 +3201,7 @@ def api_auraverb_change(change: AuraVerbChange):
         records[mix] = {**current, "params": params, "enabled": enabled}
         DEV._cache_auraverb(records)
 
-    DEV.submit(do)
+    _submit(do)
     return {"ok": True, "mix": change.mix,
             "param": change.param, "value": change.value,
             "enabled": change.enabled}
@@ -3222,7 +3277,7 @@ def api_mix(s: MixStrip):
                      "mute": mute, "solo": solo}
         DEV._cache_mixer(m, slots)
 
-    DEV.submit(do)
+    _submit(do)
     return {"ok": True}
 
 

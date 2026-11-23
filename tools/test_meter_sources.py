@@ -30,8 +30,19 @@ def load_server_without_web_or_hid_boundaries():
         def mount(self, *args, **kwargs):
             return None
 
+        def add_middleware(self, middleware, **options):
+            self.middleware = (middleware, options)
+
     fastapi = types.ModuleType('fastapi')
+    class FakeHTTPException(Exception):
+        def __init__(self, *, status_code, detail):
+            super().__init__(detail)
+            self.status_code = status_code
+
     fastapi.FastAPI = FakeFastAPI
+    fastapi.HTTPException = FakeHTTPException
+    trustedhost = types.ModuleType('fastapi.middleware.trustedhost')
+    trustedhost.TrustedHostMiddleware = 'TrustedHostMiddleware'
     responses = types.ModuleType('fastapi.responses')
     responses.FileResponse = object
     responses.JSONResponse = object
@@ -47,6 +58,7 @@ def load_server_without_web_or_hid_boundaries():
     uvicorn = types.ModuleType('uvicorn')
     with mock.patch.dict(sys.modules, {
         'fastapi': fastapi,
+        'fastapi.middleware.trustedhost': trustedhost,
         'fastapi.responses': responses,
         'fastapi.staticfiles': staticfiles,
         'pydantic': pydantic,
