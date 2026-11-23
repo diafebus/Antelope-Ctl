@@ -3174,14 +3174,15 @@ def meter_led(profile: dict, db, source_frame='meter_report'):
 
 
 def mode_name(profile: dict, mode_val: int) -> str:
-    values = profile['params']['input_mode']['values']
+    values = profile['params'].get('input_mode', {}).get('values', {})
     return values.get(str(mode_val), f'?{mode_val}')
 
 
 def mode_value(profile: dict, name: str) -> int:
     values = profile['params']['input_mode']['values']
+    normalized_name = name.casefold()
     for k, v in values.items():
-        if v == name:
+        if v.casefold() == normalized_name:
             return int(k)
     raise KeyError(f'unknown mode name "{name}"')
 
