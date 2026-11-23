@@ -1084,7 +1084,7 @@ def cmd_route(args, profile):
     if sel not in ('mute', 'all') and not cache.get(str(dest)):
         try:
             pairs = _read_routing_dest(get_transport(profile), profile, dest, timeout=args.timeout)
-        except SystemExit:
+        except (SystemExit, OSError):
             pairs = None
         if pairs:
             _save_matrix_dest(profile, dest, pairs)
@@ -1165,7 +1165,7 @@ def cmd_matrix_status(args, profile):
     transport = None
     try:
         transport = get_transport(profile)
-    except SystemExit:
+    except (SystemExit, OSError):
         transport = None
 
     live = {}
@@ -2501,7 +2501,11 @@ def main():
     args = p.parse_args()
     args.profile = _resolve_profile_path(args.profile)
     profile = proto.load_profile(args.profile)
-    args.func(args, profile)
+    try:
+        args.func(args, profile)
+    except OSError as e:
+        # transport errors carry the message for the user; no traceback
+        sys.exit(str(e))
 
 
 if __name__ == '__main__':
