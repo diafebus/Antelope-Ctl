@@ -1,0 +1,19 @@
+# systemd --user template for a further device: antelope-webui@<name> reads
+# ~/.config/antelope-ctl/<name>.env (ANTELOPE_PROFILE=<profile>.json and
+# ANTELOPE_PORT=<port>). Use distinct VID/PID pairs and distinct ports;
+# profile selection cannot distinguish two units of the same model.
+# Install with packaging/install-user.sh, which fills in @REPO@.
+# The server holds the device's HID node while it runs: stop it
+# (systemctl --user stop antelope-webui@<name>) before using the CLI, the
+# selftest or a vendor panel on the same device.
+[Unit]
+Description=antelope-ctl WebUI (%i)
+
+[Service]
+EnvironmentFile=%h/.config/antelope-ctl/%i.env
+ExecStart=:"@REPO@/webui/.venv/bin/python" "@REPO@/webui/server.py"
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

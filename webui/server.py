@@ -3328,12 +3328,19 @@ def _install_terminal_shutdown(server, device):
 
 def run_server():
     """Run the local WebUI and make terminal shutdown deterministic."""
+    raw_port = os.environ.get("ANTELOPE_PORT", "8714")
+    try:
+        port = int(raw_port)
+        if not 1 <= port <= 65535:
+            raise ValueError
+    except ValueError:
+        raise SystemExit("ANTELOPE_PORT must be an integer from 1 to 65535") from None
     DEV.start()
     try:
         config = uvicorn.Config(
             app,
             host="127.0.0.1",
-            port=8714,
+            port=port,
             log_level="warning",
             timeout_graceful_shutdown=2.0,
         )
