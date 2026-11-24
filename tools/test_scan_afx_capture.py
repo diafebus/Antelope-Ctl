@@ -12,6 +12,23 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_powerffc_parameter_family_is_observed_on_out_endpoint(self):
+        first = frame(0x26, [0xd5, 0x14, 2, 0, 100, 0, 0, 0])
+        second = frame(0x26, [0xd5, 0x14, 2, 0, 0xf4, 1, 0, 0])
+        result = analyze_reports([
+            (537, 0.0, 1, first),
+            (2351, 0.1, 1, second),
+            (2352, 0.2, 0x82, second),
+            (2353, 0.3, 1, frame(0x26, [0xd4, 0x14, 2, 0])),
+        ])
+        group, = result['parameter_groups']
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']),
+                         ('0x26', '0x14', 2))
+        self.assertEqual(group['frames'], 2)
+        self.assertEqual(group['varying_offsets'], [20, 21])
+        self.assertEqual(result['operations'], [])
+        self.assertFalse(result['device_commands_sent'])
+
     def test_vca160_captured_priming_classifies_only_passive_parameter_blocks(self):
         # Actual Output Gain priming frames2247/2295; no baseline before first.
         prefix = bytes.fromhex('70000000170000000000000000000000d505210032153a')
