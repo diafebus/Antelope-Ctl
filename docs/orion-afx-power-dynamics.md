@@ -796,3 +796,13 @@ at the low endpoint still need an audio measurement.
 
 Removal frame 2775 contained all eight AFX 2 slots empty. The Launcher
 returned to the original empty AFX 1 view.
+
+## Drum-All-Nite — partial capture, 2026-11-24
+
+Orion assigned type 83, instance 0 in AFX 2 slot 1, frame 2269.
+Threshold, Range, Release and Output have raw 0/100 endpoint pairs at
+bytes 20, 21, 22 and 23. Source byte 24 positions are 0 Int, 1 ds and
+2 Ext, paired with captured frames and settled images in the effect profile.
+The starting Source image was obscured, leaving visual restoration pending.
+Detector, Mode and processing captures remain open. The temporary effect
+was removed and the empty AFX 1 view restored before loading Gate Keeper.

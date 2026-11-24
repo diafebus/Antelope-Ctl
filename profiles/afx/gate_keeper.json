@@ -164,15 +164,17 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 86,
+      "status": "Orion assignment captured; control mapping in progress",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
+      "evidence": [
+        "captures/continuation-20261124-gate-keeper/load-gate-keeper/Orion.pcapng frame 1083"
+      ],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
     },
     {

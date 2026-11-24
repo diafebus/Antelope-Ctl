@@ -4112,6 +4112,64 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "gate-keeper-knobs",
+      "panel": "Gatex",
+      "panel_class": "Gatex",
+      "effect_id": "gate_keeper",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed Orion native targets",
+      "evidence": "captures/continuation-20261124-gate-keeper/gate-keeper-baseline-inventory.json",
+      "controls": [
+        {
+          "id": "release",
+          "class_name": "GatexReleasePot",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "attack",
+          "class_name": "GatexAttackPot",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "range",
+          "class_name": "GatexRangePot",
+          "label": "Range",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "ratio",
+          "class_name": "GatexRatioPot",
+          "label": "Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "thresh",
+          "class_name": "GatexThreshPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "Knob endpoints only",
+        "pending": [
+          "selectors",
+          "processing",
+          "readback",
+          "scaling",
+          "audio"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }
