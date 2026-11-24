@@ -838,3 +838,8 @@ Volume, Top Cut, Treble and Bass each reached raw 0/100 through bounded
 native knob gestures. Independent minimum/maximum comparisons isolate
 one byte per control. The owning model observations retain source frames
 and screenshots. Output level and processing remain pending.
+
+Modern (US) CH3 adds isolated raw 0/100 pairs for Volume, Presence, Bass,
+Middle, Treble and Gain. The full captured segments differ only at the
+mapped control byte for each pair. Mode, output level and processing
+remain pending. The temporary trial was removed before the next model.
