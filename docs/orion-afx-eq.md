@@ -941,3 +941,13 @@ with raw 1/2 pictogram positions and exact switch-image returns. Numeric
 Q meanings remain pending. Front bypass captured raw 0/1 processing reports
 and returned its appearance. Removal frame 1589 showed all eight AFX 2
 slots empty before the original AFX 1 view returned.
+
+## Gyratec XIV — partial Orion capture, 2026-11-24
+
+Type 77, instance 0 uses parameter family 0x29 / 0xd5 / 0x17.
+Sixteen knob endpoint pairs cover Frequency, Q and Level for five bands,
+plus Trim. Independent review matched complete endpoint segments to
+captured frames and settled screenshots. The owning effect file preserves
+those observations. Mode labels, bypass and physical conversions remain
+pending. Removal frame 1007 verified eight empty AFX 2 slots before the
+original empty AFX 1 view returned.
