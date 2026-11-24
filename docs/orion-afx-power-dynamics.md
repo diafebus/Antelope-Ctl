@@ -832,3 +832,9 @@ reached raw 0 and 100. Independent full-frame comparisons isolate one
 byte for each pair. The owning effect file records the frames and images.
 Bright, output level and processing remain pending. The temporary insert
 was removed and the empty rack verified before Top30 loading.
+
+Top30 (UK) Bright was captured next on the shared type 3 instance.
+Volume, Top Cut, Treble and Bass each reached raw 0/100 through bounded
+native knob gestures. Independent minimum/maximum comparisons isolate
+one byte per control. The owning model observations retain source frames
+and screenshots. Output level and processing remain pending.
