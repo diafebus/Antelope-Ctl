@@ -848,3 +848,7 @@ Plexi 59 (UK) adds isolated raw 0/100 pairs for Presence, Bass, Middle,
 Treble and Volume. Each native control was bound to its current runtime
 ID. The effect file records independent report comparisons and endpoint
 screenshots. Output level and processing remain pending.
+
+Rock 22.10 (UK) adds raw 0/100 pairs for Presence, Bass, Middle, Treble,
+Master Volume and Pre-amp Volume. Independent captured-report comparisons
+isolate one field per pair. Output level and processing remain pending.
