@@ -996,6 +996,49 @@
           "writable": false,
           "device_readback_verified": false,
           "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+        },
+        "Tweed Deluxe (US)": {
+          "knob_endpoints": {
+            "tone": [
+              {
+                "raw": 0,
+                "frame": 1457,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/tone-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/tone-minimum-3.png",
+                "offset": 23,
+                "capture_sha256": "39fd803c8aa6d606b76fb86a91080b9cdfb94b956c81c6adf844ec284171097f"
+              },
+              {
+                "raw": 100,
+                "frame": 1571,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/tone-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/tone-maximum-4.png",
+                "offset": 23,
+                "capture_sha256": "200f7e8d9e48814dfaf3ebbc974ff3be0c3aea6d06831a089ab8f0b76cbb2c83"
+              }
+            ],
+            "volume": [
+              {
+                "raw": 0,
+                "frame": 1949,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/volume-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/volume-minimum-2.png",
+                "offset": 28,
+                "capture_sha256": "715ccf1f27eb2f2e65b8cbc06b234db673c79f100ca8b807a181616a9cc162cf"
+              },
+              {
+                "raw": 100,
+                "frame": 1677,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/volume-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-tweed/volume-maximum-4.png",
+                "offset": 28,
+                "capture_sha256": "9dc740b4dd5baee8c0cec7f6aaa7ad1a9f6124e40ed1db404d57823ac1630f13"
+              }
+            ]
+          },
+          "writable": false,
+          "device_readback_verified": false,
+          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
         }
       }
     },

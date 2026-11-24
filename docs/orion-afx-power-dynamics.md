@@ -860,3 +860,7 @@ per control. Output level and processing remain pending.
 Marcus II (US) Lead adds isolated raw 0/100 pairs for Volume, Bass, Middle,
 Treble, Drive and Master. Shift, Bright, Deep, output level and processing
 remain pending. Each knob pair retains source frames and settled images.
+
+Tweed Deluxe (US) adds isolated raw 0/100 pairs for Tone and Volume.
+The printed face spans 1–12. Intermediate physical conversion remains
+pending, along with Bright, output level and processing.
