@@ -864,3 +864,7 @@ remain pending. Each knob pair retains source frames and settled images.
 Tweed Deluxe (US) adds isolated raw 0/100 pairs for Tone and Volume.
 The printed face spans 1–12. Intermediate physical conversion remains
 pending, along with Bright, output level and processing.
+
+Overange 120 (UK) adds isolated raw 0/100 pairs for Bass, Treble,
+HF Drive and Gain. FAC selector positions, output level and processing
+remain pending. Endpoint frames and images are retained per control.

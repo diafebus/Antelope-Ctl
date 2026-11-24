@@ -1039,6 +1039,85 @@
           "writable": false,
           "device_readback_verified": false,
           "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+        },
+        "Overange 120 (UK)": {
+          "knob_endpoints": {
+            "bass": [
+              {
+                "raw": 0,
+                "frame": 2005,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/bass-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/bass-minimum-2.png",
+                "offset": 22,
+                "capture_sha256": "c003a994149289d3c6082bc267b77a8fc488579ed81dc47e5770fc3d28850eb4"
+              },
+              {
+                "raw": 100,
+                "frame": 1645,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/bass-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/bass-maximum-4.png",
+                "offset": 22,
+                "capture_sha256": "669845f18b691d82ef35b2451c836f34ee067a26ccad98975527dda3280f79bc"
+              }
+            ],
+            "treble": [
+              {
+                "raw": 0,
+                "frame": 2013,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/treble-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/treble-minimum-2.png",
+                "offset": 25,
+                "capture_sha256": "c169fdb12ebea0f1dc9f2df23986cda80e72f13b143dc38980551a7cd9e0e8ed"
+              },
+              {
+                "raw": 100,
+                "frame": 1702,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/treble-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/treble-maximum-4.png",
+                "offset": 25,
+                "capture_sha256": "13e30f6ca4c89593fb6ae3da0f20a55968a9dd519774d0f9044b5cf1925ab6fe"
+              }
+            ],
+            "hf_drive": [
+              {
+                "raw": 0,
+                "frame": 1727,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/hf_drive-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/hf_drive-minimum-3.png",
+                "offset": 21,
+                "capture_sha256": "e9e19bae6d266d9f89ef3be163307c8dfb66cc5fa00deaec761be163c7573c1a"
+              },
+              {
+                "raw": 100,
+                "frame": 1899,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/hf_drive-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/hf_drive-maximum-4.png",
+                "offset": 21,
+                "capture_sha256": "f2b77c5059994935497eef3bc6426828b3971127655f0c265fc023a8a9ff1351"
+              }
+            ],
+            "gain": [
+              {
+                "raw": 0,
+                "frame": 2107,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/gain-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/gain-minimum-3.png",
+                "offset": 28,
+                "capture_sha256": "7162e9cacd927b48680fcde58e82e6e29a61927edbe21335bec1c1ae8a4d62c3"
+              },
+              {
+                "raw": 100,
+                "frame": 1787,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/gain-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-overange/gain-maximum-4.png",
+                "offset": 28,
+                "capture_sha256": "bf3cd4075ee97ed615039b1ac74d7f751296ea5dc34010fba68b04ca33b4fad2"
+              }
+            ]
+          },
+          "writable": false,
+          "device_readback_verified": false,
+          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
         }
       }
     },
