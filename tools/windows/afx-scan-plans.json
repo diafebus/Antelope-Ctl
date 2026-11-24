@@ -4315,6 +4315,140 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "gyratecxiv-knobs",
+      "panel": "GyratecXIV",
+      "panel_class": "GyratecXIV",
+      "effect_id": "gyratec_xiv",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed Orion targets",
+      "evidence": "captures/continuation-20261124-gyratecxiv/gyratecxiv-baseline-inventory.json",
+      "controls": [
+        {
+          "id": "freq_low",
+          "class_name": "GyratecXIVFreqLow",
+          "label": "freq_low",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "q_low",
+          "class_name": "GyratecXIVQLow",
+          "label": "q_low",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level_low",
+          "class_name": "GyratecXIVLevelLow",
+          "label": "level_low",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "freq_lomid",
+          "class_name": "GyratecXIVFreqLoMid",
+          "label": "freq_lomid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "q_lomid",
+          "class_name": "GyratecXIVQLoMid",
+          "label": "q_lomid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level_lomid",
+          "class_name": "GyratecXIVLevelLoMid",
+          "label": "level_lomid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "freq_mid",
+          "class_name": "GyratecXIVFreqMid",
+          "label": "freq_mid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "q_mid",
+          "class_name": "GyratecXIVQMid",
+          "label": "q_mid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level_mid",
+          "class_name": "GyratecXIVLevelMid",
+          "label": "level_mid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "freq_himid",
+          "class_name": "GyratecXIVFreqHiMid",
+          "label": "freq_himid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "q_himid",
+          "class_name": "GyratecXIVQHiMid",
+          "label": "q_himid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level_himid",
+          "class_name": "GyratecXIVLevelHiMid",
+          "label": "level_himid",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "freq_high",
+          "class_name": "GyratecXIVFreqHigh",
+          "label": "freq_high",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "q_high",
+          "class_name": "GyratecXIVQHigh",
+          "label": "q_high",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "level_high",
+          "class_name": "GyratecXIVLevelHigh",
+          "label": "level_high",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "trim",
+          "class_name": "GyratexXIVTrim",
+          "label": "trim",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "Fifteen band knob pairs plus Trim",
+        "pending": [
+          "Mode label maps",
+          "bypass",
+          "physical scales",
+          "readback"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

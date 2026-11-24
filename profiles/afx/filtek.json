@@ -210,17 +210,293 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 71,
-      "status": "Orion GUI assignment observed; control capture in progress",
+      "status": "Orion partial visible pass. Eight knob endpoint pairs, three Q switch returns and processing observations captured.",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
-      "control_encodings": {},
+      "control_encodings": {
+        "loQ": {
+          "offset": 28,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 2,
+              "frame": 1299,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/loQ-change/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/loQ-change.png"
+            },
+            {
+              "raw": 1,
+              "frame": 1261,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/loQ-return/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/loQ-return.png"
+            }
+          ],
+          "gui_returned": true,
+          "notes": "Two pictogram positions captured. Numeric Q meanings pending."
+        },
+        "midQ": {
+          "offset": 25,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 2,
+              "frame": 1271,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/midQ-change/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/midQ-change.png"
+            },
+            {
+              "raw": 1,
+              "frame": 1187,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/midQ-return/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/midQ-return.png"
+            }
+          ],
+          "gui_returned": true,
+          "notes": "Two pictogram positions captured. Numeric Q meanings pending."
+        },
+        "hiQ": {
+          "offset": 22,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "states": [
+            {
+              "raw": 2,
+              "frame": 1179,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/hiQ-change/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/hiQ-change.png"
+            },
+            {
+              "raw": 1,
+              "frame": 769,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/hiQ-return/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/hiQ-return.png"
+            }
+          ],
+          "gui_returned": true,
+          "notes": "Two pictogram positions captured. Numeric Q meanings pending."
+        }
+      },
       "evidence": [
         "captures/continuation-20261124-filtek/load-filtek/Orion.pcapng frame 1027"
       ],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "notes": "Drive, Q switches and processing require separate review. Raw segments are preserved; selector labels, physical conversions, independent readback and runtime contracts remain pending.",
+      "parameter_observation": {
+        "writable": false,
+        "device_readback_verified": false,
+        "knob_endpoint_observations": {
+          "hpf": {
+            "changed_offsets": [
+              30
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 3801,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050501050501050032000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-hpf-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 10695,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050501050501050532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-hpf-maximum.png"
+              }
+            ]
+          },
+          "lo_gain": {
+            "changed_offsets": [
+              27
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 18807,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050501050001050532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-lo_gain-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 25817,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050501050b01050532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-lo_gain-maximum.png"
+              }
+            ]
+          },
+          "lo_freq": {
+            "changed_offsets": [
+              29
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 33935,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050501050b01000532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-lo_freq-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 40797,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050501050b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-lo_freq-maximum.png"
+              }
+            ]
+          },
+          "mid_gain": {
+            "changed_offsets": [
+              24
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 49673,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050001050b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-mid_gain-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 57189,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050b01050b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-mid_gain-maximum.png"
+              }
+            ]
+          },
+          "mid_freq": {
+            "changed_offsets": [
+              26
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 65805,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050b01000b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-mid_freq-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 73015,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050501050b010b0b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-mid_freq-maximum.png"
+              }
+            ]
+          },
+          "hi_gain": {
+            "changed_offsets": [
+              21
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 82285,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050001050b010b0b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-hi_gain-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 90417,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050b01050b010b0b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-hi_gain-maximum.png"
+              }
+            ]
+          },
+          "hi_freq": {
+            "changed_offsets": [
+              23
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 99451,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050b01000b010b0b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-hi_freq-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 107251,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050b010b0b010b0b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-hi_freq-maximum.png"
+              }
+            ]
+          },
+          "lpf": {
+            "changed_offsets": [
+              20
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 116935,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "000b010b0b010b0b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-lpf-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 124833,
+                "header": "70000000200000000000000000000000d50e4700",
+                "parameter_body": "050b010b0b010b0b010b0532000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/scan-Filtek-20261124T190756897Z/Filtek-lpf-maximum.png"
+              }
+            ]
+          }
+        }
+      },
+      "processing_observation": {
+        "states": [
+          {
+            "raw": 0,
+            "frame": 1283,
+            "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/bypass-change/Orion.pcapng",
+            "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/bypass-change.png"
+          },
+          {
+            "raw": 1,
+            "frame": 1227,
+            "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/bypass-return/Orion.pcapng",
+            "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-filtek/bypass-return.png"
+          }
+        ],
+        "gui_returned": true,
+        "writable": false,
+        "device_readback_verified": false
+      }
     },
     {
       "profile": "zen_go_sc.json",

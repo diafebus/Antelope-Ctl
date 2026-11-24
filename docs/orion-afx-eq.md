@@ -927,3 +927,17 @@ reports with band IDs 0–4 at byte 20. The report family is
 The five band widgets repeat their class names and need individual runtime
 ID targeting. Other controls and numerical conversions remain pending.
 Local evidence is indexed under continuation-20261124-clearq.
+
+## Filtek MK3 — partial Orion capture, 2026-11-24
+
+Orion assigned type 71, instance 0 in the temporary AFX 2 rack.
+Eight main knob minimum/maximum pairs were captured and independently
+decoded. The owning effect file retains complete raw segments and changed
+offsets for HPF, LF/MF/HF gain and frequency, and LPF.
+Drive, Q switches, processing and selector labels require separate review.
+
+The LF, MF and HF Q switches isolated bytes 28, 25 and 22 respectively,
+with raw 1/2 pictogram positions and exact switch-image returns. Numeric
+Q meanings remain pending. Front bypass captured raw 0/1 processing reports
+and returned its appearance. Removal frame 1589 showed all eight AFX 2
+slots empty before the original AFX 1 view returned.

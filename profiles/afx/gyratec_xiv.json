@@ -344,15 +344,17 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 77,
+      "status": "Orion assignment observed; control mapping in progress",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
+      "evidence": [
+        "captures/continuation-20261124-gyratecxiv/load-gyratecxiv/Orion.pcapng frame 1015"
+      ],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
     },
     {
