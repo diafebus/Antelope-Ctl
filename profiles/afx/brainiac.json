@@ -165,7 +165,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 85,
-      "status": "Capture-observed. GUI assignment and initialization, with verified captured-body and knob-image returns for release, attack, range, ratio, thresh, linlog, mode.",
+      "status": "Capture-observed. Five knob endpoint pairs and verified control returns, including Lin/Log, Mode and rack bypass.",
       "commands": {
         "load": null,
         "recall": null,
@@ -199,6 +199,24 @@
             "source": "captures/continuation-20261124-brainiac-full/release-baseline-verified.json",
             "full_parameter_body_returned": true,
             "static_knob_returned": true
+          },
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 4315,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-release-minimum.png",
+              "printed_legend": "0.05 sec"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 12469,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-release-maximum.png",
+              "printed_legend": "5 sec"
+            }
           }
         },
         "attack": {
@@ -228,6 +246,24 @@
             "source": "captures/continuation-20261124-brainiac-full/attack-map-verified.json",
             "full_parameter_body_returned": true,
             "static_knob_returned": true
+          },
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 24685,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-attack-minimum.png",
+              "printed_legend": "0.2 ms"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 37727,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-attack-maximum.png",
+              "printed_legend": "200 ms"
+            }
           }
         },
         "range": {
@@ -257,6 +293,24 @@
             "source": "captures/continuation-20261124-brainiac-full/range-map-verified.json",
             "full_parameter_body_returned": true,
             "static_knob_returned": true
+          },
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 57003,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-range-minimum.png",
+              "printed_legend": "0 dB"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 70555,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-range-maximum.png",
+              "printed_legend": "48 dB"
+            }
           }
         },
         "ratio": {
@@ -293,6 +347,26 @@
             "source": "captures/continuation-20261124-brainiac-full/ratio-map-verified.json",
             "full_parameter_body_returned": true,
             "static_knob_returned": true
+          },
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 87187,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-ratio-minimum.png",
+              "printed_legend": "1.1",
+              "duck_indicator": "lit"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 101029,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-ratio-maximum.png",
+              "printed_legend": "100",
+              "duck_indicator": "dark"
+            }
           }
         },
         "thresh": {
@@ -322,6 +396,24 @@
             "source": "captures/continuation-20261124-brainiac-full/thresh-map-verified.json",
             "full_parameter_body_returned": true,
             "static_knob_returned": true
+          },
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 119835,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-thresh-minimum.png",
+              "printed_legend": "+20 dBV"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 133841,
+              "source": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-channel2.pcapng",
+              "capture_sha256": "0c16633ff4adbcec2e2d06a8c07c2a6654c48a1ffb16998296d602da88249273",
+              "screenshot": "captures/continuation-20261124-brainiac-full/scan-Brainiac-20261124T111115787Z/Brainiac-thresh-maximum.png",
+              "printed_legend": "−40 dBV"
+            }
           }
         },
         "linlog": {
@@ -421,7 +513,7 @@
           "screenshot": "captures/continuation-20261124-brainiac/remove-brainiac.png"
         }
       ],
-      "notes": "Model-local Orion GUI and USB observations. Other controls, independent readback, physical scaling and runtime contracts remain pending.",
+      "notes": "Orion-only visible control captures. Printed endpoint legends describe the pointer positions. Duck indicator meaning, intermediate physical scaling, independent device readback, audible behavior, telemetry and runtime contracts remain unverified.",
       "type_id_write_status": "Vendor GUI assignment observed on Orion. Runtime writer disabled.",
       "gui_observation": {
         "panel_class": "Brainiac",

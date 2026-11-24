@@ -777,3 +777,22 @@ A rack BP click emitted processing raw 0 and selected OUT in the parameter
 report. The reverse click emitted processing raw 1 and restored the complete
 parameter body, including Mode IN. A subsequent capture moved the pointer
 away without clicking. The BP highlight then matched the starting appearance.
+
+The subsequent endpoint sweep recorded raw 0 and 100 on each knob. Each
+minimum/maximum pair differs only at the corresponding parameter byte.
+The settled panel showed these printed endpoint legends.
+
+| Control | Byte | Raw 0 | Raw 100 |
+|---|---:|---|---|
+| Release | 20 | 0.05 sec | 5 sec |
+| Attack | 21 | 0.2 ms | 200 ms |
+| Range Gain | 22 | 0 dB | 48 dB |
+| Duck Ratio | 23 | 1.1 | 100 |
+| Threshold | 24 | +20 dBV | −40 dBV |
+
+The Duck indicator is bright at raw 0 and dark at raw 100. The captures
+show the pointer and indicator together. The ratio and ducking behavior
+at the low endpoint still need an audio measurement.
+
+Removal frame 2775 contained all eight AFX 2 slots empty. The Launcher
+returned to the original empty AFX 1 view.

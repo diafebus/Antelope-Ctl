@@ -274,7 +274,7 @@
         "unattended-20261027T015403Z-veq4k-pink-processing",
         "scan-SslPink-20261027T020747657Z"
       ],
-      "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, LMF ÷3 (lf_bell) byte31/HMF ×3 (hf_bell) byte24 independently reviewed mode/LED round trips and separate processing round trip. Mode raw0 LED Dark/raw1 LED Lit observations preserve compatibility IDs without inferred audio/bell semantics. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Historical before-input layout rejection and stopped priming retained. Output signed interpretation, physical/intermediate scaling, independent readback, mode audio/bell semantics, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
+      "completion_limits": "All observed editable controls captured: thirteen rotary endpoint pairs, LMF \u00f73 (lf_bell) byte31/HMF \u00d73 (hf_bell) byte24 independently reviewed mode/LED round trips and separate processing round trip. Mode raw0 LED Dark/raw1 LED Lit observations preserve compatibility IDs without inferred audio/bell semantics. Mode round trips returned full captured parameter body/static images; processing returned its checked static baseline. Endpoint scans intentionally finish at maxima. Historical before-input layout rejection and stopped priming retained. Output signed interpretation, physical/intermediate scaling, independent readback, mode audio/bell semantics, signal telemetry, processing polarity, audible/stereo behavior and runtime contracts remain unverified. SslPeakMeter/three AfxLed widgets remain separate display inventory."
     },
     {
       "name": "VEQ-4K ORANGE",
@@ -565,6 +565,21 @@
         "continuation-20261124/compThreshold-verified.json",
         "continuation-20261124/remove-diode609"
       ]
+    },
+    {
+      "name": "Brainiac",
+      "effect_id": "brainiac",
+      "panel_class": "Brainiac",
+      "next_step": "complete",
+      "range_plan": "brainiac-knobs",
+      "completion_evidence": [
+        "continuation-20261124-brainiac-full/ranges-reviewed.json",
+        "continuation-20261124-brainiac-full/linlog-verified.json",
+        "continuation-20261124-brainiac-full/mode-verified.json",
+        "continuation-20261124-brainiac-full/power-verified.json",
+        "continuation-20261124-brainiac-full/remove-brainiac"
+      ],
+      "completion_limits": "Five paired endpoints and isolated round trips, Lin/Log, Mode and rack bypass captured on Orion. Duck indicator meaning, physical scaling, independent readback, audible behavior, telemetry and runtime contracts remain unverified."
     }
   ]
 }
