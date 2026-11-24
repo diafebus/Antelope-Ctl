@@ -269,16 +269,99 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 3,
+      "status": "Partial Orion Guitar Amp model capture",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "evidence": [
+        "captures/continuation-20261124-darkface65/load-darkface65/Orion.pcapng"
+      ],
+      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding.",
+      "model_observations": {
+        "Darkface 65 (US)": {
+          "knob_endpoints": {
+            "volume": [
+              {
+                "raw": 0,
+                "frame": 1261,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/volume-minimum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/volume-minimum-4.png",
+                "offset": 28,
+                "capture_sha256": "57f1898c4b8cc572028c2db656a5681c99ecec61ff9a164f8bcab4f8604e3ba9"
+              },
+              {
+                "raw": 100,
+                "frame": 1473,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/volume-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/volume-maximum-4.png",
+                "offset": 28,
+                "capture_sha256": "4d594847c87973bbb1c3fec3ac1af130dfe2f7563336615a162d28b9a89aafcb"
+              }
+            ],
+            "bass": [
+              {
+                "raw": 0,
+                "frame": 1333,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/bass-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/bass-minimum-3.png",
+                "offset": 22,
+                "capture_sha256": "835b1aecafa34d6e76dacf7635b229baa9f8722441d7e7c2af686040dbad1d07"
+              },
+              {
+                "raw": 100,
+                "frame": 1620,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/bass-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/bass-maximum-4.png",
+                "offset": 22,
+                "capture_sha256": "d1c8ebb37910d84966d0c0b207dbf9db65ac19683a45c7f02ca0713de0e82d1e"
+              }
+            ],
+            "middle": [
+              {
+                "raw": 0,
+                "frame": 1291,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/middle-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/middle-minimum-3.png",
+                "offset": 23,
+                "capture_sha256": "bf8df97efbbf5af4a606e99b4582fe59e257453ab785781d49a28c0aef1bb3c7"
+              },
+              {
+                "raw": 100,
+                "frame": 1467,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/middle-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/middle-maximum-4.png",
+                "offset": 23,
+                "capture_sha256": "afbbffc79b574a79bd849a6dbe3778239f6acf48e378407d8b4f026b054fe972"
+              }
+            ],
+            "treble": [
+              {
+                "raw": 0,
+                "frame": 1547,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/treble-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/treble-minimum-3.png",
+                "offset": 25,
+                "capture_sha256": "16606ea623baab6d8e5e368fde728d557906e06744f05ef99b2ccda8c5515142"
+              },
+              {
+                "raw": 100,
+                "frame": 1741,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/treble-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-darkface65/treble-maximum-4.png",
+                "offset": 25,
+                "capture_sha256": "0018a79afee4cc49cf5197757d1c45e60af90d69ceb8251e6590dd6eecd92749"
+              }
+            ]
+          },
+          "writable": false,
+          "device_readback_verified": false,
+          "notes": "Four raw 0/100 knob pairs. Bright, output level and processing pending. Physical scaling, independent readback and audio behavior remain unverified."
+        }
+      }
     },
     {
       "profile": "discrete_4_a270.json",

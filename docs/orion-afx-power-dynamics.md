@@ -822,3 +822,13 @@ Attack, Release, Ratio, Threshold and Knee endpoint pairs were captured.
 The owning effect file records changed offsets and complete parameter
 segments for both endpoints. Multi-byte units require further review.
 TawCombo, output slider and processing remain pending.
+
+## Guitar Amp model capture — Darkface 65 (US), 2026-11-24
+
+Orion assigned Guitar Amp type 3, instance 0. The model dropdown displayed
+Darkface 65 (US). Four repeated DarkfaceKnob widgets were targeted by their
+individually witnessed runtime IDs. Volume, Bass, Middle and Treble each
+reached raw 0 and 100. Independent full-frame comparisons isolate one
+byte for each pair. The owning effect file records the frames and images.
+Bright, output level and processing remain pending. The temporary insert
+was removed and the empty rack verified before Top30 loading.
