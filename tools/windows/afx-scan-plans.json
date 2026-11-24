@@ -4057,6 +4057,61 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "drum-all-nite-knobs",
+      "panel": "DrumAllNite",
+      "panel_class": "DrumAllNite",
+      "effect_id": "drum_all_nite",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed Orion native controls",
+      "evidence": "captures/continuation-20261124-drum-all-nite/afternoon-preflight-inventory.json",
+      "controls": [
+        {
+          "id": "threshold",
+          "class_name": "DANThresholdPot",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 7
+        },
+        {
+          "id": "reltime",
+          "class_name": "DANRelTimePot",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 7
+        },
+        {
+          "id": "range",
+          "class_name": "DANRangePot",
+          "label": "Range",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 7
+        },
+        {
+          "id": "output",
+          "class_name": "DANOutputPot",
+          "label": "Output",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 7
+        }
+      ],
+      "coverage": {
+        "status": "knob endpoints only",
+        "pending": [
+          "selectors",
+          "processing",
+          "readback",
+          "scaling",
+          "audio"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

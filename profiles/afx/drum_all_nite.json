@@ -164,16 +164,19 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 83,
+      "status": "Partial Orion GUI capture",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "evidence": [
+        "captures/continuation-20261124-drum-all-nite/load-drum-all-nite/Orion.pcapng frame 2269, type 83 instance 0"
+      ],
+      "notes": "Captured Orion assignment and Threshold reports. Further controls and independent readback pending.",
+      "type_id_write_status": "Orion Launcher assignment captured"
     },
     {
       "profile": "zen_go_sc.json",
