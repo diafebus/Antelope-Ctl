@@ -51,7 +51,8 @@ sources are recorded in the [catalog](../profiles/afx_effects.json).
 Impresser's `OptoLed` does not return to its initial appearance after the
 eight-label Ratio cycle: it is bright before raw3/4:1, dark after the full
 captured parameter body and Ratio display return, and remains dark on a
-read-only recheck. The exact difference occupies `(1024,402)–(1040,418)`.
+read-only recheck. Within the eight settled post-click images, the lamp
+is bright only at 10:1 (frame 4125). The exact difference occupies `(1024,402)–(1040,418)`.
 `supervised-20261104T012645Z-impresser-ratio/reconciliation.json` preserves
 the original static-check failure and source images; the lamp's meaning and
 origin remain unresolved. No repair or replay was attempted. This indicator

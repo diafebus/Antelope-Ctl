@@ -486,6 +486,11 @@ parameter body identical. Static GUI verification nevertheless fails: the
 `OptoLed` OPTO lamp is bright before the cycle and dark afterward, and stays
 dark during a read-only recheck. The exact image difference is confined to its
 rectangle `(1024,402)–(1040,418)`. Its meaning and origin are unresolved.
+The load screenshot and all twelve rotary endpoint screenshots already show
+the same bright lamp at 4:1. During the subsequent eight Ratio clicks,
+the lamp is bright only at 10:1 (raw 5, frame 4125). Each of the other
+seven settled screenshots matches the dark lamp in the final recheck.
+Both lamp appearances therefore occur at 4:1 in this session.
 The original `error.json`, screenshots, actions and `reconciliation.json`
 remain intact; no repair gesture or cycle replay was sent.
 
