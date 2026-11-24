@@ -4228,6 +4228,93 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "filtek-knobs",
+      "panel": "Filtek",
+      "panel_class": "Filtek",
+      "effect_id": "filtek",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed Orion native targets",
+      "evidence": "captures/continuation-20261124-filtek/filtek-baseline-inventory.json",
+      "controls": [
+        {
+          "id": "hpf",
+          "class_name": "FiltekHpfBotPot",
+          "label": "hpf",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        },
+        {
+          "id": "lo_gain",
+          "class_name": "FiltekLodbPot",
+          "label": "lo_gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        },
+        {
+          "id": "lo_freq",
+          "class_name": "FiltekLofPot",
+          "label": "lo_freq",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        },
+        {
+          "id": "mid_gain",
+          "class_name": "FiltekMiddbPot",
+          "label": "mid_gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        },
+        {
+          "id": "mid_freq",
+          "class_name": "FiltekMidfPot",
+          "label": "mid_freq",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        },
+        {
+          "id": "hi_gain",
+          "class_name": "FiltekHidbPot",
+          "label": "hi_gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        },
+        {
+          "id": "hi_freq",
+          "class_name": "FiltekHifPot",
+          "label": "hi_freq",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        },
+        {
+          "id": "lpf",
+          "class_name": "FiltekLpfTopPot",
+          "label": "lpf",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 2
+        }
+      ],
+      "coverage": {
+        "status": "Eight knob endpoint pairs",
+        "pending": [
+          "Drive geometry",
+          "Q switches",
+          "processing",
+          "readback",
+          "scaling"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

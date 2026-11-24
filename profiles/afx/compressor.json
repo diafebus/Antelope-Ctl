@@ -29,7 +29,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 2,
-      "status": "Orion GUI assignment observed; control mapping in progress",
+      "status": "Partial Orion PowerFFC pass. Five knob endpoint pairs captured.",
       "commands": {
         "load": null,
         "recall": null,
@@ -39,7 +39,138 @@
       "evidence": [
         "captures/continuation-20261124-powerffc/load-powerffc/Orion.pcapng frame 891"
       ],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "notes": "TawCombo mode, gain slider and bypass pending. Captured fields include multi-byte values. Numerical interpretation, independent readback, telemetry, audio and runtime contracts pending.",
+      "parameter_observation": {
+        "opcode": "0x26",
+        "param_id": "0xd5",
+        "subcmd": "0x14",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "knob_endpoint_observations": {
+          "attack": {
+            "changed_offsets": [
+              20,
+              21,
+              22
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 4400,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "6400000010270000ffff6400000000180000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-attack-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 11337,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f049020010270000ffff6400000000180000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-attack-maximum.png"
+              }
+            ]
+          },
+          "release": {
+            "changed_offsets": [
+              24,
+              25,
+              26
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 19575,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200e8030000ffff6400000000180000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-release-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 27291,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200c0270900ffff6400000000180000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-release-maximum.png"
+              }
+            ]
+          },
+          "ratio": {
+            "changed_offsets": [
+              30,
+              31
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 36681,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200c0270900ffff6400000000180000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-ratio-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 44341,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200c0270900ffffd007000000180000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-ratio-maximum.png"
+              }
+            ]
+          },
+          "threshold": {
+            "changed_offsets": [
+              35
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 53381,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200c0270900ffffd007000000000000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-threshold-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 61033,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200c0270900ffffd007000000500000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-threshold-maximum.png"
+              }
+            ]
+          },
+          "knee": {
+            "changed_offsets": [
+              36
+            ],
+            "states": [
+              {
+                "gesture": "minimum",
+                "frame": 69833,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200c0270900ffffd007000000500000",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-knee-minimum.png"
+              },
+              {
+                "gesture": "maximum",
+                "frame": 77187,
+                "header": "70000000260000000000000000000000d5140200",
+                "parameter_body": "f0490200c0270900ffffd007000000501e00",
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-channel2.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-powerffc/scan-Compressor-20261124T142156382Z/Compressor-knee-maximum.png"
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "profile": "discrete_4_a270.json",

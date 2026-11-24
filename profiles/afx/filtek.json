@@ -209,15 +209,17 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 71,
+      "status": "Orion GUI assignment observed; control capture in progress",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
+      "evidence": [
+        "captures/continuation-20261124-filtek/load-filtek/Orion.pcapng frame 1027"
+      ],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
     },
     {

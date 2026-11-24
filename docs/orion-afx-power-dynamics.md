@@ -814,3 +814,11 @@ Five endpoint pairs isolate Release, Attack, Range, Ratio and Threshold
 at bytes 20–24. Lin/Log changes byte 25. The settled labelled states
 and source frames are recorded in the Orion effect profile. The visual
 return check failed, so Mode and processing remain pending manual review.
+
+## PowerFFC — partial Orion capture, 2026-11-24
+
+Orion type 2, instance 0 uses parameter family 0x26 / 0xd5 / 0x14.
+Attack, Release, Ratio, Threshold and Knee endpoint pairs were captured.
+The owning effect file records changed offsets and complete parameter
+segments for both endpoints. Multi-byte units require further review.
+TawCombo, output slider and processing remain pending.
