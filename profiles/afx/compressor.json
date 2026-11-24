@@ -28,15 +28,17 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 2,
+      "status": "Orion GUI assignment observed; control mapping in progress",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
+      "evidence": [
+        "captures/continuation-20261124-powerffc/load-powerffc/Orion.pcapng frame 891"
+      ],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
     },
     {

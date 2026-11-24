@@ -4170,6 +4170,64 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "powerffc-knobs",
+      "panel": "Compressor",
+      "panel_class": "Compressor",
+      "effect_id": "compressor",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed Orion control targets",
+      "evidence": "captures/continuation-20261124-powerffc/powerffc-baseline-inventory.json",
+      "controls": [
+        {
+          "id": "attack",
+          "class_name": "AttackPan",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "release",
+          "class_name": "ReleasePan",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "ratio",
+          "class_name": "RatioPan",
+          "label": "Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "threshold",
+          "class_name": "ThreshPan",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        },
+        {
+          "id": "knee",
+          "class_name": "KneePan",
+          "label": "Knee",
+          "kind": "knob_range",
+          "feedback": "captured_block"
+        }
+      ],
+      "coverage": {
+        "status": "Knob endpoints only",
+        "pending": [
+          "TawCombo",
+          "output gain slider",
+          "processing",
+          "physical scales",
+          "readback"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

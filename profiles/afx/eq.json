@@ -104,16 +104,75 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 1,
+      "status": "Partial Orion ClearQ capture. Five band initialization records and band 0 gain restoration.",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "evidence": [
+        {
+          "source": "captures/continuation-20261124-clearq/load-clearq/Orion.pcapng",
+          "frame": 1023,
+          "capture_sha256": "443138676d908d3ce40798562f3cf3a5356986ae6d897997c9478d60fb7faf7f"
+        }
+      ],
+      "notes": "Capture-only Orion evidence. Repeated band controls require individually bound runtime IDs. Remaining controls, units, independent readback, audio and runtime contracts pending.",
+      "type_id_write_status": "Orion vendor assignment observed",
+      "band_observations": {
+        "opcode": "0x1c",
+        "param_id": "0xd5",
+        "subcmd": "0x0a",
+        "band_offset": 20,
+        "initialization": [
+          {
+            "band": 0,
+            "frame": 1061,
+            "body": "001e004700000000"
+          },
+          {
+            "band": 1,
+            "frame": 1065,
+            "body": "01c8004700000002"
+          },
+          {
+            "band": 2,
+            "frame": 1069,
+            "body": "02e8034700000002"
+          },
+          {
+            "band": 3,
+            "frame": 1073,
+            "body": "0388134700000002"
+          },
+          {
+            "band": 4,
+            "frame": 1077,
+            "body": "04983a4700000001"
+          }
+        ],
+        "gain_trial": {
+          "band": 0,
+          "offsets": [
+            25,
+            26
+          ],
+          "status": "Two-byte field observed; numerical conversion pending",
+          "change_frames": [
+            1043,
+            1093,
+            1147
+          ],
+          "return_frame": 1089,
+          "full_record_returned": true,
+          "sources": [
+            "captures/continuation-20261124-clearq/band0-gain-change/Orion.pcapng",
+            "captures/continuation-20261124-clearq/band0-gain-restoration/Orion.pcapng"
+          ]
+        }
+      }
     },
     {
       "profile": "discrete_4_a270.json",

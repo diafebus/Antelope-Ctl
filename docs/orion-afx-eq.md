@@ -917,3 +917,13 @@ or kHz explicitly, including VMEQ-5's mixed-scale Dip Frequency choices
 original printed-label observations, raw selector keys, model-local encodings
 and runtime verification flags remain unchanged. This does not establish an
 audible frequency calibration or a continuous interpolation law.
+
+## ClearQ — partial Orion capture, 2026-11-24
+
+The vendor assigned type 1 instance 0, then sent five band initialization
+reports with band IDs 0–4 at byte 20. The report family is
+0x1c / 0xd5 / 0x0a. A gain edit on the first band affected only bytes
+25–26. A reverse gesture returned the complete initialization record.
+The five band widgets repeat their class names and need individual runtime
+ID targeting. Other controls and numerical conversions remain pending.
+Local evidence is indexed under continuation-20261124-clearq.
