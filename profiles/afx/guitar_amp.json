@@ -554,6 +554,103 @@
           "writable": false,
           "device_readback_verified": false,
           "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+        },
+        "Plexi 59 (UK)": {
+          "knob_endpoints": {
+            "presence": [
+              {
+                "raw": 0,
+                "frame": 1493,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/presence-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/presence-minimum-3.png",
+                "offset": 27,
+                "capture_sha256": "6b8714dc497816ab4fad35bddce5a56ff9405cd9b7e2dfe184911edda9f76b98"
+              },
+              {
+                "raw": 100,
+                "frame": 1415,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/presence-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/presence-maximum-4.png",
+                "offset": 27,
+                "capture_sha256": "c0975208ccf407cca638163c7d4985259f686481e8849560afa5119742c465f1"
+              }
+            ],
+            "bass": [
+              {
+                "raw": 0,
+                "frame": 1701,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/bass-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/bass-minimum-2.png",
+                "offset": 22,
+                "capture_sha256": "42c414374c90c9d551caa5e2b4565d9d867a536f90636bf67108381342e8a3be"
+              },
+              {
+                "raw": 100,
+                "frame": 1397,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/bass-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/bass-maximum-4.png",
+                "offset": 22,
+                "capture_sha256": "49b8a0a0d0b15e139ea5ddecad929f1fdafa4cdccd18436e5c833bc5910d340c"
+              }
+            ],
+            "middle": [
+              {
+                "raw": 0,
+                "frame": 1297,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/middle-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/middle-minimum-2.png",
+                "offset": 23,
+                "capture_sha256": "d728b790eb3f36b4556ec9b17553a0317ed065da16eda048c1321e4ca7b97123"
+              },
+              {
+                "raw": 100,
+                "frame": 1387,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/middle-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/middle-maximum-4.png",
+                "offset": 23,
+                "capture_sha256": "d64a78d0e8240b645f14151b1bf06bfb21e708f65c8d216d4e9e1ab0b37b2fda"
+              }
+            ],
+            "treble": [
+              {
+                "raw": 0,
+                "frame": 1327,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/treble-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/treble-minimum-3.png",
+                "offset": 25,
+                "capture_sha256": "d4d7139f975de369c903f0b98f7270a8b5220cba84c94a1058ebb0919ca9202a"
+              },
+              {
+                "raw": 100,
+                "frame": 1483,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/treble-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/treble-maximum-4.png",
+                "offset": 25,
+                "capture_sha256": "345d8af9a8a03c21ccadb20490fa333039a1b293a22db3adf7efdf7f5748243c"
+              }
+            ],
+            "volume": [
+              {
+                "raw": 0,
+                "frame": 1329,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/volume-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/volume-minimum-3.png",
+                "offset": 28,
+                "capture_sha256": "c9f360e8b50e0da1d2a6068197005796f4a36ce97c05590423dee4c394d13421"
+              },
+              {
+                "raw": 100,
+                "frame": 1509,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/volume-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-plexi/volume-maximum-4.png",
+                "offset": 28,
+                "capture_sha256": "bb752d9b697510e31c32e61449927828b2ce1405c4e48a1519dd471876dd5324"
+              }
+            ]
+          },
+          "writable": false,
+          "device_readback_verified": false,
+          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
         }
       }
     },

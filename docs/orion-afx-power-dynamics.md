@@ -843,3 +843,8 @@ Modern (US) CH3 adds isolated raw 0/100 pairs for Volume, Presence, Bass,
 Middle, Treble and Gain. The full captured segments differ only at the
 mapped control byte for each pair. Mode, output level and processing
 remain pending. The temporary trial was removed before the next model.
+
+Plexi 59 (UK) adds isolated raw 0/100 pairs for Presence, Bass, Middle,
+Treble and Volume. Each native control was bound to its current runtime
+ID. The effect file records independent report comparisons and endpoint
+screenshots. Output level and processing remain pending.
