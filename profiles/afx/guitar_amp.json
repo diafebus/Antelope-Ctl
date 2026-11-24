@@ -881,6 +881,121 @@
           "writable": false,
           "device_readback_verified": false,
           "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+        },
+        "Marcus II (US) Lead": {
+          "knob_endpoints": {
+            "volume": [
+              {
+                "raw": 0,
+                "frame": 1613,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/volume-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/volume-minimum-3.png",
+                "offset": 29,
+                "capture_sha256": "5391b493290132839067dfaa8edcb4ff24ba11d859a82d26f986d61ae1d504d0"
+              },
+              {
+                "raw": 100,
+                "frame": 1583,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/volume-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/volume-maximum-4.png",
+                "offset": 29,
+                "capture_sha256": "3170650a9c9ded23a5ab9ec68a0bccd6e490c51056819a9e96319cce263dbb2f"
+              }
+            ],
+            "bass": [
+              {
+                "raw": 0,
+                "frame": 1649,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/bass-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/bass-minimum-2.png",
+                "offset": 22,
+                "capture_sha256": "aa9bf99bd7925aa59d21b7761e1ac7b4b06b1117dce092be673d994336a8ac12"
+              },
+              {
+                "raw": 100,
+                "frame": 1485,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/bass-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/bass-maximum-4.png",
+                "offset": 22,
+                "capture_sha256": "19ca662abd279808c808e1fb3fbe4630aaf535e40b9af5d48d4973b7320fac1a"
+              }
+            ],
+            "middle": [
+              {
+                "raw": 0,
+                "frame": 1811,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/middle-minimum-1/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/middle-minimum-1.png",
+                "offset": 23,
+                "capture_sha256": "c66041792b2e5999b66bc646c85255fe0d52457bd25b33803ab59c8a48af2cb3"
+              },
+              {
+                "raw": 100,
+                "frame": 1555,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/middle-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/middle-maximum-4.png",
+                "offset": 23,
+                "capture_sha256": "c8fd175cef13f85fa213dfae1143f5730515ff547f632acd0d4def4c33e47a42"
+              }
+            ],
+            "treble": [
+              {
+                "raw": 0,
+                "frame": 1856,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/treble-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/treble-minimum-2.png",
+                "offset": 25,
+                "capture_sha256": "c162da4b506feaad3d7ea9e997adff9024784000bb3953865159e6ce3f983031"
+              },
+              {
+                "raw": 100,
+                "frame": 1617,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/treble-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/treble-maximum-4.png",
+                "offset": 25,
+                "capture_sha256": "a8dade7da7442e335edb7fe8e82757def4bc3f8ee294a66c130065291b397745"
+              }
+            ],
+            "drive": [
+              {
+                "raw": 0,
+                "frame": 1487,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/drive-minimum-2/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/drive-minimum-2.png",
+                "offset": 21,
+                "capture_sha256": "98bb4a6516bcaa02b7ae339939b99d89c9029230339b20086db2aa69e0435834"
+              },
+              {
+                "raw": 100,
+                "frame": 1628,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/drive-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/drive-maximum-4.png",
+                "offset": 21,
+                "capture_sha256": "04102ddd812e9a18eab774d6a0416ac9c5ca7b3738a6e5156b0794baf8b6a58b"
+              }
+            ],
+            "master": [
+              {
+                "raw": 0,
+                "frame": 1857,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/master-minimum-3/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/master-minimum-3.png",
+                "offset": 28,
+                "capture_sha256": "06bab5091350f1552aa12363f10ce752cb275cac836fd09c1be4d064b280eb9f"
+              },
+              {
+                "raw": 100,
+                "frame": 1593,
+                "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/master-maximum-4/Orion.pcapng",
+                "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124-marcus/master-maximum-4.png",
+                "offset": 28,
+                "capture_sha256": "d82d1e3148f87a19d5f8bfe597dbb409ed622ba9c4c6452c427fb3be06baa1d6"
+              }
+            ]
+          },
+          "writable": false,
+          "device_readback_verified": false,
+          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
         }
       }
     },

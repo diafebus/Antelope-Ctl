@@ -856,3 +856,7 @@ isolate one field per pair. Output level and processing remain pending.
 Rock 75 (UK) adds isolated raw 0/100 pairs for Presence, Bass, Middle,
 Treble, Volume and Gain. Endpoint records and screenshots are retained
 per control. Output level and processing remain pending.
+
+Marcus II (US) Lead adds isolated raw 0/100 pairs for Volume, Bass, Middle,
+Treble, Drive and Master. Shift, Bright, Deep, output level and processing
+remain pending. Each knob pair retains source frames and settled images.
