@@ -806,3 +806,11 @@ bytes 20, 21, 22 and 23. Source byte 24 positions are 0 Int, 1 ds and
 The starting Source image was obscured, leaving visual restoration pending.
 Detector, Mode and processing captures remain open. The temporary effect
 was removed and the empty AFX 1 view restored before loading Gate Keeper.
+
+## Gate Keeper — partial capture, 2026-11-24
+
+Orion assigned type 86, instance 0 in the temporary AFX 2 rack.
+Five endpoint pairs isolate Release, Attack, Range, Ratio and Threshold
+at bytes 20–24. Lin/Log changes byte 25. The settled labelled states
+and source frames are recorded in the Orion effect profile. The visual
+return check failed, so Mode and processing remain pending manual review.

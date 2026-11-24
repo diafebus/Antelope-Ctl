@@ -165,17 +165,156 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 86,
-      "status": "Orion assignment captured; control mapping in progress",
+      "status": "Partial Orion visible pass. Five endpoint pairs and Lin/Log frames captured. Mode and processing pending.",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
-      "control_encodings": {},
+      "control_encodings": {
+        "release": {
+          "offset": 20,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 4209,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-release-minimum.png"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 10962,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-release-maximum.png"
+            }
+          },
+          "status": "Raw endpoints captured; physical legend review pending"
+        },
+        "attack": {
+          "offset": 21,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 19055,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-attack-minimum.png"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 26017,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-attack-maximum.png"
+            }
+          },
+          "status": "Raw endpoints captured; physical legend review pending"
+        },
+        "range": {
+          "offset": 22,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 34167,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-range-minimum.png"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 41383,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-range-maximum.png"
+            }
+          },
+          "status": "Raw endpoints captured; physical legend review pending"
+        },
+        "ratio": {
+          "offset": 23,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 49849,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-ratio-minimum.png"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 57367,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-ratio-maximum.png"
+            }
+          },
+          "status": "Raw endpoints captured; physical legend review pending"
+        },
+        "thresh": {
+          "offset": 24,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "endpoint_observations": {
+            "minimum": {
+              "raw": 0,
+              "frame": 66143,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-thresh-minimum.png"
+            },
+            "maximum": {
+              "raw": 100,
+              "frame": 73955,
+              "source": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-channel2.pcapng",
+              "capture_sha256": "879b2544bac65b0cf963f33b495808542bfd653c222eadbe84fa3f918dff9eab",
+              "screenshot": "captures/continuation-20261124-gate-keeper/scan-Gatex-20261124T141134994Z/Gatex-thresh-maximum.png"
+            }
+          },
+          "status": "Raw endpoints captured; physical legend review pending"
+        },
+        "linlog": {
+          "offset": 25,
+          "width": 1,
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 1,
+              "printed_label": "LOG",
+              "frame": 823,
+              "source": "captures/continuation-20261124-gate-keeper/linlog-right/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-gate-keeper/linlog-right.png"
+            },
+            {
+              "raw": 0,
+              "printed_label": "LIN",
+              "frame": 915,
+              "source": "captures/continuation-20261124-gate-keeper/linlog-return/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-gate-keeper/linlog-return.png"
+            }
+          ],
+          "notes": "Visual return check failed; source images retained for review."
+        }
+      },
       "evidence": [
         "captures/continuation-20261124-gate-keeper/load-gate-keeper/Orion.pcapng frame 1083"
       ],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "notes": "Orion GUI and passive USB observations. Physical scales, independent readback, audible behavior and runtime contracts remain pending."
     },
     {
       "profile": "zen_go_sc.json",
