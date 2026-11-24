@@ -210,7 +210,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 82,
-      "status": "capture-observed; paired endpoints, five switches, Power and 5 fully witnessed rotary position sets",
+      "status": "Capture-observed. Seven rotary position sets, five switches and Power. Compressor Threshold intermediate labels partly unresolved.",
       "commands": {
         "load": null,
         "recall": null,
@@ -803,6 +803,362 @@
           ],
           "return_evidence": {
             "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
+        },
+        "limThreshold": {
+          "offset": 20,
+          "width": 1,
+          "kind": "enum",
+          "label": "Limiter Threshold",
+          "status": "capture-observed; isolated writes and individual position screenshots in both directions",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "frame": 1663,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-22/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-1-raw-0.png",
+              "capture_sha256": "05f145aa7ee39cf146b68d71e6876d9e1283cf364eee45a575f9718a116f8699",
+              "printed_label": "4 dBu"
+            },
+            {
+              "raw": 1,
+              "frame": 1502,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-21/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-2-raw-1.png",
+              "capture_sha256": "ccf0047d34a08e56598c914792d5b10515a60c9d18db6c42ef5cf54b7fc0a87a",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 2,
+              "frame": 1459,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-20/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-3-raw-2.png",
+              "capture_sha256": "94285abf5f4acdf85a541ae729f80ef2b079a621780d5e5e926062ba3c43ee3c",
+              "printed_label": "5 dBu"
+            },
+            {
+              "raw": 3,
+              "frame": 1769,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-19/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-4-raw-3.png",
+              "capture_sha256": "67777e49ffcc1154032fb63f9580aa988779d159088befccf25d270a26138696",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 4,
+              "frame": 1217,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-18/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-5-raw-4.png",
+              "capture_sha256": "2a76d3f8ebf37f402650e93f94dcfd1ba463695e7a077d475eca06cc40d448db",
+              "printed_label": "6 dBu"
+            },
+            {
+              "raw": 5,
+              "frame": 1975,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-17/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-6-raw-5.png",
+              "capture_sha256": "9ac25209adbf99c86a91deca38211e2da51a084bb41019201299a5c71519b842",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 6,
+              "frame": 1325,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-16/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-7-raw-6.png",
+              "capture_sha256": "5bc4e6f3d366d7b88465d6bf07f894cf4ecbf8b120829223aebe1a29104ef55d",
+              "printed_label": "7 dBu"
+            },
+            {
+              "raw": 7,
+              "frame": 1831,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-15/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-8-raw-7.png",
+              "capture_sha256": "854e7fa5883b902c65ff632d856c6127845386e4f026db3d2a41100cead35194",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 8,
+              "frame": 1247,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-14/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-9-raw-8.png",
+              "capture_sha256": "e487ebf2d466cce28647b3859bd1c4f0c0ffe8531881e8c48a0fd41ec8a30e9b",
+              "printed_label": "8 dBu"
+            },
+            {
+              "raw": 9,
+              "frame": 1891,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-13/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-10-raw-9.png",
+              "capture_sha256": "53f44f1a13c7f5f300e95c0498919a3e8c6946c735e1e093b1721255b6b58e5b",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 10,
+              "frame": 1781,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-12/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-11-raw-10.png",
+              "capture_sha256": "aa6871a9d71d16002d4e34ae5dfcb92bd780f3df10bcc7919c7065cc794c46a5",
+              "printed_label": "9 dBu"
+            },
+            {
+              "raw": 11,
+              "frame": 2257,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-11/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-12-raw-11.png",
+              "capture_sha256": "4b5ea345832a31498d7950d863d62df27c8d5d4b1a45464ed8a11e1dd5af9cf7",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 12,
+              "frame": 1447,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-10/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-13-raw-12.png",
+              "capture_sha256": "a8c00504d55a7139e7ccfcb6ca13ab8a19d702e92362fb4cd033c44e5511d91f",
+              "printed_label": "10 dBu"
+            },
+            {
+              "raw": 13,
+              "frame": 2617,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-9/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-14-raw-13.png",
+              "capture_sha256": "4e25165943e45bf0615b92d5c99c50207a9589720fee8c4bdb7917c97f299174",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 14,
+              "frame": 1367,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-8/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-15-raw-14.png",
+              "capture_sha256": "28cdaaede8473261eef9731408e9e3e9b0f8dd1111934ef4aed1b1c1c62cea51",
+              "printed_label": "11 dBu"
+            },
+            {
+              "raw": 15,
+              "frame": 2963,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-7/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-16-raw-15.png",
+              "capture_sha256": "13c95f12bd6801e7a0b2f245f5c5dae48569f0319d17c3e77372d1808db105be",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 16,
+              "frame": 2309,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-6/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-17-raw-16.png",
+              "capture_sha256": "ca8ab2b1d4a7282301de3e2e90b144487ab9e857c1e46c8da9833f4f24d5eb74",
+              "printed_label": "12 dBu"
+            },
+            {
+              "raw": 17,
+              "frame": 1745,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-5/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-18-raw-17.png",
+              "capture_sha256": "f067c1b8903ed91866c85ff309204e6b13bfe7d9e5642cee468fd6698f420281",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 18,
+              "frame": 1931,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-4/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-19-raw-18.png",
+              "capture_sha256": "dd5d2e8dd3781268df13cb236e4a15332cc8a769cc38c41a80ac6377f9ac0190",
+              "printed_label": "13 dBu"
+            },
+            {
+              "raw": 19,
+              "frame": 1367,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-3/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-20-raw-19.png",
+              "capture_sha256": "925dcbc2eed0f75d8d5767586f5fd7fa767f03fb7d9236de27fcd8b5d6a21969",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 20,
+              "frame": 1455,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-2/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-21-raw-20.png",
+              "capture_sha256": "a91d7ba920f8233669cb131616e891b1091d913224db480fddc64b76a83e0ad8",
+              "printed_label": "14 dBu"
+            },
+            {
+              "raw": 21,
+              "frame": 1893,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-1/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-22-raw-21.png",
+              "capture_sha256": "d817d5c1725008b2cdc4746b8bd8fd1cfea4302080f6ed33464def9f063d8439",
+              "printed_label": null,
+              "meaning": "Unlabelled mark. Numerical value unverified."
+            },
+            {
+              "raw": 22,
+              "frame": 2329,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-44/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-from-21-raw-22.png",
+              "capture_sha256": "1812b152e8093fd3d514e0022719d55cb6f9a87c8f4e10797ce3957812063a13",
+              "printed_label": "15 dBu"
+            }
+          ],
+          "return_evidence": {
+            "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limThreshold-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
+        },
+        "compThreshold": {
+          "offset": 24,
+          "width": 1,
+          "kind": "enum",
+          "label": "Compressor Threshold",
+          "writable": false,
+          "device_readback_verified": false,
+          "status": "All sixteen positions captured in both directions; intermediate legends partly unresolved.",
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "frame": 1249,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-15/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-1-raw-0.png",
+              "capture_sha256": "19f7fe780ff81f8a4cb74003ea17394c5ecc6270d1fa238505e59eab3e0abd41",
+              "printed_label": "−20 dBu"
+            },
+            {
+              "raw": 1,
+              "frame": 1325,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-14/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-2-raw-1.png",
+              "capture_sha256": "391d900cfe4fbf6c5dd48bf0b8a0f0370500e86398c5fc09c711ff23487168d4",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 2,
+              "frame": 1310,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-13/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-3-raw-2.png",
+              "capture_sha256": "e1e1bcf8f439bbd6fd83ed4a0ac30b801f133e4f86bc5f98d6b7973afc41cbe0",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 3,
+              "frame": 1421,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-12/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-4-raw-3.png",
+              "capture_sha256": "a7f184c178a34bd1fb75de67dd5614140c656e3f06678a6dbbffe947b8134e95",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 4,
+              "frame": 2125,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-11/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-5-raw-4.png",
+              "capture_sha256": "6f351e18afc9155e0c8aa64b311b148f51a03e267c45b8866c7898a4160f99e5",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 5,
+              "frame": 1359,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-10/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-6-raw-5.png",
+              "capture_sha256": "7e86df14be6f114103085169578876d43249c2feb584edb59e2e58576f96ec46",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 6,
+              "frame": 1479,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-9/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-7-raw-6.png",
+              "capture_sha256": "2fd24cfdc61bfd853710f393fcc4780d5c10c9fd2ba1569bbd0436c9c3a0391a",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 7,
+              "frame": 1253,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-8/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-8-raw-7.png",
+              "capture_sha256": "b0f1aa2681a53f0341b6002b25e0222f2b80073c653dfeb38af7b4d211493f30",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 8,
+              "frame": 1367,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-7/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-9-raw-8.png",
+              "capture_sha256": "f4dd95a9ae831894ce2be4c53e171fb81f73e214455988af6686dd14c7901b54",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 9,
+              "frame": 1359,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-6/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-10-raw-9.png",
+              "capture_sha256": "1e4c1ea456548a91f47973c29d6dd0a69fb08c12cdff6a415a9412db71490db2",
+              "printed_label": null,
+              "position": "Unlabelled tick between the printed 4 and 0, corroborated by the earlier owner-operated capture."
+            },
+            {
+              "raw": 10,
+              "frame": 1425,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-5/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-11-raw-10.png",
+              "capture_sha256": "3732be421f06201f28333ee87ae4eef1a2dd2b807d2985e368bad0eeb5dfc0b2",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 11,
+              "frame": 1539,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-4/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-12-raw-11.png",
+              "capture_sha256": "db7bd03c41f9a54462a151faf8069f25efbfa996d7037d539dd0e0158bd61a2b",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 12,
+              "frame": 1677,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-3/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-13-raw-12.png",
+              "capture_sha256": "4ea9df5f494ee20608b1230f109cd76a255bab884795714b36cf538b7e4873c1",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 13,
+              "frame": 1265,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-2/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-14-raw-13.png",
+              "capture_sha256": "9b689dedf12cd8cf8d176f5b9286a0488e2f8fab79062ad2e920c0585851839b",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 14,
+              "frame": 1855,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-1/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-15-raw-14.png",
+              "capture_sha256": "aed73744a543594199b43ff0a1d2ae0b6a884b1ad64edbbe459cb099e6a9a679",
+              "label_status": "Pending individual interpretation of pointer alignment on the printed scale."
+            },
+            {
+              "raw": 15,
+              "frame": 1263,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-30/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/compThreshold-from-14-raw-15.png",
+              "capture_sha256": "fe79cfc7dbcb1d0a29af6acfbb4878ae39aa56f9144b9746af45d45f67520b4b",
+              "printed_label": "10 dBu"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124/compThreshold-verified.json",
             "full_parameter_body_returned": true,
             "static_knob_returned": true
           }

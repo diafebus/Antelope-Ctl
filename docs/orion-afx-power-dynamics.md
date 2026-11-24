@@ -732,3 +732,13 @@ and a2. The return to raw 0 matched the initialized parameter body and
 the original knob image. The time response of a1 and a2 remains unmeasured.
 The Orion effect profile pairs each position with its source frame and
 screenshot in the local capture archive.
+
+On the same trial, the Limiter Threshold sweep covered byte 20 values 0–22.
+Even positions point to the numbered 4–15 dBu marks. Odd positions point to
+unlabelled ticks. Compressor Threshold covered all 16 byte 24 positions.
+The profile retains each frame and settled image. Some intermediate
+Compressor Threshold labels need further review against the printed scale.
+
+Both threshold sweeps returned the complete captured parameter body and
+original knob image. Removal frame 1399 showed all eight AFX 2 slots empty.
+The launcher returned to the original empty AFX 1 view.

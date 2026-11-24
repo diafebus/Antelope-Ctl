@@ -2453,7 +2453,8 @@ Limit 22, Limiter Attack 23, Compress 29 and Compressor Attack 30. Seven
 paired rotary endpoints and the Power/rack BP return are listed in the
 [Diode609 findings](docs/orion-afx-power-dynamics.md#diode609--partial-control-capture-2026-11-19).
 The owner-operated SC Preview toggle changes byte 31 (1 lit, 0 unlit).
-Intermediate rotary positions remain pending.
+All seven rotary position sets have been captured. Some Compressor Threshold
+legends remain unresolved.
 
 **Comp-4K-Bus visible controls (2026-11-04).** Directed load frame853 in
 `supervised-20261104T012645Z-load-ssl4kbus` establishes Orion type63/instance0.
