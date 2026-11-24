@@ -852,3 +852,7 @@ screenshots. Output level and processing remain pending.
 Rock 22.10 (UK) adds raw 0/100 pairs for Presence, Bass, Middle, Treble,
 Master Volume and Pre-amp Volume. Independent captured-report comparisons
 isolate one field per pair. Output level and processing remain pending.
+
+Rock 75 (UK) adds isolated raw 0/100 pairs for Presence, Bass, Middle,
+Treble, Volume and Gain. Endpoint records and screenshots are retained
+per control. Output level and processing remain pending.
