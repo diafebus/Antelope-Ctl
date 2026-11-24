@@ -868,3 +868,7 @@ pending, along with Bright, output level and processing.
 Overange 120 (UK) adds isolated raw 0/100 pairs for Bass, Treble,
 HF Drive and Gain. FAC selector positions, output level and processing
 remain pending. Endpoint frames and images are retained per control.
+
+BurnSphere (DE) Lead adds isolated raw 0/100 pairs for Gain, Bass, Middle,
+Treble, Presence and Volume. Bright, Bottom, output level and processing
+remain pending. The effect file retains each endpoint frame and image.
