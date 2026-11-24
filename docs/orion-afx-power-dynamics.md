@@ -742,3 +742,19 @@ Compressor Threshold labels need further review against the printed scale.
 Both threshold sweeps returned the complete captured parameter body and
 original knob image. Removal frame 1399 showed all eight AFX 2 slots empty.
 The launcher returned to the original empty AFX 1 view.
+
+## Brainiac — partial capture, 2026-11-24
+
+Selecting Brainiac in the Orion Launcher assigned type 85, instance 0 to
+AFX 2 slot 1 (frame 2531). The capture window contained one assignment
+report. The resulting panel displayed DEMO - Brainiac.
+
+A Release drag sent a `0x1d / 0xd5 / 0x0b` report with byte 20 at raw 4
+(frame 2369). The opposite drag sent raw 2 (frame 3069). All other report
+bytes matched. The knob image differed from its starting position, so
+the starting raw value, range and scale remain unverified. The Orion
+profile records the reports and settled images. The other controls
+remain pending.
+
+Removal frame 1338 carried eight empty slots for AFX 2. The Launcher
+showed the empty trial rack and returned to the original empty AFX 1 view.

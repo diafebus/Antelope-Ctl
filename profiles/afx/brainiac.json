@@ -164,16 +164,75 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 85,
+      "status": "Capture-observed. Temporary assignment, partial Release observation and removal.",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "evidence": [
+        {
+          "source": "captures/continuation-20261124-brainiac/load-brainiac/Orion.pcapng",
+          "frame": 2531,
+          "capture_sha256": "f061c3dfb8341f2d7a841e2e3a5c5dfb146150c71cd4a3ef2f0b6b0fd0083532",
+          "screenshot": "captures/continuation-20261124-brainiac/load-brainiac.png"
+        },
+        {
+          "source": "captures/continuation-20261124-brainiac/remove-brainiac/Orion.pcapng",
+          "frame": 1338,
+          "capture_sha256": "ee81f48bdead27efc915f19ab3d6f3e5763e9ef6b739f42e07cefa97b5c882e1",
+          "screenshot": "captures/continuation-20261124-brainiac/remove-brainiac.png"
+        }
+      ],
+      "notes": "Model-local Orion GUI and USB observations. Other controls, independent readback, physical scaling and runtime contracts remain pending.",
+      "type_id_write_status": "Vendor GUI assignment observed on Orion. Runtime writer disabled.",
+      "gui_observation": {
+        "panel_class": "Brainiac",
+        "source": "captures/continuation-20261124-brainiac/brainiac-baseline-inventory.json",
+        "controls": {
+          "release": "BrainiacPot_release",
+          "attack": "BrainiacPot_attack",
+          "range": "BrainiacPot_range",
+          "ratio": "BrainiacRatioPot",
+          "thresh": "BrainiacPot_thresh",
+          "linlog": "BrainiacLinLogButton",
+          "mode": "BrainiacModeButton",
+          "processing": "BrainiacAbstractBypass"
+        }
+      },
+      "parameter_observation": {
+        "opcode": "0x1d",
+        "param_id": "0xd5",
+        "subcmd": "0x0b",
+        "type_id_offset": 18,
+        "instance_index_offset": 19,
+        "writable": false,
+        "device_readback_verified": false,
+        "release": {
+          "offset": 20,
+          "width": 1,
+          "round_trip_verified": false,
+          "observations": [
+            {
+              "raw": 4,
+              "source": "captures/continuation-20261124-brainiac/release-change/Orion.pcapng",
+              "frame": 2369,
+              "capture_sha256": "237a9cd3586db181fab9522ce2a9a72065a96bcf4de1d3f48cc01725e9f50f84",
+              "screenshot": "captures/continuation-20261124-brainiac/release-change.png"
+            },
+            {
+              "raw": 2,
+              "source": "captures/continuation-20261124-brainiac/release-return/Orion.pcapng",
+              "frame": 3069,
+              "capture_sha256": "8f282464e6fc0853677daadb20ac28297104b4d0f07d3ae5c0be168003ed5704",
+              "screenshot": "captures/continuation-20261124-brainiac/release-return.png"
+            }
+          ],
+          "notes": "Only byte 20 differs between these reports. The load produced no parameter initialization report. The reverse drag did not return the starting knob image. Raw range, unit conversion and starting value remain unverified."
+        }
+      }
     },
     {
       "profile": "zen_go_sc.json",
