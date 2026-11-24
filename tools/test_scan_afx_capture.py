@@ -12,6 +12,16 @@ def frame(opcode, fields):
 
 
 class ScanAfxCaptureTests(unittest.TestCase):
+    def test_gyratec_xiv_parameter_family_is_passively_classified(self):
+        first = frame(0x29, [0xd5, 0x17, 77, 0, 0, 1, 19])
+        second = frame(0x29, [0xd5, 0x17, 77, 0, 3, 1, 19])
+        result = analyze_reports([(509, 0.0, 1, first), (2321, 0.1, 1, second)])
+        group, = result['parameter_groups']
+        self.assertEqual((group['opcode'], group['subcommand'], group['type']),
+                         ('0x29', '0x17', 77))
+        self.assertEqual(group['varying_offsets'], [20])
+        self.assertFalse(result['device_commands_sent'])
+
     def test_powerffc_parameter_family_is_observed_on_out_endpoint(self):
         first = frame(0x26, [0xd5, 0x14, 2, 0, 100, 0, 0, 0])
         second = frame(0x26, [0xd5, 0x14, 2, 0, 0xf4, 1, 0, 0])
