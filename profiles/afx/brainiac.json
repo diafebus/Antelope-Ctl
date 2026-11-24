@@ -165,13 +165,248 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 85,
-      "status": "Capture-observed. Temporary assignment, partial Release observation and removal.",
+      "status": "Capture-observed. GUI assignment and initialization, with verified captured-body and knob-image returns for release, attack, range, ratio, thresh, linlog, mode.",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
-      "control_encodings": {},
+      "control_encodings": {
+        "release": {
+          "offset": 20,
+          "width": 1,
+          "label": "Release",
+          "kind": "integer",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_observations": [
+            {
+              "raw": 10,
+              "frame": 3225,
+              "source": "captures/continuation-20261124-brainiac-full/release-excursion/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/release-excursion.png",
+              "capture_sha256": "4c456b2f4f636b54fab6d4cf7a2654a3cce985e217a423c9ee61f353a614923a"
+            },
+            {
+              "raw": 0,
+              "frame": 1423,
+              "source": "captures/continuation-20261124-brainiac-full/release-baseline-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/release-baseline-1.png",
+              "capture_sha256": "d89a398aa1e274e4051d314bbebe97082d06fade617f9ca5d0bac6014d310b0d"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124-brainiac-full/release-baseline-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
+        },
+        "attack": {
+          "offset": 21,
+          "width": 1,
+          "label": "Attack",
+          "kind": "integer",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_observations": [
+            {
+              "raw": 10,
+              "frame": 3925,
+              "source": "captures/continuation-20261124-brainiac-full/attack-map-excursion/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/attack-map-excursion.png",
+              "capture_sha256": "696ed942379a55d244d356205cc85f2236d0fed8c3decbf6b85e5e799fcd7b59"
+            },
+            {
+              "raw": 0,
+              "frame": 1485,
+              "source": "captures/continuation-20261124-brainiac-full/attack-map-return-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/attack-map-return-1.png",
+              "capture_sha256": "f10c7164464d7120904fb01a2c11f52d2bdf4901909361c60b8e9dddef7755a0"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124-brainiac-full/attack-map-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
+        },
+        "range": {
+          "offset": 22,
+          "width": 1,
+          "label": "Range Gain",
+          "kind": "integer",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_observations": [
+            {
+              "raw": 11,
+              "frame": 5133,
+              "source": "captures/continuation-20261124-brainiac-full/range-map-excursion/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/range-map-excursion.png",
+              "capture_sha256": "26cde5ea12d34133c981ee3f740a8d8aa896cd12276f5a7fa1d1918e828997b6"
+            },
+            {
+              "raw": 0,
+              "frame": 2937,
+              "source": "captures/continuation-20261124-brainiac-full/range-map-return-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/range-map-return-1.png",
+              "capture_sha256": "524804854e5520f74613b3047ed88ae2c12dda93630903472c554869bd44db63"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124-brainiac-full/range-map-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
+        },
+        "ratio": {
+          "offset": 23,
+          "width": 1,
+          "label": "Duck Ratio",
+          "kind": "integer",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_observations": [
+            {
+              "raw": 18,
+              "frame": 4687,
+              "source": "captures/continuation-20261124-brainiac-full/ratio-map-excursion/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/ratio-map-excursion.png",
+              "capture_sha256": "25b9454cd629caed2febfc6d7babe7f29fa620a364407e1ae6cca05682205980"
+            },
+            {
+              "raw": 12,
+              "frame": 3845,
+              "source": "captures/continuation-20261124-brainiac-full/ratio-reconcile-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/ratio-reconcile-1.png",
+              "capture_sha256": "b23c255fac913cea3fb713e80042b65fe7c41a2ec2a247232bdfc0a0d3795415"
+            },
+            {
+              "raw": 8,
+              "frame": 1863,
+              "source": "captures/continuation-20261124-brainiac-full/ratio-reconcile-2/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/ratio-reconcile-2.png",
+              "capture_sha256": "6973c2ae76bb45f7088a1172bfaa68a2cf55ac1a742df1a77167dab6aa726c50"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124-brainiac-full/ratio-map-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
+        },
+        "thresh": {
+          "offset": 24,
+          "width": 1,
+          "label": "Threshold",
+          "kind": "integer",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_observations": [
+            {
+              "raw": 10,
+              "frame": 1665,
+              "source": "captures/continuation-20261124-brainiac-full/thresh-map-excursion/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/thresh-map-excursion.png",
+              "capture_sha256": "c1e32e270c21ef93c9b613542539bea58d683a2ea3ad8ed1b0ec1f51dc5bb334"
+            },
+            {
+              "raw": 0,
+              "frame": 4225,
+              "source": "captures/continuation-20261124-brainiac-full/thresh-map-return-1/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/thresh-map-return-1.png",
+              "capture_sha256": "882a77a967336f9c0b13cc9e82fe863d2f566ccc7eb6c359184989b50138c2ef"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124-brainiac-full/thresh-map-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
+        },
+        "linlog": {
+          "offset": 25,
+          "width": 1,
+          "label": "Lin/Log",
+          "kind": "enum",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 1,
+              "frame": 2981,
+              "source": "captures/continuation-20261124-brainiac-full/linlog-change/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/linlog-change.png",
+              "capture_sha256": "4bf0fefd922544fdce8c525ed8071773f173362eba600887045b50674dbae769",
+              "printed_label": "LOG"
+            },
+            {
+              "raw": 0,
+              "frame": 1433,
+              "source": "captures/continuation-20261124-brainiac-full/linlog-return/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/linlog-return.png",
+              "capture_sha256": "b7daf27c1c77f99aeacb986671cb965f5abec09b36f0bd7c16b77578b0a43146",
+              "printed_label": "LIN"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124-brainiac-full/linlog-verified.json",
+            "full_parameter_body_returned": true,
+            "static_gui_returned": true
+          }
+        },
+        "mode": {
+          "offset": 26,
+          "width": 1,
+          "label": "Mode",
+          "kind": "enum",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 1,
+              "frame": 2825,
+              "source": "captures/continuation-20261124-brainiac-full/mode-middle/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/mode-middle.png",
+              "capture_sha256": "56aebec8fb3211c3381a85d3f948f419a9e47a60579037f254e5f33a2e3f3844",
+              "printed_label": "OUT",
+              "processing_reports": [
+                {
+                  "frame": 2773,
+                  "raw": 0
+                }
+              ]
+            },
+            {
+              "raw": 2,
+              "frame": 2529,
+              "source": "captures/continuation-20261124-brainiac-full/mode-right/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/mode-right.png",
+              "capture_sha256": "77f1351f06b51fa81aefa4cca0d9f4166bdd9ba262a55e32551ae5960d49db6b",
+              "printed_label": "KEY",
+              "processing_reports": [
+                {
+                  "frame": 2505,
+                  "raw": 1
+                }
+              ]
+            },
+            {
+              "raw": 0,
+              "frame": 2303,
+              "source": "captures/continuation-20261124-brainiac-full/mode-return/Orion.pcapng",
+              "screenshot": "captures/continuation-20261124-brainiac-full/mode-return.png",
+              "capture_sha256": "768afc002a22cda095db8cb90de7abf0b44fe547efcdf0afba8facd8d94aa4f3",
+              "printed_label": "IN"
+            }
+          ],
+          "return_evidence": {
+            "source": "captures/continuation-20261124-brainiac-full/mode-verified.json",
+            "full_parameter_body_returned": true,
+            "static_gui_returned": true
+          }
+        }
+      },
       "evidence": [
         {
           "source": "captures/continuation-20261124-brainiac/load-brainiac/Orion.pcapng",
@@ -231,6 +466,11 @@
             }
           ],
           "notes": "Only byte 20 differs between these reports. The load produced no parameter initialization report. The reverse drag did not return the starting knob image. Raw range, unit conversion and starting value remain unverified."
+        },
+        "observed_initialization": {
+          "frame": 2127,
+          "source": "captures/continuation-20261124-brainiac-full/load-brainiac/Orion.pcapng",
+          "capture_sha256": "422d8d99d611d14ee5903815007781ef8c37ee6c4723fd98481c863ca01ed40c"
         }
       }
     },

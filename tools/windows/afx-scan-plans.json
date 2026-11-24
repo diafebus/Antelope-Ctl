@@ -3995,6 +3995,68 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "brainiac-knobs",
+      "panel": "Brainiac",
+      "panel_class": "Brainiac",
+      "effect_id": "brainiac",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed Orion GUI targets",
+      "evidence": "continuation-20261124-brainiac-full/brainiac-baseline-inventory.json",
+      "controls": [
+        {
+          "id": "release",
+          "class_name": "BrainiacPot_release",
+          "label": "Release",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 5
+        },
+        {
+          "id": "attack",
+          "class_name": "BrainiacPot_attack",
+          "label": "Attack",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 5
+        },
+        {
+          "id": "range",
+          "class_name": "BrainiacPot_range",
+          "label": "Range Gain",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 5
+        },
+        {
+          "id": "ratio",
+          "class_name": "BrainiacRatioPot",
+          "label": "Duck Ratio",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 5
+        },
+        {
+          "id": "thresh",
+          "class_name": "BrainiacPot_thresh",
+          "label": "Threshold",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "panel_overflow_px": 5
+        }
+      ],
+      "coverage": {
+        "status": "visual endpoint review required",
+        "pending": [
+          "switches",
+          "physical scaling",
+          "independent readback",
+          "audio"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

@@ -758,3 +758,22 @@ remain pending.
 
 Removal frame 1338 carried eight empty slots for AFX 2. The Launcher
 showed the empty trial rack and returned to the original empty AFX 1 view.
+
+### Brainiac follow-up, 2026-11-24
+
+A fresh load included the full same-instance initialization report in frame
+2127. Captured excursions isolated Release, Attack, Range Gain, Duck Ratio
+and Threshold at bytes 20–24 respectively. Each returned to the initialized
+parameter body and its starting knob image. Duck Ratio needed smaller
+corrections to return to the initialized raw 8.
+
+Lin/Log at byte 25 uses raw 0 for LIN and 1 for LOG. Mode at byte 26 uses
+raw 0 for IN, 1 for OUT and 2 for KEY. Both selectors returned the initial
+parameter body and GUI appearance. Mode OUT emitted a processing state
+report with raw 0. KEY emitted processing state raw 1. The return from
+KEY to IN emitted the parameter report alone.
+
+A rack BP click emitted processing raw 0 and selected OUT in the parameter
+report. The reverse click emitted processing raw 1 and restored the complete
+parameter body, including Mode IN. A subsequent capture moved the pointer
+away without clicking. The BP highlight then matched the starting appearance.
