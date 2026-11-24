@@ -718,6 +718,12 @@ prints no number at the intervening Gain and HPF ticks.
 
 A settled image of the random middle settings also witnesses Limiter
 Threshold raw 12 at 10 dBu, Limiter Recovery raw 3 at 800 ms, and Compressor
-Threshold raw 9 at an unlabelled tick between printed 4 and 0. The remaining
-intermediate positions of those three controls need individual label
-witnesses. The manual sweeps ended at the owner's selected settings.
+Threshold raw 9 at an unlabelled tick between printed 4 and 0. The manual
+sweeps ended at the owner's selected settings.
+
+On November 24, an isolated AFX 2 trial captured all six Limiter Recovery
+positions. Byte 21 values 0–5 point to 50 ms, 100 ms, 200 ms, 800 ms, a1
+and a2. The return to raw 0 matched the initialized parameter body and
+the original knob image. The time response of a1 and a2 remains unmeasured.
+The Orion effect profile pairs each position with its source frame and
+screenshot in the local capture archive.

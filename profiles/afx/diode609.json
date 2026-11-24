@@ -210,7 +210,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 82,
-      "status": "capture-observed; paired endpoints, five switches, Power and four fully witnessed rotary position sets",
+      "status": "capture-observed; paired endpoints, five switches, Power and 5 fully witnessed rotary position sets",
       "commands": {
         "load": null,
         "recall": null,
@@ -742,6 +742,70 @@
               "screenshot": "captures/continuation-20261119-midday/manual-stepped-screens/1795087011314879581.webp"
             }
           ]
+        },
+        "limRecovery": {
+          "offset": 21,
+          "width": 1,
+          "kind": "enum",
+          "label": "Limiter Recovery",
+          "status": "capture-observed; isolated writes and individual position screenshots in both directions",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "frame": 1335,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-10/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-from-1-raw-0.png",
+              "capture_sha256": "a9392c45228a58643eb9a50783407c2a3752473c9dfa467b14a56d29adf7dbf8",
+              "printed_label": "50 ms"
+            },
+            {
+              "raw": 1,
+              "frame": 1605,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-1/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-from-0-raw-1.png",
+              "capture_sha256": "78a9db760833219e8d7d4633d34e9190eb2bfef7cd7a59e5af25a93d56ff9d3f",
+              "printed_label": "100 ms"
+            },
+            {
+              "raw": 2,
+              "frame": 1333,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-2/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-from-1-raw-2.png",
+              "capture_sha256": "c6b829277cc5fcc0d4da42954119e00030a362ecb77bbe0a297c820f1cad00ea",
+              "printed_label": "200 ms"
+            },
+            {
+              "raw": 3,
+              "frame": 1529,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-3/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-from-2-raw-3.png",
+              "capture_sha256": "1304bbe3e2cfe713457c73af20939150722b416094cdf291485510e91e720e14",
+              "printed_label": "800 ms"
+            },
+            {
+              "raw": 4,
+              "frame": 2259,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-4/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-from-3-raw-4.png",
+              "capture_sha256": "87db8569c975b5aa368c55a983d488e4b785e198a50311da28abb3da3c3b65e6",
+              "printed_label": "a1"
+            },
+            {
+              "raw": 5,
+              "frame": 1797,
+              "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-5/Orion.pcapng",
+              "screenshot": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-from-4-raw-5.png",
+              "capture_sha256": "7720d46f90d6c2c399adc153d0ea3dfe637004720e73142ddb6b877c220c1fb5",
+              "printed_label": "a2"
+            }
+          ],
+          "return_evidence": {
+            "source": "/home/diafebus/Projects/Antelope Orion Studio Driver/antelope-ctl/captures/continuation-20261124/limRecovery-verified.json",
+            "full_parameter_body_returned": true,
+            "static_knob_returned": true
+          }
         }
       },
       "evidence": [
