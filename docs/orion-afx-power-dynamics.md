@@ -816,13 +816,26 @@ starting image. Detector byte 26 displayed `Gate`, `Pk` and `Avg` at raw
 baseline. These are panel labels and captured values; detector behavior and
 audio meaning remain unverified.
 
-The Mode selector began at right / `Exp`. A left / `Lim` click produced a
-`0x1d/0xd5/0x0b` report (frame 1417). The next, middle / `Out` click produced
-both a `0x14` report and a `0x1d/0xd5/0x0b` report (frames 1077 and 1113).
-The capture parser stopped at this mixed report set, with no more control
-gestures. No Mode field or processing mapping is claimed. The temporary
-insert was removed; empty AFX 2 and the original empty AFX 1 view were
-verified. Raw evidence is local under
+The Mode selector's printed positions are associated with raw values 0 `Lim`,
+1 `Out` and 2 `Exp` at absolute D5 byte 25. The earlier left/`Lim` capture
+has no fresh pre-action D5 baseline. A new load captured right/`Exp` raw 2 in
+its D5 initialization (frame 989). One middle/`Out` action emitted an opaque
+`0x14` tuple `98005300` (frame 917) and D5 raw 1 (frame 929); only byte 25
+differed from the fresh initialization. The inverse right/`Exp` action emitted
+tuple `98005301` (frame 923) and restored the complete D5 body at frame 974.
+The Mode and slot BP image crops exactly matched the fresh-load image after
+return. These D5 frames are host OUT commands, not device readback.
+
+A separate slot BP Off/On/Off action pair produced the same opaque tuples
+`98005300` / `98005301` (frames 975 / 1025). The On action also emitted a D5
+body with candidate Mode byte 1 (frame 1015); the inverse emitted the previously
+captured Exp body with byte 2 (frame 1065). This repeat load had an assignment
+frame but no D5 initialization before the BP action, so it lacks a fresh current-
+load D5 baseline. BP UIA state returned Off, and the BP and Mode crops exactly
+matched the pre-action image. The tuple layout/meaning, physical bypass
+polarity, audible effect and independent readback remain unverified; no global
+`0x14` layout is inferred. Both temporary trials were removed, AFX 2 was empty,
+and the original empty AFX 1 view was restored. Raw evidence is local under
 `captures/continuation-20261125-drum-all-nite/`.
 
 ## Gate Keeper — partial capture, 2026-11-24

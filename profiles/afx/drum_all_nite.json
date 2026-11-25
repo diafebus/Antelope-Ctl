@@ -165,7 +165,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 83,
-      "status": "Partial Orion visible pass. Four endpoint pairs, Source and Detector selector positions are captured; Mode/processing interaction remains unresolved.",
+      "status": "Partial Orion visible pass. Four endpoint pairs, Source and Detector selector positions, and Mode label/raw observations are captured; slot BP action is captured with an exact GUI return. Processing tuple semantics, Mode behavior/audio, and readback remain unverified.",
       "commands": {
         "load": null,
         "recall": null,
@@ -370,6 +370,57 @@
             "1": "Pk",
             "2": "Avg"
           }
+        },
+        "mode": {
+          "offset": 25,
+          "width": 1,
+          "kind": "enum",
+          "writable": false,
+          "device_readback_verified": false,
+          "status": "capture-observed label associations; raw 1 Out is isolated against a fresh-load D5 report and exactly returned; raw 2 Exp is in fresh-load initialization; raw 0 Lim comes from a direct action capture without a fresh pre-action D5 baseline",
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "Lim",
+              "position": "left",
+              "frame": 1417,
+              "source": "captures/continuation-20261125-drum-all-nite/mode-left/Orion.pcapng",
+              "capture_sha256": "6e6cec9d3eeabd179b67090b6d34ea0cf5147199e012126baf69b8cd4c14fd99",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/mode-left.png",
+              "observation_origin": "direct left-position click followed by one D5 host OUT report; no fresh pre-action D5 body was captured"
+            },
+            {
+              "raw": 1,
+              "printed_label": "Out",
+              "position": "middle",
+              "frame": 929,
+              "source": "captures/continuation-20261125-drum-all-nite/mode-out-controlled/Orion.pcapng",
+              "capture_sha256": "29efdeb282f67fb2db8e4b7c7932e9a6993042e02a7c7603dc3ff8ce0a017c12",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/mode-out-settled.png",
+              "changed_offsets_from_fresh_load": [
+                25
+              ],
+              "return_frame": 974,
+              "return_capture": "captures/continuation-20261125-drum-all-nite/mode-exp-return/Orion.pcapng",
+              "return_capture_sha256": "d3ddb0ada319b7019bfd3cb7238772e94f9c6ab2b88b3153cf8869ccb5385455"
+            },
+            {
+              "raw": 2,
+              "printed_label": "Exp",
+              "position": "right / fresh-load baseline",
+              "frame": 989,
+              "source": "captures/continuation-20261125-drum-all-nite/mode-trial-load/Orion.pcapng",
+              "capture_sha256": "26181fbed67c4dbe35b57da6049af36bf2088453076e64ad55f85a989b0b1d26",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/mode-trial-loaded.png",
+              "observation_origin": "fresh-load D5 initialization and settled panel image; not device readback"
+            }
+          ],
+          "notes": "Printed selector labels are recorded literally; selector behavior, algorithm meaning, physical behavior and audio meaning remain unverified. D5 reports are captured host OUT commands, not independent device readback.",
+          "wire_enum": {
+            "0": "Lim",
+            "1": "Out",
+            "2": "Exp"
+          }
         }
       },
       "evidence": [
@@ -377,40 +428,133 @@
         "captures/continuation-20261125-drum-all-nite/load-drum-all-nite/Orion.pcapng frame 1419: fresh AFX2/channel1 slot1 type83/instance0 GUI assignment.",
         "captures/continuation-20261125-drum-all-nite/src-verified.json: Source byte24 raw 0 Int / 1 ds / 2 Ext; exact clean-image return.",
         "captures/continuation-20261125-drum-all-nite/dettype-verified.json: Detector byte26 raw 0 Gate / 1 Pk / 2 Avg; exact clean-image return.",
-        "captures/continuation-20261125-drum-all-nite/mode-left/Orion.pcapng frame 1417 and mode-middle/Orion.pcapng frames 1077,1113: mixed report-family stop; no Mode mapping claimed.",
-        "captures/continuation-20261125-drum-all-nite/remove-drum-all-nite/actions.json frame 1337: temporary slot removed; post-removal chain has eight empty slots."
+        "captures/continuation-20261125-drum-all-nite/mode-left/Orion.pcapng frame 1417: direct left/Lim action-associated D5 OUT raw0 at byte25; no fresh pre-action D5 baseline.",
+        "captures/continuation-20261125-drum-all-nite/mode-trial-load/Orion.pcapng frame 989: fresh D5 initialization raw2 at byte25 with right/Exp panel image.",
+        "captures/continuation-20261125-drum-all-nite/mode-out-controlled/Orion.pcapng frames 917 and 929: middle/Out action emitted opaque 0x14 tuple 98005300 and D5 raw1; only byte25 differed from fresh initialization.",
+        "captures/continuation-20261125-drum-all-nite/mode-exp-return/Orion.pcapng frames 923 and 974: inverse emitted opaque tuple 98005301 and restored the complete D5 body and Mode/BP crops.",
+        "captures/continuation-20261125-drum-all-nite/bp-on-controlled/Orion.pcapng frames 975 and 1015 and bp-off-return/Orion.pcapng frames 1025 and 1065: direct BP UI Off/On/Off action pair and D5 co-observations; the repeat load emitted no fresh D5 initialization.",
+        "captures/continuation-20261125-drum-all-nite/remove-drum-all-nite-bp-followup/Orion.pcapng frame 1021: trial removed and all eight AFX2 slots empty; AFX1 selected and empty in bp-cleanup-postflight-inventory.json."
       ],
-      "notes": "Orion type 83 / instance 0 was loaded temporarily on channel 1 / AFX 2 slot 1. Threshold, Range, Release and Output raw endpoint pairs remain as recorded. Source byte 24 now has a fresh unobscured three-position capture with exact UI return; Detector byte 26 has three printed states and exact UI return. A Mode left-position click emitted one 0x1d/0xd5/0x0b report; the subsequent middle-position click emitted both a 0x14 report and a 0x1d/0xd5/0x0b report. The reviewed parser stopped on that mixed event set. No further control gestures were sent; the temporary insert was removed and empty AFX 2 plus the original empty AFX 1 view were verified. Do not infer a Mode byte, processing mapping, audible meaning, physical scale or readback from this partial capture.",
+      "notes": "Orion type 83 / instance 0 was loaded temporarily on channel 1 / AFX 2 slot 1. Threshold, Range, Release and Output raw endpoint pairs remain as recorded. Source byte24 and Detector byte26 retain their label captures and exact UI returns. Mode labels Lim/Out/Exp are action-/load-associated with raw 0/1/2 at byte25; the Lim capture has no fresh pre-action D5 baseline, while the controlled Out trial changed only byte25 from fresh-load Exp and exactly returned. Direct slot BP Off/On/Off co-occurred with opaque 0x14 tuples 98005300/98005301 and a Mode UI/D5 co-observation; the repeat load lacked D5 initialization. No tuple semantics, global processing layout, physical bypass polarity, audible behavior, Mode algorithm meaning or device readback is claimed. Both trials were removed, AFX2 verified empty, and the original empty AFX1 view restored.",
       "type_id_write_status": "Orion Launcher assignment captured",
       "mode_capture_observation": {
-        "status": "partial; no field mapping added",
-        "initial_position": "right; displayed label Exp",
-        "first_click": {
+        "status": "three printed positions have label-associated D5 OUT observations; raw 0 Lim lacks a fresh pre-action D5 baseline; raw 1 Out has an isolated byte delta and exact return; raw 2 Exp is from fresh-load initialization",
+        "d5_header_hex": "700000001d0000000000000000000000d50b5300",
+        "fresh_load": {
+          "type_instance": [
+            83,
+            0
+          ],
+          "channel": 1,
+          "afx_slot": 1,
+          "frame": 975,
+          "initialization_frame": 989,
+          "body_hex": "640000320002010c00",
+          "mode_offset": 25,
+          "raw": 2,
+          "capture": "captures/continuation-20261125-drum-all-nite/mode-trial-load/Orion.pcapng",
+          "capture_sha256": "26181fbed67c4dbe35b57da6049af36bf2088453076e64ad55f85a989b0b1d26",
+          "screenshot": "captures/continuation-20261125-drum-all-nite/mode-trial-loaded.png"
+        },
+        "controlled_out_action": {
+          "position": "middle",
+          "printed_label": "Out",
+          "frame_0x14": 917,
+          "opaque_tuple_hex": "98005300",
+          "d5_frame": 929,
+          "body_hex": "640000320001010c00",
+          "changed_offsets": [
+            25
+          ],
+          "capture": "captures/continuation-20261125-drum-all-nite/mode-out-controlled/Orion.pcapng",
+          "capture_sha256": "29efdeb282f67fb2db8e4b7c7932e9a6993042e02a7c7603dc3ff8ce0a017c12",
+          "screenshot": "captures/continuation-20261125-drum-all-nite/mode-out-settled.png"
+        },
+        "inverse_return": {
+          "position": "right",
+          "printed_label": "Exp",
+          "frame_0x14": 923,
+          "opaque_tuple_hex": "98005301",
+          "d5_frame": 974,
+          "body_hex": "640000320002010c00",
+          "changed_offsets_from_out": [
+            25
+          ],
+          "capture": "captures/continuation-20261125-drum-all-nite/mode-exp-return/Orion.pcapng",
+          "capture_sha256": "d3ddb0ada319b7019bfd3cb7238772e94f9c6ab2b88b3153cf8869ccb5385455",
+          "screenshot": "captures/continuation-20261125-drum-all-nite/mode-exp-return-settled.png",
+          "pixel_exact_crops_returned": [
+            "slot BP indicator",
+            "Mode switch and legend"
+          ]
+        },
+        "prior_lim_observation": {
           "position": "left",
-          "displayed_label": "Lim",
+          "printed_label": "Lim",
           "frame": 1417,
-          "report_header_hex": "700000001d0000000000000000000000d50b5300",
+          "raw": 0,
+          "offset": 25,
           "capture": "captures/continuation-20261125-drum-all-nite/mode-left/Orion.pcapng",
           "capture_sha256": "6e6cec9d3eeabd179b67090b6d34ea0cf5147199e012126baf69b8cd4c14fd99",
-          "screenshot": "captures/continuation-20261125-drum-all-nite/mode-left.png"
+          "screenshot": "captures/continuation-20261125-drum-all-nite/mode-left.png",
+          "fresh_pre_action_d5_baseline": false
         },
-        "stopping_click": {
-          "position": "middle",
-          "displayed_label": "Out",
-          "frames": [
-            1077,
-            1113
-          ],
-          "report_headers_hex": [
-            "700000001400000000000000000000009800530000000000",
-            "700000001d0000000000000000000000d50b5300"
-          ],
-          "capture": "captures/continuation-20261125-drum-all-nite/mode-middle/Orion.pcapng",
-          "capture_sha256": "d639711673a1505979abd6b510072e8072152a8e4565aba915083a864f176867"
-        },
-        "stop_reason": "Two report families occurred during one action; the reviewed parameter-family capture expected a single D5 family and halted. No subsequent gesture was sent.",
         "device_readback_verified": false,
-        "runtime_writable": false
+        "runtime_writable": false,
+        "notes": "The Out action emitted both D5 and opaque 0x14 reports and changed the displayed slot BP indicator. The exact inverse restored the full valid D5 body and both captured UI crops. No 0x14 tuple meaning, global layout, bypass polarity, audio behavior or Mode algorithm meaning is inferred."
+      },
+      "processing_observation": {
+        "status": "capture-observed direct slot BP Off/On/Off UI round trip; opaque tuple and no device/audio confirmation",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "writable": false,
+        "device_readback_verified": false,
+        "states": [
+          {
+            "action": "slot BP Off to On",
+            "ui_toggle_before": "Off",
+            "ui_toggle_after": "On",
+            "frame": 975,
+            "tuple_hex": "98005300",
+            "source": "captures/continuation-20261125-drum-all-nite/bp-on-controlled/Orion.pcapng",
+            "capture_sha256": "37401368e6d028127eb0ac03d1835e317280b54dee6762c7eb921e338ff965aa"
+          },
+          {
+            "action": "slot BP On to Off inverse",
+            "ui_toggle_before": "On",
+            "ui_toggle_after": "Off",
+            "frame": 1025,
+            "tuple_hex": "98005301",
+            "source": "captures/continuation-20261125-drum-all-nite/bp-off-return/Orion.pcapng",
+            "capture_sha256": "c468bc4d58fbf748814c9e84c8359bb459313371e0f5e8fb95acf4cb8ed08b2b"
+          }
+        ],
+        "parameter_co_observations": [
+          {
+            "frame": 1015,
+            "body_hex": "640000320001010c00",
+            "mode_raw_candidate": 1,
+            "source": "captures/continuation-20261125-drum-all-nite/bp-on-controlled/Orion.pcapng",
+            "fresh_pre_action_d5_baseline_captured": false
+          },
+          {
+            "frame": 1065,
+            "body_hex": "640000320002010c00",
+            "mode_raw_candidate": 2,
+            "changed_offsets_from_on": [
+              25
+            ],
+            "source": "captures/continuation-20261125-drum-all-nite/bp-off-return/Orion.pcapng"
+          }
+        ],
+        "visual_restoration": {
+          "bp_ui_toggle": "Off",
+          "slot_bp_crop_exact": true,
+          "mode_crop_exact": true,
+          "baseline_screenshot": "captures/continuation-20261125-drum-all-nite/bp-followup-state-check.png",
+          "return_screenshot": "captures/continuation-20261125-drum-all-nite/bp-off-return-settled.png"
+        },
+        "notes": "Tuple bytes are recorded as opaque action-correlated values. The BP On action co-occurred with a D5 host OUT body whose candidate Mode byte was 1 and a visual Mode move to Out; its inverse returned the D5 body to the previously captured Exp body. This reload emitted no D5 initialization before the BP action, so no fresh current-load D5 baseline was available. No independent readback, physical bypass polarity or audible effect is established."
       }
     },
     {

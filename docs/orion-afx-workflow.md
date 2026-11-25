@@ -710,12 +710,21 @@ an exact image return. Detector captured raw `0 Gate`, `1 Pk` and `2 Avg` with
 an exact return to its clean middle baseline. These observations identify
 printed labels only; detector behavior and audio meaning remain unverified.
 
-Mode began at right / `Exp`. The left / `Lim` click produced one
-`0x1d/0xd5/0x0b` report. The middle / `Out` click produced both a `0x14`
-report and another `0x1d/0xd5/0x0b` report, so capture stopped without another
-gesture. No Mode field or processing mapping was added. The temporary insert
-was removed, and empty AFX 2 plus the original empty AFX 1 view were verified.
-See the [Orion power dynamics notes](orion-afx-power-dynamics.md#2026-11-25-selector-follow-up)
+Mode positions are label-associated with raw `0 Lim`, `1 Out`, and `2 Exp` at
+D5 byte 25. `Lim` comes from a prior direct click without a fresh D5 baseline;
+`Exp` was captured in fresh-load initialization. A controlled `Out` action
+changed only byte 25 and its inverse restored the complete D5 body and exact
+Mode/BP image crops. Both actions emitted opaque `0x14` tuples `98005300` and
+`98005301` respectively.
+
+A separate slot BP Off/On/Off action pair produced the same tuple values and
+returned the UIA checkbox plus Mode/BP image crops exactly. Its reload emitted
+no fresh D5 initialization; the accompanying D5 bodies therefore remain
+action observations rather than a fresh-baseline map. Tuple semantics,
+physical bypass polarity, audible behavior and device readback remain
+unverified. Both trials were removed, AFX 2 was verified empty, and the
+original empty AFX 1 view was restored. See the
+[Orion power dynamics notes](orion-afx-power-dynamics.md#2026-11-25-selector-follow-up)
 and the [Drum-All-Nite profile](../profiles/afx/drum_all_nite.json).
 
 ## 2026-11-25 — Gate Keeper selector follow-up
