@@ -29,7 +29,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 72,
-      "status": "capture-observed",
+      "status": "capture-observed; visible control and idle-screen inventory",
       "commands": {
         "load": null,
         "recall": null,
@@ -37,9 +37,10 @@
       },
       "control_encodings": {},
       "evidence": [
-        "unattended-20261026T091415Z-load-atuner/Orion.pcapng frame2719: labelled ATuner load, AFX2/channel1slot0 type72/instance0, sevenempty; SHA256 6928e17c5a6048871fdb0c0ecad437e3813c97ddcd02da13da60cf3143f5eeeb."
+        "unattended-20261026T091415Z-load-atuner/Orion.pcapng frame2719: labelled ATuner load, AFX2/channel1slot0 type72/instance0, sevenempty; SHA256 6928e17c5a6048871fdb0c0ecad437e3813c97ddcd02da13da60cf3143f5eeeb.",
+        "captures/continuation-20261125-atuner/load-atuner/Orion.pcapng frame 1421: temporary AFX2/channel1 slot1 GUI assignment type72/instance0; SHA256 3d34b4c4a6610fc92f1d422a8e1ae5f352a88f1323934132dee9d5b255407c39."
       ],
-      "notes": "Independently observed Orion ATuner identity and native ATuner panel. Only editable control observed is power; its GUI roundtrip is captured. The tuner depends on its screen: frequency, note and cents/needle interpretation and device telemetry/readback are deferred by owner2026-10-26. This is visible editable-control coverage, not a usable tuner implementation or verified pitch accuracy. No raw query or runtime writer added.",
+      "notes": "Orion ATuner type 72 / instance 0 was assigned to AFX 2 channel 1 slot 1 at frame 1421 in a temporary trial and then removed. The prior power-control round trip remains separate evidence. A 2026-11-25 screenshot shows the cent arc labels from -50 to +50 with the pointer centered at 0; no frequency or note value was visible. No known tone or input source was established. This is an idle-screen observation, not verified tuner accuracy, signal telemetry, device readback or a runtime contract.",
       "type_id_write_status": "vendor-load-observed; runtime contract unconfirmed",
       "bypass_observation": {
         "status": "capture-observed",
@@ -63,7 +64,7 @@
         ]
       },
       "display_observations": {
-        "status": "capture-observed native GUI inventory; signal telemetry unverified",
+        "status": "capture-observed native GUI inventory and idle-screen snapshot; signal telemetry unverified",
         "source": "unattended-20261026T091415Z-load-atuner/raw-ui.json",
         "displays": [
           {
@@ -101,8 +102,27 @@
         "runtime_reader_enabled": false,
         "meter_scale_and_signal_meaning_verified": false,
         "notes": "Record display presence separately from editable-control coverage. Class names are GUI evidence, not protocol offsets, scales or independent meter counts; overlapping parent/child widgets can share one display. Processing/mode LED correlations, where captured, remain in their separate control observations.",
-        "follow_up": "Essential tuner-screen reading deferred by owner2026-10-26: determine frequency/note/cents/needle readout and its source before claiming a usable tuner.",
-        "owner_deferred": true
+        "follow_up": "Frequency/note display behavior, cents/needle response to a known signal, input source, scale accuracy and device telemetry remain unverified. Capture only after a known signal path is available; do not infer a measured 0-cent input from the idle screenshot.",
+        "owner_deferred": false,
+        "screen_observation": {
+          "capture_date": "2026-11-25",
+          "screenshot": "captures/continuation-20261125-atuner/postload-atuner.png",
+          "ui_inventory": "captures/continuation-20261125-atuner/postload-atuner-inventory.json",
+          "screenshot_sha256": "5a7d3f890c1bfa8c9210c0bc5b42eeb301f42c5c635e30375425867df60ee555",
+          "cent_scale_labels": [
+            "-50",
+            "-25",
+            "0",
+            "+25",
+            "+50"
+          ],
+          "pointer_appearance": "visually centered at 0 in this snapshot; not interpreted as a measured input",
+          "frequency_or_note_value_visible": false,
+          "known_tone_applied": false,
+          "input_source_confirmed": false,
+          "device_telemetry_readback_verified": false,
+          "runtime_reader_enabled": false
+        }
       }
     }
   ]

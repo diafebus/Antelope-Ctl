@@ -75,7 +75,7 @@ work; no new initialization capture is required.
 | BA-31 | 48 | Both knob endpoint candidates and processing-switch GUI round trip captured; runtime/readback/scaling unverified |
 | Gyratec IX | 43 | Both continuous endpoint candidates, all Phase/Low-Cut detents and processing round trip captured; runtime/readback/scaling unverified |
 | VPA 76 | 44 | Warmth/Trim endpoint candidates, both filter detent maps and processing round trip captured; runtime/readback/scaling unverified |
-| ATuner | 72 | Power captured; essential frequency/note/cents/needle screen reading explicitly deferred by owner |
+| ATuner | 72 | Power captured; idle screen snapshot shows a centered pointer on the −50…+50 cent arc but no frequency/note value; response to known input, scale accuracy and telemetry remain unverified |
 | BAE-1023 | 24 | Eight rotary controls, all four frequency-selector maps, Phase and processing captured; scaling and per-field readback contracts unverified |
 | NEU-PEV | 13 | Five rotary endpoint pairs, four complete stepped maps and processing captured; Output scaling and per-field readback contracts unverified |
 | NEU-W492 | 15 | Nine rotary endpoint pairs, four band-switch returns, all three Low Cut positions and processing captured; scaling and per-field readback contracts unverified |
@@ -647,7 +647,10 @@ Record each plugin's visible VU/peak/gain-reduction meters, LEDs and other live
 readouts separately from its editable controls. The [display inventory](orion-afx-displays.md)
 and model-local catalog preserve native classes and source evidence, with unknown
 signal semantics, scales and device telemetry left explicit. Parameter readouts
-are distinguished from signal meters. ATuner's screen reading is deferred by
-owner request; its power-control pass does not implement tuning. A control pass
-marked complete does not claim decoded metering or screens. No speculative query
-is authorized by observing a widget.
+are distinguished from signal meters. ATuner's 2026-11-25 idle-screen snapshot
+records the printed cent arc and pointer appearance only; no known tone or input
+source was established. A known-source capture is still required to verify
+frequency/note output, needle response or tuner accuracy. Its power-control pass
+and idle screenshot do not implement tuning. A control pass marked complete does
+not claim decoded metering or screens. No speculative query is authorized by
+observing a widget.
