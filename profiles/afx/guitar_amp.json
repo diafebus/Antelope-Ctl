@@ -1367,7 +1367,75 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Captured isolated raw 0/100 knob pairs for Tone and Volume. The visible NORMAL/BRIGHT switch changed only D5 report byte31 and its exact inverse returned the complete fresh-load block and RGB switch crop. Raw 0/1 is associated with the upper NORMAL/lower BRIGHT UI positions; no audible or independent readback claim. The printed Tone/Volume faces span 1–12; intermediate physical conversion, output, processing, scale, audio behavior and readback remain pending.",
+          "switch_observations": {
+            "fresh_load": {
+              "type_instance": [
+                3,
+                0
+              ],
+              "assignment_frame": 1587,
+              "initialization_frame": 1629,
+              "initial_parameter_body_hex": "0721323d003900443a4c010100010000",
+              "source": "captures/continuation-20261125-top30/tweed-bright-load-top30/Orion.pcapng",
+              "capture_sha256": "3db3cd5eae46de0f50289d4f3d0e979db0cea8ac8caece32054db008245ee60f",
+              "screenshot": "captures/continuation-20261125-top30/tweed-bright-load-top30.png"
+            },
+            "bright_switch": {
+              "ui_class": "GuitarAmpModeSwitch",
+              "panel_labels_by_raw": [
+                {
+                  "raw": 0,
+                  "position": "upper",
+                  "printed_label": "NORMAL",
+                  "screenshot": "captures/continuation-20261125-top30/tweed-bright-forward-settled.png"
+                },
+                {
+                  "raw": 1,
+                  "position": "lower",
+                  "printed_label": "BRIGHT",
+                  "screenshot": "captures/continuation-20261125-top30/tweed-bright-load-top30.png"
+                }
+              ],
+              "body_offset": 11,
+              "report_offset": 31,
+              "transitions": [
+                {
+                  "from_raw": 1,
+                  "to_raw": 0,
+                  "frame": 1503,
+                  "source": "captures/continuation-20261125-top30/tweed-bright-forward/Orion.pcapng",
+                  "capture_sha256": "55aa6210aaa9c2b4cac333af05f0c397f9f4c041fd5fb2767022e14bb9ec0781"
+                },
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 1189,
+                  "source": "captures/continuation-20261125-top30/tweed-bright-inverse/Orion.pcapng",
+                  "capture_sha256": "13d8d7aa2a60d522983984d4e61bf031b37579e1e61aaec7e159c05225ff879a"
+                }
+              ],
+              "changed_offsets": [
+                31
+              ],
+              "full_d5_report_exact_return": true,
+              "rgb_switch_crop_exact_return": true,
+              "limits": "Panel position is associated with the printed NORMAL/BRIGHT label. Audio behavior, raw polarity beyond the observed UI association and independent device readback remain unverified."
+            },
+            "cleanup": {
+              "removal_frame": 1363,
+              "source": "captures/continuation-20261125-top30/tweed-bright-remove-trial/Orion.pcapng",
+              "capture_sha256": "15c51b680e45119daddedf044c2e284c02c1bb95f57e6b0885e4e775fdeed05b",
+              "afx2_empty_verified": true,
+              "original_empty_afx1_view_restored": true,
+              "afx2_rechecked_empty": true,
+              "afx2_verification_source": "captures/continuation-20261125-top30/tweed-bright-verify-afx2-empty/Orion.pcapng",
+              "final_afx1_restore_source": "captures/continuation-20261125-top30/tweed-bright-restore-final-afx1/Orion.pcapng"
+            },
+            "writable": false,
+            "device_readback_verified": false,
+            "status": "one literal two-position switch label/raw association observed and exactly returned; no audio or device-readback claim"
+          }
         },
         "Overange 120 (UK)": {
           "knob_endpoints": {

@@ -1012,8 +1012,13 @@ are literal UI/raw observations; state meaning, audio behavior and readback
 remain unknown. Output level, processing and physical scaling remain open.
 
 Tweed Deluxe (US) adds isolated raw 0/100 pairs for Tone and Volume.
-The printed face spans 1–12. Intermediate physical conversion remains
-pending, along with Bright, output level and processing.
+The printed face spans 1–12. From fresh D5 raw1 at report byte31, one
+`GuitarAmpModeSwitch` click moved the visible lever from the lower `BRIGHT`
+position to upper `NORMAL` with raw0; the inverse returned raw1. Each action
+changed only byte31, and the inverse restored the full D5 body and switch crop
+exactly. This associates raw values with the printed UI positions only; audio
+behavior and device readback remain unverified. Intermediate physical
+conversion, output level and processing remain pending.
 
 Overange 120 (UK) adds isolated raw 0/100 pairs for Bass, Treble, HF Drive
 and Gain. A fresh FAC-knob baseline at frame1439 had raw57 at D5 report byte23.
