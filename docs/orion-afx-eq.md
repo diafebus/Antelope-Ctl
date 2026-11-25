@@ -918,15 +918,32 @@ original printed-label observations, raw selector keys, model-local encodings
 and runtime verification flags remain unchanged. This does not establish an
 audible frequency calibration or a continuous interpolation law.
 
-## ClearQ — partial Orion capture, 2026-11-24
+## ClearQ — partial Orion capture, 2026-11-25
 
-The vendor assigned type 1 instance 0, then sent five band initialization
-reports with band IDs 0–4 at byte 20. The report family is
-0x1c / 0xd5 / 0x0a. A gain edit on the first band affected only bytes
-25–26. A reverse gesture returned the complete initialization record.
-The five band widgets repeat their class names and need individual runtime
-ID targeting. Other controls and numerical conversions remain pending.
-Local evidence is indexed under continuation-20261124-clearq.
+A fresh vendor load assigned type 1 / instance 0 to AFX 2 slot 1 (frame 1017).
+It emitted five `0x1c / 0xd5 / 0x0a` initialization reports for bands 0–4
+(frames 1033–1049, byte 20). The model-local catalog records each body and
+the capture hash. The repeated `GainPan` widgets were individually targeted.
+
+The existing band 0 gain trial plus four new trials cover the five visible G
+controls. Bands 1–4 changed only offsets 25–26 or 25; each reverse gesture
+restored the complete initialized report and the targeted knob image crop.
+The per-band frames, raw changed bytes, capture hashes and evidence paths are
+in [the ClearQ catalog entry](../profiles/afx/eq.json). These are observed
+field changes, not decoded units, device readback or an enabled writer.
+
+A separate bounded band 1 `Q` (`QualityFactorPan`) trial began at displayed
+`0.71`. Its reports changed only byte 23 (raw 71→121→171→221); the inverse
+ended at raw 121 rather than 71, and the knob image also failed exact return.
+Capture stopped immediately, with no further ClearQ gestures. The raw traces
+and screenshots are retained under `captures/continuation-20261125-clearq/`;
+the catalog records frames, hashes and the unresolved candidate byte without
+promoting a Q mapping.
+
+The temporary insert was removed at frame 1067, all eight AFX 2 slots were
+verified empty, and the original empty AFX 1 view was restored. Frequency,
+other Q controls, shape, output, processing, numerical conversions,
+independent readback, audio behavior and runtime contracts remain pending.
 
 ## Filtek MK3 — partial Orion capture, 2026-11-24
 

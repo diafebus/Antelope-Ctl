@@ -105,7 +105,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 1,
-      "status": "Partial Orion ClearQ capture. Five band initialization records and band 0 gain restoration.",
+      "status": "Partial Orion ClearQ pass. Five band initialization records and five bounded gain trials with exact returns; the band 1 Q trial failed exact restoration and was stopped.",
       "commands": {
         "load": null,
         "recall": null,
@@ -117,9 +117,14 @@
           "source": "captures/continuation-20261124-clearq/load-clearq/Orion.pcapng",
           "frame": 1023,
           "capture_sha256": "443138676d908d3ce40798562f3cf3a5356986ae6d897997c9478d60fb7faf7f"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/load-clearq/Orion.pcapng",
+          "frame": 1017,
+          "capture_sha256": "917b25c2bcecb1ff99943bf856addd9544ac85de854dfee1223bed14424a81d4"
         }
       ],
-      "notes": "Capture-only Orion evidence. Repeated band controls require individually bound runtime IDs. Remaining controls, units, independent readback, audio and runtime contracts pending.",
+      "notes": "Capture-only Orion evidence. Gain trials are bounded observations with exact full-record and targeted control-image returns, not device readback or a numeric scale. The band 1 Q trial did not restore its initialized field or image; no later ClearQ control was attempted. Other controls, units, independent readback, audio behavior and runtime contracts remain pending.",
       "type_id_write_status": "Orion vendor assignment observed",
       "band_observations": {
         "opcode": "0x1c",
@@ -129,28 +134,33 @@
         "initialization": [
           {
             "band": 0,
-            "frame": 1061,
-            "body": "001e004700000000"
+            "frame": 1033,
+            "body": "001e004700000000",
+            "source": "captures/continuation-20261125-clearq/load-clearq/Orion.pcapng"
           },
           {
             "band": 1,
-            "frame": 1065,
-            "body": "01c8004700000002"
+            "frame": 1037,
+            "body": "01c8004700000002",
+            "source": "captures/continuation-20261125-clearq/load-clearq/Orion.pcapng"
           },
           {
             "band": 2,
-            "frame": 1069,
-            "body": "02e8034700000002"
+            "frame": 1041,
+            "body": "02e8034700000002",
+            "source": "captures/continuation-20261125-clearq/load-clearq/Orion.pcapng"
           },
           {
             "band": 3,
-            "frame": 1073,
-            "body": "0388134700000002"
+            "frame": 1045,
+            "body": "0388134700000002",
+            "source": "captures/continuation-20261125-clearq/load-clearq/Orion.pcapng"
           },
           {
             "band": 4,
-            "frame": 1077,
-            "body": "04983a4700000001"
+            "frame": 1049,
+            "body": "04983a4700000001",
+            "source": "captures/continuation-20261125-clearq/load-clearq/Orion.pcapng"
           }
         ],
         "gain_trial": {
@@ -171,6 +181,178 @@
             "captures/continuation-20261124-clearq/band0-gain-change/Orion.pcapng",
             "captures/continuation-20261124-clearq/band0-gain-restoration/Orion.pcapng"
           ]
+        },
+        "additional_gain_trials": [
+          {
+            "band": 1,
+            "printed_control_label": "G",
+            "ui_class": "GainPan",
+            "initial_block": "01c8004700000002",
+            "changed_block": "01c80047002c0102",
+            "changed_offsets": [
+              25,
+              26
+            ],
+            "changed_raw_bytes": {
+              "25": 44,
+              "26": 1
+            },
+            "change_frame": 1113,
+            "return_frame": 1150,
+            "full_record_returned": true,
+            "targeted_control_image_returned": true,
+            "sources": [
+              {
+                "path": "captures/continuation-20261125-clearq/band1-gain-change-retry/Orion.pcapng",
+                "sha256": "6605497d6a715f192b22eaa97b2face97330d8f8c2e6568ce86065df34d8d501"
+              },
+              {
+                "path": "captures/continuation-20261125-clearq/band1-gain-return-retry/Orion.pcapng",
+                "sha256": "15662a602372cda9d62e9a0e4939419e64ab0b488829c8fef16b88ecf1ce7d86"
+              }
+            ]
+          },
+          {
+            "band": 2,
+            "printed_control_label": "G",
+            "ui_class": "GainPan",
+            "initial_block": "02e8034700000002",
+            "changed_block": "02e8034700c80002",
+            "changed_offsets": [
+              25
+            ],
+            "changed_raw_bytes": {
+              "25": 200
+            },
+            "change_frame": 1099,
+            "return_frame": 1001,
+            "full_record_returned": true,
+            "targeted_control_image_returned": true,
+            "sources": [
+              {
+                "path": "captures/continuation-20261125-clearq/band2-gain-change-retry/Orion.pcapng",
+                "sha256": "0b43e5a47ba8b809e597c4047f6759f1a0bcfcf682d9462e09e16396ce1de818"
+              },
+              {
+                "path": "captures/continuation-20261125-clearq/band2-gain-return-retry/Orion.pcapng",
+                "sha256": "9c490392028ebdb9da91b2260cec8411d63770e7272f30a8b89edfce83e79a7c"
+              }
+            ]
+          },
+          {
+            "band": 3,
+            "printed_control_label": "G",
+            "ui_class": "GainPan",
+            "initial_block": "0388134700000002",
+            "changed_block": "03881347002c0102",
+            "changed_offsets": [
+              25,
+              26
+            ],
+            "changed_raw_bytes": {
+              "25": 44,
+              "26": 1
+            },
+            "change_frame": 1143,
+            "return_frame": 1169,
+            "full_record_returned": true,
+            "targeted_control_image_returned": true,
+            "sources": [
+              {
+                "path": "captures/continuation-20261125-clearq/band3-gain-change-retry/Orion.pcapng",
+                "sha256": "ce62bd01217d1778dc7fa8d68c6dd8d02a7a89b708f073df836baadfdfd468e0"
+              },
+              {
+                "path": "captures/continuation-20261125-clearq/band3-gain-return-retry/Orion.pcapng",
+                "sha256": "ac0f6e16d442c6253b8f674a8f9bd29a2a1787b19a5592fe31a46e4c60ec4453"
+              }
+            ]
+          },
+          {
+            "band": 4,
+            "printed_control_label": "G",
+            "ui_class": "GainPan",
+            "initial_block": "04983a4700000001",
+            "changed_block": "04983a4700c80001",
+            "changed_offsets": [
+              25
+            ],
+            "changed_raw_bytes": {
+              "25": 200
+            },
+            "change_frame": 1153,
+            "return_frame": 1011,
+            "full_record_returned": true,
+            "targeted_control_image_returned": true,
+            "sources": [
+              {
+                "path": "captures/continuation-20261125-clearq/band4-gain-change-retry/Orion.pcapng",
+                "sha256": "484d564df3967d76101cb0db9c9f9a122c5d238b6239aa43002ad5b034140566"
+              },
+              {
+                "path": "captures/continuation-20261125-clearq/band4-gain-return-retry/Orion.pcapng",
+                "sha256": "fecbd59cfecfecef30ecdd8517bd2d60d1efef18232a6474b889414e8c1afd37"
+              }
+            ]
+          }
+        ],
+        "quality_trial": {
+          "band": 1,
+          "displayed_control_label": "Q",
+          "ui_class": "QualityFactorPan",
+          "initial_display_value": "0.71",
+          "initial_raw_byte_23": 71,
+          "candidate_changed_offsets": [
+            23
+          ],
+          "change_frames": [
+            1043,
+            1093,
+            1145
+          ],
+          "observed_raw_byte_23": [
+            121,
+            171,
+            221
+          ],
+          "return_frames": [
+            1125,
+            1177
+          ],
+          "return_raw_byte_23": [
+            171,
+            121
+          ],
+          "full_initial_record_returned": false,
+          "targeted_control_image_returned": false,
+          "status": "Unresolved candidate only; inverse gesture ended at raw 121 rather than initialized raw 71, so the full record and image did not return. No further ClearQ gestures were sent.",
+          "sources": [
+            {
+              "path": "captures/continuation-20261125-clearq/band1-quality-change/Orion.pcapng",
+              "sha256": "b08eb6032b572474d599ced70684b637d826b8ca6e2dfaf69b00d839e807f0dc"
+            },
+            {
+              "path": "captures/continuation-20261125-clearq/band1-quality-return/Orion.pcapng",
+              "sha256": "0f0e10821b68e6cdb205b0ed016303324451da8f6bf95db0a30cad06db150021"
+            },
+            {
+              "path": "captures/continuation-20261125-clearq/knob-controls-start.png",
+              "sha256": "5faa78ef6efc2defbf7c35f55397586b44a93914e7f57e4f2c9cb2ab947267ce"
+            },
+            {
+              "path": "captures/continuation-20261125-clearq/band1-quality-return.png",
+              "sha256": "cc8a3491d1fbf757df67b0591ee99c3e421584eed22df7648dd27e2e18e5c32e"
+            }
+          ]
+        },
+        "trial_cleanup": {
+          "remove_frame": 1067,
+          "source": "captures/continuation-20261125-clearq/remove-clearq/Orion.pcapng",
+          "capture_sha256": "d4af821e2a815c3e18522a2986035028e933f0ab3863afca4bb6816f93549674",
+          "observed_empty_slots": 8,
+          "owner_view": "AFX 1 selected; empty owner view restored after trial removal.",
+          "owner_view_inventory": "captures/continuation-20261125-clearq/restore-owner-view-inventory.json",
+          "owner_view_screenshot": "captures/continuation-20261125-clearq/restore-owner-view.png"
         }
       }
     },

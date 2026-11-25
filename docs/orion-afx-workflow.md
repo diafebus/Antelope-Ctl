@@ -685,3 +685,15 @@ processing behavior remain unresolved; no audio meaning is claimed. The
 temporary insert was removed and both empty AFX 2 and the original empty AFX 1
 view were verified. See the [Gate Keeper profile](../profiles/afx/gate_keeper.json)
 and [Orion power dynamics notes](orion-afx-power-dynamics.md#2026-11-25-selector-follow-up).
+
+## 2026-11-25 — ClearQ partial capture
+
+The fresh Special Processing menu exposed ClearQ. Its type 1 / instance 0
+initialization reports for all five bands were captured. Bounded gain trials on
+bands 1–4 each returned the full report and targeted knob image; band 0 retains
+its earlier exact return. Raw bytes and units remain unmapped. A band 1 Q trial
+changed candidate byte 23, but its inverse did not restore the initialized
+value or image; capture stopped and the failed trial is recorded for manual
+follow-up. The temporary insert was removed and both the empty AFX 2 rack and
+original empty AFX 1 view were verified. See the [ClearQ findings](orion-afx-eq.md#clearq--partial-orion-capture-2026-11-25),
+[catalog entry](../profiles/afx/eq.json) and local-only `captures/CAPTURE_INDEX.md`.
