@@ -969,8 +969,13 @@ values do not establish polarity, audio behavior or device readback.
 
 Modern (US) CH3 adds isolated raw 0/100 pairs for Volume, Presence, Bass,
 Middle, Treble and Gain. The full captured segments differ only at the
-mapped control byte for each pair. Mode, output level and processing
-remain pending. The temporary trial was removed before the next model.
+mapped control byte for each pair. A fresh Mode selector cycle at report byte
+30 captured raw0/1/2 at the printed Raw/Vintage/Modern positions. The three
+single-click transitions changed only byte30 and returned the full D5 body
+and RGB selector crop to the fresh-load raw1 state. Common type-3 POWER
+processing is captured above. Output level, physical scaling, independent
+readback and audio behavior remain pending. The temporary trial was removed
+before the next model.
 
 Plexi 59 (UK) adds isolated raw 0/100 pairs for Presence, Bass, Middle,
 Treble and Volume. Each native control was bound to its current runtime

@@ -410,9 +410,11 @@
         "captures/continuation-20261125-powerffc/gyratec-rack-bypass-return/Orion.pcapng frame 885 sha256 6d00ef6ca2c2a64fc3f041157a8a1b66331c765c79fe87a2f25789ae23fa2071",
         "captures/continuation-20261125-powerffc/gyratec-mode-low-pulse4/Orion.pcapng frame 981 sha256 ed60fa597170490ee60e68f8ce1b0e122235d2557616e2b2237d097362562e08",
         "captures/continuation-20261125-powerffc/gyratec-mode-low-inverse-pulse4/Orion.pcapng frame 989 sha256 f82e3ab2d30acd45edb1b19177ac9aa5d0ddb4f9f433328a8234f91a8744b778",
-        "captures/continuation-20261125-powerffc/remove-gyratecxiv/Orion.pcapng frame 1131 sha256 c0fc46619d8b56d0c60a944def85612b7aa8e306758f4a5766ff9146bb215453"
+        "captures/continuation-20261125-powerffc/remove-gyratecxiv/Orion.pcapng frame 1131 sha256 c0fc46619d8b56d0c60a944def85612b7aa8e306758f4a5766ff9146bb215453",
+        "captures/continuation-20261125-gyratecxiv-mode/load-gyratecxiv/Orion.pcapng frame 1355 assigns type 77 / instance 0 in AFX2; no D5 initialization report followed; SHA256 adf9278d535c1df5b904b00db2a979484f933d86a299b6ee3620bfcfa70b4597",
+        "captures/continuation-20261125-gyratecxiv-mode/remove-gyratecxiv/Orion.pcapng frame 1261 removes the untouched trial; empty AFX2 and original empty AFX1 view verified; SHA256 820b1356e22d3013399d3748f08be6709be1ab6e8369b1f5ab0d2508f16b18e9"
       ],
-      "notes": "Gyratec XIV type 77 / instance 0. Sixteen Frequency/Q/Level knob pairs remain in the prior capture. A fresh pass captured rack BP On/raw 0 and Off/raw 1 with exact UI return; no device readback or audible confirmation. One bounded Low Mode trial observed candidate byte 21 raw 2 and returned to raw 1, matching a prior reference and the fresh load-image crop; the current trial did not capture a pre-action parameter report. The control face says MODE but position meanings are unknown; other band Mode controls remain open. A center click on the custom GyratecXIVBypassPot produced no control OUT. No runtime writer is enabled.",
+      "notes": "Gyratec XIV type 77 / instance 0. Sixteen Frequency/Q/Level knob pairs remain in the prior capture. A fresh pass captured rack BP On/raw 0 and Off/raw 1 with exact UI return; no device readback or audible confirmation. One bounded Low Mode trial observed candidate byte 21 raw 2 and returned to raw 1, matching a prior reference and the fresh load-image crop; the current trial did not capture a pre-action parameter report. The control face says MODE but position meanings are unknown; other band Mode controls remain open. A center click on the custom GyratecXIVBypassPot produced no control OUT. No runtime writer is enabled. A fresh 2026-11-25 type77/instance0 load again produced only the slot assignment and no D5 initialization; no Mode control was touched. The untouched trial was removed and both rack state and original AFX1 view were restored.",
       "parameter_observation": {
         "opcode": "0x29",
         "param_id": "0xd5",
@@ -838,6 +840,26 @@
           "removal_capture_sha256": "c0fc46619d8b56d0c60a944def85612b7aa8e306758f4a5766ff9146bb215453"
         },
         "status": "Rack BP raw/UI correlation captured for type 77 / instance 0; effect-specific audible meaning and device readback remain unverified."
+      },
+      "mode_baseline_followup": {
+        "status": "fresh load assignment observed without D5 initialization; no Mode input sent",
+        "type_instance": [
+          77,
+          0
+        ],
+        "assignment_frame": 1355,
+        "d5_initialization_reports": 0,
+        "source": "captures/continuation-20261125-gyratecxiv-mode/load-gyratecxiv/Orion.pcapng",
+        "capture_sha256": "adf9278d535c1df5b904b00db2a979484f933d86a299b6ee3620bfcfa70b4597",
+        "action_sent": false,
+        "cleanup": {
+          "frame": 1261,
+          "source": "captures/continuation-20261125-gyratecxiv-mode/remove-gyratecxiv/Orion.pcapng",
+          "capture_sha256": "820b1356e22d3013399d3748f08be6709be1ab6e8369b1f5ab0d2508f16b18e9",
+          "afx2_empty": true,
+          "original_afx1_view_restored": true
+        },
+        "limits": "No new parameter value or Mode meaning was observed. The earlier unbased raw 2 to 1 trial is preserved and was not repeated."
       }
     },
     {

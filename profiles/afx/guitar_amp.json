@@ -591,7 +591,71 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Six isolated raw 0/100 knob pairs and the three-position Mode selector cycle are captured. Fresh D5 body raw1 transitioned through raw2 and raw0, with the selector image aligning those states to printed Vintage, Modern and Raw positions; the complete report and RGB selector crop returned exactly. Common type-3 POWER event/UI observation is in the implementation. Output level, physical scaling, independent readback and audio behavior remain unverified.",
+          "mode_selector_observation": {
+            "ui_class": "GuitarAmpModeSwitchThreeWay",
+            "parameter_body_offset": 10,
+            "report_offset": 30,
+            "positions": [
+              {
+                "raw": 0,
+                "printed_label": "Raw",
+                "panel_position": "top"
+              },
+              {
+                "raw": 1,
+                "printed_label": "Vintage",
+                "panel_position": "left"
+              },
+              {
+                "raw": 2,
+                "printed_label": "Modern",
+                "panel_position": "bottom"
+              }
+            ],
+            "fresh_load": {
+              "assignment_frame": 1373,
+              "initialization_frame": 1405,
+              "parameter_body_hex": "023f38390038003d5b00010000000000",
+              "mode_raw": 1,
+              "source": "captures/continuation-20261125-modern/load-modern/Orion.pcapng",
+              "capture_sha256": "2b5d0996efae20d32d044a94d79366453ef527f12e48e3eb4340720238119160"
+            },
+            "transitions": [
+              {
+                "from_raw": 1,
+                "to_raw": 2,
+                "frame": 1095,
+                "source": "captures/continuation-20261125-modern/mode-step1/Orion.pcapng",
+                "capture_sha256": "4a497c7e51fc420b9521f876cb28c4c06f2118e5fce972e4f473088592058fdc",
+                "screenshot": "captures/continuation-20261125-modern/mode-step1-settled.png"
+              },
+              {
+                "from_raw": 2,
+                "to_raw": 0,
+                "frame": 1135,
+                "source": "captures/continuation-20261125-modern/mode-step2/Orion.pcapng",
+                "capture_sha256": "a269a07956736cfacfac379a46d25b733961bbcb9217c8cbfd19e77801f7eac4",
+                "screenshot": "captures/continuation-20261125-modern/mode-step2-settled.png"
+              },
+              {
+                "from_raw": 0,
+                "to_raw": 1,
+                "frame": 1141,
+                "source": "captures/continuation-20261125-modern/mode-step3/Orion.pcapng",
+                "capture_sha256": "312879610a7ade59453ca374d2d09da52e23d579f2db48380a76670ead4c9387",
+                "screenshot": "captures/continuation-20261125-modern/mode-step3-settled.png"
+              }
+            ],
+            "changed_offsets": [
+              30
+            ],
+            "full_parameter_report_exact_return": true,
+            "rgb_selector_crop_exact_return": true,
+            "limits": "Raw labels are associated with the printed selector positions and screenshot states. No audio behavior, numerical meaning or independent device readback is claimed.",
+            "device_readback_verified": false,
+            "writable": false
+          }
         },
         "Plexi 59 (UK)": {
           "knob_endpoints": {

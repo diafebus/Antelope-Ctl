@@ -1013,3 +1013,8 @@ state at frame 3807, but no fresh pre-action parameter report was captured.
 The control face prints `MODE`; position meanings remain unknown, and the other
 four band Mode controls are still open. Removal frame 1131 verified eight
 empty AFX 2 slots before the original empty AFX 1 view returned.
+
+A fresh follow-up load assigned type77/instance0 at frame1355 but emitted no
+D5 initialization report. No Mode input was sent without a fresh parameter
+baseline. The untouched trial was removed at frame1261, AFX2 was verified
+empty, and the original empty AFX1 view was restored.

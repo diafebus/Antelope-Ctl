@@ -703,6 +703,11 @@ The face prints `MODE`; position meanings and the other four band modes remain
 unidentified. AFX2 removal frame 1131 verified eight empty slots and restored
 the original empty AFX1 view. No parameter writer is enabled.
 
+A fresh 2026-11-25 follow-up load assigned type77/instance0 at frame1355 but
+produced no D5 initialization report. No Mode input was sent without a current
+parameter baseline. The untouched trial was removed at frame1261; AFX2 was
+verified empty and the original empty AFX1 view restored.
+
 ## 2026-11-25 — Drum-All-Nite selector follow-up
 
 The fresh Source selector trial captured raw `0 Int`, `1 ds` and `2 Ext` with
