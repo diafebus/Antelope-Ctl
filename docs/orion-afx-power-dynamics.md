@@ -961,7 +961,13 @@ one byte per control. The owning model observations retain source frames
 and screenshots. A fresh load initialized type3/instance0 at frame1231.
 Two clicks on the output slider at host x fractions 0.74 and 0.775 left the
 readout at `0 dB`, emitted no captured parameter event, and left the RGB
-slider crop unchanged; output remains unmapped pending a supported gesture.
+slider crop unchanged; output remains unmapped pending another supported gesture.
+On 2026-11-25, a fresh type3/instance0 load initialized at frame1475. One
+guarded +30 mouse-wheel pulse against the exact `GuitarAmpLevelSlider` runtime
+ID left the display at `0 dB`, produced no parameter OUT, and returned the RGB
+slider crop exactly. This is negative evidence for that single wheel pulse;
+output remains unmapped. The trial was removed at frame1251, AFX2 was verified
+empty, and the original empty AFX1 view restored.
 The panel image has no separate Bright switch despite the model name. A
 POWER-button click/inverse produced opaque tuples `98 00 03 00` (frame1115)
 and `98 00 03 01` (frame1051), with an exact RGB POWER-crop return. These

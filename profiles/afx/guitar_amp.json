@@ -439,7 +439,7 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Four isolated raw 0/100 knob pairs. A common type 3 POWER event/UI pair is captured in the implementation-level processing observation. Two bounded clicks on the 0 dB output slider produced no captured parameter event and left its RGB crop unchanged; a supported drag/key/wheel gesture is still required. This panel image contains no separate Bright switch. Physical scaling, independent readback and audio behavior remain unverified.",
+          "notes": "Four isolated raw 0/100 knob pairs. A common type 3 POWER event/UI pair is captured in the implementation-level processing observation. Two bounded clicks and one bounded +30 wheel pulse on the 0 dB output slider produced no captured parameter event and left its RGB crop unchanged; other supported gestures remain pending. This panel image contains no separate Bright switch. Physical scaling, independent readback and audio behavior remain unverified.",
           "output_slider_click_observation": {
             "ui_class": "GuitarAmpLevelSlider",
             "displayed_value_before": "0 dB",
@@ -460,8 +460,44 @@
                 "capture_sha256": "c4c846b9afca44c258698c917e44d0f989246c7d0a222631c40f470440984df5"
               }
             ],
+            "wheel_attempt": {
+              "ui_class": "GuitarAmpLevelSlider",
+              "gesture": "one partial mouse-wheel pulse",
+              "wheel_delta": 30,
+              "displayed_value_before": "0 dB",
+              "displayed_value_after": "0 dB",
+              "captured_parameter_events": 0,
+              "source": "captures/continuation-20261125-top30/output-wheel-forward/Orion.pcapng",
+              "capture_sha256": "5623d7a674380b5a0b6709a70fcce2286f1567d3e87626a47a07ab43d1d57da6",
+              "frame_window": {
+                "start_exclusive": 307,
+                "end_inclusive": 2093
+              },
+              "host_ui_receipt": "captures/continuation-20261125-top30/output-wheel-forward-result.json",
+              "screenshot": "captures/continuation-20261125-top30/output-wheel-forward-settled.png",
+              "fresh_load": {
+                "assignment_frame": 1433,
+                "initialization_frame": 1475,
+                "parameter_body_hex": "01463c3f003800113a00000000000000",
+                "source": "captures/continuation-20261125-top30/output-wheel-load-top30/Orion.pcapng",
+                "capture_sha256": "fe5e3909f2cd10b67da51a16ca0d564bfb0b173396fd4deb8d9b7896dc566cf3"
+              },
+              "rgb_slider_crop_exact_return": true,
+              "cleanup": {
+                "removal_frame": 1251,
+                "source": "captures/continuation-20261125-top30/output-wheel-remove-top30/Orion.pcapng",
+                "capture_sha256": "e2dda24b182cc00d385b89be6983c88bc62f89fe13e7df99b01c9306b3beb553",
+                "afx2_empty": true,
+                "original_empty_afx1_view_restored": true,
+                "view_restore_source": "captures/continuation-20261125-top30/output-wheel-restore-owner-view/Orion.pcapng",
+                "view_restore_capture_sha256": "0e26f66351452e2b9a72502e0eafa6cec5724deea6a321efef08d58c45559038"
+              },
+              "device_readback_verified": false,
+              "writable": false,
+              "status": "negative for this single wheel pulse; no output parameter mapping is claimed"
+            },
             "rgb_slider_crop_unchanged": true,
-            "status": "negative for these click gestures; output remains unmapped and needs a supported non-click gesture"
+            "status": "negative for the two click gestures and one wheel pulse; output remains unmapped"
           },
           "visible_panel_observation": {
             "source": "captures/continuation-20261125-top30/load-top30-bright.png",
