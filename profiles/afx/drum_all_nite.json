@@ -165,7 +165,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 83,
-      "status": "Partial Orion visible pass. Four endpoint pairs and Source labels captured; detector, mode and processing pending.",
+      "status": "Partial Orion visible pass. Four endpoint pairs, Source and Detector selector positions are captured; Mode/processing interaction remains unresolved.",
       "commands": {
         "load": null,
         "recall": null,
@@ -291,16 +291,127 @@
               "frame": 913,
               "source": "captures/continuation-20261124-drum-all-nite/src-return/Orion.pcapng",
               "screenshot": "captures/continuation-20261124-drum-all-nite/src-return.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "ds",
+              "position": "middle",
+              "frame": 1383,
+              "source": "captures/continuation-20261125-drum-all-nite/src-middle/Orion.pcapng",
+              "capture_sha256": "76c26df1cf5fce1b25f94348d604af91abc65dabd626467b5b7550fcbb4aae06",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/src-middle.png"
+            },
+            {
+              "raw": 2,
+              "printed_label": "Ext",
+              "position": "right",
+              "frame": 1049,
+              "source": "captures/continuation-20261125-drum-all-nite/src-right/Orion.pcapng",
+              "capture_sha256": "2d75011bf5efbeef2736bf9ede9164a63ebeb5a569412177ba82fcd627f31022",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/src-right.png"
+            },
+            {
+              "raw": 0,
+              "printed_label": "Int",
+              "position": "left / exact return",
+              "frame": 1029,
+              "source": "captures/continuation-20261125-drum-all-nite/src-return/Orion.pcapng",
+              "capture_sha256": "f98b71e61cff9672b1df790c9d3007dcf4c4a6855486d78a4bea415403efe19c",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/src-return.png"
             }
           ],
-          "notes": "Starting screenshot obscured. Visual restoration unverified."
+          "notes": "The initial position was visible on a fresh, unobscured trial; all three positions were captured and the Source switch image returned exactly. Labels are transcribed literally; device readback is not available.",
+          "status": "capture-observed; three printed labels and exact UI return verified 2026-11-25",
+          "wire_enum": {
+            "0": "Int",
+            "1": "ds",
+            "2": "Ext"
+          }
+        },
+        "dettype": {
+          "offset": 26,
+          "width": 1,
+          "kind": "enum",
+          "writable": false,
+          "device_readback_verified": false,
+          "status": "capture-observed; three displayed labels and exact UI return verified 2026-11-25",
+          "raw_label_observations": [
+            {
+              "raw": 0,
+              "printed_label": "Gate",
+              "position": "left",
+              "frame": 1305,
+              "source": "captures/continuation-20261125-drum-all-nite/dettype-left/Orion.pcapng",
+              "capture_sha256": "48f9e8e7fb75cd853776f8998296549bc44df502319450ac551e1758a8e7b63f",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/dettype-left.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "Pk",
+              "position": "middle / exact return",
+              "frame": 1127,
+              "source": "captures/continuation-20261125-drum-all-nite/dettype-return/Orion.pcapng",
+              "capture_sha256": "0848dce14e7dedef70785fd4c96099fb72f017490a1ba9254a53680f0db63f9b",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/dettype-return.png"
+            },
+            {
+              "raw": 2,
+              "printed_label": "Avg",
+              "position": "right",
+              "frame": 1119,
+              "source": "captures/continuation-20261125-drum-all-nite/dettype-right/Orion.pcapng",
+              "capture_sha256": "1b54e418ae5850b62d5e734804884b9833d2d69b256c7fc4a39023501d785283",
+              "screenshot": "captures/continuation-20261125-drum-all-nite/dettype-right.png"
+            }
+          ],
+          "notes": "Literal labels from the panel; the switch image returned exactly to its fresh middle baseline. Detector behavior and physical/audio meaning remain unverified.",
+          "wire_enum": {
+            "0": "Gate",
+            "1": "Pk",
+            "2": "Avg"
+          }
         }
       },
       "evidence": [
-        "captures/continuation-20261124-drum-all-nite/load-drum-all-nite/Orion.pcapng frame 2269, type 83 instance 0"
+        "captures/continuation-20261124-drum-all-nite/load-drum-all-nite/Orion.pcapng frame 2269, type 83 instance 0",
+        "captures/continuation-20261125-drum-all-nite/load-drum-all-nite/Orion.pcapng frame 1419: fresh AFX2/channel1 slot1 type83/instance0 GUI assignment.",
+        "captures/continuation-20261125-drum-all-nite/src-verified.json: Source byte24 raw 0 Int / 1 ds / 2 Ext; exact clean-image return.",
+        "captures/continuation-20261125-drum-all-nite/dettype-verified.json: Detector byte26 raw 0 Gate / 1 Pk / 2 Avg; exact clean-image return.",
+        "captures/continuation-20261125-drum-all-nite/mode-left/Orion.pcapng frame 1417 and mode-middle/Orion.pcapng frames 1077,1113: mixed report-family stop; no Mode mapping claimed.",
+        "captures/continuation-20261125-drum-all-nite/remove-drum-all-nite/actions.json frame 1337: temporary slot removed; post-removal chain has eight empty slots."
       ],
-      "notes": "Captured Orion assignment and Threshold reports. Further controls and independent readback pending.",
-      "type_id_write_status": "Orion Launcher assignment captured"
+      "notes": "Orion type 83 / instance 0 was loaded temporarily on channel 1 / AFX 2 slot 1. Threshold, Range, Release and Output raw endpoint pairs remain as recorded. Source byte 24 now has a fresh unobscured three-position capture with exact UI return; Detector byte 26 has three printed states and exact UI return. A Mode left-position click emitted one 0x1d/0xd5/0x0b report; the subsequent middle-position click emitted both a 0x14 report and a 0x1d/0xd5/0x0b report. The reviewed parser stopped on that mixed event set. No further control gestures were sent; the temporary insert was removed and empty AFX 2 plus the original empty AFX 1 view were verified. Do not infer a Mode byte, processing mapping, audible meaning, physical scale or readback from this partial capture.",
+      "type_id_write_status": "Orion Launcher assignment captured",
+      "mode_capture_observation": {
+        "status": "partial; no field mapping added",
+        "initial_position": "right; displayed label Exp",
+        "first_click": {
+          "position": "left",
+          "displayed_label": "Lim",
+          "frame": 1417,
+          "report_header_hex": "700000001d0000000000000000000000d50b5300",
+          "capture": "captures/continuation-20261125-drum-all-nite/mode-left/Orion.pcapng",
+          "capture_sha256": "6e6cec9d3eeabd179b67090b6d34ea0cf5147199e012126baf69b8cd4c14fd99",
+          "screenshot": "captures/continuation-20261125-drum-all-nite/mode-left.png"
+        },
+        "stopping_click": {
+          "position": "middle",
+          "displayed_label": "Out",
+          "frames": [
+            1077,
+            1113
+          ],
+          "report_headers_hex": [
+            "700000001400000000000000000000009800530000000000",
+            "700000001d0000000000000000000000d50b5300"
+          ],
+          "capture": "captures/continuation-20261125-drum-all-nite/mode-middle/Orion.pcapng",
+          "capture_sha256": "d639711673a1505979abd6b510072e8072152a8e4565aba915083a864f176867"
+        },
+        "stop_reason": "Two report families occurred during one action; the reviewed parameter-family capture expected a single D5 family and halted. No subsequent gesture was sent.",
+        "device_readback_verified": false,
+        "runtime_writable": false
+      }
     },
     {
       "profile": "zen_go_sc.json",

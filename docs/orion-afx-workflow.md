@@ -654,3 +654,18 @@ frequency/note output, needle response or tuner accuracy. Its power-control pass
 and idle screenshot do not implement tuning. A control pass marked complete does
 not claim decoded metering or screens. No speculative query is authorized by
 observing a widget.
+
+## 2026-11-25 — Drum-All-Nite selector follow-up
+
+The fresh Source selector trial captured raw `0 Int`, `1 ds` and `2 Ext` with
+an exact image return. Detector captured raw `0 Gate`, `1 Pk` and `2 Avg` with
+an exact return to its clean middle baseline. These observations identify
+printed labels only; detector behavior and audio meaning remain unverified.
+
+Mode began at right / `Exp`. The left / `Lim` click produced one
+`0x1d/0xd5/0x0b` report. The middle / `Out` click produced both a `0x14`
+report and another `0x1d/0xd5/0x0b` report, so capture stopped without another
+gesture. No Mode field or processing mapping was added. The temporary insert
+was removed, and empty AFX 2 plus the original empty AFX 1 view were verified.
+See the [Orion power dynamics notes](orion-afx-power-dynamics.md#2026-11-25-selector-follow-up)
+and the [Drum-All-Nite profile](../profiles/afx/drum_all_nite.json).

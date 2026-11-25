@@ -807,6 +807,24 @@ The starting Source image was obscured, leaving visual restoration pending.
 Detector, Mode and processing captures remain open. The temporary effect
 was removed and the empty AFX 1 view restored before loading Gate Keeper.
 
+### 2026-11-25 selector follow-up
+
+A fresh, unobscured trial captured all three Source positions at byte 24:
+`0 Int`, `1 ds` and `2 Ext`; the displayed switch returned exactly to its
+starting image. Detector byte 26 displayed `Gate`, `Pk` and `Avg` at raw
+`0`, `1` and `2`, respectively, and returned exactly to its clean middle
+baseline. These are panel labels and captured values; detector behavior and
+audio meaning remain unverified.
+
+The Mode selector began at right / `Exp`. A left / `Lim` click produced a
+`0x1d/0xd5/0x0b` report (frame 1417). The next, middle / `Out` click produced
+both a `0x14` report and a `0x1d/0xd5/0x0b` report (frames 1077 and 1113).
+The capture parser stopped at this mixed report set, with no more control
+gestures. No Mode field or processing mapping is claimed. The temporary
+insert was removed; empty AFX 2 and the original empty AFX 1 view were
+verified. Raw evidence is local under
+`captures/continuation-20261125-drum-all-nite/`.
+
 ## Gate Keeper — partial capture, 2026-11-24
 
 Orion assigned type 86, instance 0 in the temporary AFX 2 rack.
