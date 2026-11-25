@@ -728,11 +728,23 @@ Mode began at left / `in`. The right / `key` action produced a captured
 type 86 / instance 0 parameter report with raw `2` at byte 26. The middle /
 `out` action produced raw `1` at byte 26 plus a separate `0x14` report. The
 parameter bodies differ only at byte 26, but capture stopped at the mixed
-families before a settled Out image or further gesture. Raw `0` / `in` and
-processing behavior remain unresolved; no audio meaning is claimed. The
-temporary insert was removed and both empty AFX 2 and the original empty AFX 1
-view were verified. See the [Gate Keeper profile](../profiles/afx/gate_keeper.json)
+families before a settled Out image or further gesture. A later fresh load
+captured raw `0` at the left / `in` position; processing behavior remains
+unverified. The temporary insert was removed and both empty AFX 2 and the
+original empty AFX 1 view were verified. See the [Gate Keeper profile](../profiles/afx/gate_keeper.json)
 and [Orion power dynamics notes](orion-afx-power-dynamics.md#2026-11-25-selector-follow-up).
+
+## 2026-11-25 — Gate Keeper rack BP follow-up
+
+Fresh load assignment frame 1031 and initialization frame 1053 captured D5 Mode
+byte 26 raw `0` with the control at left / `in`. Rack BP On emitted `0x14 / 0x98`
+bytes 16–19 `98 00 56 00` at frame 983; the same action was followed by D5 byte
+26 raw `1` and a settled middle / `out` image at frame 1003. The Mode control was
+not touched. Rack BP Off returned tuple `98 00 56 01` at frame 1153 and restored
+the full D5 block and Mode crop to the load baseline at frame 1201. This remains
+an event/UI correlation: no tuple field meaning, effect-specific bypass polarity,
+device readback or audible result is claimed. Removal frame 925 verified empty
+AFX2 and restored the original empty AFX1 view. No Gate Keeper writer is enabled.
 
 ## 2026-11-25 — ClearQ partial capture
 

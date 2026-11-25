@@ -165,7 +165,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 86,
-      "status": "Partial Orion visible pass. Five endpoint pairs and Lin/Log exact return captured; Mode has two label-associated values but the Out action emitted mixed report families; processing pending.",
+      "status": "Partial Orion visible pass. Five endpoint pairs, Lin/Log return, all three Mode label/raw observations, and a rack BP UI/tuple roundtrip with exact D5/Mode return captured; processing semantics remain unverified.",
       "commands": {
         "load": null,
         "recall": null,
@@ -339,7 +339,7 @@
           "kind": "enum",
           "writable": false,
           "device_readback_verified": false,
-          "status": "partial capture-observed; raw 1 out and raw 2 key are label-associated; raw 0 in pending",
+          "status": "all three displayed Mode positions have label-associated observations at byte 26; the load-correlated observation is not device readback",
           "raw_label_observations": [
             {
               "raw": 2,
@@ -357,9 +357,19 @@
               "frame": 1371,
               "source": "captures/continuation-20261125-gate-keeper/mode-middle/Orion.pcapng",
               "capture_sha256": "a35d58c97c02d8683df2eaafaed187854088e72abc89f02525d72fd3d482ff2d"
+            },
+            {
+              "raw": 0,
+              "printed_label": "in",
+              "position": "left",
+              "frame": 1053,
+              "source": "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/load/Orion.pcapng",
+              "capture_sha256": "d0e10bb241ecdc724ae75b0d7927818e7548a3a737681c85b6718f903c1c04fb",
+              "screenshot": "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/baseline-load.png",
+              "observation_origin": "fresh-load D5 parameter initialization and settled panel image; not device readback"
             }
           ],
-          "notes": "The clean baseline showed the selector at left / in, with no initialization parameter report. Right / key produced a D5-family type 86 / instance 0 report with byte 26 equal to 2. The following middle / out action produced a separate 0x14 report and a D5-family report; comparing that D5 body with the preceding Key body isolates byte 26 changing 2 to 1. The parser stopped on the mixed family set before its screenshot action. Raw 0 / in and any processing-state meaning remain pending; the 0x14 payload is retained as opaque evidence."
+          "notes": "Byte 26 now has label-associated UI/report observations for left / in = 0 on fresh load, middle / out = 1, and right / key = 2. A rack BP On action was followed by byte 26 0→1 and a UI move from left / in to middle / out; the BP Off return restored the full fresh-load D5 block and Mode crop. This co-occurrence does not establish causation or device readback; the 0x14 tuple remains separately opaque."
         }
       },
       "evidence": [
@@ -367,9 +377,68 @@
         "captures/continuation-20261125-gate-keeper/load-gate-keeper/Orion.pcapng frame 1209: temporary GUI assignment of Orion type 86 / instance 0 to AFX 2 slot 1.",
         "captures/continuation-20261125-gate-keeper/linlog-verified.json: byte 25 raw 1 log / 0 lin with exact clean-image return; source captures and hashes are in control_encodings.linlog.",
         "captures/continuation-20261125-gate-keeper/mode-right/Orion.pcapng frame 1429 and mode-middle/Orion.pcapng frames 1345,1371: Key and Out action observations; D5 bodies differ only at byte 26 (2 to 1), while Out also emitted opaque 0x14 header 700000001400000000000000000000009856000000000000.",
-        "captures/continuation-20261125-gate-keeper/remove-gate-keeper/actions.json frame 1327: temporary insert removed; AFX 2 empty and original empty AFX 1 view restored."
+        "captures/continuation-20261125-gate-keeper/remove-gate-keeper/actions.json frame 1327: temporary insert removed; AFX 2 empty and original empty AFX 1 view restored.",
+        "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/load/Orion.pcapng frames 1031,1053 sha256 d0e10bb241ecdc724ae75b0d7927818e7548a3a737681c85b6718f903c1c04fb",
+        "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/bp-on/Orion.pcapng frames 983,1003 sha256 f9a6f079866e70c75bb2e65692876b58e3996e1f3bbb6b03449e8f2081803a51",
+        "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/bp-return/Orion.pcapng frames 1153,1201 sha256 84e7783fb1a471cb9529ab5767b4aed44578cd5573a1ee3530242a0893400594",
+        "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/remove/Orion.pcapng frame 925 sha256 a4590eca3a13ccb699f48e4a004311984182507d1a19f9906baadac4c2cceace",
+        "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/restore-view/Orion.pcapng no matching AFX OUT sha256 8bfbd8f7de244df5958f892d89b24c1e1841d25f7119fd6b03d79b7cf60343da"
       ],
-      "notes": "Orion GUI and passive USB observations. The fresh Lin/Log capture returned exactly; the prior failed image comparison was caused by a PowerShell window obscuring its baseline. Mode raw 2 / key and raw 1 / out are associated with D5-family reports, but the Out action emitted an additional opaque 0x14 report and halted capture before a settled screenshot. Raw 0 / in, processing-state mapping, physical scales, independent readback, audible behavior and runtime contracts remain pending. SideSource and SideChanN were declared in reference metadata but no such widgets were exposed in the Orion panel inventory."
+      "notes": "Orion GUI and passive USB observations. Five endpoint pairs and Lin/Log exact return remain in the owning profile. Mode byte 26 is label-associated for `in`=0 from fresh-load initialization, `out`=1, and `key`=2; no device readback is established. Rack BP On/Off produced opaque 0x14 tuples `98005600` / `98005601`; the On action also coincided with D5 byte 26 0→1 and a left/in to middle/out image change, then the Off action restored the exact load D5 block and Mode image. This does not establish tuple semantics, bypass polarity, audio behavior or causation. SideSource and SideChanN were declared in reference metadata but no such widgets were exposed in the Orion panel inventory.",
+      "bypass_observation": {
+        "control_label": "BP",
+        "ui_class": "AfxStyledManualSlotBypass",
+        "writable": false,
+        "device_readback_verified": false,
+        "audible_confirmation": false,
+        "scope": "Orion type 86 / instance 0 only",
+        "observations": [
+          {
+            "ui_toggle": "On",
+            "frame": 983,
+            "report": "0x14 / 0x98",
+            "report_bytes_16_through_19_hex": "98005600",
+            "source": "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/bp-on/Orion.pcapng",
+            "capture_sha256": "f9a6f079866e70c75bb2e65692876b58e3996e1f3bbb6b03449e8f2081803a51",
+            "coincident_mode_report": {
+              "frame": 1003,
+              "header_hex": "700000001d0000000000000000000000d50b5600",
+              "absolute_offset": 26,
+              "raw_transition": [
+                0,
+                1
+              ],
+              "changed_offsets": [
+                26
+              ],
+              "fresh_load_frame": 1053,
+              "screenshot_transition": "left / in to middle / out",
+              "post_action_screenshot": "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/after-bp-on.png"
+            }
+          },
+          {
+            "ui_toggle": "Off",
+            "frame": 1153,
+            "report": "0x14 / 0x98",
+            "report_bytes_16_through_19_hex": "98005601",
+            "source": "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/bp-return/Orion.pcapng",
+            "capture_sha256": "84e7783fb1a471cb9529ab5767b4aed44578cd5573a1ee3530242a0893400594",
+            "coincident_mode_report": {
+              "frame": 1201,
+              "exact_full_report_match_to_fresh_load_frame": 1053,
+              "mode_crop_exactly_returned_to_load_image": true,
+              "post_action_screenshot": "captures/continuation-20261125-gate-keeper/rack-bp-follow-up/after-bp-off.png"
+            }
+          }
+        ],
+        "cleanup": {
+          "remove_frame": 925,
+          "remove_capture_sha256": "a4590eca3a13ccb699f48e4a004311984182507d1a19f9906baadac4c2cceace",
+          "afx2_empty_slots": 8,
+          "owner_view_restored": "AFX 1 selected and empty"
+        },
+        "tuple_interpretation": "The report bytes are preserved as observed. No field meanings, bypass polarity, or global processing layout are assigned from this single instance."
+      }
     },
     {
       "profile": "zen_go_sc.json",

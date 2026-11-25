@@ -847,10 +847,30 @@ byte 26 equal to `2`. Clicking middle / `out` then produced a `0x14` report
 and another parameter report at frames 1345 and 1371. The parameter bodies
 differ only at byte 26 (`2` to `1`). The parser halted on the mixed report
 families before saving a settled Out screenshot or sending another gesture.
-The `0x14` payload remains opaque; `in` / raw 0 and processing behavior are
-not mapped. The temporary insert was removed at frame 1327; empty AFX 2 and
-the original empty AFX 1 view were verified. Evidence remains local under
-`captures/continuation-20261125-gate-keeper/`.
+The `0x14` payload remains opaque. A later fresh load captured raw 0 at the
+left / `in` position; see the rack BP follow-up below. Processing semantics
+remain unverified. The temporary insert from that selector pass was removed at
+frame 1327; empty AFX 2 and the original empty AFX 1 view were verified.
+Evidence remains local under `captures/continuation-20261125-gate-keeper/`.
+
+### 2026-11-25 rack BP follow-up
+
+A fresh Gate Keeper load assigned type 86 / instance 0 at frame 1031 and sent
+its D5 initialization report at frame 1053. Byte 26 was raw 0 while the Mode
+switch sat left under the printed `in` label. A single rack BP click to On
+produced a `0x14 / 0x98` report at frame 983 with bytes 16–19 `98 00 56 00`,
+plus a D5 report at frame 1003 whose only change from the fresh-load block was
+Mode byte 26, raw 0 → 1. The settled image showed the Mode switch at middle /
+`out`; the Mode control itself was not touched during that action.
+
+The BP Off return emitted bytes 16–19 `98 00 56 01` at frame 1153 and a D5
+report at frame 1201 that exactly matched the fresh-load block; the Mode crop
+also exactly matched its left / `in` baseline. These are observed event/UI
+associations, not a confirmed field layout, bypass polarity, device readback or
+audible result. The type 86 tuple is not added to the shared bypass layout.
+Removal frame 925 verified all eight AFX2 slots empty, then restored empty AFX1.
+The ignored local archive is
+`captures/continuation-20261125-gate-keeper/rack-bp-follow-up/`.
 
 ## PowerFFC — Orion follow-up, 2026-11-25
 
