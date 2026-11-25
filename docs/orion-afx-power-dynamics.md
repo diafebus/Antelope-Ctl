@@ -852,13 +852,45 @@ not mapped. The temporary insert was removed at frame 1327; empty AFX 2 and
 the original empty AFX 1 view were verified. Evidence remains local under
 `captures/continuation-20261125-gate-keeper/`.
 
-## PowerFFC — partial Orion capture, 2026-11-24
+## PowerFFC — Orion follow-up, 2026-11-25
 
-Orion type 2, instance 0 uses parameter family 0x26 / 0xd5 / 0x14.
-Attack, Release, Ratio, Threshold and Knee endpoint pairs were captured.
-The owning effect file records changed offsets and complete parameter
-segments for both endpoints. Multi-byte units require further review.
-TawCombo, output slider and processing remain pending.
+Orion type 2 / instance 0 uses parameter family `0x26 / 0xd5 / 0x14`.
+The five existing Attack, Release, Ratio, Threshold and Knee endpoint pairs
+remain in the owning effect profile. A fresh trial captured all six Detector
+selector labels and raw values:
+
+| Displayed label | Raw | Report bytes | Change frame | Return frame |
+|---|---:|---|---:|---:|
+| PEAK | 65535 (`ffff`) | 28–29 | load 1007 | returned after each RMS option |
+| RMS 20 | 2000 (`d007`) | 28–29 | 1079 | 1075 |
+| RMS 50 | 5000 (`8813`) | 28–29 | 1219 | 1027 |
+| RMS 100 | 10000 (`1027`) | 28–29 | 1013 | 1043 |
+| RMS 150 | 15000 (`983a`) | 28–29 | 999 | 1053 |
+| RMS 200 | 20000 (`204e`) | 28–29 | 1041 | 1065 |
+
+Every RMS selection changed only the two Detector bytes, then returned the
+complete parameter report and selector image to PEAK. Labels are literal panel
+text; the numeric values are raw selector encodings. No time unit or detector
+behavior is inferred, and no device readback or audio result was captured.
+
+The panel's `GAIN` fader showed `0.0` at load (frame 1007). One bounded
+four-pulse wheel step displayed `1.0` and changed only report byte 32 from raw
+0 to 100 (frame 3017). Four inverse pulses returned the display to `0.0` and
+the full report to the loaded baseline (frame 3003). This establishes one
+candidate field association only; its width, range and physical unit remain
+unknown. The first strict capture parser guard expected bytes 30–31 and stopped
+after the bounded step. Offline review found byte 32 as the only changed byte;
+no additional input was sent until the inverse and baseline return were
+captured.
+
+Clicking the internal panel `BP` produced a processing tuple for type 2 /
+instance 0 with raw state 0 at frame 1117; the panel BP, rack BP and BP ALL
+indicators showed On. Clicking the same control restored raw state 1 at frame
+943 and all three indicators to Off. This is a capture/UI correlation for this
+trial; it does not establish PowerFFC-specific bypass polarity, independent
+readback or audible processing. The temporary insert was removed after all
+controls returned, and empty AFX 2 plus the original empty AFX 1 view were
+verified. Captures and hashes are indexed in the local capture archive.
 
 ## Guitar Amp model capture — Darkface 65 (US), 2026-11-24
 

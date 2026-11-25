@@ -655,6 +655,25 @@ and idle screenshot do not implement tuning. A control pass marked complete does
 not claim decoded metering or screens. No speculative query is authorized by
 observing a widget.
 
+## 2026-11-25 — PowerFFC continuation
+
+The Orion type 2 / instance 0 follow-up captured every Detector dropdown label
+and raw value at report bytes 28–29, with exact report and selector-image returns
+to PEAK. The labels are literal UI text; units and detector behavior remain
+unknown. One bounded four-pulse Gain fader step displayed `0.0` → `1.0` and
+changed candidate report byte 32 raw 0 → 100; its inverse restored the display
+and complete parameter report. No range, width, physical unit or runtime writer
+is inferred. The first strict parser bound assumed bytes 30–31 and stopped after
+the action; offline analysis isolated byte 32, then the single trial was reversed
+and verified before any later control input.
+
+The internal panel BP click and return correlated UI Off/On states with
+processing tuples for type 2 / instance 0, raw states 1/0 respectively. This
+capture does not establish effect-specific polarity, device readback or audible
+processing. The temporary insert was removed after all tested states returned;
+AFX2 was empty and the original empty AFX1 view was restored. See the owning
+compressor profile and local capture index for source frames and hashes.
+
 ## 2026-11-25 — Drum-All-Nite selector follow-up
 
 The fresh Source selector trial captured raw `0 Int`, `1 ds` and `2 Ext` with

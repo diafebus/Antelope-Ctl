@@ -29,17 +29,199 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 2,
-      "status": "Partial Orion PowerFFC pass. Five knob endpoint pairs captured.",
+      "status": "Partial Orion PowerFFC capture. Five knob endpoint pairs, all six Detector label/raw values, one Gain step and panel processing roundtrip captured.",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
-      "control_encodings": {},
+      "control_encodings": {
+        "detector": {
+          "offset": 28,
+          "width": 2,
+          "kind": "enum",
+          "label": "Detector",
+          "byte_order": "little-endian",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_label_observations": [
+            {
+              "raw": 65535,
+              "raw_hex": "ffff",
+              "printed_label": "PEAK",
+              "frame": 1007,
+              "source": "captures/continuation-20261125-powerffc/load-powerffc/Orion.pcapng",
+              "capture_sha256": "2fbd2d325d9a3bd5811a43ff73fa0fcb05011d056c8fed25e327e6fc521f3dae",
+              "screenshot": "captures/continuation-20261125-powerffc/powerffc-baseline.png"
+            },
+            {
+              "raw": 2000,
+              "raw_hex": "d007",
+              "printed_label": "RMS 20",
+              "frame": 1079,
+              "source": "captures/continuation-20261125-powerffc/detector-rms20-change/Orion.pcapng",
+              "capture_sha256": "c74e0a45e91ca7924dbdad63230c54a368149d741d1db7b3c3e8f0663e89f1af",
+              "screenshot": "captures/continuation-20261125-powerffc/rms20-selected.png"
+            },
+            {
+              "raw": 5000,
+              "raw_hex": "8813",
+              "printed_label": "RMS 50",
+              "frame": 1219,
+              "source": "captures/continuation-20261125-powerffc/rms-50-change/Orion.pcapng",
+              "capture_sha256": "d37e630b143fb882d05560edf1d5ca19414537927ffd7bca3af73c8f73fc27d1",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-50-change-settled.png"
+            },
+            {
+              "raw": 10000,
+              "raw_hex": "1027",
+              "printed_label": "RMS 100",
+              "frame": 1013,
+              "source": "captures/continuation-20261125-powerffc/rms-100-change/Orion.pcapng",
+              "capture_sha256": "0a79e7b8bf21935166da9ec10a032dd203cd61b3aea55238a412ee265ec5a605",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-100-change-settled.png"
+            },
+            {
+              "raw": 15000,
+              "raw_hex": "983a",
+              "printed_label": "RMS 150",
+              "frame": 999,
+              "source": "captures/continuation-20261125-powerffc/rms-150-change/Orion.pcapng",
+              "capture_sha256": "da2532ab6fe2163224b339624c03528f30c102b88b4cc664483abd318d957b55",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-150-change-settled.png"
+            },
+            {
+              "raw": 20000,
+              "raw_hex": "204e",
+              "printed_label": "RMS 200",
+              "frame": 1041,
+              "source": "captures/continuation-20261125-powerffc/rms-200-change/Orion.pcapng",
+              "capture_sha256": "8ef9483d572e33d402530ef4011a501ff34d07182fa209890b4775351842beb5",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-200-change-settled.png"
+            }
+          ],
+          "wire_enum": {
+            "65535": "PEAK",
+            "2000": "RMS 20",
+            "5000": "RMS 50",
+            "10000": "RMS 100",
+            "15000": "RMS 150",
+            "20000": "RMS 200"
+          },
+          "return_observations": [
+            {
+              "from_label": "RMS 20",
+              "to_label": "PEAK",
+              "frame": 1075,
+              "source": "captures/continuation-20261125-powerffc/detector-peak-return/Orion.pcapng",
+              "capture_sha256": "bc1bde94c5c9966bf22889c11366cdeb38625eb095f9da40ea3bb127e8280b68",
+              "screenshot": "captures/continuation-20261125-powerffc/detector-peak-return-settled.png",
+              "full_parameter_record_returned": true,
+              "selector_image_returned": true
+            },
+            {
+              "from_label": "RMS 50",
+              "to_label": "PEAK",
+              "frame": 1027,
+              "source": "captures/continuation-20261125-powerffc/rms-50-return/Orion.pcapng",
+              "capture_sha256": "8b1a6bb1bfdf202d2e71b8a28662eac390fefead49b47b5fc192fe97e70ba97b",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-50-return-settled.png",
+              "full_parameter_record_returned": true,
+              "selector_image_returned": true
+            },
+            {
+              "from_label": "RMS 100",
+              "to_label": "PEAK",
+              "frame": 1043,
+              "source": "captures/continuation-20261125-powerffc/rms-100-return/Orion.pcapng",
+              "capture_sha256": "fdf1ab1927c93cce6783f62dac40df8ba4a9be852cd3639b06101cbb42eda0b9",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-100-return-settled.png",
+              "full_parameter_record_returned": true,
+              "selector_image_returned": true
+            },
+            {
+              "from_label": "RMS 150",
+              "to_label": "PEAK",
+              "frame": 1053,
+              "source": "captures/continuation-20261125-powerffc/rms-150-return/Orion.pcapng",
+              "capture_sha256": "75d69fb5c62e3cdf081af6333837756221eb65a47af85ef314e7aee92e7c5202",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-150-return-settled.png",
+              "full_parameter_record_returned": true,
+              "selector_image_returned": true
+            },
+            {
+              "from_label": "RMS 200",
+              "to_label": "PEAK",
+              "frame": 1065,
+              "source": "captures/continuation-20261125-powerffc/rms-200-return/Orion.pcapng",
+              "capture_sha256": "a20fdb7bdaa7923adcfd0270ee80b729bf536c93404b9b42f73b4805406c9a2b",
+              "screenshot": "captures/continuation-20261125-powerffc/rms-200-return-settled.png",
+              "full_parameter_record_returned": true,
+              "selector_image_returned": true
+            }
+          ],
+          "status": "Capture-observed on Orion; all six displayed labels and raw values captured with exact full-report and selector-image returns; no time-unit or processing interpretation."
+        },
+        "gain": {
+          "changed_offsets": [
+            32
+          ],
+          "label": "GAIN",
+          "ui_class": "CompressorSlider",
+          "display_class": "CompressorGainDisplay",
+          "field_width": "unconfirmed",
+          "writable": false,
+          "device_readback_verified": false,
+          "observations": [
+            {
+              "display": "0.0",
+              "raw_byte32": 0,
+              "frame": 1007,
+              "source": "captures/continuation-20261125-powerffc/load-powerffc/Orion.pcapng",
+              "capture_sha256": "2fbd2d325d9a3bd5811a43ff73fa0fcb05011d056c8fed25e327e6fc521f3dae",
+              "screenshot": "captures/continuation-20261125-powerffc/powerffc-baseline.png",
+              "state": "loaded baseline"
+            },
+            {
+              "display": "1.0",
+              "raw_byte32": 100,
+              "frame": 3017,
+              "source": "captures/continuation-20261125-powerffc/gain-forward/Orion.pcapng",
+              "capture_sha256": "a08563b00f5aa25083d030306662d2bd34209817307b51e6411798964da6eda7",
+              "screenshot": "captures/continuation-20261125-powerffc/gain-reconcile-snapshot.png",
+              "gesture": "four bounded partial wheel pulses (±30 each; at most one full notch)",
+              "changed_offsets": [
+                32
+              ]
+            },
+            {
+              "display": "0.0",
+              "raw_byte32": 0,
+              "frame": 3003,
+              "source": "captures/continuation-20261125-powerffc/gain-inverse/Orion.pcapng",
+              "capture_sha256": "a73bd9da347752d46d7cc0f8d55f005cb06b20f5f4432af95992a08d433a1ab0",
+              "screenshot": "captures/continuation-20261125-powerffc/gain-inverse-settled.png",
+              "full_parameter_report_matches_loaded_baseline": true
+            }
+          ],
+          "status": "One bounded capture-observed step maps displayed 0.0 to 1.0 with byte 32 raw 0 to 100 and exact report/display return. Range, physical unit, width and runtime-write support remain unverified."
+        }
+      },
       "evidence": [
-        "captures/continuation-20261124-powerffc/load-powerffc/Orion.pcapng frame 891"
+        "captures/continuation-20261124-powerffc/load-powerffc/Orion.pcapng frame 891",
+        "captures/continuation-20261125-powerffc/load-powerffc/Orion.pcapng frame 1007 sha256 2fbd2d325d9a3bd5811a43ff73fa0fcb05011d056c8fed25e327e6fc521f3dae",
+        "captures/continuation-20261125-powerffc/detector-rms20-change/Orion.pcapng frame 1079 sha256 c74e0a45e91ca7924dbdad63230c54a368149d741d1db7b3c3e8f0663e89f1af",
+        "captures/continuation-20261125-powerffc/rms-50-change/Orion.pcapng frame 1219 sha256 d37e630b143fb882d05560edf1d5ca19414537927ffd7bca3af73c8f73fc27d1",
+        "captures/continuation-20261125-powerffc/rms-100-change/Orion.pcapng frame 1013 sha256 0a79e7b8bf21935166da9ec10a032dd203cd61b3aea55238a412ee265ec5a605",
+        "captures/continuation-20261125-powerffc/rms-150-change/Orion.pcapng frame 999 sha256 da2532ab6fe2163224b339624c03528f30c102b88b4cc664483abd318d957b55",
+        "captures/continuation-20261125-powerffc/rms-200-change/Orion.pcapng frame 1041 sha256 8ef9483d572e33d402530ef4011a501ff34d07182fa209890b4775351842beb5",
+        "captures/continuation-20261125-powerffc/gain-forward/Orion.pcapng frame 3017 sha256 a08563b00f5aa25083d030306662d2bd34209817307b51e6411798964da6eda7",
+        "captures/continuation-20261125-powerffc/gain-inverse/Orion.pcapng frame 3003 sha256 a73bd9da347752d46d7cc0f8d55f005cb06b20f5f4432af95992a08d433a1ab0",
+        "captures/continuation-20261125-powerffc/panel-bypass-change/Orion.pcapng frame 1117 sha256 d6b644788bb3e858de5335e32df09bb20c3f02cb5e5ba3a11aac0dae488affef",
+        "captures/continuation-20261125-powerffc/panel-bypass-return/Orion.pcapng frame 943 sha256 1230155fbdec278f0609ca920a5666d5e3fc80c81b1f77d426ffc0a9f47d627a",
+        "captures/continuation-20261125-powerffc/remove-powerffc/Orion.pcapng frame 1207 sha256 0221d401d5ba7daf2af87d19e1835cd11c2bc3ccd4fa2a66462669edcabf1771"
       ],
-      "notes": "TawCombo mode, gain slider and bypass pending. Captured fields include multi-byte values. Numerical interpretation, independent readback, telemetry, audio and runtime contracts pending.",
+      "notes": "Orion PowerFFC type 2 / instance 0: five knob endpoint pairs plus the Detector selector, one GAIN step and the panel BP roundtrip are now capture-observed. The six Detector values are literal labels only; no detector time unit/behavior is established. Gain has only a one-step observation at report byte 32; width, range and physical unit remain unverified. Bypass raw state tuples are correlated with the PowerFFC UI only; the effect-specific polarity is not claimed. No independent device readback, audio confirmation, or runtime control contract is enabled.",
       "parameter_observation": {
         "opcode": "0x26",
         "param_id": "0xd5",
@@ -169,6 +351,48 @@
               }
             ]
           }
+        }
+      },
+      "bypass_observation": {
+        "ui_label": "BP",
+        "ui_class": "AfxBypassTextButton",
+        "rack_ui_class": "AfxStyledManualSlotBypass",
+        "writable": false,
+        "device_readback_verified": false,
+        "effect_specific_polarity_confirmed": false,
+        "observations": [
+          {
+            "panel_display_after_click": "On",
+            "rack_bp_after_click": "On",
+            "bp_all_display": "On",
+            "frame": 1117,
+            "raw_instance": 0,
+            "raw_type_id": 2,
+            "raw_state": 0,
+            "source": "captures/continuation-20261125-powerffc/panel-bypass-change/Orion.pcapng",
+            "capture_sha256": "d6b644788bb3e858de5335e32df09bb20c3f02cb5e5ba3a11aac0dae488affef",
+            "screenshot": "captures/continuation-20261125-powerffc/panel-bypass-changed.png"
+          },
+          {
+            "panel_display_after_restore": "Off",
+            "rack_bp_after_restore": "Off",
+            "bp_all_display": "Off",
+            "frame": 943,
+            "raw_instance": 0,
+            "raw_type_id": 2,
+            "raw_state": 1,
+            "source": "captures/continuation-20261125-powerffc/panel-bypass-return/Orion.pcapng",
+            "capture_sha256": "1230155fbdec278f0609ca920a5666d5e3fc80c81b1f77d426ffc0a9f47d627a",
+            "screenshot": "captures/continuation-20261125-powerffc/panel-bypass-returned.png"
+          }
+        ],
+        "interpretation_limit": "UI and raw state tuples correlated for this reversible trial; bypass polarity, audio processing and independent device readback are not claimed.",
+        "restoration": {
+          "powerffc_removed": true,
+          "empty_afx2_slots": 8,
+          "removal_frame": 1207,
+          "removal_capture_sha256": "0221d401d5ba7daf2af87d19e1835cd11c2bc3ccd4fa2a66462669edcabf1771",
+          "owner_view_restored": "AFX 1 selected and empty"
         }
       }
     },
