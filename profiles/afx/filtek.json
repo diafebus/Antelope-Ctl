@@ -210,7 +210,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 71,
-      "status": "Orion partial visible pass. Eight knob endpoint pairs, three Q switch returns and processing observations captured.",
+      "status": "Orion partial visible pass. Eight knob endpoint pairs, three Q switch returns, processing observations, and a bounded Drive no-movement/report observation captured; Drive field association remains unresolved.",
       "commands": {
         "load": null,
         "recall": null,
@@ -285,9 +285,16 @@
         }
       },
       "evidence": [
-        "captures/continuation-20261124-filtek/load-filtek/Orion.pcapng frame 1027"
+        "captures/continuation-20261124-filtek/load-filtek/Orion.pcapng frame 1027",
+        "captures/continuation-20261125-filtek/filtek-load/Orion.pcapng frame 1303 sha256 054a1328fb2490656a62299e29761c7e86be8651613069bb7eac916864ba1a6f",
+        "captures/continuation-20261125-filtek/drive-plus30/Orion.pcapng no matching AFX OUT sha256 466665b7f7e77c61b259e53d07fbd4d74e7a9d42276a3d12137985b1ea6b5d05",
+        "captures/continuation-20261125-filtek/drive-plus30-pulse2/Orion.pcapng no matching AFX OUT sha256 03fa5519060aea904f6f5e7534d75bf68dff747436984352398ac0692d7a398e",
+        "captures/continuation-20261125-filtek/drive-plus30-pulse3/Orion.pcapng no matching AFX OUT sha256 3cb90d2013f8f8e6c2a87f90a1f411fbb82741e87fde0b3cc6a9b1d46e8e965f",
+        "captures/continuation-20261125-filtek/drive-plus30-pulse4/Orion.pcapng frame 1243 sha256 797c6365d05c5a43b41aa653e304da225b1c9597e2c627705a9c154d2bc677df",
+        "captures/continuation-20261125-filtek/filtek-remove/Orion.pcapng frame 947 sha256 8771d10a6567da5325b905eefe37cb7e0f3c28b1ae41495dee0b772fb5c44980",
+        "captures/continuation-20261125-filtek/filtek-restore-owner-view/Orion.pcapng no matching AFX OUT sha256 14e4ca23f63273dd3b87331e797d92a339499c800dde5d93e472472c75eba322"
       ],
-      "notes": "Drive, Q switches and processing require separate review. Raw segments are preserved; selector labels, physical conversions, independent readback and runtime contracts remain pending.",
+      "notes": "Drive, Q-switch numeric meanings, physical conversions, independent readback, audio behavior and runtime contracts remain pending. The 2026-11-25 Drive trial captured literal panel ticks and a D5 report after four bounded partial pulses, but the Drive image did not move and no fresh pre-action parameter report was captured; no byte mapping is made. Existing endpoint and Q captures remain unchanged.",
       "parameter_observation": {
         "writable": false,
         "device_readback_verified": false,
@@ -476,6 +483,86 @@
               }
             ]
           }
+        },
+        "drive_trial": {
+          "control_class": "FiltekDrivePot",
+          "control_face_labels": {
+            "scale_ticks": [
+              "-12",
+              "0",
+              "+12"
+            ],
+            "unit_label": "dB",
+            "baseline_pointer_label": "0"
+          },
+          "ui_value_pattern_available": false,
+          "pre_action_parameter_report_captured": false,
+          "gesture_sequence": [
+            {
+              "pulse": 1,
+              "wheel_delta": 30,
+              "out_frames": [],
+              "capture": "captures/continuation-20261125-filtek/drive-plus30/Orion.pcapng",
+              "capture_sha256": "466665b7f7e77c61b259e53d07fbd4d74e7a9d42276a3d12137985b1ea6b5d05",
+              "post_action_screenshot": "captures/continuation-20261125-filtek/filtek-after-drive-plus30.png",
+              "drive_face_crop_matches_fresh_load": true
+            },
+            {
+              "pulse": 2,
+              "wheel_delta": 30,
+              "out_frames": [],
+              "capture": "captures/continuation-20261125-filtek/drive-plus30-pulse2/Orion.pcapng",
+              "capture_sha256": "03fa5519060aea904f6f5e7534d75bf68dff747436984352398ac0692d7a398e",
+              "post_action_screenshot": "captures/continuation-20261125-filtek/filtek-after-drive-plus30-pulse2.png",
+              "drive_face_crop_matches_fresh_load": true
+            },
+            {
+              "pulse": 3,
+              "wheel_delta": 30,
+              "out_frames": [],
+              "capture": "captures/continuation-20261125-filtek/drive-plus30-pulse3/Orion.pcapng",
+              "capture_sha256": "3cb90d2013f8f8e6c2a87f90a1f411fbb82741e87fde0b3cc6a9b1d46e8e965f",
+              "post_action_screenshot": "captures/continuation-20261125-filtek/filtek-after-drive-plus30-pulse3.png",
+              "drive_face_crop_matches_fresh_load": true
+            },
+            {
+              "pulse": 4,
+              "wheel_delta": 30,
+              "out_frames": [
+                1243
+              ],
+              "capture": "captures/continuation-20261125-filtek/drive-plus30-pulse4/Orion.pcapng",
+              "capture_sha256": "797c6365d05c5a43b41aa653e304da225b1c9597e2c627705a9c154d2bc677df",
+              "post_action_screenshot": "captures/continuation-20261125-filtek/drive-plus30-pulse4.png",
+              "drive_face_crop_matches_fresh_load": true
+            }
+          ],
+          "observed_report": {
+            "frame": 1243,
+            "header_hex": "70000000200000000000000000000000d50e4700",
+            "opcode": "0x20",
+            "param_id": "0xd5",
+            "subcommand": "0x0e",
+            "type_id": 71,
+            "instance": 0,
+            "declared_length": 32,
+            "valid_parameter_body_bytes": 12,
+            "parameter_body_offsets_20_through_31_hex": "050501050501050501050033",
+            "byte31_raw_observed": 51,
+            "byte31_association_with_drive": "unresolved; no fresh before/after parameter delta was measured",
+            "device_readback_verified": false
+          },
+          "return_evidence": {
+            "visible_drive_crop_matches_fresh_load_after_each_pulse": true,
+            "inverse_input_sent": false,
+            "reason": "No visible knob movement was observed, so no inverse value was measured or sent.",
+            "removal_frame": 947,
+            "removal_capture_sha256": "8771d10a6567da5325b905eefe37cb7e0f3c28b1ae41495dee0b772fb5c44980",
+            "afx2_empty_slots": 8,
+            "owner_view_restored": "AFX 1 selected and empty",
+            "owner_view_capture_sha256": "14e4ca23f63273dd3b87331e797d92a339499c800dde5d93e472472c75eba322"
+          },
+          "status": "The face printed -12, 0, +12, and dB and visually remained at 0. Three +30 partial pulses emitted no matching AFX OUT; the fourth emitted one 0x20/0x0e report with byte 31 raw 51, but the Drive image crop remained pixel-identical to the fresh load image. No pre-action D5 report or demonstrated raw delta exists; byte 31 is not assigned to Drive and no physical range or runtime writer is inferred."
         }
       },
       "processing_observation": {

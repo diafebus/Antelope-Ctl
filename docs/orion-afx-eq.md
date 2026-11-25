@@ -950,14 +950,26 @@ independent readback, audio behavior and runtime contracts remain pending.
 Orion assigned type 71, instance 0 in the temporary AFX 2 rack.
 Eight main knob minimum/maximum pairs were captured and independently
 decoded. The owning effect file retains complete raw segments and changed
-offsets for HPF, LF/MF/HF gain and frequency, and LPF.
-Drive, Q switches, processing and selector labels require separate review.
+offsets for HPF, LF/MF/HF gain and frequency, and LPF. The LF, MF and HF Q
+switches and front bypass were captured separately; numeric Q meaning remains
+open.
 
 The LF, MF and HF Q switches isolated bytes 28, 25 and 22 respectively,
 with raw 1/2 pictogram positions and exact switch-image returns. Numeric
 Q meanings remain pending. Front bypass captured raw 0/1 processing reports
 and returned its appearance. Removal frame 1589 showed all eight AFX 2
 slots empty before the original AFX 1 view returned.
+
+A bounded 2026-11-25 Drive follow-up recorded the printed scale labels `-12`,
+`0`, `+12`, and `dB`, with the pointer at `0` on the fresh-load image. Three
+partial `+30` wheel pulses emitted no matching AFX OUT; the fourth produced a
+single `0x20 / 0x0e` report at frame 1243. Its valid parameter bytes included
+absolute byte 31 raw `51`, but no fresh pre-action D5 report or changed-field
+comparison exists, so byte 31 is not assigned to Drive. The Drive crop remained
+pixel-identical after every pulse; no inverse input was sent. Removal frame 947
+verified empty AFX 2 and restored the original empty AFX 1 view. Drive encoding,
+numeric Q meaning, independent readback, physical scaling, and audio behavior
+remain unresolved.
 
 ## Gyratec XIV — partial Orion capture, 2026-11-24
 

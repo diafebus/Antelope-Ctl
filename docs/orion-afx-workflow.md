@@ -674,6 +674,18 @@ processing. The temporary insert was removed after all tested states returned;
 AFX2 was empty and the original empty AFX1 view was restored. See the owning
 compressor profile and local capture index for source frames and hashes.
 
+## 2026-11-25 — Filtek Drive follow-up
+
+Filtek MK3 type 71 / instance 0 loaded alone in empty AFX2. The Drive face
+showed `-12`, `0`, `+12`, `dB` and a pointer at `0`. Four individually guarded
+`+30` partial wheel pulses were tried. The first three emitted no matching AFX
+OUT; the fourth emitted one `0x20 / 0x0e` report at frame 1243, whose valid
+parameter bytes included absolute byte 31 raw 51. The Drive crop stayed exactly
+equal to the fresh-load image throughout. Because no fresh pre-action D5 report
+or parameter delta was available, byte 31 is not mapped to Drive, and no inverse
+input was sent. AFX2 removal frame 947 verified eight empty slots and restored
+the original empty AFX1 view. No Drive writer is enabled.
+
 ## 2026-11-25 — Gyratec XIV continuation
 
 The fresh AFX2 trial confirmed the previously recorded type 77 / instance 0
