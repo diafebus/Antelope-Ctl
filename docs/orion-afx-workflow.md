@@ -674,6 +674,23 @@ processing. The temporary insert was removed after all tested states returned;
 AFX2 was empty and the original empty AFX1 view was restored. See the owning
 compressor profile and local capture index for source frames and hashes.
 
+## 2026-11-25 — Gyratec XIV continuation
+
+The fresh AFX2 trial confirmed the previously recorded type 77 / instance 0
+assignment. Rack-slot BP Off → On → Off correlated with raw state 1 → 0 → 1;
+this is a UI/event association, without independent readback or audible
+confirmation. One center click on the custom panel bypass pot produced no
+control OUT, so no claim is made for that panel control.
+
+A single Low-band MODE knob trial used four partial wheel pulses to reach raw 2
+at report byte 21, then four inverse pulses to raw 1. The forward and return
+reports differ only at byte 21, and the mode-control crop exactly matched the
+fresh load screenshot after return. The returned raw 1 matches the earlier
+captured reference, but no fresh pre-action parameter report was available.
+The face prints `MODE`; position meanings and the other four band modes remain
+unidentified. AFX2 removal frame 1131 verified eight empty slots and restored
+the original empty AFX1 view. No parameter writer is enabled.
+
 ## 2026-11-25 — Drum-All-Nite selector follow-up
 
 The fresh Source selector trial captured raw `0 Int`, `1 ds` and `2 Ext` with

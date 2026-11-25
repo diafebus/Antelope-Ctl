@@ -345,17 +345,74 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 77,
-      "status": "Partial Orion visible pass. Sixteen knob endpoint pairs captured and trial removed.",
+      "status": "Partial Orion visible pass. Sixteen knob endpoint pairs, rack BP roundtrip, and one Low Mode raw candidate captured; other Mode positions and meaning remain pending.",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
-      "control_encodings": {},
+      "control_encodings": {
+        "low_mode": {
+          "offset": 21,
+          "width": 1,
+          "label": "Low Mode",
+          "control_face_label": "MODE",
+          "kind": "enum_candidate",
+          "writable": false,
+          "device_readback_verified": false,
+          "raw_position_observations": [
+            {
+              "raw": 2,
+              "position_meaning": "unknown",
+              "frame": 981,
+              "source": "captures/continuation-20261125-powerffc/gyratec-mode-low-pulse4/Orion.pcapng",
+              "capture_sha256": "ed60fa597170490ee60e68f8ce1b0e122235d2557616e2b2237d097362562e08",
+              "screenshot": "captures/continuation-20261125-powerffc/gyratec-mode-low-pulse4-state.png",
+              "gesture": "four bounded +30 partial wheel pulses on GyratecXIVModeLow"
+            },
+            {
+              "raw": 1,
+              "position_meaning": "unknown; returned state",
+              "frame": 989,
+              "source": "captures/continuation-20261125-powerffc/gyratec-mode-low-inverse-pulse4/Orion.pcapng",
+              "capture_sha256": "f82e3ab2d30acd45edb1b19177ac9aa5d0ddb4f9f433328a8234f91a8744b778",
+              "screenshot": "captures/continuation-20261125-powerffc/gyratec-mode-low-inverse-pulse4-state.png"
+            }
+          ],
+          "prior_reference": {
+            "raw": 1,
+            "frame": 3807,
+            "source": "captures/continuation-20261124-gyratecxiv/scan-GyratecXIV-20261124T191659107Z/GyratecXIV-channel2.pcapng",
+            "capture_sha256": "7ffa8b50bc849b814e9e6bf776ae8c1a1412c1144e8fcb0ad8462488a34987ea",
+            "note": "Low Mode byte was 1 in a prior Low Freq minimum state; a fresh pre-action parameter report was not available in this trial."
+          },
+          "return_evidence": {
+            "forward_frame": 981,
+            "return_frame": 989,
+            "only_changed_absolute_offset_between_reports": [
+              21
+            ],
+            "raw_transition": [
+              2,
+              1
+            ],
+            "low_frequency_byte20_returned_value": 5,
+            "fresh_pre_action_report_captured": false,
+            "mode_control_crop_exactly_returned_to_fresh_load_image": true
+          },
+          "status": "Candidate wire byte associated with the Low Mode control and bounded raw transition 1↔2; no printed meaning for either position was captured. Other four band Mode controls remain unmapped."
+        }
+      },
       "evidence": [
-        "captures/continuation-20261124-gyratecxiv/load-gyratecxiv/Orion.pcapng frame 1015"
+        "captures/continuation-20261124-gyratecxiv/load-gyratecxiv/Orion.pcapng frame 1015",
+        "captures/continuation-20261125-powerffc/load-gyratecxiv/Orion.pcapng frame 1247 sha256 ee220a464d7b5b39fb0d6351caea2680f455163d11a596056a4dc611f622a528",
+        "captures/continuation-20261125-powerffc/gyratec-rack-bypass-change/Orion.pcapng frame 1035 sha256 e954509bf164701acdff353f2b05aef68602624bf4c4fb9ad36f76f84f93de26",
+        "captures/continuation-20261125-powerffc/gyratec-rack-bypass-return/Orion.pcapng frame 885 sha256 6d00ef6ca2c2a64fc3f041157a8a1b66331c765c79fe87a2f25789ae23fa2071",
+        "captures/continuation-20261125-powerffc/gyratec-mode-low-pulse4/Orion.pcapng frame 981 sha256 ed60fa597170490ee60e68f8ce1b0e122235d2557616e2b2237d097362562e08",
+        "captures/continuation-20261125-powerffc/gyratec-mode-low-inverse-pulse4/Orion.pcapng frame 989 sha256 f82e3ab2d30acd45edb1b19177ac9aa5d0ddb4f9f433328a8234f91a8744b778",
+        "captures/continuation-20261125-powerffc/remove-gyratecxiv/Orion.pcapng frame 1131 sha256 c0fc46619d8b56d0c60a944def85612b7aa8e306758f4a5766ff9146bb215453"
       ],
-      "notes": "Mode maps, bypass, printed endpoint scales and physical conversions remain pending. Captured reports do not establish independent readback, audio behavior or runtime contracts.",
+      "notes": "Gyratec XIV type 77 / instance 0. Sixteen Frequency/Q/Level knob pairs remain in the prior capture. A fresh pass captured rack BP On/raw 0 and Off/raw 1 with exact UI return; no device readback or audible confirmation. One bounded Low Mode trial observed candidate byte 21 raw 2 and returned to raw 1, matching a prior reference and the fresh load-image crop; the current trial did not capture a pre-action parameter report. The control face says MODE but position meanings are unknown; other band Mode controls remain open. A center click on the custom GyratecXIVBypassPot produced no control OUT. No runtime writer is enabled.",
       "parameter_observation": {
         "opcode": "0x29",
         "param_id": "0xd5",
@@ -732,6 +789,55 @@
             ]
           }
         }
+      },
+      "bypass_observation": {
+        "control_label": "BP",
+        "ui_class": "AfxStyledManualSlotBypass",
+        "writable": false,
+        "device_readback_verified": false,
+        "audible_confirmation": false,
+        "raw_label_observations": [
+          {
+            "raw_state": 0,
+            "printed_label": "On",
+            "frame": 1035,
+            "instance": 0,
+            "type_id": 77,
+            "source": "captures/continuation-20261125-powerffc/gyratec-rack-bypass-change/Orion.pcapng",
+            "capture_sha256": "e954509bf164701acdff353f2b05aef68602624bf4c4fb9ad36f76f84f93de26",
+            "screenshot": "captures/continuation-20261125-powerffc/gyratec-rack-bypass-changed.png",
+            "bp_all_label": "On"
+          },
+          {
+            "raw_state": 1,
+            "printed_label": "Off",
+            "frame": 885,
+            "instance": 0,
+            "type_id": 77,
+            "source": "captures/continuation-20261125-powerffc/gyratec-rack-bypass-return/Orion.pcapng",
+            "capture_sha256": "6d00ef6ca2c2a64fc3f041157a8a1b66331c765c79fe87a2f25789ae23fa2071",
+            "screenshot": "captures/continuation-20261125-powerffc/gyratec-rack-bypass-returned.png",
+            "bp_all_label": "Off"
+          }
+        ],
+        "panel_control_observation": {
+          "class": "GyratecXIVBypassPot",
+          "center_click_out_frames": [],
+          "capture": "captures/continuation-20261125-powerffc/gyratec-bypass-change/Orion.pcapng",
+          "capture_sha256": "4492164fd330c24fee21892e2e656c85e11f6a05cf7b70839ccbdf2a096c6123",
+          "followup_snapshot": "captures/continuation-20261125-powerffc/gyratec-after-bypass-click.png",
+          "interpretation": "No control OUT observed after one center click; no further input was sent to this panel control."
+        },
+        "return_evidence": {
+          "ui_bp_indicators_returned_to": "Off",
+          "raw_state_returned_to": 1,
+          "temporary_insert_removed": true,
+          "removal_frame": 1131,
+          "empty_afx2_slots": 8,
+          "owner_view_restored": "AFX 1 selected and empty",
+          "removal_capture_sha256": "c0fc46619d8b56d0c60a944def85612b7aa8e306758f4a5766ff9146bb215453"
+        },
+        "status": "Rack BP raw/UI correlation captured for type 77 / instance 0; effect-specific audible meaning and device readback remain unverified."
       }
     },
     {

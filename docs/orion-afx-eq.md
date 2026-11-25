@@ -965,6 +965,18 @@ Type 77, instance 0 uses parameter family 0x29 / 0xd5 / 0x17.
 Sixteen knob endpoint pairs cover Frequency, Q and Level for five bands,
 plus Trim. Independent review matched complete endpoint segments to
 captured frames and settled screenshots. The owning effect file preserves
-those observations. Mode labels, bypass and physical conversions remain
-pending. Removal frame 1007 verified eight empty AFX 2 slots before the
-original empty AFX 1 view returned.
+those observations. A fresh trial captured
+the rack slot BP UI correlation: On emitted type 77 / instance 0 state 0 at
+frame 1035; Off returned state 1 at frame 885. BP ALL tracked the same display
+state. This is not an audible or device-readback result. A center click on the
+custom `GyratecXIVBypassPot` produced no control OUT, so that control remains
+unresolved.
+
+One bounded Low-band `MODE` trial produced a `0x29 / 0xd5 / 0x17` report after
+four partial wheel pulses. The reports at frames 981 and 989 differ only at
+absolute byte 21 (raw 2 → 1); the mode-control screenshot crop returned exactly
+to the fresh load image. The returned raw 1 also matches the prior reference
+state at frame 3807, but no fresh pre-action parameter report was captured.
+The control face prints `MODE`; position meanings remain unknown, and the other
+four band Mode controls are still open. Removal frame 1131 verified eight
+empty AFX 2 slots before the original empty AFX 1 view returned.
