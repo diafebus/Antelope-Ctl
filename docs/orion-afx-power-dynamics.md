@@ -968,6 +968,11 @@ ID left the display at `0 dB`, produced no parameter OUT, and returned the RGB
 slider crop exactly. This is negative evidence for that single wheel pulse;
 output remains unmapped. The trial was removed at frame1251, AFX2 was verified
 empty, and the original empty AFX1 view restored.
+On a separate fresh load at frames1467/1477, one guarded two-pixel leftward
+drag from the visible slider handle at `(1347, 359)` also left the display at
+`0 dB`, emitted no parameter OUT and returned the slider crop exactly. That
+trial was removed at frame1117 and the original empty AFX1 view restored.
+These results apply only to the tested clicks, wheel pulse and short drag.
 The panel image has no separate Bright switch despite the model name. A
 POWER-button click/inverse produced opaque tuples `98 00 03 00` (frame1115)
 and `98 00 03 01` (frame1051), with an exact RGB POWER-crop return. These
@@ -997,16 +1002,28 @@ Treble, Volume and Gain. Endpoint records and screenshots are retained
 per control. Output level and processing remain pending.
 
 Marcus II (US) Lead adds isolated raw 0/100 pairs for Volume, Bass, Middle,
-Treble, Drive and Master. Shift, Bright, Deep, output level and processing
-remain pending. Each knob pair retains source frames and settled images.
+Treble, Drive and Master. A fresh D5 baseline at frame1494 supported four
+bounded switch click/inverse pairs. The two panel inscriptions `SHIFT` were
+associated with report bytes32 (between Bass/Middle) and31 (between
+Treble/Drive), each observed raw `0→1→0`. The visible `NORMAL / BRIGHT`
+switch changed byte33 `1→0→1`; `OFF / DEEP` changed byte34 `0→1→0`. Each
+inverse returned the complete D5 body and its RGB control crop exactly. These
+are literal UI/raw observations; state meaning, audio behavior and readback
+remain unknown. Output level, processing and physical scaling remain open.
 
 Tweed Deluxe (US) adds isolated raw 0/100 pairs for Tone and Volume.
 The printed face spans 1–12. Intermediate physical conversion remains
 pending, along with Bright, output level and processing.
 
-Overange 120 (UK) adds isolated raw 0/100 pairs for Bass, Treble,
-HF Drive and Gain. FAC selector positions, output level and processing
-remain pending. Endpoint frames and images are retained per control.
+Overange 120 (UK) adds isolated raw 0/100 pairs for Bass, Treble, HF Drive
+and Gain. A fresh FAC-knob baseline at frame1439 had raw57 at D5 report byte23.
+One bounded 8-pixel downward gesture produced raw `55→53`; the opposite
+8-pixel gesture returned `53→55→57`. Only byte23 changed, and the full D5
+body and FAC crop returned exactly. The panel shows `FAC` but no numeric
+position labels, so this is one raw-field association rather than a complete
+position/meaning map. Opposite two-pixel gestures produced no parameter report
+or crop change. FAC positions/range, output level, processing, physical
+scaling, independent readback and audio behavior remain open.
 
 BurnSphere (DE) Lead adds isolated raw 0/100 pairs for Gain, Bass, Middle,
 Treble, Presence and Volume. Bright, Bottom, output level and processing

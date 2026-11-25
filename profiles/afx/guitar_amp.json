@@ -439,7 +439,7 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Four isolated raw 0/100 knob pairs. A common type 3 POWER event/UI pair is captured in the implementation-level processing observation. Two bounded clicks and one bounded +30 wheel pulse on the 0 dB output slider produced no captured parameter event and left its RGB crop unchanged; other supported gestures remain pending. This panel image contains no separate Bright switch. Physical scaling, independent readback and audio behavior remain unverified.",
+          "notes": "Four isolated raw 0/100 knob pairs. A common type 3 POWER event/UI pair is captured in the implementation-level processing observation. Two bounded clicks, one +30 wheel pulse, and one bounded two-pixel left drag on the 0 dB output slider produced no captured AFX parameter event and left its RGB crop unchanged; other supported gestures remain pending. This panel image contains no separate Bright switch. Physical scaling, independent readback and audio behavior remain unverified.",
           "output_slider_click_observation": {
             "ui_class": "GuitarAmpLevelSlider",
             "displayed_value_before": "0 dB",
@@ -512,6 +512,44 @@
             ],
             "bright_switch_visible": false,
             "note": "The model name contains Bright, but no separate Bright switch is visible on this panel image."
+          },
+          "output_slider_drag_observation": {
+            "ui_class": "GuitarAmpLevelSlider",
+            "gesture": "one bounded two-pixel horizontal drag left from the visible slider handle",
+            "start_x": 1347,
+            "start_y": 359,
+            "delta_x": -2,
+            "displayed_value_before": "0 dB",
+            "displayed_value_after": "0 dB",
+            "captured_parameter_events": 0,
+            "source": "captures/continuation-20261125-top30/drag-wheel-step-left/Orion.pcapng",
+            "capture_sha256": "d9926aace8b596b207a3d786be2555859cb802cc3bef2e43a2283bd07ef92dce",
+            "frame_window": {
+              "start_exclusive": 301,
+              "end_inclusive": 2189
+            },
+            "fresh_load": {
+              "assignment_frame": 1467,
+              "initialization_frame": 1477,
+              "initial_parameter_body_hex": "01463c3f003800113a00000000000000",
+              "source": "captures/continuation-20261125-top30/drag-wheel-load-top30/Orion.pcapng",
+              "capture_sha256": "6b11d7325aa7cfc98dfe5740ddc04c32bcefeaf5b0e10d1102547c50f9a5f587"
+            },
+            "host_ui_receipt": "captures/continuation-20261125-top30/drag-wheel-step-left-result.json",
+            "settled_screenshot": "captures/continuation-20261125-top30/drag-wheel-step-left-settled.png",
+            "rgb_slider_crop_exact_return": true,
+            "cleanup": {
+              "removal_frame": 1117,
+              "source": "captures/continuation-20261125-top30/drag-wheel-remove-top30/Orion.pcapng",
+              "capture_sha256": "75570d79457d2947fdc1a383df2682b37ac4a4fd40982f80fff1e6ccbae36cfa",
+              "afx2_empty": true,
+              "original_empty_afx1_view_restored": true,
+              "view_restore_source": "captures/continuation-20261125-top30/drag-wheel-restore-owner-view/Orion.pcapng",
+              "view_restore_capture_sha256": "2ed201b754287c1ee8fbfad560c399680dba1982ec52e3d3a29a930074a97f45"
+            },
+            "device_readback_verified": false,
+            "writable": false,
+            "status": "negative only for this two-pixel drag; output remains unmapped"
           }
         },
         "Modern (US) CH3": {
@@ -1133,7 +1171,160 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Six isolated raw 0/100 knob pairs. Four one-click switch observations changed only their respective D5 report byte and returned the full fresh-load block and RGB control crops exactly. The visible SHIFT, NORMAL/BRIGHT and OFF/DEEP inscriptions are recorded literally; raw state meaning, audio behavior, independent readback, output and processing remain unverified.",
+          "switch_observations": {
+            "fresh_load": {
+              "assignment_frame": 1491,
+              "initialization_frame": 1494,
+              "initial_parameter_body_hex": "0621321a00390044564c010000010000",
+              "source": "captures/continuation-20261125-top30/marcus-switches-load-top30/Orion.pcapng",
+              "capture_sha256": "a16d19a4206cf0d2c710b3877ca946fce67e0e47b2589edfa5eb073f718f1e9c",
+              "screenshot": "captures/continuation-20261125-top30/marcus-switches-load-top30.png"
+            },
+            "controls": {
+              "shift_bass_middle": {
+                "ui_class": "MarcusIIShiftButton",
+                "panel_position": "between Bass and Middle",
+                "panel_inscription": "SHIFT",
+                "body_offset": 12,
+                "report_offset": 32,
+                "transitions": [
+                  {
+                    "from_raw": 0,
+                    "to_raw": 1,
+                    "frame": 1245,
+                    "source": "captures/continuation-20261125-top30/marcus-shift-bass-middle-forward/Orion.pcapng",
+                    "capture_sha256": "74644d8690ba440a70b2fe511ee6451bfb94713062d91bc0d0ad5252830d302c"
+                  },
+                  {
+                    "from_raw": 1,
+                    "to_raw": 0,
+                    "frame": 1403,
+                    "source": "captures/continuation-20261125-top30/marcus-shift-bass-middle-inverse/Orion.pcapng",
+                    "capture_sha256": "d7c611e7dd0fa16afe0ab501f9f4a7e3242022df770c4e83f63177cce76b3c7d"
+                  }
+                ],
+                "changed_offsets": [
+                  32
+                ],
+                "full_d5_report_exact_return": true,
+                "rgb_switch_crop_exact_return": true,
+                "screenshots": {
+                  "before": "captures/continuation-20261125-top30/marcus-shift-bass-middle-pre.png",
+                  "returned": "captures/continuation-20261125-top30/marcus-shift-bass-middle-inverse-settled.png"
+                },
+                "limits": "The literal SHIFT inscription and raw transition are observed; function and raw-state meaning are unknown."
+              },
+              "shift_treble_drive": {
+                "ui_class": "MarcusIIShiftButton",
+                "panel_position": "between Treble and Drive",
+                "panel_inscription": "SHIFT",
+                "body_offset": 11,
+                "report_offset": 31,
+                "transitions": [
+                  {
+                    "from_raw": 0,
+                    "to_raw": 1,
+                    "frame": 1263,
+                    "source": "captures/continuation-20261125-top30/marcus-shift-treble-drive-forward/Orion.pcapng",
+                    "capture_sha256": "907df82fb68bade43164751cff24297edf286e30b7c4b9c5c0f57001f24d7e37"
+                  },
+                  {
+                    "from_raw": 1,
+                    "to_raw": 0,
+                    "frame": 1387,
+                    "source": "captures/continuation-20261125-top30/marcus-shift-treble-drive-inverse/Orion.pcapng",
+                    "capture_sha256": "621b992d23eff48db4399087e61471ad3bd24ab5ab5aa748d310b6d82bdb9f91"
+                  }
+                ],
+                "changed_offsets": [
+                  31
+                ],
+                "full_d5_report_exact_return": true,
+                "rgb_switch_crop_exact_return": true,
+                "screenshots": {
+                  "before": "captures/continuation-20261125-top30/marcus-shift-treble-drive-pre.png",
+                  "returned": "captures/continuation-20261125-top30/marcus-shift-treble-drive-inverse-settled.png"
+                },
+                "limits": "The literal SHIFT inscription and raw transition are observed; function and raw-state meaning are unknown."
+              },
+              "normal_bright": {
+                "ui_class": "GuitarAmpModeSwitch",
+                "panel_labels": [
+                  "NORMAL",
+                  "BRIGHT"
+                ],
+                "panel_position": "right-hand two-position switch",
+                "body_offset": 13,
+                "report_offset": 33,
+                "transitions": [
+                  {
+                    "from_raw": 1,
+                    "to_raw": 0,
+                    "frame": 1269,
+                    "source": "captures/continuation-20261125-top30/marcus-bright-forward/Orion.pcapng",
+                    "capture_sha256": "cb23d3b557f215da2edb6e7971ea2f8e41b1777baa2973f298ee494bacfbd20e"
+                  },
+                  {
+                    "from_raw": 0,
+                    "to_raw": 1,
+                    "frame": 1257,
+                    "source": "captures/continuation-20261125-top30/marcus-bright-inverse/Orion.pcapng",
+                    "capture_sha256": "e793accb82320c79dae60cc3148e600959d570bfa467e32819f931d21c76f851"
+                  }
+                ],
+                "changed_offsets": [
+                  33
+                ],
+                "full_d5_report_exact_return": true,
+                "rgb_switch_crop_exact_return": true,
+                "screenshots": {
+                  "before": "captures/continuation-20261125-top30/marcus-bright-pre.png",
+                  "returned": "captures/continuation-20261125-top30/marcus-bright-inverse-settled.png"
+                },
+                "limits": "The visible labels and raw transition are recorded without assigning raw polarity, electrical behavior, or audio meaning."
+              },
+              "off_deep": {
+                "ui_class": "GuitarAmpModeSwitch",
+                "panel_labels": [
+                  "OFF",
+                  "DEEP"
+                ],
+                "panel_position": "rightmost two-position switch",
+                "body_offset": 14,
+                "report_offset": 34,
+                "transitions": [
+                  {
+                    "from_raw": 0,
+                    "to_raw": 1,
+                    "frame": 1311,
+                    "source": "captures/continuation-20261125-top30/marcus-deep-forward/Orion.pcapng",
+                    "capture_sha256": "f2cd2dac8b0e68acb37207547a82afbb7b55637366ab7d21dae5d89ba9952a00"
+                  },
+                  {
+                    "from_raw": 1,
+                    "to_raw": 0,
+                    "frame": 1385,
+                    "source": "captures/continuation-20261125-top30/marcus-deep-inverse/Orion.pcapng",
+                    "capture_sha256": "1bd12191f6419965da9418ddf22a6d383b080bae7ce065a2a4674e9a48afaac5"
+                  }
+                ],
+                "changed_offsets": [
+                  34
+                ],
+                "full_d5_report_exact_return": true,
+                "rgb_switch_crop_exact_return": true,
+                "screenshots": {
+                  "before": "captures/continuation-20261125-top30/marcus-deep-pre.png",
+                  "returned": "captures/continuation-20261125-top30/marcus-deep-inverse-settled.png"
+                },
+                "limits": "The visible labels and raw transition are recorded without assigning raw polarity, electrical behavior, or audio meaning."
+              }
+            },
+            "writable": false,
+            "device_readback_verified": false,
+            "status": "four bounded action/inverse pairs returned the fresh-load D5 block and target image crops exactly; semantic meanings remain unknown"
+          }
         },
         "Tweed Deluxe (US)": {
           "knob_endpoints": {
@@ -1255,7 +1446,106 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Captured isolated raw 0/100 knob pairs for Bass, Treble, HF Drive and Gain. A fresh-load FAC-labelled rotary observation changed only D5 report byte 23 during a bounded 8-pixel gesture and returned the complete fresh-load body and FAC crop exactly on the inverse. The two opposite 2-pixel gestures produced no parameter report or image change. FAC positions, numeric meaning, full range, output, processing, physical scaling, independent readback and audio behavior remain open.",
+          "fac_observation": {
+            "fresh_load": {
+              "type_instance": [
+                3,
+                0
+              ],
+              "assignment_frame": 1423,
+              "initialization_frame": 1439,
+              "initial_parameter_body_hex": "084638390038003d5700000000000000",
+              "source": "captures/continuation-20261125-top30/overange-fac-load-top30/Orion.pcapng",
+              "capture_sha256": "815d39967d6e1735b027e56ebd9756664eacfb42595f71a83f15cd945554d395",
+              "screenshot": "captures/continuation-20261125-top30/overange-fac-load-top30.png"
+            },
+            "ui": {
+              "ui_class": "OverangeKnob",
+              "panel_class": "GA_Overange",
+              "bounds": {
+                "x": 810,
+                "y": 389,
+                "width": 130,
+                "height": 130
+              },
+              "visible_inscription": "FAC",
+              "displayed_numeric_position": null,
+              "screenshot": "captures/continuation-20261125-top30/overange-fac-load-top30.png",
+              "limits": "The panel shows the FAC inscription but no numeric position labels or meaning."
+            },
+            "two_pixel_noop_gestures": [
+              {
+                "vertical_delta_pixels": -2,
+                "captured_parameter_events": 0,
+                "fac_crop_exact_return": true,
+                "source": "captures/continuation-20261125-top30/overange-fac-forward/Orion.pcapng",
+                "capture_sha256": "3cecb1a70a36cf09fc08be180fb5a48372dae48302d78ac53fd0ce71371b4953",
+                "screenshot": "captures/continuation-20261125-top30/overange-fac-forward-settled.png"
+              },
+              {
+                "vertical_delta_pixels": 2,
+                "captured_parameter_events": 0,
+                "fac_crop_exact_return": true,
+                "source": "captures/continuation-20261125-top30/overange-fac-opposite/Orion.pcapng",
+                "capture_sha256": "b39a60e4617a618708c93e11cafcb2a254d559d30e353f4a3409831bd0766110",
+                "screenshot": "captures/continuation-20261125-top30/overange-fac-opposite-settled.png"
+              }
+            ],
+            "observed_step": {
+              "gesture": "one bounded 8-pixel vertical drag downward",
+              "initial_raw": 57,
+              "report_offset": 23,
+              "body_offset": 3,
+              "raw_sequence": [
+                55,
+                53
+              ],
+              "frames": [
+                1613,
+                1713
+              ],
+              "changed_offsets": [
+                23
+              ],
+              "source": "captures/continuation-20261125-top30/overange-fac-eight-pixel/Orion.pcapng",
+              "capture_sha256": "33a2877515b22c02ab6fea32c9abb5403eef26afa9d3a2f3e3ec76b37b89ef7d",
+              "settled_screenshot": "captures/continuation-20261125-top30/overange-fac-eight-pixel-live.png",
+              "fac_crop_changed": true
+            },
+            "inverse": {
+              "gesture": "one bounded 8-pixel vertical drag upward",
+              "raw_sequence": [
+                55,
+                57
+              ],
+              "frames": [
+                1459,
+                1559
+              ],
+              "changed_offsets": [
+                23
+              ],
+              "source": "captures/continuation-20261125-top30/overange-fac-restore/Orion.pcapng",
+              "capture_sha256": "6a7a417352fcd0c1b2d81a7d3dd6a25813b99eeacb5d7c67477bd214dcb499ab",
+              "full_d5_body_exact_return": true,
+              "fac_crop_exact_return": true,
+              "settled_screenshot": "captures/continuation-20261125-top30/overange-fac-restore-settled.png"
+            },
+            "cleanup": {
+              "removal_frame": 1331,
+              "source": "captures/continuation-20261125-top30/overange-fac-remove-trial/Orion.pcapng",
+              "capture_sha256": "6d87b832c95a8a0412b969a30ada95d44a197db0c3de70e6bde1c12f3ab95544",
+              "afx2_empty_verified": true,
+              "afx1_original_empty_view_restored": true,
+              "afx2_rechecked_empty": true,
+              "afx1_final_restore_source": "captures/continuation-20261125-top30/overange-fac-restore-final-afx1/Orion.pcapng",
+              "afx2_empty_verification_source": "captures/continuation-20261125-top30/overange-fac-verify-afx2-empty/Orion.pcapng"
+            },
+            "device_readback_verified": false,
+            "writable": false,
+            "status": "one reversible raw field association observed; selector positions and meaning remain unknown"
+          }
         },
         "BurnSphere (DE) Lead": {
           "knob_endpoints": {
