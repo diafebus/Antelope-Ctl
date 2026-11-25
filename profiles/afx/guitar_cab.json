@@ -359,16 +359,328 @@
     },
     {
       "profile": "orion_studio_sc.json",
-      "type_id": null,
-      "status": "unconfirmed",
+      "type_id": 4,
+      "status": "capture-observed; partial Guitar Cabinet GUI/load capture",
       "commands": {
         "load": null,
         "recall": null,
         "parameters": null
       },
       "control_encodings": {},
-      "evidence": [],
-      "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding."
+      "evidence": [
+        "captures/continuation-20261124-cab-darkface/load-cab-darkface/Orion.pcapng",
+        "captures/continuation-20261124-cab-darkface/load-reconciled.json",
+        "captures/continuation-20261124-cab-darkface/model-selections.json",
+        "captures/continuation-20261124-cab-darkface/mic-model-options.json",
+        "captures/continuation-20261124-cab-darkface/mic-a-pilot-summary.json"
+      ],
+      "notes": "Orion vendor GUI assigned type 4 instance 0 to channel 1 during a temporary load. Load assignment and displayed cabinet models are capture-observed; the load command contract, parameter field map, runtime readback, physical scaling and audible behavior remain unverified. Five 0x08/0xf6/type4/instance0 envelopes have segment indices 0..4; the additional 0x65/0x53/type4/instance1 and 0x3c/0x2a/type4/instance2 envelopes remain opaque. A bounded Mic A trial changed the display from 0 dB to -6 dB and returned to -1 dB; no further parameter gestures were sent. The temporary insert was removed and both the empty AFX 2 slot and original empty AFX 1 view were verified.",
+      "type_id_write_status": "vendor GUI assignment observed; runtime command contract unverified",
+      "load_observation": {
+        "action_label": "Darkface 65 2x12",
+        "assignment_frame": 1403,
+        "channel": 1,
+        "type_instance": [
+          4,
+          0
+        ],
+        "capture": "captures/continuation-20261124-cab-darkface/load-cab-darkface/Orion.pcapng",
+        "capture_sha256": "91df02dc293823d339d098c0a503fbd05aceed0f65ea436627f42933bf68fd64",
+        "parameter_envelopes": [
+          {
+            "frame": 1441,
+            "opcode": 8,
+            "subcommand": 246,
+            "type": 4,
+            "instance": 0,
+            "declared_length": 264,
+            "segment_index": 0,
+            "header_hex": "70000000080100000000000000000000d5f60400",
+            "report_sha256": "7f1fca7e9b824d2c5318848f6c0b46123adf54118703d8b5b5cee73fd8a283b9"
+          },
+          {
+            "frame": 1445,
+            "opcode": 8,
+            "subcommand": 246,
+            "type": 4,
+            "instance": 0,
+            "declared_length": 264,
+            "segment_index": 1,
+            "header_hex": "70000000080100000000000000000000d5f60400",
+            "report_sha256": "65457e1c6f33eea257ed040d39251705365241b4a058d900025c159b068208e2"
+          },
+          {
+            "frame": 1449,
+            "opcode": 8,
+            "subcommand": 246,
+            "type": 4,
+            "instance": 0,
+            "declared_length": 264,
+            "segment_index": 2,
+            "header_hex": "70000000080100000000000000000000d5f60400",
+            "report_sha256": "9e70aa3066e070f41f5e6017ebece658e5bf8055fc6c64fdf649c967f7318cad"
+          },
+          {
+            "frame": 1453,
+            "opcode": 8,
+            "subcommand": 246,
+            "type": 4,
+            "instance": 0,
+            "declared_length": 264,
+            "segment_index": 3,
+            "header_hex": "70000000080100000000000000000000d5f60400",
+            "report_sha256": "a8e00d93d8f7c790eb3323a50caf80255803ee384a1abbbd789a09e78cc69858"
+          },
+          {
+            "frame": 1457,
+            "opcode": 8,
+            "subcommand": 246,
+            "type": 4,
+            "instance": 0,
+            "declared_length": 264,
+            "segment_index": 4,
+            "header_hex": "70000000080100000000000000000000d5f60400",
+            "report_sha256": "d1f61074879618cd8bd5d3c89cf187cd09d78ecb1e6e10af29a211ceebb413bd"
+          },
+          {
+            "frame": 1461,
+            "opcode": 101,
+            "subcommand": 83,
+            "type": 4,
+            "instance": 1,
+            "declared_length": 101,
+            "segment_index": null,
+            "header_hex": "70000000650000000000000000000000d5530401",
+            "report_sha256": "3f246ae1c7f02bf93ecef7e674990496bc9526db677eda0dbe8ae92f253ba35d"
+          },
+          {
+            "frame": 1465,
+            "opcode": 60,
+            "subcommand": 42,
+            "type": 4,
+            "instance": 2,
+            "declared_length": 60,
+            "segment_index": null,
+            "header_hex": "700000003c0000000000000000000000d52a0402",
+            "report_sha256": "c85f3d9b3054b7a9bc8ad62f3743977bb71aff7e93027afc6014a888867ed771"
+          }
+        ],
+        "device_readback_verified": false
+      },
+      "model_observations": {
+        "cabinet_model_options": {
+          "models": [
+            {
+              "model": "Darkface 65 2x12",
+              "capture": "captures/continuation-20261124-cab-darkface/load-cab-darkface/Orion.pcapng",
+              "capture_sha256": "91df02dc293823d339d098c0a503fbd05aceed0f65ea436627f42933bf68fd64",
+              "device_readback_verified": false
+            },
+            {
+              "model": "Top30 2x12",
+              "capture": "captures/continuation-20261124-cab-darkface/select-top30-cabinet/Orion.pcapng",
+              "capture_sha256": "cbe2019a22a9131ab8776e8154ba42ed917dd8b36b8308b94fb7654d51e603ae",
+              "device_readback_verified": false
+            },
+            {
+              "model": "Modern 4x12",
+              "capture": "captures/continuation-20261124-cab-darkface/02-modern-4x12-select/Orion.pcapng",
+              "capture_sha256": "777197c2c7c913c848bfeb2698a87c36194cfd7a95b87c448cb8c5ec494d8778",
+              "device_readback_verified": false,
+              "out_frames": [
+                1809,
+                1813,
+                1817,
+                1821,
+                1825,
+                1829,
+                1833
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/02-modern-4x12-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/02-modern-4x12-select.png"
+            },
+            {
+              "model": "Green 2x12",
+              "capture": "captures/continuation-20261124-cab-darkface/03-green-2x12-select/Orion.pcapng",
+              "capture_sha256": "25985e401f4f8a0a776ed09a282229fc629cdcfddafdad83561b908a1e24ad64",
+              "device_readback_verified": false,
+              "out_frames": [
+                1567,
+                1571,
+                1575,
+                1579,
+                1583,
+                1587,
+                1591
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/03-green-2x12-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/03-green-2x12-select.png"
+            },
+            {
+              "model": "Vintage 4x12",
+              "capture": "captures/continuation-20261124-cab-darkface/04-vintage-4x12-select/Orion.pcapng",
+              "capture_sha256": "a442b4aa055d47e943dfdc7856bf9f23616d0811e8fc38bf0953590d6a6e4c38",
+              "device_readback_verified": false,
+              "out_frames": [
+                1447,
+                1451,
+                1455,
+                1459,
+                1463,
+                1467,
+                1471
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/04-vintage-4x12-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/04-vintage-4x12-select.png"
+            },
+            {
+              "model": "Green 4x12",
+              "capture": "captures/continuation-20261124-cab-darkface/05-green-4x12-select/Orion.pcapng",
+              "capture_sha256": "5724ef895426b1776b8304b81efb6a21d5a64893dc0499287e21c25cb7925571",
+              "device_readback_verified": false,
+              "out_frames": [
+                1403,
+                1407,
+                1411,
+                1415,
+                1419,
+                1423,
+                1427
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/05-green-4x12-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/05-green-4x12-select.png"
+            },
+            {
+              "model": "Caliper 50 1x10",
+              "capture": "captures/continuation-20261124-cab-darkface/06-caliper-50-1x10-select/Orion.pcapng",
+              "capture_sha256": "54434ffed886fc0574b9b93728854eece637b5a99e2a8a30c01733a7a49b6f26",
+              "device_readback_verified": false,
+              "out_frames": [
+                1443,
+                1447,
+                1451,
+                1455,
+                1461,
+                1465,
+                1469
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/post-timeout-caliper-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/06-caliper-50-1x10-select.png"
+            },
+            {
+              "model": "Bluelux 1x12",
+              "capture": "captures/continuation-20261124-cab-darkface/07-bluelux-1x12-select/Orion.pcapng",
+              "capture_sha256": "29544ba983512cd57915806f36e27bddbbc52b5c1381afce5d5d798a865806fe",
+              "device_readback_verified": false,
+              "out_frames": [
+                1133,
+                1137,
+                1141,
+                1145,
+                1149,
+                1153,
+                1157
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/07-bluelux-1x12-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/07-bluelux-1x12-select.png"
+            },
+            {
+              "model": "Clst 1x12",
+              "capture": "captures/continuation-20261124-cab-darkface/08-clst-1x12-select/Orion.pcapng",
+              "capture_sha256": "02258e88e1d9892107900773cf7154a0a6f92e0a53188b03bc35011cea9002cd",
+              "device_readback_verified": false,
+              "out_frames": [
+                1001,
+                1005,
+                1009,
+                1013,
+                1017,
+                1021,
+                1025
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/08-clst-1x12-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/08-clst-1x12-select.png"
+            },
+            {
+              "model": "England 4x12",
+              "capture": "captures/continuation-20261124-cab-darkface/09-england-4x12-select/Orion.pcapng",
+              "capture_sha256": "bf6bab53419c850f65efe5b708ae9d60355cef93af6bcae4c4d4d6971389c33c",
+              "device_readback_verified": false,
+              "out_frames": [
+                1083,
+                1087,
+                1091,
+                1095,
+                1099,
+                1103,
+                1107
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/09-england-4x12-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/09-england-4x12-select.png"
+            },
+            {
+              "model": "Bass Tube 1x15",
+              "capture": "captures/continuation-20261124-cab-darkface/10-bass-tube-1x15-select/Orion.pcapng",
+              "capture_sha256": "cc7221a45a9cab24744ae5798e3d63a1effeb5a2188050856524896f7a3ad160",
+              "device_readback_verified": false,
+              "out_frames": [
+                1041,
+                1045,
+                1049,
+                1053,
+                1057,
+                1061,
+                1065
+              ],
+              "selector_inventory": "captures/continuation-20261124-cab-darkface/10-bass-tube-1x15-open-inventory.json",
+              "selection_screenshot": "captures/continuation-20261124-cab-darkface/10-bass-tube-1x15-select.png"
+            }
+          ],
+          "meaning": "Displayed vendor cabinet-model labels associated with their UI selection captures; raw envelopes are not mapped to controls.",
+          "device_readback_verified": false
+        },
+        "microphone_model_options": {
+          "selectors": [
+            {
+              "selector": "Mic A",
+              "displayed": "American57 (D)",
+              "visible_menu_options": [
+                "American57 (D)",
+                "California121 (R)",
+                "GermanFet87 (C)",
+                "AustriaGold414 (C)",
+                "American52 (D)"
+              ],
+              "screenshot": "mic_a-options-open.png",
+              "device_readback_verified": false
+            },
+            {
+              "selector": "Mic B",
+              "displayed": "California121 (R)",
+              "visible_menu_options": [
+                "California121 (R)",
+                "American57 (D)",
+                "GermanFet87 (C)",
+                "AustriaGold414 (C)",
+                "American52 (D)"
+              ],
+              "screenshot": "mic_b-options-open.png",
+              "device_readback_verified": false
+            }
+          ],
+          "meaning": "Menu labels were transcribed from the two captured vendor screenshots; UI Automation also returned hidden unrelated list items, which are excluded.",
+          "device_readback_verified": false
+        },
+        "mic_a_trial": {
+          "model": "Top30 2x12",
+          "before_display": "0 dB",
+          "changed_display": "-6 dB",
+          "return_display": "-1 dB",
+          "return_verified": false,
+          "additional_gestures_stopped": true,
+          "source": "captures/continuation-20261124-cab-darkface/mic-a-pilot-summary.json"
+        }
+      }
     }
   ]
 }

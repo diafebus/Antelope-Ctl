@@ -174,12 +174,31 @@ The revised dropdown activation and five visible De-Esser choices passed native
 GUI/USB verification on 2026-10-25. Its four-state Monitor/Out selector also
 passed after correcting the binary-looking checkbox classification. See
 [De-Esser findings](orion-afx-deesser.md). Consecutive-plugin and interrupted/
-resumed live acceptance remain separate milestones. Selector metadata covers
-cabinet/speaker/model candidates; complete option enumeration remains pending.
+resumed live acceptance remain separate milestones. Guitar Cabinet's visible
+cabinet-model options have now been enumerated on Orion; speaker selectors and
+the meaning/encoding of its parameters remain pending.
 Legacy pilot launchers are removed. Instinct's catalog now records all21 knob
 endpoint associations and three switches; Volume displays−infinity..+1dB,
 with observed float32-le0..1 at offset120. Unknown interpolation laws and
 declaration-ID correspondence keep runtime parameter writes disabled.
+
+### 2026-11-25 — Guitar Cabinet partial capture
+
+The vendor GUI assigned Guitar Cabinet type 4, instance 0, to channel 1, AFX 2
+slot 1. The selected cabinet list contains eleven displayed labels, and both
+mic selectors expose five visible model labels. The owning
+[catalog entry](../profiles/afx/guitar_cab.json) links the local capture paths
+and available per-selection OUT frames. Five `0x08/0xf6/type 4/instance 0` envelopes
+carry segment indices 0–4; two additional envelopes are retained as opaque.
+These observations do not establish control offsets, meanings, ranges, a
+runtime write/readback contract, or audible behavior.
+
+A bounded Mic A trial changed the displayed level from `0 dB` to `-6 dB`; the
+reverse gesture ended at `-1 dB`, so further control gestures stopped. The
+temporary insert was removed, AFX 2 was verified empty, and the original empty
+AFX 1 view was restored. Physical restoration of the temporary Mic A state,
+other controls, and remaining cabinet control mappings need a later supervised
+capture.
 
 Fresh startup capture on 2026-10-09 matches Instinct instance1 reply body@17
 to the last restored filter-scan write body@20 over write offsets20–123.
