@@ -279,7 +279,10 @@
       "control_encodings": {},
       "evidence": [
         "captures/continuation-20261124-darkface65/load-darkface65/Orion.pcapng",
-        "captures/continuation-20261125-top30/load-top30-bright/Orion.pcapng frames 1227/1231 assign type 3 / instance 0 and capture fresh D5 initialization; SHA256 858e2fa2051dcd1967393d4d06279fe52b963a22c86b1589f333b4eb53b2bcb0"
+        "captures/continuation-20261125-top30/load-top30-bright/Orion.pcapng frames 1227/1231 assign type 3 / instance 0 and capture fresh D5 initialization; SHA256 858e2fa2051dcd1967393d4d06279fe52b963a22c86b1589f333b4eb53b2bcb0",
+        "captures/continuation-20261125-cab-mic-b/plexi59-power-followup-20261125.json",
+        "captures/continuation-20261125-cab-mic-b/rock2210-rocker-followup-20261125.json",
+        "captures/continuation-20261125-cab-mic-b/rock75-rocker-followup-20261125.json"
       ],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding.",
       "model_observations": {
@@ -959,7 +962,67 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Five isolated raw 0/100 knob endpoint pairs. A fresh type3/instance0 trial also captured one POWER click and inverse: lever and indicator changed and returned exactly; one opaque event was observed per click. Tuple semantics, physical polarity, output level, physical scales, independent readback and audio behavior remain unverified.",
+          "power_button_observation": {
+            "ui_label": "POWER",
+            "ui_class": "AfxBypassButton",
+            "indicator_class": "AfxLed",
+            "fresh_load": {
+              "pcap": "captures/continuation-20261125-cab-mic-b/plexi-power-load/Orion.pcapng",
+              "pcap_sha256": "a14818645e38ebc314f0008f37dbdbcd59ee4ae2f1fb2637edbdf2d6e1882542",
+              "packets_received": 3874,
+              "packets_dropped": 0,
+              "assignment_frame": 1459,
+              "type_instance": [
+                [
+                  3,
+                  0
+                ]
+              ],
+              "initialization_frame": 1485,
+              "initial_parameter_body_hex": "03463b250040004c40000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "initial_ui": {
+              "panel_model": "Plexi 59 (UK)",
+              "POWER_lever": "upper / ON",
+              "indicator": "lit"
+            },
+            "event_observations": [
+              {
+                "gesture": "one click",
+                "frames": [
+                  1415
+                ],
+                "bytes_16_19": "98000300",
+                "capture": "captures/continuation-20261125-cab-mic-b/plexi-power-click-forward/Orion.pcapng",
+                "capture_sha256": "a2362f1469daa2a45b7080613f8bb6802ccfb493a13216bbdde577be6cfa329c"
+              },
+              {
+                "gesture": "inverse click",
+                "frames": [
+                  1855
+                ],
+                "bytes_16_19": "98000301",
+                "capture": "captures/continuation-20261125-cab-mic-b/plexi-power-click-return/Orion.pcapng",
+                "capture_sha256": "5db48c21021f84fe2c5a2a65474dc09746cd416e22ac3de0155a2ca08ee3be0d"
+              }
+            ],
+            "lever_and_indicator_crop_changed_on_forward": true,
+            "lever_and_indicator_crop_exact_return": true,
+            "cleanup": {
+              "removal_frames": [
+                1763
+              ],
+              "source": "captures/continuation-20261125-cab-mic-b/plexi-power-remove-trial/Orion.pcapng",
+              "capture_sha256": "768fa2cdeaa51121030f64a96547a5bd16c54ead383499bea3e7a6c96977a45e",
+              "afx2_empty_verified": true,
+              "original_empty_afx1_restored": true
+            },
+            "event_field_meaning": "opaque; no polarity or effect-specific processing interpretation",
+            "device_readback_verified": false,
+            "audible_effect_verified": false,
+            "writable": false
+          }
         },
         "Rock 22.10 (UK)": {
           "knob_endpoints": {
@@ -1074,7 +1137,58 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Six isolated raw 0/100 knob endpoint pairs. A fresh type3/instance0 trial also captured a reversible click on the visible rocker marked 0/1. Its target crop returned exactly; one opaque event was observed per click. Mark meanings, state mapping, processing/power polarity, output level, physical scaling, independent readback and audio remain unknown.",
+          "numbered_rocker_observation": {
+            "ui_automation_class": "AfxBypassButton",
+            "literal_visible_marks": [
+              "0",
+              "1"
+            ],
+            "ui_label": "none observed",
+            "fresh_load": {
+              "pcap": "captures/continuation-20261125-cab-mic-b/rock2210-power-load/Orion.pcapng",
+              "pcap_sha256": "7db563e3171e5de5c8fa09fd7227a6b75eb86dff73cb3648cffc460023b1cbbc",
+              "packets_received": 4026,
+              "packets_dropped": 0,
+              "assignment_frame": 1575,
+              "initialization_frame": 1601,
+              "initial_parameter_body_hex": "043f321b003c005346000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "type_instance": [
+                [
+                  3,
+                  0
+                ]
+              ]
+            },
+            "forward": {
+              "frames": [
+                1321
+              ],
+              "bytes_16_19": "98000300",
+              "pcap": "captures/continuation-20261125-cab-mic-b/rock2210-power-click-forward/Orion.pcapng",
+              "pcap_sha256": "d82e2f70370d02cf9982498125934036e1280ef51620bb9277a7df54a51e83c0"
+            },
+            "inverse": {
+              "frames": [
+                1499
+              ],
+              "bytes_16_19": "98000301",
+              "pcap": "captures/continuation-20261125-cab-mic-b/rock2210-power-click-return/Orion.pcapng",
+              "pcap_sha256": "2e4b6fb583ccac1abe32bc9e11e127f5ac13b0ad94818e7513599d726cc9a894"
+            },
+            "target_crop_changed_on_forward": true,
+            "target_crop_exact_return": true,
+            "tuple_semantics": "opaque",
+            "device_readback_verified": false,
+            "audible_effect_verified": false,
+            "writable": false,
+            "cleanup": {
+              "source": "captures/continuation-20261125-cab-mic-b/rock2210-power-remove-trial/Orion.pcapng",
+              "capture_sha256": "addc19f1ecc1dc1cea0b60cdd4dd54b0bbc5f1737487a87124494ce7a6fdfeff",
+              "afx2_empty_verified": true,
+              "original_empty_afx1_restored": true
+            }
+          }
         },
         "Rock 75 (UK)": {
           "knob_endpoints": {
@@ -1189,7 +1303,58 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Six isolated raw 0/100 knob endpoint pairs. A fresh type3/instance0 trial also captured a reversible click on the visible rocker marked 0/1. Its target crop returned exactly; one opaque event was observed per click. Mark meanings, state mapping, processing/power polarity, output level, physical scaling, independent readback and audio remain unknown.",
+          "numbered_rocker_observation": {
+            "ui_automation_class": "AfxBypassButton",
+            "literal_visible_marks": [
+              "0",
+              "1"
+            ],
+            "ui_label": "none observed",
+            "fresh_load": {
+              "pcap": "captures/continuation-20261125-cab-mic-b/rock75-power-load/Orion.pcapng",
+              "pcap_sha256": "92c465ff13f434ebc5895a7e48ca4f37a242f92df92e0a732f499bcdd1bbb1b4",
+              "packets_received": 3962,
+              "packets_dropped": 0,
+              "assignment_frame": 1483,
+              "initialization_frame": 1519,
+              "initial_parameter_body_hex": "05601e440042004457000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "type_instance": [
+                [
+                  3,
+                  0
+                ]
+              ]
+            },
+            "forward": {
+              "frames": [
+                1987
+              ],
+              "bytes_16_19": "98000300",
+              "pcap": "captures/continuation-20261125-cab-mic-b/rock75-power-click-forward/Orion.pcapng",
+              "pcap_sha256": "67b5d90d874e16c77d8ee0209758ecad17d06c1ca05dd2ec20b6c96ebcd057ac"
+            },
+            "inverse": {
+              "frames": [
+                1641
+              ],
+              "bytes_16_19": "98000301",
+              "pcap": "captures/continuation-20261125-cab-mic-b/rock75-power-click-return/Orion.pcapng",
+              "pcap_sha256": "c065c17010230373ff84564eb9a60077ee8b29d991b3c798631bfcb2d40493ef"
+            },
+            "target_crop_changed_on_forward": true,
+            "target_crop_exact_return": true,
+            "tuple_semantics": "opaque",
+            "device_readback_verified": false,
+            "audible_effect_verified": false,
+            "writable": false,
+            "cleanup": {
+              "source": "captures/continuation-20261125-cab-mic-b/rock75-power-remove-trial/Orion.pcapng",
+              "capture_sha256": "f86ae90faaedfa440e95b2d04931838980699604f34129d8676e84636693cfd5",
+              "afx2_empty_verified": true,
+              "original_empty_afx1_restored": true
+            }
+          }
         },
         "Marcus II (US) Lead": {
           "knob_endpoints": {

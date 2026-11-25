@@ -765,6 +765,30 @@ disabled. The generic OUT level control remains unmapped; the tested Top30
 gestures produced no AFX parameter event. See the local capture index for
 frame numbers, packet hashes, screenshots, and zero-drop counts.
 
+The Plexi 59 (UK) model was separately loaded as type 3 / instance 0 from a
+fresh empty AFX2 rack. Its labeled POWER control moved the lever and lamp from
+upper / lit to lower / unlit with one opaque event (`98000300`), then returned
+them exactly with one inverse event (`98000301`). The POWER crop matched the
+fresh-load image exactly on return; all captures had zero drops. The trial was
+removed, AFX2 verified empty and the original empty AFX1 view restored. These
+event bytes do not establish processing polarity or audible behavior. See the
+Plexi model-local observation and ignored capture archive.
+
+Rock 22.10 (UK) was loaded as type 3 / instance 0 in fresh AFX2. Its large
+panel rocker has visible `0` and `1` marks but no text label; one click produced
+one opaque event (`98000300`) and changed the targeted crop, and the inverse
+produced `98000301` and restored that crop pixel-exactly. AFX2 was emptied and
+the original empty AFX1 view restored; all captures had zero drops. No meaning
+is assigned to the marks or tuple, and no processing polarity, independent
+readback or audible behavior is claimed. See the model-local profile evidence.
+
+Rock 75 (UK) was loaded as type 3 / instance 0 in fresh AFX2. Its visible
+numbered `0`/`1` rocker changed the target image on one click and returned it
+pixel-exactly on the inverse. The events were `98000300` / `98000301`, retained
+without assigning state or processing meaning. The trial was removed; AFX2 was
+verified empty and the original empty AFX1 view restored. All captures had zero
+drops. See the Rock 75 model-local profile observation and local capture index.
+
 ## 2026-11-25 — Gyratec XIV continuation
 
 The fresh AFX2 trial confirmed the previously recorded type 77 / instance 0
