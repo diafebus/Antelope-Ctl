@@ -872,3 +872,11 @@ remain pending. Endpoint frames and images are retained per control.
 BurnSphere (DE) Lead adds isolated raw 0/100 pairs for Gain, Bass, Middle,
 Treble, Presence and Volume. Bright, Bottom, output level and processing
 remain pending. The effect file retains each endpoint frame and image.
+
+Bass SuperTube VR (2026-11-25) adds isolated raw 0/100 pairs for the
+visible Volume, Treble, Midrange and Bass knobs. The captured fields are at
+report offsets 28, 25, 23 and 22 respectively; source frames, report hashes
+and settled screenshots are kept in the Guitar Amp model observations. The
+temporary type 3 instance 0 insert was removed and AFX 2 returned empty.
+Switches, output level, processing, physical scales, independent readback and
+audible behavior remain pending.
