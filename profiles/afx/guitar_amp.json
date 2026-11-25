@@ -278,7 +278,8 @@
       },
       "control_encodings": {},
       "evidence": [
-        "captures/continuation-20261124-darkface65/load-darkface65/Orion.pcapng"
+        "captures/continuation-20261124-darkface65/load-darkface65/Orion.pcapng",
+        "captures/continuation-20261125-top30/load-top30-bright/Orion.pcapng frames 1227/1231 assign type 3 / instance 0 and capture fresh D5 initialization; SHA256 858e2fa2051dcd1967393d4d06279fe52b963a22c86b1589f333b4eb53b2bcb0"
       ],
       "notes": "UNVERIFIED: confirm the effect type and each control on Orion before assigning a type ID, command, or encoding.",
       "model_observations": {
@@ -438,7 +439,44 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Four isolated raw 0/100 knob pairs. A common type 3 POWER event/UI pair is captured in the implementation-level processing observation. Two bounded clicks on the 0 dB output slider produced no captured parameter event and left its RGB crop unchanged; a supported drag/key/wheel gesture is still required. This panel image contains no separate Bright switch. Physical scaling, independent readback and audio behavior remain unverified.",
+          "output_slider_click_observation": {
+            "ui_class": "GuitarAmpLevelSlider",
+            "displayed_value_before": "0 dB",
+            "displayed_value_after": "0 dB",
+            "attempts": [
+              {
+                "gesture": "single bounded click",
+                "host_x_fraction": 0.74,
+                "captured_parameter_events": 0,
+                "source": "captures/continuation-20261125-top30/output-step-right-v2/Orion.pcapng",
+                "capture_sha256": "945beb3e01960a6141d6dd5db1a46b003eb823f16b78cf624bb2fb3a23634811"
+              },
+              {
+                "gesture": "single bounded click",
+                "host_x_fraction": 0.775,
+                "captured_parameter_events": 0,
+                "source": "captures/continuation-20261125-top30/output-step-right-v3/Orion.pcapng",
+                "capture_sha256": "c4c846b9afca44c258698c917e44d0f989246c7d0a222631c40f470440984df5"
+              }
+            ],
+            "rgb_slider_crop_unchanged": true,
+            "status": "negative for these click gestures; output remains unmapped and needs a supported non-click gesture"
+          },
+          "visible_panel_observation": {
+            "source": "captures/continuation-20261125-top30/load-top30-bright.png",
+            "visible_controls": [
+              "POWER",
+              "Volume",
+              "Top Cut",
+              "Treble",
+              "Bass",
+              "Output slider",
+              "Input jack"
+            ],
+            "bright_switch_visible": false,
+            "note": "The model name contains Bright, but no separate Bright switch is visible on this panel image."
+          }
         },
         "Modern (US) CH3": {
           "knob_endpoints": {
@@ -1311,8 +1349,217 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Four raw 0/100 knob pairs plus isolated Bright/Off-byte, ultra-hi, 1-2-3 and Bass-Cut/Off/Ultra-Low position captures. The switch and selector cycles changed only report offsets 30–33, returned the complete D5 body and returned RGB control crops to the fresh type 3 load state. Model-level labels are literal panel text/position associations, not audio claims. Output slider, physical scaling, independent readback and audio behavior remain open.",
+          "switch_observations": {
+            "fresh_load": {
+              "assignment_frame": 1425,
+              "initialization_frame": 1471,
+              "initial_parameter_body_hex": "0a46461e013c00325700000001000000",
+              "source": "captures/continuation-20261125-bassvr/load-bass-supertube/Orion.pcapng",
+              "capture_sha256": "406aaa671d914896d8c37068b0ba0d85ff1cf18576ea94205c9d780390f928a5"
+            },
+            "bright_off_switch": {
+              "ui_class": "GuitarAmpModeSwitch",
+              "panel_labels": [
+                "Bright",
+                "Off"
+              ],
+              "body_offset": 10,
+              "report_offset": 30,
+              "transitions": [
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 1123,
+                  "source": "captures/continuation-20261125-bassvr/bright-switch-first/Orion.pcapng",
+                  "capture_sha256": "8a225f0906a984f6b1a67be0c959b35ab87fce51371d81d0a64162d2de7641f9"
+                },
+                {
+                  "from_raw": 1,
+                  "to_raw": 0,
+                  "frame": 1095,
+                  "source": "captures/continuation-20261125-bassvr/bright-switch-return/Orion.pcapng",
+                  "capture_sha256": "9307c898e96da2f48852af30c245547f44913dbb37073b1e3a9a4e000820518a"
+                }
+              ],
+              "changed_offsets": [
+                30
+              ],
+              "full_parameter_body_exact_return": true,
+              "rgb_switch_crop_exact_return": true,
+              "limits": "Raw transition and image return observed; no audible behavior or independent readback."
+            },
+            "ultra_hi_switch": {
+              "ui_class": "BassSuperTubeVrSwitch",
+              "panel_inscription": "ultra-hi off",
+              "body_offset": 11,
+              "report_offset": 31,
+              "transitions": [
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 1110,
+                  "source": "captures/continuation-20261125-bassvr/ultra-hi-first/Orion.pcapng",
+                  "capture_sha256": "073343b01fd7f1273f67bb5da1686d712b848ac0984b93b223fe6ea2c4236b52"
+                },
+                {
+                  "from_raw": 1,
+                  "to_raw": 0,
+                  "frame": 1091,
+                  "source": "captures/continuation-20261125-bassvr/ultra-hi-return/Orion.pcapng",
+                  "capture_sha256": "33bf40b0f81fb47ddc5434c37163d70efc7af0dcb8e16db305e01cd06cde9060"
+                }
+              ],
+              "changed_offsets": [
+                31
+              ],
+              "full_parameter_body_exact_return": true,
+              "rgb_switch_crop_exact_return": true,
+              "limits": "Raw transition and image return observed; inscription preserved without assigning semantic polarity; no readback or audio claim."
+            },
+            "selector_1_2_3": {
+              "ui_class": "BassSuperTubeVrSwitchThreeWay",
+              "body_offset": 12,
+              "report_offset": 32,
+              "positions": [
+                {
+                  "raw": 0,
+                  "position": "left",
+                  "printed_label": "1"
+                },
+                {
+                  "raw": 1,
+                  "position": "center",
+                  "printed_label": "2"
+                },
+                {
+                  "raw": 2,
+                  "position": "right",
+                  "printed_label": "3"
+                }
+              ],
+              "transitions": [
+                {
+                  "from_raw": 1,
+                  "to_raw": 2,
+                  "frame": 1098,
+                  "source": "captures/continuation-20261125-bassvr/selector123-step-1/Orion.pcapng",
+                  "capture_sha256": "e0bbc61554bd5c613d0c97f4493cb01a5a5af738c24cc006e1cd25582521235a"
+                },
+                {
+                  "from_raw": 2,
+                  "to_raw": 0,
+                  "frame": 1087,
+                  "source": "captures/continuation-20261125-bassvr/selector123-step-2/Orion.pcapng",
+                  "capture_sha256": "26121b9c36536f41a22ebd25f267bb4d2ab56b742b3f44e61e7cfec267d91e83"
+                },
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 1081,
+                  "source": "captures/continuation-20261125-bassvr/selector123-return/Orion.pcapng",
+                  "capture_sha256": "20c1f3b10c01b75e4afc167cb2adef3c30673bc49b93453e396e98e1d35a5683"
+                }
+              ],
+              "changed_offsets": [
+                32
+              ],
+              "initial_and_final_raw": 1,
+              "full_parameter_body_exact_return": true,
+              "rgb_selector_crop_exact_return": true,
+              "limits": "Position/printed-label association from the panel image; no numeric unit, device readback or audio claim."
+            },
+            "bass_cut_off_ultra_low": {
+              "ui_class": "BassSuperTubeVrSwitchThreeWay",
+              "body_offset": 13,
+              "report_offset": 33,
+              "positions": [
+                {
+                  "raw": 0,
+                  "position": "left",
+                  "printed_label": "Bass-Cut"
+                },
+                {
+                  "raw": 1,
+                  "position": "center",
+                  "printed_label": "Off"
+                },
+                {
+                  "raw": 2,
+                  "position": "right",
+                  "printed_label": "Ultra-Low"
+                }
+              ],
+              "transitions": [
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 1091,
+                  "source": "captures/continuation-20261125-bassvr/basscut-selector-step-1/Orion.pcapng",
+                  "capture_sha256": "456b27b974b735af34288f49f778f169ae181f31281b7a284abd131816ab5f66"
+                },
+                {
+                  "from_raw": 1,
+                  "to_raw": 2,
+                  "frame": 1113,
+                  "source": "captures/continuation-20261125-bassvr/basscut-selector-step-2/Orion.pcapng",
+                  "capture_sha256": "4d6dfe31961a7539d1b65b3d60d709667af68277bc0e25650c404f8ae1157dc7"
+                },
+                {
+                  "from_raw": 2,
+                  "to_raw": 0,
+                  "frame": 1091,
+                  "source": "captures/continuation-20261125-bassvr/basscut-selector-return/Orion.pcapng",
+                  "capture_sha256": "f6b85255800a63ad911341aacc48bffd7338d75a1b8bd81c6302a2363f99d9b5"
+                }
+              ],
+              "changed_offsets": [
+                33
+              ],
+              "initial_and_final_raw": 0,
+              "full_parameter_body_exact_return": true,
+              "rgb_selector_crop_exact_return": true,
+              "limits": "Position/printed-label association from the panel image; no audio, unit or independent readback claim."
+            }
+          }
         }
+      },
+      "processing_observation": {
+        "status": "capture-observed common Guitar Amp POWER event/UI pair; tuple remains opaque",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "type_id": 3,
+        "instance": 0,
+        "writable": false,
+        "device_readback_verified": false,
+        "fresh_load": {
+          "assignment_frame": 1227,
+          "initialization_frame": 1231,
+          "initial_parameter_body_hex": "01463c3f003800113a00000000000000",
+          "source": "captures/continuation-20261125-top30/load-top30-bright/Orion.pcapng",
+          "capture_sha256": "858e2fa2051dcd1967393d4d06279fe52b963a22c86b1589f333b4eb53b2bcb0"
+        },
+        "states": [
+          {
+            "action": "first AfxBypassButton click",
+            "frame": 1115,
+            "tuple_hex": "98000300",
+            "source": "captures/continuation-20261125-top30/power-first/Orion.pcapng",
+            "capture_sha256": "b9711f39ac1ccb17d8ea9254ec6d396608e7ca7144aa0a5d2ecc9b0ae58279b1"
+          },
+          {
+            "action": "inverse AfxBypassButton click",
+            "frame": 1051,
+            "tuple_hex": "98000301",
+            "source": "captures/continuation-20261125-top30/power-return/Orion.pcapng",
+            "capture_sha256": "14065b6f04f6f49ec5e051d5f9deb9a548766a6d16e0f82db30ae848c14a192b"
+          }
+        ],
+        "visual_restoration": {
+          "ui_class": "AfxBypassButton",
+          "rgb_power_crop_exact_return": true
+        },
+        "limits": "Tuple values are opaque action-correlated observations. No polarity, model-specific processing meaning, independent readback, or audio result is claimed."
       }
     },
     {

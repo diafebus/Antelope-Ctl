@@ -96,7 +96,7 @@ work; no new initialization capture is required.
 | X903 | 29 | Three endpoint pairs with literal ratio endpoint −1:1 and IN-button/lamp GUI return. [Dynamics findings](orion-afx-power-dynamics.md#x903--visible-control-pass-2026-11-03) preserve limits; runtime/readback/scales unverified |
 | FET-A78 | 37 | Four endpoint pairs, four individually labelled Ratio button states and Power GUI return. [Dynamics findings](orion-afx-power-dynamics.md#fet-a78--visible-control-pass-2026-11-03) preserve limits; combinations/runtime/readback/timing unverified |
 | FET-A76 | 9 | Four endpoint pairs, four individually labelled Ratio button states and illuminated ON-button return. [Dynamics findings](orion-afx-power-dynamics.md#fet-a76--visible-control-pass-2026-11-03) preserve limits; combinations/runtime/readback/timing unverified |
-| Impresser (partial) | 42 | Six endpoint pairs and eight literal Ratio labels captured. Detector intermediate labels, Harmonics, Stereo Link, UK Mode and processing remain pending. Full Ratio parameter body returns, but OPTO lamp differs; [partial findings](orion-afx-power-dynamics.md#impresser--partial-control-capture-2026-11-04) preserve the failed static check. This is not a completed plugin pass; runtime/readback/telemetry remain unverified |
+| Impresser (partial) | 42 | Six endpoint pairs and eight literal Ratio labels captured; a later BYPASS click/inverse produced an opaque event pair and exact button-crop return. Detector intermediate labels, Harmonics, Stereo Link and UK Mode remain pending. Full Ratio parameter body returns, but OPTO lamp differs; [partial findings](orion-afx-power-dynamics.md#impresser--partial-control-capture-2026-11-04) preserve the failed static check and later processing observation. This is not a completed plugin pass; runtime/readback/telemetry remain unverified |
 | Comp-4K-Bus | 63 | Six continuous endpoint pairs including HR, complete Attack/Release/Ratio label maps, Auto Fade and IN-button/rack BP GUI returns captured. Own trial removed and empty AFX2 verified; [dynamics findings](orion-afx-power-dynamics.md#comp-4k-bus--visible-control-pass-2026-11-04) preserve scope and physical/runtime limits |
 | NEU-473A | 80 | Visible-control pass complete. Both gains, Attack, Ratio, Threshold contacts, both Recovery controls, the three switches and Bypass have [capture evidence](orion-afx-power-dynamics.md#neu-473a-continuation-2026-11-19). Numerical values for unlabelled Threshold marks remain unresolved. |
 | Diode609 (partial) | 82 | Captured assignment, initialization, seven rotary endpoint pairs, seven position sets with Compressor Threshold intermediate labels partly unresolved, five binary switches and Power. See the [Orion findings](orion-afx-power-dynamics.md#diode609--partial-control-capture-2026-11-19). |
@@ -770,3 +770,8 @@ verified. Readback, filter units/behavior, bypass polarity/audio, frequency,
 other Q controls, output and runtime contracts remain open. See the
 [ClearQ findings](orion-afx-eq.md#clearq--partial-orion-capture-2026-11-25),
 [catalog entry](../profiles/afx/eq.json) and local-only `captures/CAPTURE_INDEX.md`.
+
+A fresh follow-up load assigned type 1 / instance 0 but emitted no D5
+initialization body. The frequency control therefore had no same-load D5
+baseline and was not touched; capture it only after a fresh initialization is
+available.

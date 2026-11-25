@@ -180,7 +180,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 42,
-      "status": "capture-observed; partial visible controls; OPTO indicator discrepancy unresolved",
+      "status": "capture-observed; partial visible controls; opaque BYPASS event/UI pair captured; OPTO indicator discrepancy unresolved",
       "commands": {
         "load": null,
         "recall": null,
@@ -431,9 +431,10 @@
       "evidence": [
         "captures/supervised-20261104T012645Z-load-impresser/Orion.pcapng frame785: AFX2 slot0 type42 instance0; single chain assignment; all remaining slots empty",
         "captures/scan-Impresser-20261104T012918709Z: 12 accepted endpoint phases, 95932 packets, zero drops; capture/analysis SHA256 bound",
-        "captures/supervised-20261104T012645Z-impresser-ratio: eight one-byte Ratio changes and displayed labels; complete captured body returned, OPTO lamp differs; 18116 packets, zero drops"
+        "captures/supervised-20261104T012645Z-impresser-ratio: eight one-byte Ratio changes and displayed labels; complete captured body returned, OPTO lamp differs; 18116 packets, zero drops",
+        "captures/continuation-20261125-impresser/load-impresser/Orion.pcapng frame 1132 assigns Orion type 42 / instance 0 to AFX2; no fresh D5 initialization body was observed; SHA256 7d3b2a7cb7e307d539f0006e7dbb999093f4d0b75d9a9d5c31799d703429ae40"
       ],
-      "notes": "Orion-only endpoint and labelled Ratio observations; remaining visible controls pending. OPTO lamp differs after full parameter-body and Ratio-label return. Original failed static-check trial and read-only reconciliation retained; no repair or replay. Commands remain null. Physical scaling, timing/interpolation, telemetry, independent readback, audible/stereo behavior and runtime contracts unverified.",
+      "notes": "Orion-only endpoint and labelled Ratio observations; remaining visible controls pending. OPTO lamp differs after full parameter-body and Ratio-label return. Original failed static-check trial and read-only reconciliation retained; no repair or replay. Commands remain null. Physical scaling, timing/interpolation, telemetry, independent readback, audible/stereo behavior and runtime contracts unverified. A 2026-11-25 BYPASS-button event/UI pair returned the RGB button crop exactly; the tuple remains opaque. The fresh load emitted no D5 initialization, so Harmonics, Stereo Link, UK Mode and detector follow-up remain pending. OPTO discrepancy was not replayed or repaired.",
       "type_id_write_status": "observed official GUI assignment; no runtime writer enabled",
       "parameter_observation": {
         "opcode": "0x1e",
@@ -682,7 +683,7 @@
             "control": "processing",
             "ui_class": "ImpresserBypassButton",
             "label": "BYPASS",
-            "status": "pending directed capture"
+            "status": "capture-observed opaque event/UI pair; BYPASS meaning, readback and audio remain unverified"
           }
         ]
       },
@@ -833,6 +834,34 @@
         ],
         "device_readback_verified": false,
         "runtime_authorized": false
+      },
+      "processing_observation": {
+        "status": "capture-observed; two BYPASS-button clicks produced an opaque event pair and exact button-crop return",
+        "opcode": "0x14",
+        "param_id": "0x98",
+        "writable": false,
+        "device_readback_verified": false,
+        "states": [
+          {
+            "action": "first ImpresserBypassButton click",
+            "frame": 1077,
+            "tuple_hex": "98002a00",
+            "source": "captures/continuation-20261125-impresser/impresser-bypass-first/Orion.pcapng",
+            "capture_sha256": "bdf4a67bb4a1fcc11501f6ec95aca8149cc184ae441530bff547bc6f3c330208"
+          },
+          {
+            "action": "inverse ImpresserBypassButton click",
+            "frame": 1005,
+            "tuple_hex": "98002a01",
+            "source": "captures/continuation-20261125-impresser/impresser-bypass-return/Orion.pcapng",
+            "capture_sha256": "94c2c5fb0726aa0f2b3c8dd1aef39ba24cfc07e9181c285ffeeaa63bddd3e449"
+          }
+        ],
+        "visual_restoration": {
+          "ui_class": "ImpresserBypassButton",
+          "rgb_crop_exact_return": true
+        },
+        "limits": "Tuple bytes are opaque action-correlated values. No bypass polarity, parameter-body co-observation, device readback, or audible result is claimed. The fresh load emitted no D5 initialization; do not treat this pair as a D5 control baseline."
       }
     },
     {

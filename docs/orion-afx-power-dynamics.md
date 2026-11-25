@@ -495,13 +495,32 @@ The original `error.json`, screenshots, actions and `reconciliation.json`
 remain intact; no repair gesture or cycle replay was sent.
 
 This is a **partial** plugin pass. Harmonics, Stereo Link, UK Mode (1:1),
-processing/BYPASS and both complete detector selector maps remain pending.
+and both complete detector selector maps remain pending. A later processing
+button event/UI pair is recorded below; it does not establish bypass polarity,
+readback or audible behavior.
 The OPTO discrepancy is an indicator observation, not a decoded signal meter.
 `ImpresserGRMeter`, its16`PeakLed` segments, `ClipLed`, four`ImpresserLed`
 widgets, `OptoLed` and two`DistortionLed` widgets establish GUI presence only;
 `RatioDisplay` is a parameter readout. All model-local encodings remain read-only
 and commands null. Independent readback, telemetry, physical scaling,
 audible/stereo behavior and runtime contracts remain unverified.
+
+## Impresser — BYPASS event/UI capture, 2026-11-25
+
+A fresh type42/instance0 load was assigned to empty AFX2 at frame1132 in
+`captures/continuation-20261125-impresser/load-impresser/Orion.pcapng`
+(SHA256
+`7d3b2a7cb7e307d539f0006e7dbb999093f4d0b75d9a9d5c31799d703429ae40`).
+That capture contained no D5 initialization body, so it is not a fresh
+parameter baseline for the remaining controls.
+
+Two bounded clicks on `ImpresserBypassButton` produced opaque `0x14 / 0x98`
+tuples `98 00 2a 00` (first click, frame1077) and `98 00 2a 01` (inverse,
+frame1005). The button's RGB crop returned exactly. The tuple bytes remain
+opaque action-correlated values; this does not identify bypass polarity,
+parameter-body changes, device readback or audible processing. The trial was
+removed and both rack views were verified empty. The earlier OPTO discrepancy
+was not replayed or repaired.
 
 ## Comp-4K-Bus — visible control pass, 2026-11-04
 
@@ -939,7 +958,14 @@ Top30 (UK) Bright was captured next on the shared type 3 instance.
 Volume, Top Cut, Treble and Bass each reached raw 0/100 through bounded
 native knob gestures. Independent minimum/maximum comparisons isolate
 one byte per control. The owning model observations retain source frames
-and screenshots. Output level and processing remain pending.
+and screenshots. A fresh load initialized type3/instance0 at frame1231.
+Two clicks on the output slider at host x fractions 0.74 and 0.775 left the
+readout at `0 dB`, emitted no captured parameter event, and left the RGB
+slider crop unchanged; output remains unmapped pending a supported gesture.
+The panel image has no separate Bright switch despite the model name. A
+POWER-button click/inverse produced opaque tuples `98 00 03 00` (frame1115)
+and `98 00 03 01` (frame1051), with an exact RGB POWER-crop return. These
+values do not establish polarity, audio behavior or device readback.
 
 Modern (US) CH3 adds isolated raw 0/100 pairs for Volume, Presence, Bass,
 Middle, Treble and Gain. The full captured segments differ only at the
@@ -978,7 +1004,14 @@ remain pending. The effect file retains each endpoint frame and image.
 Bass SuperTube VR (2026-11-25) adds isolated raw 0/100 pairs for the
 visible Volume, Treble, Midrange and Bass knobs. The captured fields are at
 report offsets 28, 25, 23 and 22 respectively; source frames, report hashes
-and settled screenshots are kept in the Guitar Amp model observations. The
-temporary type 3 instance 0 insert was removed and AFX 2 returned empty.
-Switches, output level, processing, physical scales, independent readback and
-audible behavior remain pending.
+and settled screenshots are kept in the Guitar Amp model observations. A
+fresh type3/instance0 D5 initialization at frame1471 provided the baseline
+for four additional switch/selector captures: the Bright/Off switch changed
+report offset30 from raw0 to raw1 and returned; the `ultra-hi off` switch
+changed offset31 from raw0 to raw1 and returned; the `1 • 2 • 3` selector
+associated raw0/1/2 with left/center/right printed positions; and the
+Bass-Cut/Off/Ultra-Low selector associated raw0/1/2 with those left/center/
+right labels. Each action changed only its own byte, and each sequence
+returned the full D5 body and RGB control crop exactly. The temporary type 3
+instance 0 insert was removed and AFX 2 returned empty. Output level, physical
+scales, independent readback and audible behavior remain open.
