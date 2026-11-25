@@ -165,7 +165,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 86,
-      "status": "Partial Orion visible pass. Five endpoint pairs and Lin/Log frames captured. Mode and processing pending.",
+      "status": "Partial Orion visible pass. Five endpoint pairs and Lin/Log exact return captured; Mode has two label-associated values but the Out action emitted mixed report families; processing pending.",
       "commands": {
         "load": null,
         "recall": null,
@@ -306,15 +306,70 @@
               "frame": 915,
               "source": "captures/continuation-20261124-gate-keeper/linlog-return/Orion.pcapng",
               "screenshot": "captures/continuation-20261124-gate-keeper/linlog-return.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "log",
+              "position": "right",
+              "frame": 1443,
+              "source": "captures/continuation-20261125-gate-keeper/linlog-right/Orion.pcapng",
+              "capture_sha256": "8af2106ba0b1cc4ebab869b0e6839f4288f3c07dd69f6061d7a238538aaa9e47",
+              "screenshot": "captures/continuation-20261125-gate-keeper/linlog-right.png"
+            },
+            {
+              "raw": 0,
+              "printed_label": "lin",
+              "position": "left / exact return",
+              "frame": 1007,
+              "source": "captures/continuation-20261125-gate-keeper/linlog-return/Orion.pcapng",
+              "capture_sha256": "b7ec5952de55121bf2d1e9ec3840d3e22e294a0ac5ce3cfd47d9effa01db7c12",
+              "screenshot": "captures/continuation-20261125-gate-keeper/linlog-return.png"
             }
           ],
-          "notes": "Visual return check failed; source images retained for review."
+          "notes": "Fresh 2026-11-25 action-labelled capture returned exactly to the clean starting image. Panel prints lower-case lin/log. The earlier 2026-11-24 return screenshot was obscured by a PowerShell window; that image is superseded for the visual-return claim. Device readback remains unverified.",
+          "status": "capture-observed; lower-case panel labels captured and exact UI return verified 2026-11-25",
+          "wire_enum": {
+            "0": "lin",
+            "1": "log"
+          }
+        },
+        "mode": {
+          "offset": 26,
+          "width": 1,
+          "kind": "enum",
+          "writable": false,
+          "device_readback_verified": false,
+          "status": "partial capture-observed; raw 1 out and raw 2 key are label-associated; raw 0 in pending",
+          "raw_label_observations": [
+            {
+              "raw": 2,
+              "printed_label": "key",
+              "position": "right",
+              "frame": 1429,
+              "source": "captures/continuation-20261125-gate-keeper/mode-right/Orion.pcapng",
+              "capture_sha256": "6f4a51849601a560acf93219218d8ea1ed34a158a430973389e4bcf856657e11",
+              "screenshot": "captures/continuation-20261125-gate-keeper/mode-right.png"
+            },
+            {
+              "raw": 1,
+              "printed_label": "out",
+              "position": "middle; label is printed on the control face; post-click screenshot not saved",
+              "frame": 1371,
+              "source": "captures/continuation-20261125-gate-keeper/mode-middle/Orion.pcapng",
+              "capture_sha256": "a35d58c97c02d8683df2eaafaed187854088e72abc89f02525d72fd3d482ff2d"
+            }
+          ],
+          "notes": "The clean baseline showed the selector at left / in, with no initialization parameter report. Right / key produced a D5-family type 86 / instance 0 report with byte 26 equal to 2. The following middle / out action produced a separate 0x14 report and a D5-family report; comparing that D5 body with the preceding Key body isolates byte 26 changing 2 to 1. The parser stopped on the mixed family set before its screenshot action. Raw 0 / in and any processing-state meaning remain pending; the 0x14 payload is retained as opaque evidence."
         }
       },
       "evidence": [
-        "captures/continuation-20261124-gate-keeper/load-gate-keeper/Orion.pcapng frame 1083"
+        "captures/continuation-20261124-gate-keeper/load-gate-keeper/Orion.pcapng frame 1083",
+        "captures/continuation-20261125-gate-keeper/load-gate-keeper/Orion.pcapng frame 1209: temporary GUI assignment of Orion type 86 / instance 0 to AFX 2 slot 1.",
+        "captures/continuation-20261125-gate-keeper/linlog-verified.json: byte 25 raw 1 log / 0 lin with exact clean-image return; source captures and hashes are in control_encodings.linlog.",
+        "captures/continuation-20261125-gate-keeper/mode-right/Orion.pcapng frame 1429 and mode-middle/Orion.pcapng frames 1345,1371: Key and Out action observations; D5 bodies differ only at byte 26 (2 to 1), while Out also emitted opaque 0x14 header 700000001400000000000000000000009856000000000000.",
+        "captures/continuation-20261125-gate-keeper/remove-gate-keeper/actions.json frame 1327: temporary insert removed; AFX 2 empty and original empty AFX 1 view restored."
       ],
-      "notes": "Orion GUI and passive USB observations. Physical scales, independent readback, audible behavior and runtime contracts remain pending."
+      "notes": "Orion GUI and passive USB observations. The fresh Lin/Log capture returned exactly; the prior failed image comparison was caused by a PowerShell window obscuring its baseline. Mode raw 2 / key and raw 1 / out are associated with D5-family reports, but the Out action emitted an additional opaque 0x14 report and halted capture before a settled screenshot. Raw 0 / in, processing-state mapping, physical scales, independent readback, audible behavior and runtime contracts remain pending. SideSource and SideChanN were declared in reference metadata but no such widgets were exposed in the Orion panel inventory."
     },
     {
       "profile": "zen_go_sc.json",

@@ -833,6 +833,25 @@ at bytes 20–24. Lin/Log changes byte 25. The settled labelled states
 and source frames are recorded in the Orion effect profile. The visual
 return check failed, so Mode and processing remain pending manual review.
 
+### 2026-11-25 selector follow-up
+
+With a clear baseline and the pointer moved away before each image, Lin/Log
+returned exactly to its starting image. Byte 25 was `1` at the displayed
+right / `log` state and `0` at the left / `lin` return. The earlier image
+comparison failed because a PowerShell window obscured the baseline; the new
+clear capture resolves that image issue, but does not establish device readback.
+
+Mode began at left / `in`. Clicking right / `key` produced a
+`0x1d/0xd5/0x0b` type 86 / instance 0 parameter report at frame 1429, with
+byte 26 equal to `2`. Clicking middle / `out` then produced a `0x14` report
+and another parameter report at frames 1345 and 1371. The parameter bodies
+differ only at byte 26 (`2` to `1`). The parser halted on the mixed report
+families before saving a settled Out screenshot or sending another gesture.
+The `0x14` payload remains opaque; `in` / raw 0 and processing behavior are
+not mapped. The temporary insert was removed at frame 1327; empty AFX 2 and
+the original empty AFX 1 view were verified. Evidence remains local under
+`captures/continuation-20261125-gate-keeper/`.
+
 ## PowerFFC — partial Orion capture, 2026-11-24
 
 Orion type 2, instance 0 uses parameter family 0x26 / 0xd5 / 0x14.

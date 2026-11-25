@@ -669,3 +669,19 @@ gesture. No Mode field or processing mapping was added. The temporary insert
 was removed, and empty AFX 2 plus the original empty AFX 1 view were verified.
 See the [Orion power dynamics notes](orion-afx-power-dynamics.md#2026-11-25-selector-follow-up)
 and the [Drum-All-Nite profile](../profiles/afx/drum_all_nite.json).
+
+## 2026-11-25 — Gate Keeper selector follow-up
+
+The fresh Lin/Log capture mapped raw `1 log` and `0 lin` and returned exactly
+to its clear starting image. The prior failed image comparison was caused by
+a PowerShell window obscuring the baseline.
+
+Mode began at left / `in`. The right / `key` action produced a captured
+type 86 / instance 0 parameter report with raw `2` at byte 26. The middle /
+`out` action produced raw `1` at byte 26 plus a separate `0x14` report. The
+parameter bodies differ only at byte 26, but capture stopped at the mixed
+families before a settled Out image or further gesture. Raw `0` / `in` and
+processing behavior remain unresolved; no audio meaning is claimed. The
+temporary insert was removed and both empty AFX 2 and the original empty AFX 1
+view were verified. See the [Gate Keeper profile](../profiles/afx/gate_keeper.json)
+and [Orion power dynamics notes](orion-afx-power-dynamics.md#2026-11-25-selector-follow-up).
