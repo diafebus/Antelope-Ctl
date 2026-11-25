@@ -200,6 +200,51 @@ AFX 1 view was restored. Physical restoration of the temporary Mic A state,
 other controls, and remaining cabinet control mappings need a later supervised
 capture.
 
+#### 2026-11-25 — Cabinet Mic B and switch follow-up
+
+A separate fresh Darkface 65 2x12 trial began with Mic B at `-6 dB` and
+`California121 (R)`. Selecting `American57 (D)` and returning to
+`California121 (R)` restored the selector crop and all seven inverse report
+bytes to the fresh-load captures. A two-pixel Mic B drag emitted no OUT and left
+the display unchanged; an eight-pixel downward gesture displayed `-7 dB`, and
+its inverse ended at `-5 dB`. Further level gestures stopped. This is not a
+successful physical restore or a field mapping.
+
+On independent fresh-load trials, ReSpire and HPF each went lit→unlit→lit;
+LPF and an unlabeled round-slash icon beside Mic B went unlit→lit→unlit. Each
+bounded inverse restored the targeted UI crop and all seven observed inverse
+reports to the fresh-load set. The icon remains unidentified; the candidate
+`mic_b_phase_inv` name is not established. The panel button labeled `BP` went
+unlit→lit→unlit with opaque OUT bytes `98000400` / `98000401`; these bytes do
+not establish field meaning or polarity. All captures had zero usbmon drops.
+
+Each trial was removed, AFX 2 was verified empty, and the original empty AFX 1
+view was restored. These GUI-correlated observations establish no parameter
+field meanings, physical switch behavior, runtime/readback contract, license
+ownership, or audible behavior. Raw PCAPs, screenshots and per-action summaries
+remain in the ignored local archive `captures/continuation-20261125-cab-mic-b/`;
+see `guitar-cabinet-followup-20261125.json` and the capture index.
+
+A third fresh trial captured the Mic A model selector: `American57 (D)` changed
+to `California121 (R)` and returned to `American57 (D)`. Each action produced
+seven observed envelopes; the inverse bytes match the fresh-load report set and
+the Mic A selector crop returns exactly. Mic B remained `California121 (R)` and
+no level or other control was touched. The trial was removed; AFX 2 was verified
+empty and the original empty AFX 1 view restored. The raw reports remain opaque;
+this is not independent device readback or an established write contract. See
+`guitar-cabinet-mic-a-model-followup-20261125.json` in the ignored capture archive.
+
+A further fresh trial captured the remaining three Mic A menu choices:
+`GermanFet87 (C)`, `AustriaGold414 (C)`, and `American52 (D)`. Each was
+selected once and returned immediately to `American57 (D)`. All three inverses
+matched the complete seven-report fresh-load set byte-for-byte and returned the
+Mic A selector crop exactly. AFX 2 was emptied after the trial and the original
+empty AFX 1 view restored. The five visible Mic A menu labels now each have an
+action-labelled selection round trip, but raw report fields, independent
+readback, runtime behavior, physical meaning, license ownership and audio remain
+unverified. See `guitar-cabinet-mic-a-model-menu-followup-20261125.json` in the
+ignored local capture archive.
+
 Fresh startup capture on 2026-10-09 matches Instinct instance1 reply body@17
 to the last restored filter-scan write body@20 over write offsets20–123.
 The shared offline analyzer now correlates serialized tagged replies, retains
@@ -697,6 +742,28 @@ This remains a candidate association for the `FiltekDrivePot` UIA class. It does
 not establish an intermediate conversion or step model, device readback,
 runtime writer, or audible behavior. The trial was removed at frame1517; AFX2
 was verified empty and the original empty AFX1 view restored.
+
+## 2026-11-25 — Guitar Amp POWER and Darkface BRIGHT
+
+Three isolated type3/instance0 AFX2 trials captured the faceplate POWER control
+on Tweed Deluxe (US) and Darkface 65 (US), and the separate BRIGHT lever on
+Darkface. Each load produced a fresh D5 initialization. POWER was tested with
+one click and one inverse click: both models emitted the observed 0x14/0x98
+byte sequences 98 00 03 00 and 98 00 03 01. The panel POWER lever and lamp
+changed on the first click and their image crops returned exactly on the
+inverse. These bytes remain an opaque event tuple; no event-field, physical
+power/bypass-polarity, device-readback, or audible claim is made.
+
+Darkface BRIGHT changed only absolute D5 report byte30, raw 1 to 0, and the
+inverse returned 0 to 1. Raw1 aligned with the upper lever position; raw0
+aligned with the lower position. The faceplate prints BRIGHT near the upper
+end and has no printed label at the opposite position. The complete D5 block
+and Bright-control image crop returned exactly. All three trials were removed;
+AFX2 was verified empty and the original empty AFX1 view restored. The owning
+Guitar Amp profile keeps these as model-local observations and leaves writing
+disabled. The generic OUT level control remains unmapped; the tested Top30
+gestures produced no AFX parameter event. See the local capture index for
+frame numbers, packet hashes, screenshots, and zero-drop counts.
 
 ## 2026-11-25 — Gyratec XIV continuation
 

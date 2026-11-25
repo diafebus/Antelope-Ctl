@@ -372,9 +372,12 @@
         "captures/continuation-20261124-cab-darkface/load-reconciled.json",
         "captures/continuation-20261124-cab-darkface/model-selections.json",
         "captures/continuation-20261124-cab-darkface/mic-model-options.json",
-        "captures/continuation-20261124-cab-darkface/mic-a-pilot-summary.json"
+        "captures/continuation-20261124-cab-darkface/mic-a-pilot-summary.json",
+        "captures/continuation-20261125-cab-mic-b/guitar-cabinet-followup-20261125.json",
+        "captures/continuation-20261125-cab-mic-b/guitar-cabinet-mic-a-model-followup-20261125.json",
+        "captures/continuation-20261125-cab-mic-b/guitar-cabinet-mic-a-model-menu-followup-20261125.json"
       ],
-      "notes": "Orion vendor GUI assigned type 4 instance 0 to channel 1 during a temporary load. Load assignment and displayed cabinet models are capture-observed; the load command contract, parameter field map, runtime readback, physical scaling and audible behavior remain unverified. Five 0x08/0xf6/type4/instance0 envelopes have segment indices 0..4; the additional 0x65/0x53/type4/instance1 and 0x3c/0x2a/type4/instance2 envelopes remain opaque. A bounded Mic A trial changed the display from 0 dB to -6 dB and returned to -1 dB; no further parameter gestures were sent. The temporary insert was removed and both the empty AFX 2 slot and original empty AFX 1 view were verified.",
+      "notes": "Orion vendor GUI assigned type 4 instance 0 to channel 1 during temporary loads. The Darkface 65 2x12 load produced five 0x08/0xf6/type4/instance0 envelopes with segment indices 0..4 and two additional opaque envelopes (0x65/0x53 and 0x3c/0x2a). Eleven cabinet labels and both five-option mic menus are recorded as displayed UI choices, not device readback. A bounded Mic A inverse ended at -1 dB, and a separate Mic B level inverse ended at -5 dB from -6 dB; no further level gestures were sent. A Mic B model selector round trip and bounded ReSpire, HPF, LPF, unlabeled Mic B-row icon, and panel BP click/inverse pairs returned their UI crops and observed inverse report sets to fresh-load captures. The icon has no assigned meaning; the envelopes and BP event bytes remain opaque. Trials were removed, AFX 2 verified empty and the original empty AFX 1 view restored. Load/write contracts, parameter meanings and encodings, independent readback, physical scaling/restoration, audible behavior and license ownership remain unverified.",
       "type_id_write_status": "vendor GUI assignment observed; runtime command contract unverified",
       "load_observation": {
         "action_label": "Darkface 65 2x12",
@@ -679,6 +682,364 @@
           "return_verified": false,
           "additional_gestures_stopped": true,
           "source": "captures/continuation-20261124-cab-darkface/mic-a-pilot-summary.json"
+        },
+        "mic_b_model_selector_trial": {
+          "initial_model": "California121 (R)",
+          "forward_to": "American57 (D)",
+          "inverse_to": "California121 (R)",
+          "forward_capture": "captures/continuation-20261125-cab-mic-b/micbmodel-select-american57/Orion.pcapng",
+          "forward_sha256": "c6be8106d9b6d1b32c3991070319bdba786b2f93d1816c0a2421e34b0fce05b3",
+          "forward_frames": [
+            1509,
+            1513,
+            1519,
+            1520,
+            1524,
+            1528,
+            1535
+          ],
+          "inverse_capture": "captures/continuation-20261125-cab-mic-b/micbmodel-return-california121/Orion.pcapng",
+          "inverse_sha256": "df34da9ba675d80483085bf9cfc75f8e4b672dcb310bf25354f980a839d1945e",
+          "inverse_frames": [
+            1569,
+            1573,
+            1577,
+            1581,
+            1585,
+            1589,
+            1593
+          ],
+          "selector_crop_exact_return": true,
+          "all_inverse_report_bytes_match_fresh_load": true,
+          "device_readback_verified": false,
+          "writable": false,
+          "audio_verified": false
+        },
+        "mic_b_level_trial": {
+          "initial_display": "-6 dB",
+          "two_pixel_probe_display_unchanged": true,
+          "eight_pixel_forward_display": "-7 dB",
+          "forward_capture": "captures/continuation-20261125-cab-mic-b/micb-level-down-8px/Orion.pcapng",
+          "forward_sha256": "9c6e4f2cf964a74b78b02d0c3310db75047e7542a5b7ddfba3f350c5ea76a391",
+          "forward_frames": [
+            1773,
+            1777,
+            1782,
+            1786,
+            1790,
+            1794,
+            1798
+          ],
+          "inverse_display": "-5 dB",
+          "inverse_capture": "captures/continuation-20261125-cab-mic-b/micb-level-up-8px-return/Orion.pcapng",
+          "inverse_sha256": "c95c86ec9efb38521ccdeae199d5ce83e2b73c9241aa407ff06ef41e824c7d60",
+          "inverse_frames": [
+            1765,
+            1769,
+            1773,
+            1777,
+            1781,
+            1785,
+            1789,
+            1829,
+            1833,
+            1837,
+            1841,
+            1845,
+            1849,
+            1853
+          ],
+          "target_crop_exact_to_fresh_load": false,
+          "further_parameter_gestures_stopped": true,
+          "device_readback_verified": false,
+          "writable": false,
+          "audio_verified": false
+        },
+        "switch_observations": {
+          "ReSpire": {
+            "initial_ui": "lit",
+            "forward_ui": "unlit",
+            "forward_capture": "captures/continuation-20261125-cab-mic-b/cab-respire-click-forward/Orion.pcapng",
+            "forward_sha256": "2a4b94109bf8c453652888eaaedc2fb4e7ccf5b53b781f22d41a981b336b977d",
+            "forward_frames": [
+              1695,
+              1699,
+              1703,
+              1707,
+              1711,
+              1715,
+              1719
+            ],
+            "inverse_capture": "captures/continuation-20261125-cab-mic-b/cab-respire-click-return/Orion.pcapng",
+            "inverse_sha256": "fe78cff3e7912663a0d8ae9b8922db0c6164b86cea1383e8c3e1f5a7b719740b",
+            "inverse_frames": [
+              1687,
+              1691,
+              1695,
+              1699,
+              1703,
+              1707,
+              1711
+            ],
+            "inverse_crop_exact": true,
+            "all_inverse_report_bytes_match_fresh_load": true,
+            "device_readback_verified": false,
+            "writable": false,
+            "audio_verified": false,
+            "observed_panel_control": "ReSpire"
+          },
+          "HPF": {
+            "initial_ui": "lit",
+            "forward_ui": "unlit",
+            "forward_capture": "captures/continuation-20261125-cab-mic-b/cab-hpf-click-forward/Orion.pcapng",
+            "forward_sha256": "0d045893a321c3fd8c5b254a9c2382367065c84da209c16d513add552e447cac",
+            "forward_frames": [
+              1491,
+              1495,
+              1499,
+              1503,
+              1507,
+              1511,
+              1515
+            ],
+            "inverse_capture": "captures/continuation-20261125-cab-mic-b/cab-hpf-click-return/Orion.pcapng",
+            "inverse_sha256": "75318db5aab9a24e919e46f14393082002610764c32c169b5d908b94e7cadf95",
+            "inverse_frames": [
+              1623,
+              1627,
+              1631,
+              1635,
+              1639,
+              1643,
+              1647
+            ],
+            "inverse_crop_exact": true,
+            "all_inverse_report_bytes_match_fresh_load": true,
+            "device_readback_verified": false,
+            "writable": false,
+            "audio_verified": false,
+            "observed_panel_control": "HPF"
+          },
+          "LPF": {
+            "initial_ui": "unlit",
+            "forward_ui": "lit",
+            "forward_capture": "captures/continuation-20261125-cab-mic-b/cab-lpf-click-forward/Orion.pcapng",
+            "forward_sha256": "9740e1bf2ee4bbe1b73e7f4d486e8d16b1e2bba9078031cd0f1e1ea409bbab88",
+            "forward_frames": [
+              1697,
+              1701,
+              1705,
+              1709,
+              1713,
+              1717,
+              1721
+            ],
+            "inverse_capture": "captures/continuation-20261125-cab-mic-b/cab-lpf-click-return/Orion.pcapng",
+            "inverse_sha256": "794851638abf068982baa410aa44efa81fdd498fad630c0bad0bc451605ccd54",
+            "inverse_frames": [
+              1673,
+              1677,
+              1681,
+              1685,
+              1689,
+              1693,
+              1697
+            ],
+            "inverse_crop_exact": true,
+            "all_inverse_report_bytes_match_fresh_load": true,
+            "device_readback_verified": false,
+            "writable": false,
+            "audio_verified": false,
+            "observed_panel_control": "LPF"
+          },
+          "unlabelled Mic B-row icon": {
+            "initial_ui": "unlit",
+            "forward_ui": "lit",
+            "forward_capture": "captures/continuation-20261125-cab-mic-b/cab-phase-icon-forward/Orion.pcapng",
+            "forward_sha256": "0b5cf8be74c19248f1a78d8ba6be33b87e856420654bb566176bb50d74f54765",
+            "forward_frames": [
+              1651,
+              1655,
+              1659,
+              1663,
+              1667,
+              1671,
+              1675
+            ],
+            "inverse_capture": "captures/continuation-20261125-cab-mic-b/cab-phase-icon-return/Orion.pcapng",
+            "inverse_sha256": "527ee578fe84c2db895a47853ea9955266d72de97500c012d76bbd8bb2d68c63",
+            "inverse_frames": [
+              1649,
+              1653,
+              1657,
+              1661,
+              1665,
+              1669,
+              1673
+            ],
+            "inverse_crop_exact": true,
+            "all_inverse_report_bytes_match_fresh_load": true,
+            "device_readback_verified": false,
+            "writable": false,
+            "audio_verified": false,
+            "observed_panel_control": "unlabelled Mic B-row icon",
+            "candidate_control_id": "mic_b_phase_inv",
+            "status": "candidate only; no displayed text or meaning assigned"
+          }
+        },
+        "panel_bp_trial": {
+          "ui_label": "BP",
+          "initial_indicator": "unlit",
+          "forward_indicator": "lit",
+          "forward_capture": "captures/continuation-20261125-cab-mic-b/cab-bp-click-forward/Orion.pcapng",
+          "forward_sha256": "ed46988f9a12d3b60cdaf2a38988260ea00a064a5e4089f476cb7037be76bb84",
+          "forward_frames": [
+            1631
+          ],
+          "inverse_capture": "captures/continuation-20261125-cab-mic-b/cab-bp-click-return/Orion.pcapng",
+          "inverse_sha256": "ad8653f1930f492e351511feb8bcd51a33777d0ad0f1d656e3838334c482f481",
+          "inverse_frames": [
+            1699
+          ],
+          "event_bytes_16_19": [
+            "98000400",
+            "98000401"
+          ],
+          "event_meaning": "opaque",
+          "crop_exact_return": true,
+          "device_readback_verified": false,
+          "audio_verified": false,
+          "writable": false
+        },
+        "mic_a_model_selector_trial": {
+          "initial_model": "American57 (D)",
+          "forward_to": "California121 (R)",
+          "inverse_to": "American57 (D)",
+          "forward_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-select-california121/Orion.pcapng",
+          "forward_sha256": "31bc45f0304bf9524dd9b3c42bb63010b14f6c452a9c6b4e00bac981218d109b",
+          "forward_frames": [
+            1551,
+            1555,
+            1559,
+            1563,
+            1567,
+            1571,
+            1575
+          ],
+          "inverse_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-return-american57/Orion.pcapng",
+          "inverse_sha256": "b6fb603a5aa2bcc261c21b559e35b9b66378d95106db46dd6bd10217fb8518cd",
+          "inverse_frames": [
+            1465,
+            1469,
+            1473,
+            1477,
+            1481,
+            1485,
+            1489
+          ],
+          "selector_crop_exact_return": true,
+          "all_inverse_report_bytes_match_fresh_load": true,
+          "device_readback_verified": false,
+          "writable": false,
+          "audio_verified": false
+        },
+        "mic_a_model_menu_roundtrips": {
+          "initial_model": "American57 (D)",
+          "choices": [
+            {
+              "label": "GermanFet87 (C)",
+              "forward_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-enum-germanfet87-forward/Orion.pcapng",
+              "forward_sha256": "c06200c7b9b0bb4ee7ec0aa64c5ff814f5414cbec1cb1fb53a024dbdfd6410f5",
+              "forward_frames": [
+                1481,
+                1485,
+                1489,
+                1493,
+                1497,
+                1501,
+                1505
+              ],
+              "inverse_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-enum-germanfet87-inverse/Orion.pcapng",
+              "inverse_sha256": "1e3c5e2f9a486fcf2b092bd989b3e7ce6ea6dabc0ad5b6d26099f1192996549a",
+              "inverse_frames": [
+                1451,
+                1455,
+                1459,
+                1463,
+                1467,
+                1471,
+                1475
+              ],
+              "inverse_report_bytes_match_fresh_load": true,
+              "inverse_crop_exact_to_baseline": true,
+              "device_readback_verified": false,
+              "writable": false,
+              "audio_verified": false
+            },
+            {
+              "label": "AustriaGold414 (C)",
+              "forward_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-enum-austriagold414-forward/Orion.pcapng",
+              "forward_sha256": "de26ae6ba19857de0bce035ca0f5e06583f1c991042c205706c9a4e9665cd2c8",
+              "forward_frames": [
+                1449,
+                1453,
+                1457,
+                1461,
+                1465,
+                1469,
+                1473
+              ],
+              "inverse_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-enum-austriagold414-inverse/Orion.pcapng",
+              "inverse_sha256": "8f7daf1f52192c38f2e5032aca049e486cb786e5ffa15399c4f0584ad828ff3b",
+              "inverse_frames": [
+                1541,
+                1545,
+                1549,
+                1553,
+                1557,
+                1561,
+                1565
+              ],
+              "inverse_report_bytes_match_fresh_load": true,
+              "inverse_crop_exact_to_baseline": true,
+              "device_readback_verified": false,
+              "writable": false,
+              "audio_verified": false
+            },
+            {
+              "label": "American52 (D)",
+              "forward_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-enum-american52-forward/Orion.pcapng",
+              "forward_sha256": "ff2f8b439c53a881cacc4dcb3880716dc99f38aa67f1cbe1dd1788eb05746c8b",
+              "forward_frames": [
+                1543,
+                1547,
+                1551,
+                1555,
+                1559,
+                1563,
+                1567
+              ],
+              "inverse_capture": "captures/continuation-20261125-cab-mic-b/mic-a-model-enum-american52-inverse/Orion.pcapng",
+              "inverse_sha256": "a862f3c60063e409ac8d6ab6fb264dc2f57606e41ada9d5869384e43705864d8",
+              "inverse_frames": [
+                1471,
+                1475,
+                1479,
+                1483,
+                1487,
+                1491,
+                1495
+              ],
+              "inverse_report_bytes_match_fresh_load": true,
+              "inverse_crop_exact_to_baseline": true,
+              "device_readback_verified": false,
+              "writable": false,
+              "audio_verified": false
+            }
+          ],
+          "source_summary": "captures/continuation-20261125-cab-mic-b/guitar-cabinet-mic-a-model-menu-followup-20261125.json",
+          "device_readback_verified": false,
+          "audio_verified": false
         }
       }
     }

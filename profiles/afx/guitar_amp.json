@@ -360,7 +360,140 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Four raw 0/100 knob pairs. Bright, output level and processing pending. Physical scaling, independent readback and audio behavior remain unverified."
+          "notes": "Four raw 0/100 knob endpoint pairs. The fresh D5 BRIGHT trial changed only absolute report byte30 raw1→0 and its inverse returned raw0→1, the complete D5 body and exact switch crop. Raw1 was at the upper lever position and raw0 at the lower; the panel prints BRIGHT near the upper end, with no text for the lower position. A separate POWER UI/event pair returned its lever and indicator exactly. Event tuple fields, physical power/bypass polarity, header OUT behavior, independent readback and audible behavior remain unknown.",
+          "switch_observations": {
+            "fresh_load": {
+              "type_instance": [
+                3,
+                0
+              ],
+              "assignment_frame": 1349,
+              "initialization_frame": 1397,
+              "initial_parameter_body_hex": "00463e3f004400325900010000000000",
+              "initial_report_byte30": 1,
+              "source": "captures/continuation-20261125-top30/darkface-bright-load-top30/Orion.pcapng",
+              "capture_sha256": "994718d6bea0242ed8b10465fc06f4912403841b82ced9a37cc1f85de5528df5",
+              "screenshot": "captures/continuation-20261125-top30/darkface-bright-load-top30.png"
+            },
+            "bright_switch": {
+              "ui_class": "DarkfaceBrightButton",
+              "printed_marking": "BRIGHT; the opposite lever position has no printed label",
+              "report_offset": 30,
+              "positions_by_raw": [
+                {
+                  "raw": 1,
+                  "position": "upper",
+                  "source": "captures/continuation-20261125-top30/darkface-bright-load-top30.png"
+                },
+                {
+                  "raw": 0,
+                  "position": "lower",
+                  "source": "captures/continuation-20261125-top30/darkface-bright-after-forward.png"
+                }
+              ],
+              "transitions": [
+                {
+                  "from_raw": 1,
+                  "to_raw": 0,
+                  "frame": 1217,
+                  "changed_bytes": {
+                    "30": [
+                      1,
+                      0
+                    ]
+                  },
+                  "source": "captures/continuation-20261125-top30/darkface-bright-forward/Orion.pcapng",
+                  "capture_sha256": "bc0639e956870a0e5b8499eb436daab03b4baf7408a0ac67df791050e2e91e68",
+                  "screenshot": "captures/continuation-20261125-top30/darkface-bright-after-forward.png"
+                },
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 1665,
+                  "changed_bytes": {
+                    "30": [
+                      0,
+                      1
+                    ]
+                  },
+                  "source": "captures/continuation-20261125-top30/darkface-bright-return/Orion.pcapng",
+                  "capture_sha256": "26d891d9445665b9df4ef368bd3515b96e66aeaca1a948aeaba17e91b45ad8cb",
+                  "screenshot": "captures/continuation-20261125-top30/darkface-bright-after-return.png"
+                }
+              ],
+              "full_d5_body_return_exact": true,
+              "button_crop_return_exact": true,
+              "device_readback_verified": false,
+              "writable": false,
+              "status": "one model-local reversible UI/report-byte association; raw polarity and electrical/audio meaning remain unknown"
+            },
+            "power_button": {
+              "ui_label": "POWER",
+              "ui_class": "AfxBypassButton",
+              "indicator_class": "AfxLed",
+              "fresh_load": {
+                "type_instance": [
+                  3,
+                  0
+                ],
+                "assignment_frame": 1287,
+                "initialization_frame": 1301,
+                "source": "captures/continuation-20261125-top30/darkface-power-load-top30/Orion.pcapng",
+                "capture_sha256": "a15f1bf0245dd100228daf88056b3e800b8b34a53e632b212af47b75ee7b0cf8",
+                "screenshot": "captures/continuation-20261125-top30/darkface-power-load-top30.png",
+                "initial_ui": {
+                  "printed_label": "ON",
+                  "lever_position": "upper",
+                  "indicator": "lit"
+                }
+              },
+              "event_observations": [
+                {
+                  "gesture": "one click",
+                  "frame": 1457,
+                  "bytes_16_19": "98000300",
+                  "source": "captures/continuation-20261125-top30/darkface-power-forward/Orion.pcapng",
+                  "capture_sha256": "f4e12ea88c70dbdfaff3ec1f6b8e1b8b73380f05b34a5e18a49ba42b53ebfbcc",
+                  "screenshot": "captures/continuation-20261125-top30/darkface-power-after-forward.png"
+                },
+                {
+                  "gesture": "inverse click",
+                  "frame": 1541,
+                  "bytes_16_19": "98000301",
+                  "source": "captures/continuation-20261125-top30/darkface-power-return/Orion.pcapng",
+                  "capture_sha256": "84d7e899b7cf70c8bd56a790599a8e1933c554bc13a84009de1ccebcb097146f",
+                  "screenshot": "captures/continuation-20261125-top30/darkface-power-after-return.png"
+                }
+              ],
+              "return_verification": {
+                "power_switch_crop_exact": true,
+                "indicator_crop_exact": true,
+                "source": "captures/continuation-20261125-top30/darkface-power-verification.json"
+              },
+              "cleanup": {
+                "removal_frame": 1539,
+                "source": "captures/continuation-20261125-top30/darkface-power-remove-trial/Orion.pcapng",
+                "capture_sha256": "7ae67ea5f90b9a002cbce2736e91aaef00c4d02624ea483ec93bdb3d4280e364",
+                "afx2_empty_verified": true,
+                "original_empty_afx1_view_restored": true
+              },
+              "event_field_meanings": "opaque; offsets 17 and 19 are retained as captured without assigning state/polarity semantics",
+              "device_readback_verified": false,
+              "audible_effect_verified": false,
+              "writable": false,
+              "status": "model-local POWER UI/event pair captured and exactly returned; device state and polarity remain unverified"
+            },
+            "cleanup": {
+              "source": "captures/continuation-20261125-top30/darkface-bright-remove-trial/Orion.pcapng",
+              "capture_sha256": "569648b6c44827f4c085369aaf5016ced5f28f8981f97556c9f43ec58ca353a2",
+              "removal_frame": 1573,
+              "afx2_empty_verified": true,
+              "original_empty_afx1_view_restored": true
+            },
+            "writable": false,
+            "device_readback_verified": false,
+            "status": "two model-local switch observations captured with exact inverse returns; power tuple semantics, physical meanings and audio remain unknown"
+          }
         },
         "Top30 (UK) Bright": {
           "knob_endpoints": {
@@ -1367,7 +1500,7 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw 0/100 knob pairs for Tone and Volume. The visible NORMAL/BRIGHT switch changed only D5 report byte31 and its exact inverse returned the complete fresh-load block and RGB switch crop. Raw 0/1 is associated with the upper NORMAL/lower BRIGHT UI positions; no audible or independent readback claim. The printed Tone/Volume faces span 1–12; intermediate physical conversion, output, processing, scale, audio behavior and readback remain pending.",
+          "notes": "Captured isolated raw 0/100 knob pairs for Tone and Volume. The visible NORMAL/BRIGHT switch changed only D5 report byte31 and its exact inverse returned the complete fresh-load block and RGB switch crop. Raw 0/1 is associated with the upper NORMAL/lower BRIGHT UI positions; no audible or independent readback claim. A separate model-local POWER button/event pair now returns its lever and indicator crops exactly; the 0x14 tuple field meanings, physical polarity and audible behavior remain unknown. The printed Tone/Volume faces span 1–12; intermediate physical conversion, header OUT behavior, independent readback and runtime mapping remain pending.",
           "switch_observations": {
             "fresh_load": {
               "type_instance": [
@@ -1434,7 +1567,63 @@
             },
             "writable": false,
             "device_readback_verified": false,
-            "status": "one literal two-position switch label/raw association observed and exactly returned; no audio or device-readback claim"
+            "status": "NORMAL/BRIGHT raw association and the model-local POWER UI/event pair captured; exact GUI returns verified, but tuple semantics, physical processing, audio and device readback remain unknown",
+            "power_button": {
+              "ui_label": "POWER",
+              "ui_class": "AfxBypassButton",
+              "indicator_class": "AfxLed",
+              "fresh_load": {
+                "type_instance": [
+                  3,
+                  0
+                ],
+                "assignment_frame": 1249,
+                "initialization_frame": 1297,
+                "source": "captures/continuation-20261125-top30/tweed-power-load-top30/Orion.pcapng",
+                "capture_sha256": "6d0e14fbe8b89a35721bf8a8e8d239b247a2f811572e3a13f20c24135a6b5714",
+                "screenshot": "captures/continuation-20261125-top30/tweed-power-load-top30.png",
+                "initial_ui": {
+                  "printed_label": "ON",
+                  "lever_position": "upper",
+                  "indicator": "lit"
+                }
+              },
+              "event_observations": [
+                {
+                  "gesture": "one click",
+                  "frame": 1273,
+                  "bytes_16_19": "98000300",
+                  "source": "captures/continuation-20261125-top30/tweed-power-forward/Orion.pcapng",
+                  "capture_sha256": "eee0e23ea46127141304fe2329f6a784ac2d35ba521ed0fa250d0edbe5e65092",
+                  "screenshot": "captures/continuation-20261125-top30/tweed-power-after-forward.png"
+                },
+                {
+                  "gesture": "inverse click",
+                  "frame": 1595,
+                  "bytes_16_19": "98000301",
+                  "source": "captures/continuation-20261125-top30/tweed-power-return/Orion.pcapng",
+                  "capture_sha256": "6fc78c124e249122d2034aeceff174b9f36524768da39480b880a219c6e680a6",
+                  "screenshot": "captures/continuation-20261125-top30/tweed-power-after-return.png"
+                }
+              ],
+              "return_verification": {
+                "power_switch_crop_exact": true,
+                "indicator_crop_exact": true,
+                "source": "captures/continuation-20261125-top30/tweed-power-verification.json"
+              },
+              "cleanup": {
+                "removal_frame": 1505,
+                "source": "captures/continuation-20261125-top30/tweed-power-remove-trial/Orion.pcapng",
+                "capture_sha256": "61d55a9553769f94143f61baa9ce0e3328d4d66994acc507dd489c88790270d3",
+                "afx2_empty_verified": true,
+                "original_empty_afx1_view_restored": true
+              },
+              "event_field_meanings": "opaque; offsets 17 and 19 are retained as captured without assigning state/polarity semantics",
+              "device_readback_verified": false,
+              "audible_effect_verified": false,
+              "writable": false,
+              "status": "model-local POWER UI/event pair captured and exactly returned; device state and polarity remain unverified"
+            }
           }
         },
         "Overange 120 (UK)": {
