@@ -757,12 +757,16 @@ AFX2 and restored the original empty AFX1 view. No Gate Keeper writer is enabled
 
 ## 2026-11-25 — ClearQ partial capture
 
-The fresh Special Processing menu exposed ClearQ. Its type 1 / instance 0
-initialization reports for all five bands were captured. Bounded gain trials on
-bands 1–4 each returned the full report and targeted knob image; band 0 retains
-its earlier exact return. Raw bytes and units remain unmapped. A band 1 Q trial
-changed candidate byte 23, but its inverse did not restore the initialized
-value or image; capture stopped and the failed trial is recorded for manual
-follow-up. The temporary insert was removed and both the empty AFX 2 rack and
-original empty AFX 1 view were verified. See the [ClearQ findings](orion-afx-eq.md#clearq--partial-orion-capture-2026-11-25),
+The fresh Special Processing menu exposed ClearQ. Its earlier type 1 / instance
+0 capture contains all five band initialization reports and exact bounded gain
+returns. The band 1 Q inverse mismatch remains preserved and was not repeated.
+A later reload emitted only band 1 initialization. Separate HPF and LPF button
+action/inverse pairs changed one D5 byte each and returned the graph/button
+crops exactly; the affected bands had no same-load D5 pre-action baseline, so no
+complete filter-type encoding is claimed. The labeled panel BP Off/On/Off pair
+also returned its UI with one opaque `0x14` report per click. The temporary
+insert was removed and empty AFX 2 plus the original empty AFX 1 view were
+verified. Readback, filter units/behavior, bypass polarity/audio, frequency,
+other Q controls, output and runtime contracts remain open. See the
+[ClearQ findings](orion-afx-eq.md#clearq--partial-orion-capture-2026-11-25),
 [catalog entry](../profiles/afx/eq.json) and local-only `captures/CAPTURE_INDEX.md`.

@@ -935,15 +935,36 @@ field changes, not decoded units, device readback or an enabled writer.
 A separate bounded band 1 `Q` (`QualityFactorPan`) trial began at displayed
 `0.71`. Its reports changed only byte 23 (raw 71→121→171→221); the inverse
 ended at raw 121 rather than 71, and the knob image also failed exact return.
-Capture stopped immediately, with no further ClearQ gestures. The raw traces
-and screenshots are retained under `captures/continuation-20261125-clearq/`;
-the catalog records frames, hashes and the unresolved candidate byte without
-promoting a Q mapping.
+That mismatch remains preserved for manual review; the band 1 Q gesture was
+not repeated.
 
-The temporary insert was removed at frame 1067, all eight AFX 2 slots were
+### 2026-11-25 filter and BP follow-up
+
+A fresh ClearQ reload assigned type 1 / instance 0 at frame 997 and emitted
+only the band 1 D5 initialization at frame 1001. No current-load pre-action D5
+body was captured for bands 0 or 4. One click on band 0's UIA `HPFButton`
+produced body `001e004700000004` (frame 1037) while the plot changed from flat
+to a high-pass-shaped curve. Its inverse produced `001e004700000000` (frame
+1047), differing only at absolute byte 27; the button and plot crops returned
+pixel-exactly to the fresh-load image. Band 4's UIA `LPFButton` similarly
+produced `04983a4700000003` (frame 1033) with a low-pass-shaped plot; its
+inverse returned `04983a4700000001` (frame 1253), changing only byte 27 from
+the forward body and restoring both crops exactly. These UIA class names are
+not printed legends, and the action reports are host OUT commands. The pair
+observations do not establish a complete `ftype` map, a current-load initial
+body for either band, readback or audible filtering.
+
+The labeled panel BP control produced one opaque `0x14` report per Off→On and
+On→Off click (frames 983 and 1091; tuple bytes `98000100` and `98000101`). Its
+UI toggle, button/LED crop and plot returned exactly. Tuple semantics, physical
+bypass polarity, audio and independent readback remain unverified.
+
+The temporary insert was removed at frame 1025, all eight AFX 2 slots were
 verified empty, and the original empty AFX 1 view was restored. Frequency,
-other Q controls, shape, output, processing, numerical conversions,
+other Q controls, remaining filter options, output, numerical conversions,
 independent readback, audio behavior and runtime contracts remain pending.
+Raw evidence and hashes are retained under
+`captures/continuation-20261125-clearq/` and in the ClearQ catalog entry.
 
 ## Filtek MK3 — partial Orion capture, 2026-11-24
 

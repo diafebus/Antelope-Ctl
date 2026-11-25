@@ -105,7 +105,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 1,
-      "status": "Partial Orion ClearQ pass. Five band initialization records and five bounded gain trials with exact returns; the band 1 Q trial failed exact restoration and was stopped.",
+      "status": "Partial Orion ClearQ pass. Five band initialization records and five bounded gain trials returned exactly; the band 1 Q restoration failure is preserved. One HPF button and one LPF button each changed a D5 body and graph, then returned exactly; the panel BP UI action pair also returned. Other controls and the missing current-load baselines remain open.",
       "commands": {
         "load": null,
         "recall": null,
@@ -122,9 +122,49 @@
           "source": "captures/continuation-20261125-clearq/load-clearq/Orion.pcapng",
           "frame": 1017,
           "capture_sha256": "917b25c2bcecb1ff99943bf856addd9544ac85de854dfee1223bed14424a81d4"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/continuation-load-clearq/Orion.pcapng",
+          "frame": 1001,
+          "capture_sha256": "9908bbc5333a14e76e29fb93f6ebd2de6522a2d5f00794f9a3641127de21b6a3"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/hpf-button-action/Orion.pcapng",
+          "frame": 1037,
+          "capture_sha256": "04a9d15eed39ad6806669640c73eba3af3aad63cf41d836795e4e2a896f304e6"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/hpf-button-return/Orion.pcapng",
+          "frame": 1047,
+          "capture_sha256": "267f0d2faca357ca5b0fdf4042b1b121d6b2527783694290d4ece2ba8a3103e1"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/lpf-button-action/Orion.pcapng",
+          "frame": 1033,
+          "capture_sha256": "47a11f9afee76d8ef6627cbe1bad82c76da2ebe7ae6cc399ebdf5623779db35a"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/lpf-button-return/Orion.pcapng",
+          "frame": 1253,
+          "capture_sha256": "cd1d205f0aa55a425b1eed781d6ff488040beff5d899f73aec50ac6a7c44eeeb"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/panel-bp-on/Orion.pcapng",
+          "frame": 983,
+          "capture_sha256": "173248a6f7d86e8dd7de2e33bba2db848dd67c6272f9ec1579d6672ae909876a"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/panel-bp-off-return/Orion.pcapng",
+          "frame": 1091,
+          "capture_sha256": "bd32f8c7fd4edc05fd68535373e2cff30fb5f96e7bd482acb9196bdd8d484eb4"
+        },
+        {
+          "source": "captures/continuation-20261125-clearq/continuation-remove-clearq/Orion.pcapng",
+          "frame": 1025,
+          "capture_sha256": "f941a23198c1ee9bd8e6a4eb818beca654c6317b2336659d53bd2414b12d03c0"
         }
       ],
-      "notes": "Capture-only Orion evidence. Gain trials are bounded observations with exact full-record and targeted control-image returns, not device readback or a numeric scale. The band 1 Q trial did not restore its initialized field or image; no later ClearQ control was attempted. Other controls, units, independent readback, audio behavior and runtime contracts remain pending.",
+      "notes": "Capture-only Orion evidence. Gain trials are bounded observations with exact full-record and targeted control-image returns, not device readback or a numeric scale. The band 1 Q trial did not restore its initialized field or image and remains untouched in this continuation. Separate HPF/LPF button action/inverse pairs changed D5 byte 27 and the displayed graph, with exact targeted image returns; the reload emitted only band 1 initialization, so bands 0 and 4 lacked fresh current-load D5 pre-action reports. The panel BP Off/On/Off pair produced one opaque 0x14 report per action and returned its UI. Frequency, other Q controls, filter modes, output, numerical conversions, independent readback, audio behavior and runtime contracts remain pending.",
       "type_id_write_status": "Orion vendor assignment observed",
       "band_observations": {
         "opcode": "0x1c",
@@ -353,7 +393,119 @@
           "owner_view": "AFX 1 selected; empty owner view restored after trial removal.",
           "owner_view_inventory": "captures/continuation-20261125-clearq/restore-owner-view-inventory.json",
           "owner_view_screenshot": "captures/continuation-20261125-clearq/restore-owner-view.png"
+        },
+        "filter_button_observations": {
+          "status": "two bounded per-band button action/inverse pairs; single D5 family and exact targeted image returns observed; no current-load D5 pre-action reports for the affected bands",
+          "d5_header_hex": "700000001c0000000000000000000000d50a0100",
+          "current_reload": {
+            "assignment_frame": 997,
+            "type_instance": [
+              1,
+              0
+            ],
+            "initialization_frame": 1001,
+            "initialization_body_hex": "01c8004700000002",
+            "initialized_band": 1,
+            "capture": "captures/continuation-20261125-clearq/continuation-load-clearq/Orion.pcapng",
+            "capture_sha256": "9908bbc5333a14e76e29fb93f6ebd2de6522a2d5f00794f9a3641127de21b6a3",
+            "notes": "This reload emitted only the band 1 D5 initialization before the button trials; no same-load pre-action D5 body was captured for bands 0 or 4."
+          },
+          "trials": [
+            {
+              "band": 0,
+              "displayed_frequency": "30",
+              "ui_automation_class": "HPFButton",
+              "plot_after_action": "high-pass-shaped curve; baseline plot was flat",
+              "action_frame": 1037,
+              "action_body_hex": "001e004700000004",
+              "action_source": "captures/continuation-20261125-clearq/hpf-button-action/Orion.pcapng",
+              "action_sha256": "04a9d15eed39ad6806669640c73eba3af3aad63cf41d836795e4e2a896f304e6",
+              "action_screenshot": "captures/continuation-20261125-clearq/hpf-button-action.png",
+              "inverse_frame": 1047,
+              "inverse_body_hex": "001e004700000000",
+              "inverse_changed_bytes_from_action": {
+                "27": [
+                  4,
+                  0
+                ]
+              },
+              "inverse_source": "captures/continuation-20261125-clearq/hpf-button-return/Orion.pcapng",
+              "inverse_sha256": "267f0d2faca357ca5b0fdf4042b1b121d6b2527783694290d4ece2ba8a3103e1",
+              "targeted_button_and_plot_returned_pixel_exactly": true,
+              "current_load_pre_action_d5_body_captured": false
+            },
+            {
+              "band": 4,
+              "displayed_frequency": "15k",
+              "ui_automation_class": "LPFButton",
+              "plot_after_action": "low-pass-shaped curve; baseline plot was flat",
+              "action_frame": 1033,
+              "action_body_hex": "04983a4700000003",
+              "action_source": "captures/continuation-20261125-clearq/lpf-button-action/Orion.pcapng",
+              "action_sha256": "47a11f9afee76d8ef6627cbe1bad82c76da2ebe7ae6cc399ebdf5623779db35a",
+              "action_screenshot": "captures/continuation-20261125-clearq/lpf-button-action.png",
+              "inverse_frame": 1253,
+              "inverse_body_hex": "04983a4700000001",
+              "inverse_changed_bytes_from_action": {
+                "27": [
+                  3,
+                  1
+                ]
+              },
+              "inverse_source": "captures/continuation-20261125-clearq/lpf-button-return/Orion.pcapng",
+              "inverse_sha256": "cd1d205f0aa55a425b1eed781d6ff488040beff5d899f73aec50ac6a7c44eeeb",
+              "targeted_button_and_plot_returned_pixel_exactly": true,
+              "current_load_pre_action_d5_body_captured": false
+            }
+          ],
+          "notes": "The class names are UI Automation metadata, not printed button labels. Raw bodies are host OUT action observations. The inverse images match the fresh-load screenshot exactly; the inverse bodies also match previously recorded band 0 / band 4 initialization patterns, but those bands had no fresh pre-action D5 report in this reload. Do not treat these two observations as a complete filter-type enum, readback, audible response or writable contract."
         }
+      },
+      "processing_observation": {
+        "status": "capture-observed direct ClearQ panel BP Off/On/Off UI round trip; 0x14 tuple remains opaque",
+        "ui_automation_class": "AfxBypassTextButton",
+        "printed_label": "BP",
+        "writable": false,
+        "device_readback_verified": false,
+        "states": [
+          {
+            "action": "panel BP Off to On",
+            "ui_toggle_before": "Off",
+            "ui_toggle_after": "On",
+            "frame": 983,
+            "tuple_bytes_16_19_hex": "98000100",
+            "source": "captures/continuation-20261125-clearq/panel-bp-on/Orion.pcapng",
+            "capture_sha256": "173248a6f7d86e8dd7de2e33bba2db848dd67c6272f9ec1579d6672ae909876a",
+            "screenshot": "captures/continuation-20261125-clearq/panel-bp-on.png"
+          },
+          {
+            "action": "panel BP On to Off inverse",
+            "ui_toggle_before": "On",
+            "ui_toggle_after": "Off",
+            "frame": 1091,
+            "tuple_bytes_16_19_hex": "98000101",
+            "source": "captures/continuation-20261125-clearq/panel-bp-off-return/Orion.pcapng",
+            "capture_sha256": "bd32f8c7fd4edc05fd68535373e2cff30fb5f96e7bd482acb9196bdd8d484eb4",
+            "screenshot": "captures/continuation-20261125-clearq/panel-bp-off-return.png"
+          }
+        ],
+        "visual_restoration": {
+          "bp_button_and_led_crop_exact": true,
+          "plot_crop_exact": true,
+          "baseline_screenshot": "captures/continuation-20261125-clearq/continuation-load-clearq.png",
+          "return_screenshot": "captures/continuation-20261125-clearq/panel-bp-off-return.png"
+        },
+        "notes": "The panel control's displayed BP label and UIA toggle were action-correlated with one 0x14 host OUT per click. No parameter D5 report accompanied this pair. Tuple semantics, physical bypass polarity, audible behavior and independent device readback remain unverified."
+      },
+      "followup_trial_cleanup": {
+        "status": "capture-verified; temporary ClearQ insert removed after bounded button trials",
+        "remove_frame": 1025,
+        "source": "captures/continuation-20261125-clearq/continuation-remove-clearq/Orion.pcapng",
+        "capture_sha256": "f941a23198c1ee9bd8e6a4eb818beca654c6317b2336659d53bd2414b12d03c0",
+        "observed_empty_slots": 8,
+        "owner_view": "AFX 1 selected and empty; AFX 2 empty",
+        "owner_view_inventory": "captures/continuation-20261125-clearq/continuation-restore-owner-view-inventory.json",
+        "owner_view_capture_sha256": "cb8bf96a9762f6805151f23e962c2af74f23b3426ba979c08f76a6d2391a6d55"
       }
     },
     {
