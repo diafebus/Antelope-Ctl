@@ -242,6 +242,16 @@ for a particular profile. Do not assume another device uses the same map.
 
 A control's `kind` is `continuous`, `integer`, `boolean`, or `enum`, or
 `null` while its semantics remain unknown.
+Every control needs a clear, human-readable `label`; expand opaque
+abbreviations where that makes the control easier to understand. Give each
+control a concise `description` that says what it changes when that meaning is
+known. For declaration-only or candidate controls, describe the named or
+visible role and state what remains unverified; do not turn a guessed UI or
+wire association into fact. Captured raw parameter envelopes also need a
+human-readable name and a short description of their observed protocol role,
+action/load context, and segment index when present. If the payload is opaque,
+say so and leave the control mapping explicitly unmapped.
+
 `range` is a display-value `[min, max]`, `step` and `default` use those same
 units, and `enum` maps stable option keys to display labels. Use `null` for
 unknown values. `control_encodings` is keyed by control ID and records the

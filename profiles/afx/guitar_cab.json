@@ -11,8 +11,8 @@
   "controls": [
     {
       "id": "cab_cmd_type",
-      "label": "Cab Cmd Type",
-      "description": null,
+      "label": "Cabinet Command Type",
+      "description": "Declaration-derived configuration field. No corresponding user-facing control is visible in the Orion capture; its role, values, and relationship to the captured reports are unknown.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -26,8 +26,8 @@
     },
     {
       "id": "model",
-      "label": "Model",
-      "description": null,
+      "label": "Cabinet Model",
+      "description": "Selects the cabinet model. The Orion panel exposed eleven displayed choices, but model IDs and the write/readback mapping remain unknown.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -42,7 +42,7 @@
     {
       "id": "mic_a_model",
       "label": "Mic A Model",
-      "description": null,
+      "description": "Selects the microphone model for Mic A. Five displayed choices were captured in selection/return trials; model IDs and the wire mapping remain unknown.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -56,8 +56,8 @@
     },
     {
       "id": "mic_a_x",
-      "label": "Mic A X",
-      "description": null,
+      "label": "Mic A X Position",
+      "description": "Declared X-position field for Mic A. A speaker/crosshair area is visible, but no action has mapped this field to an axis, scale, range, or wire location.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -71,8 +71,8 @@
     },
     {
       "id": "mic_a_y",
-      "label": "Mic A Y",
-      "description": null,
+      "label": "Mic A Y Position",
+      "description": "Declared Y-position field for Mic A. A speaker/crosshair area is visible, but no action has mapped this field to an axis, scale, range, or wire location.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -86,8 +86,8 @@
     },
     {
       "id": "mic_a_dist",
-      "label": "Mic A Dist",
-      "description": null,
+      "label": "Mic A Distance",
+      "description": "Declared distance parameter for Mic A. Units, range, and its relationship to the visible microphone placement have not been established.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -101,8 +101,8 @@
     },
     {
       "id": "mic_a_spkr",
-      "label": "Mic A Spkr",
-      "description": null,
+      "label": "Mic A Speaker",
+      "description": "Declared speaker-association field for Mic A. Its available choices and relationship to any visible control have not been established.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -116,8 +116,8 @@
     },
     {
       "id": "mic_a_phase_inv",
-      "label": "Mic A Phase Inv",
-      "description": null,
+      "label": "Mic A Phase Invert",
+      "description": "Declared phase-inversion field for Mic A. No UI control or signal behavior has been mapped to it.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -132,7 +132,7 @@
     {
       "id": "mic_b_model",
       "label": "Mic B Model",
-      "description": null,
+      "description": "Selects the microphone model for Mic B. The visible choices were enumerated and a California121 (R) ↔ American57 (D) selection/return was captured; model IDs and wire mapping remain unknown.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -146,8 +146,8 @@
     },
     {
       "id": "mic_b_x",
-      "label": "Mic B X",
-      "description": null,
+      "label": "Mic B X Position",
+      "description": "Declared X-position field for Mic B. A speaker/crosshair area is visible, but no action has mapped this field to an axis, scale, range, or wire location.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -161,8 +161,8 @@
     },
     {
       "id": "mic_b_y",
-      "label": "Mic B Y",
-      "description": null,
+      "label": "Mic B Y Position",
+      "description": "Declared Y-position field for Mic B. A speaker/crosshair area is visible, but no action has mapped this field to an axis, scale, range, or wire location.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -176,8 +176,8 @@
     },
     {
       "id": "mic_b_dist",
-      "label": "Mic B Dist",
-      "description": null,
+      "label": "Mic B Distance",
+      "description": "Declared distance parameter for Mic B. Units, range, and its relationship to the visible microphone placement have not been established.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -191,8 +191,8 @@
     },
     {
       "id": "mic_b_spkr",
-      "label": "Mic B Spkr",
-      "description": null,
+      "label": "Mic B Speaker",
+      "description": "Declared speaker-association field for Mic B. Its available choices and relationship to any visible control have not been established.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -206,8 +206,8 @@
     },
     {
       "id": "mic_b_phase_inv",
-      "label": "Mic B Phase Inv",
-      "description": null,
+      "label": "Mic B Phase Invert",
+      "description": "Declared phase-inversion field for Mic B. The nearby unlabeled Mic B-row icon remains unidentified and has not been mapped to this field.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -222,7 +222,7 @@
     {
       "id": "mic_a_level",
       "label": "Mic A Level",
-      "description": null,
+      "description": "Controls the displayed Mic A level in dB. One bounded trial changed 0 dB to −6 dB and its inverse ended at −1 dB, so the range, wire mapping, and reliable restoration are unverified.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -237,7 +237,7 @@
     {
       "id": "mic_b_level",
       "label": "Mic B Level",
-      "description": null,
+      "description": "Controls the displayed Mic B level in dB. A bounded trial changed −6 dB to −7 dB and its inverse ended at −5 dB; range, wire mapping, and reliable restoration are unverified.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -252,7 +252,7 @@
     {
       "id": "rear_mic_level",
       "label": "Rear Mic Level",
-      "description": null,
+      "description": "Displayed as the Rear Mic level with a dB readout. No action-to-field mapping or usable range has been captured.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -266,8 +266,8 @@
     },
     {
       "id": "mic_45_deg_level",
-      "label": "Mic 45 Deg Level",
-      "description": null,
+      "label": "45° Mic Level",
+      "description": "Displayed as the 45° Mic level with a dB readout. No action-to-field mapping or usable range has been captured.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -281,8 +281,8 @@
     },
     {
       "id": "respire",
-      "label": "Respire",
-      "description": null,
+      "label": "ReSpire",
+      "description": "UI toggle labeled ReSpire; a bounded on/off click and return were captured. Its processing behavior and parameter mapping remain unknown.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -296,8 +296,8 @@
     },
     {
       "id": "hpf",
-      "label": "Hpf",
-      "description": null,
+      "label": "HPF (High-Pass Filter)",
+      "description": "UI toggle labeled HPF, conventionally a high-pass filter that attenuates low frequencies. A bounded UI toggle return was captured; audio behavior, cutoff, and parameter mapping are unverified.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -311,8 +311,8 @@
     },
     {
       "id": "lpf",
-      "label": "Lpf",
-      "description": null,
+      "label": "LPF (Low-Pass Filter)",
+      "description": "UI toggle labeled LPF, conventionally a low-pass filter that attenuates high frequencies. A bounded UI toggle return was captured; audio behavior, cutoff, and parameter mapping are unverified.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -326,8 +326,8 @@
     },
     {
       "id": "level",
-      "label": "Level",
-      "description": null,
+      "label": "Cabinet Level",
+      "description": "Declared cabinet-level field. The panel shows a right-side vertical level control with a dB readout; its exact association with this field, range, and wire mapping have not been captured.",
       "kind": null,
       "unit": null,
       "range": null,
@@ -377,7 +377,7 @@
         "captures/continuation-20261125-cab-mic-b/guitar-cabinet-mic-a-model-followup-20261125.json",
         "captures/continuation-20261125-cab-mic-b/guitar-cabinet-mic-a-model-menu-followup-20261125.json"
       ],
-      "notes": "Orion vendor GUI assigned type 4 instance 0 to channel 1 during temporary loads. The Darkface 65 2x12 load produced five 0x08/0xf6/type4/instance0 envelopes with segment indices 0..4 and two additional opaque envelopes (0x65/0x53 and 0x3c/0x2a). Eleven cabinet labels and both five-option mic menus are recorded as displayed UI choices, not device readback. A bounded Mic A inverse ended at -1 dB, and a separate Mic B level inverse ended at -5 dB from -6 dB; no further level gestures were sent. A Mic B model selector round trip and bounded ReSpire, HPF, LPF, unlabeled Mic B-row icon, and panel BP click/inverse pairs returned their UI crops and observed inverse report sets to fresh-load captures. The icon has no assigned meaning; the envelopes and BP event bytes remain opaque. Trials were removed, AFX 2 verified empty and the original empty AFX 1 view restored. Load/write contracts, parameter meanings and encodings, independent readback, physical scaling/restoration, audible behavior and license ownership remain unverified.",
+      "notes": "Orion vendor GUI assigned type 4 instance 0 to channel 1 during temporary loads. The Darkface 65 2x12 load produced five 0x08/0xf6/type4/instance0 envelopes with segment indices 0..4 and two additional opaque envelopes (0x65/0x53 and 0x3c/0x2a). Eleven cabinet labels and both five-option mic menus are recorded as displayed UI choices, not device readback. A bounded Mic A inverse ended at -1 dB, and a separate Mic B level inverse ended at -5 dB from -6 dB; no further level gestures were sent. A Mic B model selector round trip and bounded ReSpire, HPF, LPF, unlabeled Mic B-row icon, and panel BP click/inverse pairs returned their UI crops and observed inverse report sets to fresh-load captures. The icon has no assigned meaning; the envelopes and BP event bytes remain opaque. Trials were removed, AFX 2 verified empty and the original empty AFX 1 view restored. Load/write contracts, parameter meanings and encodings, independent readback, physical scaling/restoration, audible behavior and license ownership remain unverified. Envelope names describe only the observed protocol role, sequence index, and capture context; they do not identify payload fields or map reports to controls.",
       "type_id_write_status": "vendor GUI assignment observed; runtime command contract unverified",
       "load_observation": {
         "action_label": "Darkface 65 2x12",
@@ -399,7 +399,11 @@
             "declared_length": 264,
             "segment_index": 0,
             "header_hex": "70000000080100000000000000000000d5f60400",
-            "report_sha256": "7f1fca7e9b824d2c5318848f6c0b46123adf54118703d8b5b5cee73fd8a283b9"
+            "report_sha256": "7f1fca7e9b824d2c5318848f6c0b46123adf54118703d8b5b5cee73fd8a283b9",
+            "name": "Guitar Cabinet parameter report (segment 0)",
+            "description": "0x08/0xf6 type 4/instance 0 report captured at frame 1441; segment index 0 in the five-report load sequence. Payload fields are opaque; no individual control mapping has been established.",
+            "control_mapping": null,
+            "mapping_status": "unmapped"
           },
           {
             "frame": 1445,
@@ -410,7 +414,11 @@
             "declared_length": 264,
             "segment_index": 1,
             "header_hex": "70000000080100000000000000000000d5f60400",
-            "report_sha256": "65457e1c6f33eea257ed040d39251705365241b4a058d900025c159b068208e2"
+            "report_sha256": "65457e1c6f33eea257ed040d39251705365241b4a058d900025c159b068208e2",
+            "name": "Guitar Cabinet parameter report (segment 1)",
+            "description": "0x08/0xf6 type 4/instance 0 report captured at frame 1445; segment index 1 in the five-report load sequence. Payload fields are opaque; no individual control mapping has been established.",
+            "control_mapping": null,
+            "mapping_status": "unmapped"
           },
           {
             "frame": 1449,
@@ -421,7 +429,11 @@
             "declared_length": 264,
             "segment_index": 2,
             "header_hex": "70000000080100000000000000000000d5f60400",
-            "report_sha256": "9e70aa3066e070f41f5e6017ebece658e5bf8055fc6c64fdf649c967f7318cad"
+            "report_sha256": "9e70aa3066e070f41f5e6017ebece658e5bf8055fc6c64fdf649c967f7318cad",
+            "name": "Guitar Cabinet parameter report (segment 2)",
+            "description": "0x08/0xf6 type 4/instance 0 report captured at frame 1449; segment index 2 in the five-report load sequence. Payload fields are opaque; no individual control mapping has been established.",
+            "control_mapping": null,
+            "mapping_status": "unmapped"
           },
           {
             "frame": 1453,
@@ -432,7 +444,11 @@
             "declared_length": 264,
             "segment_index": 3,
             "header_hex": "70000000080100000000000000000000d5f60400",
-            "report_sha256": "a8e00d93d8f7c790eb3323a50caf80255803ee384a1abbbd789a09e78cc69858"
+            "report_sha256": "a8e00d93d8f7c790eb3323a50caf80255803ee384a1abbbd789a09e78cc69858",
+            "name": "Guitar Cabinet parameter report (segment 3)",
+            "description": "0x08/0xf6 type 4/instance 0 report captured at frame 1453; segment index 3 in the five-report load sequence. Payload fields are opaque; no individual control mapping has been established.",
+            "control_mapping": null,
+            "mapping_status": "unmapped"
           },
           {
             "frame": 1457,
@@ -443,7 +459,11 @@
             "declared_length": 264,
             "segment_index": 4,
             "header_hex": "70000000080100000000000000000000d5f60400",
-            "report_sha256": "d1f61074879618cd8bd5d3c89cf187cd09d78ecb1e6e10af29a211ceebb413bd"
+            "report_sha256": "d1f61074879618cd8bd5d3c89cf187cd09d78ecb1e6e10af29a211ceebb413bd",
+            "name": "Guitar Cabinet parameter report (segment 4)",
+            "description": "0x08/0xf6 type 4/instance 0 report captured at frame 1457; segment index 4 in the five-report load sequence. Payload fields are opaque; no individual control mapping has been established.",
+            "control_mapping": null,
+            "mapping_status": "unmapped"
           },
           {
             "frame": 1461,
@@ -454,7 +474,11 @@
             "declared_length": 101,
             "segment_index": null,
             "header_hex": "70000000650000000000000000000000d5530401",
-            "report_sha256": "3f246ae1c7f02bf93ecef7e674990496bc9526db677eda0dbe8ae92f253ba35d"
+            "report_sha256": "3f246ae1c7f02bf93ecef7e674990496bc9526db677eda0dbe8ae92f253ba35d",
+            "name": "Auxiliary Guitar Cabinet envelope (0x65/0x53, instance 1)",
+            "description": "Captured at frame 1461 after the five type 4/instance 0 reports. Its meaning and whether it represents a control are unknown; do not map it to a control.",
+            "control_mapping": null,
+            "mapping_status": "unidentified"
           },
           {
             "frame": 1465,
@@ -465,7 +489,11 @@
             "declared_length": 60,
             "segment_index": null,
             "header_hex": "700000003c0000000000000000000000d52a0402",
-            "report_sha256": "c85f3d9b3054b7a9bc8ad62f3743977bb71aff7e93027afc6014a888867ed771"
+            "report_sha256": "c85f3d9b3054b7a9bc8ad62f3743977bb71aff7e93027afc6014a888867ed771",
+            "name": "Auxiliary Guitar Cabinet envelope (0x3c/0x2a, instance 2)",
+            "description": "Captured at frame 1465 after the five type 4/instance 0 reports. Its meaning and whether it represents a control are unknown; do not map it to a control.",
+            "control_mapping": null,
+            "mapping_status": "unidentified"
           }
         ],
         "device_readback_verified": false
