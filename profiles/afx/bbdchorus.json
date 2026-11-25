@@ -392,7 +392,40 @@
             "packet_count": 8646,
             "dropped_packets": 0,
             "coordinator_status": "original final ACK rejected because decoder swapped state/instance offsets; original errors preserved; reviewed offline",
-            "device_readback_verified": false
+            "device_readback_verified": false,
+            "successful_coordinator_follow_up": {
+              "source": "scan-BBD-Chorus-20261125T090500941Z/BBD-Chorus-channel2.pcapng",
+              "status": "7/7 phases accepted; offline capture summary reports 1/1 job complete",
+              "selector_raw_values": {
+                "Basic": 0,
+                "Wide": 1,
+                "Split": 2,
+                "Cross": 3
+              },
+              "selector_label_frames": {
+                "Basic": 633,
+                "Wide": 1693,
+                "Split": 2603,
+                "Cross": 3563,
+                "restored_Basic": 4523
+              },
+              "power_events": {
+                "state_0_frames": [
+                  5389,
+                  5395
+                ],
+                "state_1_frames": [
+                  6123,
+                  6127
+                ],
+                "visual_restoration": true,
+                "polarity_verified": false
+              },
+              "packet_count": 6670,
+              "dropped_packets": 0,
+              "capture_sha256": "90cebe77c3fa05cfe45f78d4e06069f2123c895f55ec772eed612c83353f6445",
+              "device_readback_verified": false
+            }
           }
         }
       },

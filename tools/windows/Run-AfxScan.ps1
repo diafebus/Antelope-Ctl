@@ -92,8 +92,10 @@ function Get-PlanOverflow($Definition) {
     $sslUpper = $plan.panel_class -ceq 'Ssl4kBus' -and $plan.effect_id -ceq 'ssl4kbus' -and
         $Definition.class_name -cin @('Ssl4kBusPotThreshold','Ssl4kBusPotShortRunRate',
             'Ssl4kBusPotShortRunScFilter','Ssl4kBusAttackPot','Ssl4kBusRatioPotNoInherit') -and $margin -eq 19
+    $filtekDrive = $plan.panel_class -ceq 'Filtek' -and $plan.effect_id -ceq 'filtek' -and
+        $Definition.class_name -ceq 'FiltekDrivePot' -and $margin -eq 15
     if ($Definition.kind -ne 'knob_range' -or $margin -isnot [int] -or $margin -lt 1 -or
-        ($margin -gt 14 -and -not $sslUpper)) {
+        ($margin -gt 14 -and -not $sslUpper -and -not $filtekDrive)) {
         throw 'Invalid reviewed knob overflow allowance.'
     }
     return $margin

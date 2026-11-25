@@ -141,11 +141,18 @@ def summarize_job(job):
         _require(all(isinstance(v, dict) for v in (plan, request, progress)), 'invalid job metadata')
         _require(_integer(plan.get('channel'), 1), 'invalid planned channel')
         actions = _schedule(plan)
-        _require(request.get('version') == 2 and request.get('plan_id') == plan['id'] and
+        request_version = request.get('version')
+        _require(request_version in (2, 5) and request.get('plan_id') == plan['id'] and
                  request.get('panel') == plan['panel'] and request.get('channel') == plan['channel'] and
                  request.get('controls') == [c['id'] for c in plan['controls']] and
                  type(request.get('actions')) is int and request['actions'] == len(actions),
                  'request does not match host plan')
+        if request_version == 5:
+            _require(request.get('executed_plan') == plan,
+                     'executed request plan differs from host plan')
+        else:
+            _require('executed_plan' not in request,
+                     'legacy request unexpectedly embeds an executed plan')
         _require(isinstance(windows, list), 'invalid action windows')
         accepted = []
         for position, window in enumerate(windows):

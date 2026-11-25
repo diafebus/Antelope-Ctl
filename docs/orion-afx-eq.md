@@ -992,6 +992,20 @@ verified empty AFX 2 and restored the original empty AFX 1 view. Drive encoding,
 numeric Q meaning, independent readback, physical scaling, and audio behavior
 remain unresolved.
 
+A separate fresh-instance endpoint capture followed on 2026-11-25. Its load
+assigned type71/instance0 at frame1249 but had no D5 initialization, so bounded
+priming established the parameter block before the minimum and maximum sweeps.
+Only absolute byte31 varied in the two accepted endpoint windows: raw0 at frame
+4457 with the pointer aligned to the printed `-12 dB` tick, and raw100 at frame
+12187 aligned to `+12 dB`. The two endpoint screenshots and the 16534-packet,
+zero-drop PCAP are retained under
+`captures/continuation-20261125-top30/filtek-drive-candidate-20261125/`; its SHA256
+is `715789cba7c8a64ad8dccbbb9cc00dea2e7e62466e1dff5f1a3e41d561f97a7c`. This is
+a candidate association for the `FiltekDrivePot` UIA class, not a runtime field
+encoding. The trial was removed at frame1517, AFX2 was verified empty, and the
+original empty AFX1 view was restored. Intermediate scale/steppedness, device
+readback, runtime serialization and audible behavior remain unverified.
+
 ## Gyratec XIV — partial Orion capture, 2026-11-24
 
 Type 77, instance 0 uses parameter family 0x29 / 0xd5 / 0x17.

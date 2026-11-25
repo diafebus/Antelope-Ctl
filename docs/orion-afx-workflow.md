@@ -686,6 +686,18 @@ or parameter delta was available, byte 31 is not mapped to Drive, and no inverse
 input was sent. AFX2 removal frame 947 verified eight empty slots and restored
 the original empty AFX1 view. No Drive writer is enabled.
 
+A separate fresh-insert capture then used bounded priming because the load
+action had no D5 initialization block. The two accepted endpoint windows changed
+only absolute parameter byte31 for type71/instance0: raw0 at frame4457 aligned
+visually with `-12 dB`, and raw100 at frame12187 aligned with `+12 dB`. The
+screenshots, actions and 16534-packet zero-drop capture are archived in
+`captures/continuation-20261125-top30/filtek-drive-candidate-20261125/`; capture
+SHA256 is `715789cba7c8a64ad8dccbbb9cc00dea2e7e62466e1dff5f1a3e41d561f97a7c`.
+This remains a candidate association for the `FiltekDrivePot` UIA class. It does
+not establish an intermediate conversion or step model, device readback,
+runtime writer, or audible behavior. The trial was removed at frame1517; AFX2
+was verified empty and the original empty AFX1 view restored.
+
 ## 2026-11-25 — Gyratec XIV continuation
 
 The fresh AFX2 trial confirmed the previously recorded type 77 / instance 0

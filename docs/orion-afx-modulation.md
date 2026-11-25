@@ -84,6 +84,19 @@ The resume has8646 packets and zero drops. Device readback, processing polarity
 and runtime writer remain unverified. The LED above Chorus/Vibrato shows
 vibrato speed, per owner; it is excluded from mode and power verification.
 
+The 2026-11-25 fresh trial in
+`scan-BBD-Chorus-20261125T090500941Z/BBD-Chorus-channel2.pcapng` completed all
+seven reviewed selector and Power phases through the corrected coordinator;
+the offline capture summary accepts 1/1 job with 6670 packets and zero drops.
+The ordered screenshots associate Stereo Type byte25 values0/1/2/3 with
+Basic/Wide/Split/Cross at frames633/1693/2603/3563, then return to Basic0 at
+frame4523. Power emitted state0 at frames5389/5395 and state1 at6123/6127; its
+visual crop returned exactly. The load action did not emit a D5 initialization
+block, so the selector pass established its target while capturing. This
+reconfirms the existing mapping; processing polarity, device readback, runtime
+writing and audible behavior remain unverified. The earlier ACK failure is
+retained as history, not overwritten by this successful follow-up.
+
 ## V12 completed visible-control capture, 2026-10-25
 
 A fresh labelled load in `unattended-20261025T195948Z-load-v12/Orion.pcapng`

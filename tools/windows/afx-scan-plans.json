@@ -4449,6 +4449,41 @@
         ],
         "device_readback_verified": false
       }
+    },
+    {
+      "id": "filtek-drive-candidate",
+      "panel": "Filtek",
+      "panel_class": "Filtek",
+      "effect_id": "filtek",
+      "process_name": "orionstudioiii",
+      "channel": 2,
+      "status": "reviewed single-control geometry; candidate endpoint pair captured",
+      "evidence": "captures/continuation-20261125-top30/filtek-hover-20261125/filtek-drive-hover.json; UIA bounds x=1386,y=300,w=130,h=130; Filtek panel x=642,y=315,w=908,h=215; center is inside panel. scan-Filtek-20261125T092834450Z captures only absolute byte31 changing raw0 at the visible -12 dB tick and raw100 at +12 dB; the UIA-class association is a candidate, with intermediate scale/steppedness and runtime meaning pending",
+      "controls": [
+        {
+          "id": "drive_candidate",
+          "class_name": "FiltekDrivePot",
+          "label": "FiltekDrivePot UIA class; printed -12 to +12 dB dial",
+          "kind": "knob_range",
+          "feedback": "captured_block",
+          "drag_point": {
+            "x": 0.5,
+            "y": 0.5
+          },
+          "panel_overflow_px": 15
+        }
+      ],
+      "coverage": {
+        "status": "One candidate endpoint pair for the FiltekDrivePot UIA class",
+        "pending": [
+          "Drive field meaning beyond the UIA class",
+          "intermediate scale and steppedness",
+          "device readback",
+          "runtime serialization",
+          "audible behavior"
+        ],
+        "device_readback_verified": false
+      }
     }
   ]
 }

@@ -164,10 +164,15 @@ def load_plans():
                              'Ssl4kBusPotShortRunScFilter', 'Ssl4kBusAttackPot',
                              'Ssl4kBusRatioPotNoInherit')
                          and control.get('panel_overflow_px') == 19)
+            filtek_drive = (plan.get('panel_class') == 'Filtek'
+                            and plan.get('effect_id') == 'filtek'
+                            and control.get('class_name') == 'FiltekDrivePot'
+                            and control.get('panel_overflow_px') == 15)
             if 'panel_overflow_px' in control and (
                     control['kind'] != 'knob_range'
                     or type(control['panel_overflow_px']) is not int
-                    or not (1 <= control['panel_overflow_px'] <= 14 or ssl_upper)):
+                    or not (1 <= control['panel_overflow_px'] <= 14
+                            or ssl_upper or filtek_drive)):
                 raise ValueError('Invalid reviewed knob overflow allowance')
             if control['kind'] == 'key_button':
                 control['option_names'] = key_control_options(plan['effect_id'], control)

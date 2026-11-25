@@ -152,9 +152,25 @@ def analyze_reports(reports):
     instance_queries, instance_states, pending_instances = [], [], {}
     profile = json.loads((Path(__file__).resolve().parents[1] / 'profiles/orion_studio_sc.json').read_text())
     catalog = load_catalog(Path(__file__).resolve().parents[1] / 'profiles/afx_effects.json')
-    bypass_layouts = {i['type_id']: i['bypass_observation'] for e in catalog['effects']
-                      for i in e['implementations'] if i['profile'] == 'orion_studio_sc.json'
-                      and 'bypass_observation' in i}
+    bypass_layouts = {}
+    layout_keys = {'opcode', 'selector', 'instance_offset', 'type_offset', 'state_offset'}
+    for effect in catalog['effects']:
+        for implementation in effect['implementations']:
+            if implementation['profile'] != 'orion_studio_sc.json':
+                continue
+            observation = implementation.get('bypass_observation')
+            if not isinstance(observation, dict):
+                continue
+            # Most bypass_observation entries are evidence records (UI labels,
+            # action frames and opaque report bytes), not a decoded wire layout.
+            # Validate only objects that declare layout fields; partial layouts
+            # remain errors instead of being treated as an inferred mapping.
+            declared = layout_keys.intersection(observation)
+            if not declared:
+                continue
+            if declared != layout_keys:
+                raise ValueError('Incomplete captured model-local bypass layout')
+            bypass_layouts[implementation['type_id']] = observation
     for layout in bypass_layouts.values():
         if (layout['status'] != 'capture-observed' or layout['opcode'] != '0x14' or layout['selector'] != '0x98'
                 or sorted(layout[key] for key in ('instance_offset', 'type_offset', 'state_offset')) != [17,18,19]):

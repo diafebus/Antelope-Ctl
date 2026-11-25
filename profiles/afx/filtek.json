@@ -210,7 +210,7 @@
     {
       "profile": "orion_studio_sc.json",
       "type_id": 71,
-      "status": "Orion partial visible pass. Eight knob endpoint pairs, three Q switch returns, processing observations, and a bounded Drive no-movement/report observation captured; Drive field association remains unresolved.",
+      "status": "Orion partial visible pass. Eight main knob endpoint pairs, three Q switch returns, processing observations, and a bounded Drive endpoint candidate for the FiltekDrivePot UIA class captured; the Drive field meaning and intermediate scale remain unresolved.",
       "commands": {
         "load": null,
         "recall": null,
@@ -294,7 +294,7 @@
         "captures/continuation-20261125-filtek/filtek-remove/Orion.pcapng frame 947 sha256 8771d10a6567da5325b905eefe37cb7e0f3c28b1ae41495dee0b772fb5c44980",
         "captures/continuation-20261125-filtek/filtek-restore-owner-view/Orion.pcapng no matching AFX OUT sha256 14e4ca23f63273dd3b87331e797d92a339499c800dde5d93e472472c75eba322"
       ],
-      "notes": "Drive, Q-switch numeric meanings, physical conversions, independent readback, audio behavior and runtime contracts remain pending. The 2026-11-25 Drive trial captured literal panel ticks and a D5 report after four bounded partial pulses, but the Drive image did not move and no fresh pre-action parameter report was captured; no byte mapping is made. Existing endpoint and Q captures remain unchanged.",
+      "notes": "Drive field meaning beyond the FiltekDrivePot UIA class, Q-switch numeric meanings, intermediate physical conversions, independent readback, audio behavior and runtime contracts remain pending. The first 2026-11-25 Drive trial used four partial wheel pulses without a fresh pre-action D5 block and did not move the face; its raw byte31 value is not a mapping. A separate two-endpoint scan captured only absolute byte31 changing from raw0 with the pointer at -12 dB to raw100 with the pointer at +12 dB. Keep this as a UIA-class endpoint candidate: intermediate scale/steppedness, device readback, runtime writer and audible behavior are unverified. Existing endpoint and Q captures remain unchanged.",
       "parameter_observation": {
         "writable": false,
         "device_readback_verified": false,
@@ -562,7 +562,54 @@
             "owner_view_restored": "AFX 1 selected and empty",
             "owner_view_capture_sha256": "14e4ca23f63273dd3b87331e797d92a339499c800dde5d93e472472c75eba322"
           },
-          "status": "The face printed -12, 0, +12, and dB and visually remained at 0. Three +30 partial pulses emitted no matching AFX OUT; the fourth emitted one 0x20/0x0e report with byte 31 raw 51, but the Drive image crop remained pixel-identical to the fresh load image. No pre-action D5 report or demonstrated raw delta exists; byte 31 is not assigned to Drive and no physical range or runtime writer is inferred."
+          "status": "The face printed -12, 0, +12, and dB and visually remained at 0. Three +30 partial pulses emitted no matching AFX OUT; the fourth emitted one 0x20/0x0e report with byte 31 raw 51, but the Drive image crop remained pixel-identical to the fresh load image. No pre-action D5 report or demonstrated raw delta exists in this trial; byte 31 is not assigned to Drive from these pulses. See endpoint_pair_follow_up for the separate captured-block endpoint candidate.",
+          "endpoint_pair_follow_up": {
+            "status": "candidate endpoint association for the FiltekDrivePot UIA class; not a runtime control encoding",
+            "source": "captures/continuation-20261125-top30/filtek-drive-candidate-20261125/scan-Filtek-20261125T092834450Z/Filtek-channel2.pcapng",
+            "capture_sha256": "715789cba7c8a64ad8dccbbb9cc00dea2e7e62466e1dff5f1a3e41d561f97a7c",
+            "packet_count": 16534,
+            "dropped_packets": 0,
+            "fresh_assignment_frame": 1249,
+            "d5_initialization_in_load_action": false,
+            "baseline_method": "captured by bounded priming before endpoint sweeps",
+            "parameter_family": {
+              "opcode": "0x20",
+              "subcommand": "0x0e",
+              "type_id": 71,
+              "instance": 0
+            },
+            "varying_absolute_offsets": [
+              31
+            ],
+            "endpoints": [
+              {
+                "raw": 0,
+                "displayed_tick": "-12 dB",
+                "frame": 4457,
+                "screenshot": "captures/continuation-20261125-top30/filtek-drive-candidate-20261125/scan-Filtek-20261125T092834450Z/Filtek-drive_candidate-minimum.png"
+              },
+              {
+                "raw": 100,
+                "displayed_tick": "+12 dB",
+                "frame": 12187,
+                "screenshot": "captures/continuation-20261125-top30/filtek-drive-candidate-20261125/scan-Filtek-20261125T092834450Z/Filtek-drive_candidate-maximum.png"
+              }
+            ],
+            "displayed_scale_ticks": [
+              "-12",
+              "0",
+              "+12"
+            ],
+            "displayed_unit": "dB",
+            "intermediate_scale_or_steppedness_verified": false,
+            "device_readback_verified": false,
+            "runtime_writable": false,
+            "audible_behavior_verified": false,
+            "temporary_insert_removed": true,
+            "cleanup_frame": 1517,
+            "afx2_empty_verified": true,
+            "original_empty_afx1_view_restored": true
+          }
         }
       },
       "processing_observation": {
