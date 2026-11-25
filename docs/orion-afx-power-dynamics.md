@@ -1031,8 +1031,14 @@ or crop change. FAC positions/range, output level, processing, physical
 scaling, independent readback and audio behavior remain open.
 
 BurnSphere (DE) Lead adds isolated raw 0/100 pairs for Gain, Bass, Middle,
-Treble, Presence and Volume. Bright, Bottom, output level and processing
-remain pending. The effect file retains each endpoint frame and image.
+Treble, Presence and Volume. A fresh type3/instance0 baseline at frame1119
+showed raw0 for both switches. One click moved the lower `BRIGHT` switch to
+raw1 at D5 report byte30; its inverse returned raw0/upper `Normal`. The
+separate lower `Bottom` switch moved raw0→1 at report byte31; its inverse
+returned raw0/upper `Off`. Each action changed only its own byte, and both
+inverses returned the full D5 body and target RGB crop exactly. These are
+printed UI/raw associations only; audio behavior and readback remain
+unverified. Output level, processing and physical scaling remain open.
 
 Bass SuperTube VR (2026-11-25) adds isolated raw 0/100 pairs for the
 visible Volume, Treble, Midrange and Bass knobs. The captured fields are at

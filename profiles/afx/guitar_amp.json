@@ -1728,7 +1728,116 @@
           },
           "writable": false,
           "device_readback_verified": false,
-          "notes": "Captured isolated raw endpoints. Remaining controls, physical scaling, audio behavior and independent readback pending."
+          "notes": "Six isolated raw 0/100 knob pairs. Fresh-baseline click/inverse pairs for the visible NORMAL/BRIGHT and OFF/BOTTOM switches changed only D5 report bytes30 and31, and each inverse restored the full D5 body and target RGB crop exactly. The labels are UI-state associations only; audio behavior and independent readback remain unverified. Output, processing and physical scaling remain open.",
+          "switch_observations": {
+            "fresh_load": {
+              "type_instance": [
+                3,
+                0
+              ],
+              "assignment_frame": 1099,
+              "initialization_frame": 1119,
+              "initial_parameter_body_hex": "094638390038003d5700000000000000",
+              "source": "captures/continuation-20261125-top30/burnsphere-bright-load-top30/Orion.pcapng",
+              "capture_sha256": "8d02f047db2e8013fe230a04bbaed2c9367e0a6dbde2f23313a9b7cd7c926d75",
+              "screenshot": "captures/continuation-20261125-top30/burnsphere-bright-load-top30.png"
+            },
+            "normal_bright": {
+              "ui_class": "GuitarAmpModeSwitch",
+              "panel_labels_by_raw": [
+                {
+                  "raw": 0,
+                  "position": "upper",
+                  "printed_label": "Normal",
+                  "screenshot": "captures/continuation-20261125-top30/burnsphere-bright-load-top30.png"
+                },
+                {
+                  "raw": 1,
+                  "position": "lower",
+                  "printed_label": "Bright",
+                  "screenshot": "captures/continuation-20261125-top30/burnsphere-bright-forward-settled.png"
+                }
+              ],
+              "body_offset": 10,
+              "report_offset": 30,
+              "transitions": [
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 3285,
+                  "source": "captures/continuation-20261125-top30/burnsphere-bright-forward/Orion.pcapng",
+                  "capture_sha256": "1427a63b44d580d8a40ec83b3f3dfe9ac8554c63ab92a1113a6445ef57dfa70d"
+                },
+                {
+                  "from_raw": 1,
+                  "to_raw": 0,
+                  "frame": 2835,
+                  "source": "captures/continuation-20261125-top30/burnsphere-bright-inverse/Orion.pcapng",
+                  "capture_sha256": "6b07f544ae314f02feaed3d587b5a324b91e5518458b87f3489ccefa3113dd96"
+                }
+              ],
+              "changed_offsets": [
+                30
+              ],
+              "full_d5_report_exact_return": true,
+              "rgb_switch_crop_exact_return": true,
+              "limits": "Raw states are associated with visible Normal/Bright positions; no audible behavior, electrical polarity or independent readback is claimed."
+            },
+            "off_bottom": {
+              "ui_class": "GuitarAmpModeSwitch",
+              "panel_labels_by_raw": [
+                {
+                  "raw": 0,
+                  "position": "upper",
+                  "printed_label": "Off",
+                  "screenshot": "captures/continuation-20261125-top30/burnsphere-bright-load-top30.png"
+                },
+                {
+                  "raw": 1,
+                  "position": "lower",
+                  "printed_label": "Bottom",
+                  "screenshot": "captures/continuation-20261125-top30/burnsphere-bottom-forward-settled.png"
+                }
+              ],
+              "body_offset": 11,
+              "report_offset": 31,
+              "transitions": [
+                {
+                  "from_raw": 0,
+                  "to_raw": 1,
+                  "frame": 2911,
+                  "source": "captures/continuation-20261125-top30/burnsphere-bottom-forward/Orion.pcapng",
+                  "capture_sha256": "ab4dce9227ca29b0f6ed906828fe230831f1864757a1229843de452193548e4a"
+                },
+                {
+                  "from_raw": 1,
+                  "to_raw": 0,
+                  "frame": 3393,
+                  "source": "captures/continuation-20261125-top30/burnsphere-bottom-inverse/Orion.pcapng",
+                  "capture_sha256": "be320376624b9cae3462bf83fac5917a5209b024315e03835c69789bf837cacb"
+                }
+              ],
+              "changed_offsets": [
+                31
+              ],
+              "full_d5_report_exact_return": true,
+              "rgb_switch_crop_exact_return": true,
+              "limits": "Raw states are associated with visible Off/Bottom positions; no audible behavior, electrical polarity or independent readback is claimed."
+            },
+            "cleanup": {
+              "removal_frame": 3261,
+              "source": "captures/continuation-20261125-top30/burnsphere-remove-trial/Orion.pcapng",
+              "capture_sha256": "1328880272da2f84c1cd8930d6df87a1c54ad819f3f9e8966bd4e8a8964cb8fb",
+              "afx2_empty_verified": true,
+              "original_empty_afx1_view_restored": true,
+              "afx2_rechecked_empty": true,
+              "afx2_verification_source": "captures/continuation-20261125-top30/burnsphere-verify-afx2-empty/Orion.pcapng",
+              "final_afx1_restore_source": "captures/continuation-20261125-top30/burnsphere-restore-final-afx1/Orion.pcapng"
+            },
+            "device_readback_verified": false,
+            "writable": false,
+            "status": "two literal switch label/raw associations observed with exact inverse returns; no audio or readback claim"
+          }
         },
         "Bass SuperTube VR": {
           "knob_endpoints": {
